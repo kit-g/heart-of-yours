@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -144,13 +145,12 @@ void main() {
       expect(find.text('Programs'), findsNothing);
     });
 
-    testWidgets('unasked, the library alone earns the offer, which says so', (tester) async {
+    testWidgets('never answered, the library is there: Programs is on by default', (tester) async {
       answer(.unasked);
       await openWorkoutTab(tester);
-      await scrollTo(tester, find.byKey(AppKeys.programsOffer));
+      await scrollTo(tester, find.byKey(AppKeys.libraryEntry));
 
-      expect(find.byKey(AppKeys.programsOffer), findsOneWidget);
-      expect(find.textContaining("Start one of Heart's ready-made plans"), findsOneWidget);
+      expect(find.byKey(AppKeys.libraryEntry), findsOneWidget);
     });
 
     testWidgets('off, there is no way in and no offer', (tester) async {
@@ -158,7 +158,6 @@ void main() {
       await openWorkoutTab(tester);
 
       expect(find.byKey(AppKeys.libraryEntry), findsNothing);
-      expect(find.byKey(AppKeys.programsOffer), findsNothing);
     });
   });
 
@@ -180,6 +179,30 @@ void main() {
       expect(find.byKey(AppKeys.libraryProgram('strength_waves')), findsOneWidget);
       expect(find.text('Starting out'), findsNothing);
     });
+  });
+
+  testWidgets('on a tablet, the cards of a row are one height', (tester) async {
+    tester.view.physicalSize = const Size(1194, 834);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    answer(.on);
+    await openLibrary(tester);
+
+    final cards = find.byWidgetPredicate(
+      (widget) => switch (widget.key) {
+        ValueKey<String>(:final value) => value.startsWith('Programs.library.program.'),
+        _ => false,
+      },
+    );
+    final rects = [for (final element in cards.evaluate()) tester.getRect(find.byWidget(element.widget))];
+    final rows = <double, List<Rect>>{};
+    for (final rect in rects) {
+      rows.putIfAbsent(rect.top, () => []).add(rect);
+    }
+    expect(rows.values.any((row) => row.length > 1), isTrue, reason: 'two columns at this width');
+    for (final row in rows.values) {
+      expect(row.map((rect) => rect.height).toSet(), hasLength(1));
+    }
   });
 
   group("a program's page", () {
@@ -204,6 +227,23 @@ void main() {
       verifyNever(db.storeProgram(any, any));
     });
 
+    testWidgets('a quote with one source is one link, the whole of it', (tester) async {
+      answer(.on);
+      await openFirstSteps(tester);
+      final semantics = tester.ensureSemantics();
+      final quote = find.textContaining('Climbing to harder versions of an exercise');
+      await scrollTo(tester, quote);
+
+      // the quote's words and its source are one node: a link that taps
+      final node = tester.getSemantics(quote);
+      expect(node.flagsCollection.isLink, isTrue);
+      expect(node.getSemanticsData().hasAction(.tap), isTrue);
+      expect(node.label, contains('Kotarsky et al., 2018'));
+      // and the source beside it is not a second control
+      expect(find.ancestor(of: find.text('Kotarsky et al., 2018').first, matching: find.byType(Tooltip)), findsNothing);
+      semantics.dispose();
+    });
+
     testWidgets('starting it makes the program and its sessions the user\'s own, filed in a folder of its name', (
       tester,
     ) async {
@@ -211,11 +251,20 @@ void main() {
       await openFirstSteps(tester);
       await tester.tapByKey(AppKeys.libraryStart);
       await tester.pumpTimes();
+      // which days suit: Monday and Thursday, from the user's first day
+      expect(find.byKey(AppKeys.libraryStartDays), findsOneWidget);
+      for (final day in ['Monday', 'Thursday']) {
+        await tester.tap(find.bySemanticsLabel(day));
+      }
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.libraryStartDaysStart);
+      await tester.pumpTimes();
 
       final folder = verify(api.createFolder(userId: userId, folder: captureAnyNamed('folder'))).captured.single;
       expect((folder as TemplateFolder).name, 'First steps');
       final program = verify(db.storeProgram(captureAny, userId)).captured.last as Program;
       expect(program.source, 'first_steps');
+      expect(program.days, {DateTime.monday, DateTime.thursday});
       expect(program.rules['id-wall-push-up'], isA<Ladder>());
       final sessions = verify(db.storeTemplates(captureAny, userId: userId)).captured.last as Iterable<Template>;
       expect(sessions, hasLength(2));
@@ -225,6 +274,35 @@ void main() {
       // on the program's own page, which leads back to the research
       await scrollTo(tester, find.byKey(AppKeys.programAbout));
       expect(find.byKey(AppKeys.programAbout), findsOneWidget);
+
+      // the research stacks over the program, so Back is the program again
+      await tester.tapByKey(AppKeys.programAbout);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.libraryOpenYours), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.programAbout), findsOneWidget);
+      // and Back from the program is the library page it was started from
+      await tester.pageBack();
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.libraryOpenYours), findsOneWidget);
+    });
+
+    testWidgets('waving the days away starts nothing', (tester) async {
+      answer(.on);
+      await openFirstSteps(tester);
+      await tester.tapByKey(AppKeys.libraryStart);
+      await tester.pumpTimes();
+      // Start waits for a day; Skip would start with none
+      expect(
+        tester.widget<PrimaryButton>(find.byKey(AppKeys.libraryStartDaysStart)).onPressed,
+        isNull,
+      );
+      await tester.tapAt(const Offset(4, 4));
+      await tester.pumpTimes();
+
+      verifyNever(db.storeProgram(any, any));
+      expect(find.byKey(AppKeys.libraryStart), findsOneWidget);
     });
 
     testWidgets('a start that fails takes its folder back, so nothing changed is true', (tester) async {
@@ -234,13 +312,15 @@ void main() {
       await openFirstSteps(tester);
       await tester.tapByKey(AppKeys.libraryStart);
       await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.libraryStartDaysSkip);
+      await tester.pumpTimes();
 
       verify(api.createFolder(userId: userId, folder: anyNamed('folder'))).called(1);
       verify(api.deleteFolder(userId: userId, folderId: 'f1')).called(1);
       expect(Templates.of(tester.element(find.byType(MaterialApp))).folders, isEmpty);
     });
 
-    testWidgets('a program whose sessions do not fit says why, in place of the button', (tester) async {
+    testWidgets('a program whose sessions do not fit keeps Start, disabled, and says why', (tester) async {
       answer(.on);
       when(db.getTemplates(userId)).thenAnswer(
         (_) async => [
@@ -251,8 +331,13 @@ void main() {
       await tester.tapByKey(AppKeys.libraryProgram('strength_waves'));
       await tester.pumpTimes();
 
-      expect(find.byKey(AppKeys.libraryStart), findsNothing);
-      expect(find.text('It needs room for 3 more templates.'), findsOneWidget);
+      // there but dead: without it the user would never guess the templates
+      final start = tester.widget<PrimaryButton>(find.byKey(AppKeys.libraryStart));
+      expect(start.onPressed, isNull);
+      expect(
+        find.text('Each of its sessions becomes a template. Remove 3 of yours to make room.'),
+        findsOneWidget,
+      );
     });
   });
 
@@ -313,10 +398,16 @@ void main() {
       expect(find.byIcon(Icons.spa_outlined), findsNothing);
     });
 
-    testWidgets('asked on the page, kept on this phone only', (tester) async {
+    testWidgets('asked on the page, after the sessions, kept on this phone only', (tester) async {
       await openWith(tester);
-      expect(find.byKey(AppKeys.goEasyRow), findsOneWidget);
-      expect(find.text('Nothing yet'), findsOneWidget);
+      // the program first, then what to be careful with in it: by the time
+      // the sessions begin, the row is still below
+      final row = find.byKey(AppKeys.goEasyRow);
+      await scrollTo(tester, find.text('Sessions'));
+      final sessions = tester.getTopLeft(find.text('Sessions')).dy;
+      expect(row.evaluate().isEmpty || tester.getTopLeft(row).dy > sessions, isTrue);
+      await scrollTo(tester, row);
+      expect(find.descendant(of: row, matching: find.text('Nothing yet')), findsOneWidget);
 
       await tester.tapByKey(AppKeys.goEasyRow);
       await tester.pumpTimes();
@@ -329,7 +420,6 @@ void main() {
 
     testWidgets('an exercise harder on the list is marked, and the mark offers kinder swaps', (tester) async {
       await openWith(tester, listed: {'knee'});
-      expect(find.descendant(of: find.byKey(AppKeys.goEasyRow), matching: find.text('Knee')), findsOneWidget);
 
       final semantics = tester.ensureSemantics();
       await scrollTo(tester, find.text('step-up-bodyweight'));

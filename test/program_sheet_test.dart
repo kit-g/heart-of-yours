@@ -6,6 +6,7 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/core/utils/column_fill.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';
@@ -130,6 +131,15 @@ void main() {
     expect(find.bySemanticsLabel(RegExp('Supplemental set')), findsOneWidget);
   });
 
+  testWidgets('the + says what a supplemental set is, where it is tapped', (tester) async {
+    await start(tester, squatDay());
+    await tester.tap(find.text('+'));
+    await tester.pumpTimes();
+
+    expect(find.byKey(WorkoutDetailKeys.supplementalExplained), findsOneWidget);
+    expect(find.textContaining("doesn't move your training max"), findsOneWidget);
+  });
+
   testWidgets('with Programs off the sheet is as it was', (tester) async {
     programs(on: false);
     await start(tester, squatDay(rest: 90, pattern: 'squat'));
@@ -163,6 +173,72 @@ void main() {
     await tester.tapByKey(WorkoutDetailKeys.exerciseOptionsFor(squat.id));
     await tester.pumpTimes();
     expect(find.byKey(WorkoutDetailKeys.swapExerciseFor(squat.id)), findsNothing);
+  });
+
+  testWidgets('an open slot says any of its pattern will do, and opens the picker on it', (tester) async {
+    await start(tester, squatDay(pattern: 'squat'));
+    expect(find.text('Any squat'), findsOneWidget);
+
+    await tester.tap(find.byKey(WorkoutDetailKeys.openSlotFor(squat.id)));
+    await tester.pumpTimes();
+    // the picker, with the slot's own exercise left out and the front squat
+    // offered: the same squat pattern
+    expect(find.text('Front Squat'), findsWidgets);
+    expect(find.byType(TextField), findsWidgets);
+  });
+
+  testWidgets("the session's note says what it is for, at the top", (tester) async {
+    final draft = Template.empty(id: 't1', order: 0)..name = 'Test day';
+    final session = Template.fromJson({
+      ...draft.toMap(),
+      'programId': 'p1',
+      'note': 'Work up to one heavy set of three to five reps',
+    });
+    when(db.getTemplates(userId)).thenAnswer((_) async => [session]);
+    final day = squatDay();
+    await start(tester, Workout.fromExercises(day, name: 'Test day', templateId: 't1', programId: 'p1'));
+    await Templates.of(tester.element(find.byType(MaterialApp))).init();
+    await tester.pumpTimes();
+
+    expect(find.byKey(WorkoutDetailKeys.sessionNote), findsOneWidget);
+    expect(find.text('Work up to one heavy set of three to five reps'), findsOneWidget);
+  });
+
+  testWidgets("a session's workout is marked, and the mark opens its program", (tester) async {
+    await start(tester, squatDay());
+    final mark = find.byKey(AppKeys.partOfProgram('p1'));
+    expect(mark, findsOneWidget);
+    expect(find.byTooltip('Open Waves'), findsOneWidget);
+
+    await tester.tap(mark);
+    await tester.pumpTimes();
+    expect(find.byType(WorkoutDetail), findsNothing, reason: 'the sheet stepped aside');
+    expect(find.text('Waves'), findsWidgets);
+  });
+
+  testWidgets('a workout of no program has no mark', (tester) async {
+    programs(on: true);
+    await start(tester, Workout.fromExercises(squatDay(), name: 'Mine'));
+    expect(find.byKey(AppKeys.partOfProgram('p1')), findsNothing);
+  });
+
+  testWidgets("a session's value columns are labels, not fills: the plan's values stay", (tester) async {
+    await start(tester, squatDay());
+    expect(find.byKey(WorkoutDetailKeys.fillFor(squat.id, SetColumn.reps.key)), findsNothing);
+    expect(find.byKey(WorkoutDetailKeys.fillFor(squat.id, SetColumn.weight.key)), findsNothing);
+    // the ✓ still ticks the column
+    expect(find.byKey(WorkoutDetailKeys.tickAllFor(squat.id)), findsOneWidget);
+  });
+
+  testWidgets('with Programs off, the columns fill as ever', (tester) async {
+    programs(on: false);
+    await start(tester, squatDay());
+    expect(find.byKey(WorkoutDetailKeys.fillFor(squat.id, SetColumn.reps.key)), findsOneWidget);
+  });
+
+  testWidgets('a session with no note says nothing', (tester) async {
+    await start(tester, squatDay());
+    expect(find.byKey(WorkoutDetailKeys.sessionNote), findsNothing);
   });
 
   testWidgets('a lighter cycle says so once, at the top', (tester) async {

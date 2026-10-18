@@ -11,6 +11,7 @@ library;
 import 'dart:math';
 
 import 'package:flutter_body_atlas/flutter_body_atlas.dart' show MuscleGroup;
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/misc.dart';
@@ -27,7 +28,6 @@ import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/feedback_button.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/muscle_figures.dart';
-import 'package:heart/presentation/widgets/popping_text.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -48,10 +48,6 @@ part 'swipe.dart';
 part 'target_input.dart';
 part 'text.dart';
 part 'thresholds.dart';
-
-/// How far a row travels before the swipe counts as a delete. Matches the
-/// exercise set's, so the gesture feels the same wherever it is used.
-const _dismissThreshold = .5;
 
 /// Applies an edit to a goal, and says so when the server refuses it.
 ///

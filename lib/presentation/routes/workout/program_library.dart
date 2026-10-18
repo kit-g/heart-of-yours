@@ -84,18 +84,30 @@ class _ProgramLibraryPageState extends State<ProgramLibraryPage> {
                             const gap = 8.0;
                             final width = constraints.maxWidth;
                             final columns = columnsFor(width, maxExtent: _libraryCardMaxWidth);
-                            final card = (width - gap * (columns - 1)) / columns;
-                            return Wrap(
+                            Widget card(LibraryProgram program) {
+                              return _LibraryCard(program: program, tag: tag, onTap: () => widget.onOpen(program));
+                            }
+
+                            // in rows, each card as tall as the tallest beside
+                            // it: a free-height grid left neighbours ragged
+                            return Column(
+                              crossAxisAlignment: .stretch,
                               spacing: gap,
-                              runSpacing: gap,
                               children: [
-                                for (final program in group)
-                                  SizedBox(
-                                    width: card,
-                                    child: _LibraryCard(
-                                      program: program,
-                                      tag: tag,
-                                      onTap: () => widget.onOpen(program),
+                                for (final row in List.generate(
+                                  (group.length / columns).ceil(),
+                                  (index) => group.skip(index * columns.toInt()).take(columns.toInt()).toList(),
+                                ))
+                                  IntrinsicHeight(
+                                    child: Row(
+                                      crossAxisAlignment: .stretch,
+                                      spacing: gap,
+                                      children: [
+                                        for (final program in row) Expanded(child: card(program)),
+                                        // a short last row keeps its columns
+                                        for (final _ in Iterable.generate(columns.toInt() - row.length))
+                                          const Expanded(child: SizedBox.shrink()),
+                                      ],
                                     ),
                                   ),
                               ],
@@ -150,6 +162,23 @@ String _audienceLabel(L copy, LibraryAudience? audience) {
   };
 }
 
+/// The user's history with [key] in words, or null when they never started
+/// it: "Following now", "Finished", "Stopped at week 5 of 12".
+String? _history(BuildContext context, String key) {
+  final copy = L.of(context);
+  final history = Programs.watch(context).historyOf(key, now: DateTime.now(), firstWeekday: firstWeekdayOf(context));
+  return switch (history) {
+    LibraryFollowing() => copy.libraryFollowingNow,
+    LibraryFinished(:final DateTime on) => copy.programFinishedOn(
+      DateFormat.MMMd(copy.localeName).format(on.toLocal()),
+    ),
+    LibraryFinished() => copy.libraryFinishedIt,
+    LibraryTried(:final week, weeks: final int weeks) => copy.libraryStoppedAt(week, weeks),
+    LibraryTried(:final week, weeks: null) => copy.libraryStoppedAtOpen(week),
+    null => null,
+  };
+}
+
 /// How often, how long and for how many weeks, in a line.
 String _facts(L copy, LibraryProgram program) {
   return [
@@ -193,7 +222,29 @@ class _LibraryCard extends StatelessWidget {
             crossAxisAlignment: .start,
             spacing: 4,
             children: [
-              Text(program.name.of(tag), style: textTheme.titleMedium),
+              Row(
+                spacing: 8,
+                crossAxisAlignment: .start,
+                children: [
+                  Expanded(child: Text(program.name.of(tag), style: textTheme.titleMedium)),
+                  // what the user has done with it, small, beside its name
+                  if (_history(context, program.key) case final String history)
+                    DecoratedBox(
+                      key: AppKeys.libraryHistory(program.key),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondaryContainer,
+                        borderRadius: const .all(.circular(8)),
+                      ),
+                      child: Padding(
+                        padding: const .symmetric(horizontal: 6, vertical: 2),
+                        child: Text(
+                          history,
+                          style: textTheme.labelSmall?.copyWith(color: colorScheme.onSecondaryContainer),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               Text(_facts(copy, program), style: muted),
               if (program.note case final ContentText note)
                 Text(note.of(tag), style: textTheme.bodyMedium, maxLines: 3, overflow: .ellipsis),
@@ -303,14 +354,14 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
                   padding: const .all(16),
                   children: [
                     Text(_facts(copy, program), style: muted),
+                    if (_history(context, program.key) case final String history) ...[
+                      const SizedBox(height: 4),
+                      Text(history, key: AppKeys.libraryHistory(program.key), style: textTheme.labelLarge),
+                    ],
                     if (program.note case final ContentText note) ...[
                       const SizedBox(height: 8),
                       Text(note.of(tag), style: textTheme.bodyLarge),
                     ],
-                    // asked before the program is started: what it marks
-                    // below is what is harder on the list (#396)
-                    const SizedBox(height: 8),
-                    const GoEasyRow(),
                     if (program.claimsAbout('program') case final about when about.isNotEmpty) ...[
                       heading(copy.libraryWhy),
                       claims(about),
@@ -356,6 +407,10 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
                         ),
                         tag: tag,
                       ),
+                    // after the sessions, once the program is known: what the
+                    // list marks in them is what is harder (#396)
+                    const SizedBox(height: 16),
+                    const GoEasyRow(),
                     if (next.isNotEmpty) ...[
                       heading(copy.libraryNext),
                       for (final each in next)
@@ -409,9 +464,15 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
     final templates = Templates.of(context);
     final programs = Programs.of(context);
     final analytics = Analytics.of(context);
-    final resolve = Exercises.of(context).lookupByKey;
+    final exercises = Exercises.of(context);
+    final resolve = exercises.lookupByKey;
     final remote = RemoteAccess.of(context);
     final tag = languageTag();
+
+    // the days it would rather fall on, asked as it starts, as a program made
+    // from a folder asks in its form; waved away, nothing starts
+    final days = await showDialog<Set<int>>(context: context, builder: (_) => const _StartDays());
+    if (days == null) return;
 
     _starting.value = true;
     // made only once the copy is known to resolve, and taken back if the
@@ -427,7 +488,39 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
       }
       final made = program.copy(resolve: resolve, tag: tag, folder: folder, order: order)!;
 
-      final started = await programs.create(made.program, sessions: made.sessions);
+      final started = await programs.create(made.program.copyWith(days: days), sessions: made.sessions);
+      // where each lift starts, from the user's own sets of it: the program's
+      // goals show from day one, and its page says and edits them
+      final seeded = await programs.seedBases(
+        started,
+        setsOf: (id) async => switch (exercises.lookup(id)) {
+          final Exercise exercise => [
+            for (final act in await exercises.getExerciseHistory(exercise, pageSize: 10)) ...act,
+          ],
+          null => const <ExerciseSet>[],
+        },
+      );
+      if (seeded.isNotEmpty && context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              copy.programSeededFromHistory(
+                seeded
+                    .map((base) => (base, exercises.lookup(base.exerciseId)))
+                    .map(
+                      (pair) => switch (pair) {
+                        (final base, final Exercise exercise) =>
+                          '${exercise.name} ${GrowthMeasure.of(context, exercise, started.rules[base.exerciseId]).format(base.value)}',
+                        (_, null) => null,
+                      },
+                    )
+                    .nonNulls
+                    .join(', '),
+              ),
+            ),
+          ),
+        );
+      }
       analytics.programCreated(source: .library, sessions: made.sessions.length, library: program.key);
       if (context.mounted) widget.onProgram(started);
     } catch (e, s) {
@@ -439,6 +532,81 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
     } finally {
       _starting.value = false;
     }
+  }
+}
+
+/// Which days a ready-made program would rather fall on, asked as it starts:
+/// the week from the user's first day (#339), each day a toggle. A hint for
+/// what is up next, never a rule — so Skip starts it with none.
+class _StartDays extends StatefulWidget {
+  const new();
+
+  @override
+  State<_StartDays> createState() => _StartDaysState();
+}
+
+class _StartDaysState extends State<_StartDays> {
+  final _days = ValueNotifier(<int>{});
+
+  @override
+  void dispose() {
+    _days.dispose();
+    super.dispose();
+  }
+
+  void _toggle(int day) {
+    _days.value = switch (_days.value.contains(day)) {
+      true => {..._days.value}..remove(day),
+      false => {..._days.value, day},
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return AlertDialog(
+      key: AppKeys.libraryStartDays,
+      title: Text(copy.libraryStartDays),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: dialogWidth),
+        child: Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .start,
+          spacing: 12,
+          children: [
+            Text(
+              copy.libraryStartDaysHint,
+              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+            ValueListenableBuilder(
+              valueListenable: _days,
+              builder: (_, days, _) => _DayToggles(days: days, onToggle: _toggle),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          key: AppKeys.libraryStartDaysSkip,
+          onPressed: () => Navigator.of(context).pop(<int>{}),
+          child: Text(copy.skip),
+        ),
+        ValueListenableBuilder(
+          valueListenable: _days,
+          builder: (context, days, _) {
+            return PrimaryButton.shrunk(
+              key: AppKeys.libraryStartDaysStart,
+              onPressed: switch (days.isEmpty) {
+                true => null,
+                false => () => Navigator.of(context).pop(days),
+              },
+              child: Text(copy.programStartIt),
+            );
+          },
+        ),
+      ],
+    );
   }
 }
 
@@ -481,11 +649,25 @@ class _StartBar extends StatelessWidget {
       );
     }
 
+    // the one place Start stays, disabled: its absence would leave the user
+    // guessing, and the reason under it says what to do (docs/style.md)
     if (!templates.allowsNewTemplates(sessions)) {
-      return Text(
-        copy.libraryNoRoom(sessions - templates.templateRoom),
-        textAlign: .center,
-        style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+      return Column(
+        mainAxisSize: .min,
+        spacing: 8,
+        children: [
+          PrimaryButton.wide(
+            key: AppKeys.libraryStart,
+            onPressed: null,
+            child: Center(heightFactor: 1, child: Text(copy.programStartIt)),
+          ),
+          Text(
+            key: AppKeys.libraryNoRoom,
+            copy.libraryNoRoom(sessions - templates.templateRoom),
+            textAlign: .center,
+            style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+          ),
+        ],
       );
     }
 
@@ -702,11 +884,34 @@ class _Claims extends StatelessWidget {
 
   const new({required this.claims, required this.tag});
 
+  /// A claim as a quote: its words, and its sources under them.
+  Widget _quote(BuildContext context, LibraryClaim claim, List<LibrarySource> sources, {required bool inert}) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: colorScheme.outlineVariant, width: 2)),
+      ),
+      child: Padding(
+        padding: const .only(left: 10),
+        child: Column(
+          crossAxisAlignment: .start,
+          spacing: 2,
+          children: [
+            Text(claim.text.of(tag), style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+            Wrap(
+              spacing: 12,
+              children: [for (final source in sources) _SourceLink(source: source, inert: inert)],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (claims.isEmpty) return const SizedBox.shrink();
     final library = ProgramLibrary.of(context);
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return Padding(
       padding: const .only(top: 6),
@@ -715,42 +920,54 @@ class _Claims extends StatelessWidget {
         spacing: 6,
         children: [
           for (final claim in claims)
-            DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(left: BorderSide(color: colorScheme.outlineVariant, width: 2)),
+            switch ([for (final key in claim.sources) ?library.source(key)]) {
+              // one source to open: the whole quote is its link, one control
+              final sources when sources.where((source) => source.url != null).length == 1 => _Linked(
+                url: sources.firstWhere((source) => source.url != null).url!,
+                child: _quote(context, claim, sources, inert: true),
               ),
-              child: Padding(
-                padding: const .only(left: 10),
-                child: Column(
-                  crossAxisAlignment: .start,
-                  spacing: 2,
-                  children: [
-                    Text(
-                      claim.text.of(tag),
-                      style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                    ),
-                    Wrap(
-                      spacing: 12,
-                      children: [
-                        for (final key in claim.sources)
-                          if (library.source(key) case final LibrarySource source) _SourceLink(source: source),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+              // several: one tap cannot open them all, so each is its own
+              final sources => _quote(context, claim, sources, inert: false),
+            },
         ],
       ),
     );
   }
 }
 
-/// A source as a short link beside a claim: who, and when.
+/// The whole of something as one link to [url]: a single control, read as a
+/// link, with ink inset to its shape.
+class _Linked extends StatelessWidget {
+  final Uri url;
+  final Widget child;
+  final Key? linkKey;
+
+  const new({required this.url, required this.child, this.linkKey});
+
+  @override
+  Widget build(BuildContext context) {
+    return MergeSemantics(
+      child: Semantics(
+        link: true,
+        child: InkWell(
+          key: linkKey,
+          borderRadius: const .all(.circular(6)),
+          onTap: () => _open(url),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// A source as a short link beside a claim: who, and when. [inert] when the
+/// claim around it is the link: it still looks like one, and is not a second
+/// control.
 class _SourceLink extends StatelessWidget {
   final LibrarySource source;
+  final bool inert;
 
-  const new({required this.source});
+  const new({required this.source, this.inert = false});
 
   @override
   Widget build(BuildContext context) {
@@ -763,6 +980,10 @@ class _SourceLink extends StatelessWidget {
     );
     return switch (source.url) {
       null => Text(short.isEmpty ? source.title : short, style: textTheme.labelSmall),
+      Uri() when inert => Padding(
+        padding: const .symmetric(vertical: 4),
+        child: Text(short.isEmpty ? source.title : short, style: style),
+      ),
       final Uri url => Tooltip(
         message: source.title,
         child: InkWell(
@@ -800,25 +1021,23 @@ class _SourceEntry extends StatelessWidget {
         ),
       },
     );
+    final entry = Column(
+      crossAxisAlignment: .start,
+      spacing: 2,
+      children: [
+        title,
+        if ([?source.who, ?source.year?.toString()] case final byline when byline.isNotEmpty)
+          Text(byline.join(', '), style: muted),
+        if (source.finding case final ContentText finding) Text(finding.of(tag), style: muted),
+      ],
+    );
     return Padding(
       padding: const .only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: .start,
-        spacing: 2,
-        children: [
-          switch (source.url) {
-            null => title,
-            final Uri url => InkWell(
-              key: AppKeys.librarySource(source.key),
-              onTap: () => _open(url),
-              child: Semantics(link: true, child: title),
-            ),
-          },
-          if ([?source.who, ?source.year?.toString()] case final byline when byline.isNotEmpty)
-            Text(byline.join(', '), style: muted),
-          if (source.finding case final ContentText finding) Text(finding.of(tag), style: muted),
-        ],
-      ),
+      // the whole entry opens the source, not just its title
+      child: switch (source.url) {
+        null => entry,
+        final Uri url => _Linked(url: url, linkKey: AppKeys.librarySource(source.key), child: entry),
+      },
     );
   }
 }

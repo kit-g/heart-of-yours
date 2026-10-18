@@ -218,7 +218,10 @@ class GoEasyRow extends StatelessWidget {
 
     return ListTile(
       key: AppKeys.goEasyRow,
-      contentPadding: .zero,
+      // the ink inset from the row's content and rounded, as Settings'
+      // option rows: flush, it was a hard-edged block cut at the icon
+      contentPadding: const .symmetric(horizontal: 8),
+      shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
       leading: const Icon(Icons.spa_outlined),
       title: Text(title.of(languageTag())),
       subtitle: Text(switch (listed) {
@@ -250,7 +253,10 @@ class ProgramConstraintRow extends StatelessWidget {
 
     return ListTile(
       key: AppKeys.programConstraint,
-      contentPadding: .zero,
+      // the ink inset from the row's content and rounded, as Settings'
+      // option rows: flush, it was a hard-edged block cut at the icon
+      contentPadding: const .symmetric(horizontal: 8),
+      shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
       leading: const Icon(Icons.filter_alt_outlined),
       title: Text(copy.programConstraint),
       subtitle: Text(switch (entry) {

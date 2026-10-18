@@ -95,7 +95,15 @@ class _RecordBadgesState extends State<_RecordBadges> with SingleTickerProviderS
       .where((each) => each.record['previous'] is Map)
       .fold({}, (acc, each) => acc..putIfAbsent(each.exercise, () => []).add(each));
 
-  late final int _firsts = widget.achieved.where((each) => each.record['previous'] is! Map).length;
+  late final List<AchievedRecord> _firstList = [
+    for (final each in widget.achieved)
+      if (each.record['previous'] is! Map) each,
+  ];
+  late final int _firsts = _firstList.length;
+
+  /// The firsts' count opens to what they were: a count alone is all a user
+  /// would ever know of them.
+  final _showFirsts = ValueNotifier(false);
 
   /// Each beaten record's place in the stagger: reading order, top to
   /// bottom, with the firsts' summary after them all.
@@ -131,6 +139,7 @@ class _RecordBadgesState extends State<_RecordBadges> with SingleTickerProviderS
   @override
   void dispose() {
     _stagger.dispose();
+    _showFirsts.dispose();
     super.dispose();
   }
 
@@ -183,12 +192,51 @@ class _RecordBadgesState extends State<_RecordBadges> with SingleTickerProviderS
                 ],
               ),
             if (_firsts > 0)
-              _Badge(
-                reveal: _reveal(_order.length),
-                icon: Icons.flag_rounded,
-                value: '$_firsts',
-                detail: l.firstRecordsBadge(_firsts),
-                semanticsLabel: l.firstRecordsLabel(_firsts),
+              ValueListenableBuilder<bool>(
+                valueListenable: _showFirsts,
+                builder: (context, shown, _) {
+                  return Column(
+                    spacing: 8,
+                    children: [
+                      // one node: the count, that it opens, and whether it is open
+                      Semantics(
+                        button: true,
+                        expanded: shown,
+                        label: l.firstRecordsLabel(_firsts),
+                        excludeSemantics: true,
+                        onTap: () => _showFirsts.value = !shown,
+                        child: InkWell(
+                          key: AppKeys.firstRecords,
+                          borderRadius: const .all(.circular(12)),
+                          onTap: () => _showFirsts.value = !shown,
+                          child: _Badge(
+                            reveal: _reveal(_order.length),
+                            icon: Icons.flag_rounded,
+                            value: '$_firsts',
+                            detail: l.firstRecordsBadge(_firsts),
+                            semanticsLabel: l.firstRecordsLabel(_firsts),
+                          ),
+                        ),
+                      ),
+                      if (shown)
+                        for (final (:exercise, :kind, :record) in _firstList)
+                          Text(
+                            l.firstRecordLine(
+                              exercise.name,
+                              recordKindLabel(context, kind),
+                              RecordFormats(
+                                l: l,
+                                prefs: prefs,
+                                unit: exercises.unitFor(exercise.id),
+                                category: exercise.category,
+                              ).value(kind, record),
+                            ),
+                            textAlign: .center,
+                            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                    ],
+                  );
+                },
               ),
           ],
         ),

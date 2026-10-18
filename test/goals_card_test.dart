@@ -23,6 +23,7 @@ void main() {
   late Exercises exercises;
   late Preferences preferences;
   late Stats stats;
+  late MockLocalStatsService statsService;
 
   const userId = 'user-1';
 
@@ -66,9 +67,12 @@ void main() {
       preferenceService: MockRemoteExercisePreferenceService(),
     );
 
-    stats = Stats(onError: null, service: MockLocalStatsService());
+    statsService = MockLocalStatsService();
+    stats = Stats(onError: null, service: statsService);
 
-    SharedPreferences.setMockInitialValues({});
+    // Programs is on by default and would read its own providers, which this
+    // test of a widget without them does not build
+    SharedPreferences.setMockInitialValues({'feature-programs': 'off'});
     preferences = Preferences();
     await preferences.init();
   });
@@ -276,18 +280,76 @@ void main() {
     });
   });
 
-  testWidgets('swiping a row away removes the goal', (tester) async {
-    // the same gesture an exercise set uses, and like it, no confirmation
+  testWidgets('a swipe uncovers Delete, and only its tap deletes', (tester) async {
     await seed([workoutsGoal(id: 'goal-1')]);
 
     await pump(tester);
     await tester.pumpAndSettle();
 
+    // even a full swipe only uncovers the button
     await tester.fling(find.byType(GoalRow), const Offset(-500, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(goals, hasLength(1));
+
+    final delete = find.byKey(const ValueKey('GoalRow.goal-1.delete'));
+    await tester.tap(delete);
     await tester.pumpAndSettle();
 
     expect(goals, isEmpty);
     expect(find.text('No goals yet'), findsOneWidget);
+  });
+
+  testWidgets(
+    "on a Pixel's width, a realistic swipe uncovers Delete",
+    (tester) async {
+      tester.view.physicalSize = const Size(412 * 2.625, 915 * 2.625);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.reset);
+      await seed([workoutsGoal(id: 'goal-1')]);
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      // 40% of the row, over a third of a second, as a thumb does
+      final row = find.byType(GoalRow);
+      final width = tester.getSize(row).width;
+      await tester.timedDrag(row, Offset(-width * .4, 0), const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+
+      final delete = find.byKey(const ValueKey('GoalRow.goal-1.delete'));
+      // uncovered: the row has slid off it, so a tap there lands on the
+      // button rather than on the row covering it
+      expect(goals, hasLength(1));
+      await tester.tap(delete, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(goals, isEmpty);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
+
+  testWidgets('an uncovered Delete closes on a tap of the row, and deletes nothing', (tester) async {
+    await seed([workoutsGoal(id: 'goal-1')]);
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(GoalRow), const Offset(-200, 0));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(GoalRow), warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    expect(goals, hasLength(1));
+    expect(tester.getTopLeft(find.byType(GoalRow)).dx, 0);
+  });
+
+  testWidgets('a screen reader deletes through the row action', (tester) async {
+    await seed([workoutsGoal(id: 'goal-1')]);
+    final semantics = tester.ensureSemantics();
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+    final node = tester.getSemantics(find.byType(GoalRow));
+    expect(node.getSemanticsData().customSemanticsActionIds, isNotEmpty);
+    semantics.dispose();
   });
 
   group('beside a running program (#353)', () {
@@ -349,14 +411,39 @@ void main() {
       expect(goals, isEmpty);
     });
 
-    testWidgets('never a second copy of a target the user holds', (tester) async {
-      await seed([workoutsGoal()]);
+    testWidgets("the program's cadence overrides the user's own, which is set aside, not edited", (tester) async {
+      await seed([workoutsGoal(target: 2)]);
       await follow(split);
 
       await pumpWith(tester);
 
-      expect(find.byType(GoalRow), findsOneWidget);
-      expect(find.text('from Split'), findsNothing);
+      // the program's 3 a week, and the user's 2 said under it
+      expect(find.byKey(AppKeys.goalRow('program:p1:workouts')), findsOneWidget);
+      expect(find.byKey(AppKeys.goalRow('goal-1')), findsNothing);
+      expect(find.text('Your 2 a week is paused while you follow Split'), findsOneWidget);
+      expect(goals.all.single.stages.single.target, 2);
+    });
+
+    testWidgets("the program's weekly goal counts the program's own sessions", (tester) async {
+      // eight workouts this week, none of them the program's
+      when(statsService.getWorkoutCountBetween(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => 8);
+      when(statsService.getWeeklyWorkoutCount(any, userId: anyNamed('userId'))).thenAnswer((_) async => 8);
+      await follow(split);
+
+      await pumpWith(tester);
+
+      final row = find.byKey(AppKeys.goalRow('program:p1:workouts'));
+      expect(find.descendant(of: row, matching: find.textContaining('0 / 3')), findsOneWidget);
+    });
+
+    testWidgets("with Programs off, the user's own weekly goal is back as it was", (tester) async {
+      await seed([workoutsGoal(target: 2)]);
+      await follow(split);
+
+      await pumpWith(tester, on: false);
+
+      expect(find.byKey(AppKeys.goalRow('goal-1')), findsOneWidget);
+      expect(find.textContaining('is paused while you follow'), findsNothing);
     });
 
     testWidgets('with Programs off, goals are as they were', (tester) async {

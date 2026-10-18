@@ -1,46 +1,22 @@
 part of 'workout.dart';
 
-/// A program in the device calendar (#391), on its page: the one ask, the one
-/// notice after a no, the row that says where its sessions go — or nothing.
-/// Asked here and not when the program starts: here is where a schedule is
-/// looked at.
+/// A program in the device calendar (#391), on its page: the row that says
+/// where its sessions go or offers to put them there, while Programs' calendar
+/// is selected in Settings, and nothing otherwise. Nothing is asked here: the
+/// OS asks for the calendar once the user opens the setup.
 class _ProgramCalendarSlot extends StatelessWidget {
-  static const _feature = Feature.programCalendar;
-
   final Program program;
 
   const new({required this.program});
 
   @override
   Widget build(BuildContext context) {
-    final preferences = Preferences.watch(context);
-    final copy = L.of(context);
-
-    final Widget? child = switch (preferences) {
-      _ when preferences.isOn(_feature) => _ProgramCalendarRow(program: program),
-      _ when preferences.owesDeclineNotice(_feature) => FeatureDeclinedNotice(
-        onDismiss: () => preferences.acknowledgeDeclineNotice(_feature),
+    return switch (Preferences.watch(context).isOptionOn(.programsCalendar)) {
+      true => Padding(
+        padding: const .only(top: 16),
+        child: _ProgramCalendarRow(program: program),
       ),
-      _ when preferences.shouldOffer(_feature) && program.sessions.isNotEmpty => FeatureOffer(
-        key: AppKeys.programCalendarOffer,
-        acceptKey: AppKeys.programCalendarAccept,
-        declineKey: AppKeys.programCalendarDecline,
-        icon: Icons.edit_calendar_rounded,
-        title: copy.programCalendarOfferTitle,
-        body: copy.programCalendarOfferBody(copy.programCalendarEventTitle),
-        onAnswer: (yes) {
-          preferences.answerOffer(_feature, yes: yes);
-          // the yes is the way in: the OS asks next, then where and when
-          if (yes) _showCalendarSetup(context, program);
-        },
-        onShown: () => preferences.markOffered(_feature),
-      ),
-      _ => null,
-    };
-
-    return switch (child) {
-      final Widget child => Padding(padding: const .only(top: 16), child: child),
-      null => const SizedBox.shrink(),
+      false => const SizedBox.shrink(),
     };
   }
 }
@@ -190,20 +166,41 @@ class _CalendarSetupState extends State<_CalendarSetup> {
                       padding: const .fromLTRB(24, 24, 24, 8),
                       child: Text(copy.programCalendarSetup, style: textTheme.titleMedium),
                     ),
+                    // what an event will say, before anything is saved: a
+                    // shared calendar shows no more than this
+                    Padding(
+                      padding: const .fromLTRB(24, 0, 24, 8),
+                      child: Text(
+                        copy.programCalendarSetupNote(copy.programCalendarEventTitle),
+                        style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ),
                     Flexible(child: body),
+                    // the destructive one on a line of its own, apart from the
+                    // pair that closes the dialog: three in a row broke on a
+                    // phone, with Save alone on the next line
+                    if (exported)
+                      Padding(
+                        padding: const .fromLTRB(16, 8, 16, 0),
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: TextButton.icon(
+                            key: AppKeys.programCalendarRemove,
+                            onPressed: () => _remove(context),
+                            style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+                            icon: const Icon(Icons.event_busy_rounded, size: 18),
+                            label: Text(copy.programCalendarRemove),
+                          ),
+                        ),
+                      ),
                     Padding(
                       padding: const .fromLTRB(16, 8, 16, 16),
-                      child: Wrap(
+                      child: OverflowBar(
                         alignment: .end,
+                        overflowAlignment: .end,
                         spacing: 8,
+                        overflowSpacing: 8,
                         children: [
-                          if (exported)
-                            TextButton(
-                              key: AppKeys.programCalendarRemove,
-                              onPressed: () => _remove(context),
-                              style: TextButton.styleFrom(foregroundColor: colorScheme.error),
-                              child: Text(copy.programCalendarRemove),
-                            ),
                           TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(copy.cancel)),
                           PrimaryButton.shrunk(
                             key: AppKeys.programCalendarSave,
@@ -234,29 +231,34 @@ class _CalendarSetupState extends State<_CalendarSetup> {
     return ValueListenableBuilder<_CalendarDraft>(
       valueListenable: _draft,
       builder: (context, draft, _) {
+        // 16 in, and each row's ink 8 in again with its content: the text
+        // sits where the title's does, and the ink stops short of the edge
         return ListView(
           shrinkWrap: true,
-          padding: const .symmetric(horizontal: 24),
+          padding: const .symmetric(horizontal: 16),
           children: [
-            Text(copy.programCalendarDays, style: textTheme.titleSmall),
+            _inset(Text(copy.programCalendarDays, style: textTheme.titleSmall)),
             const SizedBox(height: 8),
-            _DayToggles(
-              days: draft.days,
-              onToggle: (day) => _change(
-                days: switch (_draft.value.days.contains(day)) {
-                  true => {..._draft.value.days}..remove(day),
-                  false => {..._draft.value.days, day},
-                },
+            _inset(
+              _DayToggles(
+                days: draft.days,
+                onToggle: (day) => _change(
+                  days: switch (_draft.value.days.contains(day)) {
+                    true => {..._draft.value.days}..remove(day),
+                    false => {..._draft.value.days, day},
+                  },
+                ),
               ),
             ),
             if (draft.days.isEmpty) ...[
               const SizedBox(height: 4),
-              Text(copy.programCalendarNoDays, style: muted),
+              _inset(Text(copy.programCalendarNoDays, style: muted)),
             ],
             const SizedBox(height: 16),
             SwitchListTile.adaptive(
               key: AppKeys.programCalendarAllDay,
-              contentPadding: .zero,
+              contentPadding: _rowInset,
+              shape: _rowShape,
               title: Text(copy.programCalendarAllDay),
               value: draft.time == null,
               // an evening, when most people train after work
@@ -267,40 +269,80 @@ class _CalendarSetupState extends State<_CalendarSetup> {
             ),
             if (draft.time case final int time)
               ListTile(
-                contentPadding: .zero,
+                contentPadding: _rowInset,
+                shape: _rowShape,
                 title: Text(copy.time),
                 trailing: Text(_timeOfDay(context, time), style: textTheme.bodyLarge),
                 onTap: () => _pickTime(context, time),
               ),
             const SizedBox(height: 8),
-            Text(copy.programCalendarWhich, style: textTheme.titleSmall),
-            for (final choice in calendars)
-              ListTile(
-                key: AppKeys.programCalendarChoice(choice.id),
-                contentPadding: .zero,
-                selected: draft.calendarId == choice.id,
-                leading: Icon(Icons.circle, color: choice.color, size: 14),
-                title: Text(choice.title),
-                subtitle: switch (choice.account) {
-                  final String account when account.isNotEmpty && account != choice.title => Text(account),
-                  _ => null,
-                },
-                trailing: switch (draft.calendarId == choice.id) {
-                  true => const Icon(Icons.check_rounded),
-                  false => null,
-                },
-                onTap: () => _change(calendarId: choice.id, calendar: choice.title),
+            _inset(Text(copy.programCalendarWhich, style: textTheme.titleSmall)),
+            // under the account each comes from: iCloud, a Gmail address,
+            // Exchange — "Home" and "Work" alone say nothing of where they live
+            for (final MapEntry(key: account, value: choices) in _byAccount(calendars).entries) ...[
+              Padding(
+                padding: const .fromLTRB(8, 12, 8, 2),
+                child: Text(account, style: muted),
               ),
+              for (final choice in choices)
+                ListTile(
+                  key: AppKeys.programCalendarChoice(choice.id),
+                  contentPadding: _rowInset,
+                  shape: _rowShape,
+                  // one the app cannot add to: there, greyed, and why
+                  enabled: choice.writable,
+                  selected: draft.calendarId == choice.id,
+                  leading: Icon(Icons.circle, color: choice.color, size: 14),
+                  title: Text(choice.title),
+                  subtitle: switch (choice.writable) {
+                    false => Text(copy.programCalendarReadOnly),
+                    true => null,
+                  },
+                  trailing: switch (draft.calendarId == choice.id) {
+                    true => const Icon(Icons.check_rounded),
+                    false => null,
+                  },
+                  onTap: () => _change(calendarId: choice.id, calendar: choice.title),
+                ),
+            ],
+            // EventKit lists only the accounts added to the phone itself: a
+            // Google Calendar app's own calendars are not among them
+            if (Theme.of(context).platform == .iOS) ...[
+              const SizedBox(height: 12),
+              _inset(Text(copy.programCalendarGoogleHint, style: muted)),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  key: AppKeys.programCalendarSettings,
+                  onPressed: () => AppSettings.openAppSettings(asAnotherTask: true),
+                  child: Text(copy.programCalendarOpenSettings),
+                ),
+              ),
+            ],
           ],
         );
       },
     );
   }
 
+  /// [calendars] under their accounts, in the order the device lists them.
+  static Map<String, List<CalendarChoice>> _byAccount(List<CalendarChoice> calendars) {
+    return calendars.fold({}, (accounts, choice) => accounts..putIfAbsent(choice.account, () => []).add(choice));
+  }
+
+  /// A row's content, inset as far as a tile's is, so its ink is too.
+  static const _rowInset = EdgeInsets.symmetric(horizontal: 8);
+  static const _rowShape = RoundedRectangleBorder(borderRadius: .all(.circular(12)));
+
+  /// What is not a tile, in line with the tiles' content.
+  Widget _inset(Widget child) => Padding(padding: _rowInset, child: child);
+
   Future<void> _pickTime(BuildContext context, int time) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: time ~/ 60, minute: time % 60),
+    // the platform's own picker: the wheel on an iPhone, the clock elsewhere
+    final picked = await showAdaptiveTimePicker(
+      context,
+      initial: TimeOfDay(hour: time ~/ 60, minute: time % 60),
+      title: L.of(context).time,
     );
     if (picked == null) return;
     _change(time: picked.hour * 60 + picked.minute);

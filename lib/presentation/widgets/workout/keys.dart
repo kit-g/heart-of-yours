@@ -5,6 +5,15 @@ class WorkoutDetailKeys {
 
   static const cancelWorkout = Key('WorkoutDetail.cancelWorkout');
   static const options = Key('WorkoutDetail.options');
+  static const sessionNote = Key('WorkoutDetail.sessionNote');
+  static const supplementalExplained = Key('WorkoutDetail.supplementalExplained');
+  static const programBaseEditor = Key('WorkoutDetail.programBase');
+  static Key recordPill(String kind) => Key('WorkoutDetail.recordPill.$kind');
+  static const recordCount = Key('WorkoutDetail.recordCount');
+  static Key openSlotFor(String exerciseId) => Key('WorkoutDetail.openSlot.$exerciseId');
+  static const programBaseField = Key('WorkoutDetail.programBase.field');
+  static const programBaseSave = Key('WorkoutDetail.programBase.save');
+  static Key programBaseEdit(String key) => Key('WorkoutDetail.programBase.edit.$key');
   static const addExercises = Key('WorkoutDetail.addExercises');
   static const startNewWorkout = Key('WorkoutDetail.startNewWorkout');
   static const finishWorkout = Key('WorkoutDetail.finishWorkout');

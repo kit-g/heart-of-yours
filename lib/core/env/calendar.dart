@@ -4,7 +4,10 @@ import 'package:eventide/eventide.dart';
 
 /// A calendar the device holds that Heart may write to (#391): the user's own,
 /// iCloud's or Google's, whichever accounts the device is signed in to.
-typedef CalendarChoice = ({String id, String title, String account, Color color});
+///
+/// [writable] false is a calendar Heart cannot add to — a subscribed or
+/// shared one: listed, greyed, never picked.
+typedef CalendarChoice = ({String id, String title, String account, Color color, bool writable});
 
 /// What one event says and when (#391). [time] is minutes after midnight, or
 /// null for an all-day event.
@@ -75,10 +78,18 @@ final class EventideCalendar implements DeviceCalendar {
   @override
   Future<List<CalendarChoice>> calendars() {
     return _guard(() async {
-      final calendars = await _eventide.retrieveCalendars();
+      // read-only ones too, greyed in the list: hidden, a subscribed calendar
+      // would look like one the app had missed
+      final calendars = await _eventide.retrieveCalendars(onlyWritableCalendars: false);
       return [
         for (final calendar in calendars)
-          (id: calendar.id, title: calendar.title, account: calendar.account.name, color: calendar.color),
+          (
+            id: calendar.id,
+            title: calendar.title,
+            account: calendar.account.name,
+            color: calendar.color,
+            writable: calendar.isWritable,
+          ),
       ];
     });
   }

@@ -65,5 +65,17 @@ const _upgradeAppName = 'upgradeApp';
 const _upgradeAppPath = '/$_upgradeAppName';
 const _galleryName = 'gallery';
 const _galleryPath = '/$_galleryName';
+// over whichever tab is open, so Back returns to it
+const _programOverName = 'programOver';
+const _programOverPath = '/program/:programId';
+const _programEditOverName = 'programEditOver';
+const _libraryProgramOverName = 'libraryProgramOver';
+const _libraryProgramOverPath = '/library/:key';
+const _exerciseOverName = 'exerciseOver';
+const _exerciseOverPath = '/exercise/:exerciseId';
+const _workoutOverName = 'workoutOver';
+const _workoutOverPath = '/past-workout/:workoutId';
+const _filteredExercisesName = 'filteredExercises';
+const _filteredExercisesPath = '/filtered-exercises';
 const _onboardingName = 'welcome';
 const _onboardingPath = '/$_onboardingName';

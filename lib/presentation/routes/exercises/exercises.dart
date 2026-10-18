@@ -18,6 +18,7 @@ import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/exercises/new_exercise_dialog.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart';
 import 'package:heart/presentation/widgets/image.dart';
+import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/prose.dart';
 import 'package:heart/presentation/widgets/responsive/columns.dart';

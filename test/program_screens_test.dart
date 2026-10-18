@@ -11,7 +11,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
+import 'package:heart/presentation/routes/workout/workout.dart' show ProgramPage;
+import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetailKeys;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -140,52 +143,18 @@ void main() {
     await tester.pumpTimes();
   }
 
-  group('the ask (#345)', () {
-    testWidgets('a folder to make one from earns the offer, under the examples', (tester) async {
+  group('on by default (#345)', () {
+    testWidgets('never answered, Programs is on: the header and the way in, and no ask', (tester) async {
       answer(.unasked);
       await openWorkoutTab(tester);
-      await scrollTo(tester, find.byKey(AppKeys.programsOffer));
-
-      expect(find.byKey(AppKeys.programsOffer), findsOneWidget);
-      // the tab above it is the 1.13 tab: no Programs header yet
-      expect(find.byKey(AppKeys.programsFromFolder), findsNothing);
-    });
-
-    testWidgets('yes brings the whole feature: the header and the way in', (tester) async {
-      answer(.unasked);
-      await openWorkoutTab(tester);
-      await scrollTo(tester, find.byKey(AppKeys.programsAccept));
-      await tester.tapByKey(AppKeys.programsAccept);
-      await tester.pumpTimes();
-
-      expect(find.byKey(AppKeys.programsOffer), findsNothing);
       await tester.scrollUntilVisible(
         find.byKey(AppKeys.programsFromFolder),
-        -200,
+        200,
         scrollable: find.byType(Scrollable).first,
       );
+
       expect(find.byKey(AppKeys.programsFromFolder), findsOneWidget);
-    });
-
-    testWidgets('no earns one notice, and nothing else', (tester) async {
-      answer(.unasked);
-      await openWorkoutTab(tester);
-      await scrollTo(tester, find.byKey(AppKeys.programsDecline));
-      await tester.tapByKey(AppKeys.programsDecline);
-      await tester.pumpTimes();
-
-      expect(find.byKey(AppKeys.featureDeclinedNotice), findsOneWidget);
-      expect(find.byKey(AppKeys.programsFromFolder), findsNothing);
-    });
-
-    testWidgets('nothing to make a program of: no offer', (tester) async {
-      answer(.unasked);
-      when(db.getTemplateFolders(userId)).thenAnswer((_) async => <TemplateFolder>[]);
-      when(api.getFolders(userId: anyNamed('userId'))).thenAnswer((_) async => <TemplateFolder>[]);
-      when(db.getTemplates(userId)).thenAnswer((_) async => <Template>[]);
-      await openWorkoutTab(tester);
-
-      expect(find.byKey(AppKeys.programsOffer), findsNothing);
+      expect(find.byType(FeatureOffer), findsNothing);
     });
 
     testWidgets('off, the tab and the folder menu are as before programs', (tester) async {
@@ -195,7 +164,6 @@ void main() {
 
       expect(find.byKey(AppKeys.programBand('p1')), findsNothing);
       expect(find.byKey(AppKeys.programsFromFolder), findsNothing);
-      expect(find.byKey(AppKeys.programsOffer), findsNothing);
 
       await tester.tap(find.byTooltip('More options').first);
       await tester.pumpTimes();
@@ -211,7 +179,12 @@ void main() {
 
       final band = find.byKey(AppKeys.programBand('p1'));
       expect(band, findsOneWidget);
-      expect(find.descendant(of: band, matching: find.text('Week 1 of 8')), findsOneWidget);
+      // the week, and when the program would end at this pace (#F33)
+      // the week, and on a line of its own when the program would end at
+      // this pace (#F33, #F42): never cut short
+      final status = find.byKey(AppKeys.programBandStatus('p1'));
+      expect(find.descendant(of: status, matching: find.text('Week 1 of 8')), findsOneWidget);
+      expect(find.descendant(of: status, matching: find.textContaining(RegExp(r'^ends '))), findsOneWidget);
       expect(find.descendant(of: band, matching: find.text('0 of 3 this week')), findsOneWidget);
 
       await tester.tapByKey(AppKeys.programStart('p1'));
@@ -260,6 +233,26 @@ void main() {
       expect(find.text('Start Push'), findsOneWidget);
     });
 
+    testWidgets("on the program's page, the Undo is there at once, before the server answers", (tester) async {
+      answer(.on);
+      withProgram();
+      // a server that has not answered yet
+      final answered = Completer<({TrainingSkip row, bool created})>();
+      when(api.replaySkip(any)).thenAnswer((_) => answered.future);
+      await openWorkoutTab(tester);
+      await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.programNotToday('p1'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(ProgramPage), findsOneWidget);
+      expect(find.text('Undo'), findsOneWidget);
+      answered.complete((row: verify(db.storeSkip(captureAny, userId)).captured.first as TrainingSkip, created: true));
+      await tester.pumpTimes();
+    });
+
     testWidgets('a skipped day is in History, and gone from it with Programs off', (tester) async {
       answer(.on);
       withProgram();
@@ -305,6 +298,118 @@ void main() {
       await tester.pumpTimes();
     }
 
+    testWidgets("the band's end date is never cut short", (tester) async {
+      // a line of its own, unbounded: the width it has decides nothing (a
+      // phone's own width can't be pumped here — the Workout tab's header
+      // overflows it under the test font)
+      answer(.on);
+      withProgram();
+      await openWorkoutTab(tester);
+
+      final end = find.descendant(
+        of: find.byKey(AppKeys.programBandStatus('p1')),
+        matching: find.textContaining(RegExp(r'^ends ')),
+      );
+      final text = tester.widget<Text>(end);
+      expect(text.overflow, isNot(TextOverflow.ellipsis));
+      expect(text.maxLines, isNull);
+    });
+
+    testWidgets("the band's Start lines up with its week, at the card's right inset", (tester) async {
+      answer(.on);
+      withProgram();
+      await openWorkoutTab(tester);
+      final band = find.byKey(AppKeys.programBand('p1'));
+      final start = tester.getRect(find.byKey(AppKeys.programStart('p1')));
+      final card = tester.getRect(band);
+
+      final week = tester.getRect(find.descendant(of: band, matching: find.textContaining('Week')));
+      expect(start.right, closeTo(card.right - 12, 1));
+      expect(start.right, closeTo(week.right, 1));
+    });
+
+    testWidgets("a program's folder is marked, and the mark opens the program over the tab", (tester) async {
+      answer(.on);
+      withProgram();
+      await openWorkoutTab(tester);
+      final mark = find.byKey(AppKeys.partOfProgram('p1'));
+      await scrollTo(tester, mark);
+      expect(mark, findsOneWidget);
+      // beside the folder's ⋯, as one trailing pair, a full finger's size
+      final menu = tester.getRect(
+        find.ancestor(of: find.byIcon(Icons.more_horiz), matching: find.byType(PopupMenuButton<VoidCallback>)).first,
+      );
+      final markRect = tester.getRect(mark);
+      expect(menu.left - markRect.right, lessThan(4));
+      expect(markRect.height, greaterThanOrEqualTo(44));
+
+      await tester.tap(mark);
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsOneWidget);
+
+      await tester.pageBack();
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsNothing);
+      expect(mark, findsOneWidget);
+    });
+
+    testWidgets('a session under way is said at the top, and returns to its workout', (tester) async {
+      when(db.startWorkout(any, any)).thenAnswer((_) async {});
+      await openPage(tester);
+      expect(find.byKey(AppKeys.programInProgress), findsNothing);
+
+      final context = tester.element(find.byType(ProgramPage));
+      await Workouts.of(context).startWorkout(
+        source: .program,
+        template: Workout.fromExercises([], name: 'Push', programId: 'p1'),
+      );
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.programInProgress), findsOneWidget);
+      expect(find.text('In progress: Push'), findsOneWidget);
+    });
+
+    testWidgets("an exercise's charts say the program that trains it", (tester) async {
+      answer(.on);
+      withProgram();
+      when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench]));
+      await openWorkoutTab(tester);
+      final context = tester.element(find.byType(MaterialApp));
+      await Exercises.of(context).init();
+      HeartRouter.of(context).config.go('/exercises/${bench.id}?tab=charts');
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.exerciseInProgram), findsOneWidget);
+      expect(find.text('In your program, Split'), findsOneWidget);
+
+      // the program over the chart, and Back is the chart again (#F36)
+      await tester.tapByKey(AppKeys.exerciseInProgram);
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsOneWidget);
+      // its edit stacks over it too, and Back walks back the same way
+      await tester.tap(find.byTooltip('Edit program'));
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsNothing);
+      await tester.pageBack();
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsNothing);
+      expect(find.byKey(AppKeys.exerciseInProgram), findsOneWidget);
+    });
+
+    testWidgets('the sessions are joined by a rail through their icons, one sequence', (tester) async {
+      await openPage(tester);
+      await scrollTo(tester, find.text('Pull'));
+
+      final rails = find.byWidgetPredicate(
+        (widget) => widget is CustomPaint && widget.painter.runtimeType.toString() == '_Rail',
+      );
+      // Push and Pull: one runs down from the first, the other up into it
+      expect(rails, findsNWidgets(2));
+    });
+
     testWidgets('a steer lands at once, with an Undo', (tester) async {
       await openPage(tester);
 
@@ -320,6 +425,38 @@ void main() {
       verify(db.deleteProgramAction(action.id)).called(1);
     });
 
+    testWidgets("a lift's working weight shows under its rule, and the user can set it", (tester) async {
+      final growing = program.copyWith(rules: {bench.id: const AddWeight(step: 2.5)});
+      answer(.on);
+      withProgram();
+      when(db.getPrograms(userId)).thenAnswer((_) async => [growing]);
+      when(api.getPrograms()).thenAnswer((_) async => [growing]);
+      when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench]));
+      when(db.storeProgramBase(any)).thenAnswer((_) async {});
+      await openWorkoutTab(tester);
+      await Exercises.of(tester.element(find.byType(MaterialApp))).init();
+      await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
+      await tester.pumpTimes();
+
+      final edit = find.byKey(WorkoutDetailKeys.programBaseEdit(bench.id));
+      await scrollTo(tester, edit);
+      expect(find.text('No weight yet: its first session sets one'), findsOneWidget);
+
+      await tester.tap(edit);
+      await tester.pumpTimes();
+      await tester.enterText(find.byKey(WorkoutDetailKeys.programBaseField), '70');
+      await tester.pumpTimes();
+      await tester.tapByKey(WorkoutDetailKeys.programBaseSave);
+      await tester.pumpTimes();
+
+      final base = verify(db.storeProgramBase(captureAny)).captured.last as ProgramBase;
+      // the user's own word: no workout, no action behind it
+      expect((base.exerciseId, base.workoutId, base.actionId), (bench.id, null, null));
+      // typed in the unit shown, here pounds, and stored in kilograms
+      expect(base.value, closeTo(31.75, .01));
+      expect(find.text('Working weight: 70 lbs'), findsOneWidget);
+    });
+
     testWidgets('How it grows says when the program goes lighter', (tester) async {
       final lighter = program.copyWith(deload: const Deload(every: 4));
       answer(.on);
@@ -330,7 +467,7 @@ void main() {
       await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
       await tester.pumpTimes();
 
-      // under the sessions and the calendar's ask (#391)
+      // under the sessions and the calendar's row (#391)
       await scrollTo(tester, find.text('How it grows'));
       expect(find.text('How it grows'), findsOneWidget);
       expect(find.text('Every 4 weeks, a lighter one: 90% of the weight, 50% of the sets'), findsOneWidget);
@@ -723,34 +860,37 @@ void main() {
   });
 
   group('in the calendar (#391)', () {
-    Future<void> openPage(
-      WidgetTester tester, {
-      required DeviceCalendar calendar,
-      String calendarAnswer = 'unasked',
-    }) async {
-      SharedPreferences.setMockInitialValues({
-        ...pastOnboarding(),
-        'feature-programs': 'on',
-        'feature-programCalendar': calendarAnswer,
-      });
+    Future<void> openPage(WidgetTester tester, {required DeviceCalendar calendar}) async {
+      // Programs never answered: on by default, the calendar with it
+      SharedPreferences.setMockInitialValues(pastOnboarding());
       withProgram();
       await openWorkoutTab(tester, calendar: calendar);
       await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
       await tester.pumpTimes();
     }
 
-    testWidgets('asked on the page; yes, a calendar and days put the sessions in it, titled one plain word', (
+    testWidgets('a row on the page; a calendar and days put the sessions in it, titled one plain word', (
       tester,
     ) async {
       final calendar = _Calendar();
       await openPage(tester, calendar: calendar);
-      await scrollTo(tester, find.byKey(AppKeys.programCalendarAccept));
-      // nothing asks the OS before the yes in the app
+      await scrollTo(tester, find.byKey(AppKeys.programCalendarRow));
+      // nothing asks the OS until the user opens the setup
       expect(calendar.listed, 0);
 
-      await tester.tapByKey(AppKeys.programCalendarAccept);
+      await tester.tapByKey(AppKeys.programCalendarRow);
       await tester.pumpTimes();
       expect(calendar.listed, 1);
+      // what an event will say, before anything is saved
+      expect(find.textContaining('Every event is called just “Training”'), findsOneWidget);
+      // calendars under their accounts; one Heart cannot write to is there,
+      // greyed, saying why
+      expect(find.text('iCloud'), findsOneWidget);
+      expect(find.text("Read-only: Heart can't add to it"), findsOneWidget);
+      await tester.ensureVisible(find.byKey(AppKeys.programCalendarChoice('c2')));
+      expect(tester.widget<ListTile>(find.byKey(AppKeys.programCalendarChoice('c2'))).enabled, isFalse);
+      // the iPhone's hint about Google calendars is the iPhone's alone
+      expect(find.byKey(AppKeys.programCalendarSettings), findsNothing);
 
       // every day, so the next session falls today
       for (final day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']) {
@@ -781,9 +921,33 @@ void main() {
       expect(find.byKey(AppKeys.programCalendarRow), findsOneWidget);
     });
 
-    testWidgets('turned off, its events go and the setting stays', (tester) async {
+    testWidgets('on a phone, Remove has a line of its own and Cancel sits with Save', (tester) async {
       final calendar = _Calendar();
-      await openPage(tester, calendar: calendar, calendarAnswer: 'on');
+      await openPage(tester, calendar: calendar);
+      final context = tester.element(find.byType(Scaffold).last);
+      await ProgramCalendars.of(context).set('p1', (calendarId: 'c1', calendar: 'Home', time: null));
+      await tester.pumpTimes();
+      await scrollTo(tester, find.byKey(AppKeys.programCalendarRow));
+      await tester.tapByKey(AppKeys.programCalendarRow);
+      await tester.pumpTimes();
+      // a phone's width, once over the page: the Workout tab's header under
+      // the test font overflows a phone by itself
+      tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpTimes();
+
+      final remove = tester.getRect(find.byKey(AppKeys.programCalendarRemove));
+      final save = tester.getRect(find.byKey(AppKeys.programCalendarSave));
+      final cancel = tester.getRect(find.widgetWithText(TextButton, 'Cancel'));
+      expect(save.center.dy, closeTo(cancel.center.dy, 1), reason: 'Cancel and Save on one line');
+      expect(remove.bottom, lessThanOrEqualTo(cancel.top), reason: 'Remove above them');
+      expect(find.text('Remove from calendar'), findsOneWidget);
+    });
+
+    testWidgets('left out of Programs, its events go and the setting stays', (tester) async {
+      final calendar = _Calendar();
+      await openPage(tester, calendar: calendar);
       final context = tester.element(find.byType(Scaffold).last);
       final programs = Programs.of(context);
       await programs.update(programs.lookup('p1')!.copyWith(days: {1, 2, 3, 4, 5, 6, 7}));
@@ -793,13 +957,15 @@ void main() {
       expect(calendar.events, isNotEmpty);
       expect(calendar.events.values.first.$2.time, 18 * 60);
 
-      Preferences.of(context).setFeature(.programCalendar, on: false);
+      final preferences = Preferences.of(context)..setOption(.programsCalendar, on: false);
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpTimes();
 
       expect(calendar.events, isEmpty);
       expect(ProgramCalendars.of(context).settingOf('p1'), isNotNull);
       expect(find.byKey(AppKeys.programCalendarRow), findsNothing);
+      // an add-on, not a part: leaving it out leaves Programs on
+      expect(preferences.isOn(.programs), isTrue);
     });
 
     group('its links', () {
@@ -955,7 +1121,16 @@ class _Calendar implements DeviceCalendar {
   @override
   Future<List<CalendarChoice>> calendars() async {
     listed++;
-    return [(id: 'c1', title: 'Home', account: 'iCloud', color: const Color(0xFF3366FF))];
+    return [
+      (id: 'c1', title: 'Home', account: 'iCloud', color: const Color(0xFF3366FF), writable: true),
+      (
+        id: 'c2',
+        title: 'US Holidays',
+        account: 'Subscribed Calendars',
+        color: const Color(0xFF33CC66),
+        writable: false,
+      ),
+    ];
   }
 
   @override

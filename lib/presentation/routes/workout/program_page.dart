@@ -96,7 +96,30 @@ class ProgramPage extends StatelessWidget {
                 child: ListView(
                   padding: const .all(16),
                   children: [
-                    Text(_status(copy, program, position), style: textTheme.titleLarge),
+                    // a session of this program under way: the way back to it
+                    if (Workouts.watch(context).activeWorkout
+                        case Workout(
+                          :final programId,
+                          :final name,
+                        )
+                        when programId == program.id) ...[
+                      Card(
+                        key: AppKeys.programInProgress,
+                        margin: const .only(bottom: 12),
+                        color: colorScheme.secondaryContainer,
+                        child: ListTile(
+                          leading: Icon(Icons.play_circle_outline_rounded, color: colorScheme.onSecondaryContainer),
+                          title: Text(
+                            copy.programInProgress(name ?? copy.defaultWorkoutName()),
+                            style: textTheme.titleSmall?.copyWith(color: colorScheme.onSecondaryContainer),
+                          ),
+                          trailing: Icon(Icons.chevron_right_rounded, color: colorScheme.onSecondaryContainer),
+                          shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+                          onTap: onOpenActiveWorkout,
+                        ),
+                      ),
+                    ],
+                    Text(_status(context, program, position), style: textTheme.titleLarge),
                     if (_standing(context, program, position) case final String line) ...[
                       const SizedBox(height: 4),
                       Text(line, style: muted),
@@ -112,10 +135,12 @@ class ProgramPage extends StatelessWidget {
                     const SizedBox(height: 24),
                     Text(copy.programSessions, style: textTheme.titleSmall),
                     const SizedBox(height: 4),
-                    for (final session in sessions)
+                    for (final (index, session) in sessions.indexed)
                       _SessionTile(
                         program: program,
                         session: session,
+                        // the sessions as one sequence, joined like a log
+                        rail: (above: index > 0, below: index < sessions.length - 1),
                         state: switch (session.id) {
                           final id when skipped.contains(id) => .skipped,
                           final id when position.done.contains(id) => .done,
@@ -418,7 +443,16 @@ class _SessionTile extends StatelessWidget {
   final _SessionState state;
   final VoidCallback onTap;
 
-  const new({required this.program, required this.session, required this.state, required this.onTap});
+  /// Whether the rail through the icons runs on above and below this one.
+  final ({bool above, bool below}) rail;
+
+  const new({
+    required this.program,
+    required this.session,
+    required this.state,
+    required this.onTap,
+    required this.rail,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -432,41 +466,49 @@ class _SessionTile extends StatelessWidget {
         if (goEasyMarks(context, exercise.exercise).isNotEmpty) exercise.exercise,
     ];
 
-    final tile = Semantics(
-      label: switch (state) {
-        .done => copy.programSessionDone(name),
-        .skipped => copy.programSessionSkipped(name),
-        .next => copy.programSessionNext(name),
-        .ahead => name,
-      },
-      button: true,
-      excludeSemantics: true,
-      child: ListTile(
-        contentPadding: .zero,
-        onTap: onTap,
-        leading: Icon(
-          switch (state) {
-            .done => Icons.check_circle_rounded,
-            .skipped => Icons.redo_rounded,
-            .next => Icons.play_circle_outline_rounded,
-            .ahead => Icons.circle_outlined,
-          },
-          color: switch (state) {
-            .done || .skipped => colorScheme.outline,
-            .next => colorScheme.primary,
-            .ahead => colorScheme.outlineVariant,
+    final tile = CustomPaint(
+      painter: _Rail(
+        above: rail.above,
+        below: rail.below,
+        color: colorScheme.outlineVariant,
+        rtl: Directionality.of(context) == .rtl,
+      ),
+      child: Semantics(
+        label: switch (state) {
+          .done => copy.programSessionDone(name),
+          .skipped => copy.programSessionSkipped(name),
+          .next => copy.programSessionNext(name),
+          .ahead => name,
+        },
+        button: true,
+        excludeSemantics: true,
+        child: ListTile(
+          contentPadding: .zero,
+          onTap: onTap,
+          leading: Icon(
+            switch (state) {
+              .done => Icons.check_circle_rounded,
+              .skipped => Icons.redo_rounded,
+              .next => Icons.play_circle_outline_rounded,
+              .ahead => Icons.circle_outlined,
+            },
+            color: switch (state) {
+              .done || .skipped => colorScheme.outline,
+              .next => colorScheme.primary,
+              .ahead => colorScheme.outlineVariant,
+            },
+          ),
+          title: Text(name, maxLines: 1, overflow: .ellipsis),
+          subtitle: switch (exercises.isEmpty) {
+            true => null,
+            false => Text(
+              exercises,
+              maxLines: 1,
+              overflow: .ellipsis,
+              style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
           },
         ),
-        title: Text(name, maxLines: 1, overflow: .ellipsis),
-        subtitle: switch (exercises.isEmpty) {
-          true => null,
-          false => Text(
-            exercises,
-            maxLines: 1,
-            overflow: .ellipsis,
-            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-          ),
-        },
       ),
     );
 
@@ -486,6 +528,46 @@ class _SessionTile extends StatelessWidget {
         ],
       ),
     };
+  }
+}
+
+/// The line joining the sessions' icons, as a log joins its commits: down the
+/// middle of the leading icon, from the tile's top to the icon and from the
+/// icon to its bottom, so it meets the next tile's at any height. Drawn behind
+/// the tile; the icon sits in a gap of its own.
+class _Rail extends CustomPainter {
+  final bool above;
+  final bool below;
+  final Color color;
+
+  /// Right to left: the leading icon, and so the rail, is on the right.
+  final bool rtl;
+
+  const new({required this.above, required this.below, required this.color, required this.rtl});
+
+  /// The leading icon's size, at a ListTile's zero inset.
+  static const _icon = 24.0;
+
+  /// Clear space around the icon, so the line doesn't touch it.
+  static const _gap = 4.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final x = switch (rtl) {
+      false => _icon / 2,
+      true => size.width - _icon / 2,
+    };
+    final middle = size.height / 2;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2;
+    if (above) canvas.drawLine(Offset(x, 0), Offset(x, middle - _icon / 2 - _gap), paint);
+    if (below) canvas.drawLine(Offset(x, middle + _icon / 2 + _gap), Offset(x, size.height), paint);
+  }
+
+  @override
+  bool shouldRepaint(_Rail old) {
+    return above != old.above || below != old.below || color != old.color || rtl != old.rtl;
   }
 }
 
@@ -640,6 +722,7 @@ class _Growth extends StatelessWidget {
     final programs = Programs.watch(context);
     final exercises = Exercises.of(context);
     final bases = programs.basesOf(program.id!);
+    final current = programs.currentBasesOf(program.id!);
     // an occurrence with a rule or a base of its own (heart-api#256) reads as
     // itself: the exercise its session holds there, and which session
     final occurrences = {
@@ -670,6 +753,18 @@ class _Growth extends StatelessWidget {
               _GrowthRow(
                 exercise: exercise,
                 session: session,
+                // the weight it grows from, and the user's say over it
+                base: current[key]?.value,
+                onEditBase: switch (hasWeightBase(program.rules[key] ?? program.rules[exercise.id])) {
+                  true => (value) => programs.setBase(
+                    program,
+                    exerciseId: exercise.id,
+                    slot: key == exercise.id ? null : key,
+                    value: value,
+                  ),
+                  false => null,
+                },
+                editKey: key,
                 rule: program.rules[key] ?? program.rules[exercise.id],
                 history: [
                   for (final base in bases)
@@ -693,12 +788,24 @@ class _GrowthRow extends StatelessWidget {
   final List<num> history;
   final TextStyle? style;
 
+  /// The weight the rule grows from now; null until a session or the user
+  /// sets one.
+  final num? base;
+
+  /// Sets [base] by hand, as a weight in kilograms; null where the rule grows
+  /// no weight.
+  final void Function(num)? onEditBase;
+  final String editKey;
+
   const new({
     required this.exercise,
     this.session,
     required this.rule,
     required this.history,
     required this.style,
+    this.base,
+    this.onEditBase,
+    required this.editKey,
   });
 
   @override
@@ -739,6 +846,26 @@ class _GrowthRow extends StatelessWidget {
         if (rule?.amrap.isNotEmpty ?? false) Text(copy.ruleAmrap, style: style),
         if (misses != null) Text(misses, style: style),
         if (history.isNotEmpty) Text(history.map(measure.format).join(' → '), style: style),
+        if (onEditBase case final edit?)
+          Row(
+            children: [
+              Expanded(
+                child: Text(switch (base) {
+                  final num base => baseLine(context, exercise, rule, base),
+                  null => copy.programBaseUnset,
+                }, style: Theme.of(context).textTheme.bodyMedium),
+              ),
+              IconButton(
+                key: WorkoutDetailKeys.programBaseEdit(editKey),
+                tooltip: copy.programBaseChange(exercise.name),
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                onPressed: () async {
+                  final value = await showProgramBaseEditor(context, exercise: exercise, rule: rule, value: base);
+                  if (value != null) edit(value);
+                },
+              ),
+            ],
+          ),
       ],
     );
   }

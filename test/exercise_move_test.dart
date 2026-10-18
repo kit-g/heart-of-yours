@@ -38,7 +38,9 @@ void main() {
   late Preferences preferences;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+    // Programs is on by default and would read its own providers, which this
+    // test of a widget without them does not build
+    SharedPreferences.setMockInitialValues({'feature-programs': 'off'});
     preferences = Preferences();
     await preferences.init();
 

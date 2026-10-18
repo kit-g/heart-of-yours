@@ -13,6 +13,10 @@ class WorkoutItem extends StatelessWidget {
   /// Whether this card is the one open in a two-pane detail view.
   final bool highlighted;
 
+  /// The Done page's summary: each exercise's records as pills under its
+  /// line, as of this workout.
+  final bool showsRecords;
+
   const new({
     super.key,
     required this.workout,
@@ -24,6 +28,7 @@ class WorkoutItem extends StatelessWidget {
     this.onDeleteWorkout,
     this.onTapImageIcon,
     this.highlighted = false,
+    this.showsRecords = false,
   });
 
   @override
@@ -83,6 +88,14 @@ class WorkoutItem extends StatelessWidget {
                   ),
                   Row(
                     children: [
+                      // a day records fell: how many, as of that workout
+                      _RecordCount(workout: workout),
+                      // a program's session: the program, in the Workout tab
+                      PartOfProgram(
+                        programId: workout.programId,
+                        size: 18,
+                        onOpen: (program) => HeartRouter.of(context).pushProgramOver(program.id!),
+                      ),
                       if (workout case Workout(:Map images) when images.isNotEmpty)
                         FeedbackButton(
                           tooltip: l.viewProgressPhotos,
@@ -171,31 +184,39 @@ class WorkoutItem extends StatelessWidget {
                 spacing: 4,
                 children: [
                   for (final exercise in workout)
-                    Row(
-                      spacing: 12,
+                    Column(
+                      crossAxisAlignment: .start,
+                      spacing: 2,
                       children: [
-                        Expanded(
-                          child: Text(
-                            '${exercise.exercise.name} ×${exercise.where((set) => set.isCompleted).length}',
-                            style: textTheme.bodySmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Row(
+                          spacing: 12,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${exercise.exercise.name} ×${exercise.where((set) => set.isCompleted).length}',
+                                style: textTheme.bodySmall,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              _formatSet(
+                                context,
+                                exercise.best,
+                                Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.weightUnit,
+                                Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.distanceUnit,
+                              ),
+                              // the result column reads in full ink and lines up
+                              // digit-for-digit
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface,
+                                fontFeatures: const [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          _formatSet(
-                            context,
-                            exercise.best,
-                            Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.weightUnit,
-                            Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.distanceUnit,
-                          ),
-                          // the result column reads in full ink and lines up
-                          // digit-for-digit
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
+                        // the Done page's summary: what this exercise set, as pills
+                        if (showsRecords) _ExercisePills(workout: workout, exercise: exercise),
                       ],
                     ),
                 ],
@@ -506,4 +527,79 @@ enum _WorkoutOption {
   saveAsTemplate,
   repeat,
   delete,
+}
+
+/// How many records [workout] set that beat an earlier value — a trophy and
+/// the count on its card, as of that day. Absent where none did.
+class _RecordCount extends StatelessWidget {
+  final Workout workout;
+
+  const new({required this.workout});
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = Exercises.of(context).userId;
+    final book = RecordBook.maybeOf(context);
+    if (book == null || userId == null) return const SizedBox.shrink();
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+
+    return FutureBuilder<RecordMarks>(
+      future: book.marksOf(workout, userId: userId),
+      builder: (context, snapshot) {
+        final count = snapshot.data?.values.fold(0, (sum, kinds) => sum + kinds.length) ?? 0;
+        if (count == 0) return const SizedBox.shrink();
+        final label = L.of(context).workoutRecords(count);
+        return Tooltip(
+          message: label,
+          excludeFromSemantics: true,
+          child: Semantics(
+            label: label,
+            child: Padding(
+              key: AppKeys.workoutRecords(workout.id),
+              padding: const .symmetric(horizontal: 6),
+              child: Row(
+                mainAxisSize: .min,
+                spacing: 2,
+                children: [
+                  Icon(Icons.emoji_events_rounded, size: 18, color: colorScheme.tertiary),
+                  Text(
+                    L.of(context).workoutPRs(count),
+                    style: textTheme.labelLarge?.copyWith(color: colorScheme.tertiary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// The records one exercise of [workout] set, as pills: the Done page's
+/// summary, as of the workout. Nothing until they are read, nor where none.
+class _ExercisePills extends StatelessWidget {
+  final Workout workout;
+  final WorkoutExercise exercise;
+
+  const new({required this.workout, required this.exercise});
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = Exercises.of(context).userId;
+    final book = RecordBook.maybeOf(context);
+    if (book == null || userId == null) return const SizedBox.shrink();
+    return FutureBuilder<RecordMarks>(
+      future: book.marksOf(workout, userId: userId),
+      builder: (context, snapshot) {
+        final kinds = {
+          for (final set in exercise) ...?snapshot.data?[set.id],
+        };
+        return switch (kinds.isEmpty) {
+          true => const SizedBox.shrink(),
+          false => RecordPills(kinds: kinds.toList()),
+        };
+      },
+    );
+  }
 }

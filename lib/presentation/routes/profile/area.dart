@@ -39,10 +39,11 @@ class _ProfileArea extends StatelessWidget {
               ],
             ),
             // Side by side, so the chart stops owning a whole row on its own.
-            // The card takes the chart's height rule, which lines the two
-            // titles up and — more importantly — stops the card growing
-            // without limit as goals are added. Past that height its list
-            // scrolls.
+            // The card is at least the chart's height, which lines the two
+            // titles up — a part-empty panel beside it beats a short one
+            // floating — and grows past it rather than clipping what it says:
+            // a fixed box cut a line under a goal in half. Active goals are
+            // capped, so it cannot grow without limit.
             true => Row(
               crossAxisAlignment: .start,
               spacing: tileGutter,
@@ -50,11 +51,9 @@ class _ProfileArea extends StatelessWidget {
                 Expanded(child: chart),
                 Expanded(
                   child: LayoutBuilder(
-                    // the chart's own height rule, so the two tiles are the same
-                    // box; a part-empty panel beside it beats a short one floating
-                    builder: (_, constraints) => SizedBox(
-                      height: min(constraints.maxWidth * 4 / 5, _maxChartHeight),
-                      child: GoalsCard(workouts: workouts, bounded: true, headerHeight: _tileHeaderHeight),
+                    builder: (_, constraints) => ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: min(constraints.maxWidth * 4 / 5, _maxChartHeight)),
+                      child: GoalsCard(workouts: workouts, headerHeight: _tileHeaderHeight),
                     ),
                   ),
                 ),

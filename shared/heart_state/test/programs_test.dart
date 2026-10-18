@@ -59,6 +59,200 @@ void main() {
     )..userId = uid;
   });
 
+  group("the user's history with a library program", () {
+    final now = DateTime.utc(2026, 10, 29, 12);
+    Program copy(String id, {required DateTime created, int? weeks = 12, bool archived = false, String? source}) {
+      return Program(
+        id: id,
+        name: 'Strength waves',
+        perWeek: 4,
+        weeks: weeks,
+        sessions: const ['s1'],
+        source: source ?? 'strength_waves',
+        archived: archived,
+        createdAt: created,
+      );
+    }
+
+    /// [weeks] weeks done of copy [id]: its one session each week.
+    void done(String id, int weeks) {
+      local.marks[id] = [
+        for (final week in Iterable<int>.generate(weeks))
+          ProgramMark(templateId: 's1', at: DateTime.utc(2026, 8, 3 + 7 * week), isWorkout: true),
+      ];
+    }
+
+    Future<LibraryHistory?> historyWith(List<Program> copies) async {
+      remote.programs = copies;
+      await programs.init();
+      return programs.historyOf('strength_waves', now: now, firstWeekday: DateTime.monday);
+    }
+
+    test('never started: nothing to say', () async {
+      expect(await historyWith([copy('other', created: DateTime.utc(2026, 10, 1), source: 'five_by_five')]), isNull);
+    });
+
+    test('a copy put down before its end says how far it got', () async {
+      done('p1', 4);
+      final history = await historyWith([copy('p1', created: DateTime.utc(2026, 10, 1), archived: true)]);
+      expect(history, isA<LibraryTried>().having((tried) => (tried.week, tried.weeks), 'where', (5, 12)));
+    });
+
+    test('a copy that reached its end is finished, archived or not', () async {
+      done('p1', 4);
+      expect(
+        await historyWith([copy('p1', created: DateTime.utc(2026, 8, 1), weeks: 4, archived: true)]),
+        isA<LibraryFinished>(),
+      );
+    });
+
+    test('following now says more than having finished or tried it before', () async {
+      final history = await historyWith([
+        copy('old', created: DateTime.utc(2026, 8, 1), weeks: 4, archived: true),
+        copy('tried', created: DateTime.utc(2026, 9, 1), archived: true),
+        copy('now', created: DateTime.utc(2026, 10, 20)),
+      ]);
+      expect(history, isA<LibraryFollowing>());
+    });
+
+    test('a finished copy says when: its last workout', () async {
+      done('p1', 4);
+      final history = await historyWith([copy('p1', created: DateTime.utc(2026, 8, 1), weeks: 4, archived: true)]);
+      // the fourth week's session, 2026-08-03 plus three weeks
+      expect(history, isA<LibraryFinished>().having((finished) => finished.on, 'on', DateTime.utc(2026, 8, 24)));
+    });
+
+    test('finished by skips alone, it says its start plus its length', () async {
+      local.marks['p1'] = [
+        for (final week in Iterable<int>.generate(4))
+          ProgramMark(templateId: 's1', at: DateTime.utc(2026, 8, 3 + 7 * week), isWorkout: false),
+      ];
+      final history = await historyWith([copy('p1', created: DateTime.utc(2026, 8, 1), weeks: 4)]);
+      expect(history, isA<LibraryFinished>().having((finished) => finished.on, 'on', DateTime.utc(2026, 8, 29)));
+    });
+
+    test('finished says more than tried', () async {
+      done('tried', 4);
+      done('done', 4);
+      final history = await historyWith([
+        copy('tried', created: DateTime.utc(2026, 10, 1), archived: true),
+        copy('done', created: DateTime.utc(2026, 8, 1), weeks: 4, archived: true),
+      ]);
+      expect(history, isA<LibraryFinished>());
+    });
+  });
+
+  group('a start seeds bases from history (#F32)', () {
+    final lift = Exercise(name: 'Bench', category: .barbell, target: .chest);
+    List<ExerciseSet> sets(List<(num, int)> done) => [
+      for (final (weight, reps) in done) ExerciseSet(lift, weight: weight.toDouble(), reps: reps)..isCompleted = true,
+    ];
+
+    test('a working weight starts from the heaviest working set, a training max from 90% of the best estimate', () {
+      expect(suggestedBase(const AddWeight(step: 2.5), sets([(80, 8), (90, 5)])), 90);
+      // 100×5 estimates 112.5; 90% of it, down to the 2.5 step
+      expect(suggestedBase(const ShareOfMax(waves: [], step: 2.5), sets([(100, 5)])), 100);
+      expect(suggestedBase(const AddWeight(step: 2.5), const []), isNull);
+    });
+
+    test('each weight rule without a base gets one; one with history only, and never over one set', () async {
+      final started = Program(
+        id: 'p1',
+        name: 'Full body',
+        perWeek: 3,
+        weeks: 12,
+        sessions: const ['s1'],
+        rules: {
+          bench: const AddWeight(step: 2.5),
+          'squat': const AddWeight(step: 5),
+          'deadlift': const AddWeight(step: 5),
+          'pull-up': const Ladder(rungs: [], top: 10, bottom: 5),
+        },
+        createdAt: DateTime.utc(2026, 10, 1),
+      );
+      remote.programs = [started];
+      remote.bases['p1'] = [
+        ProgramBase(id: 'b0', programId: 'p1', exerciseId: 'deadlift', value: 140, at: DateTime.utc(2026, 10, 1)),
+      ];
+      await programs.init();
+
+      final seeded = await programs.seedBases(
+        started,
+        setsOf: (id) async => switch (id) {
+          bench => sets([(80, 8), (85, 6)]),
+          'deadlift' => sets([(200, 3)]),
+          _ => const <ExerciseSet>[],
+        },
+      );
+
+      // bench from its sets; squat has none; deadlift had one; a ladder grows no weight
+      expect(seeded.map((base) => (base.exerciseId, base.value, base.workoutId, base.actionId)), [
+        (bench, 85, null, null),
+      ]);
+      expect(programs.currentBasesOf('p1')['deadlift']?.value, 140);
+    });
+  });
+
+  group('projected end (#F33)', () {
+    final program = Program(id: 'p1', name: 'Waves', perWeek: 1, weeks: 12, sessions: const ['s1']);
+    // a Wednesday, in a Monday week that started on the 26th
+    final now = DateTime(2026, 10, 28);
+
+    ProgramPosition at({required List<ProgramMark> marks, List<ProgramAction> actions = const []}) {
+      return ProgramPosition.of(program, marks: marks, actions: actions, now: now);
+    }
+
+    ProgramMark done(DateTime at) => ProgramMark(templateId: 's1', at: at, isWorkout: true);
+
+    test('week 1: this week and eleven more, ending the Sunday of the twelfth', () {
+      final end = projectedEnd(
+        program,
+        at(marks: const []),
+        now: now,
+        firstWeekday: DateTime.monday,
+      );
+      expect(end, DateTime(2027, 1, 17));
+    });
+
+    test('three weeks done: the end is three weeks nearer, counted from this week', () {
+      final position = at(
+        marks: [done(DateTime(2026, 10, 6)), done(DateTime(2026, 10, 13)), done(DateTime(2026, 10, 20))],
+      );
+      expect(position.week, 4);
+      expect(projectedEnd(program, position, now: now, firstWeekday: DateTime.monday), DateTime(2026, 12, 27));
+    });
+
+    test('a pause holds the week, so a month later the end is a month later', () {
+      final paused = at(
+        marks: [done(DateTime(2026, 10, 6))],
+        actions: [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime(2026, 10, 7))],
+      );
+      final later = DateTime(2026, 11, 25);
+      final then = ProgramPosition.of(
+        program,
+        marks: [done(DateTime(2026, 10, 6))],
+        actions: [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime(2026, 10, 7))],
+        now: later,
+      );
+      final before = projectedEnd(program, paused, now: now, firstWeekday: DateTime.monday)!;
+      final after = projectedEnd(program, then, now: later, firstWeekday: DateTime.monday)!;
+      expect(after.difference(before).inDays, 28);
+    });
+
+    test('an open-ended program has no end', () {
+      final open = Program(id: 'p2', name: 'Ongoing', sessions: const ['s1']);
+      expect(
+        projectedEnd(
+          open,
+          ProgramPosition.of(open, marks: const [], actions: const [], now: now),
+          now: now,
+          firstWeekday: 1,
+        ),
+        isNull,
+      );
+    });
+  });
+
   group('init', () {
     test('reads the mirror, then the server replaces it, history and all', () async {
       local.programs[uid] = [program(id: 'gone')];
@@ -583,6 +777,25 @@ void main() {
       await programs.keep(move);
       expect(programs.currentStagesOf('p1'), {'squat': 2});
       expect(programs.currentBasesOf('p1')['squat']?.value, 100);
+    });
+
+    test("a lift's first session sets its first base, when nothing set one before", () async {
+      // Full body, three days: no test week, so nothing ever set one, and the
+      // rule held every session after (#F34)
+      await follow(growing({'squat': const AddWeight(step: 5)}));
+      final workout = done(
+        'w1',
+        start: DateTime.utc(2026, 10, 5),
+        exercises: [
+          squats([5, 5, 5], weight: 65),
+        ],
+      );
+
+      final [move] = await programs.grow(workout);
+
+      expect((move.step, move.before), (const Grow(65), null));
+      expect((move.base?.value, move.base?.workoutId), (65, 'w1'));
+      expect(programs.currentBasesOf('p1')['squat']?.value, 65);
     });
 
     test('a session that makes every set grows the base, caused by the workout', () async {

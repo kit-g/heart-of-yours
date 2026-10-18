@@ -149,8 +149,9 @@ RouteBase _workoutRoute() {
             builder: (context, state) {
               return LibraryProgramPage(
                 programKey: state.pathParameters['key']!,
-                onProgram: (program) => context.goToProgram(program.id!),
-                onLibraryProgram: context.goToLibraryProgram,
+                // drilling in from here stacks: Back is this page
+                onProgram: (program) => context.pushProgram(program.id!),
+                onLibraryProgram: context.pushLibraryProgram,
               );
             },
             name: _libraryProgramName,
@@ -175,7 +176,7 @@ RouteBase _workoutRoute() {
           return ProgramPage(
             programId: programId,
             onEdit: () => context.goToEditProgram(programId),
-            onAbout: context.goToLibraryProgram,
+            onAbout: context.pushLibraryProgram,
             onEditSession: context.pushTemplateEditor,
             onOpenActiveWorkout: () {
               HapticFeedback.mediumImpact();
@@ -283,6 +284,12 @@ RouteBase _activeWorkoutRoute() {
             key: ValueKey(active.id),
             workouts: workouts,
             onTapImage: context.goToGallery,
+            // the sheet steps aside for the program, which is in the
+            // Workout tab whichever tab is under it
+            onOpenProgram: (program) {
+              context.pop();
+              context.pushProgramOverPage(program.id!);
+            },
           );
         },
       );
@@ -367,7 +374,7 @@ RouteBase _historyRoute() {
             builder: (context, state) {
               return SkipPage(
                 skipId: state.pathParameters['skipId']!,
-                onOpenProgram: context.goToProgram,
+                onOpenProgram: context.pushProgramOverPage,
                 onClose: switch (LayoutProvider.of(context)) {
                   .compact => null,
                   .wide => context.goToHistory,
@@ -754,6 +761,10 @@ RouteBase _workoutDoneRoute() {
             final exercises = Exercises.of(context);
             final stats = Stats.of(context);
             final firstWeekday = Preferences.of(context).firstWeekday;
+            // a goal a running program's cadence overrides is not judged, so
+            // nothing celebrates what is set aside
+            final running = runningPrograms(context);
+            bool setAside(Goal goal) => pausedByPrograms(goal, running);
 
             // The id the server settled on, not the one this device saved
             // under: `saveWorkout` adopts the server's when they differ, and
@@ -766,7 +777,6 @@ RouteBase _workoutDoneRoute() {
             // the windows every goal below reads, each read once; `without`
             // filters what was read, so the before reading shares them too
             final lensSets = sharedLensSets(stats.getLensSets);
-
             final stamped = await goals.observeProgress(
               (goal) => currentGoalValue(
                 goal,
@@ -777,12 +787,14 @@ RouteBase _workoutDoneRoute() {
               ),
               // this screen is the one place that knows which session earned it
               achievedBy: finished?.id ?? workout.id,
+              setAside: setAside,
             );
 
             // A recurring goal is never stamped, so it would otherwise go
             // uncelebrated the week it is met — announced here when this
             // session is what carried the period over.
             final carried = await goals.observePeriodWins(
+              setAside: setAside,
               valueOf: (goal) => currentGoalValue(
                 goal,
                 exercises: exercises,
@@ -982,4 +994,143 @@ Future<void> _onShareExercise(BuildContext context, Exercise exercise, String? t
       ),
     );
   }
+}
+
+/// A program's page over any tab (#F36): pushed on the root, so Back is the
+/// page it was opened from.
+RouteBase _programOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _programOverPath,
+    name: _programOverName,
+    builder: (context, state) {
+      final programId = state.pathParameters['programId']!;
+      // outside the shell, so the layout is this route's to provide
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => ProgramPage(
+          programId: programId,
+          onEdit: () => context.pushProgramEditOver(programId),
+          onAbout: context.pushLibraryProgramOver,
+          onEditSession: context.pushTemplateEditor,
+          onOpenActiveWorkout: () {
+            HapticFeedback.mediumImpact();
+            context.goToActiveWorkout();
+          },
+          onGone: context.pop,
+        ),
+      );
+    },
+    routes: [
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: 'edit',
+        name: _programEditOverName,
+        builder: (context, state) {
+          return LayoutProvider(
+            currentStack: -1,
+            builder: (context, _, _) => ProgramFormPage.edit(
+              programId: state.pathParameters['programId']!,
+              onDone: context.pop,
+            ),
+          );
+        },
+      ),
+    ],
+  );
+}
+
+/// The exercise library under a filter, over the tab that asked (#F37): a
+/// count on the profile opens the exercises behind it, and Back returns to
+/// the profile.
+RouteBase _filteredExercisesRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _filteredExercisesPath,
+    name: _filteredExercisesName,
+    builder: (context, _) {
+      // outside the shell, so the layout is this route's to provide
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => ExercisesPage(
+          leading: const BackButton(),
+          onExercise: (exercise, _) => context.pushExerciseOver(exercise.id),
+          onShowArchived: context.goToExerciseArchive,
+          onOpenActiveWorkout: () {
+            HapticFeedback.mediumImpact();
+            context.goToActiveWorkout();
+          },
+        ),
+      );
+    },
+  );
+}
+
+/// A library program over any tab: its next programs and the user's copy
+/// stack over it in turn.
+RouteBase _libraryProgramOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _libraryProgramOverPath,
+    name: _libraryProgramOverName,
+    builder: (context, state) {
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => LibraryProgramPage(
+          programKey: state.pathParameters['key']!,
+          onProgram: (program) => context.pushProgramOverPage(program.id!),
+          onLibraryProgram: context.pushLibraryProgramOver,
+        ),
+      );
+    },
+  );
+}
+
+/// An exercise over any tab: from the filtered library a profile count
+/// opened, so Back walks back to the profile.
+RouteBase _exerciseOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _exerciseOverPath,
+    name: _exerciseOverName,
+    builder: (context, state) {
+      final exerciseId = state.pathParameters['exerciseId']!;
+      final exercise = _resolveExercise(Exercises.of(context), exerciseId);
+      if (exercise == null) return const Scaffold();
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => ExerciseDetailPage(
+          exercise: exercise,
+          initialTab: state.uri.queryParameters['tab'],
+          onTapWorkout: (workoutId) {
+            return Workouts.of(context).fetchWorkout(workoutId).then<void>((_) {
+              if (context.mounted) context.pushWorkoutOver(workoutId);
+            });
+          },
+          onShareExercise: (exercise, {tab}) => _onShareExercise(context, exercise, tab),
+          onFilter: (filter) => HeartRouter.of(context).goToFilteredExercises(Exercises.of(context), filter),
+          onTapAlternative: (alternative) => context.pushExerciseOver(alternative.id),
+          onAddToWorkout: (exercise) => _onAddToWorkout(context, exercise),
+        ),
+      );
+    },
+  );
+}
+
+/// A past workout over any tab: a goal rung it earned opens it where the
+/// goal was, and Back returns there.
+RouteBase _workoutOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _workoutOverPath,
+    name: _workoutOverName,
+    builder: (context, state) {
+      final workout = Workouts.of(context).lookup(state.pathParameters['workoutId']!);
+      if (workout == null) return const Scaffold();
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => WorkoutEditor(copy: workout, onTapImage: context.goToGallery),
+      );
+    },
+  );
 }

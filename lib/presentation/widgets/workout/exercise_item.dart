@@ -271,6 +271,15 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         if (planLine(context, exercise, nameOf: (id) => exercises.lookup(id)?.name ?? '')
                             case final String line)
                           _PlanLine(line),
+                      if (_slot case final String pattern)
+                        _OpenSlot(
+                          pattern: pattern,
+                          exerciseId: exercise.exercise.id,
+                          onSwap: switch ((onReplaceExercise, exercise.isStarted)) {
+                            (final onReplace?, false) => () => _replace(context, pattern, onReplace),
+                            _ => null,
+                          },
+                        ),
                       if (exercise.note case String note when note.isNotEmpty)
                         _ExerciseNote(
                           exercise: exercise,
@@ -490,12 +499,17 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
         Expanded(
           // a lone column takes both slots
           flex: 3 - columns.length,
-          child: _ColumnHeader(
-            key: WorkoutDetailKeys.fillFor(exercise.exercise.id, column.key),
-            tooltip: l.fillColumn(label(column)),
-            onTap: () => _fill(context, column, previous),
-            child: _ColumnLabel(label(column)),
-          ),
+          // a program's session: the plan worked these values out, and a fill
+          // would write over every one of them with no way back
+          child: switch (showsPlan) {
+            true => _ColumnLabel(label(column)),
+            false => _ColumnHeader(
+              key: WorkoutDetailKeys.fillFor(exercise.exercise.id, column.key),
+              tooltip: l.fillColumn(label(column)),
+              onTap: () => _fill(context, column, previous),
+              child: _ColumnLabel(label(column)),
+            ),
+          },
         ),
     ];
   }

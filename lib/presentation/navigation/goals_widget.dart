@@ -115,11 +115,17 @@ class _GoalsWidgetPresenterState extends State<GoalsWidgetPresenter> {
     if (measured == _measured) return;
     _measured = measured;
 
+    // what a running program's cadence sets aside is not on the widget either
+    final running = runningPrograms(context);
+    final listed = [
+      for (final goal in goals.all)
+        if (!pausedByPrograms(goal, running)) goal,
+    ];
     final stats = Stats.of(context);
     final counter = workoutCounter(stats, firstWeekday: preferences.firstWeekday);
     final lensSets = sharedLensSets(stats.getLensSets);
     final readings = await Future.wait([
-      for (final goal in goals.all)
+      for (final goal in listed)
         currentGoalValue(
           goal,
           exercises: exercises,
@@ -131,7 +137,7 @@ class _GoalsWidgetPresenterState extends State<GoalsWidgetPresenter> {
     if (!mounted || measured != _measured) return;
 
     final shown = [
-      for (final (index, goal) in goals.all.indexed)
+      for (final (index, goal) in listed.indexed)
         WidgetGoal(
           id: goal.id ?? '',
           title: goalTitle(context, goal, goalExercise(goal, exercises)),

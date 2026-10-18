@@ -410,15 +410,20 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   /// where the answer is known: the workout summary knows which session just
   /// ended, a profile build does not, and a wrong attribution is worse than
   /// none. The server rejects an id the caller does not own.
+  ///
+  /// A goal [setAside] answers true for — one a running program overrides —
+  /// is not judged at all.
   Future<List<GoalAchievement>> observeProgress(
     Future<num?> Function(Goal goal) valueOf, {
     String? achievedBy,
+    bool Function(Goal goal)? setAside,
   }) async {
     final achieved = <GoalAchievement>[];
     if (userId == null) return achieved;
 
     for (final goal in List.of(_goals)) {
       if (goal.cadence != null || goal.isComplete || goal.id == null) continue;
+      if (setAside?.call(goal) ?? false) continue;
 
       final num? value;
       try {
@@ -468,12 +473,14 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   Future<List<GoalAchievement>> observePeriodWins({
     required Future<num?> Function(Goal goal) valueOf,
     required Future<num?> Function(Goal goal) valueBefore,
+    bool Function(Goal goal)? setAside,
   }) async {
     final wins = <GoalAchievement>[];
     if (userId == null) return wins;
 
     for (final goal in List.of(_goals)) {
       if (goal.cadence == null) continue;
+      if (setAside?.call(goal) ?? false) continue;
       // the db gives a cadence goal exactly one stage
       final stage = goal.stages.firstOrNull;
       if (stage == null) continue;

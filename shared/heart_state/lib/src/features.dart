@@ -41,23 +41,18 @@ enum Feature {
   /// one the app has no screen for.
   shortcuts('shortcuts'),
 
-  /// Templates on a schedule, with targets that grow as you do (#340). The
-  /// ask in context and the surfaces are #345 and #347; the programs the
-  /// account holds sync and stay whole whatever the answer (#346).
-  programs('programs'),
+  /// Templates on a schedule, with targets that grow as you do (#340). On by
+  /// default ([defaultOn]): too large a feature to hide behind an ask, so the
+  /// in-context offer (#345) never shows and the switch in Settings is the
+  /// only answer. The programs the account holds sync and stay whole whatever
+  /// the answer (#346).
+  programs('programs', defaultOn: true),
 
   /// The Previous column of a workout started from a template, or a program's
   /// session, reads the last time that template was run rather than the last
   /// time anywhere (#172). Settings-only, like keep-awake: the switch is the
   /// choice. Reads only what the workouts already carry.
   previousInTemplate('previousInTemplate'),
-
-  /// A program's sessions in the device's own calendar, Google's included
-  /// (#391). Part of Programs, with its own ask on a program's page: it needs
-  /// the OS calendar permission, which Programs alone never asks for. Device
-  /// only — which calendar and which events stay on the phone — and with
-  /// Programs off it is as off as Programs is.
-  programCalendar('programCalendar'),
 
   /// "Not today" (#312) on any day, not only a program's: one tap on the
   /// Workout tab sets the day aside, with an optional reason. Settings-only,
@@ -69,7 +64,12 @@ enum Feature {
 
   final String value;
 
-  new(this.value);
+  /// On until the user turns it off in Settings, rather than off until they
+  /// say yes: the one exception to the ask-once rule (`docs/opt-in.md`,
+  /// *Default on*). Never asked about; an explicit off stays off.
+  final bool defaultOn;
+
+  new(this.value, {this.defaultOn = false});
 
   /// The parts of this feature the user can leave out ([FeatureOption]); none
   /// for most.
@@ -95,12 +95,24 @@ enum FeatureOption {
 
   /// The body figures for a single finished workout, on its page in History
   /// and on the done screen (#223).
-  muscleMapWorkout(.muscleMap, 'workout');
+  muscleMapWorkout(.muscleMap, 'workout'),
+
+  /// A program's sessions in the device's own calendar, Google's included
+  /// (#391): the way in, on a program's page. Selected with the rest of
+  /// Programs, and nothing happens until the user sets a program up there —
+  /// which is when the OS asks for the calendar, never when Programs turns
+  /// on. Device only: which calendar and which events stay on the phone.
+  programsCalendar(.programs, 'calendar', addOn: true);
 
   final Feature feature;
   final String value;
 
-  new(this.feature, this.value);
+  /// Something the feature adds rather than a part of it: leaving every
+  /// add-on out leaves the feature itself on. Leaving every *part* out is
+  /// turning the feature off.
+  final bool addOn;
+
+  new(this.feature, this.value, {this.addOn = false});
 }
 
 /// What the user said about a [Feature].

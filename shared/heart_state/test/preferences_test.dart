@@ -302,6 +302,52 @@ void main() {
     });
   });
 
+  group('a default-on feature', () {
+    const feature = Feature.programs;
+
+    test('off until the answers are read, so an off never flashes in', () {
+      expect(sut.isOn(feature), isFalse);
+    });
+
+    test('never answered, it is on and never offered', () async {
+      await sut.init();
+      expect(feature.defaultOn, isTrue);
+      expect(sut.featureAnswer(feature), FeatureAnswer.on);
+      expect(sut.isOn(feature), isTrue);
+      expect(sut.shouldOffer(feature), isFalse);
+    });
+
+    test('the switch turns it off, and off stays off', () async {
+      await sut.init();
+      sut.setFeature(feature, on: false);
+      expect(sut.isOn(feature), isFalse);
+
+      final revived = Preferences();
+      await revived.init();
+      expect(revived.isOn(feature), isFalse);
+    });
+
+    test('its calendar is an add-on: selected with it, and leaving it out leaves Programs on', () async {
+      await sut.init();
+      expect(sut.isOptionOn(FeatureOption.programsCalendar), isTrue);
+
+      sut.setOption(FeatureOption.programsCalendar, on: false);
+      expect(sut.isOptionOn(FeatureOption.programsCalendar), isFalse);
+      expect(sut.isOn(feature), isTrue);
+
+      sut.setFeature(feature, on: false);
+      expect(sut.isOptionOn(FeatureOption.programsCalendar), isFalse);
+    });
+
+    test('the default is not an answer: nothing travels until the user says so', () async {
+      await sut.init();
+      expect(sut.featureRecords.containsKey(feature), isFalse);
+
+      sut.setFeature(feature, on: true);
+      expect(sut.featureRecords[feature]?.on, isTrue);
+    });
+  });
+
   group('opt-in features (#138)', () {
     const feature = Feature.muscleMap;
 
@@ -411,7 +457,7 @@ void main() {
         'shortcuts',
         'programs',
         'previousInTemplate',
-        'programCalendar',
+        // programCalendar became Programs' calendar option before it shipped
         'notToday',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);

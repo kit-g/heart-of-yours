@@ -170,15 +170,25 @@ abstract final class AppKeys {
   static Key disconnectSignIn(String provider) => Key('SignIns.disconnect.$provider');
 
   /// The Programs offer on the Workout tab (#345), and its two answers.
-  static const programsOffer = Key('Programs.offer');
-  static const programsAccept = Key('Programs.offer.accept');
-  static const programsDecline = Key('Programs.offer.decline');
 
   /// "From a folder" on the Workout tab's Programs header (#348).
   static const programsFromFolder = Key('Programs.fromFolder');
 
   /// One program's band on the Workout tab (#347), and its Start button.
   static Key programBand(String? programId) => Key('Programs.band.$programId');
+  static Key programBandStatus(String? programId) => Key('Programs.band.status.$programId');
+  static Key partOfProgram(String? programId) => Key('Programs.partOf.$programId');
+  static const programInProgress = Key('Programs.inProgress');
+  static Key workoutRecords(String workoutId) => Key('History.records.$workoutId');
+  static const firstRecords = Key('Done.firstRecords');
+  static Key goalSetAside(String? goalId) => Key('Goals.setAside.$goalId');
+  static Key lensLine(String label) => Key('Lens.line.$label');
+  static Key lensChart(String label) => Key('Lens.chart.$label');
+  static const programCalendarSettings = Key('Programs.calendar.settings');
+  static const libraryStartDays = Key('Programs.library.startDays');
+  static const libraryStartDaysSkip = Key('Programs.library.startDays.skip');
+  static const libraryStartDaysStart = Key('Programs.library.startDays.start');
+  static const exerciseInProgram = Key('Programs.exerciseIn');
   static Key programStart(String? programId) => Key('Programs.band.start.$programId');
 
   /// "Not today" (#312), on a program's band or its page.
@@ -204,9 +214,6 @@ abstract final class AppKeys {
 
   /// A program in the device calendar (#391): the ask, the row on a program's
   /// page, and its dialog.
-  static const programCalendarOffer = Key('Programs.calendar.offer');
-  static const programCalendarAccept = Key('Programs.calendar.accept');
-  static const programCalendarDecline = Key('Programs.calendar.decline');
   static const programCalendarRow = Key('Programs.calendar.row');
   static const programCalendarAllDay = Key('Programs.calendar.allDay');
   static const programCalendarSave = Key('Programs.calendar.save');
@@ -221,10 +228,12 @@ abstract final class AppKeys {
   static const libraryEntry = Key('Programs.library');
   static const libraryEquipment = Key('Programs.library.equipment');
   static Key libraryProgram(String key) => Key('Programs.library.program.$key');
+  static Key libraryHistory(String key) => Key('Programs.library.history.$key');
   static Key libraryNext(String key) => Key('Programs.library.next.$key');
   static Key librarySource(String key) => Key('Programs.library.source.$key');
   static const libraryStart = Key('Programs.library.start');
   static const libraryOpenYours = Key('Programs.library.openYours');
+  static const libraryNoRoom = Key('Programs.library.noRoom');
   static const programAbout = Key('Programs.about');
 
   /// A program's goals on its page (#353): what it implies, and what it grows.

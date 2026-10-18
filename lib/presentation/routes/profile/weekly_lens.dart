@@ -20,7 +20,9 @@ const _lensBarsWidth = 96.0;
 
 /// One key's line: what it is called, and its weeks oldest first. Counts stay
 /// fractional here and become whole numbers only when they are drawn (rule 8).
-typedef _LensLine = ({String label, List<LensCount> weeks});
+/// One key's weeks; [filter] is the library's filter for the exercises that
+/// count toward it, where the library has one (a pattern; not a muscle).
+typedef _LensLine = ({String label, List<LensCount> weeks, ExerciseFilter? filter});
 
 /// The weekly sets card's slot on the profile (#341): baseline, so there is no
 /// offer and no switch — absent only while there is nothing logged to count.
@@ -150,6 +152,7 @@ class _WeeklyLensCardState extends State<_WeeklyLensCard> {
                       _lines(
                         countByWeek(rows, weeks: _lensWeeks, now: now, keysOf: patternsOf, firstWeekday: firstWeekday),
                         (pattern) => patternLabel(pattern, l),
+                        filterOf: PatternFilter.new,
                       ),
                       switch (rows.isEmpty) {
                         true => l.lensNothingYet,
@@ -193,12 +196,21 @@ class _WeeklyLensCardState extends State<_WeeklyLensCard> {
 
   /// [counts] as lines, one per key with at least one whole set in the
   /// window: the most trained this week first, then over the whole window.
-  List<_LensLine> _lines<K>(Map<DateTime, Map<K, LensCount>> counts, String Function(K key) label) {
+  List<_LensLine> _lines<K>(
+    Map<DateTime, Map<K, LensCount>> counts,
+    String Function(K key) label, {
+    ExerciseFilter Function(K key)? filterOf,
+  }) {
     final keys = {for (final week in counts.values) ...week.keys};
     const none = (sets: .0, sessions: 0);
     double total(_LensLine line) => line.weeks.fold(.0, (sum, week) => sum + week.sets);
     return [
-      for (final key in keys) (label: label(key), weeks: [for (final week in counts.values) week[key] ?? none]),
+      for (final key in keys)
+        (
+          label: label(key),
+          weeks: [for (final week in counts.values) week[key] ?? none],
+          filter: filterOf?.call(key),
+        ),
     ].where((line) => wholeSets(total(line)) > 0).toList()..sort(
       (a, b) => switch (b.weeks.last.sets.compareTo(a.weeks.last.sets)) {
         0 => switch (total(b).compareTo(total(a))) {
@@ -290,60 +302,86 @@ class const _LensLineTile({
       final sets => l.lensThisWeek(l.lensSets(sets), l.lensSessions(now.sessions)),
     };
     final most = weeks.reduce(max);
+    // what the little chart is, in words: on a tap, and to a screen reader
+    final chart =
+        '${l.lensChartTip(line.label, weeks.length, l.lensSets(weeks.last))} ${l.lensWeekByWeek(weeks.join(', '))}';
+    final words = Column(
+      crossAxisAlignment: .start,
+      children: [
+        Text(line.label, style: textTheme.titleSmall, maxLines: 1, overflow: .ellipsis),
+        Text(
+          summary,
+          style: textTheme.bodySmall?.copyWith(color: onSurfaceVariant),
+          maxLines: 1,
+          overflow: .ellipsis,
+        ),
+      ],
+    );
 
-    return Semantics(
-      container: true,
-      excludeSemantics: true,
-      label: '${line.label}. $summary. ${l.lensWeekByWeek(weeks.join(', '))}',
-      child: Row(
-        spacing: 12,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: .start,
-              children: [
-                Text(line.label, style: textTheme.titleSmall, maxLines: 1, overflow: .ellipsis),
-                Text(
-                  summary,
-                  style: textTheme.bodySmall?.copyWith(color: onSurfaceVariant),
-                  maxLines: 1,
-                  overflow: .ellipsis,
-                ),
-              ],
+    return Row(
+      spacing: 12,
+      children: [
+        Expanded(
+          // a pattern opens the library on its exercises; a muscle has no
+          // filter there, and stays words
+          child: switch (line.filter) {
+            final ExerciseFilter filter => Semantics(
+              button: true,
+              label: '${line.label}. $summary',
+              hint: l.lensShowExercises,
+              excludeSemantics: true,
+              onTap: () => HeartRouter.of(context).goToFilteredExercises(Exercises.of(context), filter),
+              child: InkWell(
+                key: AppKeys.lensLine(line.label),
+                borderRadius: const .all(.circular(8)),
+                onTap: () => HeartRouter.of(context).goToFilteredExercises(Exercises.of(context), filter),
+                child: words,
+              ),
             ),
-          ),
-          // eight thin weeks beside the words rather than under them: a line
-          // stays one line tall, and the bars keep their width at any font
-          SizedBox(
-            width: _lensBarsWidth,
-            height: 28,
-            child: Row(
-              crossAxisAlignment: .end,
-              spacing: 3,
-              children: [
-                for (final (index, sets) in weeks.indexed)
-                  Expanded(
-                    child: Container(
-                      // an empty week is a sliver, so the row still reads as
-                      // eight weeks rather than as gaps
-                      height: switch (sets) {
-                        0 => 2,
-                        _ => 28 * sets / most,
-                      },
-                      decoration: BoxDecoration(
-                        color: switch (index == weeks.length - 1) {
-                          true => primary,
-                          false => primary.withValues(alpha: .4),
+            null => Semantics(label: '${line.label}. $summary', excludeSemantics: true, child: words),
+          },
+        ),
+        Semantics(
+          label: chart,
+          excludeSemantics: true,
+          child: Tooltip(
+            key: AppKeys.lensChart(line.label),
+            message: chart,
+            triggerMode: .tap,
+            excludeFromSemantics: true,
+            // eight thin weeks beside the words rather than under them: a line
+            // stays one line tall, and the bars keep their width at any font
+            child: SizedBox(
+              width: _lensBarsWidth,
+              height: 28,
+              child: Row(
+                crossAxisAlignment: .end,
+                spacing: 3,
+                children: [
+                  for (final (index, sets) in weeks.indexed)
+                    Expanded(
+                      child: Container(
+                        // an empty week is a sliver, so the row still reads as
+                        // eight weeks rather than as gaps
+                        height: switch (sets) {
+                          0 => 2,
+                          _ => 28 * sets / most,
                         },
-                        borderRadius: const .vertical(top: .circular(2)),
+                        decoration: BoxDecoration(
+                          color: switch (index == weeks.length - 1) {
+                            true => primary,
+                            false => primary.withValues(alpha: .4),
+                          },
+                          borderRadius: const .vertical(top: .circular(2)),
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

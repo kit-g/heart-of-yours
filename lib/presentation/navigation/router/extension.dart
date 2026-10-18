@@ -61,6 +61,41 @@ extension on BuildContext {
     return goNamed(_libraryProgramName, pathParameters: {'key': key});
   }
 
+  /// A ready-made program over the page that named it — the program after
+  /// this one, or the one a program of the user's was copied from: pushed,
+  /// so Back returns there rather than to the library.
+  /// The pages a drill-down outside the Workout and Exercises tabs opens:
+  /// root-level, over whatever is open, so Back is always where the user was.
+  void pushProgramOverPage(String programId) {
+    pushNamed(_programOverName, pathParameters: {'programId': programId});
+  }
+
+  void pushProgramEditOver(String programId) {
+    pushNamed(_programEditOverName, pathParameters: {'programId': programId});
+  }
+
+  void pushLibraryProgramOver(String key) {
+    pushNamed(_libraryProgramOverName, pathParameters: {'key': key});
+  }
+
+  void pushExerciseOver(String exerciseId) {
+    pushNamed(_exerciseOverName, pathParameters: {'exerciseId': exerciseId});
+  }
+
+  void pushWorkoutOver(String workoutId) {
+    pushNamed(_workoutOverName, pathParameters: {'workoutId': workoutId});
+  }
+
+  void pushLibraryProgram(String key) {
+    pushNamed(_libraryProgramName, pathParameters: {'key': key});
+  }
+
+  /// A program of the user's over the library page it was started or opened
+  /// from: pushed, so Back returns to that page rather than to the Workout tab.
+  void pushProgram(String programId) {
+    pushNamed(_programName, pathParameters: {'programId': programId});
+  }
+
   void goToAccountManagement() {
     return goNamed(_accountManagementName);
   }

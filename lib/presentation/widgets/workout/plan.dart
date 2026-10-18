@@ -32,7 +32,6 @@ String? planLine(
     if (main.map((set) => set.target!.rir).nonNulls.firstOrNull case final num rir) l.planReserve(rir),
     if (_setsLine(l, percent, cells, supplemental, nameOf) case final String then) l.planThen(then),
     if (exercise.totalReps case final TargetRange total) l.planTotalReps(_rangeText(total, (value) => '$value')),
-    if (exercise.pattern case final String pattern) l.planOpenSlot(PatternFilter(pattern).label(l)),
   ];
   return switch (parts) {
     [] => null,
@@ -94,6 +93,55 @@ String? _setsLine(
   };
 }
 
+/// What an open slot takes (#349), under the plan's line: any exercise of
+/// its pattern will do — "Any horizontal row". Until a set is ticked it is
+/// the way to another, opening the picker on the pattern; after, only a
+/// line.
+class const _OpenSlot({
+  required final String pattern,
+  required final String exerciseId,
+  final VoidCallback? onSwap,
+}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final style = textTheme.bodySmall?.copyWith(color: colorScheme.tertiary);
+    final line = l.planOpenSlot(PatternFilter(pattern).label(l).toLowerCase());
+
+    return switch (onSwap) {
+      null => Padding(
+        padding: const .symmetric(horizontal: 8),
+        child: Text(line, style: style),
+      ),
+      final VoidCallback swap => Semantics(
+        button: true,
+        hint: l.swapExercise,
+        child: InkWell(
+          key: WorkoutDetailKeys.openSlotFor(exerciseId),
+          borderRadius: const .all(.circular(6)),
+          onTap: swap,
+          child: Padding(
+            padding: const .symmetric(horizontal: 8, vertical: 2),
+            child: Row(
+              spacing: 4,
+              children: [
+                Flexible(
+                  child: Text(
+                    line,
+                    style: style?.copyWith(decoration: TextDecoration.underline, decorationColor: colorScheme.tertiary),
+                  ),
+                ),
+                Icon(Icons.swap_horiz_rounded, size: 14, color: colorScheme.tertiary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    };
+  }
+}
+
 /// The plan's line, faint, under the exercise's name.
 class const _PlanLine(final String line) extends StatelessWidget {
   @override
@@ -102,6 +150,30 @@ class const _PlanLine(final String line) extends StatelessWidget {
     return Padding(
       padding: const .symmetric(horizontal: 8),
       child: Text(line, style: textTheme.bodySmall?.copyWith(color: colorScheme.tertiary)),
+    );
+  }
+}
+
+/// What a program's session is for, at the top of its workout: the
+/// session's own note, in the program's words. A session of one heavy set
+/// explains itself here ("work up to one heavy set of three to five").
+class const SessionNote({super.key, required final String note}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return Padding(
+      key: WorkoutDetailKeys.sessionNote,
+      padding: const .fromLTRB(16, 8, 16, 0),
+      child: Row(
+        spacing: 8,
+        crossAxisAlignment: .start,
+        children: [
+          Icon(Icons.event_repeat_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+          Expanded(
+            child: Text(note, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+          ),
+        ],
+      ),
     );
   }
 }

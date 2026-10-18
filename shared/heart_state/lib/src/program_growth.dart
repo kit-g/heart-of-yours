@@ -140,6 +140,17 @@ List<GrowthMove> growthOf(
       lighter: [for (final each in since) each.lighter],
     );
 
+    // a weight with nothing to grow from takes its first from this session —
+    // "its first session sets one" — as a test session would: heart_models'
+    // next() holds without a base, so a program with no test week never got
+    // one, and every session after held too
+    if (base == null && growsWeightBase(rule)) {
+      if (suggestedBase(rule, group.sets) case final num first) {
+        moves.add(GrowthMove(exerciseId: group.exerciseId, slot: group.slot, before: null, step: Grow(first)));
+      }
+      continue;
+    }
+
     final step = Progression.next(
       rule: rule,
       base: base?.value,
@@ -276,4 +287,29 @@ List<ExerciseSet>? _setsOf(Workout workout, _Group group, {Template? session}) {
     for (final (exercise, each) in _occurrences(workout, session))
       if (each == slot) ...exercise,
   ];
+}
+
+/// Whether [rule] grows a weight from a base the user can set: a training max
+/// (a share-of-max rule) or a working weight. Ladders climb exercises and
+/// [Longer] grows a length, so neither has one.
+bool growsWeightBase(GrowthRule? rule) {
+  return switch (rule) {
+    AddWeight() || RangeThenWeight() || ShareOfMax() || Stages() => true,
+    _ => false,
+  };
+}
+
+/// Where [rule] would start an exercise from the user's own [sets] of it, as
+/// a test session would: a share-of-max rule takes 90% of the best Brzycki
+/// estimate; a working weight, the heaviest working set. Null with nothing
+/// to go on.
+num? suggestedBase(GrowthRule? rule, Iterable<ExerciseSet> sets) {
+  return switch (rule) {
+    ShareOfMax() => Progression.test(sets, share: .9),
+    _ =>
+      sets
+          .where((set) => set.isCompleted && set.setType != .warmup && (set.weight ?? 0) > 0)
+          .map((set) => set.weight!)
+          .fold<num?>(null, (best, weight) => best == null || weight > best ? weight : best),
+  };
 }

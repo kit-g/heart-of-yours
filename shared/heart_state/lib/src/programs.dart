@@ -10,6 +10,7 @@ import 'program_plan.dart';
 import 'remote.dart';
 import 'skips.dart';
 import 'upsync.dart' show Replayed;
+import 'weeks.dart';
 import 'workouts.dart';
 
 /// A program's rows, as what [Programs] owes the server names them. A
@@ -285,6 +286,78 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Where the user stands in [program]: computed, never stored. [now] sets the
   /// calendar week the weekly count reads, in its zone; [firstWeekday] is ISO,
   /// the user's own first day of the week.
+  /// Seeds a base for each of [program]'s rules that grows a weight and has
+  /// none yet, from the user's own sets of its exercise ([setsOf], newest
+  /// first): what [suggestedBase] reads in them. A real base, the user's own
+  /// — as editable as one they typed — so the prescriptions and the goals the
+  /// program implies agree from its first day. A lift with no sets of it
+  /// stays without one, for its first session to set. Returns those set.
+  Future<List<ProgramBase>> seedBases(
+    Program program, {
+    required Future<Iterable<ExerciseSet>> Function(String exerciseId) setsOf,
+  }) async {
+    final id = program.id;
+    if (id == null) return const [];
+    final current = currentBasesOf(id);
+    final seeded = <ProgramBase>[];
+    for (final MapEntry(key: exerciseId, value: rule) in program.rules.entries) {
+      if (!growsWeightBase(rule) || current.containsKey(exerciseId)) continue;
+      if (suggestedBase(rule, await setsOf(exerciseId)) case final num value) {
+        seeded.add(await setBase(program, exerciseId: exerciseId, value: value));
+      }
+    }
+    return seeded;
+  }
+
+  /// What the user has done with the library's program [key], from the copies
+  /// they made of it (`source == key`), archived ones included; the most
+  /// telling one wins: following it now, then having finished it, then having
+  /// tried it. Null when they never started it.
+  LibraryHistory? historyOf(String key, {required DateTime now, required int firstWeekday}) {
+    final copies = all.where((program) => program.source == key);
+    LibraryHistory read(Program program) {
+      final position = this.position(program, now: now, firstWeekday: firstWeekday);
+      return switch ((program.archived, position.finished)) {
+        (_, true) => LibraryFinished(
+          on: finishedOn(program, now: now, firstWeekday: firstWeekday),
+        ),
+        (false, false) => const LibraryFollowing(),
+        (true, false) => LibraryTried(week: position.week, weeks: program.weeks),
+      };
+    }
+
+    return copies
+        .map(read)
+        .fold<LibraryHistory?>(
+          null,
+          (best, each) => switch (best) {
+            null => each,
+            final LibraryHistory best when each.rank < best.rank => each,
+            final LibraryHistory best => switch ((best, each)) {
+              // two tries: the one that got further
+              (LibraryTried(week: final a), LibraryTried(week: final b)) when b > a => each,
+              _ => best,
+            },
+          },
+        );
+  }
+
+  /// When [program] finished, derived — no finish time is stored: the last
+  /// of its workouts, which closed its final week, or with none of those its
+  /// start plus its length. Null while it runs, or for one with no length.
+  DateTime? finishedOn(Program program, {required DateTime now, required int firstWeekday}) {
+    if (program.weeks == null || !position(program, now: now, firstWeekday: firstWeekday).finished) return null;
+    final last = (_marks[program.id] ?? const <ProgramMark>[])
+        .where((mark) => mark.isWorkout)
+        .map((mark) => mark.at)
+        .fold<DateTime?>(null, (latest, at) => latest == null || at.isAfter(latest) ? at : latest);
+    return switch ((last, program.createdAt, program.weeks)) {
+      (final DateTime last, _, _) => last,
+      (null, final DateTime start, final int weeks) => start.add(Duration(days: 7 * weeks)),
+      _ => null,
+    };
+  }
+
   ProgramPosition position(Program program, {required DateTime now, required int firstWeekday}) {
     final id = program.id;
     return ProgramPosition.of(
@@ -1398,4 +1471,56 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       onError?.call(e, stacktrace: s);
     }
   }
+}
+
+/// The user's history with one of the library's programs (#F27): what its
+/// card and its page say beside it. Local, from the copies they made.
+sealed class LibraryHistory {
+  const new();
+
+  /// Lower says more: following beats finished beats tried.
+  int get rank;
+}
+
+/// A copy is being followed now.
+final class LibraryFollowing extends LibraryHistory {
+  const new();
+
+  @override
+  int get rank => 0;
+}
+
+/// A copy ran to its end, [on] the day its last session was, when known.
+final class LibraryFinished extends LibraryHistory {
+  final DateTime? on;
+
+  const new({this.on});
+
+  @override
+  int get rank => 1;
+}
+
+/// A copy was put down before its end, at [week] of [weeks] (null for an
+/// open-ended program).
+final class LibraryTried extends LibraryHistory {
+  final int week;
+  final int? weeks;
+
+  const new({required this.week, required this.weeks});
+
+  @override
+  int get rank => 2;
+}
+
+/// When [program] would end at this pace (#F33): the last day of its last
+/// program week, counted from the calendar week holding [now] — the open
+/// program week runs through it, and each one left takes a week after. A
+/// week only moves when its sessions are done or skipped, and a paused one
+/// not at all, so a pause or a slow week pushes the end out on its own.
+/// Null for an open-ended program, or one already finished.
+DateTime? projectedEnd(Program program, ProgramPosition position, {required DateTime now, required int firstWeekday}) {
+  final weeks = program.weeks;
+  if (weeks == null || position.finished) return null;
+  final start = weekOf(now, firstWeekday: firstWeekday);
+  return DateTime(start.year, start.month, start.day + 7 * (weeks - position.week + 1) - 1);
 }

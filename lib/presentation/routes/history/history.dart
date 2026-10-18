@@ -4,6 +4,8 @@ import 'dart:collection';
 
 import 'package:heart/core/utils/image_picker.dart';
 import 'package:heart/core/utils/misc.dart';
+import 'package:heart/core/utils/record_book.dart';
+import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/muscle_volume.dart' show muscleGroupsOf;
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';
@@ -13,7 +15,9 @@ import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/feedback_button.dart';
 import 'package:heart/presentation/widgets/health/metric.dart';
 import 'package:heart/presentation/widgets/image.dart';
+import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/part_of_program.dart';
 import 'package:heart/presentation/widgets/menu.dart';
 import 'package:heart/presentation/widgets/muscle_figures.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';

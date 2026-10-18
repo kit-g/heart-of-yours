@@ -63,7 +63,15 @@ class _GoalRowState extends State<GoalRow> {
 
     // re-read only when the thing being measured changes, not on every notify
     // the week a weekly goal is read over moves with the user's first day
-    final key = (goal.id, exercise?.name, goal.cadence, widget.workouts.workoutCount, settings.firstWeekday);
+    final key = (
+      goal.id,
+      exercise?.name,
+      goal.cadence,
+      widget.workouts.workoutCount,
+      settings.firstWeekday,
+      // a program's count moves with its own sessions
+      widget.feeds.map((feed) => feed.position.thisWeek).join(','),
+    );
     if (key != _key) {
       _key = key;
       _reading = _read(exercises, settings.firstWeekday);
@@ -164,6 +172,13 @@ class _GoalRowState extends State<GoalRow> {
   }
 
   Future<num?> _read(Exercises exercises, int firstWeekday) {
+    // a program's own sessions a week counts that program's sessions — the
+    // same count its card and page say — not every workout of the week
+    if (widget.goal case Goal(:final String id, metric: .workouts, cadence: .week) when id.startsWith('program:')) {
+      if (widget.feeds.where((feed) => id.startsWith('program:${feed.program.id}:')).firstOrNull case final feed?) {
+        return Future.value(feed.position.thisWeek);
+      }
+    }
     return currentGoalValue(
       widget.goal,
       exercises: exercises,

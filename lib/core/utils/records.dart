@@ -59,6 +59,43 @@ Future<List<AchievedRecord>> recordsSetBy(
   return achieved;
 }
 
+/// The records each set of a workout set, by set id: what the badges beside
+/// the sets say. Only records that beat an earlier value — an exercise's first
+/// time sets every record at once, and a badge on every set of it would be a
+/// wall.
+typedef RecordMarks = Map<String, List<RecordKind>>;
+
+/// [achieved] — the records [workout] set — placed on the sets that set them:
+/// the first completed working set of the exercise whose values are the
+/// record's own.
+RecordMarks recordMarks(Workout workout, Iterable<AchievedRecord> achieved) {
+  final marks = <String, List<RecordKind>>{};
+  for (final (:exercise, :kind, :record) in achieved) {
+    if (record['previous'] is! Map) continue;
+    final holder = workout
+        .where((entry) => entry.exercise.id == exercise.id)
+        .expand((entry) => entry)
+        .where((set) => set.isCompleted && set.setType != .warmup)
+        .where((set) => _holds(set, record))
+        .firstOrNull;
+    if (holder != null) marks.putIfAbsent(holder.id, () => []).add(kind);
+  }
+  return marks;
+}
+
+/// Whether [set] is the one [record] names: every measure the record carries
+/// is the set's.
+bool _holds(ExerciseSet set, Map record) {
+  bool same(Object? want, num? have) => switch (want) {
+    final num want => have != null && (want - have).abs() < .001,
+    _ => true,
+  };
+  return same(record['weight'], set.weight) &&
+      same(record['reps'], set.reps) &&
+      same(record['duration'], set.duration) &&
+      same(record['distance'], set.distance);
+}
+
 /// Unit-aware rendering of record values, shared by the records tab and the
 /// workout-done celebration.
 class RecordFormats {
@@ -128,6 +165,21 @@ class RecordFormats {
       _ => '$minutes:$seconds',
     };
   }
+}
+
+/// A record kind's short name, for a pill under its set: "1RM", "VOL.".
+String recordKindShort(BuildContext context, RecordKind kind) {
+  final l = L.of(context);
+  return switch (kind) {
+    .maxWeight => l.recordShortWeight,
+    .oneRepMax => l.recordShortOneRepMax,
+    .bestVolume => l.recordShortVolume,
+    .mostReps => l.recordShortReps,
+    .leastAssistance => l.recordShortAssistance,
+    .longestDistance => l.recordShortDistance,
+    .longestDuration => l.recordShortDuration,
+    .bestPace => l.recordShortPace,
+  };
 }
 
 /// The label copy for a record kind — here rather than on the enum because

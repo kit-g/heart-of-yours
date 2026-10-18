@@ -327,7 +327,18 @@ class _ProgramBand extends StatelessWidget {
                   Expanded(
                     child: Text(program.name, style: textTheme.titleMedium, maxLines: 1, overflow: .ellipsis),
                   ),
-                  Text(_status(copy, program, position), style: muted),
+                  // the week over its projected end, on a line each: a phone's
+                  // card is too narrow for both beside a name, and the date is
+                  // never the part cut short
+                  if (_statusParts(context, program, position) case (final status, final end))
+                    Column(
+                      key: AppKeys.programBandStatus(program.id),
+                      crossAxisAlignment: .end,
+                      children: [
+                        Text(status, style: muted, textAlign: .end),
+                        if (end != null) Text(end, style: muted, textAlign: .end),
+                      ],
+                    ),
                 ],
               ),
               if (!finished && sessions.isNotEmpty)
@@ -347,37 +358,50 @@ class _ProgramBand extends StatelessWidget {
                       ),
                   ],
                 ),
+              // the count on the left, the actions flush with the card's right
+              // inset: both sides loose, so what neither uses goes between
+              // them rather than after the button
               if (!finished)
                 Row(
+                  mainAxisAlignment: .spaceBetween,
                   spacing: 8,
                   children: [
-                    Expanded(
+                    Flexible(
                       child: switch ((program.perWeek, paused)) {
                         (final int target, false) => Text(copy.programThisWeek(thisWeek, target), style: muted),
                         _ => const SizedBox.shrink(),
                       },
                     ),
-                    // nothing is due while paused, so there is nothing to set aside
-                    if ((upNext, paused) case (final Template session, false))
-                      TextButton(
-                        key: AppKeys.programNotToday(program.id),
-                        onPressed: () => _notToday(context, program, session, fromBand: true),
-                        child: Text(copy.programNotToday),
+                    Flexible(
+                      flex: 2,
+                      child: Row(
+                        mainAxisSize: .min,
+                        spacing: 8,
+                        children: [
+                          // nothing is due while paused, so there is nothing to set aside
+                          if ((upNext, paused) case (final Template session, false))
+                            TextButton(
+                              key: AppKeys.programNotToday(program.id),
+                              onPressed: () => _notToday(context, program, session, fromBand: true),
+                              child: Text(copy.programNotToday),
+                            ),
+                          // a paused program can still be started: a program
+                          // workout resumes it, so the button is never a dead end
+                          if (upNext case final Template session)
+                            Flexible(
+                              child: PrimaryButton.shrunk(
+                                key: AppKeys.programStart(program.id),
+                                onPressed: () => onStart(session),
+                                child: Text(
+                                  copy.programStartSession(_sessionName(copy, session)),
+                                  maxLines: 1,
+                                  overflow: .ellipsis,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    // a paused program can still be started: a program workout
-                    // resumes it, so the button is never a dead end
-                    if (upNext case final Template session)
-                      Flexible(
-                        child: PrimaryButton.shrunk(
-                          key: AppKeys.programStart(program.id),
-                          onPressed: () => onStart(session),
-                          child: Text(
-                            copy.programStartSession(_sessionName(copy, session)),
-                            maxLines: 1,
-                            overflow: .ellipsis,
-                          ),
-                        ),
-                      ),
+                    ),
                   ],
                 ),
             ],
@@ -388,14 +412,40 @@ class _ProgramBand extends StatelessWidget {
   }
 }
 
-/// Where [program] stands, in a word or two: finished, paused, or its week.
-String _status(L copy, Program program, ProgramPosition position) {
-  return switch ((position, program.weeks)) {
+/// Where [program] stands, in a word or two: finished, paused, or its week —
+/// and, for one with a length, when it would end at this pace (#F33).
+String _status(BuildContext context, Program program, ProgramPosition position) {
+  return switch (_statusParts(context, program, position)) {
+    (final status, final String end) => '$status · $end',
+    (final status, null) => status,
+  };
+}
+
+/// [_status] in its two parts: where the program stands, and — for one with
+/// a length, while it runs — when it would end ("ends 17 Jan"), for a place
+/// too narrow for both on one line.
+(String, String?) _statusParts(BuildContext context, Program program, ProgramPosition position) {
+  final copy = L.of(context);
+  final now = DateTime.now();
+  final firstWeekday = firstWeekdayOf(context);
+  final finished = Programs.of(context).finishedOn(program, now: now, firstWeekday: firstWeekday);
+  final status = switch ((position, program.weeks)) {
+    (ProgramPosition(finished: true), _) when finished != null => copy.programFinishedOn(
+      DateFormat.MMMd(copy.localeName).format(finished.toLocal()),
+    ),
     (ProgramPosition(finished: true), _) => copy.programFinished,
     (ProgramPosition(paused: true), _) => copy.programPaused,
     (ProgramPosition(:final week), final int weeks) => copy.programWeekOf(week, weeks),
     (ProgramPosition(:final week), null) => copy.programWeek(week),
   };
+  final end = projectedEnd(program, position, now: now, firstWeekday: firstWeekday);
+  return (
+    status,
+    switch (end) {
+      final DateTime end => copy.programEnds(DateFormat.MMMd(copy.localeName).format(end)),
+      null => null,
+    },
+  );
 }
 
 /// "Not today" (#312): sets [session] aside at once, with an Undo beside it.
@@ -407,11 +457,16 @@ Future<void> _notToday(BuildContext context, Program program, Template session, 
   final messenger = ScaffoldMessenger.of(context);
 
   analytics.programSkipped(fromBand: fromBand);
-  final skip = await programs.skip(program, session: session.id);
   // with "Not today" on, a program's skip offers its reason too
-  if (context.mounted && Preferences.of(context).isOn(.notToday)) {
+  if (Preferences.of(context).isOn(.notToday)) {
+    final skip = await programs.skip(program, session: session.id);
+    if (!context.mounted) return;
     return showSkipSheet(context, skip, title: copy.programSkipped(_sessionName(copy, session)));
   }
+  // the Undo at once, where the tap was: the skip is on screen as soon as it
+  // is made, and only its confirmation waits on the server — waiting for that
+  // put the Undo up after the user had left the page
+  final pending = programs.skip(program, session: session.id);
   messenger
     ..clearSnackBars()
     ..showSnackBar(
@@ -419,13 +474,14 @@ Future<void> _notToday(BuildContext context, Program program, Template session, 
         content: Text(copy.programSkipped(_sessionName(copy, session))),
         action: SnackBarAction(
           label: copy.undo,
-          onPressed: () {
+          onPressed: () async {
             analytics.programUnskipped();
-            programs.unskip(skip);
+            await programs.unskip(await pending);
           },
         ),
       ),
     );
+  await pending;
 }
 
 enum _SessionState { done, skipped, next, ahead }
@@ -461,29 +517,34 @@ class _SessionChip extends StatelessWidget {
         .ahead => name,
       },
       excludeSemantics: true,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 160),
-        child: DecoratedBox(
-          decoration: ShapeDecoration(
-            color: fill,
-            shape: StadiumBorder(side: side),
-          ),
-          child: Padding(
-            padding: const .symmetric(horizontal: 10, vertical: 4),
-            child: Row(
-              mainAxisSize: .min,
-              spacing: 4,
-              children: [
-                if (_SessionChip._marks[state] case final IconData icon) Icon(icon, size: 14, color: ink),
-                Flexible(
-                  child: Text(
-                    name,
-                    style: style?.copyWith(color: ink),
-                    maxLines: 1,
-                    overflow: .ellipsis,
+      // a name cut short is there in full on a long press
+      child: Tooltip(
+        message: name,
+        excludeFromSemantics: true,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 160),
+          child: DecoratedBox(
+            decoration: ShapeDecoration(
+              color: fill,
+              shape: StadiumBorder(side: side),
+            ),
+            child: Padding(
+              padding: const .symmetric(horizontal: 10, vertical: 4),
+              child: Row(
+                mainAxisSize: .min,
+                spacing: 4,
+                children: [
+                  if (_SessionChip._marks[state] case final IconData icon) Icon(icon, size: 14, color: ink),
+                  Flexible(
+                    child: Text(
+                      name,
+                      style: style?.copyWith(color: ink),
+                      maxLines: 1,
+                      overflow: .ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -522,68 +583,6 @@ class _StoppedProgram extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The Programs offer's slot, under the example templates (#345): the one ask,
-/// the one notice after a no, or nothing.
-///
-/// Offered only where saying yes leads somewhere: a folder of templates a
-/// program can be made from, or Heart's ready-made programs (#352). A yes with
-/// nothing to make a program of would be a switch with nothing behind it.
-class _ProgramsOfferSlot extends StatelessWidget {
-  static const _feature = Feature.programs;
-
-  const new();
-
-  @override
-  Widget build(BuildContext context) {
-    final preferences = Preferences.watch(context);
-
-    return SliverToBoxAdapter(
-      child: switch (preferences) {
-        _ when preferences.isOn(_feature) => const SizedBox.shrink(),
-        _ when preferences.owesDeclineNotice(_feature) => _OfferPadding(
-          child: FeatureDeclinedNotice(onDismiss: () => preferences.acknowledgeDeclineNotice(_feature)),
-        ),
-        // the library is part of what there is to offer, so it is read for it
-        _ when preferences.shouldOffer(_feature) => _LibraryReader(child: Builder(builder: _offer)),
-        _ => const SizedBox.shrink(),
-      },
-    );
-  }
-
-  Widget _offer(BuildContext context) {
-    final preferences = Preferences.of(context);
-    final copy = L.of(context);
-    final folders = Templates.watch(context).programFolders.isNotEmpty;
-    final library = ProgramLibrary.watch(context).available;
-    if (!folders && !library) return const SizedBox.shrink();
-
-    return _OfferPadding(
-      child: FeatureOffer(
-        key: AppKeys.programsOffer,
-        acceptKey: AppKeys.programsAccept,
-        declineKey: AppKeys.programsDecline,
-        icon: Icons.event_repeat_rounded,
-        title: copy.programs,
-        body: switch (library) {
-          true => copy.programsOfferBodyLibrary,
-          false => copy.programsOfferBody,
-        },
-        onAnswer: (yes) => preferences.answerOffer(_feature, yes: yes),
-        onShown: () => preferences.markOffered(_feature),
-      ),
-    );
-  }
-}
-
-class _OfferPadding extends StatelessWidget {
-  final Widget child;
-
-  const new({required this.child});
-
-  @override
-  Widget build(BuildContext context) => Padding(padding: const .fromLTRB(8, 8, 8, 16), child: child);
 }
 
 /// A Programs page with the switch turned off under it (#345). Off is the app

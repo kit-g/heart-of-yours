@@ -90,6 +90,10 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 ),
               },
               actions: [
+                PartOfProgram(
+                  programId: workout.programId,
+                  onOpen: (program) => HeartRouter.of(context).pushProgramOver(program.id!),
+                ),
                 PrimaryButton.shrunk(
                   key: _optionsButtonKey,
                   child: Icon(
@@ -169,71 +173,76 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
             body: SafeArea(
               // "last time" as this workout saw it: the session before it,
               // never itself — the newest one would otherwise be its own
-              child: PreviousScope(
-                before: workout.start,
-                templateId: workout.templateId,
-                child: WorkoutDetail(
-                  exercises: workout,
-                  needsCancelWorkoutButton: false,
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: _WorkoutTimesSummary(
-                        workout: workout,
-                        onTap: () => _openTimesDialog(context, workout),
-                      ),
-                    ),
-                    if (workout.note case String note)
+              // the records this workout set, as of it, beside their sets
+              child: _RecordsOf(
+                workout: workout,
+                child: PreviousScope(
+                  before: workout.start,
+                  templateId: workout.templateId,
+                  child: WorkoutDetail(
+                    exercises: workout,
+                    needsCancelWorkoutButton: false,
+                    slivers: [
+                      const SliverToBoxAdapter(child: RecordCountRow()),
                       SliverToBoxAdapter(
-                        child: WorkoutNote(note: note, onChanged: _setNote),
+                        child: _WorkoutTimesSummary(
+                          workout: workout,
+                          onTap: () => _openTimesDialog(context, workout),
+                        ),
                       ),
-                  ],
-                  // what the session worked, as a summary under it (#223)
-                  trailingSlivers: [
-                    SliverToBoxAdapter(
-                      child: WorkoutMuscleMap(
-                        workout: workout,
-                        padding: const .fromLTRB(16, 16, 16, 32),
+                      if (workout.note case String note)
+                        SliverToBoxAdapter(
+                          child: WorkoutNote(note: note, onChanged: _setNote),
+                        ),
+                    ],
+                    // what the session worked, as a summary under it (#223)
+                    trailingSlivers: [
+                      SliverToBoxAdapter(
+                        child: WorkoutMuscleMap(
+                          workout: workout,
+                          padding: const .fromLTRB(16, 16, 16, 32),
+                        ),
                       ),
-                    ),
-                  ],
-                  controller: Scrolls.of(context).editWorkoutScrollController,
-                  onDragExercise: _notifier.append,
-                  onSwapExercise: _notifier.swap,
-                  onAddSet: _notifier.addSet,
-                  onNoteChanged: _notifier.setNote,
-                  onRemoveSet: _notifier.removeSet,
-                  onSetType: _notifier.setSetType,
-                  onSetRpe: _notifier.setRpe,
-                  onRemoveExercise: _notifier.removeExercise,
-                  onGroup: _notifier.group,
-                  onLeaveGroup: _notifier.leaveGroup,
-                  onSetDone: _notifier.markSet,
-                  workoutImages: workout.images?.values,
-                  onTapImage: widget.onTapImage,
-                  onAddExercises: (exercises) async {
-                    final preferences = Exercises.of(context);
-                    for (final each in exercises.toList()) {
-                      await Future.delayed(
-                        // for different IDs
-                        const Duration(milliseconds: 2),
-                        () => _notifier.add(each, note: preferences.noteFor(each.id)),
+                    ],
+                    controller: Scrolls.of(context).editWorkoutScrollController,
+                    onDragExercise: _notifier.append,
+                    onSwapExercise: _notifier.swap,
+                    onAddSet: _notifier.addSet,
+                    onNoteChanged: _notifier.setNote,
+                    onRemoveSet: _notifier.removeSet,
+                    onSetType: _notifier.setSetType,
+                    onSetRpe: _notifier.setRpe,
+                    onRemoveExercise: _notifier.removeExercise,
+                    onGroup: _notifier.group,
+                    onLeaveGroup: _notifier.leaveGroup,
+                    onSetDone: _notifier.markSet,
+                    workoutImages: workout.images?.values,
+                    onTapImage: widget.onTapImage,
+                    onAddExercises: (exercises) async {
+                      final preferences = Exercises.of(context);
+                      for (final each in exercises.toList()) {
+                        await Future.delayed(
+                          // for different IDs
+                          const Duration(milliseconds: 2),
+                          () => _notifier.add(each, note: preferences.noteFor(each.id)),
+                        );
+                      }
+                    },
+                    allowsCompletingSet: true,
+                    onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
+                    onDeleteImage: (image) {
+                      return showDeleteImageDialog(
+                        context,
+                        workout,
+                        image,
+                        onDeleted: (context) async {
+                          Navigator.of(context, rootNavigator: true).pop();
+                          _notifier.detachImageFromWorkout(image);
+                          await Workouts.of(context).detachImageFromWorkout(workout, image);
+                        },
                       );
-                    }
-                  },
-                  allowsCompletingSet: true,
-                  onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
-                  onDeleteImage: (image) {
-                    return showDeleteImageDialog(
-                      context,
-                      workout,
-                      image,
-                      onDeleted: (context) async {
-                        Navigator.of(context, rootNavigator: true).pop();
-                        _notifier.detachImageFromWorkout(image);
-                        await Workouts.of(context).detachImageFromWorkout(workout, image);
-                      },
-                    );
-                  },
+                    },
+                  ),
                 ),
               ),
             ),
@@ -606,6 +615,35 @@ class _WorkoutTimesSummary extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The records [workout] set, as of it, marked on its sets under [child]: a
+/// record day stays one in History after a later session beats it. Nothing
+/// is marked until they are read, and nothing where none was set.
+class _RecordsOf extends StatelessWidget {
+  final Workout workout;
+  final Widget child;
+
+  const new({required this.workout, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = Exercises.of(context).userId;
+    final book = RecordBook.maybeOf(context);
+    if (book == null || userId == null) return child;
+    return FutureBuilder<RecordMarks>(
+      future: book.marksOf(workout, userId: userId),
+      builder: (context, snapshot) {
+        final marks = snapshot.data ?? const <String, List<RecordKind>>{};
+        return RecordMarksScope(
+          marks: marks,
+          // the first, in the workout's own order: where its count scrolls
+          firstSetId: workout.expand((exercise) => exercise).map((set) => set.id).where(marks.containsKey).firstOrNull,
+          child: child,
+        );
+      },
     );
   }
 }

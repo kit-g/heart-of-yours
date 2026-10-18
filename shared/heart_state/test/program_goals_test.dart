@@ -89,9 +89,8 @@ void main() {
       expect(goal.stages.single.target, 120);
     });
 
-    test('a target the user already holds is never shown twice', () {
+    test("a lift's target the user already holds is never shown twice", () {
       final held = [
-        Goal(metric: .workouts, cadence: .week, stages: [GoalStage(target: 4)]),
         Goal(metric: .topSetWeight, exerciseId: 'bench', stages: [GoalStage(target: 100)]),
       ];
       final implied = impliedGoals(
@@ -99,7 +98,24 @@ void main() {
         bases: [base('bench', 60, start)],
         held: held,
       );
-      expect(implied, isEmpty);
+      expect(implied.map((each) => each.goal.metric), [GoalMetric.workouts]);
+    });
+
+    test("the program's sessions a week override the user's own weekly workouts goal", () {
+      final own = Goal(id: 'g1', metric: .workouts, cadence: .week, stages: [GoalStage(target: 3)]);
+      final running = program(perWeek: 4);
+      final implied = impliedGoals(running, bases: const [], held: [own]);
+
+      expect(implied.single.goal.stages.single.target, 4);
+      // set aside while it runs, never edited
+      expect(pausedByPrograms(own, [running]), isTrue);
+      expect(own.stages.single.target, 3);
+      // and back as it was once nothing running has a cadence
+      expect(pausedByPrograms(own, const []), isFalse);
+      expect(pausedByPrograms(own, [program(perWeek: null)]), isFalse);
+      // nothing else is set aside
+      final bench = Goal(id: 'g2', metric: .topSetWeight, exerciseId: 'bench', stages: [GoalStage(target: 100)]);
+      expect(pausedByPrograms(bench, [running]), isFalse);
     });
 
     test('an ongoing program implies no milestone, and a ladder no weight', () {

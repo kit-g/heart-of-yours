@@ -18,12 +18,16 @@ class _Charts extends StatelessWidget {
     // Every metric relevant to this exercise's category — the same set the
     // dashboard offers when adding a chart, now surfaced per exercise.
     final types = ChartPreferenceType.chartsByExerciseCategory(exercise.category);
+    // a program the user follows trains it: said once, above the charts
+    final program = _programOf(context);
 
     return ListView.separated(
       padding: const EdgeInsets.only(bottom: 16),
-      itemCount: types.length,
+      itemCount: types.length + (program == null ? 0 : 1),
       separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (_, index) {
+      itemBuilder: (_, item) {
+        if (program != null && item == 0) return _InProgram(program: program);
+        final index = program == null ? item : item - 1;
         final type = types[index];
         final title = type.title(context, prefs, unit: unit, category: exercise.category);
         return ExerciseChart(
@@ -68,6 +72,58 @@ class _Charts extends StatelessWidget {
           errorState: const _ErrorState(),
         );
       },
+    );
+  }
+}
+
+extension on _Charts {
+  /// The first program the user follows whose sessions hold [exercise]; null
+  /// while Programs is off or none does.
+  Program? _programOf(BuildContext context) {
+    if (!Preferences.watch(context).isOn(.programs)) return null;
+    final following = {for (final program in Programs.watch(context).following) program.id: program};
+    return Templates.watch(context)
+        .where((session) => following.containsKey(session.programId))
+        .where((session) => session.any((each) => each.exercise.id == exercise.id))
+        .map((session) => following[session.programId])
+        .nonNulls
+        .firstOrNull;
+  }
+}
+
+/// A quiet line over the charts: this exercise is in a program the user
+/// follows, and the way to it.
+class _InProgram extends StatelessWidget {
+  final Program program;
+
+  const new({required this.program});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final muted = colorScheme.onSurfaceVariant;
+    return Semantics(
+      link: true,
+      child: InkWell(
+        key: AppKeys.exerciseInProgram,
+        borderRadius: const .all(.circular(8)),
+        onTap: () => HeartRouter.of(context).pushProgramOver(program.id!),
+        child: Padding(
+          padding: const .symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            spacing: 8,
+            children: [
+              Icon(Icons.event_repeat_rounded, size: 16, color: muted),
+              Expanded(
+                child: Text(
+                  L.of(context).exerciseInProgram(program.name),
+                  style: textTheme.bodySmall?.copyWith(color: muted),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

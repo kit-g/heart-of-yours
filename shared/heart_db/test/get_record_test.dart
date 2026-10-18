@@ -126,6 +126,25 @@ void main() {
     });
   });
 
+  group('as of a workout', () {
+    test('reads that workout and the ones before it, so a beaten record day stays one', () async {
+      final ex = exercise(name: 'Bench', category: 'Barbell');
+      // w2 is the day; the database answers the as-of query with w1 and w2
+      // only, w3's heavier set being later
+      when(db.rawQuery(sql.recordSetsAsOf, ['user-1', ex.id, 'w2', 'w2'])).thenAnswer(
+        (_) async => [
+          row(weight: 100, reps: 3, workoutId: 'w1', start: '2026-01-01T10:00:00Z'),
+          row(weight: 105, reps: 3, workoutId: 'w2', start: '2026-02-01T10:00:00Z'),
+        ],
+      );
+
+      final records = (await local.getRecordAsOf('user-1', ex, 'w2'))!;
+
+      expect((records['heaviest'] as Map)['workoutId'], 'w2');
+      expect(((records['heaviest'] as Map)['previous'] as Map)['weight'], 100.0);
+    });
+  });
+
   group('other categories', () {
     test('reps only', () async {
       final ex = exercise(name: 'Pull Up', category: 'Reps Only');

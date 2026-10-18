@@ -148,6 +148,7 @@ class WorkoutDone extends StatelessWidget {
                             WorkoutItem(
                               workout: workout,
                               showsMenuButton: false,
+                              showsRecords: true,
                             ),
                           const SizedBox(height: 72),
                           OutlinedButton(

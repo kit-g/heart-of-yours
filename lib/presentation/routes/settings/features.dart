@@ -32,7 +32,14 @@ class _FeaturesPageState extends State<FeaturesPage> {
         if (!mounted) return;
         Analytics.of(context).featureLinked(feature: feature, source: widget.source);
         if (_focused.currentContext case BuildContext row) {
-          Scrollable.ensureVisible(row, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+          // a third of the way down, not at the very top: the rows above it
+          // say where on the page it is
+          Scrollable.ensureVisible(
+            row,
+            alignment: .3,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
         }
       });
     }
@@ -59,19 +66,25 @@ class _FeaturesPageState extends State<FeaturesPage> {
             alignment: .topCenter,
             child: SizedBox(
               width: math.min(constraints.maxWidth, readableWidth),
-              child: ListView(
+              // every row built up front, not a lazy list: a link to a row
+              // below the fold has to find it to scroll to it, and a dozen
+              // switches cost nothing to build
+              child: SingleChildScrollView(
                 padding: const .symmetric(vertical: 8),
-                children: [
-                  for (final feature in Feature.values)
-                    switch (feature == widget.focus) {
-                      true => _Spotlight(key: _focused, child: _row(feature)),
-                      false => _row(feature),
-                    },
-                  Padding(
-                    padding: const .fromLTRB(16, 8, 16, 16),
-                    child: Text(l.featuresFooter, style: textTheme.bodySmall?.copyWith(color: onSurfaceVariant)),
-                  ),
-                ],
+                child: Column(
+                  crossAxisAlignment: .stretch,
+                  children: [
+                    for (final feature in Feature.values)
+                      switch (feature == widget.focus) {
+                        true => _Spotlight(key: _focused, child: _row(feature)),
+                        false => _row(feature),
+                      },
+                    Padding(
+                      padding: const .fromLTRB(16, 8, 16, 16),
+                      child: Text(l.featuresFooter, style: textTheme.bodySmall?.copyWith(color: onSurfaceVariant)),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -84,8 +97,6 @@ class _FeaturesPageState extends State<FeaturesPage> {
     return switch (feature) {
       // only where there is a watch with Heart on it
       .watchApp => const _WatchAppSwitch(),
-      // part of Programs: with Programs off there is no calendar to fill
-      .programCalendar => const _ProgramCalendarSwitch(),
       _ => _FeatureSwitch(feature),
     };
   }
@@ -181,6 +192,8 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
       activeThumbColor: onTertiaryContainer,
       inactiveTrackColor: outlineVariant,
       onChanged: (on) {
+        // the row as well as the thumb flips it, and neither clicks by itself
+        HapticFeedback.selectionClick();
         preferences.setFeature(feature, on: on);
         onSwitched?.call();
       },
@@ -210,7 +223,10 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
                       key: ValueKey('feature-${feature.value}-${option.value}'),
                       value: preferences.isOptionOn(option),
                       // leaving out the last one turns the feature off
-                      onChanged: (checked) => preferences.setOption(option, on: checked ?? false),
+                      onChanged: (checked) {
+                        HapticFeedback.selectionClick();
+                        preferences.setOption(option, on: checked ?? false);
+                      },
                       title: Text(option.title(l)),
                       controlAffinity: ListTileControlAffinity.trailing,
                       dense: true,
@@ -230,19 +246,6 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
         ),
       ],
     );
-  }
-}
-
-/// The calendar's switch (#391), there while Programs is on.
-class _ProgramCalendarSwitch extends StatelessWidget {
-  const new();
-
-  @override
-  Widget build(BuildContext context) {
-    return switch (Preferences.watch(context).isOn(.programs)) {
-      true => const _FeatureSwitch(.programCalendar),
-      false => const SizedBox.shrink(),
-    };
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 class FixedLengthSettingPicker<T extends Object> extends StatelessWidget {
@@ -54,6 +55,13 @@ class SettingSwitcher<T extends Object> extends StatelessWidget {
     required this.onValueChanged,
   });
 
+  /// A pick that changes something clicks, as a picker wheel does; tapping
+  /// the segment already chosen does not.
+  void _onPicked(T? picked) {
+    if (picked != value) HapticFeedback.selectionClick();
+    onValueChanged(picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData(:colorScheme, :platform) = Theme.of(context);
@@ -63,7 +71,7 @@ class SettingSwitcher<T extends Object> extends StatelessWidget {
         return CupertinoSlidingSegmentedControl<T>(
           groupValue: value,
           children: children,
-          onValueChanged: onValueChanged,
+          onValueChanged: _onPicked,
           thumbColor: colorScheme.surface,
           backgroundColor: colorScheme.surfaceContainerHighest,
         );
@@ -88,7 +96,7 @@ class SettingSwitcher<T extends Object> extends StatelessWidget {
             },
           ).toList(),
           onPressed: (index) {
-            onValueChanged(children.keys.elementAt(index));
+            _onPicked(children.keys.elementAt(index));
           },
         );
     }

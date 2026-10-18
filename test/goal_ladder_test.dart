@@ -127,7 +127,9 @@ void main() {
       ]),
     );
 
-    expect(find.byType(Dismissible), findsNWidgets(2));
+    // each uncovers its Delete on a swipe
+    expect(find.byKey(const ValueKey('GoalRung.s0.delete')), findsOneWidget);
+    expect(find.byKey(const ValueKey('GoalRung.s1.delete')), findsOneWidget);
   });
 
   group('a recurring goal has no deadline', () {
@@ -216,7 +218,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final rung = tester.widget<InkWell>(
-        find.descendant(of: find.byKey(AppKeys.ladderRung('s0')), matching: find.byType(InkWell)),
+        find.descendant(of: find.byKey(AppKeys.ladderRung('s0')), matching: find.byType(InkWell)).last,
       );
 
       expect(rung.onTap, isNull);
@@ -227,7 +229,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final rung = tester.widget<InkWell>(
-        find.descendant(of: find.byKey(AppKeys.ladderRung('s0')), matching: find.byType(InkWell)),
+        find.descendant(of: find.byKey(AppKeys.ladderRung('s0')), matching: find.byType(InkWell)).last,
       );
 
       expect(rung.onTap, isNotNull);

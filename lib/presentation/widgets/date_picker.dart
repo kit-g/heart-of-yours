@@ -26,11 +26,12 @@ Future<DateTime?> showAdaptiveDatePicker(
   return switch (Theme.of(context).platform) {
     .iOS || .macOS => _cupertinoDialog(
       context,
+      mode: .date,
       initial: initial,
       first: first,
       last: last,
       title: title,
-    ),
+    ).then(_dayOf),
     _ => showDatePicker(
       context: context,
       initialDate: initial,
@@ -40,11 +41,27 @@ Future<DateTime?> showAdaptiveDatePicker(
   };
 }
 
+/// Shows a platform-adaptive time picker: the wheel, in the date picker's
+/// dialog, where the platform has one; Material's clock elsewhere. Either
+/// follows the device's 12- or 24-hour setting.
+Future<TimeOfDay?> showAdaptiveTimePicker(BuildContext context, {required TimeOfDay initial, String? title}) {
+  return switch (Theme.of(context).platform) {
+    .iOS || .macOS => _cupertinoDialog(
+      context,
+      mode: .time,
+      initial: DateTime(2024, 1, 1, initial.hour, initial.minute),
+      title: title,
+    ).then((value) => value == null ? null : TimeOfDay.fromDateTime(value)),
+    _ => showTimePicker(context: context, initialTime: initial),
+  };
+}
+
 Future<DateTime?> _cupertinoDialog(
   BuildContext context, {
+  required CupertinoDatePickerMode mode,
   required DateTime initial,
-  required DateTime first,
-  required DateTime last,
+  DateTime? first,
+  DateTime? last,
   String? title,
 }) {
   final ThemeData(:textTheme) = Theme.of(context);
@@ -75,10 +92,11 @@ Future<DateTime?> _cupertinoDialog(
                   SizedBox(
                     height: 200,
                     child: CupertinoDatePicker(
-                      mode: .date,
+                      mode: mode,
                       initialDateTime: initial,
                       minimumDate: first,
                       maximumDate: last,
+                      use24hFormat: MediaQuery.alwaysUse24HourFormatOf(context),
                       onDateTimeChanged: (value) => selected.value = value,
                     ),
                   ),
@@ -104,7 +122,7 @@ Future<DateTime?> _cupertinoDialog(
                             return PrimaryButton.shrunk(
                               onPressed: () {
                                 HapticFeedback.mediumImpact();
-                                Navigator.pop(context, _dayOf(value));
+                                Navigator.pop(context, value);
                               },
                               child: Text(L.of(context).ok),
                             );

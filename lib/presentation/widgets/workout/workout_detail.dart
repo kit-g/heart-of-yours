@@ -14,11 +14,13 @@ import 'package:heart/core/utils/replacements.dart';
 import 'package:heart/core/utils/image_picker.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/core/utils/weeks.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/part_of_program.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/countdown.dart';
 import 'package:heart/presentation/widgets/duration_picker.dart';
@@ -46,6 +48,8 @@ import 'timer.dart';
 part 'empty_state.dart';
 part 'exercise_item.dart';
 part 'exercise_note.dart';
+part 'program_base.dart';
+part 'record_marks.dart';
 part 'feedback.dart';
 part 'keys.dart';
 part 'plan.dart';
@@ -826,11 +830,16 @@ class ActiveWorkoutSheet extends StatefulWidget {
   final double closingThreshold;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
 
+  /// Opens the program a program session's workout belongs to, from the mark
+  /// in its header; the sheet's route decides how.
+  final void Function(Program)? onOpenProgram;
+
   const new({
     super.key,
     required this.workouts,
     this.closingThreshold = .25,
     this.onTapImage,
+    this.onOpenProgram,
   });
 
   @override
@@ -907,7 +916,10 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       ),
       _ => false,
     };
-    if (inProgram && program != null) await programs.replaceExercise(program, from: from.id, to: picked.id);
+    if (inProgram && program != null) {
+      await programs.replaceExercise(program, from: from.id, to: picked.id);
+      if (mounted) await _seedBase(program, from: from, to: picked);
+    }
     analytics.exerciseReplaced(
       scope: switch (inProgram) {
         true => .program,
@@ -915,6 +927,28 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       },
       suggested: suggested,
     );
+  }
+
+  /// The rule moved to [to] with the replace, but the base stayed with [from]
+  /// (#354): when [from] had one and [to] has none, asks where [to] starts —
+  /// suggesting from the user's own recent sets of it, as a test session
+  /// would (a share-of-max rule takes 90% of the best estimated max; a working
+  /// weight, the heaviest working set). Skipped, the program's first session
+  /// of it sets the base, as it would have.
+  Future<void> _seedBase(Program program, {required Exercise from, required Exercise to}) async {
+    final programs = Programs.of(context);
+    final exercises = Exercises.of(context);
+    final rule = programs.lookup(program.id!)?.rules[to.id];
+    if (!hasWeightBase(rule)) return;
+    final bases = programs.currentBasesOf(program.id!);
+    if (!bases.containsKey(from.id) || bases.containsKey(to.id)) return;
+
+    final history = await exercises.getExerciseHistory(to, pageSize: 10);
+    final sets = [for (final act in history) ...act];
+    final suggested = suggestedBase(rule, sets);
+    if (!mounted) return;
+    final value = await showProgramBaseEditor(context, exercise: to, rule: rule, value: suggested, seeding: true);
+    if (value != null) await programs.setBase(program, exerciseId: to.id, value: value);
   }
 
   void _onSheetChanged() {
@@ -950,6 +984,15 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     final programs = Programs.watch(context);
     final program = switch ((planned, active.programId)) {
       (true, final String id) => programs.lookup(id),
+      _ => null,
+    };
+    // what the session is for, in the program's words: a one-set session
+    // would otherwise look like a mistake
+    final sessionNote = switch ((program, active.templateId)) {
+      (Program(), final String id) => switch (Templates.watch(context).lookup(id)?.note) {
+        final String note when note.trim().isNotEmpty => note,
+        _ => null,
+      },
       _ => null,
     };
     final lighter = switch (program) {
@@ -1001,6 +1044,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                   return _replace(slot, picked, suggested: suggested, program: program);
                 },
                 slivers: [
+                  if (sessionNote case final String note) SliverToBoxAdapter(child: SessionNote(note: note)),
                   if (lighter) SliverToBoxAdapter(child: LighterWeekNote(deload: program?.deload)),
                   if (active.note case String note)
                     SliverToBoxAdapter(
@@ -1149,6 +1193,9 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                               ),
                             ),
                           ),
+                          // a program's session: the program it is from
+                          if (widget.onOpenProgram case final open?)
+                            PartOfProgram(programId: active.programId, onOpen: open, size: 18),
                           if (workouts.hasActiveWorkout)
                             PrimaryButton.shrunk(
                               key: WorkoutDetailKeys.finishWorkout,

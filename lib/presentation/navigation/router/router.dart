@@ -24,6 +24,7 @@ import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/settings/upgrade_app.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
+import 'package:heart/presentation/widgets/goals/goals.dart' show runningPrograms;
 import 'package:heart/presentation/widgets/app_frame.dart';
 import 'package:heart/presentation/widgets/greetings_pane.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -88,6 +89,11 @@ final class HeartRouter {
           _restoreAccountRoute(),
           _avatarRoute(),
           _galleryRoute(),
+          _programOverRoute(),
+          _filteredExercisesRoute(),
+          _libraryProgramOverRoute(),
+          _exerciseOverRoute(),
+          _workoutOverRoute(),
           if (kIsWeb)
             // Apple sign-in redirect
             GoRoute(
@@ -389,6 +395,37 @@ final class HeartRouter {
   /// A program's page, from outside it: a calendar event's link (#391).
   void goToProgram(String programId) {
     return config.goNamed(_programName, pathParameters: {'programId': programId});
+  }
+
+  /// The library showing only [filter] — from a count on the profile, the
+  /// exercises behind it — the previous filters cleared, as a chip's tap does.
+  ///
+  /// Pushed over the tab it was opened from, so Back — Android's too —
+  /// returns there rather than leaving the Exercises tab, or the app.
+  void goToFilteredExercises(Exercises exercises, ExerciseFilter filter) {
+    exercises
+      ..clearFilters()
+      ..addFilter(filter);
+    config.pushNamed(_filteredExercisesName);
+  }
+
+  /// A program's page over whichever tab it was opened from — a workout in
+  /// History, an exercise's chart, a goal on the profile: Back returns there
+  /// rather than to the Workout tab's root.
+  void pushProgramOver(String programId) {
+    config.pushNamed(_programOverName, pathParameters: {'programId': programId});
+  }
+
+  /// A past workout over whichever tab it was opened from — a goal rung it
+  /// earned: Back returns there rather than to History's list.
+  void pushWorkoutOver(String workoutId) {
+    config.pushNamed(_workoutOverName, pathParameters: {'workoutId': workoutId});
+  }
+
+  /// A program's page over the Workout tab's page that named it — a folder
+  /// its sessions live in: pushed, so Back returns there.
+  void pushProgram(String programId) {
+    config.pushNamed(_programName, pathParameters: {'programId': programId});
   }
 
   /// A day set aside with "Not today" (#312), in History.

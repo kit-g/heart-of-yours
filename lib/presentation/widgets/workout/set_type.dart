@@ -140,11 +140,25 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
 
   Future<void> _open(void Function(ExerciseSet, SetType) onSetType) async {
     final ExerciseSet(setType: current, rpe: rated) = widget.set;
-    final onSetRpe = Preferences.of(context).isOn(.rpe) ? widget.onSetRpe : null;
+    final preferences = Preferences.of(context);
+    final onSetRpe = preferences.isOn(.rpe) ? widget.onSetRpe : null;
+    // the "+" says what it is where it is tapped: a line, not a choice
+    final supplemental =
+        current == .normal && (widget.set.target?.supplemental ?? false) && preferences.isOn(.programs);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final picked = await showMenu<_SetChoice>(
       context: context,
       position: _anchor.position(),
       items: [
+        if (supplemental)
+          PopupMenuItem<_SetChoice>(
+            key: WorkoutDetailKeys.supplementalExplained,
+            enabled: false,
+            child: Text(
+              L.of(context).supplementalSetExplained,
+              style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+          ),
         ..._typed.map((type) => _item(type, selected: type == current)),
         if (onSetRpe != null) _RpeEntry(set: widget.set, explained: _rpeExplained),
         if (widget.onSetTarget != null) _targetItem(),
