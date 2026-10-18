@@ -21,6 +21,7 @@ export 'src/import.dart';
 export 'src/balance.dart';
 export 'src/lens.dart';
 export 'src/package.dart';
+export 'src/plates.dart';
 export 'src/password.dart';
 export 'src/preferences.dart';
 export 'src/previous.dart';
