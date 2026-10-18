@@ -10,6 +10,7 @@ import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/chart_dimension.dart';
+import 'package:heart/presentation/widgets/copy_for_ai.dart';
 import 'package:heart/presentation/widgets/exercise_chart.dart';
 import 'package:heart/presentation/widgets/exercises/exercise_picker_dialog.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
