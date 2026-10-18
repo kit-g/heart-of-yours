@@ -17,6 +17,13 @@ typedef MuscleVolume = ({Map<MuscleGroup, double> sets, int unmapped});
 /// answers to (cardio, the whole body) — adds to `unmapped` rather than
 /// vanishing, so the map can say what it left out.
 MuscleVolume muscleVolume(Iterable<MuscleSets> rows) {
+  return _volume(rows.map((row) => (muscles: row.muscles, target: row.target, sets: row.sets)));
+}
+
+/// What [muscleVolume] reads of a row: no time, so a plan can be one too.
+typedef _Placed = ({MuscleTagging muscles, Target target, int sets});
+
+MuscleVolume _volume(Iterable<_Placed> rows) {
   return rows.fold(
     (sets: <MuscleGroup, double>{}, unmapped: 0),
     (volume, row) {
@@ -33,32 +40,57 @@ MuscleVolume muscleVolume(Iterable<MuscleSets> rows) {
   );
 }
 
+/// Whether the map counts a set: warm-ups are left out, as the map's
+/// read of a period leaves them out (#236).
+bool _counts(ExerciseSet set) => set.setType != .warmup;
+
+/// [exercise]'s tagging from the library when it knows the exercise: the copy
+/// a workout or a template carries may have been synced without it.
+MuscleTagging _tagging(Exercise exercise, Exercise? Function(ExerciseId) lookup) {
+  return switch (lookup(exercise.id)?.muscles) {
+    MuscleTagging muscles when !muscles.isEmpty => muscles,
+    _ => exercise.muscles,
+  };
+}
+
 /// One workout's completed sets per exercise, as [muscleVolume] reads them
 /// (#223).
 ///
-/// The tagging comes from the library when it knows the exercise: the copy a
-/// workout carries may have been synced without it. Warm-ups are left out, as
-/// the map's read of a period leaves them out (#236). An exercise with no sets
-/// done adds nothing, not even to `unmapped`.
+/// An exercise with no sets done adds nothing, not even to `unmapped`.
 Iterable<MuscleSets> workoutMuscleSets(Workout workout, {required Exercise? Function(ExerciseId) lookup}) {
-  MuscleTagging tagging(Exercise exercise) {
-    return switch (lookup(exercise.id)?.muscles) {
-      MuscleTagging muscles when !muscles.isEmpty => muscles,
-      _ => exercise.muscles,
-    };
-  }
-
   return workout
       .map(
         (each) => (
           start: workout.start,
-          muscles: tagging(each.exercise),
+          muscles: _tagging(each.exercise, lookup),
           target: each.exercise.target,
-          sets: each.where((set) => set.isCompleted && set.setType != .warmup).length,
+          sets: each.where((set) => set.isCompleted && _counts(set)).length,
         ),
       )
       .where((row) => row.sets > 0);
 }
+
+/// What a template plans, per muscle group (#263): every set it lists, counted
+/// the way [workoutMuscleSets] counts a finished one, warm-ups left out.
+MuscleVolume plannedMuscleVolume(
+  Iterable<WorkoutExercise> exercises, {
+  required Exercise? Function(ExerciseId) lookup,
+}) {
+  return _volume(
+    exercises
+        .map(
+          (each) => (
+            muscles: _tagging(each.exercise, lookup),
+            target: each.exercise.target,
+            sets: plannedSets(each),
+          ),
+        )
+        .where((row) => row.sets > 0),
+  );
+}
+
+/// The sets of [exercise] a plan's muscle map counts.
+int plannedSets(WorkoutExercise exercise) => exercise.where(_counts).length;
 
 /// The last [days] calendar days, today included, of [rows].
 ///

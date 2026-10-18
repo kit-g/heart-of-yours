@@ -70,6 +70,8 @@ abstract final class AppKeys {
   static const muscleMapHeatmap = ValueKey('muscleMapHeatmap');
   static const muscleMapFigureTip = ValueKey('muscleMapFigureTip');
   static const workoutMuscleMap = ValueKey('workoutMuscleMap');
+  static const templateMuscles = ValueKey('templateMuscles');
+  static const templateMusclesToggle = ValueKey('templateMusclesToggle');
   static const musclesWorkedButton = ValueKey('musclesWorkedButton');
   static const muscleMapCellCaption = ValueKey('muscleMapCellCaption');
 

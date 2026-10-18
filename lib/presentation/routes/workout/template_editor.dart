@@ -92,6 +92,15 @@ class _TemplateEditorState extends State<TemplateEditor> {
         body: SafeArea(
           child: WorkoutDetail(
             exercises: templates.editable ?? [],
+            // what the plan works, as it grows (#263)
+            slivers: [
+              SliverToBoxAdapter(
+                child: TemplateMuscles(
+                  exercises: templates.editable ?? [],
+                  padding: const .symmetric(horizontal: 8),
+                ),
+              ),
+            ],
             onDragExercise: templates.append,
             onRemoveSet: templates.removeSet,
             onSetType: templates.setSetType,
