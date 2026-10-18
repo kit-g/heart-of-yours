@@ -84,18 +84,30 @@ class _ProgramLibraryPageState extends State<ProgramLibraryPage> {
                             const gap = 8.0;
                             final width = constraints.maxWidth;
                             final columns = columnsFor(width, maxExtent: _libraryCardMaxWidth);
-                            final card = (width - gap * (columns - 1)) / columns;
-                            return Wrap(
+                            Widget card(LibraryProgram program) {
+                              return _LibraryCard(program: program, tag: tag, onTap: () => widget.onOpen(program));
+                            }
+
+                            // in rows, each card as tall as the tallest beside
+                            // it: a free-height grid left neighbours ragged
+                            return Column(
+                              crossAxisAlignment: .stretch,
                               spacing: gap,
-                              runSpacing: gap,
                               children: [
-                                for (final program in group)
-                                  SizedBox(
-                                    width: card,
-                                    child: _LibraryCard(
-                                      program: program,
-                                      tag: tag,
-                                      onTap: () => widget.onOpen(program),
+                                for (final row in List.generate(
+                                  (group.length / columns).ceil(),
+                                  (index) => group.skip(index * columns.toInt()).take(columns.toInt()).toList(),
+                                ))
+                                  IntrinsicHeight(
+                                    child: Row(
+                                      crossAxisAlignment: .stretch,
+                                      spacing: gap,
+                                      children: [
+                                        for (final program in row) Expanded(child: card(program)),
+                                        // a short last row keeps its columns
+                                        for (final _ in Iterable.generate(columns.toInt() - row.length))
+                                          const Expanded(child: SizedBox.shrink()),
+                                      ],
                                     ),
                                   ),
                               ],

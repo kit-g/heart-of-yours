@@ -181,6 +181,30 @@ void main() {
     });
   });
 
+  testWidgets('on a tablet, the cards of a row are one height', (tester) async {
+    tester.view.physicalSize = const Size(1194, 834);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    answer(.on);
+    await openLibrary(tester);
+
+    final cards = find.byWidgetPredicate(
+      (widget) => switch (widget.key) {
+        ValueKey<String>(:final value) => value.startsWith('Programs.library.program.'),
+        _ => false,
+      },
+    );
+    final rects = [for (final element in cards.evaluate()) tester.getRect(find.byWidget(element.widget))];
+    final rows = <double, List<Rect>>{};
+    for (final rect in rects) {
+      rows.putIfAbsent(rect.top, () => []).add(rect);
+    }
+    expect(rows.values.any((row) => row.length > 1), isTrue, reason: 'two columns at this width');
+    for (final row in rows.values) {
+      expect(row.map((rect) => rect.height).toSet(), hasLength(1));
+    }
+  });
+
   group("a program's page", () {
     testWidgets('shows the plan with its research beside it and the safety notes once', (tester) async {
       answer(.on);
