@@ -64,7 +64,10 @@ const _maxShare = .9;
 /// The goals [program] implies, less any the user already holds: the same
 /// target is never shown twice (#353).
 ///
-/// - A weekly target (`perWeek`) is a weekly `workouts` goal.
+/// - A weekly target (`perWeek`) is a weekly `workouts` goal, shown even
+///   while the user holds one of their own: the program's cadence overrides
+///   theirs while it runs ([pausedByPrograms]), and theirs is set aside, never
+///   edited, until it ends.
 /// - A rule that grows a weight, in a program with a length, is a milestone
 ///   at its end: the first base grown at the rule's nominal pace for every
 ///   week. A share of a max is an estimated one-rep max; the others a top
@@ -91,7 +94,7 @@ List<ImpliedGoal> impliedGoals(
   };
 
   return [
-    if (program.perWeek case final int perWeek when !holds(.workouts, cadence: .week))
+    if (program.perWeek case final int perWeek)
       ImpliedGoal(
         program: program,
         goal: Goal(
@@ -121,6 +124,18 @@ List<ImpliedGoal> impliedGoals(
               ),
             ),
   ];
+}
+
+/// Whether [goal], one of the user's own, is set aside while [running]
+/// programs run: a weekly workouts goal, overridden by a program's own
+/// sessions a week. Set aside for display and judging only — never edited,
+/// archived or deleted — and back as it was once no running program has a
+/// weekly target.
+bool pausedByPrograms(Goal goal, Iterable<Program> running) {
+  return goal.metric == .workouts &&
+      goal.cadence == .week &&
+      !goal.archived &&
+      running.any((program) => program.perWeek != null);
 }
 
 /// How much [rule] grows its base in a week where every session is kept to,

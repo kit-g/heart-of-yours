@@ -5046,5 +5046,7 @@
   "libraryStoppedAt": "Stopped at week {week} of {weeks}",
   "@libraryStoppedAt": {"description": "On a ready-made program's card and page in the library: the user stopped following a copy of it before its end", "type": "text", "placeholders": {"week": {"type": "int"}, "weeks": {"type": "int"}}},
   "libraryStoppedAtOpen": "Stopped at week {week}",
-  "@libraryStoppedAtOpen": {"description": "On an open-ended ready-made program's card and page in the library: the user stopped following a copy of it", "type": "text", "placeholders": {"week": {"type": "int"}}}
+  "@libraryStoppedAtOpen": {"description": "On an open-ended ready-made program's card and page in the library: the user stopped following a copy of it", "type": "text", "placeholders": {"week": {"type": "int"}}},
+  "goalPausedByProgram": "Your {count} a week is paused while you follow {program}",
+  "@goalPausedByProgram": {"description": "Goals card, a muted line under a program's sessions-a-week goal: the user's own workouts-a-week goal is set aside, unchanged, while the program runs; {count} is that goal's target, {program} the program's name", "type": "text", "placeholders": {"count": {"type": "int"}, "program": {}}}
 }

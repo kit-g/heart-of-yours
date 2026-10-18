@@ -238,8 +238,13 @@ class _GoalsCardState extends State<GoalsCard> {
   /// with their program, and open it rather than a goal.
   Widget _rows(List<Goal> goals, {List<ProgramFeed> feeds = const [], List<ImpliedGoal> implied = const []}) {
     final lensSets = _lensSets();
+    // the user's own weekly workouts goal, while a program's cadence
+    // overrides it: not shown as a row, never edited, said under the program's
+    final running = runningIn(feeds);
+    final paused = goals.where((goal) => pausedByPrograms(goal, running)).toList();
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final rows = [
-      for (final goal in goals)
+      for (final goal in goals.where((goal) => !paused.contains(goal)))
         GoalRow(
           key: AppKeys.goalRow(goal.id),
           goal: goal,
@@ -259,6 +264,17 @@ class _GoalsCardState extends State<GoalsCard> {
           from: program.name,
           onEdit: () => HeartRouter.of(context).goToProgram(program.id!),
         ),
+      for (final ImpliedGoal(:goal, :program) in implied)
+        if (goal.metric == .workouts && goal.cadence == .week)
+          for (final own in paused)
+            Padding(
+              key: AppKeys.goalSetAside(own.id),
+              padding: const .fromLTRB(16, 0, 16, 8),
+              child: Text(
+                L.of(context).goalPausedByProgram(own.stages.firstOrNull?.target.toInt() ?? 0, program.name),
+                style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+              ),
+            ),
     ];
 
     return switch (widget.bounded) {

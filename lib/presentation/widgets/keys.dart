@@ -180,6 +180,7 @@ abstract final class AppKeys {
   static const programInProgress = Key('Programs.inProgress');
   static Key workoutRecords(String workoutId) => Key('History.records.$workoutId');
   static const firstRecords = Key('Done.firstRecords');
+  static Key goalSetAside(String? goalId) => Key('Goals.setAside.$goalId');
   static Key lensLine(String label) => Key('Lens.line.$label');
   static Key lensChart(String label) => Key('Lens.chart.$label');
   static const programCalendarSettings = Key('Programs.calendar.settings');

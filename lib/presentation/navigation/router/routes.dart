@@ -761,6 +761,10 @@ RouteBase _workoutDoneRoute() {
             final exercises = Exercises.of(context);
             final stats = Stats.of(context);
             final firstWeekday = Preferences.of(context).firstWeekday;
+            // a goal a running program's cadence overrides is not judged, so
+            // nothing celebrates what is set aside
+            final running = runningPrograms(context);
+            bool setAside(Goal goal) => pausedByPrograms(goal, running);
 
             // The id the server settled on, not the one this device saved
             // under: `saveWorkout` adopts the server's when they differ, and
@@ -773,7 +777,6 @@ RouteBase _workoutDoneRoute() {
             // the windows every goal below reads, each read once; `without`
             // filters what was read, so the before reading shares them too
             final lensSets = sharedLensSets(stats.getLensSets);
-
             final stamped = await goals.observeProgress(
               (goal) => currentGoalValue(
                 goal,
@@ -784,12 +787,14 @@ RouteBase _workoutDoneRoute() {
               ),
               // this screen is the one place that knows which session earned it
               achievedBy: finished?.id ?? workout.id,
+              setAside: setAside,
             );
 
             // A recurring goal is never stamped, so it would otherwise go
             // uncelebrated the week it is met — announced here when this
             // session is what carried the period over.
             final carried = await goals.observePeriodWins(
+              setAside: setAside,
               valueOf: (goal) => currentGoalValue(
                 goal,
                 exercises: exercises,

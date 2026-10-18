@@ -351,14 +351,27 @@ void main() {
       expect(goals, isEmpty);
     });
 
-    testWidgets('never a second copy of a target the user holds', (tester) async {
-      await seed([workoutsGoal()]);
+    testWidgets("the program's cadence overrides the user's own, which is set aside, not edited", (tester) async {
+      await seed([workoutsGoal(target: 2)]);
       await follow(split);
 
       await pumpWith(tester);
 
-      expect(find.byType(GoalRow), findsOneWidget);
-      expect(find.text('from Split'), findsNothing);
+      // the program's 3 a week, and the user's 2 said under it
+      expect(find.byKey(AppKeys.goalRow('program:p1:workouts')), findsOneWidget);
+      expect(find.byKey(AppKeys.goalRow('goal-1')), findsNothing);
+      expect(find.text('Your 2 a week is paused while you follow Split'), findsOneWidget);
+      expect(goals.all.single.stages.single.target, 2);
+    });
+
+    testWidgets("with Programs off, the user's own weekly goal is back as it was", (tester) async {
+      await seed([workoutsGoal(target: 2)]);
+      await follow(split);
+
+      await pumpWith(tester, on: false);
+
+      expect(find.byKey(AppKeys.goalRow('goal-1')), findsOneWidget);
+      expect(find.textContaining('is paused while you follow'), findsNothing);
     });
 
     testWidgets('with Programs off, goals are as they were', (tester) async {
