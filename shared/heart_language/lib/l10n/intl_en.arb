@@ -5030,5 +5030,9 @@
   "workoutRecords": "{count, plural, =1{1 record} other{{count} records}}",
   "@workoutRecords": {"description": "Tooltip and screen-reader label of the trophy on a workout's card in History: how many personal records it set that beat an earlier value", "type": "text", "placeholders": {"count": {"type": "int"}}},
   "firstRecordLine": "{exercise}: {record}, {value}",
-  "@firstRecordLine": {"description": "Workout Done page, a line in the list under the first-records badge: an exercise done for the first time and one record it set, such as 'Hack Squat: Max weight, 100 kg'", "type": "text", "placeholders": {"exercise": {}, "record": {}, "value": {}}}
+  "@firstRecordLine": {"description": "Workout Done page, a line in the list under the first-records badge: an exercise done for the first time and one record it set, such as 'Hack Squat: Max weight, 100 kg'", "type": "text", "placeholders": {"exercise": {}, "record": {}, "value": {}}},
+  "programCalendarReadOnly": "Read-only: Heart can't add to it",
+  "@programCalendarReadOnly": {"description": "Under a calendar in the program-calendar picker that cannot be written to, such as a subscribed one; the row is greyed", "type": "text", "placeholders": {}},
+  "programCalendarGoogleHint": "Using Google Calendar? Add your Google account to this iPhone (Settings › Apps › Calendar › Calendar Accounts) and turn on Calendars; its calendars then appear here.",
+  "@programCalendarGoogleHint": {"description": "iPhone only, under the calendar list in the program-calendar picker: only accounts added to the phone are listed, so a Google Calendar user has to add their account there; the path is the iOS Settings app's", "type": "text", "placeholders": {}}
 }

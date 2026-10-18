@@ -277,28 +277,57 @@ class _CalendarSetupState extends State<_CalendarSetup> {
               ),
             const SizedBox(height: 8),
             _inset(Text(copy.programCalendarWhich, style: textTheme.titleSmall)),
-            for (final choice in calendars)
-              ListTile(
-                key: AppKeys.programCalendarChoice(choice.id),
-                contentPadding: _rowInset,
-                shape: _rowShape,
-                selected: draft.calendarId == choice.id,
-                leading: Icon(Icons.circle, color: choice.color, size: 14),
-                title: Text(choice.title),
-                subtitle: switch (choice.account) {
-                  final String account when account.isNotEmpty && account != choice.title => Text(account),
-                  _ => null,
-                },
-                trailing: switch (draft.calendarId == choice.id) {
-                  true => const Icon(Icons.check_rounded),
-                  false => null,
-                },
-                onTap: () => _change(calendarId: choice.id, calendar: choice.title),
+            // under the account each comes from: iCloud, a Gmail address,
+            // Exchange — "Home" and "Work" alone say nothing of where they live
+            for (final MapEntry(key: account, value: choices) in _byAccount(calendars).entries) ...[
+              Padding(
+                padding: const .fromLTRB(8, 12, 8, 2),
+                child: Text(account, style: muted),
               ),
+              for (final choice in choices)
+                ListTile(
+                  key: AppKeys.programCalendarChoice(choice.id),
+                  contentPadding: _rowInset,
+                  shape: _rowShape,
+                  // one the app cannot add to: there, greyed, and why
+                  enabled: choice.writable,
+                  selected: draft.calendarId == choice.id,
+                  leading: Icon(Icons.circle, color: choice.color, size: 14),
+                  title: Text(choice.title),
+                  subtitle: switch (choice.writable) {
+                    false => Text(copy.programCalendarReadOnly),
+                    true => null,
+                  },
+                  trailing: switch (draft.calendarId == choice.id) {
+                    true => const Icon(Icons.check_rounded),
+                    false => null,
+                  },
+                  onTap: () => _change(calendarId: choice.id, calendar: choice.title),
+                ),
+            ],
+            // EventKit lists only the accounts added to the phone itself: a
+            // Google Calendar app's own calendars are not among them
+            if (Theme.of(context).platform == .iOS) ...[
+              const SizedBox(height: 12),
+              _inset(Text(copy.programCalendarGoogleHint, style: muted)),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  key: AppKeys.programCalendarSettings,
+                  onPressed: () => AppSettings.openAppSettings(asAnotherTask: true),
+                  child: Text(copy.programCalendarOpenSettings),
+                ),
+              ),
+            ],
           ],
         );
       },
     );
+  }
+
+  /// [calendars] under their accounts, in the order the device lists them.
+  static Map<String, List<CalendarChoice>> _byAccount(List<CalendarChoice> calendars) {
+    return calendars.fold({}, (accounts, choice) => accounts..putIfAbsent(choice.account, () => []).add(choice));
   }
 
   /// A row's content, inset as far as a tile's is, so its ink is too.

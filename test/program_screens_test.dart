@@ -805,6 +805,14 @@ void main() {
       expect(calendar.listed, 1);
       // what an event will say, before anything is saved
       expect(find.textContaining('Every event is called just “Training”'), findsOneWidget);
+      // calendars under their accounts; one Heart cannot write to is there,
+      // greyed, saying why
+      expect(find.text('iCloud'), findsOneWidget);
+      expect(find.text("Read-only: Heart can't add to it"), findsOneWidget);
+      await tester.ensureVisible(find.byKey(AppKeys.programCalendarChoice('c2')));
+      expect(tester.widget<ListTile>(find.byKey(AppKeys.programCalendarChoice('c2'))).enabled, isFalse);
+      // the iPhone's hint about Google calendars is the iPhone's alone
+      expect(find.byKey(AppKeys.programCalendarSettings), findsNothing);
 
       // every day, so the next session falls today
       for (final day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']) {
@@ -1035,7 +1043,16 @@ class _Calendar implements DeviceCalendar {
   @override
   Future<List<CalendarChoice>> calendars() async {
     listed++;
-    return [(id: 'c1', title: 'Home', account: 'iCloud', color: const Color(0xFF3366FF))];
+    return [
+      (id: 'c1', title: 'Home', account: 'iCloud', color: const Color(0xFF3366FF), writable: true),
+      (
+        id: 'c2',
+        title: 'US Holidays',
+        account: 'Subscribed Calendars',
+        color: const Color(0xFF33CC66),
+        writable: false,
+      ),
+    ];
   }
 
   @override
