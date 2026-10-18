@@ -120,26 +120,15 @@ Map<DateTime, MuscleVolume> _bucketed(
 /// [muscleSharesOf] its tagging and target.
 Map<MuscleGroup, double> muscleGroupsOf(LensSets row) => muscleSharesOf(row.muscles, row.target);
 
-/// The share of one set each atlas group receives, by the rule the server
-/// counts with (`MuscleTagging.groupShares`, `docs/2026-10-11.pattern-lens.md`
-/// rules 7 and 8), so the map, the weekly card and the coach over MCP agree:
-/// the groups [muscles] reaches, primary ones at the content's primary share
-/// and the others at its secondary share. An exercise nobody tagged — one the
-/// user made — falls to the group its [target] names, in full; a target no
-/// group answers to places nothing.
+/// The share of one set each atlas group receives: heart_state's
+/// [groupSharesOf], the one rule the map, the weekly card, the recaps and the
+/// coach over MCP count with, on the atlas's own groups. A group the atlas
+/// does not know places nothing.
 Map<MuscleGroup, double> muscleSharesOf(MuscleTagging muscles, Target target) {
-  return switch (muscles.groupShares) {
-    final shares when shares.isNotEmpty => {
-      for (final MapEntry(:key, value: share) in shares.entries) ?_atlasGroup(key): share,
-    },
-    _ => {?_atlasGroup(target.muscleGroup): 1.0},
+  return {
+    for (final MapEntry(:key, value: share) in groupSharesOf(muscles, target).entries) ?_atlasGroup(key): share,
   };
 }
 
 /// The atlas's own group for a heart_models one: the same ten, by id.
-MuscleGroup? _atlasGroup(MuscleGroupKey? key) {
-  return switch (key) {
-    MuscleGroupKey(:final value) => MuscleGroup.tryFromString(value),
-    null => null,
-  };
-}
+MuscleGroup? _atlasGroup(MuscleGroupKey key) => MuscleGroup.tryFromString(key.value);

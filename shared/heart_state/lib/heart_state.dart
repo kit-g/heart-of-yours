@@ -30,6 +30,7 @@ export 'src/program_growth.dart';
 export 'src/program_library.dart';
 export 'src/program_plan.dart';
 export 'src/programs.dart';
+export 'src/recaps.dart';
 export 'src/remote.dart';
 export 'src/stats.dart';
 export 'src/set_stopwatch.dart';
