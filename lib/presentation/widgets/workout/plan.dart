@@ -32,7 +32,6 @@ String? planLine(
     if (main.map((set) => set.target!.rir).nonNulls.firstOrNull case final num rir) l.planReserve(rir),
     if (_setsLine(l, percent, cells, supplemental, nameOf) case final String then) l.planThen(then),
     if (exercise.totalReps case final TargetRange total) l.planTotalReps(_rangeText(total, (value) => '$value')),
-    if (exercise.pattern case final String pattern) l.planOpenSlot(PatternFilter(pattern).label(l)),
   ];
   return switch (parts) {
     [] => null,
@@ -92,6 +91,55 @@ String? _setsLine(
     [] => null,
     final parts => parts.join(' '),
   };
+}
+
+/// What an open slot takes (#349), under the plan's line: any exercise of
+/// its pattern will do — "Any horizontal row". Until a set is ticked it is
+/// the way to another, opening the picker on the pattern; after, only a
+/// line.
+class const _OpenSlot({
+  required final String pattern,
+  required final String exerciseId,
+  final VoidCallback? onSwap,
+}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final style = textTheme.bodySmall?.copyWith(color: colorScheme.tertiary);
+    final line = l.planOpenSlot(PatternFilter(pattern).label(l).toLowerCase());
+
+    return switch (onSwap) {
+      null => Padding(
+        padding: const .symmetric(horizontal: 8),
+        child: Text(line, style: style),
+      ),
+      final VoidCallback swap => Semantics(
+        button: true,
+        hint: l.swapExercise,
+        child: InkWell(
+          key: WorkoutDetailKeys.openSlotFor(exerciseId),
+          borderRadius: const .all(.circular(6)),
+          onTap: swap,
+          child: Padding(
+            padding: const .symmetric(horizontal: 8, vertical: 2),
+            child: Row(
+              spacing: 4,
+              children: [
+                Flexible(
+                  child: Text(
+                    line,
+                    style: style?.copyWith(decoration: TextDecoration.underline, decorationColor: colorScheme.tertiary),
+                  ),
+                ),
+                Icon(Icons.swap_horiz_rounded, size: 14, color: colorScheme.tertiary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    };
+  }
 }
 
 /// The plan's line, faint, under the exercise's name.

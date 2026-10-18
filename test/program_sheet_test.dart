@@ -175,6 +175,18 @@ void main() {
     expect(find.byKey(WorkoutDetailKeys.swapExerciseFor(squat.id)), findsNothing);
   });
 
+  testWidgets('an open slot says any of its pattern will do, and opens the picker on it', (tester) async {
+    await start(tester, squatDay(pattern: 'squat'));
+    expect(find.text('Any squat'), findsOneWidget);
+
+    await tester.tap(find.byKey(WorkoutDetailKeys.openSlotFor(squat.id)));
+    await tester.pumpTimes();
+    // the picker, with the slot's own exercise left out and the front squat
+    // offered: the same squat pattern
+    expect(find.text('Front Squat'), findsWidgets);
+    expect(find.byType(TextField), findsWidgets);
+  });
+
   testWidgets("the session's note says what it is for, at the top", (tester) async {
     final draft = Template.empty(id: 't1', order: 0)..name = 'Test day';
     final session = Template.fromJson({

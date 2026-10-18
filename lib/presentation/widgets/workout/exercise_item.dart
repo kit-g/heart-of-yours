@@ -271,6 +271,15 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         if (planLine(context, exercise, nameOf: (id) => exercises.lookup(id)?.name ?? '')
                             case final String line)
                           _PlanLine(line),
+                      if (_slot case final String pattern)
+                        _OpenSlot(
+                          pattern: pattern,
+                          exerciseId: exercise.exercise.id,
+                          onSwap: switch ((onReplaceExercise, exercise.isStarted)) {
+                            (final onReplace?, false) => () => _replace(context, pattern, onReplace),
+                            _ => null,
+                          },
+                        ),
                       if (exercise.note case String note when note.isNotEmpty)
                         _ExerciseNote(
                           exercise: exercise,
