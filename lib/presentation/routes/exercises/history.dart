@@ -63,6 +63,8 @@ class _HistoryState extends State<_History> {
   Widget build(BuildContext context) {
     final prefs = Preferences.watch(context);
     final unit = Exercises.watch(context).unitFor(widget.exercise.id);
+    // Copy for AI (#259): this history as text, while the feature is on
+    final copies = prefs.isOn(.copyForAi);
 
     return ValueListenableBuilder(
       valueListenable: _query,
@@ -78,9 +80,10 @@ class _HistoryState extends State<_History> {
             ],
           ),
           (null, List<ExerciseAct> acts) => ListView.builder(
-            itemCount: acts.length,
+            itemCount: acts.length + (copies ? 1 : 0),
             itemBuilder: (_, index) {
-              final act = acts[index];
+              if (copies && index == 0) return _CopyForAi(exercise: widget.exercise);
+              final act = acts[copies ? index - 1 : index];
               return _Card(
                 act: act,
                 onTapWorkout: widget.onTapWorkout,
@@ -91,6 +94,28 @@ class _HistoryState extends State<_History> {
           ),
         };
       },
+    );
+  }
+}
+
+/// The way into Copy for AI from an exercise's history: above the sessions
+/// it copies, quiet, at the end of the line.
+class _CopyForAi extends StatelessWidget {
+  final Exercise exercise;
+
+  const new({required this.exercise});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: .centerRight,
+      child: TextButton.icon(
+        key: AppKeys.copyForAiExercise,
+        style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+        icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+        label: Text(L.of(context).copyForAi),
+        onPressed: () => copyExerciseForAi(context, exercise),
+      ),
     );
   }
 }
