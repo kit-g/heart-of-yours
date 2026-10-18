@@ -231,6 +231,11 @@ void main() {
 
     final exercises = Exercises.of(tester.element(find.byType(MaterialApp)));
     expect(exercises.filters.whereType<PatternFilter>().map((filter) => filter.pattern), ['horizontal_press']);
+
+    // over the profile, so Back returns to it (#F37)
+    await tester.pageBack();
+    await tester.pumpTimes();
+    expect(find.byKey(AppKeys.lensLine('Horizontal Press')), findsOneWidget);
   });
 
   group('balance (#342)', () {

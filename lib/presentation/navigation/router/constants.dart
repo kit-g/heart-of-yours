@@ -68,6 +68,7 @@ const _galleryPath = '/$_galleryName';
 // over whichever tab is open, so Back returns to it
 const _programOverName = 'programOver';
 const _programOverPath = '/program/:programId';
-
+const _filteredExercisesName = 'filteredExercises';
+const _filteredExercisesPath = '/filtered-exercises';
 const _onboardingName = 'welcome';
 const _onboardingPath = '/$_onboardingName';

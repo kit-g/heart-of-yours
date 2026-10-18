@@ -1023,3 +1023,29 @@ RouteBase _programOverRoute() {
     },
   );
 }
+
+/// The exercise library under a filter, over the tab that asked (#F37): a
+/// count on the profile opens the exercises behind it, and Back returns to
+/// the profile.
+RouteBase _filteredExercisesRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _filteredExercisesPath,
+    name: _filteredExercisesName,
+    builder: (context, _) {
+      // outside the shell, so the layout is this route's to provide
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => ExercisesPage(
+          leading: const BackButton(),
+          onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
+          onShowArchived: context.goToExerciseArchive,
+          onOpenActiveWorkout: () {
+            HapticFeedback.mediumImpact();
+            context.goToActiveWorkout();
+          },
+        ),
+      );
+    },
+  );
+}

@@ -7,6 +7,10 @@ class ExercisesPage extends StatefulWidget {
   final VoidCallback onShowArchived;
   final VoidCallback onOpenActiveWorkout;
 
+  /// The way back, where the library is pushed over another tab rather than
+  /// being the tab itself.
+  final Widget? leading;
+
   const new({
     super.key,
     required this.onExercise,
@@ -14,6 +18,7 @@ class ExercisesPage extends StatefulWidget {
     this.detail,
     required this.onShowArchived,
     required this.onOpenActiveWorkout,
+    this.leading,
   });
 
   @override
@@ -44,6 +49,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       appBar: SliverAppBar(
         scrolledUnderElevation: 0,
         backgroundColor: backgroundColor,
+        leading: widget.leading,
         pinned: true,
         expandedHeight: 80.0,
         flexibleSpace: FlexibleSpaceBar(

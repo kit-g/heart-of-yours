@@ -90,6 +90,7 @@ final class HeartRouter {
           _avatarRoute(),
           _galleryRoute(),
           _programOverRoute(),
+          _filteredExercisesRoute(),
           if (kIsWeb)
             // Apple sign-in redirect
             GoRoute(
@@ -395,11 +396,14 @@ final class HeartRouter {
 
   /// The library showing only [filter] — from a count on the profile, the
   /// exercises behind it — the previous filters cleared, as a chip's tap does.
+  ///
+  /// Pushed over the tab it was opened from, so Back — Android's too —
+  /// returns there rather than leaving the Exercises tab, or the app.
   void goToFilteredExercises(Exercises exercises, ExerciseFilter filter) {
     exercises
       ..clearFilters()
       ..addFilter(filter);
-    config.goNamed(_exercisesName);
+    config.pushNamed(_filteredExercisesName);
   }
 
   /// A program's page over whichever tab it was opened from — a workout in
