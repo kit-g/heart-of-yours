@@ -31,6 +31,6 @@
     <string name="widget_goals_name">Цели</string>
     <string name="widget_goals_description">Следите за достижением своих целей.</string>
     <string name="widget_goal">Цель</string>
-    <string name="widget_goals_empty">Поставьте цель и следите здесь, сколько осталось до неё.</string>
+    <string name="widget_goals_empty">Поставьте цель и следите, сколько до неё осталось.</string>
     <string name="widget_add_goal">Добавить цель</string>
 </resources>
