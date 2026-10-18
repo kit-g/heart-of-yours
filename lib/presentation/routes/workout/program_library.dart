@@ -169,6 +169,9 @@ String? _history(BuildContext context, String key) {
   final history = Programs.watch(context).historyOf(key, now: DateTime.now(), firstWeekday: firstWeekdayOf(context));
   return switch (history) {
     LibraryFollowing() => copy.libraryFollowingNow,
+    LibraryFinished(:final DateTime on) => copy.programFinishedOn(
+      DateFormat.MMMd(copy.localeName).format(on.toLocal()),
+    ),
     LibraryFinished() => copy.libraryFinishedIt,
     LibraryTried(:final week, weeks: final int weeks) => copy.libraryStoppedAt(week, weeks),
     LibraryTried(:final week, weeks: null) => copy.libraryStoppedAtOpen(week),

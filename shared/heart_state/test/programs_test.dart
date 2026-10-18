@@ -115,6 +115,22 @@ void main() {
       expect(history, isA<LibraryFollowing>());
     });
 
+    test('a finished copy says when: its last workout', () async {
+      done('p1', 4);
+      final history = await historyWith([copy('p1', created: DateTime.utc(2026, 8, 1), weeks: 4, archived: true)]);
+      // the fourth week's session, 2026-08-03 plus three weeks
+      expect(history, isA<LibraryFinished>().having((finished) => finished.on, 'on', DateTime.utc(2026, 8, 24)));
+    });
+
+    test('finished by skips alone, it says its start plus its length', () async {
+      local.marks['p1'] = [
+        for (final week in Iterable<int>.generate(4))
+          ProgramMark(templateId: 's1', at: DateTime.utc(2026, 8, 3 + 7 * week), isWorkout: false),
+      ];
+      final history = await historyWith([copy('p1', created: DateTime.utc(2026, 8, 1), weeks: 4)]);
+      expect(history, isA<LibraryFinished>().having((finished) => finished.on, 'on', DateTime.utc(2026, 8, 29)));
+    });
+
     test('finished says more than tried', () async {
       done('tried', 4);
       done('done', 4);

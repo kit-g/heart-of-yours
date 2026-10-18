@@ -5070,5 +5070,7 @@
   "recordShortPace": "PACE",
   "@recordShortPace": {"description": "A short pill under a set that set a personal record, beside a tiny trophy: this kind of record, in a word or abbreviation, upper case", "type": "text", "placeholders": {}},
   "workoutPRs": "{count, plural, =1{1 PR} other{{count} PRs}}",
-  "@workoutPRs": {"description": "Beside a trophy on a workout's card and page: how many personal records it set that beat an earlier value", "type": "text", "placeholders": {"count": {"type": "int"}}}
+  "@workoutPRs": {"description": "Beside a trophy on a workout's card and page: how many personal records it set that beat an earlier value", "type": "text", "placeholders": {"count": {"type": "int"}}},
+  "programFinishedOn": "Finished {date}",
+  "@programFinishedOn": {"description": "A program that ran to its end, on its card, its page and its library badge: the day its last session was; {date} is a short date such as '12 Jan'", "type": "text", "placeholders": {"date": {}}}
 }

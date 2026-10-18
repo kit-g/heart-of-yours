@@ -414,13 +414,19 @@ class _ProgramBand extends StatelessWidget {
 /// and, for one with a length, when it would end at this pace (#F33).
 String _status(BuildContext context, Program program, ProgramPosition position) {
   final copy = L.of(context);
+  final now = DateTime.now();
+  final firstWeekday = firstWeekdayOf(context);
+  final finished = Programs.of(context).finishedOn(program, now: now, firstWeekday: firstWeekday);
   final status = switch ((position, program.weeks)) {
+    (ProgramPosition(finished: true), _) when finished != null => copy.programFinishedOn(
+      DateFormat.MMMd(copy.localeName).format(finished.toLocal()),
+    ),
     (ProgramPosition(finished: true), _) => copy.programFinished,
     (ProgramPosition(paused: true), _) => copy.programPaused,
     (ProgramPosition(:final week), final int weeks) => copy.programWeekOf(week, weeks),
     (ProgramPosition(:final week), null) => copy.programWeek(week),
   };
-  final end = projectedEnd(program, position, now: DateTime.now(), firstWeekday: firstWeekdayOf(context));
+  final end = projectedEnd(program, position, now: now, firstWeekday: firstWeekday);
   return switch (end) {
     final DateTime end => '$status · ${copy.programEnds(DateFormat.MMMd(copy.localeName).format(end))}',
     null => status,

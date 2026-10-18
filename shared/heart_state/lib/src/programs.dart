@@ -318,7 +318,9 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     LibraryHistory read(Program program) {
       final position = this.position(program, now: now, firstWeekday: firstWeekday);
       return switch ((program.archived, position.finished)) {
-        (_, true) => const LibraryFinished(),
+        (_, true) => LibraryFinished(
+          on: finishedOn(program, now: now, firstWeekday: firstWeekday),
+        ),
         (false, false) => const LibraryFollowing(),
         (true, false) => LibraryTried(week: position.week, weeks: program.weeks),
       };
@@ -338,6 +340,22 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
             },
           },
         );
+  }
+
+  /// When [program] finished, derived — no finish time is stored: the last
+  /// of its workouts, which closed its final week, or with none of those its
+  /// start plus its length. Null while it runs, or for one with no length.
+  DateTime? finishedOn(Program program, {required DateTime now, required int firstWeekday}) {
+    if (program.weeks == null || !position(program, now: now, firstWeekday: firstWeekday).finished) return null;
+    final last = (_marks[program.id] ?? const <ProgramMark>[])
+        .where((mark) => mark.isWorkout)
+        .map((mark) => mark.at)
+        .fold<DateTime?>(null, (latest, at) => latest == null || at.isAfter(latest) ? at : latest);
+    return switch ((last, program.createdAt, program.weeks)) {
+      (final DateTime last, _, _) => last,
+      (null, final DateTime start, final int weeks) => start.add(Duration(days: 7 * weeks)),
+      _ => null,
+    };
   }
 
   ProgramPosition position(Program program, {required DateTime now, required int firstWeekday}) {
@@ -1472,9 +1490,11 @@ final class LibraryFollowing extends LibraryHistory {
   int get rank => 0;
 }
 
-/// A copy ran to its end.
+/// A copy ran to its end, [on] the day its last session was, when known.
 final class LibraryFinished extends LibraryHistory {
-  const new();
+  final DateTime? on;
+
+  const new({this.on});
 
   @override
   int get rank => 1;
