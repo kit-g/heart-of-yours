@@ -413,6 +413,11 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
     final remote = RemoteAccess.of(context);
     final tag = languageTag();
 
+    // the days it would rather fall on, asked as it starts, as a program made
+    // from a folder asks in its form; waved away, nothing starts
+    final days = await showDialog<Set<int>>(context: context, builder: (_) => const _StartDays());
+    if (days == null) return;
+
     _starting.value = true;
     // made only once the copy is known to resolve, and taken back if the
     // program then fails: "nothing changed" leaves no empty folder behind
@@ -427,7 +432,7 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
       }
       final made = program.copy(resolve: resolve, tag: tag, folder: folder, order: order)!;
 
-      final started = await programs.create(made.program, sessions: made.sessions);
+      final started = await programs.create(made.program.copyWith(days: days), sessions: made.sessions);
       analytics.programCreated(source: .library, sessions: made.sessions.length, library: program.key);
       if (context.mounted) widget.onProgram(started);
     } catch (e, s) {
@@ -439,6 +444,81 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
     } finally {
       _starting.value = false;
     }
+  }
+}
+
+/// Which days a ready-made program would rather fall on, asked as it starts:
+/// the week from the user's first day (#339), each day a toggle. A hint for
+/// what is up next, never a rule — so Skip starts it with none.
+class _StartDays extends StatefulWidget {
+  const new();
+
+  @override
+  State<_StartDays> createState() => _StartDaysState();
+}
+
+class _StartDaysState extends State<_StartDays> {
+  final _days = ValueNotifier(<int>{});
+
+  @override
+  void dispose() {
+    _days.dispose();
+    super.dispose();
+  }
+
+  void _toggle(int day) {
+    _days.value = switch (_days.value.contains(day)) {
+      true => {..._days.value}..remove(day),
+      false => {..._days.value, day},
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return AlertDialog(
+      key: AppKeys.libraryStartDays,
+      title: Text(copy.libraryStartDays),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: dialogWidth),
+        child: Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .start,
+          spacing: 12,
+          children: [
+            Text(
+              copy.libraryStartDaysHint,
+              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+            ValueListenableBuilder(
+              valueListenable: _days,
+              builder: (_, days, _) => _DayToggles(days: days, onToggle: _toggle),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          key: AppKeys.libraryStartDaysSkip,
+          onPressed: () => Navigator.of(context).pop(<int>{}),
+          child: Text(copy.skip),
+        ),
+        ValueListenableBuilder(
+          valueListenable: _days,
+          builder: (context, days, _) {
+            return PrimaryButton.shrunk(
+              key: AppKeys.libraryStartDaysStart,
+              onPressed: switch (days.isEmpty) {
+                true => null,
+                false => () => Navigator.of(context).pop(days),
+              },
+              child: Text(copy.programStartIt),
+            );
+          },
+        ),
+      ],
+    );
   }
 }
 

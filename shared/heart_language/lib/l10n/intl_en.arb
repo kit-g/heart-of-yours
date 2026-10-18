@@ -5000,5 +5000,9 @@
   "programInProgress": "In progress: {session}",
   "@programInProgress": {"description": "A program's page, at the top while one of its sessions is the workout under way: returns to that workout; {session} is the workout's name", "type": "text", "placeholders": {"session": {}}},
   "exerciseInProgram": "In your program, {program}",
-  "@exerciseInProgram": {"description": "A quiet line above an exercise's charts while a program the user follows trains it: opens the program; {program} is its name", "type": "text", "placeholders": {"program": {}}}
+  "@exerciseInProgram": {"description": "A quiet line above an exercise's charts while a program the user follows trains it: opens the program; {program} is its name", "type": "text", "placeholders": {"program": {}}},
+  "libraryStartDays": "Which days suit you?",
+  "@libraryStartDays": {"description": "Title of the step that starts a ready-made program: the weekdays it would rather fall on", "type": "text", "placeholders": {}},
+  "libraryStartDaysHint": "Heart puts the next session on these days. A hint, never a rule: train when you can.",
+  "@libraryStartDaysHint": {"description": "Under the title of the step that starts a ready-made program: what the preferred days do", "type": "text", "placeholders": {}}
 }

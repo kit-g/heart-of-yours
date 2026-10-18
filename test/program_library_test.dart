@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -226,11 +227,20 @@ void main() {
       await openFirstSteps(tester);
       await tester.tapByKey(AppKeys.libraryStart);
       await tester.pumpTimes();
+      // which days suit: Monday and Thursday, from the user's first day
+      expect(find.byKey(AppKeys.libraryStartDays), findsOneWidget);
+      for (final day in ['Monday', 'Thursday']) {
+        await tester.tap(find.bySemanticsLabel(day));
+      }
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.libraryStartDaysStart);
+      await tester.pumpTimes();
 
       final folder = verify(api.createFolder(userId: userId, folder: captureAnyNamed('folder'))).captured.single;
       expect((folder as TemplateFolder).name, 'First steps');
       final program = verify(db.storeProgram(captureAny, userId)).captured.last as Program;
       expect(program.source, 'first_steps');
+      expect(program.days, {DateTime.monday, DateTime.thursday});
       expect(program.rules['id-wall-push-up'], isA<Ladder>());
       final sessions = verify(db.storeTemplates(captureAny, userId: userId)).captured.last as Iterable<Template>;
       expect(sessions, hasLength(2));
@@ -254,12 +264,31 @@ void main() {
       expect(find.byKey(AppKeys.libraryOpenYours), findsOneWidget);
     });
 
+    testWidgets('waving the days away starts nothing', (tester) async {
+      answer(.on);
+      await openFirstSteps(tester);
+      await tester.tapByKey(AppKeys.libraryStart);
+      await tester.pumpTimes();
+      // Start waits for a day; Skip would start with none
+      expect(
+        tester.widget<PrimaryButton>(find.byKey(AppKeys.libraryStartDaysStart)).onPressed,
+        isNull,
+      );
+      await tester.tapAt(const Offset(4, 4));
+      await tester.pumpTimes();
+
+      verifyNever(db.storeProgram(any, any));
+      expect(find.byKey(AppKeys.libraryStart), findsOneWidget);
+    });
+
     testWidgets('a start that fails takes its folder back, so nothing changed is true', (tester) async {
       answer(.on);
       when(db.storeProgram(any, any)).thenThrow(StateError('disk full'));
       when(api.deleteFolder(userId: anyNamed('userId'), folderId: anyNamed('folderId'))).thenAnswer((_) async {});
       await openFirstSteps(tester);
       await tester.tapByKey(AppKeys.libraryStart);
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.libraryStartDaysSkip);
       await tester.pumpTimes();
 
       verify(api.createFolder(userId: userId, folder: anyNamed('folder'))).called(1);

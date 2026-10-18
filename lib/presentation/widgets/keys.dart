@@ -178,6 +178,9 @@ abstract final class AppKeys {
   static Key programBand(String? programId) => Key('Programs.band.$programId');
   static Key partOfProgram(String? programId) => Key('Programs.partOf.$programId');
   static const programInProgress = Key('Programs.inProgress');
+  static const libraryStartDays = Key('Programs.library.startDays');
+  static const libraryStartDaysSkip = Key('Programs.library.startDays.skip');
+  static const libraryStartDaysStart = Key('Programs.library.startDays.start');
   static const exerciseInProgram = Key('Programs.exerciseIn');
   static Key programStart(String? programId) => Key('Programs.band.start.$programId');
 
