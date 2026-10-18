@@ -40,6 +40,24 @@ Map<String, double> patternsOf(LensSets row) {
   return {for (final pattern in row.movement.groups) pattern: 1.0};
 }
 
+/// What [row]'s sets count toward under the muscle key, by group: [groupSharesOf]
+/// its tagging and target. The app maps the groups onto the body atlas's own.
+Map<MuscleGroupKey, double> muscleKeysOf(LensSets row) => groupSharesOf(row.muscles, row.target);
+
+/// The share of one set each muscle group receives, by the rule the server
+/// counts with (`MuscleTagging.groupShares`, `docs/2026-10-11.pattern-lens.md`
+/// rules 7 and 8), so the map, the weekly card, the recaps and the coach over
+/// MCP agree: the groups [muscles] reaches, primary ones at the content's
+/// primary share and the others at its secondary share. An exercise nobody
+/// tagged — one the user made — falls to the group its [target] names, in
+/// full; a target no group answers to places nothing.
+Map<MuscleGroupKey, double> groupSharesOf(MuscleTagging muscles, Target target) {
+  return switch (muscles.groupShares) {
+    final shares when shares.isNotEmpty => shares,
+    _ => {?target.muscleGroup: 1.0},
+  };
+}
+
 /// [rows] counted per key into [periods], one map of keys per period.
 ///
 /// One function for every key (rule 1): [keysOf] says what a row's sets

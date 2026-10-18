@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'charts.dart';
 import 'lens.dart';
+import 'recaps.dart';
 import 'weeks.dart';
 
 /// Completed sets of one exercise in one finished workout, with when the
@@ -59,6 +60,15 @@ abstract interface class LocalStatsService implements StatsService {
 
   /// Every finished workout started in [from, to), with its totals (#137).
   Future<List<WorkoutTotals>> getTrainingTotals(DateTime from, DateTime to, {String? userId});
+
+  /// Finished workouts started in [from, to), each with its trained time
+  /// (#154).
+  Future<List<RecapWorkout>> getRecapWorkouts(DateTime from, DateTime to, {String? userId});
+
+  /// Every completed working set, oldest workout first, of each exercise done
+  /// in a finished workout started in [from, to), from its first time up to
+  /// [to] (#154): the period's sets, and the history its records beat.
+  Future<List<RecapSet>> getRecapSets(DateTime from, DateTime to, {String? userId});
 }
 
 class Stats with ChangeNotifier implements SignOutStateSentry {
@@ -128,6 +138,30 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
   /// exercise is. Read on demand, like [getMuscleSets]: nothing is kept here.
   Future<List<LensSets>> getLensSets(DateTime from, DateTime to) {
     return _service.getLensSets(from, to, userId: userId);
+  }
+
+  /// [period]'s recap (#154, #155): what the month or the year added up to,
+  /// weeks starting on [firstWeekday] and volume in [weightUnit] — the user's,
+  /// from [Preferences]. Read and folded on demand, like [getMuscleSets]:
+  /// nothing is computed or kept while the feature is off.
+  Future<Recap> getRecap(
+    RecapPeriod period, {
+    required int firstWeekday,
+    required MeasurementUnit weightUnit,
+    DateTime? now,
+  }) async {
+    final (workouts, history) = await (
+      _service.getRecapWorkouts(period.from, period.to, userId: userId),
+      _service.getRecapSets(period.from, period.to, userId: userId),
+    ).wait;
+    return recapOf(
+      period,
+      workouts: workouts,
+      history: history,
+      firstWeekday: firstWeekday,
+      weightUnit: weightUnit,
+      now: now ?? DateTime.now(),
+    );
   }
 
   /// A training chart's points (#137), newest first: one per week (starting on
