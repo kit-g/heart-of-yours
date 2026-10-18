@@ -248,7 +248,7 @@ editTemplate,Edit template form header,Edit Template,Edit Template,Измени�
 editWorkout,Edit workout form header,Edit Workout,Edit Workout,Изменить тренировку,Editar entrenamiento,Modifier la séance
 templateName,Edit template text field hint,Template name,Template name,Название шаблона,Nombre de la plantilla,Nom du modèle
 workoutName,Edit workout text field hint,Workout name,Workout name,Название тренировки,Nombre del entrenamiento,Nom de la séance
-cannotBeEmpty,Form validation message,Cannot be empty,Cannot be empty,Заполните поле,No puede estar vacío,Ne peut pas être vide
+cannotBeEmpty,Form validation message,Cannot be empty,Cannot be empty,Не может быть пустым,No puede estar vacío,Ne peut pas être vide
 showPassword,Tooltip message,Show password,Show password,Показать пароль,Mostrar contraseña,Afficher le mot de passe
 hidePassword,Tooltip message,Hide password,Hide password,Скрыть пароль,Ocultar contraseña,Masquer le mot de passe
 yourPassword,Tooltip message,Your password,Your password,Ваш пароль,Tu contraseña,Votre mot de passe

@@ -1,6 +1,6 @@
 # Russian copy review — #442
 
-Reviewed all **1,024 app strings**, **103 native strings** and **134 release-note titles and bodies** in the locale. The English source and usage context were considered for each entry. This pass changes **252 translation entries** (21 native) and **55 release-note fields**. Unchanged strings have no findings row. User review of this log is in progress.
+Reviewed all **1,024 app strings**, **103 native strings** and **134 release-note titles and bodies** in the locale. The English source and usage context were considered for each entry. This pass changes **251 translation entries** (21 native) and **55 release-note fields**. Unchanged strings have no findings row. User review of this log is in progress.
 
 Source issue: [Copy: review and rework the Russian copy](https://github.com/kit-g/heart-of-yours/issues/442). No store listings or Play release notes are included.
 
@@ -29,6 +29,8 @@ Source issue: [Copy: review and rework the Russian copy](https://github.com/kit-
 | Dashboard chart collection | Мои графики |
 
 Use polite «вы» without formal capitalisation. Button acknowledgements avoid gendered past tense. Use ё consistently in changed copy, «ёлочки» for quoted names, and spaces between numbers and unit symbols. The English motto is deliberately unchanged: its source metadata identifies it as a fixed brand tagline.
+
+Validation messages describe the problem neutrally rather than command the user. User review retained «Не может быть пустым» for `cannotBeEmpty`; «Заполните поле» sounds rude in this context. The retained string has no findings row.
 
 User review retained the original spoken Siri request for `iosShortcutPhraseLastExercise`: «Когда я в последний раз делал ${exercise} в ${applicationName}». It has no findings row because it is unchanged from the base version.
 
@@ -89,7 +91,6 @@ User review retained the original spoken Siri request for `iosShortcutPhraseLast
 | `weightedSetRepresentation` | {weight} x {reps} | {weight} × {reps} | typography | Use a multiplication sign instead of a Latin x. |
 | `editTemplate` | Редактировать шаблон | Изменить шаблон | inconsistent terms | Match the existing «Изменить» edit action. |
 | `editWorkout` | Редактировать тренировку | Изменить тренировку | inconsistent terms | Match the existing «Изменить» edit action. |
-| `cannotBeEmpty` | Не может быть пустым | Заполните поле | register | Give a useful instruction instead of an impersonal validation fragment. |
 | `resetPasswordBody` | Мы отправим ссылку для сброса пароля на ваш email быстрее, чем вы успеете сказать "забыл пароль". Назад пути нет — если только вы не отмените, конечно. 😌 | Ссылка для сброса пароля придёт на почту быстрее, чем вы успеете сказать «Забыли пароль?». Ещё можно передумать и нажать «Отмена». 😌 | calque | Keep the light tone while removing the misleading no-way-back idiom. |
 | `orConnector` | - или - | — или — | typography | Use dashes as separators instead of hyphens. |
 | `invalidCredentials` | Что-то пошло не так! Проверьте ваши данные еще раз! | Не получилось войти! Проверьте почту и пароль. | register | Name the fields to check instead of referring vaguely to the user’s data. |
@@ -375,4 +376,4 @@ These are source CSV rows. The import regenerates the native ARB, permission she
 
 ## Patterns
 
-Calques dominate (128 changes): account screens inherit journey metaphors, import/export copy treats data as house movers, watch copy puts actions “on the wrist”, and program copy lets sessions choose, grow or rest. Terminology drift (58) and register (55) are next, concentrated in filters, records, account actions and technical explanations. Agreement and case (27) cluster around arbitrary exercise/template names and heading plurals; surrounding the unchanged name with a generic noun or using a label construction avoids demanding an inflected placeholder. Release notes repeat the same patterns across whole paragraphs. Most short utility labels were already natural and remain unchanged.
+Calques dominate (128 changes): account screens inherit journey metaphors, import/export copy treats data as house movers, watch copy puts actions “on the wrist”, and program copy lets sessions choose, grow or rest. Terminology drift (58) and register (54) are next, concentrated in filters, records, account actions and technical explanations. Agreement and case (27) cluster around arbitrary exercise/template names and heading plurals; surrounding the unchanged name with a generic noun or using a label construction avoids demanding an inflected placeholder. Release notes repeat the same patterns across whole paragraphs. Most short utility labels were already natural and remain unchanged.
