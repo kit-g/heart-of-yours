@@ -1492,31 +1492,6 @@ final class LibraryTried extends LibraryHistory {
   int get rank => 2;
 }
 
-/// Whether [rule] grows a weight from a base the user can set: a training max
-/// (a share-of-max rule) or a working weight. Ladders climb exercises and
-/// [Longer] grows a length, so neither has one.
-bool growsWeightBase(GrowthRule? rule) {
-  return switch (rule) {
-    AddWeight() || RangeThenWeight() || ShareOfMax() || Stages() => true,
-    _ => false,
-  };
-}
-
-/// Where [rule] would start an exercise from the user's own [sets] of it, as
-/// a test session would: a share-of-max rule takes 90% of the best Brzycki
-/// estimate; a working weight, the heaviest working set. Null with nothing
-/// to go on.
-num? suggestedBase(GrowthRule? rule, Iterable<ExerciseSet> sets) {
-  return switch (rule) {
-    ShareOfMax() => Progression.test(sets, share: .9),
-    _ =>
-      sets
-          .where((set) => set.isCompleted && set.setType != .warmup && (set.weight ?? 0) > 0)
-          .map((set) => set.weight!)
-          .fold<num?>(null, (best, weight) => best == null || weight > best ? weight : best),
-  };
-}
-
 /// When [program] would end at this pace (#F33): the last day of its last
 /// program week, counted from the calendar week holding [now] — the open
 /// program week runs through it, and each one left takes a week after. A

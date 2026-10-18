@@ -763,6 +763,25 @@ void main() {
       expect(programs.currentBasesOf('p1')['squat']?.value, 100);
     });
 
+    test("a lift's first session sets its first base, when nothing set one before", () async {
+      // Full body, three days: no test week, so nothing ever set one, and the
+      // rule held every session after (#F34)
+      await follow(growing({'squat': const AddWeight(step: 5)}));
+      final workout = done(
+        'w1',
+        start: DateTime.utc(2026, 10, 5),
+        exercises: [
+          squats([5, 5, 5], weight: 65),
+        ],
+      );
+
+      final [move] = await programs.grow(workout);
+
+      expect((move.step, move.before), (const Grow(65), null));
+      expect((move.base?.value, move.base?.workoutId), (65, 'w1'));
+      expect(programs.currentBasesOf('p1')['squat']?.value, 65);
+    });
+
     test('a session that makes every set grows the base, caused by the workout', () async {
       await follow(growing({'squat': const AddWeight(step: 2.5)}), bases: [base(100)]);
       final workout = done(
