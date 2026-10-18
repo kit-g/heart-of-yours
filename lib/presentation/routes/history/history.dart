@@ -4,6 +4,8 @@ import 'dart:collection';
 
 import 'package:heart/core/utils/image_picker.dart';
 import 'package:heart/core/utils/misc.dart';
+import 'package:heart/core/utils/record_book.dart';
+import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/muscle_volume.dart' show muscleGroupsOf;
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';

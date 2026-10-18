@@ -83,6 +83,8 @@ class WorkoutItem extends StatelessWidget {
                   ),
                   Row(
                     children: [
+                      // a day records fell: how many, as of that workout
+                      _RecordCount(workout: workout),
                       // a program's session: the program, in the Workout tab
                       PartOfProgram(
                         programId: workout.programId,
@@ -512,4 +514,48 @@ enum _WorkoutOption {
   saveAsTemplate,
   repeat,
   delete,
+}
+
+/// How many records [workout] set that beat an earlier value — a trophy and
+/// the count on its card, as of that day. Absent where none did.
+class _RecordCount extends StatelessWidget {
+  final Workout workout;
+
+  const new({required this.workout});
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = Exercises.of(context).userId;
+    final book = RecordBook.maybeOf(context);
+    if (book == null || userId == null) return const SizedBox.shrink();
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+
+    return FutureBuilder<RecordMarks>(
+      future: book.marksOf(workout, userId: userId),
+      builder: (context, snapshot) {
+        final count = snapshot.data?.values.fold(0, (sum, kinds) => sum + kinds.length) ?? 0;
+        if (count == 0) return const SizedBox.shrink();
+        final label = L.of(context).workoutRecords(count);
+        return Tooltip(
+          message: label,
+          excludeFromSemantics: true,
+          child: Semantics(
+            label: label,
+            child: Padding(
+              key: AppKeys.workoutRecords(workout.id),
+              padding: const .symmetric(horizontal: 6),
+              child: Row(
+                mainAxisSize: .min,
+                spacing: 2,
+                children: [
+                  Icon(Icons.emoji_events_rounded, size: 18, color: colorScheme.tertiary),
+                  Text('$count', style: textTheme.labelLarge?.copyWith(color: colorScheme.tertiary)),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }

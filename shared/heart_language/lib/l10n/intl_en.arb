@@ -5024,5 +5024,11 @@
   "programBaseSeedNoHistory": "No sets of it yet. Enter a weight, or skip and let its first session set it.",
   "@programBaseSeedNoHistory": {"description": "In the dialog after an exercise is replaced in a program, when the user has never done the new exercise", "type": "text", "placeholders": {}},
   "programBaseUnset": "No weight yet: its first session sets one",
-  "@programBaseUnset": {"description": "A program's page, under an exercise's growth rule, before it has a weight to grow from: beside the button that sets one", "type": "text", "placeholders": {}}
+  "@programBaseUnset": {"description": "A program's page, under an exercise's growth rule, before it has a weight to grow from: beside the button that sets one", "type": "text", "placeholders": {}},
+  "recordSetBadge": "Record: {records}",
+  "@recordSetBadge": {"description": "Tooltip and screen-reader label of the small trophy beside a set that set personal records, on a past workout's page; {records} is a list of record kinds such as 'Max weight, Estimated 1RM'", "type": "text", "placeholders": {"records": {}}},
+  "workoutRecords": "{count, plural, =1{1 record} other{{count} records}}",
+  "@workoutRecords": {"description": "Tooltip and screen-reader label of the trophy on a workout's card in History: how many personal records it set that beat an earlier value", "type": "text", "placeholders": {"count": {"type": "int"}}},
+  "firstRecordLine": "{exercise}: {record}, {value}",
+  "@firstRecordLine": {"description": "Workout Done page, a line in the list under the first-records badge: an exercise done for the first time and one record it set, such as 'Hack Squat: Max weight, 100 kg'", "type": "text", "placeholders": {"exercise": {}, "record": {}, "value": {}}}
 }

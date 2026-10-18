@@ -404,6 +404,10 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               ],
             ),
           ),
+          // the records this set set, on a past workout's page: over the
+          // corner of its number, taking no room from the row
+          if (RecordMarksScope.of(context, set.id) case final kinds when kinds.isNotEmpty)
+            PositionedDirectional(top: 0, start: 2, child: _RecordMark(kinds: kinds)),
           // 4pt under the row's controls: 2 of the row's own bottom padding
           // and 2 of the next row's top, so a running set keeps its height
           Positioned(

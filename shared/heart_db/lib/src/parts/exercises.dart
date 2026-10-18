@@ -324,6 +324,15 @@ mixin _Exercises on _LocalDatabase
         );
   }
 
+  /// [getRecord] as it stood when [workoutId] was done: that workout and
+  /// every earlier one, so a record day stays one after a later session
+  /// beats it. Null when the exercise had not been performed by then.
+  Future<Map?> getRecordAsOf(String userId, Exercise exercise, String workoutId) {
+    return _db
+        .rawQuery(sql.recordSetsAsOf, [userId, exercise.id, workoutId, workoutId])
+        .then((rows) => _foldRecords(exercise.category, rows));
+  }
+
   @override
   Future<Map<ExerciseId, List<Map<String, dynamic>>>> getPreviousSets(
     String userId,

@@ -8,6 +8,7 @@ class WorkoutDetailKeys {
   static const sessionNote = Key('WorkoutDetail.sessionNote');
   static const supplementalExplained = Key('WorkoutDetail.supplementalExplained');
   static const programBaseEditor = Key('WorkoutDetail.programBase');
+  static const recordMark = Key('WorkoutDetail.recordMark');
   static const programBaseField = Key('WorkoutDetail.programBase.field');
   static const programBaseSave = Key('WorkoutDetail.programBase.save');
   static Key programBaseEdit(String key) => Key('WorkoutDetail.programBase.edit.$key');

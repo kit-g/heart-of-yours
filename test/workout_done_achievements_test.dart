@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/presentation/routes/done/done.dart';
+import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -265,6 +266,12 @@ void main() {
     expect(find.text('first records'), findsOneWidget);
     expect(find.text('Max weight'), findsNothing);
     expect(find.textContaining('Exercise '), findsNothing);
+
+    // the count opens to what they were
+    await tester.tap(find.byKey(AppKeys.firstRecords));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Exercise 0: Max weight, 60'), findsOneWidget);
+    expect(find.textContaining('Exercise '), findsNWidgets(12));
   });
 
   testWidgets('firsts beside real records: badges for the beaten, a count for the rest', (tester) async {
