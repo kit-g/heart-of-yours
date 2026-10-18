@@ -436,11 +436,16 @@ Future<void> _notToday(BuildContext context, Program program, Template session, 
   final messenger = ScaffoldMessenger.of(context);
 
   analytics.programSkipped(fromBand: fromBand);
-  final skip = await programs.skip(program, session: session.id);
   // with "Not today" on, a program's skip offers its reason too
-  if (context.mounted && Preferences.of(context).isOn(.notToday)) {
+  if (Preferences.of(context).isOn(.notToday)) {
+    final skip = await programs.skip(program, session: session.id);
+    if (!context.mounted) return;
     return showSkipSheet(context, skip, title: copy.programSkipped(_sessionName(copy, session)));
   }
+  // the Undo at once, where the tap was: the skip is on screen as soon as it
+  // is made, and only its confirmation waits on the server — waiting for that
+  // put the Undo up after the user had left the page
+  final pending = programs.skip(program, session: session.id);
   messenger
     ..clearSnackBars()
     ..showSnackBar(
@@ -448,13 +453,14 @@ Future<void> _notToday(BuildContext context, Program program, Template session, 
         content: Text(copy.programSkipped(_sessionName(copy, session))),
         action: SnackBarAction(
           label: copy.undo,
-          onPressed: () {
+          onPressed: () async {
             analytics.programUnskipped();
-            programs.unskip(skip);
+            await programs.unskip(await pending);
           },
         ),
       ),
     );
+  await pending;
 }
 
 enum _SessionState { done, skipped, next, ahead }

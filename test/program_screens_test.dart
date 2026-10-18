@@ -229,6 +229,26 @@ void main() {
       expect(find.text('Start Push'), findsOneWidget);
     });
 
+    testWidgets("on the program's page, the Undo is there at once, before the server answers", (tester) async {
+      answer(.on);
+      withProgram();
+      // a server that has not answered yet
+      final answered = Completer<({TrainingSkip row, bool created})>();
+      when(api.replaySkip(any)).thenAnswer((_) => answered.future);
+      await openWorkoutTab(tester);
+      await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.programNotToday('p1'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(ProgramPage), findsOneWidget);
+      expect(find.text('Undo'), findsOneWidget);
+      answered.complete((row: verify(db.storeSkip(captureAny, userId)).captured.first as TrainingSkip, created: true));
+      await tester.pumpTimes();
+    });
+
     testWidgets('a skipped day is in History, and gone from it with Programs off', (tester) async {
       answer(.on);
       withProgram();
