@@ -306,6 +306,20 @@ void main() {
       expect(find.text('In progress: Push'), findsOneWidget);
     });
 
+    testWidgets("an exercise's charts say the program that trains it", (tester) async {
+      answer(.on);
+      withProgram();
+      when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench]));
+      await openWorkoutTab(tester);
+      final context = tester.element(find.byType(MaterialApp));
+      await Exercises.of(context).init();
+      HeartRouter.of(context).config.go('/exercises/${bench.id}?tab=charts');
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.exerciseInProgram), findsOneWidget);
+      expect(find.text('In your program, Split'), findsOneWidget);
+    });
+
     testWidgets('the sessions are joined by a rail through their icons, one sequence', (tester) async {
       await openPage(tester);
       await scrollTo(tester, find.text('Pull'));

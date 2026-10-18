@@ -83,7 +83,9 @@ class ExerciseDetailState {
 /// never reaches for [RemoteExerciseService] — a plain nice mock would answer
 /// harmlessly anyway, but this keeps the fixture's intent explicit.
 Future<ExerciseDetailState> buildExerciseDetailState({String? userId = 'u1'}) async {
-  SharedPreferences.setMockInitialValues({});
+  // Programs is on by default and would read its own providers, which this
+  // fixture of the exercise page does not build
+  SharedPreferences.setMockInitialValues({'feature-programs': 'off'});
 
   final exerciseService = MockExerciseService();
   // The real db-backed service never resolves this to null — a never-touched

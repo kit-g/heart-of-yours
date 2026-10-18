@@ -178,6 +178,7 @@ abstract final class AppKeys {
   static Key programBand(String? programId) => Key('Programs.band.$programId');
   static Key partOfProgram(String? programId) => Key('Programs.partOf.$programId');
   static const programInProgress = Key('Programs.inProgress');
+  static const exerciseInProgram = Key('Programs.exerciseIn');
   static Key programStart(String? programId) => Key('Programs.band.start.$programId');
 
   /// "Not today" (#312), on a program's band or its page.
