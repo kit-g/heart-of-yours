@@ -501,10 +501,13 @@ void main() {
 
       await scrollTo(tester, find.text('How it grows'));
       expect(find.text('Bench Press · Push'), findsOneWidget);
-      final stages = find.textContaining('5×3+ → 6×2+ → 10×1, up ');
+      final stages = find.textContaining('5×3+ → 6×2+ → 10×1: up ');
       expect(stages, findsOneWidget);
-      expect(tester.widget<Text>(stages).data, endsWith('when a session makes them; one short moves on to the next'));
-      expect(find.text('Short after the last, it starts over from the first, 15% lighter'), findsOneWidget);
+      expect(
+        tester.widget<Text>(stages).data,
+        endsWith('when a session makes its targets; a session that falls short moves to the next'),
+      );
+      expect(find.text('Short on the last, it starts over from the first, 15% lighter'), findsOneWidget);
     });
 
     testWidgets('a lighter week is asked for like any steer, and then not offered again (#350)', (tester) async {
