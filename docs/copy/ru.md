@@ -1,6 +1,6 @@
 # Russian copy review — #442
 
-Reviewed all **1,024 app strings**, **103 native strings** and **134 release-note titles and bodies** in the locale. The English source and usage context were considered for each entry. This pass changes **253 translation entries** (22 native) and **55 release-note fields**. Unchanged strings have no findings row. User review of this log is pending.
+Reviewed all **1,024 app strings**, **103 native strings** and **134 release-note titles and bodies** in the locale. The English source and usage context were considered for each entry. This pass changes **252 translation entries** (21 native) and **55 release-note fields**. Unchanged strings have no findings row. User review of this log is in progress.
 
 Source issue: [Copy: review and rework the Russian copy](https://github.com/kit-g/heart-of-yours/issues/442). No store listings or Play release notes are included.
 
@@ -29,6 +29,8 @@ Source issue: [Copy: review and rework the Russian copy](https://github.com/kit-
 | Dashboard chart collection | Мои графики |
 
 Use polite «вы» without formal capitalisation. Button acknowledgements avoid gendered past tense. Use ё consistently in changed copy, «ёлочки» for quoted names, and spaces between numbers and unit symbols. The English motto is deliberately unchanged: its source metadata identifies it as a fixed brand tagline.
+
+User review retained the original spoken Siri request for `iosShortcutPhraseLastExercise`: «Когда я в последний раз делал ${exercise} в ${applicationName}». It has no findings row because it is unchanged from the base version.
 
 ## Source questions and constraints
 
@@ -289,7 +291,6 @@ These are source CSV rows. The import regenerates the native ARB, permission she
 | `iosShortcutRepsParam` | Повторы | Повторения | inconsistent terms | Use the same reps term as the app. |
 | `iosShortcutSayValues` | Назовите вес и повторы | Назовите вес и число повторений | inconsistent terms | Use the fitness term and make clear that a number is expected. |
 | `iosShortcutPhraseRecord` | Какой мой рекорд в ${exercise} в ${applicationName} | Какой у меня рекорд в упражнении ${exercise} в ${applicationName} | agreement or case | Introduce the exercise name with a generic noun rather than demanding its prepositional form. |
-| `iosShortcutPhraseLastExercise` | Когда я в последний раз делал ${exercise} в ${applicationName} | Когда была последняя тренировка с упражнением ${exercise} в ${applicationName} | register | Use a natural gender-neutral spoken question. |
 | `iosShortcutPhraseLastTemplate` | Когда я в последний раз тренировал ${template} в ${applicationName} | Когда была последняя тренировка по шаблону ${template} в ${applicationName} | calque | A template is used for training, not itself trained. |
 | `iosShortcutLastSessionTitle` | Последняя сессия | Последняя тренировка | inconsistent terms | Use «тренировка» consistently for a workout session. |
 | `iosShortcutLastExerciseIntent` | Когда я делал упражнение | Последнее выполнение упражнения | register | Use a gender-neutral action title. |
@@ -374,4 +375,4 @@ These are source CSV rows. The import regenerates the native ARB, permission she
 
 ## Patterns
 
-Calques dominate (128 changes): account screens inherit journey metaphors, import/export copy treats data as house movers, watch copy puts actions “on the wrist”, and program copy lets sessions choose, grow or rest. Terminology drift (58) and register (56) are next, concentrated in filters, records, account actions and technical explanations. Agreement and case (27) cluster around arbitrary exercise/template names and heading plurals; surrounding the unchanged name with a generic noun or using a label construction avoids demanding an inflected placeholder. Release notes repeat the same patterns across whole paragraphs. Most short utility labels were already natural and remain unchanged.
+Calques dominate (128 changes): account screens inherit journey metaphors, import/export copy treats data as house movers, watch copy puts actions “on the wrist”, and program copy lets sessions choose, grow or rest. Terminology drift (58) and register (55) are next, concentrated in filters, records, account actions and technical explanations. Agreement and case (27) cluster around arbitrary exercise/template names and heading plurals; surrounding the unchanged name with a generic noun or using a label construction avoids demanding an inflected placeholder. Release notes repeat the same patterns across whole paragraphs. Most short utility labels were already natural and remain unchanged.
