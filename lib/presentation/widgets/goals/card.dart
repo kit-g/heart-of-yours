@@ -262,7 +262,7 @@ class _GoalsCardState extends State<GoalsCard> {
           lensSets: lensSets,
           feeds: feeds,
           from: program.name,
-          onEdit: () => HeartRouter.of(context).goToProgram(program.id!),
+          onEdit: () => HeartRouter.of(context).pushProgramOver(program.id!),
         ),
       for (final ImpliedGoal(:goal, :program) in implied)
         if (goal.metric == .workouts && goal.cadence == .week)

@@ -107,7 +107,7 @@ class _InProgram extends StatelessWidget {
       child: InkWell(
         key: AppKeys.exerciseInProgram,
         borderRadius: const .all(.circular(8)),
-        onTap: () => HeartRouter.of(context).goToProgram(program.id!),
+        onTap: () => HeartRouter.of(context).pushProgramOver(program.id!),
         child: Padding(
           padding: const .symmetric(horizontal: 8, vertical: 8),
           child: Row(

@@ -65,5 +65,9 @@ const _upgradeAppName = 'upgradeApp';
 const _upgradeAppPath = '/$_upgradeAppName';
 const _galleryName = 'gallery';
 const _galleryPath = '/$_galleryName';
+// over whichever tab is open, so Back returns to it
+const _programOverName = 'programOver';
+const _programOverPath = '/program/:programId';
+
 const _onboardingName = 'welcome';
 const _onboardingPath = '/$_onboardingName';

@@ -995,3 +995,31 @@ Future<void> _onShareExercise(BuildContext context, Exercise exercise, String? t
     );
   }
 }
+
+/// A program's page over any tab (#F36): pushed on the root, so Back is the
+/// page it was opened from.
+RouteBase _programOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _programOverPath,
+    name: _programOverName,
+    builder: (context, state) {
+      final programId = state.pathParameters['programId']!;
+      // outside the shell, so the layout is this route's to provide
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => ProgramPage(
+          programId: programId,
+          onEdit: () => context.goToEditProgram(programId),
+          onAbout: context.pushLibraryProgram,
+          onEditSession: context.pushTemplateEditor,
+          onOpenActiveWorkout: () {
+            HapticFeedback.mediumImpact();
+            context.goToActiveWorkout();
+          },
+          onGone: context.pop,
+        ),
+      );
+    },
+  );
+}

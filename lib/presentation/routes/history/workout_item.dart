@@ -89,7 +89,7 @@ class WorkoutItem extends StatelessWidget {
                       PartOfProgram(
                         programId: workout.programId,
                         size: 18,
-                        onOpen: (program) => HeartRouter.of(context).goToProgram(program.id!),
+                        onOpen: (program) => HeartRouter.of(context).pushProgramOver(program.id!),
                       ),
                       if (workout case Workout(:Map images) when images.isNotEmpty)
                         FeedbackButton(

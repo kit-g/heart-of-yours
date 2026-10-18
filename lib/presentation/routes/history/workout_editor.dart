@@ -92,7 +92,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               actions: [
                 PartOfProgram(
                   programId: workout.programId,
-                  onOpen: (program) => HeartRouter.of(context).goToProgram(program.id!),
+                  onOpen: (program) => HeartRouter.of(context).pushProgramOver(program.id!),
                 ),
                 PrimaryButton.shrunk(
                   key: _optionsButtonKey,

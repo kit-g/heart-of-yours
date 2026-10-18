@@ -340,6 +340,15 @@ void main() {
 
       expect(find.byKey(AppKeys.exerciseInProgram), findsOneWidget);
       expect(find.text('In your program, Split'), findsOneWidget);
+
+      // the program over the chart, and Back is the chart again (#F36)
+      await tester.tapByKey(AppKeys.exerciseInProgram);
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsNothing);
+      expect(find.byKey(AppKeys.exerciseInProgram), findsOneWidget);
     });
 
     testWidgets('the sessions are joined by a rail through their icons, one sequence', (tester) async {
