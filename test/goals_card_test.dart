@@ -299,6 +299,33 @@ void main() {
     expect(find.text('No goals yet'), findsOneWidget);
   });
 
+  testWidgets(
+    "on a Pixel's width, a realistic swipe uncovers Delete",
+    (tester) async {
+      tester.view.physicalSize = const Size(412 * 2.625, 915 * 2.625);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.reset);
+      await seed([workoutsGoal(id: 'goal-1')]);
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      // 40% of the row, over a third of a second, as a thumb does
+      final row = find.byType(GoalRow);
+      final width = tester.getSize(row).width;
+      await tester.timedDrag(row, Offset(-width * .4, 0), const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+
+      final delete = find.byKey(const ValueKey('GoalRow.goal-1.delete'));
+      // uncovered: the row has slid off it, so a tap there lands on the
+      // button rather than on the row covering it
+      expect(goals, hasLength(1));
+      await tester.tap(delete, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(goals, isEmpty);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
+
   testWidgets('an uncovered Delete closes on a tap of the row, and deletes nothing', (tester) async {
     await seed([workoutsGoal(id: 'goal-1')]);
 
