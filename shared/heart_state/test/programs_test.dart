@@ -59,6 +59,73 @@ void main() {
     )..userId = uid;
   });
 
+  group("the user's history with a library program", () {
+    final now = DateTime.utc(2026, 10, 29, 12);
+    Program copy(String id, {required DateTime created, int? weeks = 12, bool archived = false, String? source}) {
+      return Program(
+        id: id,
+        name: 'Strength waves',
+        perWeek: 4,
+        weeks: weeks,
+        sessions: const ['s1'],
+        source: source ?? 'strength_waves',
+        archived: archived,
+        createdAt: created,
+      );
+    }
+
+    /// [weeks] weeks done of copy [id]: its one session each week.
+    void done(String id, int weeks) {
+      local.marks[id] = [
+        for (final week in Iterable<int>.generate(weeks))
+          ProgramMark(templateId: 's1', at: DateTime.utc(2026, 8, 3 + 7 * week), isWorkout: true),
+      ];
+    }
+
+    Future<LibraryHistory?> historyWith(List<Program> copies) async {
+      remote.programs = copies;
+      await programs.init();
+      return programs.historyOf('strength_waves', now: now, firstWeekday: DateTime.monday);
+    }
+
+    test('never started: nothing to say', () async {
+      expect(await historyWith([copy('other', created: DateTime.utc(2026, 10, 1), source: 'five_by_five')]), isNull);
+    });
+
+    test('a copy put down before its end says how far it got', () async {
+      done('p1', 4);
+      final history = await historyWith([copy('p1', created: DateTime.utc(2026, 10, 1), archived: true)]);
+      expect(history, isA<LibraryTried>().having((tried) => (tried.week, tried.weeks), 'where', (5, 12)));
+    });
+
+    test('a copy that reached its end is finished, archived or not', () async {
+      done('p1', 4);
+      expect(
+        await historyWith([copy('p1', created: DateTime.utc(2026, 8, 1), weeks: 4, archived: true)]),
+        isA<LibraryFinished>(),
+      );
+    });
+
+    test('following now says more than having finished or tried it before', () async {
+      final history = await historyWith([
+        copy('old', created: DateTime.utc(2026, 8, 1), weeks: 4, archived: true),
+        copy('tried', created: DateTime.utc(2026, 9, 1), archived: true),
+        copy('now', created: DateTime.utc(2026, 10, 20)),
+      ]);
+      expect(history, isA<LibraryFollowing>());
+    });
+
+    test('finished says more than tried', () async {
+      done('tried', 4);
+      done('done', 4);
+      final history = await historyWith([
+        copy('tried', created: DateTime.utc(2026, 10, 1), archived: true),
+        copy('done', created: DateTime.utc(2026, 8, 1), weeks: 4, archived: true),
+      ]);
+      expect(history, isA<LibraryFinished>());
+    });
+  });
+
   group('init', () {
     test('reads the mirror, then the server replaces it, history and all', () async {
       local.programs[uid] = [program(id: 'gone')];

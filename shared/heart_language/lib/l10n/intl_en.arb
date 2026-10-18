@@ -5038,5 +5038,13 @@
   "lensChartTip": "{key}: sets per week, the last {weeks} weeks — {now} this week.",
   "@lensChartTip": {"description": "Tooltip and screen-reader label of the small bar chart beside a pattern or muscle on the profile's weekly sets card: what it shows; {key} is the pattern or muscle, {now} this week's sets such as '12 sets'", "type": "text", "placeholders": {"key": {}, "weeks": {"type": "int"}, "now": {}}},
   "lensShowExercises": "Shows the exercises of this pattern",
-  "@lensShowExercises": {"description": "Screen-reader hint on a pattern's line on the profile's weekly sets card: tapping it opens the exercise library filtered to that pattern", "type": "text", "placeholders": {}}
+  "@lensShowExercises": {"description": "Screen-reader hint on a pattern's line on the profile's weekly sets card: tapping it opens the exercise library filtered to that pattern", "type": "text", "placeholders": {}},
+  "libraryFollowingNow": "Following now",
+  "@libraryFollowingNow": {"description": "On a ready-made program's card and page in the library: the user follows a copy of it now", "type": "text", "placeholders": {}},
+  "libraryFinishedIt": "Finished",
+  "@libraryFinishedIt": {"description": "On a ready-made program's card and page in the library: the user ran a copy of it to its end", "type": "text", "placeholders": {}},
+  "libraryStoppedAt": "Stopped at week {week} of {weeks}",
+  "@libraryStoppedAt": {"description": "On a ready-made program's card and page in the library: the user stopped following a copy of it before its end", "type": "text", "placeholders": {"week": {"type": "int"}, "weeks": {"type": "int"}}},
+  "libraryStoppedAtOpen": "Stopped at week {week}",
+  "@libraryStoppedAtOpen": {"description": "On an open-ended ready-made program's card and page in the library: the user stopped following a copy of it", "type": "text", "placeholders": {"week": {"type": "int"}}}
 }

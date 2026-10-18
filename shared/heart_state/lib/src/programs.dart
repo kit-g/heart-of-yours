@@ -285,6 +285,37 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Where the user stands in [program]: computed, never stored. [now] sets the
   /// calendar week the weekly count reads, in its zone; [firstWeekday] is ISO,
   /// the user's own first day of the week.
+  /// What the user has done with the library's program [key], from the copies
+  /// they made of it (`source == key`), archived ones included; the most
+  /// telling one wins: following it now, then having finished it, then having
+  /// tried it. Null when they never started it.
+  LibraryHistory? historyOf(String key, {required DateTime now, required int firstWeekday}) {
+    final copies = all.where((program) => program.source == key);
+    LibraryHistory read(Program program) {
+      final position = this.position(program, now: now, firstWeekday: firstWeekday);
+      return switch ((program.archived, position.finished)) {
+        (_, true) => const LibraryFinished(),
+        (false, false) => const LibraryFollowing(),
+        (true, false) => LibraryTried(week: position.week, weeks: program.weeks),
+      };
+    }
+
+    return copies
+        .map(read)
+        .fold<LibraryHistory?>(
+          null,
+          (best, each) => switch (best) {
+            null => each,
+            final LibraryHistory best when each.rank < best.rank => each,
+            final LibraryHistory best => switch ((best, each)) {
+              // two tries: the one that got further
+              (LibraryTried(week: final a), LibraryTried(week: final b)) when b > a => each,
+              _ => best,
+            },
+          },
+        );
+  }
+
   ProgramPosition position(Program program, {required DateTime now, required int firstWeekday}) {
     final id = program.id;
     return ProgramPosition.of(
@@ -1398,4 +1429,41 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       onError?.call(e, stacktrace: s);
     }
   }
+}
+
+/// The user's history with one of the library's programs (#F27): what its
+/// card and its page say beside it. Local, from the copies they made.
+sealed class LibraryHistory {
+  const new();
+
+  /// Lower says more: following beats finished beats tried.
+  int get rank;
+}
+
+/// A copy is being followed now.
+final class LibraryFollowing extends LibraryHistory {
+  const new();
+
+  @override
+  int get rank => 0;
+}
+
+/// A copy ran to its end.
+final class LibraryFinished extends LibraryHistory {
+  const new();
+
+  @override
+  int get rank => 1;
+}
+
+/// A copy was put down before its end, at [week] of [weeks] (null for an
+/// open-ended program).
+final class LibraryTried extends LibraryHistory {
+  final int week;
+  final int? weeks;
+
+  const new({required this.week, required this.weeks});
+
+  @override
+  int get rank => 2;
 }

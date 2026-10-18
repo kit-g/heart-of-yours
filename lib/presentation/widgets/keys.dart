@@ -226,6 +226,7 @@ abstract final class AppKeys {
   static const libraryEntry = Key('Programs.library');
   static const libraryEquipment = Key('Programs.library.equipment');
   static Key libraryProgram(String key) => Key('Programs.library.program.$key');
+  static Key libraryHistory(String key) => Key('Programs.library.history.$key');
   static Key libraryNext(String key) => Key('Programs.library.next.$key');
   static Key librarySource(String key) => Key('Programs.library.source.$key');
   static const libraryStart = Key('Programs.library.start');

@@ -162,6 +162,20 @@ String _audienceLabel(L copy, LibraryAudience? audience) {
   };
 }
 
+/// The user's history with [key] in words, or null when they never started
+/// it: "Following now", "Finished", "Stopped at week 5 of 12".
+String? _history(BuildContext context, String key) {
+  final copy = L.of(context);
+  final history = Programs.watch(context).historyOf(key, now: DateTime.now(), firstWeekday: firstWeekdayOf(context));
+  return switch (history) {
+    LibraryFollowing() => copy.libraryFollowingNow,
+    LibraryFinished() => copy.libraryFinishedIt,
+    LibraryTried(:final week, weeks: final int weeks) => copy.libraryStoppedAt(week, weeks),
+    LibraryTried(:final week, weeks: null) => copy.libraryStoppedAtOpen(week),
+    null => null,
+  };
+}
+
 /// How often, how long and for how many weeks, in a line.
 String _facts(L copy, LibraryProgram program) {
   return [
@@ -205,7 +219,29 @@ class _LibraryCard extends StatelessWidget {
             crossAxisAlignment: .start,
             spacing: 4,
             children: [
-              Text(program.name.of(tag), style: textTheme.titleMedium),
+              Row(
+                spacing: 8,
+                crossAxisAlignment: .start,
+                children: [
+                  Expanded(child: Text(program.name.of(tag), style: textTheme.titleMedium)),
+                  // what the user has done with it, small, beside its name
+                  if (_history(context, program.key) case final String history)
+                    DecoratedBox(
+                      key: AppKeys.libraryHistory(program.key),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondaryContainer,
+                        borderRadius: const .all(.circular(8)),
+                      ),
+                      child: Padding(
+                        padding: const .symmetric(horizontal: 6, vertical: 2),
+                        child: Text(
+                          history,
+                          style: textTheme.labelSmall?.copyWith(color: colorScheme.onSecondaryContainer),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               Text(_facts(copy, program), style: muted),
               if (program.note case final ContentText note)
                 Text(note.of(tag), style: textTheme.bodyMedium, maxLines: 3, overflow: .ellipsis),
@@ -315,6 +351,10 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
                   padding: const .all(16),
                   children: [
                     Text(_facts(copy, program), style: muted),
+                    if (_history(context, program.key) case final String history) ...[
+                      const SizedBox(height: 4),
+                      Text(history, key: AppKeys.libraryHistory(program.key), style: textTheme.labelLarge),
+                    ],
                     if (program.note case final ContentText note) ...[
                       const SizedBox(height: 8),
                       Text(note.of(tag), style: textTheme.bodyLarge),
