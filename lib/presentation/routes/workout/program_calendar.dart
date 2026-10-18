@@ -176,19 +176,31 @@ class _CalendarSetupState extends State<_CalendarSetup> {
                       ),
                     ),
                     Flexible(child: body),
+                    // the destructive one on a line of its own, apart from the
+                    // pair that closes the dialog: three in a row broke on a
+                    // phone, with Save alone on the next line
+                    if (exported)
+                      Padding(
+                        padding: const .fromLTRB(16, 8, 16, 0),
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: TextButton.icon(
+                            key: AppKeys.programCalendarRemove,
+                            onPressed: () => _remove(context),
+                            style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+                            icon: const Icon(Icons.event_busy_rounded, size: 18),
+                            label: Text(copy.programCalendarRemove),
+                          ),
+                        ),
+                      ),
                     Padding(
                       padding: const .fromLTRB(16, 8, 16, 16),
-                      child: Wrap(
+                      child: OverflowBar(
                         alignment: .end,
+                        overflowAlignment: .end,
                         spacing: 8,
+                        overflowSpacing: 8,
                         children: [
-                          if (exported)
-                            TextButton(
-                              key: AppKeys.programCalendarRemove,
-                              onPressed: () => _remove(context),
-                              style: TextButton.styleFrom(foregroundColor: colorScheme.error),
-                              child: Text(copy.programCalendarRemove),
-                            ),
                           TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(copy.cancel)),
                           PrimaryButton.shrunk(
                             key: AppKeys.programCalendarSave,
@@ -219,29 +231,34 @@ class _CalendarSetupState extends State<_CalendarSetup> {
     return ValueListenableBuilder<_CalendarDraft>(
       valueListenable: _draft,
       builder: (context, draft, _) {
+        // 16 in, and each row's ink 8 in again with its content: the text
+        // sits where the title's does, and the ink stops short of the edge
         return ListView(
           shrinkWrap: true,
-          padding: const .symmetric(horizontal: 24),
+          padding: const .symmetric(horizontal: 16),
           children: [
-            Text(copy.programCalendarDays, style: textTheme.titleSmall),
+            _inset(Text(copy.programCalendarDays, style: textTheme.titleSmall)),
             const SizedBox(height: 8),
-            _DayToggles(
-              days: draft.days,
-              onToggle: (day) => _change(
-                days: switch (_draft.value.days.contains(day)) {
-                  true => {..._draft.value.days}..remove(day),
-                  false => {..._draft.value.days, day},
-                },
+            _inset(
+              _DayToggles(
+                days: draft.days,
+                onToggle: (day) => _change(
+                  days: switch (_draft.value.days.contains(day)) {
+                    true => {..._draft.value.days}..remove(day),
+                    false => {..._draft.value.days, day},
+                  },
+                ),
               ),
             ),
             if (draft.days.isEmpty) ...[
               const SizedBox(height: 4),
-              Text(copy.programCalendarNoDays, style: muted),
+              _inset(Text(copy.programCalendarNoDays, style: muted)),
             ],
             const SizedBox(height: 16),
             SwitchListTile.adaptive(
               key: AppKeys.programCalendarAllDay,
-              contentPadding: .zero,
+              contentPadding: _rowInset,
+              shape: _rowShape,
               title: Text(copy.programCalendarAllDay),
               value: draft.time == null,
               // an evening, when most people train after work
@@ -252,17 +269,19 @@ class _CalendarSetupState extends State<_CalendarSetup> {
             ),
             if (draft.time case final int time)
               ListTile(
-                contentPadding: .zero,
+                contentPadding: _rowInset,
+                shape: _rowShape,
                 title: Text(copy.time),
                 trailing: Text(_timeOfDay(context, time), style: textTheme.bodyLarge),
                 onTap: () => _pickTime(context, time),
               ),
             const SizedBox(height: 8),
-            Text(copy.programCalendarWhich, style: textTheme.titleSmall),
+            _inset(Text(copy.programCalendarWhich, style: textTheme.titleSmall)),
             for (final choice in calendars)
               ListTile(
                 key: AppKeys.programCalendarChoice(choice.id),
-                contentPadding: .zero,
+                contentPadding: _rowInset,
+                shape: _rowShape,
                 selected: draft.calendarId == choice.id,
                 leading: Icon(Icons.circle, color: choice.color, size: 14),
                 title: Text(choice.title),
@@ -281,6 +300,13 @@ class _CalendarSetupState extends State<_CalendarSetup> {
       },
     );
   }
+
+  /// A row's content, inset as far as a tile's is, so its ink is too.
+  static const _rowInset = EdgeInsets.symmetric(horizontal: 8);
+  static const _rowShape = RoundedRectangleBorder(borderRadius: .all(.circular(12)));
+
+  /// What is not a tile, in line with the tiles' content.
+  Widget _inset(Widget child) => Padding(padding: _rowInset, child: child);
 
   Future<void> _pickTime(BuildContext context, int time) async {
     final picked = await showTimePicker(

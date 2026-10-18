@@ -4921,7 +4921,7 @@
   "@programCalendarDays": {"description": "Heading over the day toggles in the calendar dialog: the program's preferred days, which the events fall on", "type": "text", "placeholders": {}},
   "programCalendarNoDays": "Pick the days you'd train on.",
   "@programCalendarNoDays": {"description": "Under the day toggles while none is picked: events need days to fall on", "type": "text", "placeholders": {}},
-  "programCalendarRemove": "Take it out of the calendar",
+  "programCalendarRemove": "Remove from calendar",
   "@programCalendarRemove": {"description": "Button in the calendar dialog: takes the program's upcoming events out of the calendar; past ones stay", "type": "text", "placeholders": {}},
   "programCalendarDenied": "Heart can't see your calendars. You can allow it in Settings.",
   "@programCalendarDenied": {"description": "In the calendar dialog when the OS calendar permission was refused", "type": "text", "placeholders": {}},

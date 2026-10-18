@@ -835,6 +835,30 @@ void main() {
       expect(find.byKey(AppKeys.programCalendarRow), findsOneWidget);
     });
 
+    testWidgets('on a phone, Remove has a line of its own and Cancel sits with Save', (tester) async {
+      final calendar = _Calendar();
+      await openPage(tester, calendar: calendar);
+      final context = tester.element(find.byType(Scaffold).last);
+      await ProgramCalendars.of(context).set('p1', (calendarId: 'c1', calendar: 'Home', time: null));
+      await tester.pumpTimes();
+      await scrollTo(tester, find.byKey(AppKeys.programCalendarRow));
+      await tester.tapByKey(AppKeys.programCalendarRow);
+      await tester.pumpTimes();
+      // a phone's width, once over the page: the Workout tab's header under
+      // the test font overflows a phone by itself
+      tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpTimes();
+
+      final remove = tester.getRect(find.byKey(AppKeys.programCalendarRemove));
+      final save = tester.getRect(find.byKey(AppKeys.programCalendarSave));
+      final cancel = tester.getRect(find.widgetWithText(TextButton, 'Cancel'));
+      expect(save.center.dy, closeTo(cancel.center.dy, 1), reason: 'Cancel and Save on one line');
+      expect(remove.bottom, lessThanOrEqualTo(cancel.top), reason: 'Remove above them');
+      expect(find.text('Remove from calendar'), findsOneWidget);
+    });
+
     testWidgets('left out of Programs, its events go and the setting stays', (tester) async {
       final calendar = _Calendar();
       await openPage(tester, calendar: calendar);
