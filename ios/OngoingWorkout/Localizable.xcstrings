@@ -50,7 +50,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Añadir objetivo"
+            "value": "Agregar meta"
           }
         },
         "fr": {
@@ -72,7 +72,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Masa corporal"
+            "value": "Peso corporal"
           }
         },
         "fr": {
@@ -116,13 +116,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tipo de dato"
+            "value": "Indicador"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Type de donnée"
+            "value": "Indicateur"
           }
         },
         "ru": {
@@ -204,7 +204,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Objetivo"
+            "value": "Meta"
           }
         },
         "fr": {
@@ -226,7 +226,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Objetivos"
+            "value": "Metas"
           }
         },
         "fr": {
@@ -336,13 +336,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fija un objetivo y mira aquí cuánto te falta."
+            "value": "Fija una meta y comprueba cuánto te falta para alcanzarla."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fixez un objectif et suivez ici où vous en êtes."
+            "value": "Fixez un objectif et suivez votre progression."
           }
         },
         "ru": {
@@ -446,13 +446,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Empieza un entrenamiento o una de tus plantillas con un toque."
+            "value": "Con un toque, empieza un entrenamiento desde cero o con una plantilla."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Démarrez une séance ou l’un de vos modèles d’un seul geste."
+            "value": "Démarrez une séance libre ou à partir d’un modèle en un geste."
           }
         },
         "ru": {
@@ -578,7 +578,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu progreso hacia tus objetivos activos."
+            "value": "Tu progreso en las metas activas."
           }
         },
         "fr": {
@@ -600,13 +600,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu volumen, entrenamientos, tiempo, series o repeticiones de los últimos 7 días o 3 meses."
+            "value": "Volumen, número de entrenamientos, duración, series o repeticiones de los últimos 7 días o 3 meses."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Votre volume, vos séances, votre temps, vos séries ou vos répétitions sur les 7 derniers jours ou les 3 derniers mois."
+            "value": "Volume, nombre de séances, durée, séries ou répétitions sur les 7 derniers jours ou les 3 derniers mois."
           }
         },
         "ru": {

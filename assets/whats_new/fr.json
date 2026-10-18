@@ -5,57 +5,57 @@
       {
         "id": "programs",
         "title": "Programmes",
-        "body": "Entraînez-vous selon un plan, pas seulement un journal. Choisissez l’un des 19 **programmes tout prêts**, chacun avec les études qui le fondent, ou faites-en un à partir d’un dossier de modèles. Heart planifie les séances, fixe l’objectif de chaque série et ajoute du poids quand vous le méritez. Les charges de départ viennent de votre propre historique."
+        "body": "Entraînez-vous avec un programme. Choisissez l’un des 19 **programmes tout prêts**, chacun accompagné des études sur lesquelles il s’appuie, ou créez-en un à partir d’un dossier de modèles. Heart planifie les séances, fixe l’objectif de chaque série et augmente les charges selon votre progression. Les charges de départ sont calculées à partir de votre historique."
       },
       {
         "id": "not-today",
         "title": "Pas aujourd’hui",
-        "body": "Mettez de côté une séance du programme, ou n’importe quel jour, d’un geste, et dites pourquoi si vous le souhaitez. Le programme attend, et Annuler revient en arrière."
+        "body": "Sautez une séance du programme ou une journée d’un geste et, si vous le souhaitez, indiquez le motif. Le programme attendra. Vous pouvez revenir sur ce choix avec Annuler."
       },
       {
         "id": "go-easy",
         "title": "Ce qu’il faut ménager",
-        "body": "Indiquez un genou, votre dos ou les poussées au-dessus de la tête : Heart signale les exercices qui le sollicitent davantage et propose des remplacements plus doux. La liste reste sur votre téléphone."
+        "body": "Indiquez ce que vous souhaitez ménager, comme un genou, la colonne vertébrale ou les mouvements au-dessus de la tête. Heart signale les exercices les plus exigeants pour ces zones ou mouvements et propose des alternatives moins intenses. La liste reste sur votre téléphone."
       },
       {
         "id": "program-calendar",
         "title": "Votre programme dans votre agenda",
-        "body": "Ajoutez les séances d’un programme à un calendrier de votre téléphone, Google compris, à une heure fixe ou sur la journée."
+        "body": "Ajoutez les séances d’un programme à un calendrier de votre téléphone, y compris Google, à une heure précise ou sous forme d’événements sur toute la journée."
       },
       {
         "id": "supersets",
         "title": "Supersets et circuits",
-        "body": "Regroupez des exercices dans une séance ou un modèle et enchaînez-les à tour de rôle."
+        "body": "Regroupez des exercices dans une séance ou un modèle et enchaînez-les dans l’ordre."
       },
       {
         "id": "rep-ranges",
         "title": "Fourchettes de répétitions et objectifs",
-        "body": "Les séries d’un modèle peuvent viser une fourchette, un nombre exact, une charge ou des répétitions en réserve. Touchez une série vide pour la remplir avec l’objectif."
+        "body": "Définissez les objectifs des séries d’un modèle : une fourchette de répétitions, un nombre précis, une charge ou des répétitions en réserve. Touchez une série vide pour la remplir avec l’objectif."
       },
       {
         "id": "sets-a-week",
         "title": "Séries par semaine",
-        "body": "Sur votre profil : séries et séances par semaine, par schéma de mouvement ou par muscle, et l’équilibre entre poussée et tirage, charnière et squat."
+        "body": "Sur votre profil : séries et séances par semaine, par type de mouvement ou par muscle, et l’équilibre entre poussée et tirage, et entre charnière de hanche et squat."
       },
       {
         "id": "pattern-goals",
         "title": "Objectifs par mouvement ou par muscle",
-        "body": "Fixez-vous un objectif de poussées par semaine, ou de pectoraux, pas seulement sur un exercice."
+        "body": "Fixez un objectif hebdomadaire pour un mouvement, comme la poussée, ou pour un muscle, comme les pectoraux. Les objectifs ne se limitent plus à un seul exercice."
       },
       {
         "id": "records-on-sets",
-        "title": "Les records sur la série",
-        "body": "Chaque série qui a battu un record porte désormais un badge qui le nomme, sur l’écran de fin et dans l’historique."
+        "title": "Les records de chaque série",
+        "body": "Chaque série avec un nouveau record porte désormais un badge indiquant le record battu, dans le résumé de séance et dans l’Historique."
       },
       {
         "id": "week-start",
-        "title": "Votre semaine, votre début",
-        "body": "Choisissez le jour où commence votre semaine. Tous les comptes hebdomadaires le suivent."
+        "title": "Le début de votre semaine",
+        "body": "Choisissez le premier jour de votre semaine. Tous les calculs hebdomadaires tiennent compte de ce choix."
       },
       {
         "id": "previous-in-template",
-        "title": "Dernière fois dans ce modèle",
-        "body": "Dans une séance issue d’un modèle, Précédent peut afficher la dernière fois que vous avez suivi ce modèle."
+        "title": "Dernière séance avec ce modèle",
+        "body": "Dans une séance lancée à partir d’un modèle, Précédent peut afficher les résultats de votre dernière séance avec ce modèle."
       }
     ]
   },
@@ -65,22 +65,22 @@
       {
         "id": "home-screen-widgets",
         "title": "Heart sur votre écran d’accueil",
-        "body": "Trois widgets dans la galerie : **Entraînement** affiche votre volume, vos séances, votre temps, vos séries ou vos répétitions, ou une donnée d’Apple Health, et tient aussi sur l’écran verrouillé. **Démarrer** lance une séance ou un modèle d’un geste. **Objectifs** montre où vous en êtes."
+        "body": "Trois widgets dans la galerie : **Entraînement** affiche votre volume, vos séances, votre durée d’entraînement, vos séries ou vos répétitions, ou une donnée de Santé. Il est aussi disponible sur l’écran verrouillé. **Démarrer** lance une séance vide ou à partir d’un modèle d’un geste. **Objectifs** affiche votre progression vers chaque objectif."
       },
       {
         "id": "icon-menu",
         "title": "Démarrez depuis l’icône",
-        "body": "Maintenez l’icône de Heart pour lancer une séance vide ou l’un de vos modèles."
+        "body": "Appuyez longuement sur l’icône de Heart pour lancer une séance vide ou à partir de l’un de vos modèles."
       },
       {
         "id": "move-history",
         "title": "Déplacez l’historique d’un exercice",
-        "body": "Noté sous le mauvais exercice ? **Déplacer l’historique vers…**, dans le menu de l’exercice, transfère tout vers un autre. Un aperçu indique d’abord ce qui est déplacé. Nécessite un compte."
+        "body": "Vous avez enregistré des séries avec le mauvais exercice ? L’option **Déplacer l’historique vers…**, dans le menu de l’exercice, transfère tout son historique vers un autre exercice. Un aperçu vous permet de vérifier ce qui sera déplacé avant de confirmer. Nécessite un compte."
       },
       {
         "id": "heart-import",
         "title": "Récupérez votre historique Heart",
-        "body": "**Paramètres → Vos données → Importer l’historique de séances** lit désormais les exports de Heart. Le fichier JSON restaure tout : séances, modèles et dossiers, exercices personnels et objectifs."
+        "body": "**Paramètres → Vos données → Importer l’historique de séances** accepte désormais les exports de Heart. Le fichier JSON restaure toutes les données : séances, modèles et dossiers, exercices personnalisés et objectifs."
       }
     ]
   },
@@ -90,7 +90,7 @@
       {
         "id": "shortcuts",
         "title": "Heart, à la voix",
-        "body": "Demandez à Siri de lancer une séance ou un modèle, de gérer votre repos ou de noter la série en cours, et interrogez-le sur un record ou sur votre semaine. Sur Android, lancez une séance depuis l’icône de l’app."
+        "body": "Demandez à Siri de lancer une séance vide ou à partir d’un modèle, de gérer le minuteur de repos ou de noter la série en cours. Vous pouvez aussi consulter un record ou le bilan de votre semaine. Sur Android, lancez une séance depuis l’icône de l’app."
       },
       {
         "id": "lock-screen-buttons",
@@ -105,17 +105,17 @@
       {
         "id": "hevy-import",
         "title": "Votre historique Hevy",
-        "body": "**Paramètres → Vos données → Importer l’historique de séances** accepte désormais l’export CSV de Hevy en plus de celui de Strong. Un import Strong demande l’unité de votre export."
+        "body": "**Paramètres → Vos données → Importer l’historique de séances** accepte désormais l’export CSV de Hevy en plus de celui de Strong. Lors d’un import depuis Strong, vous choisissez l’unité de poids utilisée dans le fichier."
       },
       {
         "id": "sign-ins",
-        "title": "Un compte, toutes les connexions",
-        "body": "Reliez Apple, Google et un mot de passe au même compte dans **Paramètres → Compte**, et déliez ceux dont vous ne vous servez pas."
+        "title": "Un compte, plusieurs façons de se connecter",
+        "body": "Associez Apple, Google et un mot de passe au même compte dans **Paramètres → Compte**, et dissociez les modes de connexion que vous n’utilisez pas."
       },
       {
         "id": "developer-api",
         "title": "API développeur",
-        "body": "Créez un jeton en lecture seule dans **Paramètres → API développeur** et lisez votre journal d’entraînement depuis un script, un tableur ou un assistant IA. Vos données de santé n’en font jamais partie."
+        "body": "Créez un jeton en lecture seule dans **Paramètres → API développeur** et consultez votre carnet d’entraînement depuis un script, un tableur ou un assistant IA. L’API ne donne jamais accès à vos données de santé."
       }
     ]
   },
@@ -125,27 +125,27 @@
       {
         "id": "pause-workout",
         "title": "Mettre une séance en pause",
-        "body": "Arrêtez le chrono depuis le menu **⋯** de la séance. Cocher une série le relance. Une séance oubliée ? Ouvrez-la depuis le rappel et elle vous propose de s’arrêter à votre dernière série."
+        "body": "Arrêtez le chrono depuis le menu **⋯** de la séance. Cocher une série le relance. Vous avez oublié de terminer une séance ? Ouvrez-la depuis le rappel pour pouvoir la terminer à l’heure de votre dernière série."
       },
       {
         "id": "set-stopwatch",
         "title": "Chronométrez une série",
-        "body": "Les séries en temps ont un chrono : touchez lecture dans la case du temps et il démarre, jusque sur l’écran verrouillé. Arrêtez-le pour noter le temps."
+        "body": "Les séries chronométrées ont un chrono : touchez le bouton de démarrage dans le champ de durée pour le lancer. Il apparaît aussi sur l’écran verrouillé. Arrêtez-le pour enregistrer la durée."
       },
       {
         "id": "keep-awake",
         "title": "Écran toujours allumé",
-        "body": "L’écran reste allumé pendant la séance, avec un soleil sur l’onglet **Séance** tant que c’est le cas."
+        "body": "L’écran reste allumé pendant la séance. Un soleil apparaît sur l’onglet **Séance** lorsque cette fonction est active."
       },
       {
         "id": "exercise-search",
         "title": "Trouvez vos exercices plus vite",
-        "body": "La recherche connaît les autres noms et abréviations (OHP, RDL, DB), les noms de muscles, et pardonne les fautes de frappe. Le sélecteur s’ouvre sur vos derniers exercices."
+        "body": "La recherche reconnaît les autres noms et abréviations (OHP, RDL, DB), les noms de muscles et tolère les fautes de frappe. Le sélecteur affiche d’abord vos derniers exercices."
       },
       {
         "id": "carries",
         "title": "Portés, traîneaux et maintiens lestés",
-        "body": "Deux nouveaux types d’exercice : une charge portée sur une distance, en mètres ou en yards, et une charge tenue un certain temps. Records, graphiques et historique suivent."
+        "body": "Deux nouveaux types d’exercice : porter une charge sur une distance, en mètres ou en yards, et maintenir une charge pendant un certain temps. Tous deux sont pris en compte dans les records, les graphiques et l’Historique."
       }
     ]
   },
@@ -154,13 +154,13 @@
     "items": [
       {
         "id": "set-types",
-        "title": "Échauffements, séries dégressives et à la rupture",
-        "body": "Touchez le numéro d'une série pour la marquer. L'échauffement reste hors de vos records, graphiques et carte musculaire, et **Précédent** l'aligne sur l'échauffement de la dernière fois."
+        "title": "Échauffements, séries dégressives et à l’échec",
+        "body": "Touchez le numéro d’une série pour indiquer son type. Les séries d’échauffement ne comptent pas dans vos records, graphiques ni carte musculaire, et **Précédent** les compare aux séries d’échauffement de la dernière fois."
       },
       {
         "id": "rpe",
         "title": "RPE",
-        "body": "Notez la difficulté ressentie de chaque série, de 6 à 10, depuis le menu de son numéro."
+        "body": "Notez l’effort ressenti pour chaque série, de 6 à 10, depuis le menu qui s’ouvre en touchant son numéro."
       },
       {
         "id": "workout-note",
@@ -170,12 +170,12 @@
       {
         "id": "workout-muscles",
         "title": "Muscles sollicités, séance par séance",
-        "body": "Chaque séance terminée montre les muscles sollicités, dès la fin et dans l’Historique."
+        "body": "Retrouvez les muscles sollicités par chaque séance dès que vous la terminez, puis dans l’Historique."
       },
       {
         "id": "fill-columns",
         "title": "Remplir une colonne d’un coup",
-        "body": "Touchez **kg** ou **Reps** au-dessus de vos séries pour remplir celles qui restent depuis la première. Touchez **✓** pour tout cocher."
+        "body": "Touchez **kg** ou **Reps** au-dessus de vos séries pour copier la valeur de la première dans toutes celles qui ne sont pas encore terminées. Touchez **✓** pour tout cocher."
       }
     ]
   },
@@ -200,7 +200,7 @@
       {
         "id": "features-follow-you",
         "title": "Vos choix vous suivent",
-        "body": "Activez ou désactivez une fonctionnalité une fois, et vos autres appareils connectés le savent."
+        "body": "Activez ou désactivez une fonctionnalité : ce choix s’applique à tous les appareils sur lesquels vous êtes connecté."
       }
     ]
   },
@@ -215,7 +215,7 @@
       {
         "id": "rest-timers-settings",
         "title": "Les minuteurs de repos au même endroit",
-        "body": "**Paramètres → Minuteurs de repos** liste tous ceux que vous avez définis. Effacez-en un depuis là, et annulez si ce n'était pas voulu."
+        "body": "**Paramètres → Minuteurs de repos** affiche tous les minuteurs que vous avez configurés. Vous pouvez en supprimer un et annuler la suppression en cas d’erreur."
       },
       {
         "id": "whats-new",
@@ -230,7 +230,7 @@
       {
         "id": "exercise-notes",
         "title": "Notes d’exercice",
-        "body": "Ajoutez une note à n’importe quel exercice pendant la séance : un repère, un réglage, une charge à essayer la prochaine fois. Une fois connecté, vous pouvez **épingler** une note pour qu’elle revienne à chaque fois que l’exercice revient, y compris dans les séances lancées depuis un modèle."
+        "body": "Ajoutez une note à n’importe quel exercice pendant la séance : un repère technique, un réglage du matériel ou une charge à essayer la prochaine fois. Une fois connecté, vous pouvez **épingler** la note pour la retrouver chaque fois que vous faites cet exercice, y compris dans les séances lancées depuis un modèle."
       },
       {
         "id": "history-calendar",
@@ -240,7 +240,7 @@
       {
         "id": "new-look",
         "title": "Un nouveau look",
-        "body": "Un nouveau logotype, une nouvelle icône et un écran de lancement qui suit le mode clair et le mode sombre."
+        "body": "Un nouveau logotype, une nouvelle icône et un écran de lancement qui s’adapte au mode clair ou sombre."
       }
     ]
   },
@@ -250,12 +250,12 @@
       {
         "id": "no-account",
         "title": "Pas besoin de compte",
-        "body": "Ouvrez l’app et commencez à vous entraîner. Séances, modèles, exercices personnalisés et objectifs vivent sur votre appareil dès la première séance, et tout ce qui n’a pas besoin d’un serveur fonctionne sans."
+        "body": "Ouvrez l’app et commencez à vous entraîner. Vos séances, modèles, exercices personnalisés et objectifs sont enregistrés sur votre appareil dès la première séance. Toutes les fonctions qui n’ont pas besoin d’un serveur sont disponibles sans compte."
       },
       {
         "id": "sign-in-later",
         "title": "Connectez-vous quand vous voulez",
-        "body": "Connectez-vous plus tard et tout ce que vous avez enregistré rejoint votre compte. Si ce compte contient déjà des séances d’un autre appareil, les deux sont fusionnés, pas écrasés."
+        "body": "Connectez-vous plus tard pour ajouter à votre compte tout ce que vous avez enregistré. Si ce compte contient déjà des séances d’un autre appareil, les deux historiques sont fusionnés sans écraser de données."
       },
       {
         "id": "whole-history",
@@ -275,7 +275,7 @@
       {
         "id": "languages",
         "title": "Espagnol, français et russe",
-        "body": "Réglez votre appareil sur l’une de ces langues et chaque écran suit, jusqu’aux noms et aux instructions de la bibliothèque d’exercices."
+        "body": "Choisissez l’une de ces langues dans les réglages de votre appareil : toute l’app l’utilisera, y compris pour les noms et les instructions de la bibliothèque d’exercices."
       },
       {
         "id": "themes",
@@ -285,7 +285,7 @@
       {
         "id": "records",
         "title": "Records",
-        "body": "L’onglet **Records** d’un exercice montre votre meilleure série, le plus de répétitions, votre meilleure allure, un tableau des maximums par répétitions et vos totaux cumulés. Quand une séance bat un record personnel, le résumé le fête."
+        "body": "L’onglet **Records** d’un exercice affiche votre meilleure série, votre maximum de répétitions, votre meilleure allure, un tableau des charges maximales par nombre de répétitions et vos totaux cumulés. Vos nouveaux records personnels apparaissent dans le résumé de séance."
       },
       {
         "id": "dashboard-charts",
@@ -300,7 +300,7 @@
       {
         "id": "strong-import",
         "title": "Récupérez votre historique Strong",
-        "body": "**Paramètres → Vos données → Importer l’historique de séances** lit le fichier CSV exporté par Strong et récupère vos séances, séries et exercices. Vous validez chaque exercice que Heart ne connaît pas, et importer deux fois le même fichier ne crée jamais de doublon."
+        "body": "**Paramètres → Vos données → Importer l’historique de séances** lit le fichier CSV exporté depuis Strong et importe vos séances, séries et exercices. Vous confirmez chaque exercice que Heart ne reconnaît pas. Importer deux fois le même fichier ne crée aucun doublon."
       }
     ]
   },
@@ -330,7 +330,7 @@
       {
         "id": "screen-readers",
         "title": "VoiceOver et TalkBack",
-        "body": "Les boutons, graphiques, minuteurs et champs s’annoncent aux lecteurs d’écran."
+        "body": "Les lecteurs d’écran identifient les boutons, graphiques, minuteurs et champs de saisie."
       }
     ]
   },
@@ -340,7 +340,7 @@
       {
         "id": "template-folders",
         "title": "Dossiers de modèles",
-        "body": "Rangez vos modèles dans des dossiers. Créez-les, renommez-les, supprimez-les et déplacez des modèles de l’un à l’autre. Supprimer un dossier conserve ses modèles."
+        "body": "Rangez vos modèles dans des dossiers. Créez-les, renommez-les, supprimez-les et déplacez des modèles de l’un à l’autre. Les modèles sont conservés lorsque vous supprimez leur dossier."
       }
     ]
   },
@@ -350,7 +350,7 @@
       {
         "id": "goals",
         "title": "Objectifs",
-        "body": "Fixez un objectif de séances par semaine ou par mois, ou une échelle de paliers avec une échéance facultative. Les objectifs apparaissent sous forme de lignes sur vos graphiques, le résumé de séance vous prévient quand vous en atteignez un, et chaque objectif atteint renvoie à la séance qui l’a permis."
+        "body": "Fixez un objectif de séances par semaine ou par mois, ou une série de paliers avec une échéance facultative. Les objectifs apparaissent sous forme de lignes sur vos graphiques. Le résumé de séance vous prévient quand vous en atteignez un, et chaque objectif atteint renvoie à la séance qui vous a permis de l’atteindre."
       }
     ]
   },
@@ -370,7 +370,7 @@
       {
         "id": "movement-filters",
         "title": "Filtrez les exercices par mouvement",
-        "body": "Filtrez les exercices par schéma de mouvement, stabilité et niveau technique, dans la bibliothèque et quand vous ajoutez un exercice à une séance."
+        "body": "Filtrez les exercices par type de mouvement, stabilité et niveau technique, dans la bibliothèque et lorsque vous ajoutez un exercice à une séance."
       }
     ]
   },
@@ -430,7 +430,7 @@
       {
         "id": "dashboard",
         "title": "Votre tableau de bord",
-        "body": "Votre profil affiche les séances par semaine, et tout graphique que vous ajoutez : 1RM estimé, volume, meilleure série et plus encore."
+        "body": "Votre profil affiche les séances par semaine et les graphiques que vous ajoutez : 1RM estimé, volume, charge maximale et plus encore."
       }
     ]
   }

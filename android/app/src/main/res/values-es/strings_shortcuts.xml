@@ -7,7 +7,7 @@
     <string name="function_no_timer">Este ejercicio no tiene temporizador de descanso</string>
     <string name="function_resting">Descansando %1$s</string>
     <string name="function_rest_extended">Descanso alargado, queda %1$s</string>
-    <string name="function_rest_skipped">Descanso saltado</string>
+    <string name="function_rest_skipped">Descanso omitido</string>
     <string name="function_logged">Registrado: %1$s</string>
     <string name="function_nothing_left">No queda nada por registrar</string>
     <string name="function_say_values">Di el peso y las repeticiones</string>
@@ -15,5 +15,5 @@
     <string name="function_unknown_exercise">No conozco ese ejercicio</string>
     <string name="function_unknown_template">No conozco esa plantilla</string>
     <string name="function_opening">Abriendo Heart</string>
-    <string name="function_app_closed">Heart no está abierto; lo aplicará cuando lo abras</string>
+    <string name="function_app_closed">Heart no está abierto. La acción se ejecutará cuando abras la app.</string>
 </resources>

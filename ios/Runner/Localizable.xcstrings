@@ -270,13 +270,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Última vez que hice una plantilla"
+            "value": "Último entrenamiento con una plantilla"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dernière fois que j’ai fait un modèle"
+            "value": "Dernière séance à partir d’un modèle"
           }
         },
         "ru": {
@@ -314,7 +314,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Última sesión"
+            "value": "Último entrenamiento"
           }
         },
         "fr": {
@@ -622,13 +622,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Descanso saltado"
+            "value": "Descanso omitido"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Repos passé"
+            "value": "Repos sauté"
           }
         },
         "ru": {
