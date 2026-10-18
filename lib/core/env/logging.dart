@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -63,13 +61,16 @@ void forwardToSentry(LogRecord record, {SentryLogger? logger}) {
 
   final sink = logger ?? Sentry.logger;
   final attributes = {'logger': SentryAttribute.string(record.loggerName)};
-  final sent = switch (record.level) {
-    >= Level.SHOUT => sink.fatal(record.message, attributes: attributes),
-    >= Level.SEVERE => sink.error(record.message, attributes: attributes),
-    >= Level.WARNING => sink.warn(record.message, attributes: attributes),
-    _ => sink.info(record.message, attributes: attributes),
-  };
-  unawaited(Future.value(sent));
+  switch (record.level) {
+    case >= Level.SHOUT:
+      sink.fatal(record.message, attributes: attributes);
+    case >= Level.SEVERE:
+      sink.error(record.message, attributes: attributes);
+    case >= Level.WARNING:
+      sink.warn(record.message, attributes: attributes);
+    default:
+      sink.info(record.message, attributes: attributes);
+  }
 }
 
 typedef LogInit = void Function(String level);
