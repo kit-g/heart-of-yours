@@ -47,6 +47,7 @@ import 'package:material_ui/material_ui.dart';
 import 'rest.dart';
 import 'timer.dart';
 
+part 'default_rest.dart';
 part 'empty_state.dart';
 part 'exercise_item.dart';
 part 'exercise_note.dart';
@@ -122,6 +123,11 @@ class WorkoutDetail extends StatefulWidget {
   final void Function(Iterable<Exercise>) onAddExercises;
   final bool needsCancelWorkoutButton;
   final bool allowsCompletingSet;
+
+  /// Whether the one offer of default rest (#174) may appear under an
+  /// exercise: the active workout's sheet, where a tick starts a rest — not a
+  /// past workout being edited, where it does not.
+  final bool offersDefaultRest;
   final Iterable<WorkoutImage>? workoutImages;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
   final String? workoutId;
@@ -153,6 +159,7 @@ class WorkoutDetail extends StatefulWidget {
     required this.onAddExercises,
     this.needsCancelWorkoutButton = true,
     required this.allowsCompletingSet,
+    this.offersDefaultRest = false,
     this.workoutImages,
     this.onDeleteImage,
     this.onTapImage,
@@ -457,6 +464,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                       },
                       selector: (_, provider) => provider.pointedAtExercise == set.id,
                     ),
+                    if (widget.offersDefaultRest) _DefaultRestOffer(exercise: set),
                   ],
                 );
               },
@@ -1062,6 +1070,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                         onSetType: workouts.setSetType,
                         onSetRpe: workouts.setRpe,
                         onAddWarmups: workouts.addWarmups,
+                        offersDefaultRest: true,
                         onRemoveExercise: workouts.removeExercise,
                         onGroup: workouts.group,
                         onLeaveGroup: workouts.leaveGroup,
