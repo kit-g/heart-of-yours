@@ -253,6 +253,22 @@ void main() {
       await tester.pumpTimes();
     });
 
+    testWidgets("Not today's Undo times out, as every snack does", (tester) async {
+      answer(.on);
+      withProgram();
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.programNotToday('p1'));
+      await tester.pumpTimes();
+      expect(find.text('Push sits this one out'), findsOneWidget);
+
+      // an action flips SnackBar's `persist` to true unless told otherwise:
+      // this one stayed up through a whole workout
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(find.text('Push sits this one out'), findsNothing);
+    });
+
     testWidgets('a skipped day is in History, and gone from it with Programs off', (tester) async {
       answer(.on);
       withProgram();
@@ -423,6 +439,18 @@ void main() {
       await tester.tap(find.text('Undo'));
       await tester.pumpTimes();
       verify(db.deleteProgramAction(action.id)).called(1);
+    });
+
+    testWidgets("a steer's Undo times out", (tester) async {
+      await openPage(tester);
+
+      await tester.tap(find.text('Repeat this week'));
+      await tester.pumpTimes();
+      expect(find.text('This week runs again'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(find.text('This week runs again'), findsNothing);
     });
 
     testWidgets("a lift's working weight shows under its rule, and the user can set it", (tester) async {

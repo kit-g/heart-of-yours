@@ -98,4 +98,52 @@ void main() {
     final active = (await local.getActiveWorkout(user))!;
     expect(active.first.first.target, isNull);
   });
+
+  group('a finished workout and the server copy (#173)', () {
+    /// A program session's workout, finished: one ticked set aiming at a
+    /// target.
+    Future<Workout> finished() async {
+      final template = await templateWith(doubleProgression());
+      final workout = template.toWorkout();
+      workout.first.first
+        ..setMeasurements(weight: 60, reps: 8)
+        ..isCompleted = true;
+      workout.finish(DateTime.timestamp());
+      await local.finishWorkout(workout, user);
+      return workout;
+    }
+
+    /// [workout] as the server sends it back: its sets keep no target, so
+    /// the key is not there at all.
+    Workout echoed(Workout workout, {bool clearTargets = false}) {
+      final map = workout.toMap();
+      for (final exercise in map['exercises'] as List) {
+        for (final set in (exercise as Map)['sets'] as List) {
+          (set as Map).remove('target');
+          if (clearTargets) set['target'] = null;
+        }
+      }
+      return Workout.fromJson(map);
+    }
+
+    test('a server copy without targets keeps the ones the session wrote', () async {
+      final workout = await finished();
+
+      await local.storeWorkoutHistory([echoed(workout)], user);
+
+      final read = (await local.getWorkout(user, workout.id))!;
+      final set = read.first.first;
+      expect(set.target?.toMap(), doubleProgression().toMap());
+      expect(set.reps, 8);
+    });
+
+    test('a copy that clears a target clears it', () async {
+      final workout = await finished();
+
+      await local.storeWorkoutHistory([echoed(workout, clearTargets: true)], user);
+
+      final read = (await local.getWorkout(user, workout.id))!;
+      expect(read.first.first.target, isNull);
+    });
+  });
 }

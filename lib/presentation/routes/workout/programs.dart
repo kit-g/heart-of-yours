@@ -469,16 +469,14 @@ Future<void> _notToday(BuildContext context, Program program, Template session, 
   final pending = programs.skip(program, session: session.id);
   messenger
     ..clearSnackBars()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(copy.programSkipped(_sessionName(copy, session))),
-        action: SnackBarAction(
-          label: copy.undo,
-          onPressed: () async {
-            analytics.programUnskipped();
-            await programs.unskip(await pending);
-          },
-        ),
+    ..snack(
+      copy.programSkipped(_sessionName(copy, session)),
+      action: SnackBarAction(
+        label: copy.undo,
+        onPressed: () async {
+          analytics.programUnskipped();
+          await programs.unskip(await pending);
+        },
       ),
     );
   await pending;
