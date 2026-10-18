@@ -347,37 +347,50 @@ class _ProgramBand extends StatelessWidget {
                       ),
                   ],
                 ),
+              // the count on the left, the actions flush with the card's right
+              // inset: both sides loose, so what neither uses goes between
+              // them rather than after the button
               if (!finished)
                 Row(
+                  mainAxisAlignment: .spaceBetween,
                   spacing: 8,
                   children: [
-                    Expanded(
+                    Flexible(
                       child: switch ((program.perWeek, paused)) {
                         (final int target, false) => Text(copy.programThisWeek(thisWeek, target), style: muted),
                         _ => const SizedBox.shrink(),
                       },
                     ),
-                    // nothing is due while paused, so there is nothing to set aside
-                    if ((upNext, paused) case (final Template session, false))
-                      TextButton(
-                        key: AppKeys.programNotToday(program.id),
-                        onPressed: () => _notToday(context, program, session, fromBand: true),
-                        child: Text(copy.programNotToday),
+                    Flexible(
+                      flex: 2,
+                      child: Row(
+                        mainAxisSize: .min,
+                        spacing: 8,
+                        children: [
+                          // nothing is due while paused, so there is nothing to set aside
+                          if ((upNext, paused) case (final Template session, false))
+                            TextButton(
+                              key: AppKeys.programNotToday(program.id),
+                              onPressed: () => _notToday(context, program, session, fromBand: true),
+                              child: Text(copy.programNotToday),
+                            ),
+                          // a paused program can still be started: a program
+                          // workout resumes it, so the button is never a dead end
+                          if (upNext case final Template session)
+                            Flexible(
+                              child: PrimaryButton.shrunk(
+                                key: AppKeys.programStart(program.id),
+                                onPressed: () => onStart(session),
+                                child: Text(
+                                  copy.programStartSession(_sessionName(copy, session)),
+                                  maxLines: 1,
+                                  overflow: .ellipsis,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    // a paused program can still be started: a program workout
-                    // resumes it, so the button is never a dead end
-                    if (upNext case final Template session)
-                      Flexible(
-                        child: PrimaryButton.shrunk(
-                          key: AppKeys.programStart(program.id),
-                          onPressed: () => onStart(session),
-                          child: Text(
-                            copy.programStartSession(_sessionName(copy, session)),
-                            maxLines: 1,
-                            overflow: .ellipsis,
-                          ),
-                        ),
-                      ),
+                    ),
                   ],
                 ),
             ],
@@ -461,29 +474,34 @@ class _SessionChip extends StatelessWidget {
         .ahead => name,
       },
       excludeSemantics: true,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 160),
-        child: DecoratedBox(
-          decoration: ShapeDecoration(
-            color: fill,
-            shape: StadiumBorder(side: side),
-          ),
-          child: Padding(
-            padding: const .symmetric(horizontal: 10, vertical: 4),
-            child: Row(
-              mainAxisSize: .min,
-              spacing: 4,
-              children: [
-                if (_SessionChip._marks[state] case final IconData icon) Icon(icon, size: 14, color: ink),
-                Flexible(
-                  child: Text(
-                    name,
-                    style: style?.copyWith(color: ink),
-                    maxLines: 1,
-                    overflow: .ellipsis,
+      // a name cut short is there in full on a long press
+      child: Tooltip(
+        message: name,
+        excludeFromSemantics: true,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 160),
+          child: DecoratedBox(
+            decoration: ShapeDecoration(
+              color: fill,
+              shape: StadiumBorder(side: side),
+            ),
+            child: Padding(
+              padding: const .symmetric(horizontal: 10, vertical: 4),
+              child: Row(
+                mainAxisSize: .min,
+                spacing: 4,
+                children: [
+                  if (_SessionChip._marks[state] case final IconData icon) Icon(icon, size: 14, color: ink),
+                  Flexible(
+                    child: Text(
+                      name,
+                      style: style?.copyWith(color: ink),
+                      maxLines: 1,
+                      overflow: .ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

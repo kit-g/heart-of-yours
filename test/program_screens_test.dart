@@ -273,6 +273,19 @@ void main() {
       await tester.pumpTimes();
     }
 
+    testWidgets("the band's Start lines up with its week, at the card's right inset", (tester) async {
+      answer(.on);
+      withProgram();
+      await openWorkoutTab(tester);
+      final band = find.byKey(AppKeys.programBand('p1'));
+      final start = tester.getRect(find.byKey(AppKeys.programStart('p1')));
+      final card = tester.getRect(band);
+
+      final week = tester.getRect(find.descendant(of: band, matching: find.textContaining('Week')));
+      expect(start.right, closeTo(card.right - 12, 1));
+      expect(start.right, closeTo(week.right, 1));
+    });
+
     testWidgets("a program's folder is marked, and the mark opens the program over the tab", (tester) async {
       answer(.on);
       withProgram();
