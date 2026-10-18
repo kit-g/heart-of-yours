@@ -25,6 +25,7 @@ extension FeatureCopy on Feature {
       .plateCalculator => l.plateCalculator,
       .warmups => l.warmups,
       .defaultRest => l.defaultRest,
+      .recaps => l.recaps,
     };
   }
 
@@ -48,6 +49,7 @@ extension FeatureCopy on Feature {
       .plateCalculator => l.plateCalculatorSubtitle,
       .warmups => l.warmupsSubtitle,
       .defaultRest => l.defaultRestSubtitle,
+      .recaps => l.recapsSubtitle,
     };
   }
 
@@ -66,6 +68,7 @@ extension FeatureCopy on Feature {
       .plateCalculator => Icons.fitness_center_rounded,
       .warmups => Icons.stairs_rounded,
       .defaultRest => Icons.hourglass_bottom_rounded,
+      .recaps => Icons.insights_rounded,
     };
   }
 
@@ -82,7 +85,8 @@ extension FeatureCopy on Feature {
       .programs ||
       .previousInTemplate ||
       .plateCalculator ||
-      .defaultRest => const [],
+      .defaultRest ||
+      .recaps => const [],
       // what syncs and what doesn't: the line health data never crosses
       .notToday => [l.notTodayNote],
       // the rounding, which no control says
