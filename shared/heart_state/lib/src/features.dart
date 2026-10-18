@@ -60,7 +60,14 @@ enum Feature {
   /// feature promises not to be. A program's own "Not today" is Programs',
   /// and stays with it. Skips sync whatever the answer; off, the button and
   /// the plain days in History go.
-  notToday('notToday');
+  notToday('notToday'),
+
+  /// Your own training as text for an AI assistant of your choice (#259): a
+  /// workout, a period or one exercise's history, out through the clipboard
+  /// or the share sheet. Offered once, as an item in a History workout's menu
+  /// for the session it is first seen in: nothing interrupts, and only a user
+  /// who reaches for it is asked. Device only, and never a health value.
+  copyForAi('copyForAi');
 
   final String value;
 
