@@ -106,6 +106,30 @@ class const _PlanLine(final String line) extends StatelessWidget {
   }
 }
 
+/// What a program's session is for, at the top of its workout: the
+/// session's own note, in the program's words. A session of one heavy set
+/// explains itself here ("work up to one heavy set of three to five").
+class const SessionNote({super.key, required final String note}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return Padding(
+      key: WorkoutDetailKeys.sessionNote,
+      padding: const .fromLTRB(16, 8, 16, 0),
+      child: Row(
+        spacing: 8,
+        crossAxisAlignment: .start,
+        children: [
+          Icon(Icons.event_repeat_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+          Expanded(
+            child: Text(note, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// The note at the top of a lighter cycle's workout (#349), said once rather
 /// than under every exercise.
 class const LighterWeekNote({super.key, required final Deload? deload}) extends StatelessWidget {

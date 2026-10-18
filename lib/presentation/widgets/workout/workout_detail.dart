@@ -952,6 +952,15 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       (true, final String id) => programs.lookup(id),
       _ => null,
     };
+    // what the session is for, in the program's words: a one-set session
+    // would otherwise look like a mistake
+    final sessionNote = switch ((program, active.templateId)) {
+      (Program(), final String id) => switch (Templates.watch(context).lookup(id)?.note) {
+        final String note when note.trim().isNotEmpty => note,
+        _ => null,
+      },
+      _ => null,
+    };
     final lighter = switch (program) {
       final Program program =>
         programs.position(program, now: DateTime.now(), firstWeekday: firstWeekdayOf(context)).lighter,
@@ -1001,6 +1010,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                   return _replace(slot, picked, suggested: suggested, program: program);
                 },
                 slivers: [
+                  if (sessionNote case final String note) SliverToBoxAdapter(child: SessionNote(note: note)),
                   if (lighter) SliverToBoxAdapter(child: LighterWeekNote(deload: program?.deload)),
                   if (active.note case String note)
                     SliverToBoxAdapter(

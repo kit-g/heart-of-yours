@@ -165,6 +165,28 @@ void main() {
     expect(find.byKey(WorkoutDetailKeys.swapExerciseFor(squat.id)), findsNothing);
   });
 
+  testWidgets("the session's note says what it is for, at the top", (tester) async {
+    final draft = Template.empty(id: 't1', order: 0)..name = 'Test day';
+    final session = Template.fromJson({
+      ...draft.toMap(),
+      'programId': 'p1',
+      'note': 'Work up to one heavy set of three to five reps',
+    });
+    when(db.getTemplates(userId)).thenAnswer((_) async => [session]);
+    final day = squatDay();
+    await start(tester, Workout.fromExercises(day, name: 'Test day', templateId: 't1', programId: 'p1'));
+    await Templates.of(tester.element(find.byType(MaterialApp))).init();
+    await tester.pumpTimes();
+
+    expect(find.byKey(WorkoutDetailKeys.sessionNote), findsOneWidget);
+    expect(find.text('Work up to one heavy set of three to five reps'), findsOneWidget);
+  });
+
+  testWidgets('a session with no note says nothing', (tester) async {
+    await start(tester, squatDay());
+    expect(find.byKey(WorkoutDetailKeys.sessionNote), findsNothing);
+  });
+
   testWidgets('a lighter cycle says so once, at the top', (tester) async {
     when(db.getProgramActions(userId, programId: anyNamed('programId'))).thenAnswer(
       (_) async => [ProgramAction(id: 'a1', programId: 'p1', kind: .lighter, at: DateTime.now())],
