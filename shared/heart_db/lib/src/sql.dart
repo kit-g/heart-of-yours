@@ -282,6 +282,20 @@ WHERE completed = 0
       );
 ''';
 
+/// The targets a workout's sets hold in the mirror (#173): what a server copy
+/// without them must not wipe, since the server keeps no target on a
+/// workout's sets.
+const setTargetsOfWorkout = '''
+SELECT
+    s.id AS id,
+    s.target AS target
+FROM sets s
+INNER JOIN workout_exercises we ON we.id = s.exercise_id
+WHERE we.workout_id = ?
+  AND s.target IS NOT NULL
+;
+''';
+
 /// Writes the workout row in place. Never `INSERT OR REPLACE` here: with
 /// foreign keys on, REPLACE is a delete + insert, and the delete cascades
 /// through `workout_exercises` into `sets` (heart-of-yours#85).

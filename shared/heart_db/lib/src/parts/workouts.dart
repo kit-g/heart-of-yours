@@ -16,15 +16,25 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
   /// [set]'s row. `toRow` predates set types, RPE, the tick's time and
   /// targets, and leaves them out, so every write of a set goes through here
   /// to keep them (#151, #134, #173).
-  static Map<String, Object?> _setRow(ExerciseSet set) {
+  ///
+  /// [kept] is the target the mirror already holds for it, written when [set]
+  /// says nothing about one — a server copy, which carries none.
+  static Map<String, Object?> _setRow(ExerciseSet set, {String? kept}) {
     return {
       ...set.toRow(),
       'set_type': _setType(set),
       'rpe': set.rpe,
       'completed_at': set.completedAt?.toIso8601String(),
-      'target': _encodeTarget(set),
+      'target': switch (_speaksTarget(set)) {
+        true => _encodeTarget(set),
+        false => kept,
+      },
     };
   }
+
+  /// Whether [set] says anything about its target, a cleared one included:
+  /// heart_models writes the key only then.
+  static bool _speaksTarget(ExerciseSet set) => set.toMap().containsKey('target');
 
   /// [set]'s target as stored: JSON, null for none (#173). What a newer build
   /// wrote and this one can't read is in `toMap` too, so it is kept.
@@ -101,6 +111,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     String userId, {
     required bool synced,
     required bool replaceExercises,
+    Map<String, String> keptTargets = const {},
   }) {
     final Workout(id: workoutId, :start, :name, :end, :images, :note, :pauses, :templateId, :programId) = workout;
     // every column, nulls included, so the row ends up exactly as REPLACE
@@ -148,7 +159,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       for (final set in exercise) {
         final setRow = {
           'exercise_id': exercise.id,
-          ..._setRow(set),
+          ..._setRow(set, kept: keptTargets[set.id]),
         };
 
         batch.insert(_sets, setRow, conflictAlgorithm: .replace);
@@ -394,10 +405,29 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
         };
         if (shallow.isNotEmpty) await _reportShallow(txn, shallow);
 
+        // the server keeps no target on a workout's sets, so its copy would
+        // wipe the ones a program session wrote; read them first, only for
+        // workouts with a set that says nothing about its target
+        final kept = <String, String>{};
+        for (final each in history) {
+          if (shallow.contains(each.id)) continue;
+          if (!each.any((exercise) => exercise.any((set) => !_speaksTarget(set)))) continue;
+          for (final row in await txn.rawQuery(sql.setTargetsOfWorkout, [each.id])) {
+            if ((row['id'], row['target']) case (final String id, final String target)) kept[id] = target;
+          }
+        }
+
         final batch = txn.batch();
 
         for (final each in history) {
-          _storeWorkout(batch, each, userId, synced: true, replaceExercises: !shallow.contains(each.id));
+          _storeWorkout(
+            batch,
+            each,
+            userId,
+            synced: true,
+            replaceExercises: !shallow.contains(each.id),
+            keptTargets: kept,
+          );
         }
 
         await batch.commit();
