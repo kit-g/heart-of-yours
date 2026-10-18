@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   fl_chart: ^1.2.0
-  material_ui: ^1.6.0
+  material_ui: ^1.7.0
 
 resolution: workspace
 
