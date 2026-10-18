@@ -1,7 +1,10 @@
 // The records a workout set, placed on the sets that set them (#F20).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/records.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart';
+import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   final bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
@@ -54,5 +57,47 @@ void main() {
     expect(marks, {
       heavy.id: [RecordKind.maxWeight, RecordKind.oneRepMax],
     });
+  });
+
+  Future<void> pumpScoped(WidgetTester tester, Widget child, {RecordMarks marks = const {}, String? first}) {
+    return tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: localizationsDelegates,
+        supportedLocales: L.supportedLocales,
+        home: Scaffold(
+          body: RecordMarksScope(marks: marks, firstSetId: first, child: child),
+        ),
+      ),
+    );
+  }
+
+  testWidgets('a set\'s records are short pills, each saying its full name', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpScoped(
+      tester,
+      const RecordPills(kinds: [RecordKind.oneRepMax, RecordKind.bestVolume, RecordKind.maxWeight]),
+    );
+
+    expect(find.text('1RM'), findsOneWidget);
+    expect(find.text('VOL.'), findsOneWidget);
+    expect(find.text('WEIGHT'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Record: ')), findsNWidgets(3));
+    semantics.dispose();
+  });
+
+  testWidgets('the count says how many records the page holds, and is absent with none', (tester) async {
+    await pumpScoped(
+      tester,
+      const RecordCountRow(),
+      marks: {
+        's1': [RecordKind.maxWeight, RecordKind.oneRepMax],
+        's2': [RecordKind.bestVolume],
+      },
+      first: 's1',
+    );
+    expect(find.text('3 PRs'), findsOneWidget);
+
+    await pumpScoped(tester, const RecordCountRow());
+    expect(find.textContaining('PR'), findsNothing);
   });
 }

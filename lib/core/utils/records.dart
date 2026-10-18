@@ -167,6 +167,21 @@ class RecordFormats {
   }
 }
 
+/// A record kind's short name, for a pill under its set: "1RM", "VOL.".
+String recordKindShort(BuildContext context, RecordKind kind) {
+  final l = L.of(context);
+  return switch (kind) {
+    .maxWeight => l.recordShortWeight,
+    .oneRepMax => l.recordShortOneRepMax,
+    .bestVolume => l.recordShortVolume,
+    .mostReps => l.recordShortReps,
+    .leastAssistance => l.recordShortAssistance,
+    .longestDistance => l.recordShortDistance,
+    .longestDuration => l.recordShortDuration,
+    .bestPace => l.recordShortPace,
+  };
+}
+
 /// The label copy for a record kind — here rather than on the enum because
 /// presentation owns copy; the enum carries identifiers only.
 String recordKindLabel(BuildContext context, RecordKind kind) {

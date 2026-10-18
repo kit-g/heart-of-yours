@@ -13,6 +13,10 @@ class WorkoutItem extends StatelessWidget {
   /// Whether this card is the one open in a two-pane detail view.
   final bool highlighted;
 
+  /// The Done page's summary: each exercise's records as pills under its
+  /// line, as of this workout.
+  final bool showsRecords;
+
   const new({
     super.key,
     required this.workout,
@@ -24,6 +28,7 @@ class WorkoutItem extends StatelessWidget {
     this.onDeleteWorkout,
     this.onTapImageIcon,
     this.highlighted = false,
+    this.showsRecords = false,
   });
 
   @override
@@ -179,31 +184,39 @@ class WorkoutItem extends StatelessWidget {
                 spacing: 4,
                 children: [
                   for (final exercise in workout)
-                    Row(
-                      spacing: 12,
+                    Column(
+                      crossAxisAlignment: .start,
+                      spacing: 2,
                       children: [
-                        Expanded(
-                          child: Text(
-                            '${exercise.exercise.name} ×${exercise.where((set) => set.isCompleted).length}',
-                            style: textTheme.bodySmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Row(
+                          spacing: 12,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${exercise.exercise.name} ×${exercise.where((set) => set.isCompleted).length}',
+                                style: textTheme.bodySmall,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              _formatSet(
+                                context,
+                                exercise.best,
+                                Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.weightUnit,
+                                Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.distanceUnit,
+                              ),
+                              // the result column reads in full ink and lines up
+                              // digit-for-digit
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface,
+                                fontFeatures: const [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          _formatSet(
-                            context,
-                            exercise.best,
-                            Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.weightUnit,
-                            Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.distanceUnit,
-                          ),
-                          // the result column reads in full ink and lines up
-                          // digit-for-digit
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
+                        // the Done page's summary: what this exercise set, as pills
+                        if (showsRecords) _ExercisePills(workout: workout, exercise: exercise),
                       ],
                     ),
                 ],
@@ -549,12 +562,43 @@ class _RecordCount extends StatelessWidget {
                 spacing: 2,
                 children: [
                   Icon(Icons.emoji_events_rounded, size: 18, color: colorScheme.tertiary),
-                  Text('$count', style: textTheme.labelLarge?.copyWith(color: colorScheme.tertiary)),
+                  Text(
+                    L.of(context).workoutPRs(count),
+                    style: textTheme.labelLarge?.copyWith(color: colorScheme.tertiary),
+                  ),
                 ],
               ),
             ),
           ),
         );
+      },
+    );
+  }
+}
+
+/// The records one exercise of [workout] set, as pills: the Done page's
+/// summary, as of the workout. Nothing until they are read, nor where none.
+class _ExercisePills extends StatelessWidget {
+  final Workout workout;
+  final WorkoutExercise exercise;
+
+  const new({required this.workout, required this.exercise});
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = Exercises.of(context).userId;
+    final book = RecordBook.maybeOf(context);
+    if (book == null || userId == null) return const SizedBox.shrink();
+    return FutureBuilder<RecordMarks>(
+      future: book.marksOf(workout, userId: userId),
+      builder: (context, snapshot) {
+        final kinds = {
+          for (final set in exercise) ...?snapshot.data?[set.id],
+        };
+        return switch (kinds.isEmpty) {
+          true => const SizedBox.shrink(),
+          false => RecordPills(kinds: kinds.toList()),
+        };
       },
     );
   }

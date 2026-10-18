@@ -183,6 +183,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                     exercises: workout,
                     needsCancelWorkoutButton: false,
                     slivers: [
+                      const SliverToBoxAdapter(child: RecordCountRow()),
                       SliverToBoxAdapter(
                         child: _WorkoutTimesSummary(
                           workout: workout,
@@ -634,7 +635,15 @@ class _RecordsOf extends StatelessWidget {
     if (book == null || userId == null) return child;
     return FutureBuilder<RecordMarks>(
       future: book.marksOf(workout, userId: userId),
-      builder: (context, snapshot) => RecordMarksScope(marks: snapshot.data ?? const {}, child: child),
+      builder: (context, snapshot) {
+        final marks = snapshot.data ?? const <String, List<RecordKind>>{};
+        return RecordMarksScope(
+          marks: marks,
+          // the first, in the workout's own order: where its count scrolls
+          firstSetId: workout.expand((exercise) => exercise).map((set) => set.id).where(marks.containsKey).firstOrNull,
+          child: child,
+        );
+      },
     );
   }
 }

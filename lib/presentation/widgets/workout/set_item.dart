@@ -247,193 +247,207 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       },
       onUpdate: _onSwipe,
       key: ValueKey<String>('_ExerciseSetItem.${set.id}'),
-      child: Stack(
-        clipBehavior: .none,
+      // the records this set set, on a past workout's page: a row of pills
+      // under it, the first of the page's carrying the key its count scrolls to
+      child: Column(
+        mainAxisSize: .min,
+        crossAxisAlignment: .stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
-            child: Row(
-              children: [
-                _SetTypeButton(
-                  key: WorkoutDetailKeys.setTypeFor(exercise.exercise.id, widget.index),
-                  set: set,
-                  number: widget.number,
-                  fill: fill,
-                  onSetType: widget.onSetType,
-                  onSetRpe: widget.onSetRpe,
-                  onSetTarget: widget.onSetTarget,
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Center(
-                    child: switch (widget.previousValue) {
-                      // only a previous that shows real values gets the tappable
-                      // pill — a legacy row missing its category's fields renders
-                      // a bare dash, same as no previous at all
-                      Map<String, dynamic> m when PreviousSet.represents(exercise.exercise, m) => PrimaryButton.shrunk(
-                        backgroundColor: scaffoldBackgroundColor,
-                        margin: const EdgeInsets.all(4),
-                        child: PreviousSet(
-                          previousValue: m,
-                          exercise: exercise.exercise,
-                          prefs: prefs,
-                        ),
-                        onPressed: () {
-                          buzz();
-                          switch (exercise.exercise.category) {
-                            case .weightedBodyWeight:
-                            case .assistedBodyWeight:
-                            case .machine:
-                            case .dumbbell:
-                            case .barbell:
-                              switch (m) {
-                                case {'weight': num weight, 'reps': int reps}:
-                                  _weightController.text = prefs.weight(weight, unit: _unitOverride);
-                                  _repsController.text = '$reps';
-                              }
-                            case .repsOnly:
-                              switch (m) {
-                                case {'reps': int reps}:
-                                  _repsController.text = '$reps';
-                              }
-                            case .cardio:
-                              switch (m) {
-                                case {'duration': num duration, 'distance': num distance}:
-                                  _durationController.text = duration.toInt().toDuration();
-                                  _distanceController.text = _shownDistance(prefs, distance);
-                              }
-                            case .duration:
-                              switch (m) {
-                                case {'duration': num duration}:
-                                  _durationController.text = duration.toInt().toDuration();
-                              }
-                            case .weightedDistance:
-                              switch (m) {
-                                case {'weight': num weight, 'distance': num distance}:
-                                  _weightController.text = prefs.weight(weight, unit: _unitOverride);
-                                  _distanceController.text = _shownDistance(prefs, distance);
-                              }
-                            case .weightedDuration:
-                              switch (m) {
-                                case {'weight': num weight, 'duration': num duration}:
-                                  _weightController.text = prefs.weight(weight, unit: _unitOverride);
-                                  _durationController.text = duration.toInt().toDuration();
-                              }
-                          }
+          Stack(
+            clipBehavior: .none,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
+                child: Row(
+                  children: [
+                    _SetTypeButton(
+                      key: WorkoutDetailKeys.setTypeFor(exercise.exercise.id, widget.index),
+                      set: set,
+                      number: widget.number,
+                      fill: fill,
+                      onSetType: widget.onSetType,
+                      onSetRpe: widget.onSetRpe,
+                      onSetTarget: widget.onSetTarget,
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Center(
+                        child: switch (widget.previousValue) {
+                          // only a previous that shows real values gets the tappable
+                          // pill — a legacy row missing its category's fields renders
+                          // a bare dash, same as no previous at all
+                          Map<String, dynamic> m when PreviousSet.represents(exercise.exercise, m) =>
+                            PrimaryButton.shrunk(
+                              backgroundColor: scaffoldBackgroundColor,
+                              margin: const EdgeInsets.all(4),
+                              child: PreviousSet(
+                                previousValue: m,
+                                exercise: exercise.exercise,
+                                prefs: prefs,
+                              ),
+                              onPressed: () {
+                                buzz();
+                                switch (exercise.exercise.category) {
+                                  case .weightedBodyWeight:
+                                  case .assistedBodyWeight:
+                                  case .machine:
+                                  case .dumbbell:
+                                  case .barbell:
+                                    switch (m) {
+                                      case {'weight': num weight, 'reps': int reps}:
+                                        _weightController.text = prefs.weight(weight, unit: _unitOverride);
+                                        _repsController.text = '$reps';
+                                    }
+                                  case .repsOnly:
+                                    switch (m) {
+                                      case {'reps': int reps}:
+                                        _repsController.text = '$reps';
+                                    }
+                                  case .cardio:
+                                    switch (m) {
+                                      case {'duration': num duration, 'distance': num distance}:
+                                        _durationController.text = duration.toInt().toDuration();
+                                        _distanceController.text = _shownDistance(prefs, distance);
+                                    }
+                                  case .duration:
+                                    switch (m) {
+                                      case {'duration': num duration}:
+                                        _durationController.text = duration.toInt().toDuration();
+                                    }
+                                  case .weightedDistance:
+                                    switch (m) {
+                                      case {'weight': num weight, 'distance': num distance}:
+                                        _weightController.text = prefs.weight(weight, unit: _unitOverride);
+                                        _distanceController.text = _shownDistance(prefs, distance);
+                                    }
+                                  case .weightedDuration:
+                                    switch (m) {
+                                      case {'weight': num weight, 'duration': num duration}:
+                                        _weightController.text = prefs.weight(weight, unit: _unitOverride);
+                                        _durationController.text = duration.toInt().toDuration();
+                                    }
+                                }
+                              },
+                            ),
+                          _ => const Text(_emptyValue),
                         },
                       ),
-                      _ => const Text(_emptyValue),
-                    },
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Row(
-                    children: _buttons(fill),
-                  ),
-                ),
-                SizedBox(
-                  width: _fixedColumnWidth,
-                  height: _fixedButtonHeight,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                    child: PrimaryButton.shrunk(
-                      key: WorkoutDetailKeys.doneFor(exercise.exercise.id, widget.index),
-                      backgroundColor: switch (set.isCompleted) {
-                        true => tertiaryContainer,
-                        false => fill,
-                      },
-                      margin: EdgeInsets.zero,
-                      onPressed: () {
-                        if (!widget.isLocked) {
-                          if (widget.onSetDone != null) {
-                            widget.onSetDone?.call(exercise, set);
-                          } else {
-                            switch ((_timing, _canStartStopwatch)) {
-                              // ■ brings the running stopwatch back
-                              case (true, _):
-                                _openStopwatch();
-                              // ▶ starts it, and shows it counting
-                              case (false, true):
-                                _startStopwatch();
-                                _openStopwatch();
-                              // ✓ ticks and unticks as ever
-                              case _:
-                                _onDone(context);
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Row(
+                        children: _buttons(fill),
+                      ),
+                    ),
+                    SizedBox(
+                      width: _fixedColumnWidth,
+                      height: _fixedButtonHeight,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                        child: PrimaryButton.shrunk(
+                          key: WorkoutDetailKeys.doneFor(exercise.exercise.id, widget.index),
+                          backgroundColor: switch (set.isCompleted) {
+                            true => tertiaryContainer,
+                            false => fill,
+                          },
+                          margin: EdgeInsets.zero,
+                          onPressed: () {
+                            if (!widget.isLocked) {
+                              if (widget.onSetDone != null) {
+                                widget.onSetDone?.call(exercise, set);
+                              } else {
+                                switch ((_timing, _canStartStopwatch)) {
+                                  // ■ brings the running stopwatch back
+                                  case (true, _):
+                                    _openStopwatch();
+                                  // ▶ starts it, and shows it counting
+                                  case (false, true):
+                                    _startStopwatch();
+                                    _openStopwatch();
+                                  // ✓ ticks and unticks as ever
+                                  case _:
+                                    _onDone(context);
+                                }
+                              }
                             }
-                          }
-                        }
-                      },
-                      child: Center(
-                        child: Opacity(
-                          opacity: widget.isLocked ? .5 : 1,
-                          child: ListenableBuilder(
-                            listenable: workouts.stopwatch,
-                            builder: (context, _) {
-                              return switch ((_timing, _canStartStopwatch)) {
-                                (true, _) => Semantics(
-                                  label: L.of(context).showSetStopwatch,
-                                  child: Icon(Icons.stop_rounded, size: 18, color: primary),
-                                ),
-                                (false, true) => Semantics(
-                                  label: L.of(context).timeSet,
-                                  child: Icon(Icons.play_arrow_rounded, size: 18, color: onSurfaceVariant),
-                                ),
-                                _ => Semantics(
-                                  label: switch (set.isCompleted) {
-                                    true => L.of(context).untickSet,
-                                    false => L.of(context).tickSet,
-                                  },
-                                  child: Icon(
-                                    Icons.done,
-                                    size: 18,
-                                    color: switch (set.isCompleted) {
-                                      true => onTertiaryContainer,
-                                      false => onSurfaceVariant,
-                                    },
-                                  ),
-                                ),
-                              };
-                            },
+                          },
+                          child: Center(
+                            child: Opacity(
+                              opacity: widget.isLocked ? .5 : 1,
+                              child: ListenableBuilder(
+                                listenable: workouts.stopwatch,
+                                builder: (context, _) {
+                                  return switch ((_timing, _canStartStopwatch)) {
+                                    (true, _) => Semantics(
+                                      label: L.of(context).showSetStopwatch,
+                                      child: Icon(Icons.stop_rounded, size: 18, color: primary),
+                                    ),
+                                    (false, true) => Semantics(
+                                      label: L.of(context).timeSet,
+                                      child: Icon(Icons.play_arrow_rounded, size: 18, color: onSurfaceVariant),
+                                    ),
+                                    _ => Semantics(
+                                      label: switch (set.isCompleted) {
+                                        true => L.of(context).untickSet,
+                                        false => L.of(context).tickSet,
+                                      },
+                                      child: Icon(
+                                        Icons.done,
+                                        size: 18,
+                                        color: switch (set.isCompleted) {
+                                          true => onTertiaryContainer,
+                                          false => onSurfaceVariant,
+                                        },
+                                      ),
+                                    ),
+                                  };
+                                },
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              // 4pt under the row's controls: 2 of the row's own bottom padding
+              // and 2 of the next row's top, so a running set keeps its height
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: -2,
+                child: ListenableBuilder(
+                  listenable: workouts.stopwatch,
+                  builder: (context, _) {
+                    final stopwatch = workouts.stopwatch;
+                    return switch (_timing) {
+                      true => ValueListenableBuilder<int>(
+                        valueListenable: stopwatch.seconds,
+                        builder: (_, seconds, _) {
+                          return _StopwatchLine(
+                            seconds: seconds,
+                            target: set.duration,
+                            paused: stopwatch.isPaused,
+                          );
+                        },
+                      ),
+                      false => const SizedBox.shrink(),
+                    };
+                  },
+                ),
+              ),
+            ],
           ),
-          // the records this set set, on a past workout's page: over the
-          // corner of its number, taking no room from the row
           if (RecordMarksScope.of(context, set.id) case final kinds when kinds.isNotEmpty)
-            PositionedDirectional(top: 0, start: 2, child: _RecordMark(kinds: kinds)),
-          // 4pt under the row's controls: 2 of the row's own bottom padding
-          // and 2 of the next row's top, so a running set keeps its height
-          Positioned(
-            left: 8,
-            right: 8,
-            bottom: -2,
-            child: ListenableBuilder(
-              listenable: workouts.stopwatch,
-              builder: (context, _) {
-                final stopwatch = workouts.stopwatch;
-                return switch (_timing) {
-                  true => ValueListenableBuilder<int>(
-                    valueListenable: stopwatch.seconds,
-                    builder: (_, seconds, _) {
-                      return _StopwatchLine(
-                        seconds: seconds,
-                        target: set.duration,
-                        paused: stopwatch.isPaused,
-                      );
-                    },
-                  ),
-                  false => const SizedBox.shrink(),
-                };
+            Padding(
+              key: switch (RecordMarksScope._of(context)) {
+                final RecordMarksScope scope when scope.firstSetId == set.id => scope.first,
+                _ => null,
               },
+              padding: const .fromLTRB(16, 0, 16, 6),
+              child: RecordPills(kinds: kinds),
             ),
-          ),
         ],
       ),
     );
