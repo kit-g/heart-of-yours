@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
+import 'package:heart/presentation/routes/workout/workout.dart' show ProgramPage;
 import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
@@ -270,6 +271,24 @@ void main() {
       await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
       await tester.pumpTimes();
     }
+
+    testWidgets("a program's folder is marked, and the mark opens the program over the tab", (tester) async {
+      answer(.on);
+      withProgram();
+      await openWorkoutTab(tester);
+      final mark = find.byKey(AppKeys.partOfProgram('p1'));
+      await scrollTo(tester, mark);
+      expect(mark, findsOneWidget);
+
+      await tester.tap(mark);
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsOneWidget);
+
+      await tester.pageBack();
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsNothing);
+      expect(mark, findsOneWidget);
+    });
 
     testWidgets('the sessions are joined by a rail through their icons, one sequence', (tester) async {
       await openPage(tester);

@@ -391,6 +391,12 @@ final class HeartRouter {
     return config.goNamed(_programName, pathParameters: {'programId': programId});
   }
 
+  /// A program's page over the Workout tab's page that named it — a folder
+  /// its sessions live in: pushed, so Back returns there.
+  void pushProgram(String programId) {
+    config.pushNamed(_programName, pathParameters: {'programId': programId});
+  }
+
   /// A day set aside with "Not today" (#312), in History.
   void goToSkip(String skipId) {
     return config.goNamed(_historySkipName, pathParameters: {'skipId': skipId});

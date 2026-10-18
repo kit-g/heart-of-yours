@@ -150,6 +150,9 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
             onDelete: () => _showDeleteFolderDialog(context, folder),
             onDrop: (template) => _file(template, folder),
             card: (template) => _userCard(context, template),
+            // a folder a program made: its sessions carry the program's id
+            programId: templates.templatesIn(folder).map((template) => template.programId).nonNulls.firstOrNull,
+            onOpenProgram: (program) => HeartRouter.of(context).pushProgram(program.id!),
             onMakeProgram: switch (preferences.isOn(.programs) && programFolders.any((each) => each.id == folder.id)) {
               true => () => widget.goToNewProgram(folder),
               false => null,
@@ -712,6 +715,11 @@ class _FolderSection extends StatelessWidget {
   /// off or the folder cannot be one, and then the menu has no such entry.
   final VoidCallback? onMakeProgram;
 
+  /// The program whose sessions this folder holds, marked in its header and
+  /// opened from there; null for a plain folder.
+  final String? programId;
+  final void Function(Program)? onOpenProgram;
+
   const new({
     super.key,
     required this.folder,
@@ -723,6 +731,8 @@ class _FolderSection extends StatelessWidget {
     required this.onDrop,
     required this.card,
     this.onMakeProgram,
+    this.programId,
+    this.onOpenProgram,
   });
 
   @override
@@ -870,6 +880,9 @@ class _FolderSection extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            // the program the folder's sessions belong to, and the way to it
+            if ((programId, onOpenProgram) case (final String id, final open?))
+              PartOfProgram(programId: id, onOpen: open, size: 18),
             // The name is [Expanded] and this is not, so the summary states an
             // intrinsic width and the name takes what is left — they cannot
             // overlap. The cap is what keeps a folder of long names from
