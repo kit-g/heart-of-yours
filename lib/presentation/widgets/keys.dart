@@ -176,6 +176,7 @@ abstract final class AppKeys {
 
   /// One program's band on the Workout tab (#347), and its Start button.
   static Key programBand(String? programId) => Key('Programs.band.$programId');
+  static Key programBandStatus(String? programId) => Key('Programs.band.status.$programId');
   static Key partOfProgram(String? programId) => Key('Programs.partOf.$programId');
   static const programInProgress = Key('Programs.inProgress');
   static Key workoutRecords(String workoutId) => Key('History.records.$workoutId');

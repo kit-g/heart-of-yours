@@ -180,7 +180,11 @@ void main() {
       final band = find.byKey(AppKeys.programBand('p1'));
       expect(band, findsOneWidget);
       // the week, and when the program would end at this pace (#F33)
-      expect(find.descendant(of: band, matching: find.textContaining(RegExp(r'^Week 1 of 8 · ends '))), findsOneWidget);
+      // the week, and on a line of its own when the program would end at
+      // this pace (#F33, #F42): never cut short
+      final status = find.byKey(AppKeys.programBandStatus('p1'));
+      expect(find.descendant(of: status, matching: find.text('Week 1 of 8')), findsOneWidget);
+      expect(find.descendant(of: status, matching: find.textContaining(RegExp(r'^ends '))), findsOneWidget);
       expect(find.descendant(of: band, matching: find.text('0 of 3 this week')), findsOneWidget);
 
       await tester.tapByKey(AppKeys.programStart('p1'));
@@ -293,6 +297,23 @@ void main() {
       await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
       await tester.pumpTimes();
     }
+
+    testWidgets("the band's end date is never cut short", (tester) async {
+      // a line of its own, unbounded: the width it has decides nothing (a
+      // phone's own width can't be pumped here — the Workout tab's header
+      // overflows it under the test font)
+      answer(.on);
+      withProgram();
+      await openWorkoutTab(tester);
+
+      final end = find.descendant(
+        of: find.byKey(AppKeys.programBandStatus('p1')),
+        matching: find.textContaining(RegExp(r'^ends ')),
+      );
+      final text = tester.widget<Text>(end);
+      expect(text.overflow, isNot(TextOverflow.ellipsis));
+      expect(text.maxLines, isNull);
+    });
 
     testWidgets("the band's Start lines up with its week, at the card's right inset", (tester) async {
       answer(.on);

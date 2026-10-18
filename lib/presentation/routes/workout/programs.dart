@@ -327,16 +327,18 @@ class _ProgramBand extends StatelessWidget {
                   Expanded(
                     child: Text(program.name, style: textTheme.titleMedium, maxLines: 1, overflow: .ellipsis),
                   ),
-                  // the week and its projected end give way to a long name
-                  Flexible(
-                    child: Text(
-                      _status(context, program, position),
-                      style: muted,
-                      maxLines: 1,
-                      overflow: .ellipsis,
-                      textAlign: .end,
+                  // the week over its projected end, on a line each: a phone's
+                  // card is too narrow for both beside a name, and the date is
+                  // never the part cut short
+                  if (_statusParts(context, program, position) case (final status, final end))
+                    Column(
+                      key: AppKeys.programBandStatus(program.id),
+                      crossAxisAlignment: .end,
+                      children: [
+                        Text(status, style: muted, textAlign: .end),
+                        if (end != null) Text(end, style: muted, textAlign: .end),
+                      ],
                     ),
-                  ),
                 ],
               ),
               if (!finished && sessions.isNotEmpty)
@@ -413,6 +415,16 @@ class _ProgramBand extends StatelessWidget {
 /// Where [program] stands, in a word or two: finished, paused, or its week —
 /// and, for one with a length, when it would end at this pace (#F33).
 String _status(BuildContext context, Program program, ProgramPosition position) {
+  return switch (_statusParts(context, program, position)) {
+    (final status, final String end) => '$status · $end',
+    (final status, null) => status,
+  };
+}
+
+/// [_status] in its two parts: where the program stands, and — for one with
+/// a length, while it runs — when it would end ("ends 17 Jan"), for a place
+/// too narrow for both on one line.
+(String, String?) _statusParts(BuildContext context, Program program, ProgramPosition position) {
   final copy = L.of(context);
   final now = DateTime.now();
   final firstWeekday = firstWeekdayOf(context);
@@ -427,10 +439,13 @@ String _status(BuildContext context, Program program, ProgramPosition position) 
     (ProgramPosition(:final week), null) => copy.programWeek(week),
   };
   final end = projectedEnd(program, position, now: now, firstWeekday: firstWeekday);
-  return switch (end) {
-    final DateTime end => '$status · ${copy.programEnds(DateFormat.MMMd(copy.localeName).format(end))}',
-    null => status,
-  };
+  return (
+    status,
+    switch (end) {
+      final DateTime end => copy.programEnds(DateFormat.MMMd(copy.localeName).format(end)),
+      null => null,
+    },
+  );
 }
 
 /// "Not today" (#312): sets [session] aside at once, with an Undo beside it.
