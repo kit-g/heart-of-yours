@@ -338,9 +338,11 @@ class _CalendarSetupState extends State<_CalendarSetup> {
   Widget _inset(Widget child) => Padding(padding: _rowInset, child: child);
 
   Future<void> _pickTime(BuildContext context, int time) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: time ~/ 60, minute: time % 60),
+    // the platform's own picker: the wheel on an iPhone, the clock elsewhere
+    final picked = await showAdaptiveTimePicker(
+      context,
+      initial: TimeOfDay(hour: time ~/ 60, minute: time % 60),
+      title: L.of(context).time,
     );
     if (picked == null) return;
     _change(time: picked.hour * 60 + picked.minute);
