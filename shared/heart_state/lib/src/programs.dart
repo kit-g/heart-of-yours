@@ -285,6 +285,29 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Where the user stands in [program]: computed, never stored. [now] sets the
   /// calendar week the weekly count reads, in its zone; [firstWeekday] is ISO,
   /// the user's own first day of the week.
+  /// Seeds a base for each of [program]'s rules that grows a weight and has
+  /// none yet, from the user's own sets of its exercise ([setsOf], newest
+  /// first): what [suggestedBase] reads in them. A real base, the user's own
+  /// — as editable as one they typed — so the prescriptions and the goals the
+  /// program implies agree from its first day. A lift with no sets of it
+  /// stays without one, for its first session to set. Returns those set.
+  Future<List<ProgramBase>> seedBases(
+    Program program, {
+    required Future<Iterable<ExerciseSet>> Function(String exerciseId) setsOf,
+  }) async {
+    final id = program.id;
+    if (id == null) return const [];
+    final current = currentBasesOf(id);
+    final seeded = <ProgramBase>[];
+    for (final MapEntry(key: exerciseId, value: rule) in program.rules.entries) {
+      if (!growsWeightBase(rule) || current.containsKey(exerciseId)) continue;
+      if (suggestedBase(rule, await setsOf(exerciseId)) case final num value) {
+        seeded.add(await setBase(program, exerciseId: exerciseId, value: value));
+      }
+    }
+    return seeded;
+  }
+
   /// What the user has done with the library's program [key], from the copies
   /// they made of it (`source == key`), archived ones included; the most
   /// telling one wins: following it now, then having finished it, then having
@@ -1466,4 +1489,29 @@ final class LibraryTried extends LibraryHistory {
 
   @override
   int get rank => 2;
+}
+
+/// Whether [rule] grows a weight from a base the user can set: a training max
+/// (a share-of-max rule) or a working weight. Ladders climb exercises and
+/// [Longer] grows a length, so neither has one.
+bool growsWeightBase(GrowthRule? rule) {
+  return switch (rule) {
+    AddWeight() || RangeThenWeight() || ShareOfMax() || Stages() => true,
+    _ => false,
+  };
+}
+
+/// Where [rule] would start an exercise from the user's own [sets] of it, as
+/// a test session would: a share-of-max rule takes 90% of the best Brzycki
+/// estimate; a working weight, the heaviest working set. Null with nothing
+/// to go on.
+num? suggestedBase(GrowthRule? rule, Iterable<ExerciseSet> sets) {
+  return switch (rule) {
+    ShareOfMax() => Progression.test(sets, share: .9),
+    _ =>
+      sets
+          .where((set) => set.isCompleted && set.setType != .warmup && (set.weight ?? 0) > 0)
+          .map((set) => set.weight!)
+          .fold<num?>(null, (best, weight) => best == null || weight > best ? weight : best),
+  };
 }

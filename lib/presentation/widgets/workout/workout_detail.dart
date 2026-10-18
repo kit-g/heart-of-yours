@@ -945,14 +945,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
 
     final history = await exercises.getExerciseHistory(to, pageSize: 10);
     final sets = [for (final act in history) ...act];
-    final suggested = switch (rule) {
-      ShareOfMax() => Progression.test(sets, share: .9),
-      _ =>
-        sets
-            .where((set) => set.isCompleted && set.setType != .warmup && (set.weight ?? 0) > 0)
-            .map((set) => set.weight!)
-            .fold<num?>(null, (best, weight) => best == null || weight > best ? weight : best),
-    };
+    final suggested = suggestedBase(rule, sets);
     if (!mounted) return;
     final value = await showProgramBaseEditor(context, exercise: to, rule: rule, value: suggested, seeding: true);
     if (value != null) await programs.setBase(program, exerciseId: to.id, value: value);

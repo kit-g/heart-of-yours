@@ -5048,5 +5048,7 @@
   "libraryStoppedAtOpen": "Stopped at week {week}",
   "@libraryStoppedAtOpen": {"description": "On an open-ended ready-made program's card and page in the library: the user stopped following a copy of it", "type": "text", "placeholders": {"week": {"type": "int"}}},
   "goalPausedByProgram": "Your {count} a week is paused while you follow {program}",
-  "@goalPausedByProgram": {"description": "Goals card, a muted line under a program's sessions-a-week goal: the user's own workouts-a-week goal is set aside, unchanged, while the program runs; {count} is that goal's target, {program} the program's name", "type": "text", "placeholders": {"count": {"type": "int"}, "program": {}}}
+  "@goalPausedByProgram": {"description": "Goals card, a muted line under a program's sessions-a-week goal: the user's own workouts-a-week goal is set aside, unchanged, while the program runs; {count} is that goal's target, {program} the program's name", "type": "text", "placeholders": {"count": {"type": "int"}, "program": {}}},
+  "programSeededFromHistory": "Starting from your history: {lifts}. Change any on the program's page.",
+  "@programSeededFromHistory": {"description": "Shown once a ready-made program starts, when some of its lifts got a starting weight from the user's own sets; {lifts} is a list such as 'Squat 120 kg, Bench Press 80 kg'", "type": "text", "placeholders": {"lifts": {}}}
 }

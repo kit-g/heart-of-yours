@@ -461,7 +461,8 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
     final templates = Templates.of(context);
     final programs = Programs.of(context);
     final analytics = Analytics.of(context);
-    final resolve = Exercises.of(context).lookupByKey;
+    final exercises = Exercises.of(context);
+    final resolve = exercises.lookupByKey;
     final remote = RemoteAccess.of(context);
     final tag = languageTag();
 
@@ -485,6 +486,38 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
       final made = program.copy(resolve: resolve, tag: tag, folder: folder, order: order)!;
 
       final started = await programs.create(made.program.copyWith(days: days), sessions: made.sessions);
+      // where each lift starts, from the user's own sets of it: the program's
+      // goals show from day one, and its page says and edits them
+      final seeded = await programs.seedBases(
+        started,
+        setsOf: (id) async => switch (exercises.lookup(id)) {
+          final Exercise exercise => [
+            for (final act in await exercises.getExerciseHistory(exercise, pageSize: 10)) ...act,
+          ],
+          null => const <ExerciseSet>[],
+        },
+      );
+      if (seeded.isNotEmpty && context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              copy.programSeededFromHistory(
+                seeded
+                    .map((base) => (base, exercises.lookup(base.exerciseId)))
+                    .map(
+                      (pair) => switch (pair) {
+                        (final base, final Exercise exercise) =>
+                          '${exercise.name} ${GrowthMeasure.of(context, exercise, started.rules[base.exerciseId]).format(base.value)}',
+                        (_, null) => null,
+                      },
+                    )
+                    .nonNulls
+                    .join(', '),
+              ),
+            ),
+          ),
+        );
+      }
       analytics.programCreated(source: .library, sessions: made.sessions.length, library: program.key);
       if (context.mounted) widget.onProgram(started);
     } catch (e, s) {

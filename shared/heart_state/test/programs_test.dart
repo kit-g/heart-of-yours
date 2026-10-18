@@ -126,6 +126,57 @@ void main() {
     });
   });
 
+  group('a start seeds bases from history (#F32)', () {
+    final lift = Exercise(name: 'Bench', category: .barbell, target: .chest);
+    List<ExerciseSet> sets(List<(num, int)> done) => [
+      for (final (weight, reps) in done) ExerciseSet(lift, weight: weight.toDouble(), reps: reps)..isCompleted = true,
+    ];
+
+    test('a working weight starts from the heaviest working set, a training max from 90% of the best estimate', () {
+      expect(suggestedBase(const AddWeight(step: 2.5), sets([(80, 8), (90, 5)])), 90);
+      // 100×5 estimates 112.5; 90% of it, down to the 2.5 step
+      expect(suggestedBase(const ShareOfMax(waves: [], step: 2.5), sets([(100, 5)])), 100);
+      expect(suggestedBase(const AddWeight(step: 2.5), const []), isNull);
+    });
+
+    test('each weight rule without a base gets one; one with history only, and never over one set', () async {
+      final started = Program(
+        id: 'p1',
+        name: 'Full body',
+        perWeek: 3,
+        weeks: 12,
+        sessions: const ['s1'],
+        rules: {
+          bench: const AddWeight(step: 2.5),
+          'squat': const AddWeight(step: 5),
+          'deadlift': const AddWeight(step: 5),
+          'pull-up': const Ladder(rungs: [], top: 10, bottom: 5),
+        },
+        createdAt: DateTime.utc(2026, 10, 1),
+      );
+      remote.programs = [started];
+      remote.bases['p1'] = [
+        ProgramBase(id: 'b0', programId: 'p1', exerciseId: 'deadlift', value: 140, at: DateTime.utc(2026, 10, 1)),
+      ];
+      await programs.init();
+
+      final seeded = await programs.seedBases(
+        started,
+        setsOf: (id) async => switch (id) {
+          bench => sets([(80, 8), (85, 6)]),
+          'deadlift' => sets([(200, 3)]),
+          _ => const <ExerciseSet>[],
+        },
+      );
+
+      // bench from its sets; squat has none; deadlift had one; a ladder grows no weight
+      expect(seeded.map((base) => (base.exerciseId, base.value, base.workoutId, base.actionId)), [
+        (bench, 85, null, null),
+      ]);
+      expect(programs.currentBasesOf('p1')['deadlift']?.value, 140);
+    });
+  });
+
   group('init', () {
     test('reads the mirror, then the server replaces it, history and all', () async {
       local.programs[uid] = [program(id: 'gone')];

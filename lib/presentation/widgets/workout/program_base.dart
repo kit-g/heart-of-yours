@@ -3,12 +3,7 @@ part of 'workout_detail.dart';
 /// Whether [rule] grows a weight from a base the user can set: a training
 /// max (a share-of-max rule) or a working weight. Ladders climb exercises and
 /// [Longer] grows a length, so neither has one to set here.
-bool hasWeightBase(GrowthRule? rule) {
-  return switch (rule) {
-    AddWeight() || RangeThenWeight() || ShareOfMax() || Stages() => true,
-    _ => false,
-  };
-}
+bool hasWeightBase(GrowthRule? rule) => growsWeightBase(rule);
 
 /// The base [rule] holds for [exercise] in words: "Training max: 60 kg" for a
 /// share-of-max rule, "Working weight: 60 kg" otherwise.
