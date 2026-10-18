@@ -260,7 +260,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Сколько повторов?"
+            "value": "Сколько повторений?"
           }
         }
       }
@@ -282,7 +282,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Когда я делал шаблон"
+            "value": "Последняя тренировка по шаблону"
           }
         }
       }
@@ -304,7 +304,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Когда я делал упражнение"
+            "value": "Последнее выполнение упражнения"
           }
         }
       }
@@ -326,7 +326,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Последняя сессия"
+            "value": "Последняя тренировка"
           }
         }
       }
@@ -568,7 +568,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Повторы"
+            "value": "Повторения"
           }
         }
       }
@@ -678,7 +678,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Назовите вес и повторы"
+            "value": "Назовите вес и число повторений"
           }
         }
       }
