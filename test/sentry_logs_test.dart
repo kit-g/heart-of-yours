@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/logging.dart';
 import 'package:logging/logging.dart';
@@ -62,27 +60,27 @@ void main() {
 class _Sink implements SentryLogger {
   final sent = <(String, String, String?)>[];
 
-  FutureOr<void> _add(String level, String body, Map<String, SentryAttribute>? attributes) {
+  void _add(String level, String body, Map<String, SentryAttribute>? attributes) {
     sent.add((level, body, attributes?['logger']?.value as String?));
   }
 
   @override
-  FutureOr<void> trace(String body, {Map<String, SentryAttribute>? attributes}) => _add('trace', body, attributes);
+  void trace(String body, {Map<String, SentryAttribute>? attributes}) => _add('trace', body, attributes);
 
   @override
-  FutureOr<void> debug(String body, {Map<String, SentryAttribute>? attributes}) => _add('debug', body, attributes);
+  void debug(String body, {Map<String, SentryAttribute>? attributes}) => _add('debug', body, attributes);
 
   @override
-  FutureOr<void> info(String body, {Map<String, SentryAttribute>? attributes}) => _add('info', body, attributes);
+  void info(String body, {Map<String, SentryAttribute>? attributes}) => _add('info', body, attributes);
 
   @override
-  FutureOr<void> warn(String body, {Map<String, SentryAttribute>? attributes}) => _add('warn', body, attributes);
+  void warn(String body, {Map<String, SentryAttribute>? attributes}) => _add('warn', body, attributes);
 
   @override
-  FutureOr<void> error(String body, {Map<String, SentryAttribute>? attributes}) => _add('error', body, attributes);
+  void error(String body, {Map<String, SentryAttribute>? attributes}) => _add('error', body, attributes);
 
   @override
-  FutureOr<void> fatal(String body, {Map<String, SentryAttribute>? attributes}) => _add('fatal', body, attributes);
+  void fatal(String body, {Map<String, SentryAttribute>? attributes}) => _add('fatal', body, attributes);
 
   @override
   SentryLoggerFormatter get fmt => throw UnimplementedError();

@@ -26,8 +26,6 @@ FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config)
         // reported the same failures a second time, ungrouped, and an offline
         // device's DNS failure along with them.
         ..captureFailedRequests = false
-        // `logging` records from the allowlisted loggers (see logging.dart)
-        ..enableLogs = true
         ..dsn = config.sentryDsn
         // Nothing to stitch a client span to: heart-api runs no Sentry, so the
         // `sentry-trace` and `baggage` headers `SentryHttpClient` would add to
