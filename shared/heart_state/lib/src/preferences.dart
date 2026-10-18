@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'features.dart';
 import 'plates.dart';
 import 'warmups.dart';
+import 'rest_defaults.dart';
 
 const _baseColor = 'baseColor';
 const _themeMode = 'themeMode';
@@ -31,6 +32,7 @@ const _whatsNewRead = 'whatsNewRead';
 const _barWeight = 'barWeight';
 const _platesWithout = 'platesWithout';
 const _warmupScheme = 'warmupScheme';
+const _defaultRest = 'defaultRest';
 
 class Preferences with ChangeNotifier {
   /// The key under which [onboardingSeen] is stored. Public so a test can seed
@@ -464,6 +466,19 @@ class Preferences with ChangeNotifier {
       ),
       _ => null,
     };
+  }
+
+  /// How long a [kind] of exercise rests by default (#174), in seconds, while
+  /// [Feature.defaultRest] is on: the user's own length, or the kind's own
+  /// until they pick one. 0 is no rest — the duration picker's Cancel.
+  ///
+  /// A fact about the device, like the per-exercise timers it stands in for,
+  /// which never leave it either. Kept whatever the feature's switch says.
+  int defaultRest(RestKind kind) => _prefs?.getInt('$_defaultRest-${kind.value}') ?? kind.seconds;
+
+  void setDefaultRest(RestKind kind, int seconds) {
+    _prefs?.setInt('$_defaultRest-${kind.value}', seconds);
+    notifyListeners();
   }
 
   /// What the user said about [feature]: see [FeatureAnswer].
