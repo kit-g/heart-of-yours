@@ -6,6 +6,7 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/core/utils/column_fill.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';
@@ -198,6 +199,20 @@ void main() {
     programs(on: true);
     await start(tester, Workout.fromExercises(squatDay(), name: 'Mine'));
     expect(find.byKey(AppKeys.partOfProgram('p1')), findsNothing);
+  });
+
+  testWidgets("a session's value columns are labels, not fills: the plan's values stay", (tester) async {
+    await start(tester, squatDay());
+    expect(find.byKey(WorkoutDetailKeys.fillFor(squat.id, SetColumn.reps.key)), findsNothing);
+    expect(find.byKey(WorkoutDetailKeys.fillFor(squat.id, SetColumn.weight.key)), findsNothing);
+    // the ✓ still ticks the column
+    expect(find.byKey(WorkoutDetailKeys.tickAllFor(squat.id)), findsOneWidget);
+  });
+
+  testWidgets('with Programs off, the columns fill as ever', (tester) async {
+    programs(on: false);
+    await start(tester, squatDay());
+    expect(find.byKey(WorkoutDetailKeys.fillFor(squat.id, SetColumn.reps.key)), findsOneWidget);
   });
 
   testWidgets('a session with no note says nothing', (tester) async {
