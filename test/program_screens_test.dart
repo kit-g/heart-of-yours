@@ -365,6 +365,13 @@ void main() {
       await tester.tapByKey(AppKeys.exerciseInProgram);
       await tester.pumpTimes();
       expect(find.byType(ProgramPage), findsOneWidget);
+      // its edit stacks over it too, and Back walks back the same way
+      await tester.tap(find.byTooltip('Edit program'));
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsNothing);
+      await tester.pageBack();
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsOneWidget);
       await tester.pageBack();
       await tester.pumpTimes();
       expect(find.byType(ProgramPage), findsNothing);

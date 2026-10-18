@@ -91,6 +91,9 @@ final class HeartRouter {
           _galleryRoute(),
           _programOverRoute(),
           _filteredExercisesRoute(),
+          _libraryProgramOverRoute(),
+          _exerciseOverRoute(),
+          _workoutOverRoute(),
           if (kIsWeb)
             // Apple sign-in redirect
             GoRoute(
@@ -411,6 +414,12 @@ final class HeartRouter {
   /// rather than to the Workout tab's root.
   void pushProgramOver(String programId) {
     config.pushNamed(_programOverName, pathParameters: {'programId': programId});
+  }
+
+  /// A past workout over whichever tab it was opened from — a goal rung it
+  /// earned: Back returns there rather than to History's list.
+  void pushWorkoutOver(String workoutId) {
+    config.pushNamed(_workoutOverName, pathParameters: {'workoutId': workoutId});
   }
 
   /// A program's page over the Workout tab's page that named it — a folder

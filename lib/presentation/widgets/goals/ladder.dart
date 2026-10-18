@@ -248,7 +248,8 @@ class _Rung extends StatelessWidget {
         messenger.snack(gone);
       case true:
         navigator.pop();
-        router.goToWorkoutEditor(workoutId);
+        // over the profile, so Back returns to the goal's card
+        router.pushWorkoutOver(workoutId);
     }
   }
 

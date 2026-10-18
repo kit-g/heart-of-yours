@@ -288,7 +288,7 @@ RouteBase _activeWorkoutRoute() {
             // Workout tab whichever tab is under it
             onOpenProgram: (program) {
               context.pop();
-              context.goToProgram(program.id!);
+              context.pushProgramOverPage(program.id!);
             },
           );
         },
@@ -374,7 +374,7 @@ RouteBase _historyRoute() {
             builder: (context, state) {
               return SkipPage(
                 skipId: state.pathParameters['skipId']!,
-                onOpenProgram: context.goToProgram,
+                onOpenProgram: context.pushProgramOverPage,
                 onClose: switch (LayoutProvider.of(context)) {
                   .compact => null,
                   .wide => context.goToHistory,
@@ -1010,8 +1010,8 @@ RouteBase _programOverRoute() {
         currentStack: -1,
         builder: (context, _, _) => ProgramPage(
           programId: programId,
-          onEdit: () => context.goToEditProgram(programId),
-          onAbout: context.pushLibraryProgram,
+          onEdit: () => context.pushProgramEditOver(programId),
+          onAbout: context.pushLibraryProgramOver,
           onEditSession: context.pushTemplateEditor,
           onOpenActiveWorkout: () {
             HapticFeedback.mediumImpact();
@@ -1021,6 +1021,22 @@ RouteBase _programOverRoute() {
         ),
       );
     },
+    routes: [
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: 'edit',
+        name: _programEditOverName,
+        builder: (context, state) {
+          return LayoutProvider(
+            currentStack: -1,
+            builder: (context, _, _) => ProgramFormPage.edit(
+              programId: state.pathParameters['programId']!,
+              onDone: context.pop,
+            ),
+          );
+        },
+      ),
+    ],
   );
 }
 
@@ -1038,13 +1054,82 @@ RouteBase _filteredExercisesRoute() {
         currentStack: -1,
         builder: (context, _, _) => ExercisesPage(
           leading: const BackButton(),
-          onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
+          onExercise: (exercise, _) => context.pushExerciseOver(exercise.id),
           onShowArchived: context.goToExerciseArchive,
           onOpenActiveWorkout: () {
             HapticFeedback.mediumImpact();
             context.goToActiveWorkout();
           },
         ),
+      );
+    },
+  );
+}
+
+/// A library program over any tab: its next programs and the user's copy
+/// stack over it in turn.
+RouteBase _libraryProgramOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _libraryProgramOverPath,
+    name: _libraryProgramOverName,
+    builder: (context, state) {
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => LibraryProgramPage(
+          programKey: state.pathParameters['key']!,
+          onProgram: (program) => context.pushProgramOverPage(program.id!),
+          onLibraryProgram: context.pushLibraryProgramOver,
+        ),
+      );
+    },
+  );
+}
+
+/// An exercise over any tab: from the filtered library a profile count
+/// opened, so Back walks back to the profile.
+RouteBase _exerciseOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _exerciseOverPath,
+    name: _exerciseOverName,
+    builder: (context, state) {
+      final exerciseId = state.pathParameters['exerciseId']!;
+      final exercise = _resolveExercise(Exercises.of(context), exerciseId);
+      if (exercise == null) return const Scaffold();
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => ExerciseDetailPage(
+          exercise: exercise,
+          initialTab: state.uri.queryParameters['tab'],
+          onTapWorkout: (workoutId) {
+            return Workouts.of(context).fetchWorkout(workoutId).then<void>((_) {
+              if (context.mounted) context.pushWorkoutOver(workoutId);
+            });
+          },
+          onShareExercise: (exercise, {tab}) => _onShareExercise(context, exercise, tab),
+          onFilter: (filter) => HeartRouter.of(context).goToFilteredExercises(Exercises.of(context), filter),
+          onTapAlternative: (alternative) => context.pushExerciseOver(alternative.id),
+          onAddToWorkout: (exercise) => _onAddToWorkout(context, exercise),
+        ),
+      );
+    },
+  );
+}
+
+/// A past workout over any tab: a goal rung it earned opens it where the
+/// goal was, and Back returns there.
+RouteBase _workoutOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _workoutOverPath,
+    name: _workoutOverName,
+    builder: (context, state) {
+      final workout = Workouts.of(context).lookup(state.pathParameters['workoutId']!);
+      if (workout == null) return const Scaffold();
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => WorkoutEditor(copy: workout, onTapImage: context.goToGallery),
       );
     },
   );
