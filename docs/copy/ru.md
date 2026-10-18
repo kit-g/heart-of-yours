@@ -1,6 +1,6 @@
 # Russian copy review — #442
 
-Reviewed all **1,024 app strings**, **103 native strings** and **134 release-note titles and bodies** in the locale. The English source and usage context were considered for each entry. This pass changes **251 translation entries** (21 native) and **55 release-note fields**. Unchanged strings have no findings row. User review of this log is in progress.
+Reviewed all **1,024 app strings**, **103 native strings** and **134 release-note titles and bodies** in the locale. The English source and usage context were considered for each entry. This pass changes **249 translation entries** (21 native) and **55 release-note fields**. Unchanged strings have no findings row. User review of this log is in progress.
 
 Source issue: [Copy: review and rework the Russian copy](https://github.com/kit-g/heart-of-yours/issues/442). No store listings or Play release notes are included.
 
@@ -15,6 +15,7 @@ Source issue: [Copy: review and rework the Russian copy](https://github.com/kit-
 | Workout template | шаблон; тренировка по шаблону (never «делать шаблон») |
 | Exercise target filter | Мышцы |
 | Exercise library / movement pattern | библиотека упражнений / тип движения |
+| Hamstrings / adductors | Бицепс бедра / Приводящие; user-reviewed preference for familiar gym terminology |
 | Stability / skill ceiling | стабилизация / сложность не выше; Низкая, Средняя |
 | Assistance weight | противовес / вес противовеса; minimum: минимальный противовес |
 | Distance / duration | дистанция / длительность; short time column: Время |
@@ -33,6 +34,8 @@ Use polite «вы» without formal capitalisation. Button acknowledgements avoid
 Validation messages describe the problem neutrally rather than command the user. User review retained «Не может быть пустым» for `cannotBeEmpty`; «Заполните поле» sounds rude in this context. The retained string has no findings row.
 
 User review retained the original spoken Siri request for `iosShortcutPhraseLastExercise`: «Когда я в последний раз делал ${exercise} в ${applicationName}». It has no findings row because it is unchanged from the base version.
+
+User review also retained «Бицепс бедра» and «Приводящие» for the muscle-map labels. Familiar gym terminology takes priority over added anatomical precision for these labels; neither retained string has a findings row.
 
 ## Source questions and constraints
 
@@ -169,8 +172,6 @@ User review retained the original spoken Siri request for `iosShortcutPhraseLast
 | `muscleMapOfferTitle` | Смотреть, какие мышцы вы тренируете? | Показать, какие мышцы вы тренируете? | register | Phrase the offer as an action instead of the unnatural infinitive «Смотреть?». |
 | `muscleMapOfferBody` | Карта тела в профиле, закрашенная по числу подходов на каждую группу мышц за последнее время. | Карта мышц в профиле: чем больше подходов на группу мышц за последнее время, тем темнее она выделена. | calque | Explain the shading naturally instead of a map being painted by a count. |
 | `featureDeclinedNotice` | Это всегда можно включить в Настройках › Функции. | Это всегда можно включить в разделе «Настройки» › «Функции». | typography | Keep navigation labels exact and outside the sentence’s case inflection. |
-| `muscleGroupHamstrings` | Бицепс бедра | Задняя поверхность бедра | meaning | Hamstrings include more than the biceps femoris; use the familiar group name. |
-| `muscleGroupAdductors` | Приводящие | Приводящие мышцы | register | Complete the anatomical label with its noun. |
 | `muscleMapFigureHelp` | Каждая группа мышц закрашена по числу подходов за выбранный период: чем темнее, тем больше. Нажмите на мышцу, чтобы увидеть число. | Чем больше подходов на группу мышц за выбранный период, тем темнее она выделена. Нажмите на мышцу, чтобы увидеть число подходов. | calque | Explain the colour scale directly and name what the displayed number counts. |
 | `workoutMuscleMapHelp` | Каждая группа мышц закрашена по числу подходов за эту тренировку: чем темнее, тем больше. Нажмите на мышцу, чтобы увидеть число. | Чем больше подходов на группу мышц в этой тренировке, тем темнее она выделена. Нажмите на мышцу, чтобы увидеть число подходов. | calque | Use the same clear colour-scale explanation as the profile map. |
 | `muscleMapBreakdownHelp` | Выполненные подходы по группам мышц за выбранный период. Подход засчитывается целиком основным мышцам упражнения и наполовину — вспомогательным: один подход жима лёжа добавляет 1 к груди и ½ к рукам. Ваше собственное упражнение засчитывается целиком своей части тела. | Выполненные подходы по группам мышц за выбранный период. Основным мышцам упражнения засчитывается полный подход, вспомогательным — половина. Например, подход жима лёжа добавляет 1 подход к груди и ½ к рукам. В упражнениях, которые вы создали сами, полный подход засчитывается выбранной части тела. | calque | Remove the awkward full-toward-its-own-body-part construction and make the counting example explicit. |
@@ -376,4 +377,4 @@ These are source CSV rows. The import regenerates the native ARB, permission she
 
 ## Patterns
 
-Calques dominate (128 changes): account screens inherit journey metaphors, import/export copy treats data as house movers, watch copy puts actions “on the wrist”, and program copy lets sessions choose, grow or rest. Terminology drift (58) and register (54) are next, concentrated in filters, records, account actions and technical explanations. Agreement and case (27) cluster around arbitrary exercise/template names and heading plurals; surrounding the unchanged name with a generic noun or using a label construction avoids demanding an inflected placeholder. Release notes repeat the same patterns across whole paragraphs. Most short utility labels were already natural and remain unchanged.
+Calques dominate (128 changes): account screens inherit journey metaphors, import/export copy treats data as house movers, watch copy puts actions “on the wrist”, and program copy lets sessions choose, grow or rest. Terminology drift (58) and register (53) are next, concentrated in filters, records, account actions and technical explanations. Agreement and case (27) cluster around arbitrary exercise/template names and heading plurals; surrounding the unchanged name with a generic noun or using a label construction avoids demanding an inflected placeholder. Release notes repeat the same patterns across whole paragraphs. Most short utility labels were already natural and remain unchanged.
