@@ -60,7 +60,14 @@ enum Feature {
   /// feature promises not to be. A program's own "Not today" is Programs',
   /// and stays with it. Skips sync whatever the answer; off, the button and
   /// the plain days in History go.
-  notToday('notToday');
+  notToday('notToday'),
+
+  /// What a month and a year of training added up to (#154, #155), and the
+  /// cards that share them (#166): workouts, time, sets, volume, the muscles
+  /// and patterns trained, the records set. Computed on the device from what
+  /// is already logged and never stored, so off costs nothing and on rebuilds
+  /// it all. Never a health value, on screen or on a card.
+  recaps('recaps');
 
   final String value;
 

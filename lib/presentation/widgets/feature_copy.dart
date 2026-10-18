@@ -22,6 +22,7 @@ extension FeatureCopy on Feature {
       .programs => l.programs,
       .previousInTemplate => l.previousInTemplate,
       .notToday => l.programNotToday,
+      .recaps => l.recaps,
     };
   }
 
@@ -42,6 +43,7 @@ extension FeatureCopy on Feature {
       .programs => l.programsSubtitle,
       .previousInTemplate => l.previousInTemplateSubtitle,
       .notToday => l.notTodaySubtitle,
+      .recaps => l.recapsSubtitle,
     };
   }
 
@@ -57,6 +59,7 @@ extension FeatureCopy on Feature {
       .programs => Icons.event_repeat_rounded,
       .previousInTemplate => Icons.history_rounded,
       .notToday => Icons.redo_rounded,
+      .recaps => Icons.insights_rounded,
     };
   }
 
@@ -71,7 +74,8 @@ extension FeatureCopy on Feature {
       .pauseWorkout ||
       .shortcuts ||
       .programs ||
-      .previousInTemplate => const [],
+      .previousInTemplate ||
+      .recaps => const [],
       // what syncs and what doesn't: the line health data never crosses
       .notToday => [l.notTodayNote],
       // where Apple keeps Always On: Heart has no switch of its own for it.

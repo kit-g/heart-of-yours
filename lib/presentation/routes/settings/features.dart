@@ -74,7 +74,7 @@ class _FeaturesPageState extends State<FeaturesPage> {
                 child: Column(
                   crossAxisAlignment: .stretch,
                   children: [
-                    for (final feature in Feature.values)
+                    for (final feature in Feature.values.where(_listed))
                       switch (feature == widget.focus) {
                         true => _Spotlight(key: _focused, child: _row(feature)),
                         false => _row(feature),
@@ -97,9 +97,37 @@ class _FeaturesPageState extends State<FeaturesPage> {
     return switch (feature) {
       // only where there is a watch with Heart on it
       .watchApp => const _WatchAppSwitch(),
-      _ => _FeatureSwitch(feature),
+      .muscleMap ||
+      .rpe ||
+      .keepAwake ||
+      .setStopwatch ||
+      .pauseWorkout ||
+      .shortcuts ||
+      .programs ||
+      .previousInTemplate ||
+      .notToday ||
+      .recaps => _FeatureSwitch(feature),
     };
   }
+}
+
+/// Whether [feature] has a switch here yet. Recaps' engine landed before any
+/// screen shows one (#154): a switch with nothing behind it would be a dead
+/// control, so it joins the list with the monthly card.
+bool _listed(Feature feature) {
+  return switch (feature) {
+    .recaps => false,
+    .muscleMap ||
+    .watchApp ||
+    .rpe ||
+    .keepAwake ||
+    .setStopwatch ||
+    .pauseWorkout ||
+    .shortcuts ||
+    .programs ||
+    .previousInTemplate ||
+    .notToday => true,
+  };
 }
 
 /// The row a link opened Features at (#239), lit for a moment so the eye
