@@ -690,6 +690,63 @@ GROUP BY w.id, we.exercise_id
 ;
 ''';
 
+/// Finished workouts that started in a window, with what their trained time
+/// is made of: a recap's sessions (#154). Never `calories`, nor anything else
+/// a health source wrote (`docs/2026-09-05.health-data.md`).
+const recapWorkouts = '''
+SELECT
+    id,
+    start,
+    "end",
+    pauses
+FROM workouts
+WHERE user_id = ?
+  AND "end" IS NOT NULL
+  AND start >= ?
+  AND start < ?
+ORDER BY start, id
+;
+''';
+
+/// Every completed working set of each exercise done in a finished workout
+/// started in a window, from its first time up to the window's end, with what
+/// the exercise is: a recap's sets, and the history its records beat (#154).
+/// Ordered as [recordSets] is, so the shared records fold reads the same.
+const recapSets = '''
+SELECT
+    w.id AS workout_id,
+    w.start AS start,
+    we.exercise_id AS exercise_id,
+    e.category AS category,
+    e.movement AS movement,
+    e.muscles AS muscles,
+    e.target AS target,
+    s.weight AS weight,
+    s.reps AS reps,
+    s.duration AS duration,
+    s.distance AS distance
+FROM workouts w
+INNER JOIN workout_exercises we ON we.workout_id = w.id
+INNER JOIN sets s ON s.exercise_id = we.id
+LEFT JOIN exercises e ON e.id = we.exercise_id
+WHERE w.user_id = ?
+  AND w."end" IS NOT NULL
+  AND w.start < ?
+  AND s.completed
+  AND s.set_type IS NOT 'warmup'
+  AND we.exercise_id IN (
+      SELECT pwe.exercise_id
+      FROM workouts pw
+      INNER JOIN workout_exercises pwe ON pwe.workout_id = pw.id
+      WHERE pw.user_id = ?
+        AND pw."end" IS NOT NULL
+        AND pw.start >= ?
+        AND pw.start < ?
+  )
+ORDER BY w.start, w.id
+;
+''';
+
 /// Finished workouts that started in a window: every period's count (#339).
 const workoutCountBetween = '''
 SELECT count(*) AS c
