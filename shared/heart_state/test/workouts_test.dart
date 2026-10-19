@@ -400,6 +400,33 @@ void main() {
       verify(local.addSet(we, any)).called(1);
     });
 
+    test('addWarmups puts warm-ups first, in memory and on disk (#158)', () async {
+      await sut.startWorkout(source: .blank, name: 'Chest');
+      await sut.startExercise(bench);
+      final we = sut.activeWorkout!.first;
+      await sut.addSet(we);
+      final [first, second] = we.toList();
+      clearInteractions(local);
+
+      final probe = ListenerProbe()..attach(sut);
+      await sut.addWarmups(we, [(weight: 40.0, reps: 5), (weight: 60.0, reps: 3)]);
+
+      expect(we.map((set) => set.setType), [SetType.warmup, SetType.warmup, SetType.normal, SetType.normal]);
+      expect(we.take(2).map((set) => (set.weight, set.reps)), [(40.0, 5), (60.0, 3)]);
+      expect(we.skip(2), [same(first), same(second)], reason: 'the sets that were there, as they were');
+      expect(we.toList()..sort(), we.toList(), reason: 'the server orders by start');
+      expect(probe.notifications, 1);
+      // written in the order shown: the warm-ups, then the others again
+      verifyInOrder([
+        local.addSet(we, we.elementAt(0)),
+        local.addSet(we, we.elementAt(1)),
+        local.removeSet(first),
+        local.addSet(we, first),
+        local.removeSet(second),
+        local.addSet(we, second),
+      ]);
+    });
+
     test('removeSet removes and calls service', () async {
       await sut.startWorkout(source: .blank, name: 'Chest');
       await sut.startExercise(bench);

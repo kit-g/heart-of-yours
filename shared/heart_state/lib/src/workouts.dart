@@ -11,6 +11,7 @@ import 'backfill.dart';
 import 'remote.dart';
 import 'set_stopwatch.dart';
 import 'supersets.dart';
+import 'warmups.dart';
 
 typedef WorkoutId = String;
 
@@ -837,6 +838,43 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     );
 
     return _localService.addSet(exercise, set);
+  }
+
+  /// Puts [sets] before every other set of [exercise] as warm-ups (#158): the
+  /// ramp to its first working set. Afterwards each is a warm-up like one
+  /// marked by hand, to edit or remove.
+  ///
+  /// The device reads an exercise's sets back in the order they were written,
+  /// and the server in the order they started, so the warm-ups start just
+  /// before the first set and the sets already there are written again after
+  /// them.
+  Future<void> addWarmups(WorkoutExercise exercise, Iterable<WarmupSet> sets) async {
+    final workout = activeWorkout;
+    if (workout == null || !workout.contains(exercise) || sets.isEmpty) return;
+    final after = exercise.toList();
+    final first = after.map((set) => set.start).fold(DateTime.timestamp(), (a, b) => b.isBefore(a) ? b : a);
+    final count = sets.length;
+    final warmups = [
+      for (final (index, (:weight, :reps)) in sets.indexed)
+        ExerciseSet(
+          exercise.exercise,
+          weight: weight,
+          reps: reps,
+          setType: .warmup,
+          start: first.subtract(Duration(milliseconds: count - index)),
+        ),
+    ];
+    after.forEach(exercise.remove);
+    [...warmups, ...after].forEach(exercise.add);
+    notifyListeners();
+
+    for (final set in warmups) {
+      await _localService.addSet(exercise, set);
+    }
+    for (final set in after) {
+      await _localService.removeSet(set);
+      await _localService.addSet(exercise, set);
+    }
   }
 
   Future<void>? removeSet(WorkoutExercise exercise, ExerciseSet set) {
