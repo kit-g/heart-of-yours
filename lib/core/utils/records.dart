@@ -83,6 +83,70 @@ RecordMarks recordMarks(Workout workout, Iterable<AchievedRecord> achieved) {
   return marks;
 }
 
+/// The records a workout in progress holds so far, on the sets that hold them
+/// (#160): what the Done page will say of it, worked out as the sets are
+/// ticked.
+///
+/// [prior] is each exercise's records over every other workout, read once when
+/// the exercise came into the workout; an exercise not in it yet is left out.
+/// The past enters the fold as the sets behind those records alone: the fold
+/// keeps the first best and only asks what came later beat it, so those few
+/// sets answer exactly as the whole history would — and the in-memory fold
+/// over them and today's sets is the very one `getRecord` runs on the
+/// finished workout.
+RecordMarks liveRecordMarks(Workout workout, Map<ExerciseId, Map?> prior) {
+  final exercises = {for (final entry in workout) entry.exercise.id: entry.exercise};
+  final achieved = [
+    for (final MapEntry(key: id, value: exercise) in exercises.entries)
+      if (prior.containsKey(id))
+        if (_foldToday(workout, exercise, prior[id]) case final Map records)
+          for (final kind in RecordKind.values)
+            if (records[kind.key] case Map record when record['workoutId'] == workout.id)
+              (exercise: exercise, kind: kind, record: record),
+  ];
+  return recordMarks(workout, achieved);
+}
+
+/// [exercise]'s records with [workout]'s ticked working sets after [prior]'s.
+/// Warm-ups are no one's record (#151), as in the query the Done page reads.
+Map? _foldToday(Workout workout, Exercise exercise, Map? prior) {
+  final at = workout.start.toUtc().toIso8601String();
+  final today = workout
+      .where((entry) => entry.exercise.id == exercise.id)
+      .expand((entry) => entry)
+      .where((set) => set.isCompleted && set.setType != .warmup)
+      .map(
+        (set) => RecordSet(
+          weight: set.weight,
+          reps: set.reps,
+          duration: set.duration?.toDouble(),
+          distance: set.distance,
+          workoutId: workout.id,
+          at: at,
+        ),
+      );
+  return [..._holders(prior), ...today].toPersonalRecords(exercise.category);
+}
+
+/// The sets behind [records]' headline entries, oldest first.
+List<RecordSet> _holders(Map? records) {
+  final entries = [
+    for (final kind in RecordKind.values)
+      if (records?[kind.key] case Map record) record,
+  ]..sort((a, b) => '${a['at']}'.compareTo('${b['at']}'));
+  return [
+    for (final record in entries)
+      RecordSet(
+        weight: (record['weight'] as num?)?.toDouble(),
+        reps: (record['reps'] as num?)?.toInt(),
+        duration: (record['duration'] as num?)?.toDouble(),
+        distance: (record['distance'] as num?)?.toDouble(),
+        workoutId: '${record['workoutId']}',
+        at: '${record['at']}',
+      ),
+  ];
+}
+
 /// Whether [set] is the one [record] names: every measure the record carries
 /// is the set's.
 bool _holds(ExerciseSet set, Map record) {

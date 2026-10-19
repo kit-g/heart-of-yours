@@ -60,7 +60,14 @@ enum Feature {
   /// feature promises not to be. A program's own "Not today" is Programs',
   /// and stays with it. Skips sync whatever the answer; off, the button and
   /// the plain days in History go.
-  notToday('notToday');
+  notToday('notToday'),
+
+  /// A quiet note the moment a ticked working set beats a previous best
+  /// (#160), named by the same fold the Done page and the record pills read.
+  /// Asked once, in context: the first time a ticked set would have been a
+  /// record, the offer sits under that set. Computes nothing it stores; off,
+  /// nothing is read.
+  liveRecords('liveRecords');
 
   final String value;
 
