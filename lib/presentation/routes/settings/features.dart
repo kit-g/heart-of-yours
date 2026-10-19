@@ -97,6 +97,8 @@ class _FeaturesPageState extends State<FeaturesPage> {
     return switch (feature) {
       // only where there is a watch with Heart on it
       .watchApp => const _WatchAppSwitch(),
+      // the ramp itself, which only the switch's own page can hold
+      .warmups => const _FeatureSwitch(.warmups, extra: _WarmupScheme()),
       _ => _FeatureSwitch(feature),
     };
   }
