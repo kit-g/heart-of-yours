@@ -145,6 +145,26 @@ void main() {
     });
   });
 
+  group('without a workout', () {
+    test('folds every other workout, so a session in progress is measured against the past (#160)', () async {
+      final ex = exercise(name: 'Bench', category: 'Barbell');
+      when(db.rawQuery(sql.recordSetsWithout, ['user-1', ex.id, 'active'])).thenAnswer(
+        (_) async => [row(weight: 100, reps: 3, workoutId: 'w1', start: '2026-01-01T10:00:00Z')],
+      );
+
+      final records = (await local.getRecordWithout('user-1', ex, 'active'))!;
+
+      expect((records['heaviest'] as Map)['workoutId'], 'w1');
+    });
+
+    test('is null when nothing else holds the exercise', () async {
+      final ex = exercise(name: 'Bench', category: 'Barbell');
+      when(db.rawQuery(sql.recordSetsWithout, ['user-1', ex.id, 'active'])).thenAnswer((_) async => []);
+
+      expect(await local.getRecordWithout('user-1', ex, 'active'), isNull);
+    });
+  });
+
   group('other categories', () {
     test('reps only', () async {
       final ex = exercise(name: 'Pull Up', category: 'Reps Only');
