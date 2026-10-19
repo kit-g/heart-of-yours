@@ -16,6 +16,9 @@ One summary, three renderings, three limits. Everything lives in `release_notes/
 The first two are the *pending* build and get overwritten every time. The archive is written
 once, at tag time.
 
+Outside the repo, a release with something new also gets a post draft for r/heartofyours, the
+app's own subreddit — section 9.
+
 ## 1. Find the range
 
 ```sh
@@ -171,6 +174,7 @@ below has to be **committed before the tag**: prod CI checks out the tagged comm
    body.
 3. Add the release to the app's **What's new** list — section 7. Skip it on a fix-only cycle.
    Then update the **feature list** — section 8. That one runs every cycle, fix-only included.
+   Then draft the **subreddit post** — section 9. Skip it on a fix-only cycle.
 4. Leave `testflight.txt` and the `whatsnew-*` files in place; the next cycle overwrites them.
 5. **Run `make test-app`**, not just the two content tests. Those check the files are *valid*,
    and a perfectly valid file can still break a widget test that reads it — which is how 1.9.0
@@ -317,6 +321,25 @@ duplicate or malformed id, an undeclared or empty category, a `since` newer than
 markup in the copy, an over-long pitch, or formatting that differs from
 `JsonEncoder.withIndent('  ')` with a trailing newline.
 
+## 9. The subreddit post
+
+r/heartofyours is the app's own subreddit, moderated by u/heartofyoursapp: release notes, bugs,
+requests. Every release that brought something new gets a post there. The user posts it by hand
+from the app account. Reddit has no posting path here, and nothing gets posted on their behalf.
+
+- **Where the draft goes:** a row in the Notion **Posts** database (Heart Growth), with Kind
+  *Release*, Status *Draft*, Channel *r/heartofyours (ours)*, and the text in **Draft text**.
+  Never overwrite Draft text afterwards. The user's final version goes in **As posted**, and the
+  gap between the two is how drafts get better. Read the last few pairs before writing.
+- **What it says:** the release's new things, from the same agreed summary as step 5. It's the
+  long rendering: more room than the stores, so each item can say why it exists. Close with one
+  question that invites replies (what's missing, what broke).
+- **Voice:** the developer talking to people who use the app, not a changelog. No marketing
+  adjectives, no competitor names. Same health rule as everywhere else: never a health value,
+  including in screenshots.
+- **Timing:** draft it at tag time, post it once the build is live in the stores. The post
+  shouldn't announce something people can't download yet.
+
 ## Facts and gotchas
 
 - **Both stores are automatic.** The Fastfile reads `release_notes/testflight.txt` into
@@ -369,5 +392,6 @@ markup in the copy, an over-long pitch, or formatting that differs from
 - [ ] `flutter test test/whats_new_content_test.dart` passes
 - [ ] **`make test-app` passes** — the content tests alone are not enough, and the deploys gate
       on it
+- [ ] A release with a new capability has an r/heartofyours draft in Notion Posts (section 9)
 - [ ] `docs/features.json` matches what this release ships, no `"since": null` is left at tag
       time, and `flutter test test/features_content_test.dart` passes
