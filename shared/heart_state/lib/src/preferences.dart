@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:heart_models/heart_models.dart';
 import 'package:intl/date_symbol_data_local.dart' show dateTimeSymbolMap;
 import 'package:intl/date_symbols.dart' show DateSymbols;
@@ -9,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'features.dart';
 import 'plates.dart';
+import 'warmups.dart';
 
 const _baseColor = 'baseColor';
 const _themeMode = 'themeMode';
@@ -28,6 +30,7 @@ const _feature = 'feature';
 const _whatsNewRead = 'whatsNewRead';
 const _barWeight = 'barWeight';
 const _platesWithout = 'platesWithout';
+const _warmupScheme = 'warmupScheme';
 
 class Preferences with ChangeNotifier {
   /// The key under which [onboardingSeen] is stored. Public so a test can seed
@@ -426,6 +429,41 @@ class Preferences with ChangeNotifier {
     }
     _prefs?.setStringList(key, without.toList());
     notifyListeners();
+  }
+
+  /// The warm-up ramp (#158), lightest rung first: [defaultWarmupScheme]
+  /// until the user sets their own in Settings. Kept on this device, like the
+  /// units it is rounded in. A rung this build cannot read is skipped, and a
+  /// ramp with none left is the default again.
+  List<WarmupStep> get warmupScheme {
+    final steps = [for (final each in _prefs?.getStringList(_warmupScheme) ?? const <String>[]) ?_readStep(each)];
+    return switch (steps) {
+      [] => defaultWarmupScheme,
+      _ => steps,
+    };
+  }
+
+  /// Stores [scheme] as the ramp, sorted lightest first; its invalid rungs are
+  /// dropped, and an empty one, or the default itself, is the default again.
+  void setWarmupScheme(Iterable<WarmupStep> scheme) {
+    final steps = scheme.where(isWarmupStep).take(maxWarmupSteps).toList()
+      ..sort((a, b) => a.percent.compareTo(b.percent));
+    if (steps.isEmpty || listEquals(steps, defaultWarmupScheme)) {
+      _prefs?.remove(_warmupScheme);
+    } else {
+      _prefs?.setStringList(_warmupScheme, [for (final (:percent, :reps) in steps) '${percent}x$reps']);
+    }
+    notifyListeners();
+  }
+
+  static WarmupStep? _readStep(String stored) {
+    return switch (stored.split('x').map(int.tryParse).toList()) {
+      [final int percent, final int reps] when isWarmupStep((percent: percent, reps: reps)) => (
+        percent: percent,
+        reps: reps,
+      ),
+      _ => null,
+    };
   }
 
   /// What the user said about [feature]: see [FeatureAnswer].

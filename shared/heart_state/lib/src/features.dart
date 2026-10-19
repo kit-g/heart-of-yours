@@ -66,7 +66,15 @@ enum Feature {
   /// bar over the keyboard while a barbell or machine weight is being typed.
   /// Asked once there, the first time such a weight is. The bar each exercise
   /// takes and the plates the gym has stay on the device whatever the answer.
-  plateCalculator('plateCalculator');
+  plateCalculator('plateCalculator'),
+
+  /// Warm-up sets worked out from an exercise's first working set (#158): a
+  /// ramp of percentages of its weight, rounded to what can be loaded. Asked
+  /// once, on the workout sheet, the first time a barbell or machine exercise
+  /// has a working weight and no warm-ups yet. What it adds are ordinary
+  /// warm-up sets, kept whatever the answer; off, only the offer, the menu
+  /// row and the ramp in Settings go.
+  warmups('warmups');
 
   final String value;
 

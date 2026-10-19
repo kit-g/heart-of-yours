@@ -460,6 +460,7 @@ void main() {
         // programCalendar became Programs' calendar option before it shipped
         'notToday',
         'plateCalculator',
+        'warmups',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });
@@ -544,6 +545,38 @@ void main() {
     test('marking nothing on a fresh install still records it as caught up', () {
       sut.markWhatsNewRead(const []);
       expect(sut.whatsNewRead, isEmpty);
+    });
+  });
+  group('warm-up ramp (#158)', () {
+    setUp(() => sut.init());
+
+    test('is the default until set, and the default again when emptied', () {
+      expect(sut.warmupScheme, defaultWarmupScheme);
+
+      sut.setWarmupScheme([(percent: 70, reps: 2), (percent: 50, reps: 5)]);
+      expect(sut.warmupScheme, [(percent: 50, reps: 5), (percent: 70, reps: 2)], reason: 'lightest first');
+
+      sut.setWarmupScheme(const []);
+      expect(sut.warmupScheme, defaultWarmupScheme);
+    });
+
+    test('drops rungs it cannot hold, and notifies once a set', () {
+      var notified = 0;
+      sut.addListener(() => notified++);
+
+      sut.setWarmupScheme([(percent: 100, reps: 1), (percent: 50, reps: 0), (percent: 50, reps: 5)]);
+
+      expect(sut.warmupScheme, [(percent: 50, reps: 5)]);
+      expect(notified, 1);
+    });
+
+    test('skips a stored rung it cannot read', () async {
+      SharedPreferences.setMockInitialValues({
+        'warmupScheme': ['45x5', 'nonsense', '75x2'],
+      });
+      final stored = Preferences();
+      await stored.init();
+      expect(stored.warmupScheme, [(percent: 45, reps: 5), (percent: 75, reps: 2)]);
     });
   });
 }
