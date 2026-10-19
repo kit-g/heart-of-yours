@@ -28,6 +28,7 @@ extension FeatureCopy on Feature {
       .recaps => l.recaps,
       .copyForAi => l.copyForAi,
       .liveRecords => l.liveRecords,
+      .workoutSounds => l.workoutSounds,
     };
   }
 
@@ -54,6 +55,7 @@ extension FeatureCopy on Feature {
       .recaps => l.recapsSubtitle,
       .copyForAi => l.copyForAiSubtitle,
       .liveRecords => l.liveRecordsSubtitle,
+      .workoutSounds => l.workoutSoundsSubtitle,
     };
   }
 
@@ -75,6 +77,7 @@ extension FeatureCopy on Feature {
       .recaps => Icons.insights_rounded,
       .copyForAi => Icons.auto_awesome_outlined,
       .liveRecords => Icons.emoji_events_rounded,
+      .workoutSounds => Icons.volume_up_rounded,
     };
   }
 
@@ -93,7 +96,8 @@ extension FeatureCopy on Feature {
       .plateCalculator ||
       .defaultRest ||
       .recaps ||
-      .liveRecords => const [],
+      .liveRecords ||
+      .workoutSounds => const [],
       // what syncs and what doesn't: the line health data never crosses
       .notToday => [l.notTodayNote],
       // the rounding, which no control says
@@ -120,6 +124,29 @@ extension FeatureOptionCopy on FeatureOption {
       .muscleMapWorkout => l.muscleMapOptionWorkout,
       .muscleMapTemplate => l.muscleMapOptionTemplate,
       .programsCalendar => l.programCalendar,
+    };
+  }
+}
+
+/// What the rest's sounds are called (#169).
+extension RestSoundCopy on RestSound {
+  String title(L l) {
+    return switch (this) {
+      .chime => l.restSoundChime,
+      .bell => l.restSoundBell,
+      .beeps => l.restSoundBeeps,
+      .marimba => l.restSoundMarimba,
+    };
+  }
+}
+
+extension SoundVolumeCopy on SoundVolume {
+  String title(L l) {
+    return switch (this) {
+      .off => l.soundVolumeOff,
+      .low => l.soundVolumeLow,
+      .normal => l.soundVolumeNormal,
+      .high => l.soundVolumeHigh,
     };
   }
 }
