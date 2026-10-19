@@ -40,6 +40,10 @@ class ExerciseChart extends StatefulWidget {
   /// re-fetch.
   final Object? refreshKey;
 
+  /// How a point's date reads on the axis and to a screen reader. A session's
+  /// day by default; a training chart's months read as months (#137).
+  final String Function(DateTime)? dateLabel;
+
   const new({
     super.key,
     required this.emptyState,
@@ -57,6 +61,7 @@ class ExerciseChart extends StatefulWidget {
     this.timeline = false,
     this.firstWeekday,
     this.refreshKey,
+    this.dateLabel,
   }) : assert(!timeline || firstWeekday != null, 'a timeline buckets by week, so it needs the first weekday');
 
   @override
@@ -103,6 +108,7 @@ class _ExerciseChartState extends State<ExerciseChart> {
 
   Widget _dataChart(List<(num, DateTime)> records, TextTheme textTheme, ColorScheme colorScheme) {
     final reversed = records.reversed.toList();
+    final dated = widget.dateLabel ?? L.of(context).dayAndMonth;
     // aim for ~6 date labels regardless of how many points there are, so a long
     // history doesn't crowd the axis
     // One label per *day*, not per Nth point. Points are sessions, so training
@@ -112,7 +118,7 @@ class _ExerciseChartState extends State<ExerciseChart> {
     final firstOfDay = <int>[];
     String? previous;
     for (final (index, (_, at)) in reversed.indexed) {
-      final day = L.of(context).dayAndMonth(at);
+      final day = dated(at);
       if (day == previous) continue;
       previous = day;
       firstOfDay.add(index);
@@ -135,8 +141,8 @@ class _ExerciseChartState extends State<ExerciseChart> {
     };
     final summary = l.exerciseChartSummary(
       widget.label ?? l.chartGenericLabel,
-      l.dayAndMonth(reversed.first.$2),
-      l.dayAndMonth(reversed.last.$2),
+      dated(reversed.first.$2),
+      dated(reversed.last.$2),
       widget.getTooltip?.call(lastValue) ?? _double(lastValue),
       trend,
     );
@@ -197,7 +203,7 @@ class _ExerciseChartState extends State<ExerciseChart> {
           ),
           getBottomLabel: (x) {
             return switch (labelled.contains(x)) {
-              true => L.of(context).dayAndMonth(reversed[x].$2),
+              true => dated(reversed[x].$2),
               false => '',
             };
           },

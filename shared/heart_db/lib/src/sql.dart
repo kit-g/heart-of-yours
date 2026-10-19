@@ -709,3 +709,45 @@ WHERE "end" IS NOT NULL
   AND user_id = ?
 ;
 ''';
+
+/// What the dashboard's training charts are drawn from (#137): every finished
+/// workout started in a window, with its working sets counted and its volume
+/// summed across every exercise in it.
+///
+/// Warm-ups count toward neither, as in every other chart. Volume is weight
+/// times reps, and an assisted exercise's weight is the help it gave rather
+/// than a load lifted, so it adds none. The `LEFT JOIN`s keep a workout with
+/// no working sets at all: it still took time, which the duration chart shows.
+///
+/// `/*discarded:s*/` sits inside the join, after the warm-up clause, where the
+/// rest of the counts carry it: a set the user marks as a bad entry (#428)
+/// drops out of both totals once that marker is honoured.
+const trainingTotals = '''
+SELECT
+    w.start AS start,
+    w."end" AS "end",
+    w.pauses AS pauses,
+    count(s.id) AS sets,
+    coalesce(
+        sum(
+            CASE e.category
+                WHEN 'Assisted Body Weight' THEN 0
+                ELSE coalesce(s.weight, 0) * coalesce(s.reps, 0)
+            END
+        ),
+        0
+    ) AS volume
+FROM workouts w
+LEFT JOIN workout_exercises we ON we.workout_id = w.id
+LEFT JOIN sets s ON s.exercise_id = we.id
+    AND s.completed
+    AND s.set_type IS NOT 'warmup'
+    /*discarded:s*/
+LEFT JOIN exercises e ON e.id = we.exercise_id
+WHERE w.user_id = ?
+  AND w."end" IS NOT NULL
+  AND w.start >= ?
+  AND w.start < ?
+GROUP BY w.id
+;
+''';

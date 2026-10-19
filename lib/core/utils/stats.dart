@@ -42,4 +42,9 @@ class LocalStats implements LocalStatsService {
   Future<List<LensSets>> getLensSets(DateTime from, DateTime to, {String? userId}) {
     return _db.getLensSets(from, to, userId: userId);
   }
+
+  @override
+  Future<List<WorkoutTotals>> getTrainingTotals(DateTime from, DateTime to, {String? userId}) {
+    return _db.getTrainingTotals(from, to, userId: userId);
+  }
 }

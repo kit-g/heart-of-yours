@@ -47,6 +47,8 @@ enum _Screen {
   muscleMap,
   weeklyLens,
   weeklyBalance,
+  trainingCharts,
+  newChartDialog,
   noAccountDialog,
   workout,
   programs,
@@ -326,6 +328,31 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Guideline.iosTapTarget,
     'bottom nav bar items, and the card\'s Patterns/Muscles/Balance SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
   ),
+
+  // The dashboard's training-wide charts (#137): a volume chart with its
+  // period menu, and a days-trained heatmap
+  // (lib/presentation/routes/profile/dashboard.dart).
+  (_Screen.trainingCharts, _Guideline.labeledTapTarget, null),
+  (_Screen.trainingCharts, _Guideline.textContrastLight, null),
+  (_Screen.trainingCharts, _Guideline.textContrastDark, null),
+  (
+    _Screen.trainingCharts,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items, and the cards\' 20pt title-bar buttons (close, and the period menu; lib/presentation/routes/profile/dashboard.dart _CardHeader, as on every dashboard chart) are below 48x48 — visual-density change, out of scope',
+  ),
+  (
+    _Screen.trainingCharts,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items, and the cards\' 20pt title-bar buttons (close, and the period menu; lib/presentation/routes/profile/dashboard.dart _CardHeader, as on every dashboard chart) are below 44x44 — visual-density change, out of scope',
+  ),
+
+  // The New chart dialog over the profile, one training chart already added
+  // and so greyed (lib/presentation/routes/profile/page.dart, _showNewChartDialog).
+  (_Screen.newChartDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.newChartDialog, _Guideline.textContrastLight, null),
+  (_Screen.newChartDialog, _Guideline.textContrastDark, null),
+  (_Screen.newChartDialog, _Guideline.androidTapTarget, null),
+  (_Screen.newChartDialog, _Guideline.iosTapTarget, null),
 
   // The no-account dialog over the profile of an anonymous session
   // (lib/presentation/routes/profile/page.dart, _showNoAccountDialog).
@@ -950,7 +977,7 @@ void main() {
       (_) async => MintedApiToken(token: _liveToken, secret: 'hrt_6PnLB1AcxbmXGK1ZeqJVevM9pFCAxx-i7iUShZD-hbo'),
     );
     when(api.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
-    when(db.getPreferences(any)).thenAnswer((_) async => <ChartPreference>[]);
+    when(db.getChartRows(any)).thenAnswer((_) async => <Map<String, Object?>>[]);
 
     when(db.getActiveWorkout(any)).thenAnswer((_) async => null);
     stubPauses(db);
@@ -1030,6 +1057,24 @@ void main() {
         if (screen == _Screen.muscleMap) {
           SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
         }
+      case _Screen.trainingCharts || _Screen.newChartDialog:
+        when(db.getChartRows(any)).thenAnswer(
+          (_) async => [
+            const TrainingChart(id: 'volume', metric: .volume).toRow(),
+            const FrequencyChart(id: 'days', exerciseId: 'bench').toRow(),
+          ],
+        );
+        when(db.getTrainingTotals(any, any, userId: anyNamed('userId'))).thenAnswer(
+          (_) async => [
+            (start: DateTime.now(), duration: const Duration(minutes: 50), sets: 12, volume: 4200.0),
+            (
+              start: DateTime.now().subtract(const Duration(days: 7)),
+              duration: const Duration(minutes: 40),
+              sets: 9,
+              volume: 3100.0,
+            ),
+          ],
+        );
       case _Screen.weeklyLens:
         when(
           db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
@@ -1312,6 +1357,19 @@ void main() {
       case _Screen.weeklyBalance:
         await tester.ensureVisible(find.text('Balance'));
         await tester.tap(find.text('Balance'));
+        await tester.pumpTimes();
+      case _Screen.trainingCharts || _Screen.newChartDialog:
+        // `_initApp` never gets as far as the charts in a widget test (see
+        // dashboard_test.dart), so they are read the way it would
+        await Charts.of(tester.element(find.byType(MaterialApp))).init();
+        await tester.pumpTimes();
+        switch (screen) {
+          case _Screen.newChartDialog:
+            await tester.ensureVisible(find.text('New chart'));
+            await tester.tap(find.text('New chart'));
+          default:
+            await tester.ensureVisible(find.byTooltip('Period: By week'));
+        }
         await tester.pumpTimes();
       case _Screen.upsyncRunning || _Screen.upsyncFailed || _Screen.upsyncDone:
         unawaited(Upsync.of(tester.element(find.byType(MaterialApp))).run('u1'));

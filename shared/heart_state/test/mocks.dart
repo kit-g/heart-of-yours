@@ -33,7 +33,7 @@ import 'package:mockito/annotations.dart';
     MockSpec<GoogleSignIn>(),
     MockSpec<ExerciseHistoryService>(),
     MockSpec<ChartPreference>(),
-    MockSpec<ChartPreferenceService>(),
+    MockSpec<LocalChartService>(),
     MockSpec<UpsyncService>(),
     MockSpec<LocalUpsyncService>(),
     MockSpec<RemoteAccountSummaryService>(),

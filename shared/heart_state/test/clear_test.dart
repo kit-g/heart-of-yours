@@ -34,7 +34,7 @@ class _Auth extends Auth {
 class _Charts extends Charts {
   int calls = 0;
 
-  new() : super(service: MockChartPreferenceService());
+  new() : super(service: MockLocalChartService());
 
   @override
   void onSignOut() => calls++;

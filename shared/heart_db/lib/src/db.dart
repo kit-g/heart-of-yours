@@ -79,6 +79,7 @@ class LocalDatabase extends _LocalDatabase
         _Programs,
         _Skips,
         _Stats,
+        _TrainingTotals,
         _TemplateFolders,
         _Templates,
         _Timers,

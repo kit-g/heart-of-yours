@@ -250,4 +250,41 @@ void main() {
       );
     },
   );
+
+  group(
+    'chart rows (#137)',
+    () {
+      test(
+        'a row of a kind this build does not know shares the order and is skipped by getPreferences',
+        () async {
+          await local.saveChartPreference(ChartPreference.exercise('Push Up', .topSetWeight), userId);
+          final id = await local.saveChartRow({'type': 'trainingSets', 'data': '{"period":"week"}'}, userId);
+
+          final rows = await local.getChartRows(userId);
+          expect(rows.map((row) => row['type']), ['topSetWeight', 'trainingSets']);
+          expect(rows.last['id'].toString(), id);
+          expect(rows.last['sort_order'], 1);
+
+          final preferences = await local.getPreferences(userId);
+          expect(preferences.single.type, ChartPreferenceType.topSetWeight);
+        },
+      );
+
+      test(
+        'updateChartData changes the data in place, and only for its owner',
+        () async {
+          final id = await local.saveChartRow({'type': 'trainingSets', 'data': '{"period":"week"}'}, userId);
+          await local.saveChartRow({'type': 'trainingVolume', 'data': '{"period":"week"}'}, userId);
+
+          await local.updateChartData(id, '{"period":"month"}', strangerId);
+          expect((await local.getChartRows(userId)).first['data'], '{"period":"week"}');
+
+          await local.updateChartData(id, '{"period":"month"}', userId);
+          final [first, _] = await local.getChartRows(userId);
+          expect(first['data'], '{"period":"month"}');
+          expect(first['sort_order'], 0);
+        },
+      );
+    },
+  );
 }

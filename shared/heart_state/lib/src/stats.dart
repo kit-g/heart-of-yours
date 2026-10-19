@@ -2,6 +2,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'charts.dart';
 import 'lens.dart';
 import 'weeks.dart';
 
@@ -9,6 +10,22 @@ import 'weeks.dart';
 /// workout started and what the exercise trains — the muscle map's unit of
 /// data (#136). [target] is where an exercise nobody tagged still belongs.
 typedef MuscleSets = ({DateTime start, MuscleTagging muscles, Target target, int sets});
+
+/// What one finished workout amounted to: when it started, how long it ran
+/// less its pauses, its working sets and the volume they moved, in kilograms —
+/// the training charts' unit of data (#137).
+typedef WorkoutTotals = ({DateTime start, Duration duration, int sets, double volume});
+
+/// How many weeks a weekly training chart shows: the eight of the
+/// workouts-per-week chart.
+const trainingWeeks = 8;
+
+/// How many months a monthly training chart shows.
+const trainingMonths = 6;
+
+/// How many weeks the frequency heatmap shows: a quarter, enough to read a
+/// habit off without the cells shrinking past a tap's worth in a phone card.
+const frequencyWeeks = 12;
 
 /// [StatsService] plus the reads only the local mirror can answer.
 ///
@@ -39,6 +56,9 @@ abstract interface class LocalStatsService implements StatsService {
   /// Completed working sets per exercise per finished workout started in
   /// [from, to), with the workout and what the exercise is (#341).
   Future<List<LensSets>> getLensSets(DateTime from, DateTime to, {String? userId});
+
+  /// Every finished workout started in [from, to), with its totals (#137).
+  Future<List<WorkoutTotals>> getTrainingTotals(DateTime from, DateTime to, {String? userId});
 }
 
 class Stats with ChangeNotifier implements SignOutStateSentry {
@@ -109,4 +129,103 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
   Future<List<LensSets>> getLensSets(DateTime from, DateTime to) {
     return _service.getLensSets(from, to, userId: userId);
   }
+
+  /// A training chart's points (#137), newest first: one per week (starting on
+  /// [firstWeekday]) or month, each dated by its first day.
+  ///
+  /// Volume and sets are the period's totals, and a period with no training
+  /// is a zero — a quiet week is part of the shape. Duration is the period's
+  /// average workout, so a period with none has no point rather than a
+  /// zero-minute session. A chart with nothing but zeros has no points at all,
+  /// which is what its empty state is for.
+  Future<List<(num, DateTime)>> getTrainingSeries(
+    TrainingMetric metric,
+    ChartPeriod period, {
+    required int firstWeekday,
+    DateTime? now,
+  }) async {
+    final today = now ?? DateTime.now();
+    final starts = trainingPeriods(period, now: today, firstWeekday: firstWeekday);
+    final rows = await _service.getTrainingTotals(
+      starts.first,
+      DateTime(today.year, today.month, today.day + 1),
+      userId: userId,
+    );
+    return trainingSeries(metric, rows, starts: starts);
+  }
+
+  /// Completed working sets of [exerciseId] per day over the last
+  /// [frequencyWeeks] weeks, keyed by local midnight: the frequency heatmap's
+  /// cells (#137). The pattern lens's read, narrowed to one exercise.
+  Future<Map<DateTime, int>> getExerciseDays(String exerciseId, {required int firstWeekday, DateTime? now}) async {
+    final today = now ?? DateTime.now();
+    final rows = await _service.getLensSets(
+      lastWeeksOf(frequencyWeeks, now: today, firstWeekday: firstWeekday).first,
+      DateTime(today.year, today.month, today.day + 1),
+      userId: userId,
+    );
+    return rows.where((row) => row.exerciseId == exerciseId).fold<Map<DateTime, int>>(
+      {},
+      (days, row) {
+        final day = DateTime(row.start.year, row.start.month, row.start.day);
+        return days..update(day, (sets) => sets + row.sets, ifAbsent: () => row.sets);
+      },
+    );
+  }
+}
+
+/// The first days of the periods a training chart shows, oldest first, the
+/// current one last.
+List<DateTime> trainingPeriods(ChartPeriod period, {required DateTime now, required int firstWeekday}) {
+  return switch (period) {
+    .week => lastWeeksOf(trainingWeeks, now: now, firstWeekday: firstWeekday),
+    .month => [
+      for (final back in Iterable<int>.generate(trainingMonths, (index) => trainingMonths - 1 - index))
+        DateTime(now.year, now.month - back),
+    ],
+  };
+}
+
+/// [rows] folded into one point per period that begins at each of [starts]
+/// (oldest first), newest first. See [Stats.getTrainingSeries] for what each
+/// metric's point is.
+List<(num, DateTime)> trainingSeries(
+  TrainingMetric metric,
+  List<WorkoutTotals> rows, {
+  required List<DateTime> starts,
+}) {
+  // the period a workout falls in: the latest one that began before it
+  List<WorkoutTotals> within(int index) {
+    final from = starts[index];
+    return rows.where((row) {
+      final inside = !row.start.isBefore(from);
+      return switch (starts.elementAtOrNull(index + 1)) {
+        DateTime next => inside && row.start.isBefore(next),
+        null => inside,
+      };
+    }).toList();
+  }
+
+  final points = starts.indexed
+      .map((each) {
+        final (index, start) = each;
+        final workouts = within(index);
+        final num? value = switch (metric) {
+          .volume => workouts.fold<double>(0, (sum, row) => sum + row.volume),
+          .sets => workouts.fold<int>(0, (sum, row) => sum + row.sets),
+          .duration => switch (workouts) {
+            [] => null,
+            _ => workouts.fold<int>(0, (sum, row) => sum + row.duration.inSeconds) / workouts.length,
+          },
+        };
+        return switch (value) {
+          num v => (v, start),
+          null => null,
+        };
+      })
+      .nonNulls
+      .toList();
+
+  if (points.every((point) => point.$1 == 0)) return const [];
+  return points.reversed.toList();
 }

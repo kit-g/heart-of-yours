@@ -146,6 +146,15 @@ void main() {
     );
   });
 
+  test('a frequency chart (#137) follows the exercise like any chart keyed by it', () async {
+    await local.saveChartRow({'type': 'exerciseFrequency', 'data': '{"exerciseName":"source"}'}, me);
+
+    await local.moveExerciseHistory(sourceId: 'source', targetId: 'target', userId: me, deleteSource: false);
+
+    final [chart] = await local.getChartRows(me);
+    expect((chart['type'], chart['data']), ('exerciseFrequency', '{"exerciseName":"target"}'));
+  });
+
   test('a deleted custom goes after its children have moved, so the cascade takes nothing', () async {
     await seed(me, 'custom');
 
