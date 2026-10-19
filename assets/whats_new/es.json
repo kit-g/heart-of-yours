@@ -5,57 +5,57 @@
       {
         "id": "programs",
         "title": "Programas",
-        "body": "Entrena con un plan, no solo con un registro. Elige uno de 19 **programas listos**, cada uno con la investigación que lo respalda, o convierte una carpeta de plantillas en uno. Heart programa las sesiones, fija el objetivo de cada serie y sube el peso cuando te lo ganas. Los pesos iniciales salen de tu propio historial."
+        "body": "Entrena con un plan. Elige uno de los 19 **programas prediseñados**, cada uno con las investigaciones que lo respaldan, o crea uno a partir de una carpeta de plantillas. Heart programa las sesiones, fija el objetivo de cada serie y aumenta el peso según tu progreso. Los pesos iniciales se calculan a partir de tu historial."
       },
       {
         "id": "not-today",
         "title": "Hoy no",
-        "body": "Aparta una sesión del programa, o cualquier día, con un toque, y di por qué si quieres. El programa espera, y Deshacer lo revierte."
+        "body": "Omite una sesión del programa o un día con un toque y, si quieres, indica el motivo. El programa queda en espera. Puedes revertirlo con Deshacer."
       },
       {
         "id": "go-easy",
-        "title": "Con qué ir con cuidado",
-        "body": "Indica una rodilla, la columna o empujar por encima de la cabeza, y Heart marca los ejercicios más exigentes con eso y sugiere cambios más suaves. La lista se queda en tu teléfono."
+        "title": "Qué cuidar",
+        "body": "Indica qué quieres cuidar, como una rodilla, la columna o los movimientos por encima de la cabeza. Heart señala los ejercicios más exigentes para esas zonas o movimientos y sugiere alternativas más suaves. La lista se guarda solo en tu teléfono."
       },
       {
         "id": "program-calendar",
         "title": "Tu programa en tu calendario",
-        "body": "Añade las sesiones de un programa a un calendario de tu teléfono, incluido el de Google, a una hora o todo el día."
+        "body": "Añade las sesiones de un programa a un calendario de tu teléfono, incluido el de Google, a una hora concreta o como eventos de todo el día."
       },
       {
         "id": "supersets",
         "title": "Superseries y circuitos",
-        "body": "Agrupa ejercicios en un entrenamiento o una plantilla y hazlos por turnos."
+        "body": "Agrupa ejercicios en un entrenamiento o una plantilla y hazlos uno tras otro."
       },
       {
         "id": "rep-ranges",
         "title": "Rangos de repeticiones y objetivos",
-        "body": "Las series de una plantilla pueden apuntar a un rango, un número exacto, un peso o repeticiones en reserva. Toca una serie vacía y se rellena con el objetivo."
+        "body": "Define los objetivos de las series de una plantilla: un rango de repeticiones, un número exacto, un peso o repeticiones en reserva. Toca una serie vacía para rellenarla con el objetivo."
       },
       {
         "id": "sets-a-week",
         "title": "Series por semana",
-        "body": "En tu perfil: series y sesiones por semana según el patrón de movimiento o el músculo, y el equilibrio entre empuje y tirón, bisagra y sentadilla."
+        "body": "En tu perfil: series y sesiones por semana según el tipo de movimiento o el músculo, y el equilibrio entre empuje y tracción, y entre bisagra de cadera y sentadilla."
       },
       {
         "id": "pattern-goals",
-        "title": "Objetivos por patrón o músculo",
-        "body": "Ponte un objetivo de empujes por semana, o de pecho, no solo de un ejercicio."
+        "title": "Metas por movimiento o músculo",
+        "body": "Fija una meta semanal para un movimiento, como el empuje, o para un músculo, como el pecho. Las metas ya no se limitan a un solo ejercicio."
       },
       {
         "id": "records-on-sets",
-        "title": "Récords en la serie",
-        "body": "Cada serie que marcó un récord lleva ahora una insignia que lo nombra, en la pantalla final y en el historial."
+        "title": "Récords en cada serie",
+        "body": "Cada serie con un nuevo récord lleva una insignia que indica qué récord has batido, tanto en el resumen del entrenamiento como en el Historial."
       },
       {
         "id": "week-start",
-        "title": "Tu semana, tu comienzo",
-        "body": "Elige el día en que empieza tu semana. Todos los recuentos semanales lo siguen."
+        "title": "El inicio de tu semana",
+        "body": "Elige el día en que empieza tu semana. Los cálculos semanales se ajustan al día que elijas."
       },
       {
         "id": "previous-in-template",
-        "title": "Última vez en esta plantilla",
-        "body": "En un entrenamiento de una plantilla, Anterior puede mostrar la última vez que hiciste esa plantilla."
+        "title": "Última vez con esta plantilla",
+        "body": "En un entrenamiento iniciado desde una plantilla, Anterior puede mostrar los resultados de la última vez que usaste esa plantilla."
       }
     ]
   },
@@ -65,22 +65,22 @@
       {
         "id": "home-screen-widgets",
         "title": "Heart en tu pantalla de inicio",
-        "body": "Tres widgets en la galería: **Entrenamiento** muestra tu volumen, entrenamientos, tiempo, series o repeticiones, o un dato de Apple Health, y también cabe en la pantalla de bloqueo. **Empezar** inicia un entrenamiento o una plantilla con un toque. **Objetivos** muestra cómo vas con tus objetivos."
+        "body": "Tres widgets en la galería: **Entrenamiento** muestra tu volumen, entrenamientos, duración, series o repeticiones, o un dato de Salud, y también está disponible en la pantalla de bloqueo. **Empezar** inicia un entrenamiento vacío o desde una plantilla con un toque. **Metas** muestra tu progreso hacia cada meta."
       },
       {
         "id": "icon-menu",
         "title": "Empieza desde el icono",
-        "body": "Mantén pulsado el icono de Heart para empezar un entrenamiento vacío o una de tus plantillas."
+        "body": "Mantén pulsado el icono de Heart para empezar un entrenamiento vacío o desde una de tus plantillas."
       },
       {
         "id": "move-history",
         "title": "Mueve el historial de un ejercicio",
-        "body": "¿Lo registraste en el ejercicio equivocado? **Mover el historial a…**, en el menú del ejercicio, lo pasa todo a otro. Antes, una vista previa te dice qué se mueve. Requiere una cuenta."
+        "body": "¿Registraste series en el ejercicio equivocado? La opción **Mover el historial a…**, en el menú del ejercicio, transfiere todo su historial a otro ejercicio. Puedes revisar qué se moverá antes de confirmar. Requiere una cuenta."
       },
       {
         "id": "heart-import",
         "title": "Recupera tu historial de Heart",
-        "body": "**Ajustes → Tus datos → Importar historial de entrenamientos** ahora lee las exportaciones de Heart. El archivo JSON lo recupera todo: entrenamientos, plantillas y carpetas, ejercicios propios y objetivos."
+        "body": "**Ajustes → Tus datos → Importar historial de entrenamientos** ahora admite las exportaciones de Heart. El archivo JSON recupera todos los datos: entrenamientos, plantillas y carpetas, ejercicios personalizados y metas."
       }
     ]
   },
@@ -90,7 +90,7 @@
       {
         "id": "shortcuts",
         "title": "Heart, con la voz",
-        "body": "Pídele a Siri que empiece un entrenamiento o una plantilla, que lleve tu descanso o que registre la serie que toca, y pregúntale por un récord o por tu semana. En Android, empieza un entrenamiento desde el icono de la app."
+        "body": "Pídele a Siri que empiece un entrenamiento vacío o desde una plantilla, controle el temporizador de descanso o registre la serie actual. También puedes consultar un récord o el resumen de tu semana. En Android, empieza un entrenamiento desde el icono de la app."
       },
       {
         "id": "lock-screen-buttons",
@@ -104,18 +104,18 @@
       },
       {
         "id": "hevy-import",
-        "title": "Trae tu historial de Hevy",
-        "body": "**Ajustes → Tus datos → Importar historial de entrenamientos** ahora acepta la exportación CSV de Hevy además de la de Strong. Al importar de Strong, eliges la unidad de tu exportación."
+        "title": "Importa tu historial de Hevy",
+        "body": "**Ajustes → Tus datos → Importar historial de entrenamientos** ahora acepta la exportación CSV de Hevy además de la de Strong. Al importar desde Strong, eliges la unidad de peso de tu exportación."
       },
       {
         "id": "sign-ins",
-        "title": "Una cuenta, todos los accesos",
-        "body": "Conecta Apple, Google y una contraseña a la misma cuenta en **Ajustes → Cuenta**, y desconecta los que no uses."
+        "title": "Una cuenta, varias formas de acceder",
+        "body": "Vincula Apple, Google y una contraseña a la misma cuenta en **Ajustes → Cuenta**, y desvincula los métodos de acceso que no uses."
       },
       {
         "id": "developer-api",
         "title": "API para desarrolladores",
-        "body": "Crea un token de solo lectura en **Ajustes → API para desarrolladores** y lee tu registro de entrenamientos desde un script, una hoja de cálculo o un asistente de IA. Tus datos de salud nunca forman parte de él."
+        "body": "Crea un token de solo lectura en **Ajustes → API para desarrolladores** y consulta tu diario de entrenamiento desde un script, una hoja de cálculo o un asistente de IA. La API nunca incluye tus datos de salud."
       }
     ]
   },
@@ -125,27 +125,27 @@
       {
         "id": "pause-workout",
         "title": "Pausar un entrenamiento",
-        "body": "Detén el reloj desde el menú **⋯** del entrenamiento. Marcar una serie lo pone en marcha otra vez. ¿Dejaste un entrenamiento abierto? Ábrelo desde el recordatorio y te ofrecerá terminarlo en tu última serie."
+        "body": "Detén el cronómetro desde el menú **⋯** del entrenamiento. Al marcar una serie, vuelve a ponerse en marcha. ¿Dejaste un entrenamiento abierto? Ábrelo desde el recordatorio y podrás finalizarlo a la hora de tu última serie."
       },
       {
         "id": "set-stopwatch",
         "title": "Cronometra una serie",
-        "body": "Las series por tiempo tienen cronómetro: toca reproducir en la celda del tiempo y empieza a correr, también en la pantalla de bloqueo. Detenlo para registrar el tiempo."
+        "body": "Las series por tiempo tienen cronómetro: toca el botón de inicio en el campo de tiempo para ponerlo en marcha. También aparece en la pantalla de bloqueo. Detenlo para registrar el tiempo."
       },
       {
         "id": "keep-awake",
         "title": "Pantalla siempre encendida",
-        "body": "La pantalla no se apaga durante el entrenamiento, con un sol en la pestaña **Entreno** mientras tanto."
+        "body": "La pantalla permanece encendida durante el entrenamiento. Mientras esta función está activa, aparece un sol en la pestaña **Entreno**."
       },
       {
         "id": "exercise-search",
         "title": "Encuentra ejercicios más rápido",
-        "body": "La búsqueda conoce otros nombres y abreviaturas (OHP, RDL, DB), palabras de músculos, y perdona las erratas. El selector se abre con lo último que hiciste."
+        "body": "La búsqueda reconoce otros nombres y abreviaturas (OHP, RDL, DB), nombres de músculos y errores de escritura. El selector muestra primero los últimos ejercicios que hiciste."
       },
       {
         "id": "carries",
-        "title": "Paseos con carga, trineos y sostenidos",
-        "body": "Dos tipos nuevos de ejercicio: un peso llevado una distancia, en metros o yardas, y un peso sostenido un tiempo. Récords, gráficas e historial los tienen en cuenta."
+        "title": "Paseos con carga, trineos e isométricos",
+        "body": "Dos nuevos tipos de ejercicio: transportar un peso a lo largo de una distancia, en metros o yardas, y sostener un peso durante un tiempo. Ambos se incluyen en los récords, los gráficos y el Historial."
       }
     ]
   },
@@ -155,12 +155,12 @@
       {
         "id": "set-types",
         "title": "Calentamiento, series descendentes y al fallo",
-        "body": "Toca el número de una serie para marcarla. El calentamiento no cuenta en tus récords, gráficas ni mapa muscular, y **Anterior** lo empareja con el calentamiento de la vez pasada."
+        "body": "Toca el número de una serie para indicar su tipo. Las series de calentamiento no cuentan en tus récords, gráficos ni mapa muscular, y **Anterior** las compara con las series de calentamiento de la última vez."
       },
       {
         "id": "rpe",
         "title": "RPE",
-        "body": "Valora lo duro que fue cada serie, del 6 al 10, desde el menú de su número."
+        "body": "Valora el esfuerzo de cada serie, del 6 al 10, desde el menú que se abre al tocar su número."
       },
       {
         "id": "workout-note",
@@ -170,12 +170,12 @@
       {
         "id": "workout-muscles",
         "title": "Músculos trabajados, en cada entrenamiento",
-        "body": "Cada entrenamiento terminado muestra qué músculos trabajó, nada más terminar y en el Historial."
+        "body": "Consulta los músculos trabajados en cada entrenamiento al terminarlo y en el Historial."
       },
       {
         "id": "fill-columns",
         "title": "Rellena una columna de una vez",
-        "body": "Toca **kg** o **Reps** sobre tus series para rellenar las que faltan desde la primera. Toca **✓** para marcarlas todas."
+        "body": "Toca **kg** o **Reps** sobre tus series para copiar el valor de la primera en todas las que aún no has completado. Toca **✓** para marcarlas todas."
       }
     ]
   },
@@ -200,7 +200,7 @@
       {
         "id": "features-follow-you",
         "title": "Tus elecciones te acompañan",
-        "body": "Activa o desactiva una función una vez, y tus otros dispositivos con sesión iniciada lo sabrán."
+        "body": "Activa o desactiva una función y el cambio se aplicará en todos los dispositivos donde hayas iniciado sesión."
       }
     ]
   },
@@ -215,7 +215,7 @@
       {
         "id": "rest-timers-settings",
         "title": "Los descansos, en un solo sitio",
-        "body": "**Ajustes → Temporizadores de descanso** lista todos los que has puesto. Borra uno desde ahí, y deshazlo si no querías."
+        "body": "**Ajustes → Temporizadores de descanso** muestra todos los temporizadores que has configurado. Puedes borrar cualquiera desde ahí y deshacerlo si te equivocas."
       },
       {
         "id": "whats-new",
@@ -230,7 +230,7 @@
       {
         "id": "exercise-notes",
         "title": "Notas de ejercicio",
-        "body": "Añade una nota a cualquier ejercicio mientras entrenas: una indicación, una configuración, un peso para probar la próxima vez. Con la sesión iniciada, puedes **fijar** una nota para que vuelva cada vez que aparezca el ejercicio, también en los entrenamientos que empiezas desde una plantilla."
+        "body": "Añade una nota a cualquier ejercicio mientras entrenas: una indicación técnica, un ajuste del equipo o un peso para probar la próxima vez. Con la sesión iniciada, puedes **fijar** la nota para verla cada vez que hagas ese ejercicio, también al iniciar un entrenamiento desde una plantilla."
       },
       {
         "id": "history-calendar",
@@ -240,7 +240,7 @@
       {
         "id": "new-look",
         "title": "Un nuevo aspecto",
-        "body": "Un logotipo nuevo, un icono de app nuevo y una pantalla de inicio que sigue el modo claro y el oscuro."
+        "body": "Un logotipo nuevo, un icono nuevo para la app y una pantalla de inicio que se adapta al modo claro y oscuro."
       }
     ]
   },
@@ -250,12 +250,12 @@
       {
         "id": "no-account",
         "title": "Sin necesidad de cuenta",
-        "body": "Abre la app y empieza a entrenar. Tus entrenamientos, plantillas, ejercicios propios y metas se guardan en tu dispositivo desde la primera sesión, y todo lo que no necesita un servidor funciona sin él."
+        "body": "Abre la app y empieza a entrenar. Tus entrenamientos, plantillas, ejercicios personalizados y metas se guardan en tu dispositivo desde la primera sesión. Todas las funciones que no necesitan un servidor están disponibles sin cuenta."
       },
       {
         "id": "sign-in-later",
         "title": "Inicia sesión cuando quieras",
-        "body": "Inicia sesión más adelante y todo lo que hayas registrado pasa a tu cuenta. Si esa cuenta ya tiene entrenamientos de otro dispositivo, ambos se combinan en lugar de sobrescribirse."
+        "body": "Inicia sesión más adelante y todo lo que hayas registrado se añadirá a tu cuenta. Si ya contiene entrenamientos de otro dispositivo, los dos historiales se combinarán sin sobrescribir datos."
       },
       {
         "id": "whole-history",
@@ -275,7 +275,7 @@
       {
         "id": "languages",
         "title": "Español, francés y ruso",
-        "body": "Configura tu dispositivo en uno de ellos y todas las pantallas lo siguen, incluidos los nombres y las instrucciones de la biblioteca de ejercicios."
+        "body": "Configura tu dispositivo en uno de estos idiomas y toda la app lo usará, incluidos los nombres y las instrucciones de la biblioteca de ejercicios."
       },
       {
         "id": "themes",
@@ -285,7 +285,7 @@
       {
         "id": "records",
         "title": "Récords",
-        "body": "La pestaña **Récords** de un ejercicio muestra tu mejor serie, el máximo de repeticiones, tu mejor ritmo, una tabla de máximos por repeticiones y los totales de siempre. Cuando un entrenamiento bate un récord personal, el resumen lo celebra."
+        "body": "La pestaña **Récords** de un ejercicio muestra tu mejor serie, el máximo de repeticiones, tu mejor ritmo, una tabla de pesos máximos por número de repeticiones y los totales acumulados. Cuando bates un récord personal, aparece en el resumen del entrenamiento."
       },
       {
         "id": "dashboard-charts",
@@ -299,8 +299,8 @@
     "items": [
       {
         "id": "strong-import",
-        "title": "Trae tu historial de Strong",
-        "body": "**Ajustes → Tus datos → Importar historial de entrenamientos** lee el archivo CSV que exporta Strong y trae tus entrenamientos, series y ejercicios. Tú apruebas cada ejercicio que Heart no conoce, e importar el mismo archivo dos veces nunca duplica nada."
+        "title": "Importa tu historial de Strong",
+        "body": "**Ajustes → Tus datos → Importar historial de entrenamientos** lee el archivo CSV exportado desde Strong e importa tus entrenamientos, series y ejercicios. Tú confirmas cada ejercicio que Heart no reconoce. Importar el mismo archivo dos veces no crea duplicados."
       }
     ]
   },
@@ -309,7 +309,7 @@
     "items": [
       {
         "id": "health-workouts",
-        "title": "Entrenamientos en Apple Salud y Health Connect",
+        "title": "Entrenamientos en Salud y Health Connect",
         "body": "Los entrenamientos terminados se guardan en la app de salud de tu dispositivo, así tus sesiones de fuerza cuentan en tu actividad. Heart registra cuánto entrenaste y qué tipo de sesión fue, y nunca estima calorías. Puedes desactivarlo en **Ajustes**."
       }
     ]
@@ -320,7 +320,7 @@
       {
         "id": "health-data",
         "title": "Datos de salud en tu perfil",
-        "body": "Heart puede leer la frecuencia cardíaca en reposo, la variabilidad de la frecuencia cardíaca, el sueño, los pasos, la energía activa y el peso corporal de Apple Salud o Health Connect, y mostrarlos en gráficos en tu perfil. Esos datos nunca salen de tu dispositivo."
+        "body": "Heart puede leer la frecuencia cardíaca en reposo, la variabilidad de la frecuencia cardíaca, el sueño, los pasos, la energía activa y el peso corporal de Salud o Health Connect, y mostrarlos en gráficos en tu perfil. Esos datos nunca salen de tu dispositivo."
       },
       {
         "id": "chart-ranges",
@@ -330,7 +330,7 @@
       {
         "id": "screen-readers",
         "title": "VoiceOver y TalkBack",
-        "body": "Los botones, gráficos, temporizadores y campos se anuncian en los lectores de pantalla."
+        "body": "Los lectores de pantalla identifican los botones, gráficos, temporizadores y campos de entrada."
       }
     ]
   },
@@ -350,7 +350,7 @@
       {
         "id": "goals",
         "title": "Metas",
-        "body": "Fija una meta semanal o mensual de entrenamientos, o una escalera de hitos con fecha límite opcional. Las metas aparecen como líneas en tus gráficos, el resumen del entrenamiento te avisa cuando alcanzas una, y cada meta alcanzada enlaza con el entrenamiento que lo logró."
+        "body": "Fija una meta semanal o mensual de entrenamientos, o una serie de hitos con fecha límite opcional. Las metas aparecen como líneas en tus gráficos. El resumen del entrenamiento te avisa cuando alcanzas una, y cada meta alcanzada enlaza con el entrenamiento en el que la lograste."
       }
     ]
   },
@@ -370,7 +370,7 @@
       {
         "id": "movement-filters",
         "title": "Filtra ejercicios por movimiento",
-        "body": "Filtra los ejercicios por patrón de movimiento, estabilidad y nivel de técnica, en la biblioteca y al añadir un ejercicio a un entrenamiento."
+        "body": "Filtra los ejercicios por tipo de movimiento, estabilidad y nivel técnico, en la biblioteca y al agregar un ejercicio a un entrenamiento."
       }
     ]
   },
@@ -410,7 +410,7 @@
       {
         "id": "rest-timer",
         "title": "Temporizador de descanso",
-        "body": "Un temporizador de descanso corre entre series, y una notificación te avisa cuando toca la siguiente."
+        "body": "Un temporizador cuenta el descanso entre series y una notificación te avisa cuando toca la siguiente."
       },
       {
         "id": "templates",
@@ -430,7 +430,7 @@
       {
         "id": "dashboard",
         "title": "Tu panel",
-        "body": "Tu perfil muestra los entrenamientos por semana y cualquier gráfico que añadas: 1RM estimado, volumen, mejor serie y más."
+        "body": "Tu perfil muestra los entrenamientos por semana y los gráficos que añadas: 1RM estimado, volumen, peso máximo y más."
       }
     ]
   }

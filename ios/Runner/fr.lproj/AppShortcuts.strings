@@ -9,5 +9,5 @@
 "Log a set in ${applicationName}" = "Enregistrer une série dans ${applicationName}";
 "What's my ${exercise} record in ${applicationName}" = "Quel est mon record en ${exercise} dans ${applicationName}";
 "When did I last do ${exercise} in ${applicationName}" = "Quand ai-je fait ${exercise} pour la dernière fois dans ${applicationName}";
-"When did I last train ${template} in ${applicationName}" = "Quand ai-je entraîné ${template} pour la dernière fois dans ${applicationName}";
+"When did I last train ${template} in ${applicationName}" = "Quand ai-je utilisé ${template} pour la dernière fois dans ${applicationName}";
 "How many workouts this week in ${applicationName}" = "Combien de séances cette semaine dans ${applicationName}";
