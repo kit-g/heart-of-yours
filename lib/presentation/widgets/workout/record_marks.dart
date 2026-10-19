@@ -1,7 +1,8 @@
 part of 'workout_detail.dart';
 
 /// The records each set under [child] set, by set id: a past workout's page
-/// puts its own here, and each set row shows its own as pills under it.
+/// puts its own here, as does the active workout while live records are on
+/// (#160), and each set row shows its own as pills under it.
 ///
 /// Only records that beat an earlier value are here ([recordMarks]): an
 /// exercise's first session sets every record at once, and a pill on each of

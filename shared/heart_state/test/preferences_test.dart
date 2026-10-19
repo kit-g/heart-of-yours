@@ -507,6 +507,7 @@ void main() {
         'defaultRest',
         'recaps',
         'copyForAi',
+        'liveRecords',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });

@@ -96,7 +96,14 @@ enum Feature {
   /// or the share sheet. Offered once, as an item in a History workout's menu
   /// for the session it is first seen in: nothing interrupts, and only a user
   /// who reaches for it is asked. Device only, and never a health value.
-  copyForAi('copyForAi');
+  copyForAi('copyForAi'),
+
+  /// A quiet note the moment a ticked working set beats a previous best
+  /// (#160), named by the same fold the Done page and the record pills read.
+  /// Asked once, in context: the first time a ticked set would have been a
+  /// record, the offer sits under that set. Computes nothing it stores; off,
+  /// nothing is read.
+  liveRecords('liveRecords');
 
   final String value;
 
