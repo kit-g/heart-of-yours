@@ -508,6 +508,7 @@ void main() {
         'recaps',
         'copyForAi',
         'liveRecords',
+        'workoutSounds',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });
