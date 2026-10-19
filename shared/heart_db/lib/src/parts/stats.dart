@@ -199,6 +199,64 @@ mixin _Stats on _LocalDatabase implements StatsService {
   }
 }
 
+/// What a finished workout amounted to, for the dashboard's training charts
+/// (#137): when it started, how long it ran less its pauses, its working sets,
+/// and the volume they moved, in kilograms.
+typedef WorkoutTotalsRow = ({DateTime start, Duration duration, int sets, double volume});
+
+mixin _TrainingTotals on _LocalDatabase {
+  /// Every finished workout started in [from, to), with its totals: the
+  /// training charts' read (#137). Bucketing into weeks or months is the
+  /// caller's, in the user's own calendar, as with [getLensSets].
+  Future<List<WorkoutTotalsRow>> getTrainingTotals(DateTime from, DateTime to, {String? userId}) {
+    if (userId == null) return Future.value(const []);
+    return _db
+        .rawQuery(
+          sql.trainingTotals,
+          [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
+        )
+        .then(
+          (rows) => _readable(
+            rows,
+            (row) {
+              final start = DateTime.parse(row['start'] as String);
+              final end = DateTime.parse(row['end'] as String);
+              return (
+                start: start.toLocal(),
+                // a clock that moved backwards between start and end is not a
+                // negative workout
+                duration: switch (end.difference(start) - _paused(row['pauses'])) {
+                  Duration d when d.isNegative => Duration.zero,
+                  Duration d => d,
+                },
+                sets: (row['sets'] as num).toInt(),
+                volume: (row['volume'] as num).toDouble(),
+              );
+            },
+            what: 'workout totals',
+          ),
+        );
+  }
+}
+
+/// The closed pauses stored with a workout, as one length (#134).
+Duration _paused(Object? value) {
+  return switch (value) {
+    String s when s.isNotEmpty => switch (jsonDecode(s)) {
+      List pauses =>
+        pauses
+            .whereType<Map>()
+            .map(WorkoutPause.fromJson)
+            .fold(
+              Duration.zero,
+              (sum, pause) => sum + pause.duration,
+            ),
+      _ => Duration.zero,
+    },
+    _ => Duration.zero,
+  };
+}
+
 /// A non-empty JSON object stored as text, or null.
 Map<String, dynamic>? _blob(Object? value) {
   return switch (value) {
