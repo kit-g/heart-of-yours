@@ -59,13 +59,10 @@ void main() {
     when(
       state.exerciseService.getExerciseMetics(any, any, any, limit: anyNamed('limit')),
     ).thenAnswer((_) async => [(8, now)]);
-    when(state.chartService.saveChartPreference(any, any)).thenAnswer((invocation) async {
-      // the server assigns the id; removePreference only acts on a preference
-      // that carries one (see Charts.removePreference)
-      final preference = invocation.positionalArguments[0] as ChartPreference;
-      return preference.copyWith(id: 'server-id');
-    });
-    when(state.chartService.deleteChartPreference(any, any)).thenAnswer((_) async {});
+    // the store assigns the id; removePreference only acts on a preference
+    // that carries one (see Charts.removePreference)
+    when(state.chartService.saveChart(any, any)).thenAnswer((_) async => 'stored-id');
+    when(state.chartService.deleteChart(any, any)).thenAnswer((_) async {});
 
     await pumpExerciseDetail(tester, pullUp, initialTab: 'charts', state: state);
     await tester.pumpAndSettle();
@@ -78,7 +75,7 @@ void main() {
 
     expect(find.text(l.chartAddedToProfile), findsOneWidget);
     expect(
-      state.charts.any((each) => each.exerciseName == pullUp.id && each.type == .maxConsecutiveReps),
+      state.charts.exerciseCharts.any((each) => each.exerciseName == pullUp.id && each.type == .maxConsecutiveReps),
       isTrue,
     );
     expect(find.tooltip(l.removeChartFromProfile), findsOneWidget);
@@ -87,7 +84,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      state.charts.any((each) => each.exerciseName == pullUp.id && each.type == .maxConsecutiveReps),
+      state.charts.exerciseCharts.any((each) => each.exerciseName == pullUp.id && each.type == .maxConsecutiveReps),
       isFalse,
     );
     expect(find.tooltip(l.addChartToProfile), findsNWidgets(2));

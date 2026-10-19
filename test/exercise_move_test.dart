@@ -91,9 +91,9 @@ void main() {
     when(timers.getTimers(any)).thenAnswer((_) async => <String, int>{});
     final previous = MockPreviousExerciseService();
     when(previous.getPreviousSets(any)).thenAnswer((_) async => {});
-    final charts = MockChartPreferenceService();
-    when(charts.getPreferences(any)).thenAnswer((_) async => <ChartPreference>[]);
-    when(charts.saveChartPreference(any, any)).thenAnswer((inv) async => inv.positionalArguments.first);
+    final charts = MockLocalChartService();
+    when(charts.getCharts(any)).thenAnswer((_) async => <DashboardChart>[]);
+    when(charts.saveChart(any, any)).thenAnswer((_) async => 'saved');
 
     await tester.pumpWidget(
       MultiProvider(

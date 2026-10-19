@@ -58,7 +58,7 @@ class ExerciseDetailState {
   final Goals goals;
   final MockExerciseService exerciseService;
   final MockWorkoutService workoutService;
-  final MockChartPreferenceService chartService;
+  final MockLocalChartService chartService;
 
   new({
     required this.exercises,
@@ -114,7 +114,7 @@ Future<ExerciseDetailState> buildExerciseDetailState({String? userId = 'u1'}) as
   final preferences = Preferences();
   await preferences.init();
 
-  final chartService = MockChartPreferenceService();
+  final chartService = MockLocalChartService();
   final charts = Charts(service: chartService)..userId = userId;
 
   final goals = Goals(

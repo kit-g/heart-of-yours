@@ -59,11 +59,21 @@ class RecordingStatsService implements LocalStatsService {
   }
 
   final List<(DateTime, DateTime, String?)> lensSetsCalls = [];
+  List<LensSets> lensSetsToReturn = [];
 
   @override
   Future<List<LensSets>> getLensSets(DateTime from, DateTime to, {String? userId}) async {
     lensSetsCalls.add((from, to, userId));
-    return const [];
+    return lensSetsToReturn;
+  }
+
+  final List<(DateTime, DateTime, String?)> totalsCalls = [];
+  List<WorkoutTotals> totalsToReturn = [];
+
+  @override
+  Future<List<WorkoutTotals>> getTrainingTotals(DateTime from, DateTime to, {String? userId}) async {
+    totalsCalls.add((from, to, userId));
+    return totalsToReturn;
   }
 }
 
@@ -168,6 +178,110 @@ void main() {
       expect(await stats.getLensSets(from, to), isEmpty);
       expect(service.lensSetsCalls, [(from, to, 'u1')]);
       expect(notifications, 0);
+    });
+  });
+
+  group('training charts (#137)', () {
+    late RecordingStatsService service;
+    late Stats stats;
+
+    // a Wednesday; weeks start on Monday unless a test says otherwise
+    final now = DateTime(2026, 10, 14, 18);
+
+    WorkoutTotals workout(DateTime start, {int minutes = 60, int sets = 10, double volume = 1000}) {
+      return (start: start, duration: Duration(minutes: minutes), sets: sets, volume: volume);
+    }
+
+    setUp(() {
+      service = RecordingStatsService();
+      stats = Stats(onError: null, service: service)..userId = 'muffin';
+    });
+
+    test('a weekly series reads eight of the user\'s weeks, newest first, a quiet week a zero', () async {
+      service.totalsToReturn = [
+        workout(DateTime(2026, 10, 12, 9), volume: 1500),
+        workout(DateTime(2026, 10, 13, 9), volume: 500),
+        workout(DateTime(2026, 9, 29, 9), volume: 800),
+      ];
+
+      final series = await stats.getTrainingSeries(.volume, .week, firstWeekday: DateTime.monday, now: now);
+
+      expect(service.totalsCalls.single, (DateTime(2026, 8, 24), DateTime(2026, 10, 15), 'muffin'));
+      expect(series, hasLength(trainingWeeks));
+      expect(series[0], (2000.0, DateTime(2026, 10, 12)));
+      expect(series[1], (0.0, DateTime(2026, 10, 5)));
+      expect(series[2], (800.0, DateTime(2026, 9, 28)));
+    });
+
+    test('the first weekday moves where a workout falls', () async {
+      // a Sunday: the end of a Monday week, the start of a Sunday one
+      service.totalsToReturn = [workout(DateTime(2026, 10, 11, 9), sets: 12)];
+
+      final monday = await stats.getTrainingSeries(.sets, .week, firstWeekday: DateTime.monday, now: now);
+      final sunday = await stats.getTrainingSeries(.sets, .week, firstWeekday: DateTime.sunday, now: now);
+
+      expect(monday[1], (12, DateTime(2026, 10, 5)));
+      expect(sunday[0], (12, DateTime(2026, 10, 11)));
+    });
+
+    test('a monthly series reads six calendar months', () async {
+      service.totalsToReturn = [
+        workout(DateTime(2026, 10, 1, 9), sets: 4),
+        workout(DateTime(2026, 9, 30, 21), sets: 6),
+      ];
+
+      final series = await stats.getTrainingSeries(.sets, .month, firstWeekday: DateTime.monday, now: now);
+
+      expect(service.totalsCalls.single.$1, DateTime(2026, 5));
+      expect(series.map((point) => point.$2), [
+        for (final month in [10, 9, 8, 7, 6, 5]) DateTime(2026, month),
+      ]);
+      expect(series.take(2), [(4, DateTime(2026, 10)), (6, DateTime(2026, 9))]);
+    });
+
+    test('duration is the average workout, and a period with none has no point', () async {
+      service.totalsToReturn = [
+        workout(DateTime(2026, 10, 12, 9), minutes: 40),
+        workout(DateTime(2026, 10, 13, 9), minutes: 80),
+        workout(DateTime(2026, 9, 29, 9), minutes: 50),
+      ];
+
+      final series = await stats.getTrainingSeries(.duration, .week, firstWeekday: DateTime.monday, now: now);
+
+      expect(series, [(3600.0, DateTime(2026, 10, 12)), (3000.0, DateTime(2026, 9, 28))]);
+    });
+
+    test('nothing but zeros is no series at all', () async {
+      service.totalsToReturn = [workout(DateTime(2026, 10, 12, 9), volume: 0)];
+
+      expect(await stats.getTrainingSeries(.volume, .week, firstWeekday: DateTime.monday, now: now), isEmpty);
+      expect(await stats.getTrainingSeries(.sets, .week, firstWeekday: DateTime.monday, now: now), isNotEmpty);
+    });
+
+    test('exercise days add up one exercise\'s sets per local day', () async {
+      LensSets row(String exercise, DateTime start, int sets) {
+        return (
+          workoutId: 'w',
+          exerciseId: exercise,
+          start: start,
+          movement: Movement.empty(),
+          muscles: MuscleTagging.empty(),
+          target: Target.chest,
+          sets: sets,
+        );
+      }
+
+      service.lensSetsToReturn = [
+        row('bench', DateTime(2026, 10, 12, 8), 3),
+        row('bench', DateTime(2026, 10, 12, 19), 2),
+        row('squat', DateTime(2026, 10, 12, 8), 5),
+        row('bench', DateTime(2026, 10, 1, 8), 4),
+      ];
+
+      final days = await stats.getExerciseDays('bench', firstWeekday: DateTime.monday, now: now);
+
+      expect(service.lensSetsCalls.single.$1, DateTime(2026, 7, 27));
+      expect(days, {DateTime(2026, 10, 12): 5, DateTime(2026, 10, 1): 4});
     });
   });
 

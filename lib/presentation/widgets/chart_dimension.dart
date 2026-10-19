@@ -3,6 +3,7 @@ import 'package:heart/presentation/widgets/formatters.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The training quality a metric speaks to. Drives the chart color so a glance
@@ -233,4 +234,70 @@ String _formatDuration(int totalSeconds) {
   final minutes = pad(d.inMinutes.remainder(60));
   final seconds = pad(d.inSeconds.remainder(60));
   return d.inHours > 0 ? '${pad(d.inHours)}:$minutes:$seconds' : '$minutes:$seconds';
+}
+
+/// Presentation for the training-wide charts (#137), as [ChartDimension] is
+/// for an exercise's: the copy, the scale, the axis and the colour.
+extension TrainingDimension on TrainingMetric {
+  String label(BuildContext context) {
+    final l = L.of(context);
+    return switch (this) {
+      .volume => l.chartTrainingVolume,
+      .sets => l.chartTrainingSets,
+      .duration => l.chartTrainingDuration,
+    };
+  }
+
+  /// The label with the unit its numbers are in: volume in the user's weight
+  /// unit, duration in minutes.
+  String title(BuildContext context, Preferences settings) {
+    final l = L.of(context);
+    final weight = switch (settings.weightUnit) {
+      .imperial => l.lbs,
+      .metric => l.kg,
+    };
+    return switch (this) {
+      .volume => '${label(context)} · $weight',
+      .sets => label(context),
+      .duration => '${label(context)} · ${l.min}',
+    };
+  }
+
+  /// Stored kilograms into the user's unit; stored seconds into minutes.
+  double Function(num) converter(Preferences settings) {
+    return switch (this) {
+      .volume => (v) => settings.weightValue(v),
+      .sets => (v) => v.toDouble(),
+      .duration => (v) => v / 60,
+    };
+  }
+
+  /// A week's volume runs to five figures, which would not fit the axis
+  /// gutter written out: it is shortened the locale's way (25K, 25 тыс.).
+  Widget Function(double y) leftLabel(BuildContext context, TextStyle? style) {
+    final compact = NumberFormat.compact(locale: Localizations.localeOf(context).toString());
+    return (y) => Text(compact.format(y), style: style);
+  }
+
+  String Function(double y) tooltip(BuildContext context) {
+    final whole = NumberFormat.decimalPattern(Localizations.localeOf(context).toString())..maximumFractionDigits = 0;
+    return whole.format;
+  }
+
+  /// Minutes snap to the marks a clock has; counts and weights take the
+  /// chart's own nice numbers.
+  List<double>? get yStepCandidates {
+    return switch (this) {
+      .duration => const [5.0, 10.0, 15.0, 20.0, 30.0, 45.0, 60.0, 90.0, 120.0],
+      .volume || .sets => null,
+    };
+  }
+
+  Color color(BuildContext context) {
+    final family = switch (this) {
+      .volume || .sets => _ChartFamily.volume,
+      .duration => _ChartFamily.endurance,
+    };
+    return family.of(Theme.of(context).brightness);
+  }
 }

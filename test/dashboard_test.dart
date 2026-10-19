@@ -5,6 +5,7 @@
 // just what this file composes around them.
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -22,7 +23,11 @@ void main() {
 
   final bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
 
+  /// Charts a test adds after the two exercise charts.
+  var extraRows = <Map<String, Object?>>[];
+
   setUp(() {
+    extraRows = [];
     db = MockLocalDatabase();
     api = MockApi();
     cdn = MockCdn();
@@ -31,15 +36,20 @@ void main() {
 
     when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench]));
     when(api.getExercises()).thenAnswer((_) async => [bench]);
-    when(db.getPreferences(any)).thenAnswer(
+    when(db.getChartRows(any)).thenAnswer(
       (_) async => [
-        // A stored preference always carries the id the database assigned it
-        // — `ChartPreference.exercise` (the client-side "new" factory, `id:
+        // A stored chart always carries the id the database assigned it —
+        // `ChartPreference.exercise` (the client-side "new" factory, `id:
         // null`) is not what a *read* returns, and `Charts.removePreference`
         // is a no-op without one.
-        ChartPreference.create(id: 'pref-1', type: .topSetWeight, data: {'exerciseName': bench.id}),
+        ChartPreference.create(id: 'pref-1', type: .topSetWeight, data: {'exerciseName': bench.id}).toRow(),
         // no exercise in the catalog has this id — the fallback path
-        ChartPreference.create(id: 'pref-2', type: .totalVolume, data: {'exerciseName': 'not-a-real-exercise-id'}),
+        ChartPreference.create(
+          id: 'pref-2',
+          type: .totalVolume,
+          data: {'exerciseName': 'not-a-real-exercise-id'},
+        ).toRow(),
+        ...extraRows,
       ],
     );
     // `_Chart`'s own customLabel (the `resolved?.name ?? '…'` line this file
@@ -132,5 +142,87 @@ void main() {
 
     expect(Charts.of(context).length, 1);
     verify(db.deleteChartPreference(any, 'u1')).called(1);
+  });
+
+  group('training-wide charts (#137)', () {
+    final now = DateTime.now();
+
+    setUp(() {
+      extraRows = [
+        const TrainingChart(id: 'volume', metric: .volume).toRow(),
+        FrequencyChart(id: 'days', exerciseId: bench.id).toRow(),
+        // a kind from a newer build: skipped, and the dashboard still draws
+        {'id': 'future', 'type': 'fromTheFuture', 'data': '{}'},
+      ];
+      when(db.getTrainingTotals(any, any, userId: anyNamed('userId'))).thenAnswer(
+        (_) async => [
+          (start: now, duration: const Duration(minutes: 50), sets: 12, volume: 4200.0),
+          (
+            start: now.subtract(const Duration(days: 7)),
+            duration: const Duration(minutes: 40),
+            sets: 9,
+            volume: 3100.0,
+          ),
+        ],
+      );
+      when(db.getLensSets(any, any, userId: anyNamed('userId'))).thenAnswer(
+        (_) async => [
+          (
+            workoutId: 'w1',
+            exerciseId: bench.id,
+            start: now,
+            movement: Movement.empty(),
+            muscles: MuscleTagging.empty(),
+            target: Target.chest,
+            sets: 4,
+          ),
+        ],
+      );
+      when(db.updateChartData(any, any, any)).thenAnswer((_) async {});
+    });
+
+    Future<void> tall(WidgetTester tester, {double width = 800}) async {
+      tester.view.physicalSize = Size(width, 4000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+    }
+
+    testWidgets('a volume chart and a days-trained heatmap sit among the exercise charts', (tester) async {
+      await tall(tester);
+      await pumpProfile(tester);
+
+      final context = tester.element(find.byType(MaterialApp));
+      final l = L.of(tester.element(find.byType(Scaffold).first));
+      expect(Charts.of(context).length, 4);
+      final summary = l.chartFrequencySummary(bench.name, 1, frequencyWeeks);
+      expect(
+        find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.label == summary),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets("switching a training chart to months stores it in the chart's place", (tester) async {
+      await tall(tester);
+      await pumpProfile(tester);
+
+      final context = tester.element(find.byType(MaterialApp));
+      final l = L.of(tester.element(find.byType(Scaffold).first));
+      await tester.tap(find.byTooltip(l.chartPeriod(l.chartByWeek)));
+      await tester.pumpTimes();
+      await tester.tap(find.text(l.chartByMonth));
+      await tester.pumpTimes();
+
+      expect((Charts.of(context).elementAt(2) as TrainingChart).period, ChartPeriod.month);
+      verify(db.updateChartData('volume', '{"period":"month"}', 'u1')).called(1);
+    });
+
+    testWidgets('on a phone the training cards keep to their row and do not overflow', (tester) async {
+      await tall(tester, width: 390);
+      await pumpProfile(tester);
+
+      expect(find.byType(SliverReorderableList), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

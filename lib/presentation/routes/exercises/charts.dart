@@ -146,7 +146,9 @@ class _DashboardToggle extends StatelessWidget {
     // the dashboard card this chart would duplicate, if it is already there.
     // The preference's getter keeps its stale name — the value is the
     // exercise id, the identity that survives localization.
-    final existing = charts.where((each) => each.exerciseName == exercise.id && each.type == type).firstOrNull;
+    final existing = charts.exerciseCharts
+        .where((each) => each.exerciseName == exercise.id && each.type == type)
+        .firstOrNull;
 
     return switch (existing) {
       null => FeedbackButton.circular(

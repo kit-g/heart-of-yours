@@ -52,7 +52,7 @@ void main() {
     when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
     when(api.getExercises()).thenAnswer((_) async => <Exercise>[]);
     when(api.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
-    when(db.getPreferences(any)).thenAnswer((_) async => <ChartPreference>[]);
+    when(db.getChartRows(any)).thenAnswer((_) async => <Map<String, Object?>>[]);
     when(db.getActiveWorkout(any)).thenAnswer((_) async => null);
     when(db.startWorkout(any, any)).thenAnswer((_) async {});
     when(db.isHistoryBackfilled(any)).thenAnswer((_) async => true);

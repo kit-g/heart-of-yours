@@ -34,7 +34,7 @@ import 'package:heart_models/heart_models.dart';
     MockSpec<Cdn>(),
     MockSpec<LocalDatabase>(),
     MockSpec<ChartPreference>(),
-    MockSpec<ChartPreferenceService>(),
+    MockSpec<LocalChartService>(),
   ],
 )
 void main() {

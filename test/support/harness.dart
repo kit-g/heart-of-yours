@@ -36,7 +36,7 @@ void stubStartup(MockLocalDatabase db, MockApi api) {
   ).thenAnswer((_) async => WorkoutAggregation.empty());
   when(db.getWeeklyWorkoutCount(any)).thenAnswer((_) async => 0);
   when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
-  when(db.getPreferences(any)).thenAnswer((_) async => <ChartPreference>[]);
+  when(db.getChartRows(any)).thenAnswer((_) async => <Map<String, Object?>>[]);
   when(db.getActiveWorkout(any)).thenAnswer((_) async => null);
   when(
     db.getWorkoutGallery(userId: anyNamed('userId')),

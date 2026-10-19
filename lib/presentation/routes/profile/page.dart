@@ -218,12 +218,15 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                           final charts = Charts.of(context);
                           final scrolls = Scrolls.of(context);
                           final returned = await _showNewChartDialog(context, _searchController, _focus);
-                          switch (returned) {
-                            case (Exercise ex, ChartPreferenceType type):
-                              final preference = ChartPreference.exercise(ex.id, type);
-                              await charts.addPreference(preference);
-                              await Future.delayed(const Duration(milliseconds: 100));
-                              scrolls.scrollProfileToBottom();
+                          final added = switch (returned) {
+                            (Exercise ex, ChartPreferenceType type) => charts.addPreference(.exercise(ex.id, type)),
+                            DashboardChart chart => charts.add(chart),
+                            _ => null,
+                          };
+                          if (added != null) {
+                            await added;
+                            await Future.delayed(const Duration(milliseconds: 100));
+                            scrolls.scrollProfileToBottom();
                           }
                         },
                         child: Row(
@@ -375,25 +378,65 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
     );
   }
 
-  /// If an exercise is selected, [_showExercises] returns a (Exercise, ChartPreferenceType)? record,
-  /// and this dialog returns it back to the widget.
+  /// What the user picked: an (Exercise, ChartPreferenceType) record from the
+  /// exercise picker, or a [DashboardChart] of one of the other kinds (#137).
   Future<dynamic> _showNewChartDialog(BuildContext context, TextEditingController controller, FocusNode focus) {
-    final L(:newChart, :exercises) = L.of(context);
+    final L(:newChart, :exercises, :chartFrequency, :chartAllExercises, :chartAlreadyAdded) = L.of(context);
+    final charts = Charts.of(context);
+    final training = charts.whereType<TrainingChart>().map((each) => each.metric).toSet();
+    final frequent = charts.whereType<FrequencyChart>().map((each) => each.exerciseId).toSet();
+
     return showBrandedDialog<dynamic>(
       context,
       title: Text(newChart),
       padding: .zero,
       content: SizedBox(
         width: double.maxFinite,
-        child: ListTile(
-          onTap: () async {
-            final returned = await showExercisePicker(context, controller: controller, focus: focus);
-            if (returned != null && context.mounted) {
-              return Navigator.of(context, rootNavigator: true).pop(returned);
-            }
-          },
-          title: Text(exercises),
-          trailing: const Icon(Icons.chevron_right_rounded),
+        child: Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .stretch,
+          children: [
+            ListTile(
+              onTap: () async {
+                final returned = await showExercisePicker(context, controller: controller, focus: focus);
+                if (returned != null && context.mounted) {
+                  return Navigator.of(context, rootNavigator: true).pop(returned);
+                }
+              },
+              title: Text(exercises),
+              trailing: const Icon(Icons.chevron_right_rounded),
+            ),
+            ListTile(
+              onTap: () async {
+                final exercise = await showSingleExercisePicker(
+                  context,
+                  // greyed with the reason rather than hidden (#338)
+                  refuses: (exercise) => frequent.contains(exercise.id) ? chartAlreadyAdded : null,
+                );
+                if (exercise != null && context.mounted) {
+                  return Navigator.of(context, rootNavigator: true).pop(FrequencyChart(exerciseId: exercise.id));
+                }
+              },
+              title: Text(chartFrequency),
+              trailing: const Icon(Icons.chevron_right_rounded),
+            ),
+            Padding(
+              padding: const .fromLTRB(16, 12, 16, 4),
+              // read where the dialog is shown, so a theme change while it is
+              // open repaints it (see _NoAccountActions)
+              child: Builder(
+                builder: (context) => Text(chartAllExercises, style: Theme.of(context).textTheme.labelLarge),
+              ),
+            ),
+            for (final metric in TrainingMetric.values)
+              ListTile(
+                // one of each: the period is changed on the card itself
+                enabled: !training.contains(metric),
+                subtitle: training.contains(metric) ? Text(chartAlreadyAdded) : null,
+                onTap: () => Navigator.of(context, rootNavigator: true).pop(TrainingChart(metric: metric)),
+                title: Text(metric.label(context)),
+              ),
+          ],
         ),
       ),
     );

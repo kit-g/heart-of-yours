@@ -26,6 +26,7 @@ import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/programs.dart';
 import 'package:heart/core/utils/record_book.dart';
+import 'package:heart/core/utils/charts.dart';
 import 'package:heart/core/utils/stats.dart';
 import 'package:heart/core/utils/templates.dart';
 import 'package:heart/core/utils/upsync.dart';
@@ -257,7 +258,7 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Charts>(
           create: (_) => Charts(
             onError: reportToSentry,
-            service: db,
+            service: LocalCharts(db),
           ),
         ),
         ChangeNotifierProvider<Goals>(
