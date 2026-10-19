@@ -823,7 +823,8 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.restTimers, _Guideline.iosTapTarget, null),
 
   // Features (lib/presentation/routes/settings/features.dart, #226): the
-  // opt-in switches, the muscle map on so its options unfold under it.
+  // opt-in switches, the muscle map on so its options unfold under it, and
+  // workout sounds (#169) on for its pickers and checkbox.
   (_Screen.features, _Guideline.labeledTapTarget, null),
   (_Screen.features, _Guideline.textContrastLight, null),
   (_Screen.features, _Guideline.textContrastDark, null),
@@ -1013,7 +1014,11 @@ void main() {
     }
     // a feature on, so the page shows what unfolds under a switch too
     if (screen == _Screen.features) {
-      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-muscleMap': 'on',
+        'feature-workoutSounds': 'on',
+      });
     }
     if (screen == _Screen.setStopwatch) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on', 'feature-setStopwatch': 'on'});

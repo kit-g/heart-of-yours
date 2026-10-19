@@ -66,6 +66,11 @@ abstract final class AppKeys {
   static const muscleMapAccept = ValueKey('muscleMapAccept');
   static const muscleMapDecline = ValueKey('muscleMapDecline');
   static const featureDeclinedNotice = ValueKey('featureDeclinedNotice');
+
+  /// Workout sounds' choices under its switch in Settings › Features (#169).
+  static const restSoundPicker = Key('Features.workoutSounds.rest');
+  static const soundVolumePicker = Key('Features.workoutSounds.volume');
+  static const setDoneSound = Key('Features.workoutSounds.setDone');
   static const muscleMapCard = ValueKey('muscleMapCard');
   static const muscleMapHeatmap = ValueKey('muscleMapHeatmap');
   static const muscleMapFigureTip = ValueKey('muscleMapFigureTip');

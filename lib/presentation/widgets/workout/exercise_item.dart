@@ -459,6 +459,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   Future<void> _tickAll(BuildContext context) async {
     final untick = exercise.every((set) => set.isCompleted);
     final workouts = Workouts.of(context);
+    final sounds = WorkoutSounds.of(context);
     if (!untick) {
       // a ghost row's tick takes its target as the set (#173), as one row's does
       for (final set in exercise.where((set) => !set.isCompleted).toList()) {
@@ -484,6 +485,10 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
           workouts.markEdited(set);
           workouts.markSetAsComplete(exercise, set);
       }
+    }
+    // a whole exercise ticked at once is one tick to hear (#169)
+    if (!untick && onSetDone == null && (workouts.activeWorkout?.contains(exercise) ?? false)) {
+      sounds.setDone();
     }
   }
 
