@@ -5377,5 +5377,15 @@
   "aiLeftOutWorkouts": "{count, plural, =1{One earlier workout was} other{{count} earlier workouts were}} left out to keep this short ({range}).",
   "@aiLeftOutWorkouts": {"description": "Copy for AI text, the last line: how many older workouts did not fit, and when they were; {range} is a date range", "type": "text", "placeholders": {"count": {"type": "int"}, "range": {}}},
   "aiLeftOutSessions": "{count, plural, =1{One earlier session was} other{{count} earlier sessions were}} left out to keep this short ({range}).",
-  "@aiLeftOutSessions": {"description": "Copy for AI text, the last line of one exercise's history: how many older sessions of it did not fit, and when they were; {range} is a date range", "type": "text", "placeholders": {"count": {"type": "int"}, "range": {}}}
+  "@aiLeftOutSessions": {"description": "Copy for AI text, the last line of one exercise's history: how many older sessions of it did not fit, and when they were; {range} is a date range", "type": "text", "placeholders": {"count": {"type": "int"}, "range": {}}},
+  "liveRecords": "Live records",
+  "@liveRecords": {"description": "Settings › Features title for the opt-in note that appears the moment a ticked set beats a personal best, during a workout (#160)", "type": "text", "placeholders": {}},
+  "liveRecordsSubtitle": "A quiet note the moment a ticked set beats your best.",
+  "@liveRecordsSubtitle": {"description": "Settings › Features subtitle for Live records (#160)", "type": "text", "placeholders": {}},
+  "liveRecordsOfferTitle": "That set was a record",
+  "@liveRecordsOfferTitle": {"description": "Title of the one-time card under a just-ticked set that beat a personal best, offering to turn on Live records (#160)", "type": "text", "placeholders": {}},
+  "liveRecordsOfferBody": "Want a quiet note every time a set beats your best, right as you tick it?",
+  "@liveRecordsOfferBody": {"description": "Body of the one-time card offering Live records, under the set that would have been a record (#160)", "type": "text", "placeholders": {}},
+  "liveRecordLine": "{exercise}: {records}",
+  "@liveRecordLine": {"description": "Live records note during a workout, under 'New record': the exercise and the kinds of record the set just beat, such as 'Bench Press: Estimated 1RM, Max weight'", "type": "text", "placeholders": {"exercise": {}, "records": {}}}
 }
