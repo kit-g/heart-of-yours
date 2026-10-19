@@ -8,6 +8,8 @@ import 'dart:convert';
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/presentation/routes/settings/settings.dart';
+import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -15,29 +17,14 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'mocks.mocks.dart';
+import 'support/file_picker.dart';
 import 'support/harness.dart';
 
 const _csv =
     'Date,Workout Name,Exercise Name,Set Order,Weight,Reps\n'
     '2024-01-01 10:00:00,Push Day,Bench Press (Barbell),1,60,8';
-
-class _FakePicker extends FileSelectorPlatform with MockPlatformInterfaceMixin {
-  final XFile? file;
-
-  new(this.file);
-
-  @override
-  Future<XFile?> openFile({
-    List<XTypeGroup>? acceptedTypeGroups,
-    String? initialDirectory,
-    String? confirmButtonText,
-  }) async {
-    return file;
-  }
-}
 
 void main() {
   late MockLocalDatabase db;
@@ -127,7 +114,7 @@ void main() {
   }
 
   testWidgets('nothing unmatched: the preview flows straight into the commit and the report', (tester) async {
-    FileSelectorPlatform.instance = _FakePicker(
+    FileSelectorPlatform.instance = FakePicker(
       XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
     );
     serveImport(
@@ -181,7 +168,7 @@ void main() {
   });
 
   testWidgets('a finished import sends the backfill back for what it brought', (tester) async {
-    FileSelectorPlatform.instance = _FakePicker(
+    FileSelectorPlatform.instance = FakePicker(
       XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
     );
     serveImport(
@@ -220,7 +207,7 @@ void main() {
   });
 
   testWidgets('unmatched exercises are each their own checkbox; unchecked ones stay behind', (tester) async {
-    FileSelectorPlatform.instance = _FakePicker(
+    FileSelectorPlatform.instance = FakePicker(
       XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
     );
     serveImport(
@@ -295,7 +282,7 @@ void main() {
   });
 
   testWidgets('deselect all clears the list; select all takes everything back', (tester) async {
-    FileSelectorPlatform.instance = _FakePicker(
+    FileSelectorPlatform.instance = FakePicker(
       XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
     );
     serveImport(
@@ -331,7 +318,7 @@ void main() {
   });
 
   testWidgets('a full re-upload says nothing is new, not that everything is coming over', (tester) async {
-    FileSelectorPlatform.instance = _FakePicker(
+    FileSelectorPlatform.instance = FakePicker(
       XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
     );
     serveImport(
@@ -359,7 +346,7 @@ void main() {
   });
 
   testWidgets('cancelling the consent step walks away without writing anything', (tester) async {
-    FileSelectorPlatform.instance = _FakePicker(
+    FileSelectorPlatform.instance = FakePicker(
       XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
     );
     serveImport(
@@ -392,7 +379,7 @@ void main() {
   });
 
   testWidgets('a rejected file gets the friendly headline with the reason as detail', (tester) async {
-    FileSelectorPlatform.instance = _FakePicker(
+    FileSelectorPlatform.instance = FakePicker(
       XFile.fromData(utf8.encode('not,a,strong,export'), name: 'random.csv'),
     );
     serveImport(statusCode: 400, preview: {'reason': 'missing "Workout Name" column'});
@@ -408,7 +395,7 @@ void main() {
   });
 
   testWidgets('backing out of the picker is a non-event', (tester) async {
-    FileSelectorPlatform.instance = _FakePicker(null);
+    FileSelectorPlatform.instance = FakePicker(null);
     serveImport();
 
     await pumpImportPage(tester);
@@ -428,7 +415,7 @@ void main() {
         '"Push","1 Jan 2027, 09:00","1 Jan 2027, 10:00","","Bench Press (Barbell)",,"",0,"normal",60,8,,,';
 
     testWidgets('goes up as source=hevy, with no unit question and no unit', (tester) async {
-      FileSelectorPlatform.instance = _FakePicker(
+      FileSelectorPlatform.instance = FakePicker(
         XFile.fromData(utf8.encode(hevy), name: 'workout_data.csv'),
       );
       serveImport(
@@ -458,7 +445,7 @@ void main() {
     });
 
     testWidgets('a rejected Hevy file points back at Hevy, not Strong', (tester) async {
-      FileSelectorPlatform.instance = _FakePicker(
+      FileSelectorPlatform.instance = FakePicker(
         XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
       );
       serveImport(statusCode: 400, preview: {'reason': 'not a readable Hevy export: missing "title"'});
@@ -474,7 +461,7 @@ void main() {
     });
 
     testWidgets('a parked file says it was kept, and nothing is committed', (tester) async {
-      FileSelectorPlatform.instance = _FakePicker(
+      FileSelectorPlatform.instance = FakePicker(
         XFile.fromData(utf8.encode(hevy), name: 'workouts.csv'),
       );
       serveImport(
@@ -509,7 +496,7 @@ void main() {
         '019a,2027-01-01T07:00:00.000Z,2027-01-01T08:00:00.000Z,019b,Bench Press,1,60,kg,8,,,\n';
 
     testWidgets('goes up as source=heart, with no unit question, no unit and no offset', (tester) async {
-      FileSelectorPlatform.instance = _FakePicker(
+      FileSelectorPlatform.instance = FakePicker(
         XFile.fromData(utf8.encode(heart), name: 'heart.csv'),
       );
       serveImport(
@@ -539,7 +526,7 @@ void main() {
     });
 
     testWidgets('a rejected file points back at Export my data', (tester) async {
-      FileSelectorPlatform.instance = _FakePicker(
+      FileSelectorPlatform.instance = FakePicker(
         XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
       );
       serveImport(statusCode: 400, preview: {'reason': 'not a Heart CSV export'});
@@ -617,7 +604,7 @@ void main() {
     });
 
     testWidgets('is read by the app, not sent, and the account is owed the replay', (tester) async {
-      FileSelectorPlatform.instance = _FakePicker(
+      FileSelectorPlatform.instance = FakePicker(
         XFile.fromData(utf8.encode(export()), name: 'heart-export.json'),
       );
       serveImport();
@@ -639,9 +626,27 @@ void main() {
       expect(find.text('1 template imported'), findsOneWidget);
     });
 
+    testWidgets('one that brought ratings offers RPE under its report (#244)', (tester) async {
+      FileSelectorPlatform.instance = FakePicker(
+        XFile.fromData(utf8.encode(export()), name: 'heart-export.json'),
+      );
+      serveImport();
+      var reads = 0;
+      when(db.getRatedSetCount(any)).thenAnswer((_) async => reads++ == 0 ? 0 : 1);
+
+      await pumpImportPage(tester);
+      await tester.tap(find.text('Heart'));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      expect(find.text('1 workout imported'), findsOneWidget);
+      expect(find.byKey(AppKeys.rpeImportOffer), findsOneWidget);
+    });
+
     testWidgets('a newer layout is refused with a reason the user can act on', (tester) async {
       final newer = {...jsonDecode(export()) as Map, 'schemaVersion': exportSchemaVersion + 1};
-      FileSelectorPlatform.instance = _FakePicker(
+      FileSelectorPlatform.instance = FakePicker(
         XFile.fromData(utf8.encode(jsonEncode(newer)), name: 'heart-export.json'),
       );
       serveImport();
@@ -660,7 +665,7 @@ void main() {
     testWidgets('without an account it is the only import, and nothing asks where the file came from', (
       tester,
     ) async {
-      FileSelectorPlatform.instance = _FakePicker(
+      FileSelectorPlatform.instance = FakePicker(
         XFile.fromData(utf8.encode(export()), name: 'heart-export.json'),
       );
       serveImport();
@@ -684,13 +689,96 @@ void main() {
     });
   });
 
+  group('RPE after an import that carries ratings (#244)', () {
+    /// Muffin's Strong export: one set rated.
+    const rated =
+        'Date,Workout Name,Exercise Name,Set Order,Weight,Reps,RPE\n'
+        '2024-01-01 10:00:00,Push Day,Bench Press (Barbell),1,60,8,8.5';
+
+    setUp(() {
+      FileSelectorPlatform.instance = FakePicker(
+        XFile.fromData(utf8.encode(rated), name: 'strong.csv'),
+      );
+      serveImport(
+        preview: {'source': 'strong', 'workoutsFound': 1, 'setsFound': 1, 'exercisesUnmatched': []},
+        report: {'source': 'strong', 'workoutsFound': 1, 'workoutsCreated': 1, 'setsCreated': 1},
+      );
+    });
+
+    /// The store's rated sets: [before] until the import's workouts come
+    /// down, [after] from then on.
+    void storeRates({required int before, required int after}) {
+      var reads = 0;
+      when(db.getRatedSetCount(any)).thenAnswer((_) async => reads++ == 0 ? before : after);
+    }
+
+    FeatureAnswer answerOnPage(WidgetTester tester) {
+      return Preferences.of(tester.element(find.byType(ImportDataPage))).featureAnswer(.rpe);
+    }
+
+    Future<void> importFile(WidgetTester tester) async {
+      await pumpImportPage(tester);
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+    }
+
+    testWidgets('unanswered, the report offers it once, and yes turns it on', (tester) async {
+      storeRates(before: 0, after: 1);
+      await importFile(tester);
+
+      expect(find.text('1 workout imported'), findsOneWidget);
+      expect(find.byKey(AppKeys.rpeImportOffer), findsOneWidget);
+      expect(find.text('Your workouts include RPE'), findsOneWidget);
+
+      await tester.tap(find.byKey(AppKeys.rpeImportAccept));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.rpeImportOffer), findsNothing);
+      expect(find.byKey(AppKeys.featureDeclinedNotice), findsNothing);
+      expect(answerOnPage(tester), FeatureAnswer.on);
+    });
+
+    testWidgets('no gets the one notice, and the answer sticks', (tester) async {
+      storeRates(before: 0, after: 1);
+      await importFile(tester);
+
+      await tester.tap(find.byKey(AppKeys.rpeImportDecline));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.rpeImportOffer), findsNothing);
+      expect(find.text('You can always turn this on in Settings › Features.'), findsOneWidget);
+      expect(answerOnPage(tester), FeatureAnswer.off);
+    });
+
+    testWidgets('an import that brought no ratings offers nothing', (tester) async {
+      // ratings already in the store from an earlier import, none new
+      storeRates(before: 4, after: 4);
+      await importFile(tester);
+
+      expect(find.text('1 workout imported'), findsOneWidget);
+      expect(find.byKey(AppKeys.rpeImportOffer), findsNothing);
+    });
+
+    for (final answer in [FeatureAnswer.on, FeatureAnswer.off, FeatureAnswer.pending]) {
+      testWidgets('already ${answer.name}, nothing', (tester) async {
+        SharedPreferences.setMockInitialValues({'feature-rpe': answer.name});
+        storeRates(before: 0, after: 1);
+        await importFile(tester);
+
+        expect(find.text('1 workout imported'), findsOneWidget);
+        expect(find.byKey(AppKeys.rpeImportOffer), findsNothing);
+        expect(find.byKey(AppKeys.featureDeclinedNotice), findsNothing);
+      });
+    }
+  });
+
   group('the unit the export was made in (#307)', () {
     testWidgets('starts on the account\'s unit and sends what the user picks, to both halves', (tester) async {
       await Preferences().let((p) async {
         await p.init();
         await p.setWeightUnit(MeasurementUnit.metric);
       });
-      FileSelectorPlatform.instance = _FakePicker(
+      FileSelectorPlatform.instance = FakePicker(
         XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
       );
       serveImport();
@@ -715,7 +803,7 @@ void main() {
         await p.init();
         await p.setWeightUnit(MeasurementUnit.metric);
       });
-      FileSelectorPlatform.instance = _FakePicker(
+      FileSelectorPlatform.instance = FakePicker(
         XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
       );
       serveImport();

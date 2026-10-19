@@ -7,8 +7,10 @@
 // stays enumerable instead of silently missing. Do not delete a failing
 // entry — flip its `skip` to null once the underlying issue is fixed.
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,12 +20,16 @@ import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
+import 'package:heart_api/heart_api.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'support/file_picker.dart';
 import 'support/finders.dart';
 import 'support/harness.dart';
 
@@ -84,6 +90,7 @@ enum _Screen {
   moveHistoryDialog,
   eraseDataDialog,
   importData,
+  importRpeOffer,
   exportData,
   apiTokens,
   newApiToken,
@@ -803,6 +810,22 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.importData, _Guideline.androidTapTarget, null),
   (_Screen.importData, _Guideline.iosTapTarget, null),
 
+  // The report of an import that brought RPEs, with the one offer under it
+  // (#244): the muscle map's offer card, so the same two buttons.
+  (_Screen.importRpeOffer, _Guideline.labeledTapTarget, null),
+  (_Screen.importRpeOffer, _Guideline.textContrastLight, null),
+  (_Screen.importRpeOffer, _Guideline.textContrastDark, null),
+  (
+    _Screen.importRpeOffer,
+    _Guideline.androidTapTarget,
+    'the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart:98) are below 48x48 — visual-density change, out of scope',
+  ),
+  (
+    _Screen.importRpeOffer,
+    _Guideline.iosTapTarget,
+    'the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart:98) are below 44x44 — visual-density change, out of scope',
+  ),
+
   // The export page (lib/presentation/routes/settings/export_data.dart):
   // prose and two 48pt buttons, like the import page beside it.
   (_Screen.exportData, _Guideline.labeledTapTarget, null),
@@ -1080,6 +1103,23 @@ void main() {
     // `_initApp` runs in `Zone.root`, which this fake-async zone never yields
     // to, so its own restore-and-run never gets that far in a widget test.
     switch (screen) {
+      case _Screen.importRpeOffer:
+        // a Strong file whose sets carry RPEs: the store counts none before
+        // the import and one after
+        FileSelectorPlatform.instance = FakePicker(XFile.fromData(utf8.encode('Date,RPE\n'), name: 'strong.csv'));
+        Api(
+          gateway: 'api.example.com',
+          client: MockClient(
+            (request) async => http.Response(
+              jsonEncode({'source': 'strong', 'workoutsFound': 1, 'workoutsCreated': 1, 'setsCreated': 1}),
+              200,
+              headers: {'content-type': 'application/json'},
+              request: request,
+            ),
+          ),
+        );
+        var reads = 0;
+        when(db.getRatedSetCount(any)).thenAnswer((_) async => reads++ == 0 ? 0 : 1);
       case _Screen.muscleMapOffer || _Screen.muscleMap:
         // history to map, and for the card, a device that has said yes
         when(
@@ -1782,6 +1822,14 @@ void main() {
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
         await tester.tap(find.byIcon(Icons.upload_file_rounded));
+      case _Screen.importRpeOffer:
+        await tester.tap(find.byIcon(Icons.settings_rounded));
+        await tester.pumpTimes();
+        await tester.tap(find.byIcon(Icons.upload_file_rounded));
+        await tester.pumpTimes();
+        await tester.tap(find.text('Choose file'));
+        await tester.pumpTimes();
+        await tester.ensureVisible(find.byKey(AppKeys.rpeImportOffer));
       case _Screen.exportData:
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
