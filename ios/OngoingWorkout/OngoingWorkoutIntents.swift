@@ -180,7 +180,7 @@ enum OngoingWorkoutIntents {
         content.title = notification.title
         content.subtitle = notification.subtitle
         if let body = notification.body { content.body = body }
-        content.sound = .default
+        content.sound = sound()
         content.userInfo = ["payload": notification.exerciseId]
         let components = Calendar.current.dateComponents(
             [.year, .month, .day, .hour, .minute, .second],
@@ -190,6 +190,21 @@ enum OngoingWorkoutIntents {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: [restNotification])
         try? await center.add(UNNotificationRequest(identifier: restNotification, content: content, trigger: trigger))
+    }
+
+    /// Where Dart leaves the workout sounds' choice for the rest's notification
+    /// (#169, `publishRestTone`), as shared_preferences names its key.
+    static let restSoundKey = "flutter.workoutSounds.restNotification"
+
+    /// The rest's notification sound as the app would have chosen it: the
+    /// system's when workout sounds are off (nothing stored), none for an
+    /// empty name, otherwise the bundled sound of that name.
+    static func sound(in defaults: UserDefaults = .standard) -> UNNotificationSound? {
+        switch defaults.string(forKey: restSoundKey) {
+        case nil: return .default
+        case "": return nil
+        case let name?: return UNNotificationSound(named: UNNotificationSoundName("\(name).wav"))
+        }
     }
 
     /// [state] with its rest moved by [seconds], or over for nil: every rest
