@@ -11,6 +11,11 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final void Function(ExerciseSet, SetType)? onSetType;
   final void Function(ExerciseSet, double?)? onSetRpe;
   final void Function(ExerciseSet, SetTarget?)? onSetTarget;
+  final AddWarmups? onAddWarmups;
+
+  /// Whether the warm-ups' one offer (#158), or the notice after a no, sits
+  /// under this exercise's sets.
+  final bool offersWarmups;
   final bool showsPlan;
   final ReplaceExercise? onReplaceExercise;
   final void Function(WorkoutExercise exercise, WorkoutExercise neighbour)? onGroup;
@@ -44,6 +49,8 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     this.onSetType,
     this.onSetRpe,
     this.onSetTarget,
+    this.onAddWarmups,
+    this.offersWarmups = false,
     this.showsPlan = false,
     this.onReplaceExercise,
     this.onGroup,
@@ -68,6 +75,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final exercises = Exercises.watch(context);
+    final preferences = Preferences.watch(context);
 
     return DragTarget<WorkoutExercise>(
       key: ValueKey<String>('_WorkoutExerciseItem.${exercise.id}'),
@@ -223,6 +231,17 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                               onPressed: () => _replaceAny(context, onReplace),
                               child: Text(L.of(context).replaceExercise, style: textTheme.titleSmall),
                             ),
+                          if ((onAddWarmups, preferences.isOn(.warmups)) case (final add?, true))
+                            if (_warmupsFor(exercise, preferences, exercises) case final sets when sets.isNotEmpty)
+                              MenuItemButton(
+                                key: WorkoutDetailKeys.addWarmupsFor(exercise.exercise.id),
+                                leadingIcon: Icon(Feature.warmups.icon),
+                                onPressed: () {
+                                  buzz();
+                                  add(exercise, sets);
+                                },
+                                child: Text(L.of(context).addWarmups, style: textTheme.titleSmall),
+                              ),
                           ..._groupOptions(context, textTheme),
                           _exerciseOptionButton(context, .autoRestTimer, textTheme, colorScheme),
                           if (_showsUnitOption) _unitSubmenu(context, textTheme),
@@ -334,6 +353,11 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                           );
                         },
                       ),
+                      if ((onAddWarmups, offersWarmups) case (final add?, true))
+                        Padding(
+                          padding: const .symmetric(horizontal: 16, vertical: 4),
+                          child: _WarmupsPrompt(exercise: exercise, onAdd: add),
+                        ),
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: PrimaryButton.wide(

@@ -598,6 +598,10 @@ void main() {
       await tester.enterTextAndWait(find.byKey(WorkoutDetailKeys.weightFor(exercise.id, 1)), '60');
       await tester.enterTextAndWait(find.byKey(WorkoutDetailKeys.repsFor(exercise.id, 1)), '8');
       third.isCompleted = true;
+      // a weight on a barbell brings the warm-ups' offer (#158) under the
+      // sets, and the card grows into it: tapped mid-growth, the header is
+      // not where it ends up
+      await tester.pump(const Duration(milliseconds: 500));
 
       await tester.tapByKey(WorkoutDetailKeys.fillFor(exercise.id, 'weight'));
       await tester.pumpTimes();
