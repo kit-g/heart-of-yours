@@ -5106,5 +5106,9 @@
   "watchFinishedAwayAndroid": "Saved on your watch. Your phone gets it when it's back.",
   "@watchFinishedAwayAndroid": {"description": "Wear OS watch screen after the user finished the workout on the watch while the phone was out of reach: the workout is safe, and the phone saves it once it is near again", "type": "text", "placeholders": {}},
   "watchAppAwayNoteAndroid": "Phone in your locker? The watch keeps logging, and your phone catches up when it's back. That can take a few seconds.",
-  "@watchAppAwayNoteAndroid": {"description": "Settings on Android, under the Wear OS switch while it is on: the watch works without the phone nearby, and what it logs reaches the phone a few seconds after the phone is back", "type": "text", "placeholders": {}}
+  "@watchAppAwayNoteAndroid": {"description": "Settings on Android, under the Wear OS switch while it is on: the watch works without the phone nearby, and what it logs reaches the phone a few seconds after the phone is back", "type": "text", "placeholders": {}},
+  "watchReadings": "Heart rate in Health Connect",
+  "@watchReadings": {"description": "Settings on Android, a switch under the Wear OS watch app: whether the heart rate and energy the watch measured go into Health Connect with each workout. Short: a switch title", "type": "text", "placeholders": {}},
+  "watchReadingsSubtitle": "What your watch measured, saved with each workout",
+  "@watchReadingsSubtitle": {"description": "Settings on Android, under the 'Heart rate in Health Connect' switch: what it does — the heart rate and energy the Wear OS watch measured during a workout are saved in Health Connect alongside that workout", "type": "text", "placeholders": {}}
 }
