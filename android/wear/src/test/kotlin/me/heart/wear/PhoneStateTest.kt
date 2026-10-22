@@ -101,6 +101,16 @@ class PhoneStateTest {
     }
 
     @Test
+    fun `the workout page lists a set's values as the phone shows them`() {
+        val bench = PhoneState.Workout.Exercise("e", "Bench", "kg", 2.5, true, true, null, emptyList())
+        assertEquals("60 kg × 5", rowValues(60.0, 5, bench, "Reps"))
+        assertEquals("60 kg", rowValues(60.0, null, bench, "Reps"))
+        val pullUp = bench.copy(unit = null, weighted = false)
+        assertEquals("8 Reps", rowValues(60.0, 8, pullUp, "Reps"))
+        assertEquals("", rowValues(null, null, pullUp.copy(counted = false), "Reps"))
+    }
+
+    @Test
     fun `the dimmed page's clock is true to the minute`() {
         assertEquals("0:12", minutes(12 * 60_000L + 59_000))
         assertEquals("1:05", minutes(65 * 60_000L))

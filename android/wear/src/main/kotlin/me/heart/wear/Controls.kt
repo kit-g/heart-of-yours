@@ -114,13 +114,13 @@ fun SetControls(
 }
 
 /// Which of a set's values is open in its editor.
-private enum class Field { Weight, Reps }
+internal enum class Field { Weight, Reps }
 
 /// A value on a set, shown as it will be logged; tapping it opens the editor.
 /// Not edited in place: on a scrolling page the rotary input would scroll the
 /// page as often as it changed the number.
 @Composable
-private fun ValuePill(text: String, unit: String, modifier: Modifier = Modifier, open: () -> Unit) {
+internal fun ValuePill(text: String, unit: String, modifier: Modifier = Modifier, open: () -> Unit) {
     FilledTonalButton(
         onClick = open,
         modifier = modifier.semantics(mergeDescendants = true) {
@@ -139,7 +139,7 @@ private fun ValuePill(text: String, unit: String, modifier: Modifier = Modifier,
 /// bigger moves — focused from the start, with nothing else on screen to
 /// scroll. Swiping it away puts it away; the set's own Done is what logs it.
 @Composable
-private fun ValueEditor(value: Double, step: Double, unit: String, accent: Color, onChange: (Double) -> Unit) {
+internal fun ValueEditor(value: Double, step: Double, unit: String, accent: Color, onChange: (Double) -> Unit) {
     val focus = remember { FocusRequester() }
     val haptics = LocalHapticFeedback.current
     var turned by remember { mutableFloatStateOf(0f) }

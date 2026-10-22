@@ -24,6 +24,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
+import androidx.wear.compose.foundation.pager.HorizontalPager
+import androidx.wear.compose.foundation.pager.rememberPagerState
+import androidx.wear.compose.material3.AnimatedPage
+import androidx.wear.compose.material3.HorizontalPagerScaffold
 import androidx.wear.compose.material3.LinearProgressIndicator
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ProgressIndicatorDefaults
@@ -36,10 +40,12 @@ import java.text.DecimalFormat
 import java.util.Date
 import kotlin.math.roundToInt
 
-/// The workout in progress, as the phone summarised it (#459): the set up
-/// next, read top to bottom in the order it is used — the exercise and which
-/// set, its values, last time's — and at the foot where the workout stands.
-/// While a rest runs its countdown leads the page; paused, that leads.
+/// The workout in progress, as the phone summarised it (#459), in two pages.
+/// The first is the set up next, read top to bottom in the order it is used —
+/// the exercise and which set, its values, last time's — and at the foot where
+/// the workout stands. While a rest runs its countdown leads the page; paused,
+/// that leads. The second, a swipe away (#464), is the whole workout, for
+/// going back to a set already done.
 ///
 /// The clocks are instants, never counts: the countdown and the elapsed time
 /// tick here, and the phone only speaks when something changes — the same
@@ -49,6 +55,29 @@ import kotlin.math.roundToInt
 /// command is applied here at once, and the phone's answer replaces it.
 @Composable
 fun WorkoutScreen(workout: PhoneState.Workout, reachable: Boolean, send: (Command) -> Unit) {
+    // absent from a phone that predates it, rather than an empty page
+    if (workout.exercises.isEmpty()) return UpNextPage(workout, reachable, send)
+    val pages = rememberPagerState { 2 }
+    // wrist down: back to the set up next, which is what is worth a glance
+    val dimmed = LocalDimmed.current
+    LaunchedEffect(dimmed) {
+        if (dimmed) pages.scrollToPage(0)
+    }
+    HorizontalPagerScaffold(pages) {
+        HorizontalPager(pages) { page ->
+            AnimatedPage(page, pages) {
+                when (page) {
+                    0 -> UpNextPage(workout, reachable, send)
+                    else -> WorkoutList(workout, reachable, send)
+                }
+            }
+        }
+    }
+}
+
+/// The first page: the set up next, and everything about the moment.
+@Composable
+private fun UpNextPage(workout: PhoneState.Workout, reachable: Boolean, send: (Command) -> Unit) {
     val accent = Color(workout.accent)
     // wrist down (#462): once a minute, when the system says, and no controls
     val dimmed = LocalDimmed.current
