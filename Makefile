@@ -9,7 +9,8 @@
 #   make test-<pkg>  one shared package, e.g. `make test-heart_db`
 #   make profiles    iOS signing profiles for one environment (ENV=dev|prod)
 #   make wear        the Wear OS app (#250), dev debug; wear-install puts it on
-#                    DEVICE=<adb serial>, wear-test runs its unit tests
+#                    DEVICE=<adb serial>, wear-test runs its unit tests,
+#                    wear-pages its Compose tests on DEVICE
 
 # Packages with a test suite in the CI matrix.
 PACKAGES := heart_api heart_db heart_state heart_charts heart_language heart_health
@@ -21,7 +22,7 @@ TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 CODEGEN_TARGETS := $(addprefix codegen-,$(CODEGEN_PACKAGES))
 
 .PHONY: bootstrap deps hooks codegen codegen-app codegen-heart_language lint format format-check test test-app \
-        test-scripts profiles reclaim wear wear-install wear-test $(TEST_TARGETS) $(CODEGEN_TARGETS)
+        test-scripts profiles reclaim wear wear-install wear-test wear-pages $(TEST_TARGETS) $(CODEGEN_TARGETS)
 
 bootstrap: hooks deps codegen codegen-app
 	@echo "Ready. Note: lib/firebase_options.dart and lib/firebase_options_prod.dart"
@@ -195,6 +196,11 @@ wear-install: wear
 
 wear-test:
 	$(WEAR_GRADLE) testDevDebugUnitTest
+
+# The pages, as Compose tests on a Wear OS emulator (DEVICE=<adb serial>)
+wear-pages:
+	@[ -n "$(DEVICE)" ] || { echo "DEVICE=<adb serial> (adb devices)"; exit 1; }
+	ANDROID_SERIAL=$(DEVICE) $(WEAR_GRADLE) connectedDevDebugAndroidTest
 
 # Disk leftovers: merged worktrees, stray agent simulators, stale DerivedData.
 # Lists by default; APPLY=1 removes; WORKTREE=<branch> touches that merged

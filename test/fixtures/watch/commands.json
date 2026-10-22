@@ -1,0 +1,11 @@
+[
+  {"event": "command", "action": "complete", "workoutId": "w1", "setId": "b3", "weight": 62.5, "reps": 5, "id": "c1", "at": 1792692000000},
+  {"event": "command", "action": "complete", "workoutId": "w1", "setId": "p1", "reps": 8, "id": "c2", "at": 1792692060000},
+  {"event": "command", "action": "edit", "workoutId": "w1", "setId": "b2", "weight": 60, "reps": 6, "id": "c3", "at": 1792692070000},
+  {"event": "command", "action": "untick", "workoutId": "w1", "setId": "b2", "id": "c4", "at": 1792692080000},
+  {"event": "command", "action": "skipRest", "workoutId": "w1", "id": "c5", "at": 1792692090000},
+  {"event": "command", "action": "adjustRest", "workoutId": "w1", "seconds": -10, "id": "c6", "at": 1792692100000},
+  {"event": "command", "action": "finish", "workoutId": "w1", "id": "c7", "at": 1792692110000},
+  {"event": "command", "action": "pause", "workoutId": "w1", "id": "c8", "at": 1792692120000},
+  {"event": "command", "action": "resume", "workoutId": "w1", "id": "c9", "at": 1792692130000}
+]

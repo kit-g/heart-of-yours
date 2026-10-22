@@ -61,6 +61,7 @@
 		F01213153BE2EEE6E87B1099 /* Watch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = FDF3F4CD8F30591F05A41007 /* Watch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F551872CB324653080A0F356 /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3C40913D963F97A8F864DDB /* ActivityKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		F95532206C0282CE73074885 /* WatchStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA46C60E9E57C24D765D3DEC /* WatchStateTests.swift */; };
+		BB7723B541A4473FA7643979 /* FixturesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 734289B43393460D863619CA /* FixturesTests.swift */; };
 		F9F0C754A7939666F8BB1D3B /* WorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD57D645F6830CD033192B34 /* WorkoutView.swift */; };
 		610000000000000000000011 /* TrainingSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000001 /* TrainingSnapshot.swift */; };
 		610000000000000000000012 /* TrainingSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000001 /* TrainingSnapshot.swift */; };
@@ -233,6 +234,7 @@
 		B2F7BB5D5000B89E5C116949 /* HeartWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeartWatchApp.swift; sourceTree = "<group>"; };
 		B6CEA9D901B2DAA16CAC4004 /* ComplicationSnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComplicationSnapshot.swift; sourceTree = "<group>"; };
 		BA46C60E9E57C24D765D3DEC /* WatchStateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchStateTests.swift; sourceTree = "<group>"; };
+		734289B43393460D863619CA /* FixturesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FixturesTests.swift; sourceTree = "<group>"; };
 		C036B1B730C13C9F2F94BDE4 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		D104CFDB124801058D590F5E /* OngoingWorkoutLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OngoingWorkoutLiveActivity.swift; sourceTree = "<group>"; };
 		D3C40913D963F97A8F864DDB /* ActivityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ActivityKit.framework; path = System/Library/Frameworks/ActivityKit.framework; sourceTree = SDKROOT; };
@@ -482,6 +484,7 @@
 			isa = PBXGroup;
 			children = (
 				BA46C60E9E57C24D765D3DEC /* WatchStateTests.swift */,
+				734289B43393460D863619CA /* FixturesTests.swift */,
 			);
 			name = WatchTests;
 			path = WatchTests;
@@ -840,6 +843,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F95532206C0282CE73074885 /* WatchStateTests.swift in Sources */,
+				BB7723B541A4473FA7643979 /* FixturesTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

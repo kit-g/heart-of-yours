@@ -79,6 +79,11 @@ android {
     testOptions {
         unitTests.returnDefaultValues = true
     }
+
+    // the phone's payloads, as test/watch_fixtures_test.dart writes them (#466)
+    sourceSets {
+        androidTest.assets.srcDirs += "../../test/fixtures/watch"
+    }
 }
 
 dependencies {
@@ -115,4 +120,11 @@ dependencies {
     testImplementation "junit:junit:4.13.2"
     // org.json on the JVM, for the state's tests; on the watch it is the platform's
     testImplementation "org.json:json:20260814"
+
+    // the pages on a Wear OS emulator, from the shared fixtures (#466)
+    androidTestImplementation composeBom
+    androidTestImplementation "androidx.compose.ui:ui-test-junit4"
+    androidTestImplementation "androidx.test.ext:junit:1.3.0"
+    androidTestImplementation "androidx.test:runner:1.7.0"
+    debugImplementation "androidx.compose.ui:ui-test-manifest"
 }
