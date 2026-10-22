@@ -7,9 +7,12 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.SystemClock
 import android.os.VibrationEffect
+import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -21,6 +24,7 @@ import androidx.health.services.client.data.Availability
 import androidx.health.services.client.data.DataType
 import androidx.health.services.client.data.ExerciseConfig
 import androidx.health.services.client.data.ExerciseLapSummary
+import androidx.health.services.client.data.ExerciseTrackedStatus
 import androidx.health.services.client.data.ExerciseType
 import androidx.health.services.client.data.ExerciseUpdate
 import androidx.lifecycle.LifecycleService
@@ -58,6 +62,11 @@ class WorkoutService : LifecycleService() {
     private val exercises by lazy { HealthServices.getClient(this).exerciseClient }
     private var workoutId: String? = null
 
+    /// Which session this is. A start bumps it; anything that ends a session
+    /// says which one it means, so an end or an "ended" update that arrives
+    /// late can never stop the next one.
+    private var generation = 0
+
     /// What this session measured, for the phone to save if the user said so
     /// (#461): one heart-rate sample per [Readings.SAMPLE_MS], and the energy
     /// total. Held in memory, and in [Readings] once the session is over.
@@ -70,8 +79,17 @@ class WorkoutService : LifecycleService() {
     /// the same wrist a second time — so the watch owns the tap.
     private var restAlarm: Job? = null
 
-    private val updates = object : ExerciseUpdateCallback {
+    /// Keeps the CPU counting through a rest with the wrist down: a coroutine's
+    /// delay runs on uptime, which stops while the watch sleeps.
+    private val restWake by lazy {
+        getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "heart:rest").apply {
+            setReferenceCounted(false)
+        }
+    }
+
+    private fun updates(generation: Int) = object : ExerciseUpdateCallback {
         override fun onExerciseUpdateReceived(update: ExerciseUpdate) {
+            if (generation != this@WorkoutService.generation) return
             val boot = System.currentTimeMillis() - SystemClock.elapsedRealtime()
             val beats = update.latestMetrics.getData(DataType.HEART_RATE_BPM)
             beats.forEach { point ->
@@ -81,7 +99,8 @@ class WorkoutService : LifecycleService() {
             val total = update.latestMetrics.getData(DataType.CALORIES_TOTAL)?.total
             if (total != null) energy = total
             Measuring.read(beats.lastOrNull()?.value, total)
-            if (update.exerciseStateInfo.state.isEnded) stop()
+            // another app's exercise took over, or the system ended this one
+            if (update.exerciseStateInfo.state.isEnded) stop(generation)
         }
 
         override fun onLapSummaryReceived(lapSummary: ExerciseLapSummary) = Unit
@@ -94,6 +113,8 @@ class WorkoutService : LifecycleService() {
 
         override fun onAvailabilityChanged(dataType: DataType<*, *>, availability: Availability) = Unit
     }
+
+    private var callback: ExerciseUpdateCallback? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
@@ -117,6 +138,8 @@ class WorkoutService : LifecycleService() {
 
     private fun start(workoutId: String, activity: String?) {
         if (this.workoutId == workoutId) return
+        val previous = this.workoutId
+        val generation = ++generation
         this.workoutId = workoutId
         started = System.currentTimeMillis()
         heartRate.clear()
@@ -125,36 +148,56 @@ class WorkoutService : LifecycleService() {
         describe()
         lifecycleScope.launch {
             runCatching {
-                val supported = exercises.getCapabilitiesAsync().await().supportedExerciseTypes
-                val type = exerciseType(activity).takeIf { it in supported } ?: ExerciseType.WORKOUT
-                exercises.setUpdateCallback(updates)
-                exercises.startExerciseAsync(
-                    ExerciseConfig.builder(type)
-                        .setDataTypes(setOf(DataType.HEART_RATE_BPM, DataType.CALORIES_TOTAL))
-                        .setIsAutoPauseAndResumeEnabled(false)
-                        .setIsGpsEnabled(false)
-                        .build(),
-                ).await()
+                // a workout before this one ends first, measured and kept as its own
+                if (previous != null) {
+                    keep(previous)
+                    runCatching { exercises.endExerciseAsync().await() }
+                }
+                val callback = updates(generation).also { callback = it }
+                // this process died mid-workout, and Health Services kept its
+                // exercise: take it up again rather than start over
+                val info = exercises.getCurrentExerciseInfoAsync().await()
+                val resumed = info.exerciseTrackedStatus == ExerciseTrackedStatus.OWNED_EXERCISE_IN_PROGRESS &&
+                    prefs().getString(CURRENT, null) == workoutId
+                exercises.setUpdateCallback(callback)
+                if (!resumed) {
+                    val capabilities = exercises.getCapabilitiesAsync().await()
+                    val type = exerciseType(activity).takeIf { it in capabilities.supportedExerciseTypes } ?: ExerciseType.WORKOUT
+                    // only what this exercise can measure: asking for more is refused whole
+                    val dataTypes = setOf(DataType.HEART_RATE_BPM, DataType.CALORIES_TOTAL)
+                        .intersect(capabilities.getExerciseTypeCapabilities(type).supportedDataTypes)
+                    check(dataTypes.isNotEmpty()) { "Nothing to measure for $type" }
+                    exercises.startExerciseAsync(
+                        ExerciseConfig.builder(type)
+                            .setDataTypes(dataTypes)
+                            .setIsAutoPauseAndResumeEnabled(false)
+                            .setIsGpsEnabled(false)
+                            .build(),
+                    ).await()
+                }
+                if (generation != this@WorkoutService.generation) return@launch
+                prefs().edit().putString(CURRENT, workoutId).apply()
                 Measuring.started(workoutId)
                 tellPhone(workoutId)
             }.onFailure {
                 // declined, or no sensors: nothing is measured, and everything
                 // else about the watch app carries on
                 Log.w(TAG, "Exercise did not start: ${it.message}")
-                stop()
+                stop(generation)
             }
         }
     }
 
-    /// That the watch measures [workoutId] — no reading, only the fact — so the
-    /// phone leaves the rest's tap to it (#462). Left as a data item, which
-    /// reaches a phone app that isn't running.
+    /// Whether the watch measures [workoutId] — no reading, only the fact — so
+    /// the phone leaves the rest's tap to it while it does (#462); empty when
+    /// it stopped. Left as a data item, which reaches a phone app that isn't
+    /// running.
     private suspend fun tellPhone(workoutId: String) {
         runCatching {
-            val measuring = JSONObject().put("event", "measuring").put("workoutId", workoutId)
+            val measuring = JSONObject().put("event", "measuring").put("workoutId", workoutId).put("at", System.currentTimeMillis())
             val request = PutDataRequest.create("${PhoneSession.EVENTS}/measuring").setData(measuring.toString().toByteArray()).setUrgent()
             Wearable.getDataClient(this).putDataItem(request).await()
-        }.onFailure { Log.w(TAG, "The phone was not told the watch measures: ${it.message}") }
+        }.onFailure { Log.w(TAG, "The phone was not told whether the watch measures: ${it.message}") }
     }
 
     /// What the Ongoing Activity says: the workout's name and its clock.
@@ -203,35 +246,66 @@ class WorkoutService : LifecycleService() {
 
     private fun rest(end: Long) {
         restAlarm?.cancel()
-        if (workoutId == null || end <= System.currentTimeMillis()) return
+        if (restWake.isHeld) restWake.release()
+        val left = end - System.currentTimeMillis()
+        if (workoutId == null || left <= 0) return
+        restWake.acquire(left + WAKE_SLACK_MS)
         restAlarm = lifecycleScope.launch {
-            delay(end - System.currentTimeMillis())
-            val vibrator = getSystemService(VibratorManager::class.java).defaultVibrator
-            vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 250, 120, 250), -1))
+            delay(left)
+            vibrator().vibrate(VibrationEffect.createWaveform(longArrayOf(0, 250, 120, 250), -1))
+            if (restWake.isHeld) restWake.release()
         }
+    }
+
+    /// The default vibrator: [VibratorManager] from Wear OS 4 (API 31), the
+    /// old service before it.
+    private fun vibrator(): Vibrator = when {
+        Build.VERSION.SDK_INT >= 31 -> getSystemService(VibratorManager::class.java).defaultVibrator
+        else -> @Suppress("DEPRECATION") getSystemService(Vibrator::class.java)
     }
 
     private fun end() {
+        val generation = generation
         lifecycleScope.launch {
             runCatching { exercises.endExerciseAsync().await() }
-            stop()
+            stop(generation)
         }
     }
 
-    private fun stop() {
+    /// What [workoutId]'s session measured, kept for the phone (#461).
+    private fun keep(workoutId: String) {
+        Readings.keep(this, workoutId, started, System.currentTimeMillis(), heartRate.toList(), energy)
+        heartRate.clear()
+        energy = null
+    }
+
+    private fun stop(generation: Int) {
+        if (generation != this.generation) return
         restAlarm?.cancel()
+        if (restWake.isHeld) restWake.release()
         workoutId?.let { id ->
-            Readings.keep(this, id, started, System.currentTimeMillis(), heartRate.toList(), energy)
-            heartRate.clear()
-            // a coroutine of the app's own: this service is on its way out
-            ProcessLifecycleOwner.get().lifecycleScope.launch { Readings.handOver(applicationContext) }
+            keep(id)
+            // coroutines of the app's own: this service is on its way out
+            ProcessLifecycleOwner.get().lifecycleScope.launch {
+                Readings.handOver(applicationContext)
+                tellPhone("")
+            }
         }
-        runCatching { exercises.clearUpdateCallbackAsync(updates) }
+        callback?.let { runCatching { exercises.clearUpdateCallbackAsync(it) } }
+        callback = null
         workoutId = null
+        prefs().edit().remove(CURRENT).apply()
         Measuring.ended()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
+
+    override fun onDestroy() {
+        if (restWake.isHeld) restWake.release()
+        super.onDestroy()
+    }
+
+    private fun prefs() = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     override fun onBind(intent: Intent): IBinder? {
         super.onBind(intent)
@@ -261,6 +335,10 @@ class WorkoutService : LifecycleService() {
 
     companion object {
         private const val TAG = "WorkoutService"
+        private const val PREFS = "exercise"
+        /// The workout an exercise was started for, kept past a process death.
+        private const val CURRENT = "currentWorkout"
+        private const val WAKE_SLACK_MS = 5_000L
         private const val CHANNEL = "workout"
         private const val NOTIFICATION = 1
 
@@ -287,7 +365,42 @@ class WorkoutService : LifecycleService() {
 
         fun follow(context: Context, paused: Boolean) = send(context, if (paused) PAUSE else RESUME)
 
-        fun end(context: Context) = send(context, END)
+        /// Ends the exercise. Running here, the service ends it; with this
+        /// process gone and Health Services still holding the exercise it
+        /// started, it is ended directly, so none is left running.
+        fun end(context: Context) {
+            if (Measuring.now.value != null) return send(context, END)
+            val app = context.applicationContext
+            val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            if (prefs.getString(CURRENT, null) == null) return
+            ProcessLifecycleOwner.get().lifecycleScope.launch {
+                runCatching {
+                    val client = HealthServices.getClient(app).exerciseClient
+                    val info = client.getCurrentExerciseInfoAsync().await()
+                    if (info.exerciseTrackedStatus == ExerciseTrackedStatus.OWNED_EXERCISE_IN_PROGRESS) client.endExerciseAsync().await()
+                }
+                prefs.edit().remove(CURRENT).apply()
+            }
+        }
+
+        /// Keeps a running exercise in step with what the phone now says — its
+        /// rest, its pause, its name and clock, or its end — whether or not
+        /// Heart is on screen: called by the app and by [StateListenerService].
+        /// Never starts one; only the app on screen does.
+        fun follow(context: Context, state: PhoneState) {
+            val running = Measuring.now.value?.workoutId
+            when {
+                state is PhoneState.Awaiting -> Unit
+                state !is PhoneState.Workout -> end(context)
+                running == null -> Unit
+                state.workoutId != running -> end(context)
+                else -> {
+                    rest(context, state.rest?.end ?: 0)
+                    follow(context, paused = state.pausedAt != null)
+                    describe(context, state.title, state.clock, state.pausedAt)
+                }
+            }
+        }
 
         /// What the workout is called and where its clock stands, for the
         /// Ongoing Activity.

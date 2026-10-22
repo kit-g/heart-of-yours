@@ -39,10 +39,10 @@ fun ExerciseFollowing(state: PhoneState) {
         granted = sensors(context)
     }
 
+    // started only from here: a workout, with Heart on screen
     LaunchedEffect(workout?.workoutId, onScreen, granted) {
         when {
-            workout == null -> WorkoutService.end(context)
-            !onScreen -> Unit
+            workout == null || !onScreen -> Unit
             granted -> WorkoutService.start(context, workout.workoutId, workout.activity)
             !asked(context) -> {
                 markAsked(context)
@@ -50,16 +50,14 @@ fun ExerciseFollowing(state: PhoneState) {
             }
         }
     }
+    // and kept in step, or ended, by what the phone says — also from the
+    // background, by StateListenerService. A session that only just started
+    // takes the pause, the rest and the name it missed. Not while the phone
+    // has said nothing yet: a new page that has not restored is no reason to
+    // end what runs
     val measuring by Measuring.now.collectAsStateWithLifecycle()
-    LaunchedEffect(workout?.pausedAt != null) {
-        if (workout != null) WorkoutService.follow(context, paused = workout.pausedAt != null)
-    }
-    LaunchedEffect(workout?.title, workout?.clock, workout?.pausedAt, measuring?.workoutId) {
-        if (workout != null) WorkoutService.describe(context, workout.title, workout.clock, workout.pausedAt)
-    }
-    // the rest's tap is the watch's while it measures (#462)
-    LaunchedEffect(workout?.rest?.end, measuring?.workoutId) {
-        WorkoutService.rest(context, workout?.rest?.end ?: 0)
+    LaunchedEffect(state, measuring?.workoutId) {
+        WorkoutService.follow(context, state)
     }
 }
 
