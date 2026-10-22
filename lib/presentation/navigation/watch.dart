@@ -314,10 +314,16 @@ class _WatchPresenterState extends State<WatchPresenter> {
 
   WatchState? _state() {
     final l = L.of(context);
+    // a Wear OS watch's readings (#461): the user's answer, which an Apple
+    // Watch never needs — it saves its own workout
+    final keepsReadings = switch (Theme.of(context).platform) {
+      .android => Preferences.of(context).watchReadings,
+      _ => null,
+    };
     return switch (Preferences.of(context).featureAnswer(.watchApp)) {
       // never opened on the watch: nothing is said to it at all
       .unasked || .pending => null,
-      .off => WatchMessage.off(_phone(l).off),
+      .off => WatchMessage.off(_phone(l).off, keepsReadings: keepsReadings),
       .on => switch ((ongoingWorkoutOf(context), _workouts?.hasResolvedActiveWorkout ?? false)) {
         (var workout?, _) => WatchWorkout(
           workout,
@@ -337,9 +343,10 @@ class _WatchPresenterState extends State<WatchPresenter> {
             for (final pause in _workouts?.activeWorkout?.pauses ?? const <WorkoutPause>[])
               (start: pause.start, end: pause.end),
           ],
+          keepsReadings: keepsReadings,
         ),
         // "no workout" only once that is known, not while it is still loading
-        (null, true) => WatchMessage.idle(_phone(l).idle),
+        (null, true) => WatchMessage.idle(_phone(l).idle, keepsReadings: keepsReadings),
         (null, false) => null,
       },
     };

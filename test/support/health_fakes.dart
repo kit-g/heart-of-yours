@@ -61,6 +61,15 @@ class FakeHealthDevice implements HealthService {
   }
 
   @override
+  Future<HealthAccess> watchReadingsWriteAccess() async => HealthAccess.denied;
+
+  @override
+  Future<bool> requestWatchReadingsWriteAccess() async {
+    log.add('requestWatchReadingsWriteAccess');
+    return true;
+  }
+
+  @override
   Future<bool> writeWorkout({
     required WorkoutActivity activity,
     required DateTime start,

@@ -4,6 +4,7 @@ import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
 /// What the Wear OS app (#250) says, delivered whether or not this app is
@@ -11,7 +12,11 @@ import org.json.JSONObject
 /// what no Dart is listening for.
 class WatchListenerService : WearableListenerService() {
     override fun onMessageReceived(event: MessageEvent) {
-        if (event.path == WatchChannel.EVENT) WatchChannel.received(this, event.data)
+        when (event.path) {
+            WatchChannel.EVENT -> WatchChannel.received(this, event.data)
+            // already off the main thread: the write is done before this returns
+            WatchReadings.PATH -> runBlocking { WatchReadings.received(this@WatchListenerService, event.data) }
+        }
     }
 
     /// What the watch left while the phone was away (#465) arrives as a batch

@@ -507,6 +507,25 @@ Future<void> finishWorkout(BuildContext context, Workouts workouts, {DateTime? a
     _ => Future.value(false),
   };
 
+  // A Wear OS watch that measured this session asks, once, whether its
+  // readings go into Health Connect (#461) — at the first finish they are
+  // about, in Health Connect's own sheet. The watch holds them until the
+  // answer reaches it with the next state.
+  final preferences = Preferences.of(context);
+  if ((watch, session, Theme.of(context).platform, preferences.watchReadings) case (
+    WatchLink watch,
+    Workout session,
+    .android,
+    null,
+  )) {
+    unawaited(
+      watch.measures(session.id).then((measuring) async {
+        if (!measuring) return;
+        await preferences.setWatchReadings(on: await health.askWatchReadings());
+      }),
+    );
+  }
+
   // which template exercise each of the session's exercises came from, read
   // before the finish drops the ones nobody ticked (#350)
   final grows = switch ((session, Preferences.of(context).isOn(.programs))) {

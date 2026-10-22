@@ -88,8 +88,14 @@ object WatchChannel {
                     val workoutId = call.argument<String>("workoutId")
                     result.success(workoutId != null && prefs(app).getString(MEASURING, null) == workoutId)
                 }
-                // the watch measures nothing yet (#461): the phone writes the workout
-                "finish" -> result.success(false)
+                // a Wear OS watch saves nothing itself: the phone writes the
+                // workout, and the watch's readings join it if the user said so (#461)
+                "finish" -> {
+                    call.argument<String>("workoutId")?.let { workoutId ->
+                        scope.launch(Dispatchers.IO) { WatchReadings.finished(app, workoutId) }
+                    }
+                    result.success(false)
+                }
                 "send" -> {
                     val state = call.arguments as? Map<*, *>
                     if (state == null) {
