@@ -134,7 +134,7 @@ object WatchChannel {
         // the item is deduplicated by content; a send is a real change by
         // construction (Dart compares first), and the stamp keeps a repeat meant
         // for a reinstalled watch app from being dropped as a duplicate
-        val payload = JSONObject(state).put("sentAt", System.currentTimeMillis()).toString().toByteArray()
+        val payload = JSONObject(state).put("sentAt", stamp()).toString().toByteArray()
         runCatching {
             val request = PutDataRequest.create(STATE).setData(payload).setUrgent()
             Wearable.getDataClient(context).putDataItem(request).await()
@@ -150,6 +150,17 @@ object WatchChannel {
         }.onFailure { Log.w(TAG, "Watch state not sent: ${it.message}") }
     }
 
+    private var lastStamp = 0L
+
+    /// When a state was sent, and its order: the watch drops anything older
+    /// than what it shows, so two states sent in the same millisecond still
+    /// get stamps of their own.
+    @Synchronized
+    private fun stamp(): Long {
+        lastStamp = maxOf(System.currentTimeMillis(), lastStamp + 1)
+        return lastStamp
+    }
+
     /// What the watch said, from [WatchListenerService].
     fun received(context: Context, data: ByteArray) {
         val message = runCatching { JSONObject(String(data)) }.getOrNull() ?: return
@@ -158,7 +169,13 @@ object WatchChannel {
         main.post {
             when (event) {
                 "command" -> forward(app, message)
-                "measuring" -> prefs(app).edit().putString(MEASURING, message.optString("workoutId")).apply()
+                // empty when the watch stopped measuring: the rest's tap is the phone's again
+                "measuring" -> prefs(app).edit().apply {
+                    when (val workoutId = message.optString("workoutId")) {
+                        "" -> remove(MEASURING)
+                        else -> putString(MEASURING, workoutId)
+                    }
+                }.apply()
                 else -> {
                     // kept until Dart takes it: the channel may not exist yet,
                     // or may belong to an engine that is not listening

@@ -119,8 +119,11 @@ jobs:
       # under the same package. Play wants a version code no other bundle of the
       # app uses, phone or watch, so the watch takes this run's number in a range
       # of its own.
+      # Never a reason to hold the phone back: a watch that fails to build
+      # skips its own upload below and leaves the phone's release alone.
       - name: "Build Wear OS bundle"
         id: wear
+        continue-on-error: true
         working-directory: android/wear
         run: |
           code=$((1000000000 + ${{ github.run_number }}))
@@ -204,6 +207,7 @@ jobs:
       # exist and the upload is refused: a warning on the run, never a failed
       # phone release.
       - name: "Upload Wear OS bundle to Play Store"
+        if: steps.wear.outcome == 'success'
         continue-on-error: true
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
         with:
