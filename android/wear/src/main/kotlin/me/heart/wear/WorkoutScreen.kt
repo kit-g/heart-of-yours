@@ -2,6 +2,7 @@ package me.heart.wear
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,15 +13,17 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
-import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
+import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.LinearProgressIndicator
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ProgressIndicatorDefaults
@@ -51,16 +54,24 @@ fun WorkoutScreen(workout: PhoneState.Workout, reachable: Boolean, send: (Comman
     val dimmed = LocalDimmed.current
     val ticking by ticking()
     val now = if (dimmed) LocalAmbientTick.current else ticking
-    val list = rememberScalingLazyListState()
-    // back to the top, which is what is worth a glance
-    LaunchedEffect(dimmed) {
-        if (dimmed) list.scrollToItem(0)
+    val list = rememberTransformingLazyColumnState()
+    // back to the top, which is what is worth a glance: with the wrist down,
+    // and when the moment moves on — a new set up next, a rest begun
+    LaunchedEffect(dimmed, workout.set?.setId, workout.rest?.start) {
+        list.scrollToItem(0)
     }
 
+    // Wear's margin, a share of the screen; the round edge takes the rest
+    val margin = (LocalConfiguration.current.screenWidthDp * 0.052f).dp
     ScreenScaffold(scrollState = list) { padding ->
-        ScalingLazyColumn(
+        TransformingLazyColumn(
             state = list,
-            contentPadding = padding,
+            contentPadding = PaddingValues(
+                start = margin,
+                end = margin,
+                top = padding.calculateTopPadding(),
+                bottom = padding.calculateBottomPadding(),
+            ),
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -69,7 +80,17 @@ fun WorkoutScreen(workout: PhoneState.Workout, reachable: Boolean, send: (Comman
             // the page moves until the clock does
             if (workout.pausedAt != null) {
                 when (controls) {
-                    null -> workout.controls?.let { item { Text(it.paused, style = MaterialTheme.typography.titleMedium, color = accent) } }
+                    null -> workout.controls?.let { copy ->
+                        item {
+                            Text(
+                                copy.paused,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = accent,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
                     else -> item { Paused(workout.workoutId, controls, accent, send) }
                 }
             }
@@ -87,6 +108,9 @@ fun WorkoutScreen(workout: PhoneState.Workout, reachable: Boolean, send: (Comman
                         color = accent,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        // where a round screen is narrowest when it leads
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 28.dp),
                     )
                 }
             }
@@ -95,10 +119,7 @@ fun WorkoutScreen(workout: PhoneState.Workout, reachable: Boolean, send: (Comman
             }
             val set = workout.set
             when {
-                controls != null && set != null -> {
-                    item { SetControls(workout.workoutId, set, controls, accent, send) }
-                    set.previous?.let { previous -> item { Muted(previous) } }
-                }
+                controls != null && set != null -> item { SetControls(workout.workoutId, set, controls, accent, send) }
                 // every set ticked: the one thing left to do
                 controls != null -> item { FinishControl(workout.workoutId, controls, accent, send) }
                 set != null -> {
@@ -118,13 +139,19 @@ fun WorkoutScreen(workout: PhoneState.Workout, reachable: Boolean, send: (Comman
 @Composable
 private fun Rest(rest: PhoneState.Workout.Rest, now: Long, accent: Color) {
     if (now >= rest.end) {
-        Text(rest.over, style = MaterialTheme.typography.titleMedium, color = accent)
+        Text(
+            rest.over,
+            style = MaterialTheme.typography.titleMedium,
+            color = accent,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
         return
     }
     // dimmed, a countdown would be wrong between the minute's redraws: when
     // the rest ends is true all minute long
     if (LocalDimmed.current) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             Muted(rest.label)
             Text(timeOfDay(rest.end), style = MaterialTheme.typography.numeralSmall)
         }
@@ -134,7 +161,8 @@ private fun Rest(rest: PhoneState.Workout.Rest, now: Long, accent: Color) {
     Column(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp)
+            // it leads the page, where a round screen is narrowest
+            .padding(horizontal = 20.dp)
             .clearAndSetSemantics { contentDescription = "${rest.label} ${clock(left, up = false)}" },
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {

@@ -74,6 +74,15 @@ fun SetControls(
                 }
             }
         }
+        set.previous?.let { previous ->
+            Text(
+                previous,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         Button(
             onClick = {
                 send(
@@ -251,7 +260,14 @@ fun FinishControl(workoutId: String, controls: PhoneState.Workout.Controls, acce
 @Composable
 fun Paused(workoutId: String, controls: PhoneState.Workout.Controls, accent: Color, send: (Command) -> Unit) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(controls.paused, style = MaterialTheme.typography.titleMedium, color = accent)
+        // it leads the page, where a round screen is narrowest
+        Text(
+            controls.paused,
+            style = MaterialTheme.typography.titleMedium,
+            color = accent,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
         Button(
             onClick = { send(Command.Resume(workoutId)) },
             icon = { Icon(painterResource(R.drawable.ic_play), contentDescription = null) },
