@@ -3,6 +3,20 @@
 
     <uses-feature android:name="android.hardware.type.watch" />
 
+    <!-- The workout's exercise (#461): heart rate and energy, read for the
+         wrist only and never sent anywhere (docs/2026-09-05.health-data.md).
+         Wear OS 6 split heart rate out of the body sensors. -->
+    <uses-permission
+        android:name="android.permission.BODY_SENSORS"
+        android:maxSdkVersion="35" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- the rest's tap (#462) -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
@@ -25,5 +39,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".WorkoutService"
+            android:exported="false"
+            android:foregroundServiceType="health" />
     </application>
 </manifest>

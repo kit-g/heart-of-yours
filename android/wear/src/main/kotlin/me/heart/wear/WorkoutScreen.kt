@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
@@ -25,6 +27,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import kotlinx.coroutines.delay
 import java.text.DecimalFormat
+import kotlin.math.roundToInt
 
 /// The workout in progress, as the phone summarised it (#459): the set up
 /// next, read top to bottom in the order it is used — the exercise and which
@@ -146,9 +149,28 @@ private fun Footer(workout: PhoneState.Workout, now: Long, controls: PhoneState.
             Muted(workout.title, Modifier.weight(1f, fill = false))
             Muted(clock(until - workout.clock, up = true))
         }
+        workout.controls?.let { copy -> Vitals(workout.workoutId, copy) }
         // pausing is the phone's opt-in (#134): off, no control
         if (workout.pausable && workout.pausedAt == null && controls != null) {
             PauseButton(workout.workoutId, controls, send)
+        }
+    }
+}
+
+/// What the watch measures (#461), while it measures this workout: heart rate
+/// and energy, labelled in the phone's words. The readings stay on the wrist.
+@Composable
+private fun Vitals(workoutId: String, controls: PhoneState.Workout.Controls) {
+    val reading by Measuring.now.collectAsStateWithLifecycle()
+    val now = reading?.takeIf { it.workoutId == workoutId } ?: return
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        now.heartRate?.let { bpm ->
+            val text = "${bpm.roundToInt()} ${controls.bpm}"
+            Muted(text, Modifier.semantics(mergeDescendants = true) { contentDescription = "${controls.heartRate} $text" })
+        }
+        now.energy?.let { kcal ->
+            val text = "${kcal.roundToInt()} ${controls.kcal}"
+            Muted(text, Modifier.semantics(mergeDescendants = true) { contentDescription = "${controls.energy} $text" })
         }
     }
 }

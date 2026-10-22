@@ -24,6 +24,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val state by phone.state.collectAsStateWithLifecycle()
             val reachable by phone.reachable.collectAsStateWithLifecycle()
+            ExerciseFollowing(state)
             HeartTheme {
                 PhoneStateScreen(state = state, reachable = reachable, send = phone::send)
             }

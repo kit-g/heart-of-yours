@@ -93,6 +93,10 @@ dependencies {
     // the Data Layer to the phone, and awaiting its tasks
     implementation "com.google.android.gms:play-services-wearable:20.0.1"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.11.0"
+    // the workout's exercise: heart rate and energy, on the wrist only (#461)
+    implementation "androidx.health:health-services-client:1.1.0"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.11.0"
+    implementation "androidx.lifecycle:lifecycle-service:2.11.0"
 
     // previews: the annotations in every build, the renderer in debug only
     implementation "androidx.compose.ui:ui-tooling-preview"
