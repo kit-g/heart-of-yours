@@ -258,7 +258,8 @@ private fun Footer(workout: PhoneState.Workout, now: Long, controls: PhoneState.
 }
 
 /// What the watch measures (#461), while it measures this workout: heart rate
-/// and energy, labelled in the phone's words. The readings stay on the wrist.
+/// and energy, labelled in the phone's words. What reaches Health Connect, and
+/// only with the user's say, is [Readings]'s business, never this page's.
 @Composable
 private fun Vitals(workoutId: String, controls: PhoneState.Workout.Controls) {
     val reading by Measuring.now.collectAsStateWithLifecycle()

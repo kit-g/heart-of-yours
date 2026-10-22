@@ -7,9 +7,11 @@ import kotlinx.coroutines.flow.asStateFlow
 /// What the watch is measuring for the workout on the phone (#461), as
 /// [WorkoutService] reads it from Health Services, for the page to show.
 ///
-/// Readings stay on the wrist: never sent to the phone app, the server, logs
-/// or anywhere else (`docs/2026-09-05.health-data.md`). Only *that* the watch
-/// measures crosses over — the phone's cue to leave the rest's tap to it.
+/// These live readings stay on the wrist: never in the Data Layer, logs, or
+/// anything the phone shows (`docs/2026-09-05.health-data.md`). *That* the
+/// watch measures crosses over — the phone's cue to leave the rest's tap to
+/// it — and, after the workout and only with the user's say, the session's
+/// readings go to the phone for Health Connect ([Readings]).
 object Measuring {
     data class Reading(
         val workoutId: String,

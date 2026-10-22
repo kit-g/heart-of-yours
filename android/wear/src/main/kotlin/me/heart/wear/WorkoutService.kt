@@ -46,7 +46,8 @@ import kotlinx.coroutines.launch
 /// the wrist down. The twin of `WorkoutSession` in ios/Watch/WorkoutSession.swift.
 ///
 /// Measuring is Health Services' job; Heart only starts and ends it. The
-/// readings are shown on the wrist and go nowhere else ([Measuring]).
+/// readings are shown on the wrist ([Measuring]), and reach Health Connect
+/// only if the user said so ([Readings]).
 ///
 /// **When it starts.** Only one app can run an exercise at a time: starting
 /// Heart's ends any other's. So Heart never starts one on its own behalf — not
@@ -57,7 +58,7 @@ import kotlinx.coroutines.launch
 /// **How it ends.** With the workout on the phone, finished or not. Unlike the
 /// Apple Watch, the watch saves nothing: Wear OS has no Health Connect of its
 /// own, so the phone writes the workout to Health Connect as it always has,
-/// and the readings, which may not leave the watch, are not in it.
+/// and the readings join it there only with the user's say ([Readings]).
 class WorkoutService : LifecycleService() {
     private val exercises by lazy { HealthServices.getClient(this).exerciseClient }
     private var workoutId: String? = null

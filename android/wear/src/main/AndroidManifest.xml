@@ -4,7 +4,8 @@
     <uses-feature android:name="android.hardware.type.watch" />
 
     <!-- The workout's exercise (#461): heart rate and energy, read for the
-         wrist only and never sent anywhere (docs/2026-09-05.health-data.md).
+         wrist, and for Health Connect only with the user's say (#461) — never
+         a server (docs/2026-09-05.health-data.md).
          Wear OS 6 split heart rate out of the body sensors. -->
     <uses-permission
         android:name="android.permission.BODY_SENSORS"
