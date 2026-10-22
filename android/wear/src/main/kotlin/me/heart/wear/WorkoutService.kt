@@ -24,6 +24,7 @@ import androidx.health.services.client.data.ExerciseLapSummary
 import androidx.health.services.client.data.ExerciseType
 import androidx.health.services.client.data.ExerciseUpdate
 import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.wear.ongoing.OngoingActivity
 import androidx.wear.ongoing.Status
 import androidx.lifecycle.lifecycleScope
@@ -57,6 +58,13 @@ class WorkoutService : LifecycleService() {
     private val exercises by lazy { HealthServices.getClient(this).exerciseClient }
     private var workoutId: String? = null
 
+    /// What this session measured, for the phone to save if the user said so
+    /// (#461): one heart-rate sample per [Readings.SAMPLE_MS], and the energy
+    /// total. Held in memory, and in [Readings] once the session is over.
+    private var started = 0L
+    private val heartRate = mutableListOf<Pair<Long, Double>>()
+    private var energy: Double? = null
+
     /// The tap for the rest that is running (#462). Once the watch measures,
     /// the phone schedules no rest notification of its own — it would reach
     /// the same wrist a second time — so the watch owns the tap.
@@ -64,9 +72,15 @@ class WorkoutService : LifecycleService() {
 
     private val updates = object : ExerciseUpdateCallback {
         override fun onExerciseUpdateReceived(update: ExerciseUpdate) {
-            val heartRate = update.latestMetrics.getData(DataType.HEART_RATE_BPM).lastOrNull()?.value
-            val energy = update.latestMetrics.getData(DataType.CALORIES_TOTAL)?.total
-            Measuring.read(heartRate, energy)
+            val boot = System.currentTimeMillis() - SystemClock.elapsedRealtime()
+            val beats = update.latestMetrics.getData(DataType.HEART_RATE_BPM)
+            beats.forEach { point ->
+                val time = boot + point.timeDurationFromBoot.toMillis()
+                if (heartRate.lastOrNull()?.let { time - it.first >= Readings.SAMPLE_MS } != false) heartRate += time to point.value
+            }
+            val total = update.latestMetrics.getData(DataType.CALORIES_TOTAL)?.total
+            if (total != null) energy = total
+            Measuring.read(beats.lastOrNull()?.value, total)
             if (update.exerciseStateInfo.state.isEnded) stop()
         }
 
@@ -104,6 +118,9 @@ class WorkoutService : LifecycleService() {
     private fun start(workoutId: String, activity: String?) {
         if (this.workoutId == workoutId) return
         this.workoutId = workoutId
+        started = System.currentTimeMillis()
+        heartRate.clear()
+        energy = null
         ServiceCompat.startForeground(this, NOTIFICATION, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH)
         describe()
         lifecycleScope.launch {
@@ -203,6 +220,12 @@ class WorkoutService : LifecycleService() {
 
     private fun stop() {
         restAlarm?.cancel()
+        workoutId?.let { id ->
+            Readings.keep(this, id, started, System.currentTimeMillis(), heartRate.toList(), energy)
+            heartRate.clear()
+            // a coroutine of the app's own: this service is on its way out
+            ProcessLifecycleOwner.get().lifecycleScope.launch { Readings.handOver(applicationContext) }
+        }
         runCatching { exercises.clearUpdateCallbackAsync(updates) }
         workoutId = null
         Measuring.ended()

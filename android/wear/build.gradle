@@ -102,6 +102,7 @@ dependencies {
     implementation "androidx.health:health-services-client:1.1.0"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.11.0"
     implementation "androidx.lifecycle:lifecycle-service:2.11.0"
+    implementation "androidx.lifecycle:lifecycle-process:2.11.0"
     // the wrist down: ambient mode, and the workout as an Ongoing Activity (#462)
     implementation "androidx.wear:wear:1.4.0"
     implementation "androidx.wear:wear-ongoing:1.1.0"

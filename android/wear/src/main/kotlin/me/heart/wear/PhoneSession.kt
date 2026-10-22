@@ -202,7 +202,10 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         val reachable = info.nodes.isNotEmpty()
         val back = reachable && !_reachable.value
         _reachable.value = reachable
-        if (back) scope.launch { requestState() }
+        if (back) {
+            scope.launch { requestState() }
+            scope.launch { Readings.handOver(context) }
+        }
     }
 
     fun send(command: Command) {
@@ -277,6 +280,9 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         val state = PhoneState.from(json) ?: return
         sentAt = stamp
         phoneState = state
+        // the user's say over the watch's readings, which every state carries (#461)
+        val keeps = if (json.has("keepsReadings")) json.optBoolean("keepsReadings") else null
+        scope.launch { Readings.answer(context, keeps) }
         // what the phone has heard is in what it sent; the rest still applies
         queued.removeAll { it.delivered }
         show()
