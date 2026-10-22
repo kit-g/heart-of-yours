@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -28,6 +30,7 @@ import androidx.wear.compose.foundation.pager.HorizontalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
 import androidx.wear.compose.material3.AnimatedPage
 import androidx.wear.compose.material3.HorizontalPagerScaffold
+import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.LinearProgressIndicator
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ProgressIndicatorDefaults
@@ -54,9 +57,15 @@ import kotlin.math.roundToInt
 /// The controls (#460) are there only while the phone can hear them; a
 /// command is applied here at once, and the phone's answer replaces it.
 @Composable
-fun WorkoutScreen(workout: PhoneState.Workout, reachable: Boolean, send: (Command) -> Unit) {
+fun WorkoutScreen(
+    workout: PhoneState.Workout,
+    reachable: Boolean,
+    send: (Command) -> Unit,
+    waiting: Boolean = false,
+    unsynced: Set<String> = emptySet(),
+) {
     // absent from a phone that predates it, rather than an empty page
-    if (workout.exercises.isEmpty()) return UpNextPage(workout, reachable, send)
+    if (workout.exercises.isEmpty()) return UpNextPage(workout, reachable, waiting, send)
     val pages = rememberPagerState { 2 }
     // wrist down: back to the set up next, which is what is worth a glance
     val dimmed = LocalDimmed.current
@@ -67,8 +76,8 @@ fun WorkoutScreen(workout: PhoneState.Workout, reachable: Boolean, send: (Comman
         HorizontalPager(pages) { page ->
             AnimatedPage(page, pages) {
                 when (page) {
-                    0 -> UpNextPage(workout, reachable, send)
-                    else -> WorkoutList(workout, reachable, send)
+                    0 -> UpNextPage(workout, reachable, waiting, send)
+                    else -> WorkoutList(workout, reachable, unsynced, send)
                 }
             }
         }
@@ -77,7 +86,7 @@ fun WorkoutScreen(workout: PhoneState.Workout, reachable: Boolean, send: (Comman
 
 /// The first page: the set up next, and everything about the moment.
 @Composable
-private fun UpNextPage(workout: PhoneState.Workout, reachable: Boolean, send: (Command) -> Unit) {
+private fun UpNextPage(workout: PhoneState.Workout, reachable: Boolean, waiting: Boolean, send: (Command) -> Unit) {
     val accent = Color(workout.accent)
     // wrist down (#462): once a minute, when the system says, and no controls
     val dimmed = LocalDimmed.current
@@ -104,7 +113,9 @@ private fun UpNextPage(workout: PhoneState.Workout, reachable: Boolean, send: (C
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            val controls = workout.controls?.takeIf { reachable && !dimmed }
+            // out of reach too (#465): what is done here queues, and reaches the
+            // phone when it is back
+            val controls = workout.controls?.takeIf { !dimmed }
             // paused (#134), that leads, with the way back: nothing else on
             // the page moves until the clock does
             if (workout.pausedAt != null) {
@@ -156,6 +167,13 @@ private fun UpNextPage(workout: PhoneState.Workout, reachable: Boolean, send: (C
                         item { Text(values, style = MaterialTheme.typography.displaySmall) }
                     }
                     set.previous?.let { previous -> item { Muted(previous) } }
+                }
+            }
+            // the phone away, or back and still being handed what it missed
+            controls?.let { copy ->
+                when {
+                    !reachable -> item { Away(copy.unreachable) }
+                    waiting -> item { Away(copy.sending.ifEmpty { copy.unreachable }) }
                 }
             }
             item { Footer(workout, now, controls, send) }
@@ -257,6 +275,29 @@ private fun Vitals(workoutId: String, controls: PhoneState.Workout.Controls) {
     }
 }
 
+/// The phone out of reach, or catching up: one line, with a phone.
+@Composable
+private fun Away(text: String) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painterResource(R.drawable.ic_phone),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(14.dp),
+        )
+        Text(
+            text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
 @Composable
 private fun Muted(text: String, modifier: Modifier = Modifier) {
     Text(
@@ -326,7 +367,7 @@ private fun WorkoutPreview() {
     val now = System.currentTimeMillis()
     HeartTheme {
         WorkoutScreen(
-            reachable = true,
+            reachable = false,
             send = {},
             workout = PhoneState.Workout(
                 workoutId = "w",

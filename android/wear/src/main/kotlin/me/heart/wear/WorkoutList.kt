@@ -40,7 +40,7 @@ import androidx.wear.compose.material3.Text
 /// way in to its editor while the phone can hear; out of reach it is only a
 /// line. The twin of `WorkoutList` in ios/Watch/WorkoutView.swift.
 @Composable
-fun WorkoutList(workout: PhoneState.Workout, reachable: Boolean, send: (Command) -> Unit) {
+fun WorkoutList(workout: PhoneState.Workout, reachable: Boolean, unsynced: Set<String>, send: (Command) -> Unit) {
     val accent = Color(workout.accent)
     val controls = workout.controls?.takeIf { reachable && !LocalDimmed.current }
     var editing by remember { mutableStateOf<Pair<PhoneState.Workout.Exercise, PhoneState.Workout.Exercise.Row>?>(null) }
@@ -75,9 +75,10 @@ fun WorkoutList(workout: PhoneState.Workout, reachable: Boolean, send: (Command)
                 }
                 exercise.sets.forEachIndexed { index, row ->
                     item(key = row.id) {
-                        val line = @Composable { Line(index, row, exercise, workout, accent) }
+                        val line = @Composable { Line(index, row, exercise, workout, accent, row.id in unsynced) }
                         when (controls) {
-                            null -> line()
+                            // a button's own padding, for a line that is not one
+                            null -> Column(Modifier.padding(horizontal = 18.dp)) { line() }
                             else -> FilledTonalButton(
                                 onClick = { editing = exercise to row },
                                 modifier = Modifier.fillMaxWidth(),
@@ -105,6 +106,8 @@ private fun Line(
     exercise: PhoneState.Workout.Exercise,
     workout: PhoneState.Workout,
     accent: Color,
+    /// On the watch, not yet on the phone (#465).
+    unsynced: Boolean,
 ) {
     val mark = row.mark.ifEmpty { "${index + 1}" }
     val values = rowValues(row.weight, row.reps, exercise, workout.controls?.reps.orEmpty())
@@ -112,8 +115,12 @@ private fun Line(
         Modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {
-                contentDescription = listOfNotNull(row.type ?: mark, values, workout.controls?.done?.takeIf { row.done })
-                    .joinToString(", ")
+                contentDescription = listOfNotNull(
+                    row.type ?: mark,
+                    values,
+                    workout.controls?.done?.takeIf { row.done },
+                    workout.controls?.unreachable?.takeIf { unsynced },
+                ).joinToString(", ")
             },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -131,6 +138,14 @@ private fun Line(
             maxLines = 1,
             modifier = Modifier.weight(1f),
         )
+        if (unsynced) {
+            Icon(
+                painterResource(R.drawable.ic_phone),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(14.dp),
+            )
+        }
         if (row.done) {
             Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
         }

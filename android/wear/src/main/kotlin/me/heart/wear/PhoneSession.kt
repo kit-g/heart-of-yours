@@ -10,6 +10,7 @@ import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.MessageEvent
+import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CoroutineScope
@@ -36,7 +37,12 @@ import java.util.UUID
 ///
 /// Commands are requests, never edits (#460). The watch shows each one applied
 /// to the phone's last state at once ([applying]), and the phone's answer
-/// replaces that: the phone is still the only writer.
+/// replaces that: the phone is still the only writer. In reach, a command goes
+/// as a message. Out of reach (#465) — the phone in a locker — or when a
+/// message fails, it goes as a data item of its own under [COMMANDS], which
+/// the system keeps (through the app being killed, and the watch rebooting)
+/// and delivers once the phone is back. The phone deletes each one it has
+/// applied: an item still here is a command the phone does not have yet.
 ///
 /// Opening is both the opt-in's yes (`docs/opt-in.md`) and a request for the
 /// current state. The yes goes as a data item — kept by the system and
@@ -67,9 +73,22 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         val id: String,
         val command: Command,
         val at: Long,
+        /// Left as a data item, waiting for the phone to be back, rather than
+        /// a message in flight.
+        val transferred: Boolean = false,
         /// Handed to the phone, which has not sent a state since.
         val delivered: Boolean = false,
     )
+
+    private val _waiting = MutableStateFlow(false)
+
+    /// Something waits for the phone to be back.
+    val waiting: StateFlow<Boolean> = _waiting.asStateFlow()
+
+    private val _unsynced = MutableStateFlow(emptySet<String>())
+
+    /// The sets a waiting command is about: on the watch, not yet on the phone.
+    val unsynced: StateFlow<Set<String>> = _unsynced.asStateFlow()
 
     private val _reachable = MutableStateFlow(false)
 
@@ -85,6 +104,7 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         messages.addListener(this)
         capabilities.addListener(this, PHONE_CAPABILITY)
         scope.launch {
+            restoreQueue()
             restore()
             announce()
         }
@@ -109,6 +129,25 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         }.onFailure { Log.w(TAG, "No state to restore: ${it.message}") }
     }
 
+    /// What the system still holds for the phone, after a relaunch: the queue
+    /// outlives the app, the list of it does not.
+    private suspend fun restoreQueue() {
+        runCatching {
+            val local = Wearable.getNodeClient(context).localNode.await().id
+            val uri = Uri.Builder().scheme("wear").authority(local).path(COMMANDS).build()
+            val items = data.getDataItems(uri, DataClient.FILTER_PREFIX).await()
+            val kept = items.mapNotNull { item ->
+                val json = item.data?.let { runCatching { JSONObject(String(it)) }.getOrNull() } ?: return@mapNotNull null
+                val command = Command.from(json) ?: return@mapNotNull null
+                Queued(json.optString("id"), command, json.optLong("at", System.currentTimeMillis()), transferred = true)
+            }
+            items.release()
+            queued.removeAll { it.transferred }
+            queued.addAll(0, kept.sortedBy { it.at })
+            show()
+        }.onFailure { Log.w(TAG, "No queue to restore: ${it.message}") }
+    }
+
     private suspend fun announce() {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(ANNOUNCED, false)) {
@@ -131,13 +170,27 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         _reachable.value = phones.isNotEmpty()
         val opened = event("opened").toString().toByteArray()
         phones.forEach { messages.sendMessage(it.id, EVENT, opened) }
+        announceQueue(phones)
+    }
+
+    /// Back in reach with a queue: tell the phone now. The queue itself goes
+    /// when the system gets to it, seconds later, and without this the phone
+    /// sits there saying nothing.
+    private fun announceQueue(phones: Collection<Node>) {
+        if (!_waiting.value) return
+        val catchingUp = event("catchingUp").toString().toByteArray()
+        phones.forEach { messages.sendMessage(it.id, EVENT, catchingUp) }
     }
 
     override fun onDataChanged(events: DataEventBuffer) {
-        events
-            .filter { it.type == DataEvent.TYPE_CHANGED && it.dataItem.uri.path == STATE }
-            .mapNotNull { it.dataItem.data }
-            .forEach(::apply)
+        events.forEach { event ->
+            val path = event.dataItem.uri.path.orEmpty()
+            when {
+                event.type == DataEvent.TYPE_CHANGED && path == STATE -> event.dataItem.data?.let(::apply)
+                // the phone took a queued command: the receipt
+                event.type == DataEvent.TYPE_DELETED && path.startsWith("$COMMANDS/") -> delivered(path.substringAfterLast('/'))
+            }
+        }
     }
 
     override fun onMessageReceived(event: MessageEvent) {
@@ -156,39 +209,61 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         val at = System.currentTimeMillis()
         val id = UUID.randomUUID().toString()
         val message = command.json(id, at).toString().toByteArray()
+        // while anything waits for the phone, this waits behind it: a message
+        // would overtake the queue, and the phone would apply them out of order
+        val queue = _waiting.value || !reachable.value
         queued += Queued(id, command, at)
         show()
         scope.launch {
+            if (queue) return@launch transfer(id, message)
             val phone = runCatching {
                 capabilities.getCapability(PHONE_CAPABILITY, CapabilityClient.FILTER_REACHABLE).await().nodes.firstOrNull()
             }.getOrNull()
             val sent = phone != null && runCatching { messages.sendMessage(phone.id, EVENT, message).await() }.isSuccess
-            if (sent || debugReachable.value) {
-                delivered(id)
-            } else {
-                // never reached the phone: the phone's state stands
-                _reachable.value = false
-                queued.removeAll { it.id == id }
-                show()
+            when {
+                sent || debugReachable.value -> delivered(id)
+                // never reached the phone — the reach went as it was sent
+                else -> {
+                    _reachable.value = false
+                    transfer(id, message)
+                }
             }
         }
+    }
+
+    /// Leaves [id] for the system to deliver once the phone is back.
+    private suspend fun transfer(id: String, message: ByteArray) {
+        val index = queued.indexOfFirst { it.id == id }
+        if (index < 0) return
+        runCatching {
+            val request = PutDataRequest.create("$COMMANDS/$id").setData(message).setUrgent()
+            data.putDataItem(request).await()
+        }.onFailure { Log.w(TAG, "A command could not be queued: ${it.message}") }
+        queued[index] = queued[index].copy(transferred = true)
+        show()
     }
 
     /// The phone has the command: it counts as answered at the next state the
     /// phone sends.
     private fun delivered(id: String) {
         val index = queued.indexOfFirst { it.id == id }
-        if (index >= 0) queued[index] = queued[index].copy(delivered = true)
+        if (index < 0) return
+        queued[index] = queued[index].copy(delivered = true)
+        show()
     }
 
-    /// The phone's state with what it has not answered applied. A Finish never
-    /// counts until the phone agrees: it may still refuse it (a set added there
-    /// since), and the watch must not say the workout is over before it does.
+    /// The phone's state with what it has not answered applied. A Finish counts
+    /// only once it is queued: in reach, the phone may still refuse it (a set
+    /// added there since), and the watch must not say the workout is over
+    /// before it does.
     private fun show() {
         val shown = queued
-            .filter { it.command !is Command.Finish }
+            .filter { it.command !is Command.Finish || it.transferred }
             .fold(phoneState) { state, entry -> state.applying(entry.command, entry.at) }
         _state.value = shown
+        val waiting = queued.filter { it.transferred && !it.delivered }
+        _waiting.value = waiting.isNotEmpty()
+        _unsynced.value = waiting.mapNotNull { it.command.setId }.toSet()
         // the watch face follows what the wrist shows (#463)
         Snapshot.write(context, Snapshot.of(shown))
     }
@@ -219,6 +294,7 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         const val STATE = "/state"
         const val EVENT = "/event"
         const val EVENTS = "/events"
+        const val COMMANDS = "$EVENTS/commands"
 
         /// Debug builds only (DebugStateReceiver): act as if the phone could hear.
         internal val debugReachable = MutableStateFlow(false)

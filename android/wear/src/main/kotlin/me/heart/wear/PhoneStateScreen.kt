@@ -20,13 +20,19 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 
 @Composable
-fun PhoneStateScreen(state: PhoneState, reachable: Boolean = false, send: (Command) -> Unit = {}) {
+fun PhoneStateScreen(
+    state: PhoneState,
+    reachable: Boolean = false,
+    send: (Command) -> Unit = {},
+    waiting: Boolean = false,
+    unsynced: Set<String> = emptySet(),
+) {
     AppScaffold {
         when (state) {
             PhoneState.Awaiting -> ScreenScaffold { AwaitingPhone() }
             is PhoneState.Idle -> ScreenScaffold { Message(state.message) }
             is PhoneState.Off -> ScreenScaffold { Message(state.message) }
-            is PhoneState.Workout -> WorkoutScreen(state, reachable, send)
+            is PhoneState.Workout -> WorkoutScreen(state, reachable, send, waiting, unsynced)
         }
     }
 }

@@ -28,10 +28,12 @@ class MainActivity : ComponentActivity() {
             val state by phone.state.collectAsStateWithLifecycle()
             val reachable by phone.reachable.collectAsStateWithLifecycle()
             val wrist by ambient.state.collectAsStateWithLifecycle()
+            val waiting by phone.waiting.collectAsStateWithLifecycle()
+            val unsynced by phone.unsynced.collectAsStateWithLifecycle()
             ExerciseFollowing(state)
             HeartTheme {
                 CompositionLocalProvider(LocalDimmed provides wrist.dimmed, LocalAmbientTick provides wrist.tick) {
-                    PhoneStateScreen(state = state, reachable = reachable, send = phone::send)
+                    PhoneStateScreen(state, reachable, phone::send, waiting, unsynced)
                 }
             }
         }
