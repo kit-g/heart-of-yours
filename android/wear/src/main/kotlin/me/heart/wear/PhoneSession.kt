@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
+import java.util.UUID
 
 /// The watch's end of the link to the phone — the twin of
 /// ios/Watch/PhoneSession.swift, over the Wearable Data Layer: holds the last
@@ -28,6 +29,10 @@ import org.json.JSONObject
 /// replaces and which is there to read on launch even if it was written while
 /// this app was closed, and as a message while the phone can reach the watch.
 /// Both carry the phone's `sentAt`, and the older of the two is dropped.
+///
+/// Commands are requests, never edits (#460). The watch shows each one applied
+/// to the phone's last state at once ([applying]), and the phone's answer
+/// replaces that: the phone is still the only writer.
 ///
 /// Opening is both the opt-in's yes (`docs/opt-in.md`) and a request for the
 /// current state. The yes goes as a data item — kept by the system and
@@ -45,8 +50,22 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
 
     private val _state = MutableStateFlow<PhoneState>(PhoneState.Awaiting)
 
-    /// What to show: the phone's last state.
+    /// What to show: the phone's last state, with [queued] applied on top.
     val state: StateFlow<PhoneState> = _state.asStateFlow()
+
+    /// What the phone last said.
+    private var phoneState: PhoneState = PhoneState.Awaiting
+
+    /// Commands the phone has not answered, oldest first.
+    private val queued = mutableListOf<Queued>()
+
+    private data class Queued(
+        val id: String,
+        val command: Command,
+        val at: Long,
+        /// Handed to the phone, which has not sent a state since.
+        val delivered: Boolean = false,
+    )
 
     private val _reachable = MutableStateFlow(false)
 
@@ -125,6 +144,44 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         if (back) scope.launch { requestState() }
     }
 
+    fun send(command: Command) {
+        val at = System.currentTimeMillis()
+        val id = UUID.randomUUID().toString()
+        val message = command.json(id, at).toString().toByteArray()
+        queued += Queued(id, command, at)
+        show()
+        scope.launch {
+            val phone = runCatching {
+                capabilities.getCapability(PHONE_CAPABILITY, CapabilityClient.FILTER_REACHABLE).await().nodes.firstOrNull()
+            }.getOrNull()
+            val sent = phone != null && runCatching { messages.sendMessage(phone.id, EVENT, message).await() }.isSuccess
+            if (sent) {
+                delivered(id)
+            } else {
+                // never reached the phone: the phone's state stands
+                _reachable.value = false
+                queued.removeAll { it.id == id }
+                show()
+            }
+        }
+    }
+
+    /// The phone has the command: it counts as answered at the next state the
+    /// phone sends.
+    private fun delivered(id: String) {
+        val index = queued.indexOfFirst { it.id == id }
+        if (index >= 0) queued[index] = queued[index].copy(delivered = true)
+    }
+
+    /// The phone's state with what it has not answered applied. A Finish never
+    /// counts until the phone agrees: it may still refuse it (a set added there
+    /// since), and the watch must not say the workout is over before it does.
+    private fun show() {
+        _state.value = queued
+            .filter { it.command !is Command.Finish }
+            .fold(phoneState) { state, entry -> state.applying(entry.command, entry.at) }
+    }
+
     private fun apply(bytes: ByteArray) {
         val json = runCatching { JSONObject(String(bytes)) }.getOrNull() ?: return
         val stamp = json.optLong("sentAt", 0)
@@ -133,7 +190,10 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         if (stamp != 0L && stamp <= sentAt) return
         val state = PhoneState.from(json) ?: return
         sentAt = stamp
-        _state.value = state
+        phoneState = state
+        // what the phone has heard is in what it sent; the rest still applies
+        queued.removeAll { it.delivered }
+        show()
     }
 
     private fun event(name: String) = JSONObject().put("event", name)

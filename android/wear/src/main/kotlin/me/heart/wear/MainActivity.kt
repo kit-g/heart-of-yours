@@ -23,8 +23,9 @@ class MainActivity : ComponentActivity() {
         phone = PhoneSession(this, lifecycleScope)
         setContent {
             val state by phone.state.collectAsStateWithLifecycle()
+            val reachable by phone.reachable.collectAsStateWithLifecycle()
             HeartTheme {
-                PhoneStateScreen(state = state)
+                PhoneStateScreen(state = state, reachable = reachable, send = phone::send)
             }
         }
     }

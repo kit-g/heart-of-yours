@@ -34,8 +34,11 @@ import java.text.DecimalFormat
 /// The clocks are instants, never counts: the countdown and the elapsed time
 /// tick here, and the phone only speaks when something changes — the same
 /// contract as the Apple Watch's page (ios/Watch/WorkoutView.swift).
+///
+/// The controls (#460) are there only while the phone can hear them; a
+/// command is applied here at once, and the phone's answer replaces it.
 @Composable
-fun WorkoutScreen(workout: PhoneState.Workout) {
+fun WorkoutScreen(workout: PhoneState.Workout, reachable: Boolean, send: (Command) -> Unit) {
     val accent = Color(workout.accent)
     val now by ticking()
     val list = rememberScalingLazyListState()
@@ -47,12 +50,20 @@ fun WorkoutScreen(workout: PhoneState.Workout) {
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            val controls = workout.controls
-            if (workout.pausedAt != null && controls != null) {
-                item { Text(controls.paused, style = MaterialTheme.typography.titleMedium, color = accent) }
+            val controls = workout.controls?.takeIf { reachable }
+            // paused (#134), that leads, with the way back: nothing else on
+            // the page moves until the clock does
+            if (workout.pausedAt != null) {
+                when (controls) {
+                    null -> workout.controls?.let { item { Text(it.paused, style = MaterialTheme.typography.titleMedium, color = accent) } }
+                    else -> item { Paused(workout.workoutId, controls, accent, send) }
+                }
             }
             workout.rest?.let { rest ->
                 item { Rest(rest, now, accent) }
+                if (controls != null && now < rest.end) {
+                    item { RestControls(workout.workoutId, controls, send) }
+                }
             }
             if (workout.exercise.isNotEmpty()) {
                 item {
@@ -68,13 +79,22 @@ fun WorkoutScreen(workout: PhoneState.Workout) {
             workout.set?.position?.let { position ->
                 item { Muted(position) }
             }
-            workout.set?.let { set ->
-                values(set)?.let { values ->
-                    item { Text(values, style = MaterialTheme.typography.displaySmall) }
+            val set = workout.set
+            when {
+                controls != null && set != null -> {
+                    item { SetControls(workout.workoutId, set, controls, accent, send) }
+                    set.previous?.let { previous -> item { Muted(previous) } }
                 }
-                set.previous?.let { previous -> item { Muted(previous) } }
+                // every set ticked: the one thing left to do
+                controls != null -> item { FinishControl(workout.workoutId, controls, accent, send) }
+                set != null -> {
+                    values(set)?.let { values ->
+                        item { Text(values, style = MaterialTheme.typography.displaySmall) }
+                    }
+                    set.previous?.let { previous -> item { Muted(previous) } }
+                }
             }
-            item { Footer(workout, now) }
+            item { Footer(workout, now, controls, send) }
         }
     }
 }
@@ -113,16 +133,23 @@ private fun Rest(rest: PhoneState.Workout.Rest, now: Long, accent: Color) {
 /// Where the workout stands: its name, and how long it has run — or where it
 /// stood when it was paused.
 @Composable
-private fun Footer(workout: PhoneState.Workout, now: Long) {
+private fun Footer(workout: PhoneState.Workout, now: Long, controls: PhoneState.Workout.Controls?, send: (Command) -> Unit) {
     val until = workout.pausedAt?.takeIf { it >= workout.clock } ?: now
-    Row(
+    Column(
         Modifier
             .fillMaxWidth()
             .padding(top = 8.dp, start = 12.dp, end = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Muted(workout.title, Modifier.weight(1f, fill = false))
-        Muted(clock(until - workout.clock, up = true))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
+            Muted(workout.title, Modifier.weight(1f, fill = false))
+            Muted(clock(until - workout.clock, up = true))
+        }
+        // pausing is the phone's opt-in (#134): off, no control
+        if (workout.pausable && workout.pausedAt == null && controls != null) {
+            PauseButton(workout.workoutId, controls, send)
+        }
     }
 }
 
@@ -182,7 +209,9 @@ private fun WorkoutPreview() {
     val now = System.currentTimeMillis()
     HeartTheme {
         WorkoutScreen(
-            PhoneState.Workout(
+            reachable = true,
+            send = {},
+            workout = PhoneState.Workout(
                 workoutId = "w",
                 startedAt = now - 754_000,
                 title = "Push day",
