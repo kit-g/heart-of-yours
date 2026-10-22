@@ -143,8 +143,13 @@ internal fun ValueEditor(value: Double, step: Double, unit: String, accent: Colo
     val focus = remember { FocusRequester() }
     val haptics = LocalHapticFeedback.current
     var turned by remember { mutableFloatStateOf(0f) }
+    // the value as the editor last set it, ahead of the caller's next
+    // recomposition: a fast turn delivers several detents in one frame, and
+    // each has to step from the one before, not from the frame's old value
+    var current by remember(value) { mutableDoubleStateOf(value) }
     fun nudge(steps: Int) {
-        onChange(max(0.0, value + steps * step))
+        current = max(0.0, current + steps * step)
+        onChange(current)
         haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
     }
 
@@ -167,10 +172,11 @@ internal fun ValueEditor(value: Double, step: Double, unit: String, accent: Colo
             // the buttons are hidden from TalkBack: this is the control
             .semantics(mergeDescendants = true) {
                 contentDescription = unit
-                stateDescription = number(value)
-                progressBarRangeInfo = ProgressBarRangeInfo(value.toFloat(), 0f..MAX.toFloat())
+                stateDescription = number(current)
+                progressBarRangeInfo = ProgressBarRangeInfo(current.toFloat(), 0f..MAX.toFloat())
                 setProgress { target ->
-                    onChange(target.toDouble().coerceAtLeast(0.0))
+                    current = target.toDouble().coerceAtLeast(0.0)
+                    onChange(current)
                     true
                 }
             },
@@ -180,7 +186,7 @@ internal fun ValueEditor(value: Double, step: Double, unit: String, accent: Colo
         Text(unit, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Stepper(R.drawable.ic_minus, accent) { nudge(-1) }
-            Text(number(value), style = MaterialTheme.typography.displayMedium, maxLines = 1)
+            Text(number(current), style = MaterialTheme.typography.displayMedium, maxLines = 1)
             Stepper(R.drawable.ic_plus, accent) { nudge(1) }
         }
     }

@@ -21,7 +21,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
 import java.util.UUID
@@ -208,40 +211,55 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         }
     }
 
+    /// Sends run one at a time, in the order they were tapped: each decides
+    /// between message and queue only once the one before has settled, so a
+    /// later command can never overtake an earlier one.
+    private val sending = Mutex()
+
     fun send(command: Command) {
         val at = System.currentTimeMillis()
         val id = UUID.randomUUID().toString()
         val message = command.json(id, at).toString().toByteArray()
-        // while anything waits for the phone, this waits behind it: a message
-        // would overtake the queue, and the phone would apply them out of order
-        val queue = _waiting.value || !reachable.value
         queued += Queued(id, command, at)
         show()
         scope.launch {
-            if (queue) return@launch transfer(id, message)
-            val phone = runCatching {
-                capabilities.getCapability(PHONE_CAPABILITY, CapabilityClient.FILTER_REACHABLE).await().nodes.firstOrNull()
-            }.getOrNull()
-            val sent = phone != null && runCatching { messages.sendMessage(phone.id, EVENT, message).await() }.isSuccess
-            when {
-                sent || debugReachable.value -> delivered(id)
-                // never reached the phone — the reach went as it was sent
-                else -> {
-                    _reachable.value = false
-                    transfer(id, message)
+            sending.withLock {
+                // while anything waits for the phone, this waits behind it: a
+                // message would overtake the queue, and the phone would apply
+                // them out of order
+                if (_waiting.value || !reachable.value) return@withLock transfer(id, message)
+                val phone = runCatching {
+                    capabilities.getCapability(PHONE_CAPABILITY, CapabilityClient.FILTER_REACHABLE).await().nodes.firstOrNull()
+                }.getOrNull()
+                val sent = phone != null && runCatching { messages.sendMessage(phone.id, EVENT, message).await() }.isSuccess
+                when {
+                    sent || debugReachable.value -> delivered(id)
+                    // never reached the phone — the reach went as it was sent
+                    else -> {
+                        _reachable.value = false
+                        transfer(id, message)
+                    }
                 }
             }
         }
     }
 
-    /// Leaves [id] for the system to deliver once the phone is back.
+    /// Leaves [id] for the system to deliver once the phone is back. Marked as
+    /// waiting only once the system has it; a store that fails is tried again,
+    /// so a set logged on the wrist is never quietly lost.
     private suspend fun transfer(id: String, message: ByteArray) {
+        var wait = 1_000L
+        while (queued.any { it.id == id }) {
+            val stored = runCatching {
+                data.putDataItem(PutDataRequest.create("$COMMANDS/$id").setData(message).setUrgent()).await()
+            }.onFailure { Log.w(TAG, "A command could not be queued yet: ${it.javaClass.simpleName}") }
+            if (stored.isSuccess) break
+            delay(wait)
+            wait = (wait * 2).coerceAtMost(60_000L)
+        }
+        // looked up again: the queue may have changed while the store ran
         val index = queued.indexOfFirst { it.id == id }
         if (index < 0) return
-        runCatching {
-            val request = PutDataRequest.create("$COMMANDS/$id").setData(message).setUrgent()
-            data.putDataItem(request).await()
-        }.onFailure { Log.w(TAG, "A command could not be queued: ${it.message}") }
         queued[index] = queued[index].copy(transferred = true)
         show()
     }
@@ -274,9 +292,10 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
     private fun apply(bytes: ByteArray) {
         val json = runCatching { JSONObject(String(bytes)) }.getOrNull() ?: return
         val stamp = json.optLong("sentAt", 0)
-        // the message and the item carry the same state; whichever lands
-        // second, and anything older, changes nothing
-        if (stamp != 0L && stamp <= sentAt) return
+        // the message and the item carry the same state; anything older than
+        // what is shown changes nothing. The phone's stamps only go up, so an
+        // equal one is the same state again, harmless to apply
+        if (stamp != 0L && stamp < sentAt) return
         val state = PhoneState.from(json) ?: return
         sentAt = stamp
         phoneState = state
