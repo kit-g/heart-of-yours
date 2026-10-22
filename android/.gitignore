@@ -11,3 +11,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# The watch app (#250) is its own Gradle build and keeps its wrapper: Flutter
+# writes the phone's, nothing writes the watch's
+!/wear/gradle/wrapper/gradle-wrapper.jar

@@ -115,6 +115,19 @@ jobs:
       - name: "Build app bundle"
         run: flutter build appbundle --release --flavor ${{ inputs.flavor }} --build-number ${{ github.run_number }} --dart-define-from-file=appconfig.json
 
+      # The Wear OS app (#250) is a bundle of its own, uploaded to the same app
+      # under the same package. Play wants a version code no other bundle of the
+      # app uses, phone or watch, so the watch takes this run's number in a range
+      # of its own.
+      - name: "Build Wear OS bundle"
+        id: wear
+        working-directory: android/wear
+        run: |
+          code=$((1000000000 + ${{ github.run_number }}))
+          flavor=${{ inputs.flavor }}
+          ./gradlew bundle${flavor^}Release -PversionCode=$code
+          echo "aab=android/wear/build/outputs/bundle/${flavor}Release/heart-wear-${flavor}-release.aab" >> "$GITHUB_OUTPUT"
+
       # A resource named only at runtime — by a Dart string, or by a library
       # calling getIdentifier() — is invisible to the resource shrinker, which
       # drops it from release builds while debug keeps working.
@@ -185,3 +198,18 @@ jobs:
           # and capped at 500 characters each. A draft keeps them editable in the
           # Play Console; a completed release ships them as written.
           whatsNewDirectory: release_notes/whatsnew
+
+      # The watch's bundle goes to the Wear OS form factor's own track. Until the
+      # form factor is added to the app in the Play Console, that track does not
+      # exist and the upload is refused: a warning on the run, never a failed
+      # phone release.
+      - name: "Upload Wear OS bundle to Play Store"
+        continue-on-error: true
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
+        with:
+          serviceAccountJson: "playstore-sa-key.json"
+          packageName: ${{ inputs.app_id }}
+          releaseFiles: ${{ steps.wear.outputs.aab }}
+          releaseName: ${{ steps.release.outputs.name }}
+          track: "wear:${{ inputs.track }}"
+          status: ${{ inputs.status }}

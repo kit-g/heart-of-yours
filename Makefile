@@ -8,6 +8,8 @@
 #                    (`make format` fixes what the check reports)
 #   make test-<pkg>  one shared package, e.g. `make test-heart_db`
 #   make profiles    iOS signing profiles for one environment (ENV=dev|prod)
+#   make wear        the Wear OS app (#250), dev debug; wear-install puts it on
+#                    DEVICE=<adb serial>, wear-test runs its unit tests
 
 # Packages with a test suite in the CI matrix.
 PACKAGES := heart_api heart_db heart_state heart_charts heart_language heart_health
@@ -19,7 +21,7 @@ TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 CODEGEN_TARGETS := $(addprefix codegen-,$(CODEGEN_PACKAGES))
 
 .PHONY: bootstrap deps hooks codegen codegen-app codegen-heart_language lint format format-check test test-app \
-        test-scripts profiles reclaim $(TEST_TARGETS) $(CODEGEN_TARGETS)
+        test-scripts profiles reclaim wear wear-install wear-test $(TEST_TARGETS) $(CODEGEN_TARGETS)
 
 bootstrap: hooks deps codegen codegen-app
 	@echo "Ready. Note: lib/firebase_options.dart and lib/firebase_options_prod.dart"
@@ -177,6 +179,22 @@ profiles:
 	MATCH_PASSWORD=$$(aws s3 cp "s3://$$bucket/secrets/appstore/fastlane_passphrase.txt" - --profile "$$aws_profile") \
 	APPSTORE_USERNAME=$$(jq -r .username fastlane/appstore_key.json) \
 	fastlane profiles env:$(ENV) force:$(if $(FORCE),true,false)
+
+# The Wear OS app (#250) is its own Gradle build under android/wear, native
+# Compose with no Flutter in it. AGP wants JDK 17+, and its lint JDK 21: take
+# JAVA_HOME when set, else Android Studio's bundled JDK.
+WEAR_JAVA_HOME := $(or $(JAVA_HOME),/Applications/Android Studio.app/Contents/jbr/Contents/Home)
+WEAR_GRADLE := cd android/wear && JAVA_HOME="$(WEAR_JAVA_HOME)" ANDROID_HOME="$(or $(ANDROID_HOME),$(HOME)/Library/Android/sdk)" ./gradlew -q
+
+wear:
+	$(WEAR_GRADLE) assembleDevDebug
+
+wear-install: wear
+	@[ -n "$(DEVICE)" ] || { echo "DEVICE=<adb serial> (adb devices)"; exit 1; }
+	adb -s $(DEVICE) install -r android/wear/build/outputs/apk/dev/debug/heart-wear-dev-debug.apk
+
+wear-test:
+	$(WEAR_GRADLE) testDevDebugUnitTest
 
 # Disk leftovers: merged worktrees, stray agent simulators, stale DerivedData.
 # Lists by default; APPLY=1 removes; WORKTREE=<branch> touches that merged

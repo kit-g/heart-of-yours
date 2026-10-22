@@ -1,0 +1,99 @@
+plugins {
+    id "com.android.application"
+    id "org.jetbrains.kotlin.plugin.compose"
+}
+
+// The phone's signing key (../key.properties, gitignored). The Data Layer
+// pairs a watch app with its phone app only when both carry the same
+// application id *and* the same signature.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = file("../key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+// The version name is the phone's, read from pubspec.yaml so the two never
+// drift. The version code is CI's to give: Play wants every bundle in an app —
+// phone and watch alike — to carry its own, so the deploy passes the watch one
+// of its own range (see google-play-deployment.yml).
+def pubspecVersion = (file("../../pubspec.yaml").text =~ /(?m)^version:\s*([^+\s]+)/)[0][1]
+
+android {
+    namespace = "me.heart.wear"
+    compileSdk = 37
+
+    defaultConfig {
+        applicationId = "me.heart.android"
+        // Wear OS 3, the first on which Health Services and Compose for Wear run
+        minSdk = 30
+        targetSdk = 36
+        versionCode = (project.findProperty("versionCode") ?: "1") as int
+        versionName = pubspecVersion
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            release {
+                keyAlias = keystoreProperties["keyAlias"]
+                keyPassword = keystoreProperties["keyPassword"]
+                storeFile = file("../" + keystoreProperties["storeFile"])
+                storePassword = keystoreProperties["storePassword"]
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = true
+            shrinkResources = true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt")
+            signingConfig = keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    // the phone's flavours (../app/build.gradle), id for id
+    flavorDimensions = ["default"]
+    productFlavors {
+        dev {
+            dimension = "default"
+            applicationIdSuffix = ".dev"
+            resValue "string", "app_name", "Heart dev"
+        }
+        prod {
+            dimension = "default"
+            resValue "string", "app_name", "Heart"
+        }
+    }
+
+    buildFeatures {
+        compose = true
+        resValues = true
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+dependencies {
+    def composeBom = platform("androidx.compose:compose-bom:2026.09.00")
+    implementation composeBom
+    implementation "androidx.activity:activity-compose:1.13.0"
+    implementation "androidx.wear.compose:compose-material3:1.7.1"
+    implementation "androidx.wear.compose:compose-foundation:1.7.1"
+    implementation "androidx.compose.material:material-icons-core"
+    implementation "androidx.core:core-splashscreen:1.2.0"
+
+    // previews: the annotations in every build, the renderer in debug only
+    implementation "androidx.compose.ui:ui-tooling-preview"
+    implementation "androidx.wear.compose:compose-ui-tooling:1.7.1"
+    debugImplementation "androidx.compose.ui:ui-tooling"
+
+    testImplementation "junit:junit:4.13.2"
+}
