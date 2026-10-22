@@ -13,9 +13,13 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
@@ -70,7 +74,8 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
     private val _reachable = MutableStateFlow(false)
 
     /// Whether the phone can hear a message right now.
-    val reachable: StateFlow<Boolean> = _reachable.asStateFlow()
+    val reachable: StateFlow<Boolean> = combine(_reachable, debugReachable) { real, debug -> real || debug }
+        .stateIn(scope, SharingStarted.Eagerly, false)
 
     /// The `sentAt` of what [state] came from.
     private var sentAt = 0L
@@ -83,6 +88,9 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
             restore()
             announce()
         }
+        // debug builds only (DebugStateReceiver): a state planted on a watch with
+        // no phone, whose Data Layer stays silent until it is paired
+        scope.launch { planted.collect(::apply) }
     }
 
     fun stop() {
@@ -155,7 +163,7 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
                 capabilities.getCapability(PHONE_CAPABILITY, CapabilityClient.FILTER_REACHABLE).await().nodes.firstOrNull()
             }.getOrNull()
             val sent = phone != null && runCatching { messages.sendMessage(phone.id, EVENT, message).await() }.isSuccess
-            if (sent) {
+            if (sent || debugReachable.value) {
                 delivered(id)
             } else {
                 // never reached the phone: the phone's state stands
@@ -177,9 +185,12 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
     /// counts until the phone agrees: it may still refuse it (a set added there
     /// since), and the watch must not say the workout is over before it does.
     private fun show() {
-        _state.value = queued
+        val shown = queued
             .filter { it.command !is Command.Finish }
             .fold(phoneState) { state, entry -> state.applying(entry.command, entry.at) }
+        _state.value = shown
+        // the watch face follows what the wrist shows (#463)
+        Snapshot.write(context, Snapshot.of(shown))
     }
 
     private fun apply(bytes: ByteArray) {
@@ -208,6 +219,10 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         const val STATE = "/state"
         const val EVENT = "/event"
         const val EVENTS = "/events"
+
+        /// Debug builds only (DebugStateReceiver): act as if the phone could hear.
+        internal val debugReachable = MutableStateFlow(false)
+        internal val planted = MutableSharedFlow<ByteArray>(replay = 1)
 
         private const val TAG = "PhoneSession"
         private const val PREFS = "phone"
