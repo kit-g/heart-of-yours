@@ -89,6 +89,10 @@ dependencies {
     implementation "androidx.wear.compose:compose-foundation:1.7.1"
     implementation "androidx.compose.material:material-icons-core"
     implementation "androidx.core:core-splashscreen:1.2.0"
+    implementation "androidx.lifecycle:lifecycle-runtime-compose:2.11.0"
+    // the Data Layer to the phone, and awaiting its tasks
+    implementation "com.google.android.gms:play-services-wearable:20.0.1"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.11.0"
 
     // previews: the annotations in every build, the renderer in debug only
     implementation "androidx.compose.ui:ui-tooling-preview"
@@ -96,4 +100,6 @@ dependencies {
     debugImplementation "androidx.compose.ui:ui-tooling"
 
     testImplementation "junit:junit:4.13.2"
+    // org.json on the JVM, for the state's tests; on the watch it is the platform's
+    testImplementation "org.json:json:20260814"
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- What the phone app looks for to know Heart is on a paired watch (#250) -->
+    <string-array name="android_wear_capabilities" translatable="false">
+        <item>heart_watch</item>
+    </string-array>
+</resources>
