@@ -171,7 +171,12 @@ bool _complete(
     .weightedDuration => true,
     .repsOnly || .cardio || .duration => false,
   };
-  return (weighted, weighted || exercise.exercise.category == .repsOnly);
+  // a load held for a time or carried for a distance takes no count (#483)
+  final counted = switch (exercise.exercise.category) {
+    .barbell || .dumbbell || .machine || .assistedBodyWeight || .weightedBodyWeight || .repsOnly => true,
+    .weightedDistance || .weightedDuration || .cardio || .duration => false,
+  };
+  return (weighted, counted);
 }
 
 /// The unit [exercise] is shown in: its own override, or the app's.
