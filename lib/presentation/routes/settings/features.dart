@@ -164,7 +164,8 @@ class _SpotlightState extends State<_Spotlight> {
 /// is on, what unfolds under it (#213): the parts of the feature the user can
 /// leave out, and the notes worth knowing about it. Off, they fold away with
 /// the feature.
-class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitched}) extends StatelessWidget {
+class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitched, final Widget? extra})
+    extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
@@ -177,13 +178,13 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
     );
     final on = preferences.isOn(feature);
     final options = feature.options.toList();
-    final notes = feature.notes(l);
-    final unfolds = options.isNotEmpty || notes.isNotEmpty;
+    final notes = feature.notes(l, Theme.of(context).platform);
+    final unfolds = options.isNotEmpty || notes.isNotEmpty || extra != null;
 
     final toggle = SwitchListTile.adaptive(
       key: ValueKey('feature-${feature.value}'),
       secondary: Icon(feature.icon),
-      title: Text(feature.title(l)),
+      title: Text(feature.title(l, Theme.of(context).platform)),
       subtitle: Text(feature.subtitle(l, Theme.of(context).platform)),
       value: on,
       // the lock-screen switch's colors: the accent as a fill, and a
@@ -234,6 +235,7 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
                       contentPadding: const .symmetric(horizontal: 8),
                       shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
                     ),
+                  ?extra,
                   for (final note in notes)
                     Padding(
                       padding: const .fromLTRB(8, 4, 8, 4),
@@ -306,10 +308,47 @@ class _WatchAppSwitchState extends State<_WatchAppSwitch> {
               final on = Preferences.of(context).isOn(.watchApp);
               Analytics.of(context).watchAppSwitched(on: on, fromWatch: false);
             },
+            // a Wear OS watch's readings in Health Connect (#461); the Apple
+            // Watch saves its own
+            extra: switch (Theme.of(context).platform) {
+              .android => const _WatchReadingsSwitch(),
+              _ => null,
+            },
           ),
           false => const SizedBox.shrink(),
         };
       },
+    );
+  }
+}
+
+/// Whether a Wear OS watch's heart rate and energy go into Health Connect
+/// with each workout it measured (#461): the user's say, first asked at such a
+/// finish, and changed here either way. On asks Health Connect for the write
+/// if it was never granted; off keeps the readings on the watch.
+class const _WatchReadingsSwitch() extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final preferences = Preferences.watch(context);
+    return SwitchListTile.adaptive(
+      key: const ValueKey('feature-watchApp-readings'),
+      value: preferences.watchReadings ?? false,
+      onChanged: (on) async {
+        HapticFeedback.selectionClick();
+        final health = Health.of(context);
+        final granted = switch (on) {
+          true => await health.watchReadingsGranted() || await health.askWatchReadings(),
+          false => false,
+        };
+        await preferences.setWatchReadings(on: granted);
+      },
+      title: Text(l.watchReadings),
+      subtitle: Text(l.watchReadingsSubtitle),
+      dense: true,
+      visualDensity: .compact,
+      contentPadding: const .symmetric(horizontal: 8),
+      shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
     );
   }
 }

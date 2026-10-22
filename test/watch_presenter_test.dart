@@ -79,7 +79,9 @@ void main() {
 
   tearDown(() => link.dispose());
 
-  Future<void> pump(WidgetTester tester) async {
+  /// iOS unless said otherwise: the watch's lines name the phone, and the
+  /// Apple Watch's say iPhone.
+  Future<void> pump(WidgetTester tester, {TargetPlatform platform = .iOS}) async {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -93,6 +95,7 @@ void main() {
           Provider<Analytics>.value(value: Analytics(service: _NoAnalytics())),
         ],
         child: MaterialApp(
+          theme: ThemeData(platform: platform),
           localizationsDelegates: L.localizationsDelegates,
           supportedLocales: L.supportedLocales,
           builder: (context, child) => WatchPresenter(link: link, child: child!),
@@ -217,6 +220,49 @@ void main() {
     await init;
     await tester.pump();
     expect(link.sent.single, isA<WatchMessage>());
+  });
+
+  testWidgets('beside a Wear OS watch, the lines name a phone, not an iPhone (#459)', (tester) async {
+    preferences.setFeature(.watchApp, on: true);
+    when(local.getActiveWorkout('u1')).thenAnswer((_) async => null);
+
+    await pump(tester, platform: .android);
+    await workouts.init();
+    await tester.pump();
+    expect(link.sent.single.toMap(), {'state': 'idle', 'message': 'Start a workout on your phone'});
+
+    preferences.setFeature(.watchApp, on: false);
+    await tester.pump();
+    expect(link.sent.last.toMap(), {'state': 'off', 'message': 'Turned off in Heart on your phone'});
+  });
+
+  testWidgets("a Wear OS watch hears the user's say over its readings, on every state (#461)", (tester) async {
+    preferences.setFeature(.watchApp, on: true);
+    when(local.getActiveWorkout('u1')).thenAnswer((_) async => null);
+
+    await pump(tester, platform: .android);
+    await workouts.init();
+    await tester.pump();
+    expect(link.sent.last.toMap().containsKey('keepsReadings'), isFalse, reason: 'never asked: the watch holds them');
+
+    await preferences.setWatchReadings(on: true);
+    await tester.pump();
+    expect(link.sent.last.toMap()['keepsReadings'], isTrue);
+
+    await preferences.setWatchReadings(on: false);
+    await tester.pump();
+    expect(link.sent.last.toMap()['keepsReadings'], isFalse);
+  });
+
+  testWidgets('an Apple Watch is never told about readings: it saves its own', (tester) async {
+    preferences.setFeature(.watchApp, on: true);
+    await preferences.setWatchReadings(on: true);
+    when(local.getActiveWorkout('u1')).thenAnswer((_) async => null);
+
+    await pump(tester);
+    await workouts.init();
+    await tester.pump();
+    expect(link.sent.last.toMap().containsKey('keepsReadings'), isFalse);
   });
 
   group('from the wrist (#183)', () {

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- What the Wear OS app (#250) looks for to know the phone app is there -->
+    <string-array name="android_wear_capabilities" translatable="false">
+        <item>heart_phone</item>
+    </string-array>
+</resources>

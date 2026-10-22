@@ -179,6 +179,35 @@ class DeviceHealthStore implements HealthService {
   }
 
   @override
+  Future<HealthAccess> watchReadingsWriteAccess() async {
+    // the Apple Watch saves its own workout, readings and all
+    if (defaultTargetPlatform != .android) return .denied;
+    await _ensureConfigured();
+    try {
+      return switch (await _plugin.hasPermissions(_watchReadingTypes, permissions: [.WRITE, .WRITE])) {
+        true => .granted,
+        false => .denied,
+        null => .unknown,
+      };
+    } catch (error, stacktrace) {
+      _logger.warning('Could not read watch readings write access', error, stacktrace);
+      return .denied;
+    }
+  }
+
+  @override
+  Future<bool> requestWatchReadingsWriteAccess() async {
+    if (defaultTargetPlatform != .android) return false;
+    await _ensureConfigured();
+    try {
+      return await _plugin.requestAuthorization(_watchReadingTypes, permissions: [.WRITE, .WRITE]);
+    } catch (error, stacktrace) {
+      _logger.warning('Watch readings write authorization failed', error, stacktrace);
+      return false;
+    }
+  }
+
+  @override
   Future<bool> requestWorkoutWriteAccess() async {
     await _ensureConfigured();
     if (!_plugin.isDataTypeAvailable(_workoutType)) return false;
@@ -350,6 +379,10 @@ class DeviceHealthStore implements HealthService {
 /// vocabulary of things Heart *reads and charts*, and a workout is neither — it
 /// is the one thing written out.
 const _workoutType = plugin.HealthDataType.WORKOUT;
+
+/// What a Wear OS watch measured during a workout, written beside it (#461).
+/// Written natively, not through the plugin — only asked for here.
+const _watchReadingTypes = [plugin.HealthDataType.HEART_RATE, plugin.HealthDataType.ACTIVE_ENERGY_BURNED];
 
 /// Heart's activity as the platform in front of us spells it.
 ///

@@ -1,0 +1,100 @@
+{
+  "activity": "strength",
+  "clockStart": 1792692030000,
+  "pausedAt": 1792692900000,
+  "pausable": true,
+  "pauses": [],
+  "exercises": [
+    {
+      "id": "bench",
+      "name": "Bench Press (Barbell)",
+      "unit": "kg",
+      "step": 2.5,
+      "weighted": true,
+      "counted": true,
+      "rest": 90,
+      "sets": [
+        {
+          "id": "b1",
+          "mark": "W",
+          "type": "Warm-up",
+          "weight": 40.0,
+          "reps": 10,
+          "done": true,
+          "position": "Warm-up",
+          "next": "Next: 60 kg × 5"
+        },
+        {
+          "id": "b2",
+          "mark": "1",
+          "weight": 60.0,
+          "reps": 5,
+          "done": true,
+          "position": "Set 1 of 2",
+          "previous": "Last time: 57.5 kg × 5",
+          "next": "Next: 62.5 kg × 5"
+        },
+        {
+          "id": "b3",
+          "mark": "2",
+          "weight": 62.5,
+          "reps": 5,
+          "done": false,
+          "position": "Set 2 of 2",
+          "previous": "Last time: 60 kg × 5",
+          "next": "Next: Pull-up"
+        }
+      ]
+    },
+    {
+      "id": "pullup",
+      "name": "Pull-up",
+      "step": 2.5,
+      "weighted": false,
+      "counted": true,
+      "sets": [
+        {
+          "id": "p1",
+          "mark": "1",
+          "reps": 8,
+          "done": false,
+          "position": "Set 1 of 1",
+          "previous": "Last time: 7 Reps",
+          "next": "All done"
+        }
+      ]
+    }
+  ],
+  "done": "Done",
+  "skip": "Skip",
+  "add": "+10s",
+  "subtract": "-10s",
+  "repsLabel": "Reps",
+  "unreachable": "Syncs with your phone when it's back",
+  "heartRate": "Heart rate",
+  "bpm": "bpm",
+  "energy": "Active energy",
+  "kcal": "kcal",
+  "finish": "Finish",
+  "finishTitle": "Complete your workout?",
+  "finishConfirm": "Yes, I'm done!",
+  "finishCancel": "No, one more set!",
+  "save": "Save",
+  "notDone": "Not done",
+  "restLabelAway": "Rest",
+  "restOverAway": "Rest complete!",
+  "allDone": "All done",
+  "idle": "Start a workout on your phone",
+  "sending": "Sending to your phone…",
+  "finishedAway": "Saved on your watch. Your phone gets it when it's back.",
+  "pause": "Pause",
+  "resume": "Resume",
+  "paused": "Paused",
+  "state": "workout",
+  "workoutId": "w1",
+  "startedAt": 1792692000000,
+  "title": "Push day",
+  "exercise": "Pull-up",
+  "next": "All done",
+  "accent": 4292146503
+}

@@ -1,0 +1,26 @@
+// Heart on Wear OS (#250): its own Gradle build, beside the phone app's rather
+// than inside it. The watch is native Compose and never loads Flutter, so it
+// builds without a Flutter SDK, and the phone's build never waits on it.
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    // the phone's versions (../settings.gradle): one AGP and one Kotlin for both
+    id "com.android.application" version "9.4.1" apply false
+    id "org.jetbrains.kotlin.plugin.compose" version "2.4.21" apply false
+}
+
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "heart-wear"

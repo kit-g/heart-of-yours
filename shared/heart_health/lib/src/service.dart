@@ -106,6 +106,22 @@ abstract interface class HealthService {
   /// that anything was granted. Read [workoutWriteAccess] afterwards for that.
   Future<bool> requestWorkoutWriteAccess();
 
+  /// Whether a Wear OS watch's readings may be written: heart rate and active
+  /// energy, measured by Heart's watch app during a workout and kept beside the
+  /// workout the phone writes (#461). Android only; on iOS the Apple Watch
+  /// saves its own workout, and this answers denied.
+  ///
+  /// Never asked and refused read the same here, as for [workoutWriteAccess].
+  Future<HealthAccess> watchReadingsWriteAccess();
+
+  /// Asks, once, to write a Wear OS watch's readings — the user's say over
+  /// whether they reach the store at all (#461). As with
+  /// [requestWorkoutWriteAccess], a true reports the sheet was shown, not
+  /// that anything was granted: read [watchReadingsWriteAccess] afterwards.
+  /// The readings themselves are written by the host app's native side, which
+  /// receives them from the watch even with this app closed.
+  Future<bool> requestWatchReadingsWriteAccess();
+
   /// Saves a finished strength-training session to the store.
   ///
   /// The one thing this package writes. Everything else is read-only, and the

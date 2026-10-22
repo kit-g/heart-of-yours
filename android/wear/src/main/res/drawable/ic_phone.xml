@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A phone, outlined: the whole instruction before the phone has said
+     anything, and it reads in every language -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M7,1h10c1.1,0 2,0.9 2,2v18c0,1.1 -0.9,2 -2,2H7c-1.1,0 -2,-0.9 -2,-2V3c0,-1.1 0.9,-2 2,-2zM7,2.5c-0.28,0 -0.5,0.22 -0.5,0.5v18c0,0.28 0.22,0.5 0.5,0.5h10c0.28,0 0.5,-0.22 0.5,-0.5V3c0,-0.28 -0.22,-0.5 -0.5,-0.5H7zM10,19h4v1.25h-4z" />
+</vector>

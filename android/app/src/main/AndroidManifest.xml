@@ -68,6 +68,10 @@
          Writing this requires the Play Console health data declaration to
          cover writing, not just reading. -->
     <uses-permission android:name="android.permission.health.WRITE_EXERCISE" />
+    <!-- A Wear OS watch's readings beside the workout (#461), only with the
+         user's say; see docs/2026-09-05.health-data.md, "On Wear OS" -->
+    <uses-permission android:name="android.permission.health.WRITE_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.WRITE_ACTIVE_CALORIES_BURNED" />
 
     <!-- Without this, Health Connect serves only the 30 days before the moment
          permission was granted, whatever window is asked for. The backfill would
@@ -103,6 +107,29 @@
                 android:value="heart_app_functions.xml" />
             <intent-filter>
                 <action android:name="android.app.appfunctions.AppFunctionService" />
+            </intent-filter>
+        </service>
+        <!-- What the Wear OS app (#250) says, heard even with the app closed -->
+        <service
+            android:name=".WatchListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:path="/event"
+                    android:scheme="wear" />
+                <data
+                    android:host="*"
+                    android:path="/readings"
+                    android:scheme="wear" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/events"
+                    android:scheme="wear" />
             </intent-filter>
         </service>
         <!-- The training widget on the Home Screen (#161) and its settings. -->

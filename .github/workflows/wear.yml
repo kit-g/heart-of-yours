@@ -1,0 +1,72 @@
+name: "Wear OS"
+
+# The Wear OS app (#250), built and tested on pull requests that touch it or
+# what it reads: its own module, the phone's side of the link, and the shared
+# payload fixtures (#466). It is its own Gradle build with no Flutter in it,
+# so none of this sets up Flutter.
+on:
+  pull_request:
+    paths:
+      - 'android/wear/**'
+      - 'android/app/src/main/kotlin/me/heart/Watch*.kt'
+      - 'lib/core/env/watch.dart'
+      - 'test/fixtures/watch/**'
+      - '.github/workflows/wear.yml'
+  workflow_dispatch: { }
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "wear-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: "Wear OS • build and unit tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # AGP's lint wants JDK 21 (see google-play-deployment.yml)
+      - name: "Set up JDK"
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: "Build"
+        run: make wear
+
+      - name: "Unit tests"
+        run: make wear-test
+
+  pages:
+    name: "Wear OS • pages on an emulator"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: "Set up JDK"
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      # the runner's KVM, which the emulator needs to run at speed
+      - name: "Enable KVM"
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: "Compose tests on Wear OS"
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          target: android-wear
+          arch: x86_64
+          profile: wearos_large_round
+          disable-animations: true
+          working-directory: android/wear
+          script: ./gradlew connectedDevDebugAndroidTest

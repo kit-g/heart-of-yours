@@ -5,10 +5,15 @@ import 'package:heart_state/heart_state.dart';
 /// What an opt-in [Feature] is called and how it is described — copy, so it
 /// lives here rather than on the enum (see `docs/style.md`).
 extension FeatureCopy on Feature {
-  String title(L l) {
+  /// What the feature is called on [platform]: the watch app is the Apple
+  /// Watch on iOS and Wear OS on Android.
+  String title(L l, TargetPlatform platform) {
     return switch (this) {
       .muscleMap => l.muscleMap,
-      .watchApp => l.watchApp,
+      .watchApp => switch (platform) {
+        .android => l.watchAppAndroid,
+        _ => l.watchApp,
+      },
       .rpe => l.rpe,
       .keepAwake => l.keepAwake,
       .setStopwatch => l.setStopwatch,
@@ -57,7 +62,7 @@ extension FeatureCopy on Feature {
 
   /// Lines of text under the feature's switch while it is on (#213): what is
   /// worth knowing about it, and that a control would not say.
-  List<String> notes(L l) {
+  List<String> notes(L l, TargetPlatform platform) {
     return switch (this) {
       .muscleMap ||
       .rpe ||
@@ -69,8 +74,12 @@ extension FeatureCopy on Feature {
       .previousInTemplate => const [],
       // what syncs and what doesn't: the line health data never crosses
       .notToday => [l.notTodayNote],
-      // where Apple keeps Always On: Heart has no switch of its own for it
-      .watchApp => [l.watchAppAwayNote, l.watchAlwaysOnNote],
+      // where Apple keeps Always On: Heart has no switch of its own for it.
+      // Wear OS has no per-app one to point at
+      .watchApp => switch (platform) {
+        .android => [l.watchAppAwayNoteAndroid],
+        _ => [l.watchAppAwayNote, l.watchAlwaysOnNote],
+      },
     };
   }
 }

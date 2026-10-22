@@ -41,6 +41,12 @@ class UnsupportedHealthStore implements HealthService {
   Future<bool> requestWorkoutWriteAccess() async => false;
 
   @override
+  Future<HealthAccess> watchReadingsWriteAccess() async => HealthAccess.denied;
+
+  @override
+  Future<bool> requestWatchReadingsWriteAccess() async => false;
+
+  @override
   Future<bool> writeWorkout({
     required WorkoutActivity activity,
     required DateTime start,

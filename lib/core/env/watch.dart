@@ -13,7 +13,15 @@ final _logger = Logger('Watch');
 /// Every string is finished copy. The watch app has no localisations of its
 /// own; whatever it says, the phone said first.
 sealed class WatchState {
-  const new();
+  /// The user's say over a Wear OS watch's readings (#461): whether its heart
+  /// rate and energy go into Health Connect beside the workout. Null until
+  /// asked — the watch holds a finished session's readings meanwhile — true to
+  /// hand them over, false to drop them on the watch. Sent on every state, idle
+  /// included: the first workout the watch measures ends before anyone asked.
+  /// Always null to an Apple Watch, which saves its own workout.
+  final bool? keepsReadings;
+
+  const new({this.keepsReadings});
 
   Map<String, Object?> toMap();
 }
@@ -167,6 +175,7 @@ final class WatchWorkout extends WatchState {
     this.exercises = const [],
     this.pausable = false,
     this.pauses = const [],
+    super.keepsReadings,
   });
 
   @override
@@ -174,6 +183,7 @@ final class WatchWorkout extends WatchState {
     final OngoingWorkout(:workoutId, :startedAt, :clockStart, :pausedAt, :title, :exercise, :next, :rest, :preset) =
         workout;
     return {
+      'keepsReadings': ?keepsReadings,
       'activity': ?activity,
       // the clock: where it counts from, and where it stands while paused.
       // `startedAt` stays the true start, which the watch's workout session
@@ -412,18 +422,23 @@ final class WatchMessage extends WatchState {
   final String kind;
   final String message;
 
-  const new idle(this.message) : kind = 'idle';
+  const new idle(this.message, {super.keepsReadings}) : kind = 'idle';
 
-  const new off(this.message) : kind = 'off';
-
-  @override
-  Map<String, Object?> toMap() => {'state': kind, 'message': message};
+  const new off(this.message, {super.keepsReadings}) : kind = 'off';
 
   @override
-  bool operator ==(Object other) => other is WatchMessage && other.kind == kind && other.message == message;
+  Map<String, Object?> toMap() => {'state': kind, 'message': message, 'keepsReadings': ?keepsReadings};
 
   @override
-  int get hashCode => Object.hash(kind, message);
+  bool operator ==(Object other) {
+    return other is WatchMessage &&
+        other.kind == kind &&
+        other.message == message &&
+        other.keepsReadings == keepsReadings;
+  }
+
+  @override
+  int get hashCode => Object.hash(kind, message, keepsReadings);
 }
 
 /// Something the watch app did.
@@ -443,8 +458,9 @@ enum WatchEvent {
   catchingUp,
 }
 
-/// The phone's end of the watch app (#175), through
-/// `ios/Runner/WatchChannel.swift`.
+/// The phone's end of the watch app: the Apple Watch (#175) through
+/// `ios/Runner/WatchChannel.swift`, Wear OS (#250) through
+/// `android/app/src/main/kotlin/me/heart/WatchChannel.kt`.
 abstract interface class WatchLink {
   /// Whether a paired watch has Heart installed — what decides if the setting
   /// is offered at all.
@@ -493,15 +509,17 @@ abstract interface class WatchLink {
 /// The link for [platform], or null where there is no watch app.
 WatchLink? watchLink(TargetPlatform platform) {
   return switch (platform) {
-    .iOS => _WatchConnectivity.instance,
+    .iOS || .android => _WatchChannel.instance,
     _ => null,
   };
 }
 
-/// WatchConnectivity. Like the Live Activity, every call is fire-and-report:
-/// a watch that cannot be reached is never a reason to fail a workout.
-class _WatchConnectivity implements WatchLink {
-  static final instance = _WatchConnectivity._();
+/// WatchConnectivity on iOS, the Wearable Data Layer on Android: one channel,
+/// the same methods on both. Like the Live Activity, every call is
+/// fire-and-report: a watch that cannot be reached is never a reason to fail a
+/// workout.
+class _WatchChannel implements WatchLink {
+  static final instance = _WatchChannel._();
 
   static const _channel = MethodChannel('heart/watch');
 

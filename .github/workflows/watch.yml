@@ -12,6 +12,9 @@ on:
     paths:
       - 'ios/**/*.swift'
       - 'ios/Runner.xcodeproj/**'
+      # what the phone sends, which WatchTests reads (#466)
+      - 'lib/core/env/watch.dart'
+      - 'test/fixtures/watch/**'
       - '.github/workflows/watch.yml'
   workflow_dispatch: { }
 
