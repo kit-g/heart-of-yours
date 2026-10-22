@@ -3,6 +3,7 @@ package me.heart.wear
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -16,17 +17,22 @@ import androidx.lifecycle.lifecycleScope
 /// localised.
 class MainActivity : ComponentActivity() {
     private lateinit var phone: PhoneSession
+    private lateinit var ambient: Ambient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         phone = PhoneSession(this, lifecycleScope)
+        ambient = Ambient(this)
         setContent {
             val state by phone.state.collectAsStateWithLifecycle()
             val reachable by phone.reachable.collectAsStateWithLifecycle()
+            val wrist by ambient.state.collectAsStateWithLifecycle()
             ExerciseFollowing(state)
             HeartTheme {
-                PhoneStateScreen(state = state, reachable = reachable, send = phone::send)
+                CompositionLocalProvider(LocalDimmed provides wrist.dimmed, LocalAmbientTick provides wrist.tick) {
+                    PhoneStateScreen(state = state, reachable = reachable, send = phone::send)
+                }
             }
         }
     }

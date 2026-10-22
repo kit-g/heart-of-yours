@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
+import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.VibratorManager
 import android.util.Log
@@ -23,6 +24,8 @@ import androidx.health.services.client.data.ExerciseLapSummary
 import androidx.health.services.client.data.ExerciseType
 import androidx.health.services.client.data.ExerciseUpdate
 import androidx.lifecycle.LifecycleService
+import androidx.wear.ongoing.OngoingActivity
+import androidx.wear.ongoing.Status
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
@@ -86,6 +89,14 @@ class WorkoutService : LifecycleService() {
             RESUME -> lifecycleScope.launch { runCatching { exercises.resumeExerciseAsync().await() } }
             END -> end()
             REST -> rest(intent.getLongExtra(REST_END, 0))
+            DESCRIBE -> {
+                summary = Summary(
+                    title = intent.getStringExtra(TITLE).orEmpty(),
+                    clock = intent.getLongExtra(CLOCK, 0),
+                    pausedAt = intent.getLongExtra(PAUSED_AT, 0).takeIf { it > 0 },
+                )
+                describe()
+            }
         }
         return START_NOT_STICKY
     }
@@ -94,6 +105,7 @@ class WorkoutService : LifecycleService() {
         if (this.workoutId == workoutId) return
         this.workoutId = workoutId
         ServiceCompat.startForeground(this, NOTIFICATION, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH)
+        describe()
         lifecycleScope.launch {
             runCatching {
                 val supported = exercises.getCapabilitiesAsync().await().supportedExerciseTypes
@@ -126,6 +138,50 @@ class WorkoutService : LifecycleService() {
             val request = PutDataRequest.create("${PhoneSession.EVENTS}/measuring").setData(measuring.toString().toByteArray()).setUrgent()
             Wearable.getDataClient(this).putDataItem(request).await()
         }.onFailure { Log.w(TAG, "The phone was not told the watch measures: ${it.message}") }
+    }
+
+    /// What the Ongoing Activity says: the workout's name and its clock.
+    private data class Summary(val title: String, val clock: Long, val pausedAt: Long?)
+
+    private var summary: Summary? = null
+
+    /// The workout as an Ongoing Activity (#462): in the watch face's chip and
+    /// the recents, one tap back to Heart, with the workout's name and its
+    /// clock ticking — stopped while paused. Every word is the phone's.
+    private fun describe() {
+        val summary = summary ?: return
+        if (workoutId == null) return
+        val open = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE,
+        )
+        // the stopwatch counts on the boot clock, not the wall clock
+        val now = System.currentTimeMillis()
+        val zero = SystemClock.elapsedRealtime() - (now - summary.clock)
+        val stopwatch = when (val pausedAt = summary.pausedAt) {
+            null -> Status.StopwatchPart(zero)
+            else -> Status.StopwatchPart(zero, SystemClock.elapsedRealtime() - (now - pausedAt))
+        }
+        val status = Status.Builder()
+            .addTemplate("#title# · #clock#")
+            .addPart("title", Status.TextPart(summary.title))
+            .addPart("clock", stopwatch)
+            .build()
+        val builder = NotificationCompat.Builder(this, CHANNEL)
+            .setSmallIcon(R.drawable.ic_heart)
+            .setContentTitle(summary.title)
+            .setContentIntent(open)
+            .setOngoing(true)
+            .setCategory(NotificationCompat.CATEGORY_WORKOUT)
+        OngoingActivity.Builder(this, NOTIFICATION, builder)
+            .setStaticIcon(R.drawable.ic_heart)
+            .setTouchIntent(open)
+            .setStatus(status)
+            .build()
+            .apply(this)
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION, builder.build())
     }
 
     private fun rest(end: Long) {
@@ -191,6 +247,10 @@ class WorkoutService : LifecycleService() {
         private const val END = "end"
         private const val REST = "rest"
         private const val REST_END = "restEnd"
+        private const val DESCRIBE = "describe"
+        private const val TITLE = "title"
+        private const val CLOCK = "clock"
+        private const val PAUSED_AT = "pausedAt"
         private const val WORKOUT_ID = "workoutId"
         private const val ACTIVITY = "activity"
 
@@ -205,6 +265,18 @@ class WorkoutService : LifecycleService() {
         fun follow(context: Context, paused: Boolean) = send(context, if (paused) PAUSE else RESUME)
 
         fun end(context: Context) = send(context, END)
+
+        /// What the workout is called and where its clock stands, for the
+        /// Ongoing Activity.
+        fun describe(context: Context, title: String, clock: Long, pausedAt: Long?) {
+            if (Measuring.now.value == null) return
+            val intent = Intent(context, WorkoutService::class.java)
+                .setAction(DESCRIBE)
+                .putExtra(TITLE, title)
+                .putExtra(CLOCK, clock)
+                .putExtra(PAUSED_AT, pausedAt ?: 0)
+            context.startService(intent)
+        }
 
         /// The rest now running ends at [end], epoch milliseconds; 0 for none.
         fun rest(context: Context, end: Long) {

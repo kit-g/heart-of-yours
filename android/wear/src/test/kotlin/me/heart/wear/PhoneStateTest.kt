@@ -99,4 +99,11 @@ class PhoneStateTest {
         assertEquals("0:00", clock(-5, up = false))
         assertTrue(clock(59_999, up = false) == "1:00")
     }
+
+    @Test
+    fun `the dimmed page's clock is true to the minute`() {
+        assertEquals("0:12", minutes(12 * 60_000L + 59_000))
+        assertEquals("1:05", minutes(65 * 60_000L))
+        assertEquals("0:00", minutes(-1))
+    }
 }

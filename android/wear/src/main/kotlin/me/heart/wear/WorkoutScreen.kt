@@ -6,11 +6,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -26,7 +28,9 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import kotlinx.coroutines.delay
+import android.text.format.DateFormat
 import java.text.DecimalFormat
+import java.util.Date
 import kotlin.math.roundToInt
 
 /// The workout in progress, as the phone summarised it (#459): the set up
@@ -43,8 +47,15 @@ import kotlin.math.roundToInt
 @Composable
 fun WorkoutScreen(workout: PhoneState.Workout, reachable: Boolean, send: (Command) -> Unit) {
     val accent = Color(workout.accent)
-    val now by ticking()
+    // wrist down (#462): once a minute, when the system says, and no controls
+    val dimmed = LocalDimmed.current
+    val ticking by ticking()
+    val now = if (dimmed) LocalAmbientTick.current else ticking
     val list = rememberScalingLazyListState()
+    // back to the top, which is what is worth a glance
+    LaunchedEffect(dimmed) {
+        if (dimmed) list.scrollToItem(0)
+    }
 
     ScreenScaffold(scrollState = list) { padding ->
         ScalingLazyColumn(
@@ -53,7 +64,7 @@ fun WorkoutScreen(workout: PhoneState.Workout, reachable: Boolean, send: (Comman
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            val controls = workout.controls?.takeIf { reachable }
+            val controls = workout.controls?.takeIf { reachable && !dimmed }
             // paused (#134), that leads, with the way back: nothing else on
             // the page moves until the clock does
             if (workout.pausedAt != null) {
@@ -110,6 +121,15 @@ private fun Rest(rest: PhoneState.Workout.Rest, now: Long, accent: Color) {
         Text(rest.over, style = MaterialTheme.typography.titleMedium, color = accent)
         return
     }
+    // dimmed, a countdown would be wrong between the minute's redraws: when
+    // the rest ends is true all minute long
+    if (LocalDimmed.current) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Muted(rest.label)
+            Text(timeOfDay(rest.end), style = MaterialTheme.typography.numeralSmall)
+        }
+        return
+    }
     val left = rest.end - now
     Column(
         Modifier
@@ -147,7 +167,12 @@ private fun Footer(workout: PhoneState.Workout, now: Long, controls: PhoneState.
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
             Muted(workout.title, Modifier.weight(1f, fill = false))
-            Muted(clock(until - workout.clock, up = true))
+            Muted(
+                when (LocalDimmed.current) {
+                    true -> minutes(until - workout.clock)
+                    false -> clock(until - workout.clock, up = true)
+                },
+            )
         }
         workout.controls?.let { copy -> Vitals(workout.workoutId, copy) }
         // pausing is the phone's opt-in (#134): off, no control
@@ -194,6 +219,19 @@ private fun ticking() = produceState(System.currentTimeMillis()) {
         value = System.currentTimeMillis()
         delay(1000 - value % 1000)
     }
+}
+
+/// When [millis] falls, as the watch tells the time: "12:41", or "12:41 PM".
+@Composable
+private fun timeOfDay(millis: Long): String {
+    val context = LocalContext.current
+    return DateFormat.getTimeFormat(context).format(Date(millis))
+}
+
+/// "0:12", "1:05": an elapsed clock to the minute, for the dimmed page.
+internal fun minutes(millis: Long): String {
+    val minutes = (millis / 60_000).coerceAtLeast(0)
+    return "%d:%02d".format(minutes / 60, minutes % 60)
 }
 
 /// "60 kg × 5", "× 12", "60 kg": the set's values as the phone shows them,

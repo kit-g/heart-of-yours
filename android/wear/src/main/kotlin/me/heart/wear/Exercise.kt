@@ -50,11 +50,14 @@ fun ExerciseFollowing(state: PhoneState) {
             }
         }
     }
+    val measuring by Measuring.now.collectAsStateWithLifecycle()
     LaunchedEffect(workout?.pausedAt != null) {
         if (workout != null) WorkoutService.follow(context, paused = workout.pausedAt != null)
     }
+    LaunchedEffect(workout?.title, workout?.clock, workout?.pausedAt, measuring?.workoutId) {
+        if (workout != null) WorkoutService.describe(context, workout.title, workout.clock, workout.pausedAt)
+    }
     // the rest's tap is the watch's while it measures (#462)
-    val measuring by Measuring.now.collectAsStateWithLifecycle()
     LaunchedEffect(workout?.rest?.end, measuring?.workoutId) {
         WorkoutService.rest(context, workout?.rest?.end ?: 0)
     }
