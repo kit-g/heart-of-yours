@@ -443,8 +443,9 @@ enum WatchEvent {
   catchingUp,
 }
 
-/// The phone's end of the watch app (#175), through
-/// `ios/Runner/WatchChannel.swift`.
+/// The phone's end of the watch app: the Apple Watch (#175) through
+/// `ios/Runner/WatchChannel.swift`, Wear OS (#250) through
+/// `android/app/src/main/kotlin/me/heart/WatchChannel.kt`.
 abstract interface class WatchLink {
   /// Whether a paired watch has Heart installed — what decides if the setting
   /// is offered at all.
@@ -493,15 +494,17 @@ abstract interface class WatchLink {
 /// The link for [platform], or null where there is no watch app.
 WatchLink? watchLink(TargetPlatform platform) {
   return switch (platform) {
-    .iOS => _WatchConnectivity.instance,
+    .iOS || .android => _WatchChannel.instance,
     _ => null,
   };
 }
 
-/// WatchConnectivity. Like the Live Activity, every call is fire-and-report:
-/// a watch that cannot be reached is never a reason to fail a workout.
-class _WatchConnectivity implements WatchLink {
-  static final instance = _WatchConnectivity._();
+/// WatchConnectivity on iOS, the Wearable Data Layer on Android: one channel,
+/// the same methods on both. Like the Live Activity, every call is
+/// fire-and-report: a watch that cannot be reached is never a reason to fail a
+/// workout.
+class _WatchChannel implements WatchLink {
+  static final instance = _WatchChannel._();
 
   static const _channel = MethodChannel('heart/watch');
 

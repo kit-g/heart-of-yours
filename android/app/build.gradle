@@ -116,6 +116,9 @@ dependencies {
     implementation 'androidx.appfunctions:appfunctions:1.0.0-alpha13'
     ksp 'androidx.appfunctions:appfunctions-compiler:1.0.0-alpha13'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0'
+    // the Wear OS app's Data Layer (#250), and awaiting its tasks
+    implementation 'com.google.android.gms:play-services-wearable:20.0.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.11.0'
 
     testImplementation 'junit:junit:4.13.2'
     // org.json on the JVM, for the plans' tests; on the device it is the platform's

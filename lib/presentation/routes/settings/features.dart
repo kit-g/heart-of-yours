@@ -177,13 +177,13 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
     );
     final on = preferences.isOn(feature);
     final options = feature.options.toList();
-    final notes = feature.notes(l);
+    final notes = feature.notes(l, Theme.of(context).platform);
     final unfolds = options.isNotEmpty || notes.isNotEmpty;
 
     final toggle = SwitchListTile.adaptive(
       key: ValueKey('feature-${feature.value}'),
       secondary: Icon(feature.icon),
-      title: Text(feature.title(l)),
+      title: Text(feature.title(l, Theme.of(context).platform)),
       subtitle: Text(feature.subtitle(l, Theme.of(context).platform)),
       value: on,
       // the lock-screen switch's colors: the accent as a fill, and a

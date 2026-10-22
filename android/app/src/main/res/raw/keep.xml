@@ -41,7 +41,10 @@
   `default_web_client_id` as "is not reachable". That asymmetry is the whole
   bug: three of the four generated strings are protected by someone else, and
   the fourth is ours to protect.
+
+  `android_wear_capabilities` is read by name by Play services, never by this
+  app: it is how the Wear OS app (#250) finds the phone app on a paired phone.
 -->
 <resources
     xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@drawable/ic_stat_heart,@string/default_web_client_id" />
+    tools:keep="@drawable/ic_stat_heart,@string/default_web_client_id,@array/android_wear_capabilities" />

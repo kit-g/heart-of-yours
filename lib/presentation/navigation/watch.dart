@@ -31,7 +31,7 @@ import 'package:material_ui/material_ui.dart';
 class WatchPresenter extends StatefulWidget {
   final Widget child;
 
-  /// Null turns this into a pass-through (Android, web, tests).
+  /// Null turns this into a pass-through (web, tests).
   final WatchLink? link;
 
   const new({super.key, required this.child, required this.link});
@@ -317,7 +317,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
     return switch (Preferences.of(context).featureAnswer(.watchApp)) {
       // never opened on the watch: nothing is said to it at all
       .unasked || .pending => null,
-      .off => WatchMessage.off(l.watchAppOff),
+      .off => WatchMessage.off(_phone(l).off),
       .on => switch ((ongoingWorkoutOf(context), _workouts?.hasResolvedActiveWorkout ?? false)) {
         (var workout?, _) => WatchWorkout(
           workout,
@@ -339,7 +339,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
           ],
         ),
         // "no workout" only once that is known, not while it is still loading
-        (null, true) => WatchMessage.idle(l.watchAppIdle),
+        (null, true) => WatchMessage.idle(_phone(l).idle),
         (null, false) => null,
       },
     };
@@ -451,14 +451,36 @@ class _WatchPresenterState extends State<WatchPresenter> {
     return _inTemplate ?? PreviousExercises.of(context);
   }
 
+  /// The watch's lines that name the phone: an iPhone beside an Apple Watch,
+  /// a phone beside a Wear OS watch.
+  ({String idle, String off, String unreachable, String sending, String finishedAway}) _phone(L l) {
+    return switch (Theme.of(context).platform) {
+      .android => (
+        idle: l.watchAppIdleAndroid,
+        off: l.watchAppOffAndroid,
+        unreachable: l.watchPhoneUnreachableAndroid,
+        sending: l.watchSendingAndroid,
+        finishedAway: l.watchFinishedAwayAndroid,
+      ),
+      _ => (
+        idle: l.watchAppIdle,
+        off: l.watchAppOff,
+        unreachable: l.watchPhoneUnreachable,
+        sending: l.watchSending,
+        finishedAway: l.watchFinishedAway,
+      ),
+    };
+  }
+
   WatchControls _controls(L l) {
+    final phone = _phone(l);
     return (
       done: l.watchSetDone,
       skip: l.skip,
       add: l.addSeconds,
       subtract: l.subtractSeconds,
       reps: l.reps,
-      unreachable: l.watchPhoneUnreachable,
+      unreachable: phone.unreachable,
       heartRate: l.watchHeartRate,
       bpm: l.healthBpm,
       energy: l.healthActiveEnergy,
@@ -472,9 +494,9 @@ class _WatchPresenterState extends State<WatchPresenter> {
       restLabel: l.ongoingWorkoutRest,
       restOver: l.restComplete,
       allDone: l.ongoingWorkoutAllDone,
-      idle: l.watchAppIdle,
-      sending: l.watchSending,
-      finishedAway: l.watchFinishedAway,
+      idle: phone.idle,
+      sending: phone.sending,
+      finishedAway: phone.finishedAway,
       pause: l.watchPause,
       resume: l.watchResume,
       paused: l.workoutPaused,

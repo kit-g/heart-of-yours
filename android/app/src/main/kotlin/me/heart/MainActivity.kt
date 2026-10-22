@@ -81,6 +81,8 @@ class MainActivity : FlutterFragmentActivity() {
         // the launcher's per-template shortcuts (#286)
         ShortcutsChannel.register(this, flutterEngine.dartExecutor.binaryMessenger)
         WidgetsChannel.register(this, flutterEngine.dartExecutor.binaryMessenger)
+        // the Wear OS app (#250)
+        WatchChannel.register(this, flutterEngine.dartExecutor.binaryMessenger)
     }
 
     // Google's documented signal: the system setting is "true" whenever the app
@@ -150,6 +152,7 @@ class MainActivity : FlutterFragmentActivity() {
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
         commands?.let(CommandRelay::detach)
+        WatchChannel.unregister(this)
         commands = null
         super.cleanUpFlutterEngine(flutterEngine)
     }
