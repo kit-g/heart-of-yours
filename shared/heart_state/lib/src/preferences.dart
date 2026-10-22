@@ -18,6 +18,8 @@ const _firstWeekdayOwed = 'firstWeekdayOwed';
 const _collapsedFolders = 'collapsedTemplateFolders';
 const _healthInviteDismissed = 'healthInviteDismissed';
 const _healthAsked = 'healthAsked';
+// read natively too, as `flutter.watchReadings` (android/app WatchReadings.kt)
+const _watchReadings = 'watchReadings';
 const _notificationsReminderDismissed = 'notificationsReminderDismissed';
 const _installed = 'installed';
 const _lockScreenWorkout = 'lockScreenWorkout';
@@ -71,6 +73,20 @@ class Preferences with ChangeNotifier {
   /// Whether the choice here is newer than the account's: made on this device
   /// and not yet written up. [SettingsSync] writes it and [settleFirstWeekday]s.
   bool get firstWeekdayOwed => _prefs?.getBool(_firstWeekdayOwed) ?? false;
+
+  /// Whether a Wear OS watch's readings go into Health Connect with each
+  /// workout it measured (#461): null until the user has been asked — once, at
+  /// the first such finish — then their answer, which the switch under the
+  /// watch app in Settings changes. Per device: it rides on a Health Connect
+  /// grant, which is this phone's. The phone's native side reads it before
+  /// writing anything, with the app closed or not.
+  bool? get watchReadings => _prefs?.getBool(_watchReadings);
+
+  Future<bool>? setWatchReadings({required bool on}) {
+    final write = _prefs?.setBool(_watchReadings, on);
+    notifyListeners();
+    return write;
+  }
 
   Future<bool>? setFirstWeekday(int weekday) {
     final write = _prefs?.setInt(_firstWeekday, weekday);

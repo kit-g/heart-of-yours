@@ -930,6 +930,18 @@ class _FakeDevice implements HealthService {
     return writeAccess == HealthAccess.granted;
   }
 
+  HealthAccess readingsAccess = HealthAccess.denied;
+
+  @override
+  Future<HealthAccess> watchReadingsWriteAccess() async => readingsAccess;
+
+  @override
+  Future<bool> requestWatchReadingsWriteAccess() async {
+    log.add('requestWatchReadingsWriteAccess');
+    readingsAccess = HealthAccess.granted;
+    return true;
+  }
+
   /// Every session handed to [writeWorkout], in order.
   final written = <({WorkoutActivity activity, DateTime start, DateTime end, String? title})>[];
 

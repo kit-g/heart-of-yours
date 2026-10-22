@@ -212,6 +212,26 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     return asked;
   }
 
+  /// Whether a Wear OS watch's readings may be written beside its workouts
+  /// (#461). Android only; false wherever the store is not there.
+  Future<bool> watchReadingsGranted() async {
+    if (_status != .available) return false;
+    return await _device.watchReadingsWriteAccess() == .granted;
+  }
+
+  /// Asks for the user's say over a Wear OS watch's readings — Health
+  /// Connect's own sheet — and answers whether they were granted.
+  Future<bool> askWatchReadings() async {
+    if (_status != .available) return false;
+    try {
+      await _device.requestWatchReadingsWriteAccess();
+      return await watchReadingsGranted();
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+      return false;
+    }
+  }
+
   /// Mirrors a finished session into the device's health store, so the user's
   /// rings credit their lifting and every other app on the phone can see it
   /// happened.
