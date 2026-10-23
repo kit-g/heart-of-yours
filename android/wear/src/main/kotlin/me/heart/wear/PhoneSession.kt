@@ -95,7 +95,8 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
 
     private val _reachable = MutableStateFlow(false)
 
-    /// Whether the phone can hear a message right now.
+    /// Whether a phone is near enough to hear a message right now: over
+    /// Bluetooth or the same Wi-Fi, never only through the cloud.
     val reachable: StateFlow<Boolean> = combine(_reachable, debugReachable) { real, debug -> real || debug }
         .stateIn(scope, SharingStarted.Eagerly, false)
 
@@ -170,7 +171,7 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
         val phones = runCatching {
             capabilities.getCapability(PHONE_CAPABILITY, CapabilityClient.FILTER_REACHABLE).await().nodes
         }.getOrDefault(emptySet())
-        _reachable.value = phones.isNotEmpty()
+        _reachable.value = phones.any { it.isNearby }
         val opened = event("opened").toString().toByteArray()
         phones.forEach { messages.sendMessage(it.id, EVENT, opened) }
         announceQueue(phones)
@@ -201,8 +202,10 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
     }
 
     override fun onCapabilityChanged(info: CapabilityInfo) {
-        // the listener hears the phones that are connected now
-        val reachable = info.nodes.isNotEmpty()
+        // in reach means nearby: a phone the Data Layer reaches only through
+        // the cloud — the watch on Wi-Fi, the phone in a locker and offline —
+        // takes a message and never delivers it, so it counts as away
+        val reachable = info.nodes.any { it.isNearby }
         val back = reachable && !_reachable.value
         _reachable.value = reachable
         if (back) {
@@ -228,8 +231,9 @@ class PhoneSession(context: Context, private val scope: CoroutineScope) :
                 // message would overtake the queue, and the phone would apply
                 // them out of order
                 if (_waiting.value || !reachable.value) return@withLock transfer(id, message)
+                // a message goes only to a phone nearby; anything else queues
                 val phone = runCatching {
-                    capabilities.getCapability(PHONE_CAPABILITY, CapabilityClient.FILTER_REACHABLE).await().nodes.firstOrNull()
+                    capabilities.getCapability(PHONE_CAPABILITY, CapabilityClient.FILTER_REACHABLE).await().nodes.firstOrNull { it.isNearby }
                 }.getOrNull()
                 val sent = phone != null && runCatching { messages.sendMessage(phone.id, EVENT, message).await() }.isSuccess
                 when {
