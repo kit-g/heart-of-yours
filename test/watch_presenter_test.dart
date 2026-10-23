@@ -400,6 +400,27 @@ void main() {
       expect(link.sent.length, before + 1, reason: 'the watch hears back even when nothing changed');
     });
 
+    testWidgets("an empty set with a plan starts at the plan's least, as the phone's ghost row does (#479)", (
+      tester,
+    ) async {
+      // the bench's second set: nothing filled in, planned at 70 kg × 5+
+      await running(
+        tester,
+        prepare: (workout) =>
+            workout.first.last.target = SetTarget({.weight: TargetRange.exactly(70), .reps: const TargetRange(min: 5)}),
+      );
+
+      final rows = (link.sent.last as WatchWorkout).exercises.single.sets;
+      expect((rows.last.weight, rows.last.reps), (70, 5), reason: '70 kg × 5+ starts at 70 × 5, not 0 × 0');
+      expect((rows.first.weight, rows.first.reps), (60, 5), reason: 'values filled in stay as they are');
+    });
+
+    testWidgets('an empty set with no plan starts at nothing', (tester) async {
+      await running(tester);
+      final rows = (link.sent.last as WatchWorkout).exercises.single.sets;
+      expect((rows.last.weight, rows.last.reps), (0, 0));
+    });
+
     testWidgets('the watch is sent the whole workout, for going back to a set', (tester) async {
       preferences.setWeightUnit(.imperial);
       await running(tester);

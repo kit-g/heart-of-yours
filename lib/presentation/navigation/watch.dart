@@ -227,19 +227,23 @@ class _WatchPresenterState extends State<WatchPresenter> {
     };
   }
 
-  /// [set]'s weight as the watch shows it: in [exercise]'s unit, 0 when not
-  /// filled in, null when the set takes none.
+  /// [set]'s weight as the watch shows it: in [exercise]'s unit, null when
+  /// the set takes none. Not filled in, it is the plan's — the least its
+  /// target asks for, as a tick on the phone's ghost row would take (#479) —
+  /// or 0 with no plan.
   double? _shownWeight(WorkoutExercise exercise, ExerciseSet set) {
-    return switch ((_measures(exercise).$1, set.weight)) {
+    return switch ((_measures(exercise).$1, set.weight ?? set.target?[.weight]?.min.toDouble())) {
       (true, double weight) => Preferences.of(context).weightValue(weight, unit: _unit(exercise)),
       (true, null) => 0,
       (false, _) => null,
     };
   }
 
+  /// [set]'s count as the watch shows it: not filled in, the least its target
+  /// asks for (#479) — 5 of "5+", 6 of "6–10" — or 0 with no plan.
   int? _shownReps(WorkoutExercise exercise, ExerciseSet set) {
     return switch (_measures(exercise).$2) {
-      true => set.reps ?? 0,
+      true => set.reps ?? set.target?[.reps]?.min.toInt() ?? 0,
       false => null,
     };
   }
