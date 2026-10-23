@@ -95,7 +95,7 @@ private fun UpNextPage(workout: PhoneState.Workout, reachable: Boolean, waiting:
     val list = rememberTransformingLazyColumnState()
     // back to the top, which is what is worth a glance: with the wrist down,
     // and when the moment moves on — a new set up next, a rest begun
-    LaunchedEffect(dimmed, workout.set?.setId, workout.rest?.start) {
+    LaunchedEffect(dimmed, workout.set?.setId, workout.rest?.start, workout.pausedAt) {
         list.scrollToItem(0)
     }
 
@@ -108,7 +108,8 @@ private fun UpNextPage(workout: PhoneState.Workout, reachable: Boolean, waiting:
                 start = margin,
                 end = margin,
                 top = padding.calculateTopPadding(),
-                bottom = padding.calculateBottomPadding(),
+                // clear of the pager's dots, which float over the foot
+                bottom = padding.calculateBottomPadding() + 20.dp,
             ),
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -252,7 +253,7 @@ private fun Footer(workout: PhoneState.Workout, now: Long, controls: PhoneState.
         workout.controls?.let { copy -> Vitals(workout.workoutId, copy) }
         // pausing is the phone's opt-in (#134): off, no control
         if (workout.pausable && workout.pausedAt == null && controls != null) {
-            PauseButton(workout.workoutId, controls, send)
+            PauseButton(workout.workoutId, controls, Color(workout.accent), send)
         }
     }
 }

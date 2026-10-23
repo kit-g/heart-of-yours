@@ -3,6 +3,7 @@ package me.heart.wear
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -217,7 +218,13 @@ fun RestControls(workoutId: String, controls: PhoneState.Workout.Controls, send:
             controls.add to Command.AdjustRest(workoutId, 10),
             controls.skip to Command.SkipRest(workoutId),
         ).forEach { (label, command) ->
-            FilledTonalButton(onClick = { send(command) }, modifier = Modifier.weight(1f)) {
+            // three across a 41 mm screen: the button's own padding would leave
+            // "+10s" no room
+            FilledTonalButton(
+                onClick = { send(command) },
+                contentPadding = PaddingValues(horizontal = 2.dp),
+                modifier = Modifier.weight(1f),
+            ) {
                 Text(label, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, maxLines = 1)
             }
         }
@@ -287,9 +294,10 @@ fun Paused(workoutId: String, controls: PhoneState.Workout.Controls, accent: Col
 
 /// Stops the workout's clock (#134), offered only while pausing is on, on the phone.
 @Composable
-fun PauseButton(workoutId: String, controls: PhoneState.Workout.Controls, send: (Command) -> Unit) {
+fun PauseButton(workoutId: String, controls: PhoneState.Workout.Controls, accent: Color, send: (Command) -> Unit) {
     FilledTonalIconButton(
         onClick = { send(Command.Pause(workoutId)) },
+        colors = IconButtonDefaults.filledTonalIconButtonColors(contentColor = accent),
         modifier = Modifier.semantics { contentDescription = controls.pause },
     ) {
         Icon(painterResource(R.drawable.ic_pause), contentDescription = null)
