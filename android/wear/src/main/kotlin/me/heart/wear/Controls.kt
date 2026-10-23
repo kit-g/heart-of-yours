@@ -38,6 +38,7 @@ import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.Dialog
+import androidx.wear.compose.material3.FilledIconButton
 import androidx.wear.compose.material3.FilledTonalButton
 import androidx.wear.compose.material3.FilledTonalIconButton
 import androidx.wear.compose.material3.Icon
@@ -107,8 +108,8 @@ fun SetControls(
 
     Dialog(visible = editing != null, onDismissRequest = { editing = null }) {
         when (editing) {
-            Field.Weight -> ValueEditor(weight, set.step, set.unit.orEmpty(), accent) { weight = it }
-            Field.Reps -> ValueEditor(reps, 1.0, controls.reps, accent) { reps = it }
+            Field.Weight -> ValueEditor(weight, set.step, set.unit.orEmpty(), accent, controls.save, { editing = null }) { weight = it }
+            Field.Reps -> ValueEditor(reps, 1.0, controls.reps, accent, controls.save, { editing = null }) { reps = it }
             null -> Unit
         }
     }
@@ -138,9 +139,20 @@ internal fun ValuePill(text: String, unit: String, modifier: Modifier = Modifier
 
 /// One value, full screen: − and + a step at a time, the crown or bezel for
 /// bigger moves — focused from the start, with nothing else on screen to
-/// scroll. Swiping it away puts it away; the set's own Done is what logs it.
+/// scroll. ✓ under it, or a swipe, puts it away with the value kept; the
+/// set's own Done is what logs it. The ✓ is there because a swipe from the
+/// edge is a gesture nothing on screen announces.
 @Composable
-internal fun ValueEditor(value: Double, step: Double, unit: String, accent: Color, onChange: (Double) -> Unit) {
+internal fun ValueEditor(
+    value: Double,
+    step: Double,
+    unit: String,
+    accent: Color,
+    /// The phone's word for keeping it, for TalkBack.
+    keep: String,
+    close: () -> Unit,
+    onChange: (Double) -> Unit,
+) {
     val focus = remember { FocusRequester() }
     val haptics = LocalHapticFeedback.current
     var turned by remember { mutableFloatStateOf(0f) }
@@ -155,40 +167,54 @@ internal fun ValueEditor(value: Double, step: Double, unit: String, accent: Colo
     }
 
     Column(
-        Modifier
-            .fillMaxSize()
-            .padding(horizontal = 12.dp)
-            .onRotaryScrollEvent { event ->
-                // a detent's worth of turning is a step, whichever way
-                turned += event.verticalScrollPixels
-                val steps = (turned / DETENT).toInt()
-                if (steps != 0) {
-                    turned -= steps * DETENT
-                    nudge(steps)
-                }
-                true
-            }
-            .focusRequester(focus)
-            .focusable()
-            // the buttons are hidden from TalkBack: this is the control
-            .semantics(mergeDescendants = true) {
-                contentDescription = unit
-                stateDescription = number(current)
-                progressBarRangeInfo = ProgressBarRangeInfo(current.toFloat(), 0f..MAX.toFloat())
-                setProgress { target ->
-                    current = target.toDouble().coerceAtLeast(0.0)
-                    onChange(current)
-                    true
-                }
-            },
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+        Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(unit, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Stepper(R.drawable.ic_minus, accent) { nudge(-1) }
-            Text(number(current), style = MaterialTheme.typography.displayMedium, maxLines = 1)
-            Stepper(R.drawable.ic_plus, accent) { nudge(1) }
+        // the value: the one control, adjustable, focused for the crown; the
+        // steppers inside it are hidden from TalkBack
+        Column(
+            Modifier
+                .padding(horizontal = 12.dp)
+                .onRotaryScrollEvent { event ->
+                    // a detent's worth of turning is a step, whichever way
+                    turned += event.verticalScrollPixels
+                    val steps = (turned / DETENT).toInt()
+                    if (steps != 0) {
+                        turned -= steps * DETENT
+                        nudge(steps)
+                    }
+                    true
+                }
+                .focusRequester(focus)
+                .focusable()
+                .semantics(mergeDescendants = true) {
+                    contentDescription = unit
+                    stateDescription = number(current)
+                    progressBarRangeInfo = ProgressBarRangeInfo(current.toFloat(), 0f..MAX.toFloat())
+                    setProgress { target ->
+                        current = target.toDouble().coerceAtLeast(0.0)
+                        onChange(current)
+                        true
+                    }
+                },
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(unit, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Stepper(R.drawable.ic_minus, accent) { nudge(-1) }
+                Text(number(current), style = MaterialTheme.typography.displayMedium, maxLines = 1)
+                Stepper(R.drawable.ic_plus, accent) { nudge(1) }
+            }
+        }
+        // a button of its own, for TalkBack too
+        FilledIconButton(
+            onClick = close,
+            colors = IconButtonDefaults.filledIconButtonColors(containerColor = accent, contentColor = Color.Black),
+            modifier = Modifier.semantics { contentDescription = keep },
+        ) {
+            Icon(painterResource(R.drawable.ic_check), contentDescription = null)
         }
     }
     LaunchedEffect(Unit) { focus.requestFocus() }
