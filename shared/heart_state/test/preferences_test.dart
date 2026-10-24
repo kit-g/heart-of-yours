@@ -302,6 +302,49 @@ void main() {
     });
   });
 
+  group('default rest (#174)', () {
+    test("is each kind's own length until the user picks one", () async {
+      await sut.init();
+      expect(sut.defaultRest(.compound), 150);
+      expect(sut.defaultRest(.isolation), 90);
+      expect(sut.defaultRest(.conditioning), 60);
+    });
+
+    test('a picked length notifies, survives a new instance, and leaves the other kinds alone', () async {
+      await sut.init();
+      final probe = ListenerProbe()..attach(sut);
+
+      sut.setDefaultRest(.compound, 180);
+      expect(sut.defaultRest(.compound), 180);
+      expect(sut.defaultRest(.isolation), 90);
+      expect(probe.notifications, 1);
+
+      final revived = Preferences();
+      await revived.init();
+      expect(revived.defaultRest(.compound), 180);
+    });
+
+    test('0 is no rest, and is kept as such', () async {
+      await sut.init();
+      sut.setDefaultRest(.conditioning, 0);
+
+      final revived = Preferences();
+      await revived.init();
+      expect(revived.defaultRest(.conditioning), 0);
+    });
+
+    test('switching the feature off keeps the lengths', () async {
+      await sut.init();
+      sut
+        ..setFeature(.defaultRest, on: true)
+        ..setDefaultRest(.isolation, 75)
+        ..setFeature(.defaultRest, on: false);
+
+      expect(sut.isOn(.defaultRest), isFalse);
+      expect(sut.defaultRest(.isolation), 75);
+    });
+  });
+
   group('a default-on feature', () {
     const feature = Feature.programs;
 
@@ -461,6 +504,7 @@ void main() {
         'notToday',
         'plateCalculator',
         'warmups',
+        'defaultRest',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });

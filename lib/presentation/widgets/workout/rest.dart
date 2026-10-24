@@ -6,15 +6,32 @@ import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// How long [exercise] rests after a set, in seconds: the user's own timer for
-/// it, and otherwise what its program session plans (#349) while Programs is
-/// on. The user's word wins: a timer they set is a choice, a plan a default.
+/// it, otherwise what its program session plans (#349) while Programs is on,
+/// and otherwise its kind's default rest (#174) while that is on. The user's
+/// word wins: a timer they set is a choice, a plan a default, and the default
+/// rest the most general of all.
+///
+/// Every surface that starts or shows a rest reads it here — the countdown,
+/// the lock screen, the Live Activity, the watch — so the default reaches them
+/// all.
 int? restFor(BuildContext context, WorkoutExercise exercise, {bool listen = false}) {
   final timers = Provider.of<Timers>(context, listen: listen);
-  final planned = switch (Provider.of<Preferences>(context, listen: listen).isOn(.programs)) {
+  final preferences = Provider.of<Preferences>(context, listen: listen);
+  final planned = switch (preferences.isOn(.programs)) {
     true => exercise.rest,
     false => null,
   };
-  return timers[exercise.exercise.id] ?? planned;
+  return timers[exercise.exercise.id] ?? planned ?? _defaultRestFor(preferences, exercise.exercise);
+}
+
+/// [exercise]'s default rest (#174), in seconds: null while the feature is
+/// off, and for a kind the user set to no rest.
+int? _defaultRestFor(Preferences preferences, Exercise exercise) {
+  if (!preferences.isOn(.defaultRest)) return null;
+  return switch (preferences.defaultRest(restKindOf(exercise))) {
+    0 => null,
+    final seconds => seconds,
+  };
 }
 
 /// How long the rest after a set of [exercise] is, in seconds, in the active

@@ -25,8 +25,13 @@ void main() {
 
   late Exercises exercises;
   late Timers timers;
+  late Preferences preferences;
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    preferences = Preferences();
+    await preferences.init();
+
     final local = MockExerciseService();
     when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [squat, bench]));
     when(local.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
@@ -51,6 +56,7 @@ void main() {
         providers: [
           ChangeNotifierProvider<Timers>.value(value: timers),
           ChangeNotifierProvider<Exercises>.value(value: exercises),
+          ChangeNotifierProvider<Preferences>.value(value: preferences),
         ],
         child: const MaterialApp(
           localizationsDelegates: localizationsDelegates,
@@ -121,5 +127,59 @@ void main() {
 
     expect(find.byType(ListTile), findsNothing);
     expect(find.textContaining('No rest timers.'), findsOneWidget);
+  });
+
+  group('default rest (#174)', () {
+    testWidgets('off, no heading and no defaults: the page as it was', (tester) async {
+      await pump(tester);
+
+      expect(find.text('Default rest'), findsNothing);
+      expect(find.text('Exercises'), findsNothing);
+      expect(find.text('Compound lifts'), findsNothing);
+    });
+
+    testWidgets("on, each kind's length heads the page, the timers under it", (tester) async {
+      preferences.setFeature(.defaultRest, on: true);
+      await pump(tester);
+
+      expect(titles(tester), ['Compound lifts', 'Isolation lifts', 'Bodyweight and cardio', 'Bench press', 'Squat']);
+      expect(find.text('Default rest'), findsOneWidget);
+      expect(find.text('Exercises'), findsOneWidget);
+      expect(find.text('02:30'), findsOneWidget);
+      expect(find.text('01:00'), findsOneWidget);
+    });
+
+    testWidgets('a kind set to no rest says so', (tester) async {
+      preferences
+        ..setFeature(.defaultRest, on: true)
+        ..setDefaultRest(.conditioning, 0);
+      await pump(tester);
+
+      expect(find.text('No rest'), findsOneWidget);
+    });
+
+    testWidgets('with every timer cleared, says what the defaults are for', (tester) async {
+      preferences.setFeature(.defaultRest, on: true);
+      await timers.remove(squat.id);
+      await timers.remove(bench.id);
+      await pump(tester);
+
+      expect(find.text('Compound lifts'), findsOneWidget);
+      expect(find.textContaining('No rest timers.'), findsNothing);
+      expect(find.textContaining('Exercises without a timer of their own'), findsOneWidget);
+    });
+
+    testWidgets("the picker's Cancel makes a kind rest not at all", (tester) async {
+      preferences.setFeature(.defaultRest, on: true);
+      await pump(tester);
+
+      await tester.tap(find.text('Isolation lifts'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel timer'));
+      await tester.pumpAndSettle();
+
+      expect(preferences.defaultRest(.isolation), 0);
+      expect(find.text('No rest'), findsOneWidget);
+    });
   });
 }

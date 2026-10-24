@@ -2,10 +2,11 @@ part of 'settings.dart';
 
 /// Every exercise with a rest timer, what it is set to, and a way to change or
 /// clear it — otherwise a timer is only visible from inside a workout, on the
-/// exercise that owns it.
+/// exercise that owns it. While default rest (#174) is on, its length for each
+/// kind of exercise comes first; off, the page is what it was before it.
 ///
-/// A view over [Timers]: nothing here is stored beyond what setting a timer
-/// from the exercise menu already stores.
+/// A view over [Timers] and [Preferences]: nothing here is stored beyond what
+/// setting a timer from the exercise menu, or a default here, already stores.
 class RestTimersPage extends StatelessWidget {
   const new({super.key});
 
@@ -14,6 +15,7 @@ class RestTimersPage extends StatelessWidget {
     final L(:restTimers, :restTimersEmpty) = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final exercises = Exercises.watch(context);
+    final defaults = Preferences.watch(context).isOn(.defaultRest);
     // keyed by exercise id under a foreign key that cascades, so every timer
     // resolves; one that does not can only come from a hand-edited database,
     // and inventing a row for it would be answering a state the app cannot
@@ -31,7 +33,7 @@ class RestTimersPage extends StatelessWidget {
           child: LogoStripe(),
         ),
       ),
-      body: switch ((exercises.isInitialized, rows.isEmpty)) {
+      body: switch ((exercises.isInitialized, rows.isEmpty && !defaults)) {
         // before the catalog lands nothing resolves, and the page would claim
         // there are no timers
         (false, _) => const SizedBox.shrink(),
@@ -45,7 +47,7 @@ class RestTimersPage extends StatelessWidget {
             ),
           ),
         ),
-        (true, false) => _RestTimerList(rows: rows),
+        (true, false) => _RestTimerList(rows: rows, defaults: defaults),
       },
     );
   }
@@ -56,10 +58,17 @@ typedef _Row = ({String id, Exercise exercise, int seconds});
 class _RestTimerList extends StatelessWidget {
   final List<_Row> rows;
 
-  const new({required this.rows});
+  /// Whether default rest (#174) is on, and its lengths head the page.
+  final bool defaults;
+
+  const new({required this.rows, required this.defaults});
 
   @override
   Widget build(BuildContext context) {
+    final L(:defaultRest, :exercises, :restTimersDefaultNote) = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final tiles = rows.map((row) => _RestTimerTile(key: ValueKey(row.id), row: row)).toList();
+
     return LayoutBuilder(
       builder: (context, constraints) {
         // a name and a duration per row — across a tablet pane the two end up
@@ -71,15 +80,81 @@ class _RestTimerList extends StatelessWidget {
             width: width,
             child: ListView(
               padding: const .symmetric(vertical: 8),
-              children: [
-                ...rows.map((row) => _RestTimerTile(key: ValueKey(row.id), row: row)),
-              ],
+              children: switch (defaults) {
+                // off, the list is the timers alone, with no heading over them
+                false => tiles,
+                true => [
+                  _Section(
+                    title: defaultRest,
+                    children: [...RestKind.values.map(_DefaultRestTile.new)],
+                  ),
+                  const SizedBox(height: 16),
+                  switch (tiles) {
+                    [] => Padding(
+                      padding: const .symmetric(horizontal: 16),
+                      child: Text(
+                        restTimersDefaultNote,
+                        style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    _ => _Section(title: exercises, children: tiles),
+                  },
+                ],
+              },
             ),
           ),
         );
       },
     );
   }
+}
+
+/// One kind of exercise's default rest (#174): what it is, and how long. A tap
+/// changes it; the picker's Cancel makes it no rest at all, which is kept
+/// rather than reset — the user said none.
+class const _DefaultRestTile(final RestKind kind) extends StatelessWidget with HasHaptic {
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme) = Theme.of(context);
+    final seconds = Preferences.watch(context).defaultRest(kind);
+
+    return ListTile(
+      key: ValueKey('defaultRest-${kind.value}'),
+      title: Text(_kindLabel(kind, l)),
+      trailing: Text(
+        switch (seconds) {
+          0 => l.noRest,
+          _ => formatRestTimer(seconds),
+        },
+        style: textTheme.bodyLarge?.copyWith(fontFeatures: const [.tabularFigures()]),
+      ),
+      onTap: () => _edit(context, seconds),
+    );
+  }
+
+  Future<void> _edit(BuildContext context, int current) async {
+    buzz();
+    final preferences = Preferences.of(context);
+    final seconds = await showDurationPicker(
+      context,
+      initialValue: switch (current) {
+        0 => null,
+        _ => current,
+      },
+      subtitle: _kindLabel(kind, L.of(context)),
+    );
+    // the picker's own contract: 0 is its Cancel, null a dismissal
+    if (seconds case int seconds) preferences.setDefaultRest(kind, seconds);
+  }
+}
+
+String _kindLabel(RestKind kind, L l) {
+  return switch (kind) {
+    .compound => l.restKindCompound,
+    .isolation => l.restKindIsolation,
+    .conditioning => l.restKindConditioning,
+  };
 }
 
 class _RestTimerTile extends StatelessWidget with HasHaptic {

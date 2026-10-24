@@ -74,7 +74,15 @@ enum Feature {
   /// has a working weight and no warm-ups yet. What it adds are ordinary
   /// warm-up sets, kept whatever the answer; off, only the offer, the menu
   /// row and the ramp in Settings go.
-  warmups('warmups');
+  warmups('warmups'),
+
+  /// A rest after every set, for exercises without a timer of their own
+  /// (#174): one length per `RestKind`, each editable in Settings › Rest
+  /// timers. A per-exercise timer always wins, and so does a program's planned
+  /// rest. Offered once, under the exercise whose set was just ticked with no
+  /// rest to start. The lengths are this device's, like the timers they stand
+  /// in for; off, they are kept, unused.
+  defaultRest('defaultRest');
 
   final String value;
 

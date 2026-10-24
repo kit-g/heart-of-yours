@@ -292,10 +292,11 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                       onTap: onFeatures,
                     ),
                     const _NotificationsRow(),
-                    // absent until there is a timer to list: an entry that can
-                    // only open onto an empty page is a dead end
-                    Selector<Timers, bool>(
-                      selector: (_, timers) => timers.isNotEmpty,
+                    // absent until there is a timer to list, or default rest
+                    // (#174) to adjust: an entry that can only open onto an
+                    // empty page is a dead end
+                    Selector2<Timers, Preferences, bool>(
+                      selector: (_, timers, preferences) => timers.isNotEmpty || preferences.isOn(.defaultRest),
                       builder: (_, any, _) {
                         return switch (any) {
                           true => ListTile(
