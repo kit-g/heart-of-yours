@@ -22,6 +22,13 @@ void main() {
       expect(PreviousSet.represents(dips, {'weight': 10.0}), isFalse);
     });
 
+    test('a bodyweight move done with nothing added keeps a null weight, and still counts (#488)', () {
+      expect(PreviousSet.represents(dips, {'reps': 12, 'weight': null}), isTrue);
+      expect(PreviousSet.represents(dips, {'reps': 12}), isTrue);
+      expect(PreviousSet.represents(dips, {'reps': 12, 'weight': 10.0}), isTrue);
+      expect(PreviousSet.represents(dips, {'weight': null}), isFalse);
+    });
+
     test('legacy junk with the right fields still counts', () {
       // the old serializer wrote zeros for foreign fields; reps+weight are real
       expect(

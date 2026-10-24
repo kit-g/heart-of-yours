@@ -177,76 +177,9 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                           );
                         },
                       ),
-                      MenuAnchor(
-                        style: _menuStyle(),
-                        builder: (context, controller, _) {
-                          return IconButton(
-                            key: WorkoutDetailKeys.exerciseOptionsFor(exercise.exercise.id),
-                            tooltip: L.of(context).exerciseOptions,
-                            style: const ButtonStyle(
-                              visualDensity: VisualDensity(vertical: 0, horizontal: -2),
-                            ),
-                            icon: const Icon(Icons.more_horiz),
-                            onPressed: () => controller.isOpen ? controller.close() : controller.open(),
-                          );
-                        },
-                        menuChildren: [
-                          _exerciseOptionButton(context, .inspectExercise, textTheme, colorScheme),
-                          if (onNoteChanged != null &&
-                              exercises.canPinNote &&
-                              exercises.noteFor(exercise.exercise.id) != null)
-                            MenuItemButton(
-                              leadingIcon: const Icon(Icons.push_pin_outlined),
-                              onPressed: () => _unpinNote(context),
-                              child: Text(L.of(context).unpinExerciseNote, style: textTheme.titleSmall),
-                            ),
-                          if (onNoteChanged != null)
-                            MenuItemButton(
-                              leadingIcon: const Icon(Icons.edit_note_rounded),
-                              onPressed: () => _editNote(context),
-                              child: Text(switch (exercise.note) {
-                                String _ => L.of(context).editExerciseNote,
-                                null => L.of(context).addExerciseNote,
-                              }, style: textTheme.titleSmall),
-                            ),
-                          if ((onReplaceExercise, _slot, exercise.isStarted) case (
-                            final onReplace?,
-                            final String pattern,
-                            false,
-                          ))
-                            MenuItemButton(
-                              key: WorkoutDetailKeys.swapExerciseFor(exercise.exercise.id),
-                              leadingIcon: const Icon(Icons.swap_horiz_rounded),
-                              onPressed: () => _replace(context, pattern, onReplace),
-                              child: Text(L.of(context).swapExercise, style: textTheme.titleSmall),
-                            ),
-                          if ((onReplaceExercise, _slot, exercise.isStarted) case (
-                            final onReplace?,
-                            null,
-                            false,
-                          ))
-                            MenuItemButton(
-                              key: WorkoutDetailKeys.replaceExerciseFor(exercise.exercise.id),
-                              leadingIcon: const Icon(Icons.find_replace_rounded),
-                              onPressed: () => _replaceAny(context, onReplace),
-                              child: Text(L.of(context).replaceExercise, style: textTheme.titleSmall),
-                            ),
-                          if ((onAddWarmups, preferences.isOn(.warmups)) case (final add?, true))
-                            if (_warmupsFor(exercise, preferences, exercises) case final sets when sets.isNotEmpty)
-                              MenuItemButton(
-                                key: WorkoutDetailKeys.addWarmupsFor(exercise.exercise.id),
-                                leadingIcon: Icon(Feature.warmups.icon),
-                                onPressed: () {
-                                  buzz();
-                                  add(exercise, sets);
-                                },
-                                child: Text(L.of(context).addWarmups, style: textTheme.titleSmall),
-                              ),
-                          ..._groupOptions(context, textTheme),
-                          _exerciseOptionButton(context, .autoRestTimer, textTheme, colorScheme),
-                          if (_showsUnitOption) _unitSubmenu(context, textTheme),
-                          _exerciseOptionButton(context, .remove, textTheme, colorScheme),
-                        ],
+                      _ExerciseOptionsButton(
+                        key: WorkoutDetailKeys.exerciseOptionsFor(exercise.exercise.id),
+                        options: () => _options(context, exercises, preferences),
                       ),
                     ],
                   ),
@@ -538,14 +471,6 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     ];
   }
 
-  String _exerciseOptionCopy(BuildContext context, _ExerciseOption option) {
-    return switch (option) {
-      .autoRestTimer => L.of(context).restTimer,
-      .remove => L.of(context).removeExercise,
-      .inspectExercise => L.of(context).aboutExercise,
-    };
-  }
-
   /// The open slot's pattern (#349), a Programs thing: with the plan not
   /// shown, an exercise that came with one is replaced like any other.
   String? get _slot {
@@ -555,134 +480,202 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     };
   }
 
+  /// The exercise's ⋯ (#488), most used first: what happens between this
+  /// exercise's sets, then its note, then how it sits on the sheet, then its
+  /// unit and its page. Removing it comes last, set apart.
+  List<PopupMenuEntry<_ExerciseAction>> _options(BuildContext context, Exercises exercises, Preferences preferences) {
+    final l = L.of(context);
+    final id = exercise.exercise.id;
+    return [
+      _option(
+        icon: Icons.timer_outlined,
+        label: l.restTimer,
+        onPick: (_) {
+          buzz();
+          _selectRestTime(context, initialValue: restFor(context, exercise));
+        },
+      ),
+      if ((onAddWarmups, preferences.isOn(.warmups)) case (final add?, true))
+        if (_warmupsFor(exercise, preferences, exercises) case final sets when sets.isNotEmpty)
+          _option(
+            key: WorkoutDetailKeys.addWarmupsFor(id),
+            icon: Feature.warmups.icon,
+            label: l.addWarmups,
+            onPick: (_) {
+              buzz();
+              add(exercise, sets);
+            },
+          ),
+      if (onNoteChanged != null) ...[
+        _option(
+          icon: Icons.edit_note_rounded,
+          label: switch (exercise.note) {
+            String _ => l.editExerciseNote,
+            null => l.addExerciseNote,
+          },
+          onPick: (_) => _editNote(context),
+        ),
+        if (exercises.canPinNote && exercises.noteFor(id) != null)
+          _option(
+            icon: Icons.push_pin_outlined,
+            label: l.unpinExerciseNote,
+            onPick: (_) => _unpinNote(context),
+          ),
+      ],
+      ..._groupOptions(context),
+      if ((onReplaceExercise, exercise.isStarted) case (final onReplace?, false))
+        switch (_slot) {
+          final String pattern => _option(
+            key: WorkoutDetailKeys.swapExerciseFor(id),
+            icon: Icons.swap_horiz_rounded,
+            label: l.swapExercise,
+            onPick: (_) => _replace(context, pattern, onReplace),
+          ),
+          null => _option(
+            key: WorkoutDetailKeys.replaceExerciseFor(id),
+            icon: Icons.find_replace_rounded,
+            label: l.replaceExercise,
+            onPick: (_) => _replaceAny(context, onReplace),
+          ),
+        },
+      if (_unit(context, exercises, preferences) case (final label, final current))
+        _option(
+          icon: Icons.straighten,
+          label: label,
+          value: _unitCopy(l, current),
+          onPick: (anchor) => _pickUnit(context, anchor, current),
+        ),
+      _option(
+        icon: Icons.info_outline_rounded,
+        label: l.aboutExercise,
+        onPick: (_) {
+          buzz();
+          onTapExercise(exercise.exercise);
+        },
+      ),
+      _removeOption(context, l.removeExercise),
+    ];
+  }
+
+  /// The one destructive row: in the error colour, under a hairline that
+  /// sets it apart from the rows that keep the exercise.
+  PopupMenuItem<_ExerciseAction> _removeOption(BuildContext context, String label) {
+    final ColorScheme(:error, :outlineVariant) = Theme.of(context).colorScheme;
+    return PopupMenuItem<_ExerciseAction>(
+      key: WorkoutDetailKeys.removeExerciseFor(exercise.exercise.id),
+      padding: .zero,
+      value: (_) {
+        buzz();
+        onRemoveExercise(exercise);
+      },
+      child: Container(
+        width: _exerciseMenuWidth,
+        constraints: const BoxConstraints(minHeight: kMinInteractiveDimension),
+        alignment: .centerStart,
+        padding: const .symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: outlineVariant, width: .5)),
+        ),
+        child: _OptionRow(icon: Icons.close, label: label, color: error),
+      ),
+    );
+  }
+
+  PopupMenuItem<_ExerciseAction> _option({
+    Key? key,
+    required IconData icon,
+    required String label,
+    String? value,
+    required _ExerciseAction onPick,
+  }) {
+    return PopupMenuItem<_ExerciseAction>(
+      key: key,
+      value: onPick,
+      child: _OptionRow(icon: icon, label: label, value: value),
+    );
+  }
+
   /// A superset with the exercise either side, unless it already shares this
-  /// one's (#159), and leaving the one this exercise is in.
-  List<Widget> _groupOptions(BuildContext context, TextTheme textTheme) {
+  /// one's (#159), and leaving the one this exercise is in. The neighbour's
+  /// name wraps inside the menu's width rather than widening it.
+  List<PopupMenuEntry<_ExerciseAction>> _groupOptions(BuildContext context) {
     final l = L.of(context);
     return [
       if (onGroup case final join?)
         for (final neighbour in [?before, ?after])
           if (!group.contains(neighbour))
-            MenuItemButton(
+            _option(
               key: WorkoutDetailKeys.groupWith(exercise.exercise.id, neighbour.exercise.id),
-              leadingIcon: const Icon(Icons.link_rounded),
-              onPressed: () => join(exercise, neighbour),
-              child: Text(l.supersetWith(neighbour.exercise.name), style: textTheme.titleSmall),
+              icon: Icons.link_rounded,
+              label: l.supersetWith(neighbour.exercise.name),
+              onPick: (_) => join(exercise, neighbour),
             ),
       if ((onLeaveGroup, group.length) case (final leave?, > 1))
-        MenuItemButton(
+        _option(
           key: WorkoutDetailKeys.leaveGroup(exercise.exercise.id),
-          leadingIcon: const Icon(Icons.link_off_rounded),
-          onPressed: () => leave(exercise),
-          child: Text(switch (group.length) {
+          icon: Icons.link_off_rounded,
+          label: switch (group.length) {
             2 => l.leaveSuperset,
             _ => l.leaveCircuit,
-          }, style: textTheme.titleSmall),
+          },
+          onPick: (_) => leave(exercise),
         ),
     ];
   }
 
-  /// Whether the per-exercise unit submenu applies (weight- or distance-based
-  /// exercises only — duration/reps have no unit).
-  bool get _showsUnitOption {
+  /// The per-exercise unit's row, for weight- or distance-based exercises
+  /// only (duration and reps have no unit): its label, and the unit in force
+  /// — the global setting for this dimension when there's no override of the
+  /// exercise's own, so the row always names one.
+  (String, MeasurementUnit)? _unit(BuildContext context, Exercises exercises, Preferences prefs) {
+    final l = L.of(context);
+    final override = exercises.unitFor(exercise.exercise.id);
     return switch (exercise.exercise.category) {
-      .duration || .repsOnly => false,
-      _ => true,
+      .duration || .repsOnly => null,
+      .cardio => (l.distanceUnitLabel, override ?? prefs.distanceUnit),
+      .barbell ||
+      .dumbbell ||
+      .machine ||
+      .weightedBodyWeight ||
+      .assistedBodyWeight ||
+      .weightedDistance ||
+      .weightedDuration => (l.weightUnitLabel, override ?? prefs.weightUnit),
     };
   }
 
-  Widget _exerciseOptionButton(
-    BuildContext context,
-    _ExerciseOption option,
-    TextTheme textTheme,
-    ColorScheme colorScheme,
-  ) {
-    return MenuItemButton(
-      leadingIcon: _exerciseOptionIcon(option, colorScheme),
-      onPressed: () => _onTapExerciseOption(context, option),
-      child: Text(
-        _exerciseOptionCopy(context, option),
-        style: _exerciseOptionStyle(textTheme, colorScheme, option),
-      ),
-    );
+  String _unitCopy(L l, MeasurementUnit unit) {
+    return switch (unit) {
+      .imperial => l.imperial,
+      .metric => l.metric,
+    };
   }
 
-  /// Cascading "Weight/Distance unit → Imperial/Metric" submenu. Writes through
-  /// [Exercises.setUnit] (per-user) and check-marks the active selection.
-  Widget _unitSubmenu(BuildContext context, TextTheme textTheme) {
+  /// The unit's two choices, in a popup of their own where the menu was:
+  /// writes through [Exercises.setUnit] (per user).
+  Future<void> _pickUnit(BuildContext context, RelativeRect anchor, MeasurementUnit current) async {
     final l = L.of(context);
-    final prefs = Preferences.of(context);
     final exercises = Exercises.of(context);
-    final isCardio = exercise.exercise.category == .cardio;
-    // fall back to the global setting for this dimension when there's no
-    // explicit per-exercise override, so the menu always check-marks something.
-    final current = exercises.unitFor(exercise.exercise.id) ?? (isCardio ? prefs.distanceUnit : prefs.weightUnit);
-    final label = isCardio ? l.distanceUnitLabel : l.weightUnitLabel;
-    return SubmenuButton(
-      menuStyle: _menuStyle(),
-      leadingIcon: const Icon(Icons.straighten),
-      menuChildren: [
+    final picked = await showMenu<MeasurementUnit>(
+      context: context,
+      position: anchor,
+      constraints: const BoxConstraints(minWidth: _exerciseMenuWidth, maxWidth: _exerciseMenuWidth),
+      items: [
         for (final unit in MeasurementUnit.values)
-          MenuItemButton(
-            leadingIcon: Icon(
-              current == unit ? Icons.check : null,
-              size: 18,
-            ),
-            onPressed: () {
-              buzz();
-              exercises.setUnit(exercise.exercise, unit);
-            },
-            child: Text(
-              switch (unit) {
-                .imperial => l.imperial,
-                .metric => l.metric,
-              },
-              style: textTheme.titleSmall,
+          PopupMenuItem<MeasurementUnit>(
+            value: unit,
+            child: Semantics(
+              selected: unit == current,
+              child: _OptionRow(
+                icon: unit == current ? Icons.check : null,
+                label: _unitCopy(l, unit),
+              ),
             ),
           ),
       ],
-      child: Text(
-        label,
-        style: textTheme.titleSmall,
-      ),
     );
-  }
-
-  MenuStyle _menuStyle() {
-    return const MenuStyle(
-      padding: WidgetStatePropertyAll(.zero),
-      shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: .all(.circular(8)))),
-    );
-  }
-
-  TextStyle? _exerciseOptionStyle(TextTheme theme, ColorScheme scheme, _ExerciseOption option) {
-    return switch (option) {
-      .remove => theme.titleSmall?.copyWith(color: scheme.error),
-      _ => theme.titleSmall,
-    };
-  }
-
-  Widget _exerciseOptionIcon(_ExerciseOption option, ColorScheme scheme) {
-    return switch (option) {
-      .remove => Icon(Icons.close, color: scheme.error),
-      .autoRestTimer => const Icon(Icons.timer_outlined),
-      .inspectExercise => const Icon(Icons.info_outline_rounded),
-    };
-  }
-
-  Future<void> _onTapExerciseOption(BuildContext context, _ExerciseOption option) async {
+    if (picked == null) return;
     buzz();
-    switch (option) {
-      case .remove:
-        return onRemoveExercise(exercise);
-      case .autoRestTimer:
-        return _selectRestTime(
-          context,
-          initialValue: restFor(context, exercise),
-        );
-      case .inspectExercise:
-        return onTapExercise(exercise.exercise);
-    }
+    exercises.setUnit(exercise.exercise, picked);
   }
 
   Future<void> _selectRestTime(BuildContext context, {int? initialValue}) async {
@@ -769,6 +762,87 @@ class const _ColumnHeader({
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The exercise menu's one width (#488): rows wrap a long exercise name
+/// inside it rather than widening the menu past the screen's edge, as the old
+/// menu did with "Superset with Triceps Pushdown (Cable - Straight Bar)". A
+/// multiple of 56, the step a popup menu rounds its width up to, or the rows
+/// stop short of its right edge.
+const _exerciseMenuWidth = 280.0;
+
+/// What a row of the exercise menu does once the menu has closed. [anchor] is
+/// where the menu stood, for a row that opens a choice of its own there.
+typedef _ExerciseAction = void Function(RelativeRect anchor);
+
+/// An exercise's ⋯: the app's popup, as the workout's own ⋯ is, hung under
+/// the button with its right edge on the button's.
+class _ExerciseOptionsButton extends StatefulWidget {
+  final List<PopupMenuEntry<_ExerciseAction>> Function() options;
+
+  const new({super.key, required this.options});
+
+  @override
+  State<_ExerciseOptionsButton> createState() => _ExerciseOptionsButtonState();
+}
+
+class _ExerciseOptionsButtonState extends State<_ExerciseOptionsButton> {
+  final _anchor = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      key: _anchor,
+      tooltip: L.of(context).exerciseOptions,
+      style: const ButtonStyle(
+        visualDensity: VisualDensity(vertical: 0, horizontal: -2),
+      ),
+      icon: const Icon(Icons.more_horiz),
+      onPressed: _open,
+    );
+  }
+
+  Future<void> _open() async {
+    RelativeRect anchor() => menuUnderValue(context, _anchor, width: _exerciseMenuWidth);
+    final picked = await showMenu<_ExerciseAction>(
+      context: context,
+      position: anchor(),
+      constraints: const BoxConstraints(minWidth: _exerciseMenuWidth, maxWidth: _exerciseMenuWidth),
+      items: widget.options(),
+    );
+    if (!mounted) return;
+    picked?.call(anchor());
+  }
+}
+
+/// One row of the exercise menu: an icon and up to two lines of copy, and,
+/// for a setting, the value in force at its end.
+class const _OptionRow({
+  final IconData? icon,
+  required final String label,
+  final String? value,
+  final Color? color,
+}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return Row(
+      spacing: 12,
+      children: [
+        SizedBox(width: 24, child: Icon(icon, color: color)),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 2,
+            overflow: .ellipsis,
+            style: textTheme.titleSmall?.copyWith(color: color),
+          ),
+        ),
+        if (value case final String value)
+          Text(value, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+      ],
     );
   }
 }

@@ -321,6 +321,10 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                                       case {'weight': num weight, 'reps': int reps}:
                                         _weightController.text = prefs.weight(weight, unit: _unitOverride);
                                         _repsController.text = '$reps';
+                                      // bodyweight with nothing added: last time had no load
+                                      case {'reps': int reps}:
+                                        _weightController.clear();
+                                        _repsController.text = '$reps';
                                     }
                                   case .repsOnly:
                                     switch (m) {

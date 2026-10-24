@@ -73,8 +73,6 @@ extension on TextEditingController {
   }
 }
 
-enum _ExerciseOption { inspectExercise, autoRestTimer, remove }
-
 /// Index in [items] where [dragged] would land if dropped on [hovered] — the
 /// slot the drop indicator marks, and the slot the reorder actually produces.
 ///

@@ -500,6 +500,36 @@ void main() {
       },
     );
 
+    testWidgets('a bodyweight move done with nothing added reads its last time by the count (#488)', (tester) async {
+      final bridge = Exercise.fromJson({
+        'id': 'id-bridge',
+        'name': 'Single Leg Bridge',
+        'category': 'Weighted Body Weight',
+        'target': 'Legs',
+        'archived': false,
+      });
+      final service = MockPreviousExerciseService();
+      when(service.getPreviousSets('u1')).thenAnswer(
+        (_) async => {
+          'id-bridge': [
+            {'set_type': 'normal', 'weight': null, 'reps': 12},
+          ],
+        },
+      );
+      previous = PreviousExercises(service: service)..userId = 'u1';
+      await previous.init();
+
+      preferences.setFeature(.watchApp, on: true);
+      workout = Workout.fromExercises([WorkoutExercise(starter: ExerciseSet(bridge))], name: 'Home');
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+      await pump(tester);
+      await workouts.init();
+      await tester.pumpAndSettle();
+
+      final set = (link.sent.last as WatchWorkout).exercises.single.sets.single;
+      expect(set.previous, contains('12'));
+    });
+
     testWidgets('a warm-up reads as one on the watch, and only plain sets are numbered', (tester) async {
       await running(tester, prepare: (workout) => workout.first.first.setType = .warmup);
 
