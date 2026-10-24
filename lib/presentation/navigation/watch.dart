@@ -431,6 +431,10 @@ class _WatchPresenterState extends State<WatchPresenter> {
       (true, {'reps': int reps, 'weight': num weight}) => l.watchLastTime(
         '${prefs.weight(weight, unit: _unit(exercise))} $unit × $reps',
       ),
+      // bodyweight with nothing added keeps a null weight (#488)
+      (true, {'reps': int reps}) when exercise.exercise.category == .weightedBodyWeight => l.watchLastTime(
+        '$reps ${l.reps}',
+      ),
       (false, {'reps': int reps}) => l.watchLastTime('$reps ${l.reps}'),
       _ => null,
     };

@@ -19,13 +19,19 @@ class PreviousSet extends StatelessWidget {
   /// actually displays. Legacy rows miss them (a null weight, a category
   /// mismatch) and would render as a bare dash — the caller uses this to
   /// skip the tappable pill around it, since a dash is nothing to copy.
+  ///
+  /// A bodyweight move's load is what is *added*, and a set done with none
+  /// keeps a null weight: completing one asks for reps alone. Reading that
+  /// null as a legacy row left a single-leg bridge done twice with no last
+  /// time at all (#488).
   static bool represents(Exercise exercise, Map<String, dynamic> previousValue) {
     return switch ((exercise.category, previousValue)) {
       (
-        .barbell || .dumbbell || .machine || .assistedBodyWeight || .weightedBodyWeight,
+        .barbell || .dumbbell || .machine || .assistedBodyWeight,
         {'reps': int _, 'weight': num _},
       ) =>
         true,
+      (.weightedBodyWeight, {'reps': int _}) => true,
       (.repsOnly, {'reps': int _}) => true,
       (.duration, {'duration': num _}) => true,
       (.cardio, {'duration': num _, 'distance': num _}) => true,
@@ -53,6 +59,11 @@ class PreviousSet extends StatelessWidget {
         return switch (previousValue) {
           {'reps': int reps, 'weight': num weight} => Text(
             '${prefs.weight(weight, unit: override)} $unit x $reps',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          // bodyweight with nothing added: the count is the whole of it
+          {'reps': int count} when exercise.category == .weightedBodyWeight => Text(
+            '$count $reps',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           _ => const Text(_emptyValue),
