@@ -68,6 +68,8 @@ enum _Screen {
   setTargetDialog,
   rpePicker,
   setStopwatch,
+  platesOffer,
+  plateCalculator,
   history,
   historyNotToday,
   skipPage,
@@ -461,6 +463,26 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.setStopwatch, _Guideline.textContrastDark, null),
   (_Screen.setStopwatch, _Guideline.androidTapTarget, null),
   (_Screen.setStopwatch, _Guideline.iosTapTarget, null),
+  // The plate calculator (#132): its one offer over the keyboard while a
+  // barbell weight is typed, and the sheet it opens once on.
+  (_Screen.platesOffer, _Guideline.labeledTapTarget, null),
+  (_Screen.platesOffer, _Guideline.textContrastLight, null),
+  (_Screen.platesOffer, _Guideline.textContrastDark, null),
+  (
+    _Screen.platesOffer,
+    _Guideline.androidTapTarget,
+    'the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart) and, behind it, the set-row fields, exercise header and workout bar\'s buttons are below 48x48 (as for workoutNote) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.platesOffer,
+    _Guideline.iosTapTarget,
+    'the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart) and, behind it, the set-row fields, exercise header and workout bar\'s buttons are below 44x44 (as for workoutNote) — visual-density change, out of scope',
+  ),
+  (_Screen.plateCalculator, _Guideline.labeledTapTarget, null),
+  (_Screen.plateCalculator, _Guideline.textContrastLight, null),
+  (_Screen.plateCalculator, _Guideline.textContrastDark, null),
+  (_Screen.plateCalculator, _Guideline.androidTapTarget, null),
+  (_Screen.plateCalculator, _Guideline.iosTapTarget, null),
   (_Screen.exerciseNoteEditor, _Guideline.labeledTapTarget, null),
   (_Screen.exerciseNoteEditor, _Guideline.textContrastLight, null),
   (_Screen.exerciseNoteEditor, _Guideline.textContrastDark, null),
@@ -1018,6 +1040,9 @@ void main() {
     if (screen == _Screen.setStopwatch) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on', 'feature-setStopwatch': 'on'});
     }
+    if (screen == _Screen.plateCalculator) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-plateCalculator': 'on'});
+    }
     if (screen == _Screen.rpePicker) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on'});
     }
@@ -1538,6 +1563,21 @@ void main() {
         await tester.pumpTimes();
         await tester.tap(find.text('Pause'));
         await tester.pumpTimes();
+      case _Screen.platesOffer || _Screen.plateCalculator:
+        final workout = Workout(name: 'Plates')..add(_bench);
+        await Workouts.of(tester.element(find.byType(MaterialApp))).startWorkout(source: .template, template: workout);
+        await tester.tapByKey(AppKeys.workoutStack);
+        await tester.pumpTimes();
+        if (find.byType(WorkoutDetail).evaluate().isEmpty) {
+          await tester.tapByKey(WorkoutDetailKeys.startNewWorkout);
+        }
+        await tester.pumpTimes();
+        await tester.enterText(find.byKey(WorkoutDetailKeys.weightFor(_bench.id, 1)), '101');
+        await tester.pumpTimes();
+        if (screen == _Screen.plateCalculator) {
+          await tester.tapByKey(WorkoutDetailKeys.platesButton);
+          await tester.pumpTimes();
+        }
       case _Screen.rpePicker:
         final workout = Workout(name: 'Rated')..add(_bench);
         workout.first.first.rpe = 8;

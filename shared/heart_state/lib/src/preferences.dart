@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'features.dart';
+import 'plates.dart';
 
 const _baseColor = 'baseColor';
 const _themeMode = 'themeMode';
@@ -25,6 +26,8 @@ const _installed = 'installed';
 const _lockScreenWorkout = 'lockScreenWorkout';
 const _feature = 'feature';
 const _whatsNewRead = 'whatsNewRead';
+const _barWeight = 'barWeight';
+const _platesWithout = 'platesWithout';
 
 class Preferences with ChangeNotifier {
   /// The key under which [onboardingSeen] is stored. Public so a test can seed
@@ -388,6 +391,40 @@ class Preferences with ChangeNotifier {
 
   set lockScreenWorkout(bool value) {
     _prefs?.setBool(_lockScreenWorkout, value);
+    notifyListeners();
+  }
+
+  /// What [exercise]'s bar weighs for the plate calculator (#132): the
+  /// user's choice, else the bar its equipment suggests ([Bar.defaultFor]).
+  ///
+  /// Device only: the account's exercise preferences have no field for it, and
+  /// a bar is the gym's, which a second phone may well not share.
+  BarWeight barWeightFor(Exercise exercise) {
+    return BarWeight.decode(_prefs?.getString('$_barWeight-${exercise.id}')) ?? NamedBar(Bar.defaultFor(exercise));
+  }
+
+  void setBarWeight(Exercise exercise, BarWeight bar) {
+    _prefs?.setString('$_barWeight-${exercise.id}', bar.encoded);
+    notifyListeners();
+  }
+
+  /// The plates the calculator loads from in [unit], heaviest first: the
+  /// standard set less any the user unticked. Stored as what is missing, so
+  /// the full set is what an untouched install has.
+  List<double> platesIn(MeasurementUnit unit) {
+    final without = _prefs?.getStringList('$_platesWithout-${unit.name}') ?? const [];
+    return standardPlates(unit).where((plate) => !without.contains('$plate')).toList();
+  }
+
+  void setPlate(MeasurementUnit unit, double plate, {required bool on}) {
+    final key = '$_platesWithout-${unit.name}';
+    final without = {...?_prefs?.getStringList(key)};
+    if (on) {
+      without.remove('$plate');
+    } else {
+      without.add('$plate');
+    }
+    _prefs?.setStringList(key, without.toList());
     notifyListeners();
   }
 
