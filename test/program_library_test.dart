@@ -244,6 +244,59 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('on a phone, the facts that pick it are badges and a session reads across its card (#488)', (
+      tester,
+    ) async {
+      answer(.on);
+      await openFirstSteps(tester);
+      // the page at a phone's width; the way to it is not what this is about
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpTimes();
+
+      final facts = find.byKey(AppKeys.libraryFacts);
+      for (final fact in ['2× a week', 'About 30 min', '8 weeks', 'Starting out', 'No equipment']) {
+        expect(
+          find.descendant(of: facts, matching: find.text(fact)),
+          findsOneWidget,
+          reason: fact,
+        );
+      }
+      // the line the library's card keeps is not repeated on the page
+      expect(find.text('2× a week · About 30 min · 8 weeks'), findsNothing);
+
+      final card = find.ancestor(
+        of: find.text('Day A'),
+        matching: find.byWidgetPredicate(
+          (widget) => switch (widget.key) {
+            ValueKey<String>(:final value) => value.startsWith('Programs.library.session.'),
+            _ => false,
+          },
+        ),
+      );
+      await scrollTo(tester, card);
+      // an exercise on the left, what to do with it against the right edge
+      final rest = find.descendant(of: card, matching: find.textContaining(' rest')).first;
+      expect(tester.getRect(rest).right, moreOrLessEquals(tester.getRect(card).right - 16, epsilon: 1));
+    });
+
+    testWidgets('a program opened from "After this" opens at its top', (tester) async {
+      answer(.on);
+      await openFirstSteps(tester);
+      final next = find.byKey(AppKeys.libraryNext('full_body_muscle'));
+      await scrollTo(tester, next);
+      await tester.tap(next);
+      await tester.pumpTimes();
+
+      expect(find.text('Full body for muscle'), findsWidgets);
+      final scrollable = find.descendant(
+        of: find.byKey(const PageStorageKey('full_body_muscle')),
+        matching: find.byType(Scrollable),
+      );
+      expect(tester.state<ScrollableState>(scrollable.first).position.pixels, 0);
+    });
+
     testWidgets('starting it makes the program and its sessions the user\'s own, filed in a folder of its name', (
       tester,
     ) async {
@@ -434,6 +487,23 @@ void main() {
       // a bridge works the legs too, and the map calls it kinder to a knee
       expect(find.text('glute-bridge'), findsWidgets);
       expect(find.text("Suggestions only: a session's exercises change in its template."), findsOneWidget);
+    });
+
+    testWidgets('the page\'s tappable rows share one shape and inset, and no hover ink to leave lit (#488)', (
+      tester,
+    ) async {
+      await openWith(tester);
+      await scrollTo(tester, find.byKey(AppKeys.goEasyRow));
+      final easy = tester.widget<ListTile>(find.byKey(AppKeys.goEasyRow));
+      await scrollTo(tester, find.byKey(AppKeys.libraryNext('full_body_muscle')));
+      final next = tester.widget<ListTile>(find.byKey(AppKeys.libraryNext('full_body_muscle')));
+      expect(next.shape, easy.shape);
+      expect(next.contentPadding, easy.contentPadding);
+      expect(next.leading, isNotNull, reason: 'titles line up with the go-easy row\'s');
+      // a pointer resting where a row was tapped lit it again on the way
+      // back: neither row paints hover
+      expect(easy.hoverColor, Colors.transparent);
+      expect(next.hoverColor, Colors.transparent);
     });
   });
 }

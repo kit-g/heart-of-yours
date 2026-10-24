@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -179,5 +180,21 @@ void main() {
     expect(find.text('RECENT'), findsNothing);
     expect(find.text('ALL EXERCISES'), findsNothing);
     expect(names(tester), [barbell.name, dumbbell.name, incline.name, squat.name]);
+  });
+
+  testWidgets('with nothing of the lifter\'s own, Target and Category share the row evenly (#488)', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(tester);
+
+    expect(find.text('Mine'), findsNothing);
+    Rect button(String label) =>
+        tester.getRect(find.ancestor(of: find.text(label), matching: find.byType(PrimaryButton)));
+    final target = button('Target');
+    final category = button('Category');
+    // no slot held for the absent chip: the row's insets match on both sides
+    expect(390 - category.right, moreOrLessEquals(target.left));
+    expect(category.width, moreOrLessEquals(target.width));
   });
 }

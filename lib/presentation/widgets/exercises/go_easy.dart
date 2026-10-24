@@ -206,6 +206,12 @@ class _GoEasySheet extends StatelessWidget with HasHaptic<_GoEasySheet> {
 /// setup and on a library program's page. Absent while Programs is off or
 /// the map isn't published.
 class GoEasyRow extends StatelessWidget {
+  /// The ink inset from the row's content and rounded, as Settings' option
+  /// rows: flush, it was a hard-edged block cut at the icon. A library
+  /// program's "After this" rows take the same, so a page's rows match.
+  static const padding = EdgeInsets.symmetric(horizontal: 8);
+  static const shape = RoundedRectangleBorder(borderRadius: .all(.circular(12)));
+
   const new({super.key});
 
   @override
@@ -218,10 +224,12 @@ class GoEasyRow extends StatelessWidget {
 
     return ListTile(
       key: AppKeys.goEasyRow,
-      // the ink inset from the row's content and rounded, as Settings'
-      // option rows: flush, it was a hard-edged block cut at the icon
-      contentPadding: const .symmetric(horizontal: 8),
-      shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+      contentPadding: GoEasyRow.padding,
+      shape: GoEasyRow.shape,
+      // no hover ink: a pointer resting where the row was tapped (an iPad's
+      // trackpad, the simulator's cursor) lit it again on the way back, a
+      // row that looked pressed with nothing pressed (#488)
+      hoverColor: Colors.transparent,
       leading: const Icon(Icons.spa_outlined),
       title: Text(title.of(languageTag())),
       subtitle: Text(switch (listed) {
@@ -253,10 +261,10 @@ class ProgramConstraintRow extends StatelessWidget {
 
     return ListTile(
       key: AppKeys.programConstraint,
-      // the ink inset from the row's content and rounded, as Settings'
-      // option rows: flush, it was a hard-edged block cut at the icon
-      contentPadding: const .symmetric(horizontal: 8),
-      shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+      contentPadding: GoEasyRow.padding,
+      shape: GoEasyRow.shape,
+      // as GoEasyRow: no hover ink to be left lit on the way back
+      hoverColor: Colors.transparent,
       leading: const Icon(Icons.filter_alt_outlined),
       title: Text(copy.programConstraint),
       subtitle: Text(switch (entry) {

@@ -398,12 +398,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     (
       _Screen.libraryStartDays,
       guideline,
-      'Skip is a dialog TextButton (lib/presentation/routes/workout/program_library.dart:591) and Start a PrimaryButton.shrunk at the house 32pt (program_library.dart:599, lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+      'Skip is a dialog TextButton (lib/presentation/routes/workout/program_library.dart:684) and Start a PrimaryButton.shrunk at the house 32pt (program_library.dart:691, lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.libraryProgram,
       guideline,
-      'Start program is PrimaryButton.wide (lib/presentation/routes/workout/program_library.dart:495) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), and a claim with several sources keeps a link each (program_library.dart:805), a line of small text — visual-density change, out of scope',
+      'Start program is PrimaryButton.wide (lib/presentation/routes/workout/program_library.dart:770) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), and a claim with several sources keeps a link each (program_library.dart:1142), a line of small text — visual-density change, out of scope',
     ),
     (
       _Screen.programs,
