@@ -564,7 +564,8 @@ class _CustomBarDialogState extends State<_CustomBarDialog> {
 
 /// One sleeve of the bar, loaded: the collar, then the plates outward,
 /// heaviest first, each sized and coloured by its weight the way gym plates
-/// are. Silent to a screen reader: the line under it says the same in words.
+/// are, and each with its weight printed on it. Silent to a screen reader: the
+/// line under it says the same in words.
 class _PlatePicture extends StatelessWidget {
   final PlateLoad load;
   final MeasurementUnit unit;
@@ -595,7 +596,9 @@ class _PlatePicture extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme(:outline, :outlineVariant, :onSurfaceVariant) = Theme.of(context).colorScheme;
+    final ThemeData(:textTheme, colorScheme: ColorScheme(:outline, :outlineVariant, :onSurfaceVariant)) = Theme.of(
+      context,
+    );
     final standard = standardPlates(unit);
     final colors = switch (unit) {
       .metric => _kgColors,
@@ -613,17 +616,37 @@ class _PlatePicture extends StatelessWidget {
             >= .4 => 1.0,
             final ratio => .35 + ratio * 1.2,
           };
+      final color = switch (rank) {
+        -1 => outline,
+        _ => colors[rank],
+      };
+      // the number, as a real plate carries it: colours vary from gym to gym,
+      // and mean nothing to someone new to them
       return Container(
-        width: weight / heaviest >= .4 ? 16 : 10,
+        width: weight / heaviest >= .4 ? 22 : 16,
         height: height,
         margin: const .symmetric(horizontal: 1),
         decoration: BoxDecoration(
-          color: switch (rank) {
-            -1 => outline,
-            _ => colors[rank],
-          },
+          color: color,
           border: .all(color: outline, width: .5),
           borderRadius: const .all(.circular(3)),
+        ),
+        child: RotatedBox(
+          quarterTurns: 3,
+          child: Center(
+            child: Text(
+              _plateNumber(weight),
+              maxLines: 1,
+              style: textTheme.labelSmall?.copyWith(
+                fontWeight: .w700,
+                height: 1,
+                color: switch (ThemeData.estimateBrightnessForColor(color)) {
+                  .dark => Colors.white,
+                  .light => Colors.black87,
+                },
+              ),
+            ),
+          ),
         ),
       );
     }
