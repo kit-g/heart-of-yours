@@ -229,7 +229,8 @@ class _TemplateMusclesState extends State<TemplateMuscles> {
                       alignment: .topCenter,
                       child: switch (open) {
                         true => Padding(
-                          padding: const .only(bottom: 8),
+                          // clear of the line's ink above
+                          padding: const .symmetric(vertical: 8),
                           child: _ShadedFigures(sets: sets, help: l.templateMuscleMapHelp),
                         ),
                         false => const SizedBox(width: double.infinity),
