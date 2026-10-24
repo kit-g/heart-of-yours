@@ -464,6 +464,240 @@ void main() {
     });
   });
 
+  group('a session joins a running program (#489)', () {
+    const press = {'id': 'press', 'name': 'Overhead press', 'category': 'Barbell', 'target': 'Shoulders'};
+    const plank = {'id': 'plank', 'name': 'Plank', 'category': 'Duration', 'target': 'Core'};
+
+    Template extra(String id, {int order = 0, List<Map> exercises = const []}) {
+      return Template.fromJson({
+        'id': id,
+        'name': 'Day $id',
+        'order': order,
+        'exercises': [
+          for (final (index, exercise) in exercises.indexed)
+            {
+              'id': '$id-$index',
+              'exercise': exercise,
+              'sets': [
+                {'id': '$id-$index-set', 'set_type': 'normal', 'completed': false},
+              ],
+            },
+        ],
+      });
+    }
+
+    // two cycles' worth of the program, well before the session joins
+    final marks = [
+      ProgramMark(templateId: 's1', at: DateTime.utc(2025, 3, 3, 8), isWorkout: true),
+      ProgramMark(templateId: 's2', at: DateTime.utc(2025, 3, 5, 8), isWorkout: true),
+      ProgramMark(templateId: 's1', at: DateTime.utc(2025, 3, 10, 8), isWorkout: true),
+    ];
+
+    Future<Program> follow(Program program) async {
+      local.programs[uid] = [program];
+      local.marks['p1'] = [...marks];
+      when(templates.getTemplates(uid)).thenAnswer((_) async => [session('s1'), session('s2', order: 1)]);
+      final online = access.account;
+      access.account = false;
+      await programs.init();
+      access.account = online;
+      return programs.lookup('p1')!;
+    }
+
+    // where [position] stands: its week, and the open cycle's done and to do
+    void standsAt(ProgramPosition position, int week, Set<String> done, List<String> remaining) {
+      expect(position.week, week);
+      expect(position.done, done);
+      expect(position.remaining, remaining);
+    }
+
+    ProgramPosition now() => programs.position(
+      programs.lookup('p1')!,
+      now: DateTime.timestamp(),
+      firstWeekday: DateTime.monday,
+    );
+
+    test('it joins at the end, and the week, the cycle and the bases stay as they were', () async {
+      final followed = await follow(program());
+      local.bases.add(ProgramBase(id: 'b1', programId: 'p1', exerciseId: bench, value: 80, at: DateTime.utc(2025, 3)));
+      await programs.refreshMarks();
+      final before = now();
+      standsAt(before, 2, {'s1'}, ['s2']);
+
+      final joined = await programs.join(followed, extra('s3'));
+
+      expect(joined.sessions, ['s1', 's2', 's3']);
+      expect(joined.joined['s3'], isNotNull);
+      final after = now();
+      // the open cycle was fixed by its first mark: the new session waits for
+      // the next one, and nothing before it reads it as missed
+      standsAt(after, 2, {'s1'}, ['s2']);
+      expect(programs.currentBasesOf('p1')[bench]?.value, 80);
+    });
+
+    test('without its join time a late session would have been missed in every cycle before it', () async {
+      // the same session filed with no join time, as nothing but its own id to
+      // go on: every cycle since the start waits for it, and the program sits
+      // on week 1
+      final unstamped = await follow(program(sessions: const ['s1', 's2', 's3']));
+      expect(programs.position(unstamped, now: DateTime.timestamp(), firstWeekday: DateTime.monday).week, 1);
+    });
+
+    test('the next cycle runs it, once its first mark comes after the join', () async {
+      final followed = await follow(program());
+      await programs.join(followed, extra('s3'));
+      final soon = DateTime.timestamp().add(const Duration(days: 1));
+      local.marks['p1'] = [
+        ...marks,
+        ProgramMark(templateId: 's2', at: soon, isWorkout: true),
+        ProgramMark(templateId: 's1', at: soon.add(const Duration(days: 1)), isWorkout: true),
+      ];
+      await programs.refreshMarks();
+
+      final position = programs.position(
+        programs.lookup('p1')!,
+        now: soon.add(const Duration(days: 2)),
+        firstWeekday: DateTime.monday,
+      );
+      standsAt(position, 3, {'s1'}, ['s2', 's3']);
+    });
+
+    test('it is filed with its join time and takes the end of the order, here and on the server', () async {
+      final followed = await follow(program());
+
+      await programs.join(followed, extra('s3'));
+
+      final [stored, ..._] = verify(templates.storeTemplates(captureAny, userId: uid)).captured;
+      final filed = (stored as List<Template>).single;
+      expect((filed.programId, filed.order), ('p1', 2));
+      expect(filed.joined, isNotNull);
+      expect(remote.calls, ['setTemplateProgram s3 p1']);
+      expect(local.owed, isEmpty);
+      expect(local.programs[uid]!.single.sessions, ['s1', 's2', 's3']);
+      expect(sessionsChanged, greaterThan(0));
+    });
+
+    test('offline it is owed, and the next launch files it', () async {
+      final followed = await follow(program());
+      remote.failingFilings.add('s3');
+
+      await programs.join(followed, extra('s3'));
+      expect(local.owed.map((each) => (each.row, each.id, each.change)), [
+        (ProgramRow.session, 's3', ProgramChange.edited),
+      ]);
+
+      final [stored, ..._] = verify(templates.storeTemplates(captureAny, userId: uid)).captured;
+      when(templates.getTemplates(uid)).thenAnswer(
+        (_) async => [session('s1'), session('s2', order: 1), ...(stored as List<Template>)],
+      );
+      remote
+        ..failingFilings.clear()
+        ..calls.clear();
+      await relaunch().init();
+
+      expect(remote.calls, contains('setTemplateProgram s3 p1'));
+      expect(local.owed, isEmpty);
+    });
+
+    test('a program that grows a working weight grows the new lifts by it; the rest run as written', () async {
+      final followed = await follow(
+        Program(
+          id: 'p1',
+          name: 'Getting stronger',
+          sessions: const ['s1', 's2'],
+          rules: {
+            bench: const AddWeight(step: 2.5),
+            'squat': const AddWeight(step: 2.5),
+            'row': const AddWeight(step: 5),
+          },
+          createdAt: DateTime.utc(2025, 3),
+        ),
+      );
+
+      final joined = await programs.join(followed, extra('s3', exercises: [press, plank]));
+
+      expect(joined.rules['press'], const AddWeight(step: 2.5));
+      expect(joined.rules.containsKey('plank'), isFalse);
+      expect(remote.calls, ['setTemplateProgram s3 p1', 'editProgram p1']);
+      expect(local.owed, isEmpty);
+    });
+
+    test('a program without a working-weight rule is left as it was', () async {
+      final followed = await follow(program());
+
+      final joined = await programs.join(followed, extra('s3', exercises: [press]));
+
+      expect(joined.rules, isEmpty);
+      expect(remote.calls, ['setTemplateProgram s3 p1']);
+    });
+
+    test('a program in phases runs it in each one', () async {
+      final followed = await follow(
+        Program(
+          id: 'p1',
+          name: 'Blocks',
+          sessions: const ['s1', 's2'],
+          phases: const [
+            ProgramPhase(sessions: ['s1'], cycles: 4),
+            ProgramPhase(sessions: ['s2']),
+          ],
+          createdAt: DateTime.utc(2025, 3),
+        ),
+      );
+
+      final joined = await programs.join(followed, extra('s3'));
+
+      expect(joined.phases.map((phase) => phase.sessions), [
+        ['s1', 's3'],
+        ['s2', 's3'],
+      ]);
+    });
+
+    test('taking a session out keeps its template, and the last one stays', () async {
+      final followed = await follow(program());
+
+      final left = await programs.leave(followed, session('s2'));
+
+      expect(left.sessions, ['s1']);
+      final [stored, ..._] = verify(templates.storeTemplates(captureAny, userId: uid)).captured;
+      expect((stored as List<Template>).single.programId, isNull);
+      expect(remote.calls, ['setTemplateProgram s2 null']);
+      expect(local.owed, isEmpty);
+
+      expect((await programs.leave(left, session('s1'))).sessions, ['s1']);
+    });
+
+    test('put back after taking it out, it joined when it first joined', () async {
+      final followed = await follow(program());
+      final first = DateTime.utc(2025, 3, 4);
+      final joined = await programs.join(followed, extra('s3'), at: first);
+      final left = await programs.leave(joined, extra('s3'));
+
+      final back = await programs.join(left, extra('s3'), at: joined.joined['s3']);
+
+      expect(back.joined['s3'], first);
+      expect(back.sessions, ['s1', 's2', 's3']);
+    });
+
+    test('taken out offline, the next launch takes it out on the server too', () async {
+      final followed = await follow(program());
+      remote.failing = true;
+
+      await programs.leave(followed, session('s2'));
+      expect(local.owed.map((each) => (each.row, each.id, each.change)), [
+        (ProgramRow.session, 's2', ProgramChange.deleted),
+      ]);
+
+      remote
+        ..failing = false
+        ..calls.clear();
+      await relaunch().init();
+
+      expect(remote.calls, contains('setTemplateProgram s2 null'));
+      expect(local.owed, isEmpty);
+    });
+  });
+
   group('position', () {
     test('a cycle done moves the week; a repeat runs it again', () async {
       local.programs[uid] = [program()];
