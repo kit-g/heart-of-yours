@@ -615,10 +615,14 @@ Future<void> _showStartTemplateDialog(
       startNewWorkoutFromTemplate,
       textAlign: TextAlign.center,
     ),
-    content: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+    // scrolls: the muscle map unfolds in it (#263), and a long template with
+    // the map open is taller than a phone
+    content: SingleChildScrollView(
+      padding: const .symmetric(vertical: 8),
       child: Wrap(
         children: [
+          // its own child, so that a map that is off leaves no spacing behind
+          TemplateMuscles(exercises: template, padding: const .symmetric(horizontal: 12)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
             child: Column(

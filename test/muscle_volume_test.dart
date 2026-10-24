@@ -240,4 +240,53 @@ void main() {
       expect(muscleVolume(workoutMuscleSets(workout, lookup: (_) => tagged)).sets, {MuscleGroup.back: 1});
     });
   });
+
+  group('plannedMuscleVolume (#263)', () {
+    MuscleTagging tags(String json) => MuscleTagging.fromJson(jsonDecode(json));
+
+    final bench = Exercise(
+      name: 'Bench Press',
+      category: .barbell,
+      target: .chest,
+      tags: tags('{"primary": {"groups": ["chest"]}, "secondary": {"groups": ["arms"]}}'),
+    );
+
+    test('counts every planned set, done or not, and leaves warm-ups out', () {
+      final template = Template.empty(id: 'push', order: 0);
+      template.add(bench)
+        ..first.setType = .warmup
+        ..add(ExerciseSet(bench, weight: 60, reps: 5))
+        ..add(ExerciseSet(bench, weight: 60, reps: 5));
+
+      expect(plannedSets(template.first), 2);
+      final (:sets, :unmapped) = plannedMuscleVolume(template, lookup: (_) => null);
+      expect(sets, {MuscleGroup.chest: 2, MuscleGroup.arms: 1});
+      expect(unmapped, 0);
+    });
+
+    test('places a custom exercise by its target, and keeps what it cannot place apart', () {
+      final curl = Exercise(name: 'Muffin Curl', category: .dumbbell, target: .arms, isMine: true);
+      final carry = Exercise(name: 'Muffin Carry', category: .dumbbell, target: .fullBody, isMine: true);
+      final template = Template.empty(id: 'mine', order: 0)
+        ..add(curl)
+        ..add(carry);
+
+      final (:sets, :unmapped) = plannedMuscleVolume(template, lookup: (_) => null);
+      expect(sets, {MuscleGroup.arms: 1});
+      expect(unmapped, 1);
+    });
+
+    test("takes the library's tagging over the template's own copy", () {
+      final untagged = Exercise(name: 'Row', category: .barbell, target: .chest);
+      final tagged = Exercise(
+        name: 'Row',
+        category: .barbell,
+        target: .back,
+        tags: tags('{"primary": {"groups": ["back"]}}'),
+      );
+      final template = Template.empty(id: 'pull', order: 0)..add(untagged);
+
+      expect(plannedMuscleVolume(template, lookup: (_) => tagged).sets, {MuscleGroup.back: 1});
+    });
+  });
 }
