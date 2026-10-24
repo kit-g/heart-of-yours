@@ -60,7 +60,13 @@ enum Feature {
   /// feature promises not to be. A program's own "Not today" is Programs',
   /// and stays with it. Skips sync whatever the answer; off, the button and
   /// the plain days in History go.
-  notToday('notToday');
+  notToday('notToday'),
+
+  /// Which plates go on each side of the bar for a set's weight (#132), from a
+  /// bar over the keyboard while a barbell or machine weight is being typed.
+  /// Asked once there, the first time such a weight is. The bar each exercise
+  /// takes and the plates the gym has stay on the device whatever the answer.
+  plateCalculator('plateCalculator');
 
   final String value;
 
