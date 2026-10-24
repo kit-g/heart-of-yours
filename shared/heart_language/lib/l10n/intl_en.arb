@@ -4818,6 +4818,8 @@
   "@libraryEquipmentHome": {"description": "Equipment filter of the ready-made programs: programs needing a pair of adjustable dumbbells, at home", "type": "text", "placeholders": {}},
   "libraryEquipmentGym": "Gym",
   "@libraryEquipmentGym": {"description": "Equipment filter of the ready-made programs: programs for a gym", "type": "text", "placeholders": {}},
+  "libraryNoEquipment": "No equipment",
+  "@libraryNoEquipment": {"description": "Badge on a ready-made program's page: the program needs no equipment at all", "type": "text", "placeholders": {}},
   "libraryStartingOut": "Starting out",
   "@libraryStartingOut": {"description": "Group of ready-made programs: for people new to strength training", "type": "text", "placeholders": {}},
   "libraryGettingBack": "Getting back",
