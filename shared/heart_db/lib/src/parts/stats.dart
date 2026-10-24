@@ -48,6 +48,17 @@ mixin _Stats on _LocalDatabase implements StatsService {
         );
   }
 
+  /// Sets with an RPE in [userId]'s finished workouts (#244). Local, like the
+  /// count above: an import's ratings show here once the mirror has pulled
+  /// its workouts down.
+  Future<int> getRatedSetCount(String userId) async {
+    final rows = await _db.rawQuery(sql.ratedSetCount, [userId]);
+    return switch (rows) {
+      [{'c': num count}] => count.toInt(),
+      _ => 0,
+    };
+  }
+
   /// Finished workouts in [d]'s calendar month.
   ///
   /// Not on [StatsService]: the weekly count is, and this belongs beside it, but

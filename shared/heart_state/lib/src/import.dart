@@ -91,6 +91,10 @@ class DataImport {
   final LocalGoalService _goals;
   final LocalProgramService? _programs;
 
+  /// Counts the sets in a user's finished workouts that carry an RPE. Apart
+  /// from [WorkoutService], which ships from the API repo and has no count.
+  final Future<int> Function(String userId)? _ratedSets;
+
   const new({
     required this._workouts,
     required this._templates,
@@ -98,11 +102,18 @@ class DataImport {
     required this._exercises,
     required this._goals,
     this._programs,
+    this._ratedSets,
   });
 
   static DataImport of(BuildContext context) {
     return Provider.of<DataImport>(context, listen: false);
   }
+
+  /// How many sets in [userId]'s history carry an RPE (#244). An import that
+  /// raises it brought ratings with it, which is the one moment the app learns
+  /// that this user rates sets, and so where RPE is offered. Zero where the
+  /// store cannot say.
+  Future<int> ratedSets(String userId) => _ratedSets?.call(userId) ?? Future.value(0);
 
   /// The dry run: reads [file] against [userId]'s store and writes nothing.
   Future<LocalImportPreview> preview(String file, String userId) async {

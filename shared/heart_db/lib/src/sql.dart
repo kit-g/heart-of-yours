@@ -751,3 +751,16 @@ WHERE w.user_id = ?
 GROUP BY w.id
 ;
 ''';
+
+/// Sets that carry an RPE in the user's finished workouts (#244): how the app
+/// tells that an import brought ratings, by counting before and after it.
+const ratedSetCount = '''
+SELECT count(*) AS c
+FROM sets
+INNER JOIN workout_exercises ON workout_exercises.id = sets.exercise_id
+INNER JOIN workouts ON workouts.id = workout_exercises.workout_id
+WHERE sets.rpe IS NOT NULL
+  AND workouts."end" IS NOT NULL
+  AND workouts.user_id = ?
+;
+''';
