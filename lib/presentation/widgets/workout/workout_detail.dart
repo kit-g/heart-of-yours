@@ -30,6 +30,8 @@ import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/formatters.dart';
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart' show PreviousSet;
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart';
+import 'package:heart/presentation/widgets/feature_copy.dart';
+import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/widgets/menu.dart';
 import 'package:heart/presentation/widgets/popping_text.dart';
@@ -61,6 +63,7 @@ part 'superset.dart';
 part 'target.dart';
 part 'text_field_button.dart';
 part 'utils.dart';
+part 'warmups.dart';
 part 'workout_note.dart';
 
 /// Puts [picked] in [slot]'s place on the sheet (#349, #354). [suggested] is
@@ -96,6 +99,10 @@ class WorkoutDetail extends StatefulWidget {
   /// Sets what a set aims for (#173), from the set-number popup. Only a
   /// template's editor plans sets; without it the popup has no target row.
   final void Function(ExerciseSet, SetTarget?)? onSetTarget;
+
+  /// Adds warm-up sets before an exercise's first working set (#158), from its
+  /// menu and from the feature's one offer. Only the workout in progress does.
+  final AddWarmups? onAddWarmups;
 
   /// Whether each exercise says its program's plan in a line under its name
   /// (#349): a program's workout while Programs is on.
@@ -135,6 +142,7 @@ class WorkoutDetail extends StatefulWidget {
     this.onSetType,
     this.onSetRpe,
     this.onSetTarget,
+    this.onAddWarmups,
     this.showsPlan = false,
     this.onReplaceExercise,
     this.onGroup,
@@ -340,6 +348,10 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
 
   SliverList _exerciseList(ColorScheme colorScheme, String addSet, String setCopy, String previous) {
     final items = exercises.toList();
+    final warmupsAnchor = switch (widget.onAddWarmups) {
+      null => null,
+      _ => _warmupsAnchor(items, Preferences.watch(context), Exercises.watch(context)),
+    };
     return SliverList.builder(
       itemCount: items.length + 1,
       itemBuilder: (_, index) {
@@ -413,6 +425,8 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                                 onSetType: widget.onSetType,
                                 onSetRpe: widget.onSetRpe,
                                 onSetTarget: widget.onSetTarget,
+                                onAddWarmups: widget.onAddWarmups,
+                                offersWarmups: warmupsAnchor == set.id,
                                 showsPlan: widget.showsPlan,
                                 onReplaceExercise: widget.onReplaceExercise,
                                 onGroup: widget.onGroup,
@@ -1036,6 +1050,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                 onRemoveSet: workouts.removeSet,
                 onSetType: workouts.setSetType,
                 onSetRpe: workouts.setRpe,
+                onAddWarmups: workouts.addWarmups,
                 onRemoveExercise: workouts.removeExercise,
                 onGroup: workouts.group,
                 onLeaveGroup: workouts.leaveGroup,

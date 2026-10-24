@@ -35,6 +35,12 @@ class WorkoutDetailKeys {
   /// localized display copy and change with the device language, ids don't.
   static Key exerciseOptionsFor(String exerciseId) => Key('WorkoutDetail.exerciseOptions.$exerciseId');
 
+  /// The ⋯ menu's row adding warm-up sets (#158), and the one offer of them.
+  static Key addWarmupsFor(String exerciseId) => Key('WorkoutDetail.addWarmups.$exerciseId');
+  static const warmupsOffer = Key('WorkoutDetail.warmupsOffer');
+  static const warmupsAccept = Key('WorkoutDetail.warmupsAccept');
+  static const warmupsDecline = Key('WorkoutDetail.warmupsDecline');
+
   /// The ⋯ menu's swap for an open slot (#349).
   static Key swapExerciseFor(String exerciseId) => Key('WorkoutDetail.swapExercise.$exerciseId');
 
