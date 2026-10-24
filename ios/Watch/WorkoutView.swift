@@ -2,10 +2,10 @@ import SwiftUI
 
 /// The workout in progress, as the phone summarised it (#182), in two pages.
 ///
-/// The first is the set up next, read top to bottom in the order it is used:
-/// the exercise and which set, its values, last time's, the tick (#183), and
-/// at the foot where the workout stands. While a rest runs, its countdown
-/// leads the page. The second, a swipe
+/// The first is the set up next: which set beside the clock, the exercise, its
+/// values and last time's, and the tick (#183) in the bottom toolbar, on screen
+/// at every watch size and text size without a scroll (#492); below, where the
+/// workout stands. While a rest runs, its countdown leads the page. The second, a swipe
 /// away, is the whole workout, for going back to a set already done: new
 /// values, or the tick taken off. Adding sets or exercises stays the phone's.
 ///
@@ -51,77 +51,91 @@ struct UpNextPage: View {
     @Environment(\.isLuminanceReduced) private var dimmed
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 6) {
-                // paused (#134), that leads, with the way back: nothing else
-                // on the page moves until the clock does
-                if workout.pausedAt != nil, let controls = workout.controls {
-                    PausedView(workoutId: workout.workoutId, controls: controls, accent: workout.accent, dimmed: dimmed)
-                    Divider()
-                        .padding(.vertical, 6)
-                }
+        // for the bottom toolbar, where the page's one action sits (#492)
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 6) {
+                    // paused (#134), that leads, with the way back: nothing else
+                    // on the page moves until the clock does
+                    if workout.pausedAt != nil, let controls = workout.controls {
+                        PausedView(workoutId: workout.workoutId, controls: controls, accent: workout.accent, dimmed: dimmed)
+                        Divider()
+                            .padding(.vertical, 6)
+                    }
 
-                // resting, the countdown leads: it is what a lowered wrist
-                // comes up to check, and below the set it sat off-screen on
-                // every watch size. The rest over, the page is as before
-                if let rest = workout.rest {
-                    RestView(rest: rest, accent: workout.accent)
+                    // resting, the countdown leads: it is what a lowered wrist
+                    // comes up to check, and below the set it sat off-screen on
+                    // every watch size. The rest over, the page is as before
+                    if let rest = workout.rest {
+                        RestView(rest: rest, accent: workout.accent)
+                        if let controls = workout.controls, !dimmed {
+                            RestControls(workoutId: workout.workoutId, controls: controls)
+                        }
+                        Divider()
+                            .padding(.vertical, 6)
+                    }
+
+                    heading
+
                     if let controls = workout.controls, !dimmed {
-                        RestControls(workoutId: workout.workoutId, controls: controls)
+                        // out of reach too (#206): what is done here queues, and
+                        // reaches the phone when it is back
+                        if let set = workout.set {
+                            SetControls(workoutId: workout.workoutId, set: set, controls: controls, accent: workout.accent)
+                        }
+                        // the phone away, or back and still being handed what it missed
+                        switch (phone.reachable, phone.waiting) {
+                        case (false, _):
+                            Label(controls.unreachable, systemImage: "iphone.slash")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 2)
+                        case (true, true):
+                            Label(controls.sending.isEmpty ? controls.unreachable : controls.sending,
+                                  systemImage: "iphone.radiowaves.left.and.right")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 2)
+                        case (true, false):
+                            EmptyView()
+                        }
                     }
-                    Divider()
-                        .padding(.vertical, 6)
-                }
 
-                if !workout.exercise.isEmpty {
-                    Text(workout.exercise)
-                        .font(.headline)
-                        .foregroundStyle(workout.accent)
-                        .lineLimit(2)
+                    footer
+                        .padding(.top, 8)
                 }
-
-                if let position = workout.set?.position {
-                    Text(position)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                if let controls = workout.controls, !dimmed {
-                    // out of reach too (#206): what is done here queues, and
-                    // reaches the phone when it is back
-                    if let set = workout.set {
-                        SetControls(workoutId: workout.workoutId, set: set, controls: controls, accent: workout.accent)
-                            .padding(.top, 2)
-                    } else {
-                        // every set ticked: the one thing left to do
-                        FinishControl(workoutId: workout.workoutId, controls: controls, accent: workout.accent)
-                            .padding(.top, 2)
-                    }
-                    // the phone away, or back and still being handed what it missed
-                    switch (phone.reachable, phone.waiting) {
-                    case (false, _):
-                        Label(controls.unreachable, systemImage: "iphone.slash")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 2)
-                    case (true, true):
-                        Label(controls.sending.isEmpty ? controls.unreachable : controls.sending,
-                              systemImage: "iphone.radiowaves.left.and.right")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 2)
-                    case (true, false):
-                        EmptyView()
-                    }
-                }
-
-                footer
-                    .padding(.top, 8)
-                    // clear of the page dots, which float over the foot
-                    .padding(.bottom, 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                // the system's margins, which the bottom toolbar's button keeps:
+                // without them the page ran edge to edge and Done sat inset,
+                // skewed against everything above it
+                .scenePadding(.horizontal)
+                .opacity(dimmed ? 0.6 : 1)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .opacity(dimmed ? 0.6 : 1)
+            // which set, beside the clock: the line the page had spent on it
+            // goes to the values and Done (#492)
+            .navigationTitle(workout.set?.position ?? "")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                // every set ticked: the one thing left to do
+                if workout.set == nil, let controls = workout.controls, !dimmed {
+                    ToolbarItem(placement: .bottomBar) {
+                        FinishControl(workoutId: workout.workoutId, controls: controls, accent: workout.accent)
+                    }
+                }
+            }
+        }
+    }
+
+    /// The exercise: two lines, shrinking before it truncates, so a long name
+    /// leaves the values their room.
+    @ViewBuilder
+    private var heading: some View {
+        if !workout.exercise.isEmpty {
+            Text(workout.exercise)
+                .font(.headline)
+                .foregroundStyle(workout.accent)
+                .lineLimit(2)
+                .minimumScaleFactor(0.6)
         }
     }
 
@@ -325,10 +339,10 @@ struct SetEditor: View {
                     if exercise.weighted || exercise.counted {
                         HStack(spacing: 6) {
                             if exercise.weighted, let unit = exercise.unit {
-                                ValuePill(text: WorkoutView.format(weight), unit: unit) { field = .weight }
+                                ValuePill(value: weight, unit: unit, accent: accent) { field = .weight }
                             }
                             if exercise.counted {
-                                ValuePill(text: "\(Int(reps))", unit: controls.reps) { field = .reps }
+                                ValuePill(value: reps, unit: controls.reps, accent: accent, counted: true) { field = .reps }
                             }
                         }
                     }
@@ -514,15 +528,15 @@ struct SetControls: View {
     @State private var editing: ValueField?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(spacing: 2) {
             if set.weight != nil || set.reps != nil {
-                HStack(spacing: 6) {
-                    if set.weight != nil, let unit = set.unit {
-                        ValuePill(text: WorkoutView.format(weight), unit: unit) { editing = .weight }
-                    }
-                    if set.reps != nil {
-                        ValuePill(text: "\(Int(reps))", unit: controls.reps) { editing = .reps }
-                    }
+                // where the row is too wide — 227.5 lbs on a 40mm, or the
+                // largest text — tighter, then the count as "× 10", and never
+                // a number into an ellipsis
+                ViewThatFits(in: .horizontal) {
+                    values(compact: false)
+                    values(compact: true)
+                    values(compact: true, times: true)
                 }
             }
 
@@ -530,27 +544,32 @@ struct SetControls: View {
                 Text(previous)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
-
-            Button {
-                phone.send(.complete(
-                    workoutId: workoutId,
-                    setId: set.setId,
-                    // only what this set takes: a reps-only set sends no weight
-                    weight: set.weight.map { _ in weight },
-                    reps: set.reps.map { _ in Int(reps) }
-                ))
-            } label: {
-                Text(controls.done)
-                    .frame(maxWidth: .infinity)
+        }
+        // one column with Done, which the toolbar centres beneath
+        .frame(maxWidth: .infinity)
+        // where the thumb expects it, and on screen however long the page is:
+        // logging the set is what the page is for (#492)
+        .toolbar {
+            ToolbarItem(placement: .bottomBar) {
+                Button {
+                    phone.send(.complete(
+                        workoutId: workoutId,
+                        setId: set.setId,
+                        // only what this set takes: a reps-only set sends no weight
+                        weight: set.weight.map { _ in weight },
+                        reps: set.reps.map { _ in Int(reps) }
+                    ))
+                } label: {
+                    Text(controls.done)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(accent)
+                // a counted set needs a count; the phone would refuse it anyway
+                .disabled(set.reps != nil && reps < 1)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(accent)
-            // the button, not only its label, spans the column — in a leading-
-            // aligned stack it otherwise hugs the left edge
-            .frame(maxWidth: .infinity)
-            // a counted set needs a count; the phone would refuse it anyway
-            .disabled(set.reps != nil && reps < 1)
         }
         // a new set — or the same set sent again with new values — starts over
         .task(id: set) {
@@ -566,6 +585,17 @@ struct SetControls: View {
             }
         }
     }
+
+    private func values(compact: Bool, times: Bool = false) -> some View {
+        HStack(spacing: compact ? 4 : 6) {
+            if set.weight != nil, let unit = set.unit {
+                ValuePill(value: weight, unit: unit, accent: accent, compact: compact) { editing = .weight }
+            }
+            if set.reps != nil {
+                ValuePill(value: reps, unit: controls.reps, accent: accent, counted: true, compact: compact, times: times) { editing = .reps }
+            }
+        }
+    }
 }
 
 /// Which of a set's values is open in its editor.
@@ -578,25 +608,66 @@ enum ValueField: Hashable, Identifiable {
 /// Not edited in place: in a scrolling view the crown would scroll the page as
 /// often as it changed the number, and nothing on a two-inch screen can say
 /// "now turn the crown".
+///
+/// A value, not a field (#492): the number and its unit on one line, on a light
+/// tint that says it can be tapped, in a target the size of a fingertip rather
+/// than of an input box. No weight yet — a bodyweight set, as a rule — is only
+/// the unit and a plus, one tap from adding some.
 struct ValuePill: View {
-    let text: String
+    let value: Double
     let unit: String
+    let accent: Color
+    /// A count, which zero does not leave unset: a set of no reps is asked for.
+    var counted = false
+    /// Tighter, for a narrow row.
+    var compact = false
+    /// A count as "× 10", without its word, for the narrowest row.
+    var times = false
     let open: () -> Void
 
     var body: some View {
         Button(action: open) {
-            VStack(spacing: 0) {
-                Text(text)
-                    .font(.system(.title3, design: .rounded).monospacedDigit())
-                Text(unit)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: compact ? 2 : 3) {
+                if times {
+                    Text(verbatim: "×")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                number
+                    .layoutPriority(1)
+                if !times {
+                    Text(unit)
+                        .font(compact ? .caption2 : .footnote)
+                        .foregroundStyle(.secondary)
+                        // smaller rather than an ellipsis
+                        .minimumScaleFactor(0.6)
+                }
             }
-            .frame(maxWidth: .infinity)
+            .lineLimit(1)
+            .padding(.horizontal, compact ? 7 : 10)
+            .padding(.vertical, 3)
+            .background(accent.opacity(0.18), in: .capsule)
+            // the HIG's comfortable target, around a smaller-looking value
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(.rect)
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.plain)
         .accessibilityLabel(unit)
-        .accessibilityValue(text)
+        .accessibilityValue(WorkoutView.format(value))
+    }
+
+    @ViewBuilder
+    private var number: some View {
+        if value == 0 && !counted {
+            Image(systemName: "plus")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(accent)
+        } else {
+            Text(WorkoutView.format(value))
+                .font(.system(.title3, design: .rounded).weight(.semibold).monospacedDigit())
+                // the last resort, when even the tighter row is too wide
+                .minimumScaleFactor(0.7)
+        }
     }
 }
 
