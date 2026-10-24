@@ -73,6 +73,9 @@ class WorkoutDetailKeys {
       Key('WorkoutDetail.groupWith.$exerciseId.$neighbourId');
   static Key leaveGroup(String exerciseId) => Key('WorkoutDetail.leaveGroup.$exerciseId');
 
+  /// An exercise's ⋯ row that takes it off the sheet.
+  static Key removeExerciseFor(String exerciseId) => Key('WorkoutDetail.removeExercise.$exerciseId');
+
   /// The rail beside a superset's members.
   static Key groupRailFor(String exerciseId) => Key('WorkoutDetail.groupRail.$exerciseId');
 
