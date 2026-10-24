@@ -23,6 +23,7 @@ extension FeatureCopy on Feature {
       .previousInTemplate => l.previousInTemplate,
       .notToday => l.programNotToday,
       .plateCalculator => l.plateCalculator,
+      .warmups => l.warmups,
     };
   }
 
@@ -44,6 +45,7 @@ extension FeatureCopy on Feature {
       .previousInTemplate => l.previousInTemplateSubtitle,
       .notToday => l.notTodaySubtitle,
       .plateCalculator => l.plateCalculatorSubtitle,
+      .warmups => l.warmupsSubtitle,
     };
   }
 
@@ -60,6 +62,7 @@ extension FeatureCopy on Feature {
       .previousInTemplate => Icons.history_rounded,
       .notToday => Icons.redo_rounded,
       .plateCalculator => Icons.fitness_center_rounded,
+      .warmups => Icons.stairs_rounded,
     };
   }
 
@@ -78,6 +81,8 @@ extension FeatureCopy on Feature {
       .plateCalculator => const [],
       // what syncs and what doesn't: the line health data never crosses
       .notToday => [l.notTodayNote],
+      // the rounding, which no control says
+      .warmups => [l.warmupsNote],
       // where Apple keeps Always On: Heart has no switch of its own for it.
       // Wear OS has no per-app one to point at
       .watchApp => switch (platform) {

@@ -55,4 +55,5 @@ part 'page.dart';
 part 'rest_timers.dart';
 part 'restore.dart';
 part 'theme_mode_picker.dart';
+part 'warmup_scheme.dart';
 part 'whats_new.dart';

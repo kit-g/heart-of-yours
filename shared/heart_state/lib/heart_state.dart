@@ -41,4 +41,5 @@ export 'src/timers.dart';
 export 'src/upsync.dart';
 export 'src/weeks.dart';
 export 'src/workout_activity.dart';
+export 'src/warmups.dart';
 export 'src/workouts.dart';
