@@ -5241,5 +5241,19 @@
   "noRest": "No rest",
   "@noRest": {"description": "Rest timers page: in place of a duration, for a kind of exercise the user set to rest not at all", "type": "text", "placeholders": {}},
   "restTimersDefaultNote": "Exercises without a timer of their own rest this long. Set one from an exercise's menu during a workout.",
-  "@restTimersDefaultNote": {"description": "Rest timers page, under the default rest section while no exercise has a timer of its own", "type": "text", "placeholders": {}}
+  "@restTimersDefaultNote": {"description": "Rest timers page, under the default rest section while no exercise has a timer of its own", "type": "text", "placeholders": {}},
+  "programAddSession": "Add a session",
+  "@programAddSession": {"description": "On a program's page, under its sessions, and the title of the picker it opens: adds one of the user's templates to the program as a session", "type": "text", "placeholders": {}},
+  "programAddSessionTaken": "Already a session of {program}",
+  "@programAddSessionTaken": {"description": "In the picker that adds a session to a program, under a template that is already a session of another program and so cannot be picked; {program} is that program's name", "type": "text", "placeholders": {"program": {}}},
+  "templateAddToProgram": "Add to program",
+  "@templateAddToProgram": {"description": "Entry in the menu of a template that sits in a program's folder but is not one of its sessions: makes it a session of that program", "type": "text", "placeholders": {}},
+  "programRemoveSession": "Remove from program",
+  "@programRemoveSession": {"description": "Takes a session out of its program; the template stays as a plain template. In a session's menu on the Workout tab and on its sheet on the program's page", "type": "text", "placeholders": {}},
+  "programSessionAdded": "{session} is now part of {program}",
+  "@programSessionAdded": {"description": "Shown once a template joins a program as a session, beside Undo; {session} is the template's name, {program} the program's", "type": "text", "placeholders": {"session": {}, "program": {}}},
+  "programSessionAddedSeeded": "{session} is now part of {program}. Starting from your history: {lifts}.",
+  "@programSessionAddedSeeded": {"description": "Shown once a template joins a program as a session and some of its lifts got a starting weight from the user's own sets, beside Undo; {lifts} is a list such as 'Squat 120 kg, Bench Press 80 kg'", "type": "text", "placeholders": {"session": {}, "program": {}, "lifts": {}}},
+  "programSessionRemoved": "{session} is no longer part of {program}",
+  "@programSessionRemoved": {"description": "Shown once a session is taken out of its program, beside Undo; {session} is the template's name, {program} the program's", "type": "text", "placeholders": {"session": {}, "program": {}}}
 }

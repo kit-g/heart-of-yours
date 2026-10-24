@@ -47,6 +47,7 @@ part 'program_calendar.dart';
 part 'program_form.dart';
 part 'program_library.dart';
 part 'program_page.dart';
+part 'program_sessions.dart';
 part 'programs.dart';
 part 'template_editor.dart';
 part 'templates.dart';

@@ -890,6 +890,152 @@ void main() {
     });
   });
 
+  group('a session joins a running program (#489)', () {
+    // what an assistant added to the program's folder after it started, and a
+    // template of the user's elsewhere
+    Template unfiled(String id, int order, String name) {
+      final draft = Template.empty(id: id, order: order)
+        ..name = name
+        ..add(bench);
+      return Template.fromJson(draft.toMap());
+    }
+
+    void withExtras() {
+      withProgram();
+      when(db.getTemplates(userId)).thenAnswer(
+        (_) async => [
+          template('t1', 0, 'Push', programId: 'p1'),
+          template('t2', 1, 'Pull', programId: 'p1'),
+          unfiled('t4', 2, 'Legs'),
+          template('t3', 3, 'Arms'),
+        ],
+      );
+      when(api.setTemplateProgram(any, programId: anyNamed('programId'))).thenAnswer(
+        (i) async => Template.fromJson({
+          ...(i.positionalArguments.single as Template).toMap(),
+          'programId': i.namedArguments[#programId],
+        }),
+      );
+    }
+
+    Future<void> openPage(WidgetTester tester) async {
+      answer(.on);
+      withExtras();
+      await openWorkoutTab(tester);
+      await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
+      await tester.pumpTimes();
+    }
+
+    Program held(WidgetTester tester) => Programs.of(tester.element(find.byType(MaterialApp))).lookup('p1')!;
+
+    testWidgets("a template in the program's folder joins from its card in two taps", (tester) async {
+      answer(.on);
+      withExtras();
+      await openWorkoutTab(tester);
+      final card = find.ancestor(of: find.text('Arms'), matching: find.byType(Card));
+      await scrollTo(tester, card);
+
+      await tester.tap(find.descendant(of: card, matching: find.byTooltip('More options')));
+      await tester.pumpTimes();
+      // a session already in it can leave; this one can join
+      expect(find.text('Remove from program'), findsNothing);
+      await tester.tap(find.text('Add to program'));
+      await tester.pumpTimes();
+
+      final filed = verify(api.setTemplateProgram(captureAny, programId: 'p1')).captured.single as Template;
+      expect(filed.id, 't3');
+      expect(filed.joined, isNotNull);
+      expect(held(tester).sessions, ['t1', 't2', 't3']);
+      expect(find.text('Arms is now part of Split'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpTimes();
+      verify(api.setTemplateProgram(any, programId: null)).called(1);
+      expect(held(tester).sessions, ['t1', 't2']);
+    });
+
+    testWidgets('a template outside any program folder is offered nothing', (tester) async {
+      answer(.on);
+      withExtras();
+      await openWorkoutTab(tester);
+      final card = find.ancestor(of: find.text('Legs'), matching: find.byType(Card));
+      await scrollTo(tester, card);
+
+      await tester.tap(find.descendant(of: card, matching: find.byTooltip('More options')));
+      await tester.pumpTimes();
+      expect(find.text('Add to program'), findsNothing);
+    });
+
+    testWidgets('off, a card is as it was before programs', (tester) async {
+      answer(.off);
+      withExtras();
+      await openWorkoutTab(tester);
+      final card = find.ancestor(of: find.text('Arms'), matching: find.byType(Card));
+      await scrollTo(tester, card);
+
+      await tester.tap(find.descendant(of: card, matching: find.byTooltip('More options')));
+      await tester.pumpTimes();
+      expect(find.text('Add to program'), findsNothing);
+    });
+
+    testWidgets("the program's page adds one, picked from its folder first", (tester) async {
+      await openPage(tester);
+      await scrollTo(tester, find.byKey(AppKeys.programAddSession));
+      await tester.tapByKey(AppKeys.programAddSession);
+      await tester.pumpTimes();
+
+      final arms = tester.getRect(find.byKey(AppKeys.programSessionCandidate('t3')));
+      final legs = tester.getRect(find.byKey(AppKeys.programSessionCandidate('t4')));
+      expect(arms.top, lessThan(legs.top), reason: "the program's folder first");
+      expect(
+        find.byKey(AppKeys.programSessionCandidate('t1')),
+        findsNothing,
+        reason: 'its own sessions are not offered',
+      );
+
+      await tester.tapByKey(AppKeys.programSessionCandidate('t4'));
+      await tester.pumpTimes();
+
+      verify(api.setTemplateProgram(any, programId: 'p1')).called(1);
+      expect(held(tester).sessions, ['t1', 't2', 't4']);
+      expect(find.text('Legs is now part of Split'), findsOneWidget);
+    });
+
+    testWidgets("a session leaves from its sheet on the program's page, and Undo puts it back", (tester) async {
+      await openPage(tester);
+      await scrollTo(tester, find.text('Pull'));
+      await tester.tap(find.text('Pull'));
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.programRemoveSession);
+      await tester.pumpTimes();
+
+      verify(api.setTemplateProgram(any, programId: null)).called(1);
+      expect(held(tester).sessions, ['t1']);
+      expect(find.text('Pull is no longer part of Split'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpTimes();
+      verify(api.setTemplateProgram(any, programId: 'p1')).called(1);
+      expect(held(tester).sessions, ['t1', 't2']);
+    });
+
+    testWidgets('on a tablet the page and the picker keep their reading widths', (tester) async {
+      // an 11" iPad in landscape: the simulator this was built on is a phone
+      tester.view.physicalSize = const Size(1194 * 2, 834 * 2);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+      await openPage(tester);
+      await scrollTo(tester, find.byKey(AppKeys.programAddSession));
+
+      expect(tester.getSize(find.byKey(AppKeys.programAddSession)).width, lessThanOrEqualTo(480));
+
+      await tester.tapByKey(AppKeys.programAddSession);
+      await tester.pumpTimes();
+      expect(tester.getSize(find.byKey(AppKeys.programSessionCandidate('t3'))).width, lessThanOrEqualTo(560));
+    });
+  });
+
   group('in the calendar (#391)', () {
     Future<void> openPage(WidgetTester tester, {required DeviceCalendar calendar}) async {
       // Programs never answered: on by default, the calendar with it

@@ -1,4 +1,6 @@
 import 'dart:collection';
+import 'dart:convert';
+import 'dart:math';
 
 import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
@@ -593,6 +595,147 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     await _settle(.session, session.id);
   }
 
+  /// Adds [session], a template the account already holds, to [program] as its
+  /// last session (#489). The program's week, its bases and what the user has
+  /// done stay as they are: the session joins now, stamped `joined` as this
+  /// device saw it, so the position counts it from the next cycle that opens
+  /// and never as missed in the ones before (`ProgramPosition.of`).
+  ///
+  /// It takes the end of the program's order by taking the end of the
+  /// template order, which is what the server orders a program's sessions by.
+  /// A program with phases runs it in each of them. Each weighted exercise of
+  /// it the program has no rule for grows by the program's own working-weight
+  /// rule, when it has one ([_inheritedRule]): a program that grows grows its
+  /// new session too. Its bases are [seedBases]'s to give.
+  ///
+  /// Offline-safe as [create] is: the filing, and the program's edit when
+  /// rules or phases changed, are owed until the server confirms them.
+  ///
+  /// [at] is when it joined, for one taken out and put back ([leave]'s Undo):
+  /// it joined then, and its place in the cycles stays where it was.
+  Future<Program> join(Program program, Template session, {DateTime? at}) async {
+    final uid = userId;
+    final id = program.id;
+    if (uid == null || id == null) throw StateError('a program belongs to an account or a session');
+    final current = _programs[id] ?? program;
+    if (current.sessions.contains(session.id)) return current;
+
+    final joined = (at ?? DateTime.timestamp()).toUtc();
+    final held = await _templates.getTemplates(uid);
+    final orders = {for (final template in held) template.id: template.order};
+    final behind = current.sessions.map((each) => orders[each] ?? -1).fold(-1, max);
+    final order = switch (session.order <= behind) {
+      true => held.map((template) => template.order).fold(behind, max) + 1,
+      false => session.order,
+    };
+    final filed = Template.fromJson({
+      ...session.toMap(),
+      'programId': id,
+      'joined': joined.toIso8601String(),
+      'order': order,
+    });
+
+    final rule = _inheritedRule(current);
+    final rules = {
+      ...current.rules,
+      if (rule != null)
+        for (final WorkoutExercise(id: slot, :exercise) in session)
+          if (_takesWeight(exercise.category) && current.ruleFor(exercise.id, slot: slot) == null) exercise.id: rule,
+    };
+    final phases = [
+      for (final phase in current.phases)
+        // one taken out and put back is still in them: a phase keeps the ids
+        // of sessions gone, and the position reads past them
+        switch (phase.sessions.contains(session.id)) {
+          true => phase,
+          false => ProgramPhase(name: phase.name, sessions: [...phase.sessions, session.id], cycles: phase.cycles),
+        },
+    ];
+    final edited =
+        rules.length != current.rules.length || current.phases.any((phase) => !phase.sessions.contains(session.id));
+    final local = Program.fromJson({
+      ...current.copyWith(rules: rules, phases: phases).toMap(),
+      'sessions': [...current.sessions, session.id],
+      'joined': {
+        for (final MapEntry(:key, :value) in current.joined.entries) key: value.toUtc().toIso8601String(),
+        session.id: joined.toIso8601String(),
+      },
+    });
+
+    await _templates.storeTemplates([filed], userId: uid);
+    await _service.storeProgram(local, uid);
+    if (edited) await _owe(.program, id, .edited, programId: id);
+    await _owe(.session, session.id, .edited, programId: id);
+    _programs[id] = local;
+    notifyListeners();
+    await onSessionsChanged?.call();
+
+    if (!_remote.allowed) return local;
+
+    try {
+      await _file(filed, id, uid);
+      await onSessionsChanged?.call();
+      if (edited) {
+        // after the filing: the server's copy names its sessions, the new one
+        // among them only once it is filed
+        await _keep(await _remoteService.editProgram(local), uid);
+        await _settle(.program, id);
+      }
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
+    }
+    return _programs[id] ?? local;
+  }
+
+  /// Takes [session] out of [program] (#489), [join] the other way: it stays
+  /// as a plain template where it is, its workouts stay the program's history,
+  /// and the rules and bases it grew by stay too, for another session of the
+  /// same lift or for joining again. The last session stays: a program with
+  /// none has nothing to run.
+  Future<Program> leave(Program program, Template session) async {
+    final uid = userId;
+    final id = program.id;
+    if (uid == null || id == null) throw StateError('a program belongs to an account or a session');
+    final current = _programs[id] ?? program;
+    if (!current.sessions.contains(session.id) || current.sessions.length < 2) return current;
+
+    final left = Template.fromJson({...session.toMap(), 'programId': null, 'joined': null});
+    final local = Program.fromJson({
+      ...current.toMap(),
+      'sessions': current.sessions.where((each) => each != session.id).toList(),
+      'joined': {
+        for (final MapEntry(:key, :value) in current.joined.entries)
+          if (key != session.id) key: value.toUtc().toIso8601String(),
+      },
+    });
+
+    await _templates.storeTemplates([left], userId: uid);
+    await _service.storeProgram(local, uid);
+    // a session row owed as deleted is one taken out of its program, the
+    // template kept
+    await _owe(.session, session.id, .deleted, programId: id);
+    _programs[id] = local;
+    notifyListeners();
+    await onSessionsChanged?.call();
+
+    if (!_remote.allowed) return local;
+
+    try {
+      await _unfile(left, uid);
+      await onSessionsChanged?.call();
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
+    }
+    return _programs[id] ?? local;
+  }
+
+  /// Takes [template] out of its program on the server, and keeps its copy.
+  Future<void> _unfile(Template template, String uid) async {
+    final unfiled = await _remoteService.setTemplateProgram(template, programId: null);
+    await _templates.storeTemplates([unfiled], userId: uid);
+    await _settle(.session, template.id);
+  }
+
   /// Saves [program]'s own fields and rules. Sessions change through their
   /// templates.
   Future<Program> update(Program program) async {
@@ -643,8 +786,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     // its history goes with it on the server too; and one the server never
     // had is owed nothing at all
     final reached = _owed[(ProgramRow.program, id)]?.change != .created;
-    // a skip outlives its program, as on the server: it still goes up
-    for (final owed in [..._owed.values.where((each) => each.programId == id && each.row != .skip)]) {
+    // a skip outlives its program, as on the server: it still goes up; and a
+    // session taken out of it still has to leave it there, before the delete
+    // takes the program's templates with it
+    bool outlives(ProgramOwed owed) => owed.row == .skip || (owed.row == .session && owed.change == .deleted);
+    for (final owed in [..._owed.values.where((each) => each.programId == id && !outlives(each))]) {
       await _settle(owed.row, owed.id);
     }
     if (reached) {
@@ -1365,7 +1511,14 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
         if (held.where((skip) => skip.id == id).firstOrNull case final TrainingSkip skip) await _confirmSkip(skip);
       case (.skip, _):
         await _remoteService.deleteSkip(id);
-      case (.session, _):
+      case (.session, .deleted || .deletedKeepingTemplates):
+        // taken out of its program (#489): the template stays
+        final held = await _templates.getTemplates(uid);
+        if (held.where((template) => template.id == id).firstOrNull case final Template session) {
+          await _unfile(session, uid);
+          await onSessionsChanged?.call();
+        }
+      case (.session, .created || .edited):
         final held = await _templates.getTemplates(uid);
         if (held.where((template) => template.id == id).firstOrNull case final Template session) {
           await _file(session, programId, uid);
@@ -1523,4 +1676,30 @@ DateTime? projectedEnd(Program program, ProgramPosition position, {required Date
   if (weeks == null || position.finished) return null;
   final start = weekOf(now, firstWeekday: firstWeekday);
   return DateTime(start.year, start.month, start.day + 7 * (weeks - position.week + 1) - 1);
+}
+
+/// The rule [program] grows a working weight by, for a weighted exercise of a
+/// session that joins it (#489): the one most of its exercises grow by, of
+/// the rules a lift can take whatever it is. A training max and its stages
+/// are programmed lift by lift, so neither is handed on. Null for a program
+/// that grows no working weight, whose new session runs as written.
+GrowthRule? _inheritedRule(Program program) {
+  final counts = <String, (GrowthRule, int)>{};
+  for (final rule in program.rules.values) {
+    if (rule case AddWeight() || RangeThenWeight()) {
+      final key = jsonEncode(rule.toMap());
+      counts[key] = (rule, (counts[key]?.$2 ?? 0) + 1);
+    }
+  }
+  return counts.values
+      .fold<(GrowthRule, int)?>(null, (best, each) => best == null || each.$2 > best.$2 ? each : best)
+      ?.$1;
+}
+
+/// Whether a lift of [category] carries a working weight a rule can grow.
+bool _takesWeight(Category category) {
+  return switch (category) {
+    .barbell || .dumbbell || .machine || .weightedBodyWeight => true,
+    .assistedBodyWeight || .repsOnly || .cardio || .duration || .weightedDistance || .weightedDuration => false,
+  };
 }

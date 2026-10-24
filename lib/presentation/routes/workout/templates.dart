@@ -234,6 +234,18 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
 
   Widget _userCard(BuildContext context, Template template) {
     final templates = Templates.of(context);
+    final programs = Programs.watch(context);
+    // a program's session can leave it, and a template in a program's folder
+    // that is not one can join it (#489): an assistant's, a tap from joining
+    final (joins, leaves) = switch ((Preferences.of(context).isOn(.programs), template.programId, template.folder)) {
+      (false, _, _) => (null, null),
+      (true, final String id, _) => (null, programs.lookup(id)),
+      (true, null, final TemplateFolder folder) => (
+        templates.templatesIn(folder).map((each) => each.programId).nonNulls.map(programs.lookup).nonNulls.firstOrNull,
+        null,
+      ),
+      (true, null, null) => (null, null),
+    };
     final card = _TemplateCard(
       template: template,
       options: [
@@ -243,9 +255,20 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
         // no folders without an account (see the new-folder button), so
         // nothing to move into
         if (!Auth.of(context).isAnonymous) .move,
+        if (joins != null && !joins.archived) .joinProgram,
+        // the last one stays: a program with none has nothing to run
+        if (leaves != null && leaves.sessions.length > 1) .leaveProgram,
         .startWorkout,
         .delete,
       ],
+      onJoinProgram: switch (joins) {
+        final Program program => (template) => _joinProgram(context, program, template),
+        null => null,
+      },
+      onLeaveProgram: switch (leaves) {
+        final Program program => (template) => _leaveProgram(context, program, template),
+        null => null,
+      },
       onDuplicate: (template) => _duplicate(context, template),
       onDelete: (template) {
         _showDeleteTemplateDialog(context, template);
@@ -599,16 +622,17 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
 }
 
 /// [template]'s exercises, and the ways on from them: start it, edit it when
-/// [onEdit] is given, or leave. The Workout tab's cards and a program's
-/// sessions open the same one.
+/// [onEdit] is given, take it out of its program when [onRemove] is, or
+/// leave. The Workout tab's cards and a program's sessions open the same one.
 Future<void> _showStartTemplateDialog(
   BuildContext context,
   Template template, {
   required Future<void> Function() onStart,
   VoidCallback? onEdit,
+  VoidCallback? onRemove,
 }) {
   final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
-  final L(:cancel, :startWorkout, :startNewWorkoutFromTemplate, :editTemplate) = L.of(context);
+  final L(:cancel, :startWorkout, :startNewWorkoutFromTemplate, :editTemplate, :programRemoveSession) = L.of(context);
   return showBrandedDialog(
     context,
     title: Text(
@@ -682,6 +706,19 @@ Future<void> _showStartTemplateDialog(
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
                 edit();
+              },
+            ),
+          // a program's session, taken out of it and kept as a template (#489)
+          if (onRemove case final VoidCallback remove)
+            PrimaryButton.wide(
+              key: AppKeys.programRemoveSession,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              child: Center(
+                child: Text(programRemoveSession),
+              ),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+                remove();
               },
             ),
           PrimaryButton.wide(
