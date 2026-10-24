@@ -66,6 +66,7 @@ enum _Screen {
   finishAtLastSet,
   setTypeMenu,
   setTargetDialog,
+  templateMuscles,
   rpePicker,
   setStopwatch,
   platesOffer,
@@ -590,6 +591,21 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Guideline.iosTapTarget,
     'No target and Save are 32pt tall, the dialog actions\' density across the app (lib/presentation/widgets/workout/target.dart:221, :225; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
   ),
+  // A template's editor with the muscle map on and its plan unfolded into the
+  // figures (#263, lib/presentation/widgets/muscle_figures.dart).
+  (_Screen.templateMuscles, _Guideline.labeledTapTarget, null),
+  (_Screen.templateMuscles, _Guideline.textContrastLight, null),
+  (_Screen.templateMuscles, _Guideline.textContrastDark, null),
+  (
+    _Screen.templateMuscles,
+    _Guideline.androidTapTarget,
+    'the editor\'s own density, not the muscle map: Add exercises at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), the exercise-name links, the column headers and the set rows at 24pt (lib/presentation/widgets/workout/workout_detail.dart, set_item.dart) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.templateMuscles,
+    _Guideline.iosTapTarget,
+    'the editor\'s own density, not the muscle map: Add exercises at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), the exercise-name links, the column headers and the set rows at 24pt (lib/presentation/widgets/workout/workout_detail.dart, set_item.dart) — visual-density change, out of scope',
+  ),
   (_Screen.workout, _Guideline.textContrastLight, null),
   (_Screen.workout, _Guideline.textContrastDark, null),
   (
@@ -1042,6 +1058,9 @@ void main() {
     }
     if (screen == _Screen.plateCalculator) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-plateCalculator': 'on'});
+    }
+    if (screen == _Screen.templateMuscles) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
     }
     if (screen == _Screen.rpePicker) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on'});
@@ -1547,6 +1566,15 @@ void main() {
         await tester.tapByKey(WorkoutDetailKeys.setTypeFor(_bench.id, 1));
         await tester.pumpTimes();
         await tester.tapByKey(WorkoutDetailKeys.setTarget);
+      case _Screen.templateMuscles:
+        final template = Template.empty(id: 'template-planned', order: 0)
+          ..name = 'Planned'
+          ..add(_bench)
+          ..add(_squat);
+        Templates.of(tester.element(find.byType(MaterialApp))).editable = template;
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/workout/templates');
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.templateMusclesToggle);
       case _Screen.setStopwatch:
         final timed = Exercise(name: 'Plank', category: .duration, target: .core);
         final workout = Workout(name: 'Timed')..add(timed);

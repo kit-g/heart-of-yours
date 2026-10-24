@@ -4026,6 +4026,43 @@
     "type": "text",
     "placeholders": {}
   },
+  "muscleMapOptionTemplate": "Each template",
+  "@muscleMapOptionTemplate": {
+    "description": "Settings, under the muscle map switch: the option that shows the body figures for a template's planned sets, in its editor and before starting it. Sits beside \"Each workout\"",
+    "type": "text",
+    "placeholders": {}
+  },
+  "templateMuscleSummary": "{exercises, plural, =1{1 exercise} other{{exercises} exercises}} · {sets, plural, =0{no sets} =1{1 set} other{{sets} sets}}",
+  "@templateMuscleSummary": {
+    "description": "One compact line over a template's exercises, in its editor and in the dialog before starting it: how many exercises and working sets it plans (warm-ups not counted). Tapping it unfolds the body map",
+    "type": "text",
+    "placeholders": {
+      "exercises": {
+        "type": "int"
+      },
+      "sets": {
+        "type": "int"
+      }
+    }
+  },
+  "templateMusclesShow": "show the muscles",
+  "@templateMusclesShow": {
+    "description": "Screen-reader hint on a template's summary line, read as 'double tap to show the muscles': it unfolds the body map. Lower case, it follows the platform's 'double tap to'",
+    "type": "text",
+    "placeholders": {}
+  },
+  "templateMusclesHide": "hide the muscles",
+  "@templateMusclesHide": {
+    "description": "Screen-reader hint on a template's summary line while its body map is open, read as 'double tap to hide the muscles'. Lower case, it follows the platform's 'double tap to'",
+    "type": "text",
+    "placeholders": {}
+  },
+  "templateMuscleMapHelp": "Each muscle group is shaded by how many sets this template plans for it: the darker, the more. Warm-ups don't count. Tap a muscle to see its number.",
+  "@templateMuscleMapHelp": {
+    "description": "Help tooltip on a template's body map",
+    "type": "text",
+    "placeholders": {}
+  },
   "muscleMapBreakdownHelp": "Completed sets per muscle group in the chosen period. A set counts in full for the muscles an exercise mainly works and as half for the ones it also works: one set of bench press adds 1 to Chest and ½ to Arms. An exercise you made counts in full toward its body part.",
   "@muscleMapBreakdownHelp": {
     "description": "Help tooltip on the muscle map's list: how sets are counted per muscle group",

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter_body_atlas/flutter_body_atlas.dart';
 import 'package:heart/core/utils/muscle_volume.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -11,8 +12,8 @@ import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
-// The muscle map's body figures (#136), on the profile for a window of days
-// and on a single finished workout (#223).
+// The muscle map's body figures (#136), on the profile for a window of days,
+// on a single finished workout (#223) and on a template's plan (#263).
 
 /// One finished workout's figures, under a heading: what it worked, shaded by
 /// its own busiest group. Nothing at all when the muscle map's per-workout
@@ -43,8 +44,7 @@ class const WorkoutMuscleMap({
     if (sets.isEmpty) return const SizedBox.shrink();
 
     final l = L.of(context);
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    final most = sets.values.fold(0.0, max);
+    final textTheme = Theme.of(context).textTheme;
 
     return Padding(
       padding: padding,
@@ -57,25 +57,190 @@ class const WorkoutMuscleMap({
             spacing: 8,
             children: [
               Text(l.musclesWorked, style: textTheme.titleMedium),
-              LayoutBuilder(
-                builder: (_, constraints) {
-                  return SizedBox(
-                    // the profile's rule for the figures on their own
-                    height: min(constraints.maxWidth * 4 / 5, 320),
-                    child: MuscleFigures(
-                      help: l.workoutMuscleMapHelp,
-                      sets: sets,
-                      colors: {
-                        for (final muscle in MuscleCatalog.all)
-                          if (sets[muscle.group] case double count when count > 0)
-                            muscle: muscleShade(colorScheme, count, most),
-                      },
-                    ),
-                  );
-                },
-              ),
+              _ShadedFigures(sets: sets, help: l.workoutMuscleMapHelp),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// [sets] on the figures, each group shaded by its share of the busiest one,
+/// as tall as the profile's figures on their own.
+class const _ShadedFigures({
+  required final Map<MuscleGroup, double> sets,
+  required final String help,
+}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final most = sets.values.fold(0.0, max);
+
+    return _FiguresBox(
+      child: MuscleFigures(
+        help: help,
+        sets: sets,
+        colors: {
+          for (final muscle in MuscleCatalog.all)
+            if (sets[muscle.group] case double count when count > 0) muscle: muscleShade(colorScheme, count, most),
+        },
+      ),
+    );
+  }
+}
+
+/// The width it is given, and the profile's height for the figures on their
+/// own: four fifths of that, at most 320.
+///
+/// A box of its own rather than a `LayoutBuilder`, because the figures also
+/// sit in a dialog (#263), and a dialog sizes itself by asking its content
+/// for intrinsic sizes, which a `LayoutBuilder` — the atlas's own included —
+/// cannot answer. This one answers for them: no width of its own, so the
+/// dialog keeps the width its words give it, and the height that width gets.
+class _FiguresBox extends SingleChildRenderObjectWidget {
+  const new({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderFiguresBox();
+}
+
+class _RenderFiguresBox extends RenderProxyBox {
+  static double _heightFor(double width) => min(width * 4 / 5, 320);
+
+  @override
+  double computeMinIntrinsicWidth(double height) => 0;
+
+  @override
+  double computeMaxIntrinsicWidth(double height) => 0;
+
+  @override
+  double computeMinIntrinsicHeight(double width) => _heightFor(width);
+
+  @override
+  double computeMaxIntrinsicHeight(double width) => _heightFor(width);
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    return constraints.constrain(Size(constraints.maxWidth, _heightFor(constraints.maxWidth)));
+  }
+
+  @override
+  void performLayout() {
+    size = computeDryLayout(constraints);
+    child?.layout(BoxConstraints.tight(size));
+  }
+}
+
+/// What a template plans (#263), as one quiet line — its exercises and its
+/// sets — that unfolds into the figures on a tap. A line, not a block: the
+/// editor and the start dialog are about the exercises, and the map is there
+/// for whoever asks whether legs got forgotten. It follows every change to
+/// the plan, so it fills as exercises go in.
+///
+/// Nothing at all when the muscle map's per-template part is off, or when the
+/// plan is empty. A plan nothing in which can be placed keeps its line, with
+/// nothing to unfold: an untinted body would say "this trains nothing".
+class TemplateMuscles extends StatefulWidget {
+  final Iterable<WorkoutExercise> exercises;
+
+  /// Around the line when there is one, so a line that is not there leaves no
+  /// gap either.
+  final EdgeInsetsGeometry padding;
+
+  const new({super.key, required this.exercises, this.padding = .zero});
+
+  @override
+  State<TemplateMuscles> createState() => _TemplateMusclesState();
+}
+
+class _TemplateMusclesState extends State<TemplateMuscles> {
+  final _open = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _open.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Preferences.watch(context).isOptionOn(.muscleMapTemplate)) return const SizedBox.shrink();
+    final exercises = widget.exercises;
+    if (exercises.isEmpty) return const SizedBox.shrink();
+
+    final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final (:sets, unmapped: _) = plannedMuscleVolume(exercises, lookup: Exercises.of(context).lookup);
+    final total = exercises.fold(0, (sum, each) => sum + plannedSets(each));
+
+    final summary = Text(
+      l.templateMuscleSummary(exercises.length, total),
+      style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+      maxLines: 1,
+      overflow: .ellipsis,
+    );
+
+    return Padding(
+      padding: widget.padding,
+      // at the start, where the exercises under it begin
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: ConstrainedBox(
+          key: AppKeys.templateMuscles,
+          constraints: const BoxConstraints(maxWidth: readableWidth),
+          child: switch (sets.isEmpty) {
+            true => Padding(padding: const .symmetric(vertical: 8), child: summary),
+            false => ValueListenableBuilder<bool>(
+              valueListenable: _open,
+              builder: (_, open, _) {
+                return Column(
+                  crossAxisAlignment: .stretch,
+                  children: [
+                    Semantics(
+                      button: true,
+                      expanded: open,
+                      onTapHint: open ? l.templateMusclesHide : l.templateMusclesShow,
+                      child: InkWell(
+                        key: AppKeys.templateMusclesToggle,
+                        borderRadius: const .all(.circular(8)),
+                        onTap: () => _open.value = !open,
+                        child: ConstrainedBox(
+                          // a tap target, though it reads as a line
+                          constraints: const BoxConstraints(minHeight: 48),
+                          child: Row(
+                            spacing: 8,
+                            children: [
+                              Icon(Icons.accessibility_new_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+                              Expanded(child: summary),
+                              AnimatedRotation(
+                                turns: open ? .5 : 0,
+                                duration: const Duration(milliseconds: 200),
+                                child: Icon(Icons.expand_more_rounded, color: colorScheme.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      alignment: .topCenter,
+                      child: switch (open) {
+                        true => Padding(
+                          // clear of the line's ink above
+                          padding: const .symmetric(vertical: 8),
+                          child: _ShadedFigures(sets: sets, help: l.templateMuscleMapHelp),
+                        ),
+                        false => const SizedBox(width: double.infinity),
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
+          },
         ),
       ),
     );

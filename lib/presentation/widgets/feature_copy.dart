@@ -96,6 +96,7 @@ extension FeatureOptionCopy on FeatureOption {
       .muscleMapBreakdown => l.muscleMapBreakdown,
       .muscleMapHeatmap => l.muscleMapWeekly,
       .muscleMapWorkout => l.muscleMapOptionWorkout,
+      .muscleMapTemplate => l.muscleMapOptionTemplate,
       .programsCalendar => l.programCalendar,
     };
   }

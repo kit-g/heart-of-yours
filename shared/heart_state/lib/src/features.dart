@@ -103,6 +103,10 @@ enum FeatureOption {
   /// and on the done screen (#223).
   muscleMapWorkout(.muscleMap, 'workout'),
 
+  /// The body figures for a template, the sets it plans: in its editor and
+  /// before starting it (#263).
+  muscleMapTemplate(.muscleMap, 'template'),
+
   /// A program's sessions in the device's own calendar, Google's included
   /// (#391): the way in, on a program's page. Selected with the rest of
   /// Programs, and nothing happens until the user sets a program up there —
