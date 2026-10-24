@@ -22,6 +22,7 @@ extension FeatureCopy on Feature {
       .programs => l.programs,
       .previousInTemplate => l.previousInTemplate,
       .notToday => l.programNotToday,
+      .workoutSounds => l.workoutSounds,
     };
   }
 
@@ -42,6 +43,7 @@ extension FeatureCopy on Feature {
       .programs => l.programsSubtitle,
       .previousInTemplate => l.previousInTemplateSubtitle,
       .notToday => l.notTodaySubtitle,
+      .workoutSounds => l.workoutSoundsSubtitle,
     };
   }
 
@@ -57,6 +59,7 @@ extension FeatureCopy on Feature {
       .programs => Icons.event_repeat_rounded,
       .previousInTemplate => Icons.history_rounded,
       .notToday => Icons.redo_rounded,
+      .workoutSounds => Icons.volume_up_rounded,
     };
   }
 
@@ -71,7 +74,8 @@ extension FeatureCopy on Feature {
       .pauseWorkout ||
       .shortcuts ||
       .programs ||
-      .previousInTemplate => const [],
+      .previousInTemplate ||
+      .workoutSounds => const [],
       // what syncs and what doesn't: the line health data never crosses
       .notToday => [l.notTodayNote],
       // where Apple keeps Always On: Heart has no switch of its own for it.
@@ -93,6 +97,29 @@ extension FeatureOptionCopy on FeatureOption {
       .muscleMapHeatmap => l.muscleMapWeekly,
       .muscleMapWorkout => l.muscleMapOptionWorkout,
       .programsCalendar => l.programCalendar,
+    };
+  }
+}
+
+/// What the rest's sounds are called (#169).
+extension RestSoundCopy on RestSound {
+  String title(L l) {
+    return switch (this) {
+      .chime => l.restSoundChime,
+      .bell => l.restSoundBell,
+      .beeps => l.restSoundBeeps,
+      .marimba => l.restSoundMarimba,
+    };
+  }
+}
+
+extension SoundVolumeCopy on SoundVolume {
+  String title(L l) {
+    return switch (this) {
+      .off => l.soundVolumeOff,
+      .low => l.soundVolumeLow,
+      .normal => l.soundVolumeNormal,
+      .high => l.soundVolumeHigh,
     };
   }
 }

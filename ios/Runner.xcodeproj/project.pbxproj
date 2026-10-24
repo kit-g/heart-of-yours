@@ -74,6 +74,13 @@
 		680000000000000000000013 /* GoalsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 680000000000000000000002 /* GoalsWidget.swift */; };
 		610000000000000000000014 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000003 /* Localizable.xcstrings */; };
 		610000000000000000000015 /* HomeWidgetsChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000005 /* HomeWidgetsChannel.swift */; };
+		7C0000000000000000000021 /* rest_chime.wav in Resources */ = {isa = PBXBuildFile; fileRef = 7C0000000000000000000001 /* rest_chime.wav */; };
+		7C0000000000000000000022 /* rest_bell.wav in Resources */ = {isa = PBXBuildFile; fileRef = 7C0000000000000000000002 /* rest_bell.wav */; };
+		7C0000000000000000000023 /* rest_beeps.wav in Resources */ = {isa = PBXBuildFile; fileRef = 7C0000000000000000000003 /* rest_beeps.wav */; };
+		7C0000000000000000000024 /* rest_marimba.wav in Resources */ = {isa = PBXBuildFile; fileRef = 7C0000000000000000000004 /* rest_marimba.wav */; };
+		7C0000000000000000000025 /* set_tick.wav in Resources */ = {isa = PBXBuildFile; fileRef = 7C0000000000000000000005 /* set_tick.wav */; };
+		7C0000000000000000000026 /* record_fanfare.wav in Resources */ = {isa = PBXBuildFile; fileRef = 7C0000000000000000000006 /* record_fanfare.wav */; };
+		7C0000000000000000000042 /* SoundsChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C0000000000000000000041 /* SoundsChannel.swift */; };
 		610000000000000000000016 /* TrainingSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000006 /* TrainingSnapshotTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -252,6 +259,13 @@
 		610000000000000000000003 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		610000000000000000000004 /* OngoingWorkout.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OngoingWorkout.entitlements; sourceTree = "<group>"; };
 		610000000000000000000005 /* HomeWidgetsChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWidgetsChannel.swift; sourceTree = "<group>"; };
+		7C0000000000000000000001 /* rest_chime.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest_chime.wav; sourceTree = "<group>"; };
+		7C0000000000000000000002 /* rest_bell.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest_bell.wav; sourceTree = "<group>"; };
+		7C0000000000000000000003 /* rest_beeps.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest_beeps.wav; sourceTree = "<group>"; };
+		7C0000000000000000000004 /* rest_marimba.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest_marimba.wav; sourceTree = "<group>"; };
+		7C0000000000000000000005 /* set_tick.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = set_tick.wav; sourceTree = "<group>"; };
+		7C0000000000000000000006 /* record_fanfare.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = record_fanfare.wav; sourceTree = "<group>"; };
+		7C0000000000000000000041 /* SoundsChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundsChannel.swift; sourceTree = "<group>"; };
 		610000000000000000000006 /* TrainingSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingSnapshotTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -444,8 +458,23 @@
 				5C0000000000000000000003 /* AppShortcuts.strings */,
 				5C0000000000000000000005 /* Localizable.xcstrings */,
 				610000000000000000000005 /* HomeWidgetsChannel.swift */,
+				7C0000000000000000000041 /* SoundsChannel.swift */,
+				7C0000000000000000000040 /* Sounds */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		7C0000000000000000000040 /* Sounds */ = {
+			isa = PBXGroup;
+			children = (
+				7C0000000000000000000001 /* rest_chime.wav */,
+				7C0000000000000000000002 /* rest_bell.wav */,
+				7C0000000000000000000003 /* rest_beeps.wav */,
+				7C0000000000000000000004 /* rest_marimba.wav */,
+				7C0000000000000000000005 /* set_tick.wav */,
+				7C0000000000000000000006 /* record_fanfare.wav */,
+			);
+			path = Sounds;
 			sourceTree = "<group>";
 		};
 		AFD1F0049FDF442C8FC764C1 /* Frameworks */ = {
@@ -733,6 +762,12 @@
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				7A0000000000000000000002 /* PrivacyInfo.xcprivacy in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+				7C0000000000000000000021 /* rest_chime.wav in Resources */,
+				7C0000000000000000000022 /* rest_bell.wav in Resources */,
+				7C0000000000000000000023 /* rest_beeps.wav in Resources */,
+				7C0000000000000000000024 /* rest_marimba.wav in Resources */,
+				7C0000000000000000000025 /* set_tick.wav in Resources */,
+				7C0000000000000000000026 /* record_fanfare.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -876,6 +911,7 @@
 				670000000000000000000012 /* StartSnapshot.swift in Sources */,
 				680000000000000000000012 /* GoalsSnapshot.swift in Sources */,
 				610000000000000000000015 /* HomeWidgetsChannel.swift in Sources */,
+				7C0000000000000000000042 /* SoundsChannel.swift in Sources */,
 				B74ADED1ADF65E7B22533F18 /* WatchChannel.swift in Sources */,
 				5E0000000000000000000014 /* CommandQueue.swift in Sources */,
 				5F0000000000000000000011 /* RestVoice.swift in Sources */,

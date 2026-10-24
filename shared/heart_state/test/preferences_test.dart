@@ -459,6 +459,7 @@ void main() {
         'previousInTemplate',
         // programCalendar became Programs' calendar option before it shipped
         'notToday',
+        'workoutSounds',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });

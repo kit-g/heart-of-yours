@@ -22,7 +22,9 @@
   bug that gets shipped: the icon is present in the debug APK, and the debug
   build is what anyone tests.
 
-  Any future resource named only from Dart belongs in this list.
+  Any future resource named only from Dart belongs in this list — the
+  workout sounds (#169) among them: Dart names each to a notification channel
+  and to SoundsChannel, which looks it up with getIdentifier.
 
   `default_web_client_id` is the same bug with a different victim, and it cost
   more. The google-services Gradle plugin generates it from the web OAuth
@@ -47,4 +49,4 @@
 -->
 <resources
     xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@drawable/ic_stat_heart,@string/default_web_client_id,@array/android_wear_capabilities" />
+    tools:keep="@drawable/ic_stat_heart,@string/default_web_client_id,@array/android_wear_capabilities,@raw/rest_chime,@raw/rest_bell,@raw/rest_beeps,@raw/rest_marimba,@raw/set_tick,@raw/record_fanfare" />

@@ -28,6 +28,11 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
   /// The rest's home between launches (#141); null keeps it in memory only.
   final RestStore? _store;
 
+  /// Told the exercise whose countdown just ran out — run out, never skipped
+  /// or replaced — whichever surface started it. Where the app hears the end
+  /// of a rest (#169).
+  final void Function(String exerciseId)? _onRunOut;
+
   /// Whether [restore] has had its say this launch — true from the start with
   /// no store, since there is nothing to pick up. A command about the rest
   /// that arrives before this would find no rest and be dropped as stale,
@@ -50,6 +55,7 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
     this.cancelRestTimerNotifications,
     DateTime Function()? now,
     this._store,
+    this._onRunOut,
   }) : _now = now ?? DateTime.now,
        _restored = _store == null;
 
@@ -167,6 +173,7 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
             _activeExercise?.remains.value = 0;
             if (timer.isActive) {
               onComplete?.call();
+              _onRunOut?.call(exerciseId);
             }
             _stopActiveExerciseTimer();
             // run out, not skipped: nothing to withdraw, nothing to keep

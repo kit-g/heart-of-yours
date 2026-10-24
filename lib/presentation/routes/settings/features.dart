@@ -97,6 +97,8 @@ class _FeaturesPageState extends State<FeaturesPage> {
     return switch (feature) {
       // only where there is a watch with Heart on it
       .watchApp => const _WatchAppSwitch(),
+      // the sound, the volume, and the cues that are not the rest's
+      .workoutSounds => const _FeatureSwitch(.workoutSounds, extra: _WorkoutSoundsSettings()),
       _ => _FeatureSwitch(feature),
     };
   }
@@ -349,6 +351,91 @@ class const _WatchReadingsSwitch() extends StatelessWidget {
       visualDensity: .compact,
       contentPadding: const .symmetric(horizontal: 8),
       shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+    );
+  }
+}
+
+/// What workout sounds (#169) let the user choose, under its switch while it
+/// is on: the rest's sound and the volume, each played as it is picked, and a
+/// sound on every ticked set. The record's sound has no row until there are
+/// records to hear (#160): a switch for a sound that never plays is dead.
+class _WorkoutSoundsSettings extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final sounds = WorkoutSounds.watch(context);
+    final ThemeData(:textTheme) = Theme.of(context);
+
+    Widget picker<T extends Object>({
+      required Key key,
+      required String title,
+      required T value,
+      required List<T> values,
+      required String Function(T) label,
+      required ValueChanged<T> onPicked,
+    }) {
+      return Padding(
+        padding: const .fromLTRB(8, 8, 8, 4),
+        child: Column(
+          crossAxisAlignment: .start,
+          spacing: 6,
+          children: [
+            Text(title, style: textTheme.bodyMedium),
+            // four names in Russian outgrow a phone's width under the indent:
+            // the control shrinks rather than overflow
+            FittedBox(
+              fit: .scaleDown,
+              alignment: .centerLeft,
+              child: SettingSwitcher<T>(
+                key: key,
+                value: value,
+                onValueChanged: (picked) {
+                  if (picked != null) onPicked(picked);
+                },
+                children: {for (final each in values) each: Text(label(each))},
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: .stretch,
+      children: [
+        picker<RestSound>(
+          key: AppKeys.restSoundPicker,
+          title: l.restSoundLabel,
+          value: sounds.restSound,
+          values: RestSound.values,
+          label: (sound) => sound.title(l),
+          onPicked: sounds.setRestSound,
+        ),
+        picker<SoundVolume>(
+          key: AppKeys.soundVolumePicker,
+          title: l.soundVolume,
+          value: sounds.volume,
+          values: SoundVolume.values,
+          label: (volume) => volume.title(l),
+          onPicked: sounds.setVolume,
+        ),
+        CheckboxListTile.adaptive(
+          key: AppKeys.setDoneSound,
+          value: sounds.setDoneSound,
+          onChanged: (checked) {
+            HapticFeedback.selectionClick();
+            sounds.setSetDoneSound(on: checked ?? false);
+          },
+          title: Text(l.setDoneSoundLabel),
+          controlAffinity: ListTileControlAffinity.trailing,
+          dense: true,
+          visualDensity: .compact,
+          contentPadding: const .symmetric(horizontal: 8),
+          shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+        ),
+      ],
     );
   }
 }

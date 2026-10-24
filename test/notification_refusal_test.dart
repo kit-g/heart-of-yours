@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/notifications.dart';
+import 'package:heart_state/heart_state.dart' show SharedPreferences;
 import 'package:timezone/data/latest_all.dart' as tz;
 
 /// Scheduling a notification the user has refused permission for.
@@ -55,6 +56,8 @@ void main() {
   });
 
   setUp(() async {
+    // where the rest's notification looks up its sound (#169)
+    SharedPreferences.setMockInitialValues({});
     called = <String>[];
     reported = <Object>[];
     scheduleError = null;
