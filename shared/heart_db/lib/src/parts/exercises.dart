@@ -333,6 +333,14 @@ mixin _Exercises on _LocalDatabase
         .then((rows) => _foldRecords(exercise.category, rows));
   }
 
+  /// [getRecord] without [workoutId]'s sets: the records a workout in
+  /// progress has to beat (#160). Null when nothing else holds the exercise.
+  Future<Map?> getRecordWithout(String userId, Exercise exercise, String workoutId) {
+    return _db
+        .rawQuery(sql.recordSetsWithout, [userId, exercise.id, workoutId])
+        .then((rows) => _foldRecords(exercise.category, rows));
+  }
+
   @override
   Future<Map<ExerciseId, List<Map<String, dynamic>>>> getPreviousSets(
     String userId,

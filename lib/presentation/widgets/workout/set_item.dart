@@ -448,6 +448,9 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               padding: const .fromLTRB(16, 0, 16, 6),
               child: RecordPills(kinds: kinds),
             ),
+          // the one offer of live records (#160), under the set that would
+          // have been one; nothing on every other row
+          _LiveRecordOffer(setId: set.id),
         ],
       ),
     );

@@ -516,6 +516,28 @@ WHERE workouts.user_id = ?
 ORDER BY workouts.start, workouts.id;
 ''';
 
+/// [recordSets] over every workout but one: the past a workout in progress
+/// is measured against (#160). Its own sets stay out, so a set ticked before
+/// the app restarted is not counted as something the session has to beat.
+const recordSetsWithout = '''
+SELECT
+    sets.weight,
+    sets.reps,
+    sets.duration,
+    sets.distance,
+    workouts.id AS workout_id,
+    workouts.start AS start
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND workouts.id IS NOT ?
+  AND sets.completed
+  AND sets.set_type IS NOT 'warmup'
+ORDER BY workouts.start, workouts.id;
+''';
+
 const getWeightHistory = '''
 SELECT
     MAX(sets.weight) AS "value",

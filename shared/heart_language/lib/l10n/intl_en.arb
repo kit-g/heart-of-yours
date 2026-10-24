@@ -5110,5 +5110,15 @@
   "watchReadings": "Heart rate in Health Connect",
   "@watchReadings": {"description": "Settings on Android, a switch under the Wear OS watch app: whether the heart rate and energy the watch measured go into Health Connect with each workout. Short: a switch title", "type": "text", "placeholders": {}},
   "watchReadingsSubtitle": "What your watch measured, saved with each workout",
-  "@watchReadingsSubtitle": {"description": "Settings on Android, under the 'Heart rate in Health Connect' switch: what it does — the heart rate and energy the Wear OS watch measured during a workout are saved in Health Connect alongside that workout", "type": "text", "placeholders": {}}
+  "@watchReadingsSubtitle": {"description": "Settings on Android, under the 'Heart rate in Health Connect' switch: what it does — the heart rate and energy the Wear OS watch measured during a workout are saved in Health Connect alongside that workout", "type": "text", "placeholders": {}},
+  "liveRecords": "Live records",
+  "@liveRecords": {"description": "Settings › Features title for the opt-in note that appears the moment a ticked set beats a personal best, during a workout (#160)", "type": "text", "placeholders": {}},
+  "liveRecordsSubtitle": "A quiet note the moment a ticked set beats your best.",
+  "@liveRecordsSubtitle": {"description": "Settings › Features subtitle for Live records (#160)", "type": "text", "placeholders": {}},
+  "liveRecordsOfferTitle": "That set was a record",
+  "@liveRecordsOfferTitle": {"description": "Title of the one-time card under a just-ticked set that beat a personal best, offering to turn on Live records (#160)", "type": "text", "placeholders": {}},
+  "liveRecordsOfferBody": "Want a quiet note every time a set beats your best, right as you tick it?",
+  "@liveRecordsOfferBody": {"description": "Body of the one-time card offering Live records, under the set that would have been a record (#160)", "type": "text", "placeholders": {}},
+  "liveRecordLine": "{exercise}: {records}",
+  "@liveRecordLine": {"description": "Live records note during a workout, under 'New record': the exercise and the kinds of record the set just beat, such as 'Bench Press: Estimated 1RM, Max weight'", "type": "text", "placeholders": {"exercise": {}, "records": {}}}
 }
