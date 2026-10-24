@@ -155,7 +155,27 @@ class ProgramPage extends StatelessWidget {
                             onEditSession();
                           },
                           onStart: () => _start(context, session),
+                          // the last one stays: a program with none has
+                          // nothing to run
+                          onRemove: switch (sessions.length > 1) {
+                            true => () => _leaveProgram(context, program, session),
+                            false => null,
+                          },
                         ),
+                      ),
+                    // a template made since the program started, by hand or
+                    // by an assistant, joins it here (#489)
+                    if (!program.archived &&
+                        Templates.watch(context).candidatesFor(program).any((each) => each.programId == null))
+                      ListTile(
+                        key: AppKeys.programAddSession,
+                        contentPadding: .zero,
+                        leading: Icon(Icons.add_circle_outline_rounded, color: colorScheme.primary),
+                        title: Text(
+                          copy.programAddSession,
+                          style: textTheme.titleSmall?.copyWith(color: colorScheme.primary),
+                        ),
+                        onTap: () => _pickSession(context, program),
                       ),
                     ProgramConstraintRow(program: program),
                     if (!program.archived) _ProgramCalendarSlot(program: program),

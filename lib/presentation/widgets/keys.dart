@@ -238,6 +238,12 @@ abstract final class AppKeys {
   static const libraryNoRoom = Key('Programs.library.noRoom');
   static const programAbout = Key('Programs.about');
 
+  /// A session joining a running program (#489), and leaving it.
+  static const programAddSession = Key('Programs.addSession');
+  static Key programSessionCandidate(String templateId) => Key('Programs.addSession.$templateId');
+  static const programRemoveSession = Key('Programs.removeSession');
+  static Key templateMenu(String templateId) => Key('Templates.menu.$templateId');
+
   /// A program's goals on its page (#353): what it implies, and what it grows.
   static const programGoals = Key('Programs.goals');
   static Key programGoalKeep(String? goalId) => Key('Programs.goals.keep.$goalId');

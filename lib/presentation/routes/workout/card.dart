@@ -7,6 +7,12 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
   final void Function(Template)? onDuplicate;
   final void Function(Template)? onMove;
   final void Function(Template)? onStartWorkout;
+
+  /// Makes it a session of the program whose folder it sits in (#489).
+  final void Function(Template)? onJoinProgram;
+
+  /// Takes it, a program's session, out of the program.
+  final void Function(Template)? onLeaveProgram;
   final void Function(Template) onTap;
   final List<_TemplateOption>? options;
 
@@ -17,6 +23,8 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
     this.onDuplicate,
     this.onMove,
     this.onStartWorkout,
+    this.onJoinProgram,
+    this.onLeaveProgram,
     this.options,
     required this.onTap,
   });
@@ -52,6 +60,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
                     ),
                   ),
                   PopupMenuButton<_TemplateOption>(
+                    key: AppKeys.templateMenu(template.id),
                     tooltip: L.of(context).moreOptions,
                     style: const ButtonStyle(
                       visualDensity: VisualDensity(vertical: -3, horizontal: -3),
@@ -131,6 +140,8 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
       .move => onMove?.call(template),
       .delete => onDelete?.call(template),
       .startWorkout => onStartWorkout?.call(template),
+      .joinProgram => onJoinProgram?.call(template),
+      .leaveProgram => onLeaveProgram?.call(template),
     };
   }
 
@@ -163,13 +174,23 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
         style: textTheme.titleSmall,
         icon: const Icon(Icons.fitness_center_rounded, size: 16),
       ),
+      .joinProgram => (
+        copy: L.of(context).templateAddToProgram,
+        style: textTheme.titleSmall,
+        icon: const Icon(Icons.event_repeat_rounded, size: 16),
+      ),
+      .leaveProgram => (
+        copy: L.of(context).programRemoveSession,
+        style: textTheme.titleSmall,
+        icon: const Icon(Icons.event_busy_rounded, size: 16),
+      ),
     };
   }
 }
 
 const _maxPerCard = 5;
 
-enum _TemplateOption { edit, duplicate, move, startWorkout, delete }
+enum _TemplateOption { edit, duplicate, move, joinProgram, leaveProgram, startWorkout, delete }
 
 const _shape = RoundedRectangleBorder(borderRadius: .all(.circular(8)));
 
