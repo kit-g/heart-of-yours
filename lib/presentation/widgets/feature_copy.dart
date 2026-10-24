@@ -22,6 +22,7 @@ extension FeatureCopy on Feature {
       .programs => l.programs,
       .previousInTemplate => l.previousInTemplate,
       .notToday => l.programNotToday,
+      .copyForAi => l.copyForAi,
     };
   }
 
@@ -42,6 +43,7 @@ extension FeatureCopy on Feature {
       .programs => l.programsSubtitle,
       .previousInTemplate => l.previousInTemplateSubtitle,
       .notToday => l.notTodaySubtitle,
+      .copyForAi => l.copyForAiSubtitle,
     };
   }
 
@@ -57,6 +59,7 @@ extension FeatureCopy on Feature {
       .programs => Icons.event_repeat_rounded,
       .previousInTemplate => Icons.history_rounded,
       .notToday => Icons.redo_rounded,
+      .copyForAi => Icons.auto_awesome_outlined,
     };
   }
 
@@ -74,6 +77,8 @@ extension FeatureCopy on Feature {
       .previousInTemplate => const [],
       // what syncs and what doesn't: the line health data never crosses
       .notToday => [l.notTodayNote],
+      // the line the text never crosses: health data stays on the device
+      .copyForAi => [l.copyForAiNote],
       // where Apple keeps Always On: Heart has no switch of its own for it.
       // Wear OS has no per-app one to point at
       .watchApp => switch (platform) {

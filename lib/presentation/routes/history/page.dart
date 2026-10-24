@@ -65,6 +65,14 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
       slivers: [
         SliverAppBar(
           actions: [
+            // Copy for AI (#259): a stretch of training, while it is on
+            if (preferences.isOn(.copyForAi) && workouts.history.isNotEmpty)
+              IconButton(
+                key: AppKeys.copyForAiHistory,
+                tooltip: L.of(context).copyForAi,
+                icon: const Icon(Icons.auto_awesome_outlined),
+                onPressed: () => copyPeriodForAi(context),
+              ),
             IconButton(
               tooltip: L.of(context).calendar,
               icon: const Icon(Icons.calendar_month_rounded),

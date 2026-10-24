@@ -67,6 +67,19 @@ abstract final class AppKeys {
   static const muscleMapDecline = ValueKey('muscleMapDecline');
   static const featureDeclinedNotice = ValueKey('featureDeclinedNotice');
   static const muscleMapCard = ValueKey('muscleMapCard');
+
+  /// Copy for AI (#259): its offer and answers, the ways in, and its sheet.
+  static const copyForAiOffer = ValueKey('copyForAiOffer');
+  static const copyForAiAccept = ValueKey('copyForAiAccept');
+  static const copyForAiDecline = ValueKey('copyForAiDecline');
+  static const copyForAiHistory = ValueKey('copyForAiHistory');
+  static const copyForAiExercise = ValueKey('copyForAiExercise');
+  static const copyForAiSheet = ValueKey('copyForAiSheet');
+  static const copyForAiPeriod = ValueKey('copyForAiPeriod');
+  static const copyForAiPreview = ValueKey('copyForAiPreview');
+  static const copyForAiCopy = ValueKey('copyForAiCopy');
+  static const copyForAiShare = ValueKey('copyForAiShare');
+  static Key copyForAiWorkout(String id) => ValueKey('copyForAiWorkout.$id');
   static const muscleMapHeatmap = ValueKey('muscleMapHeatmap');
   static const muscleMapFigureTip = ValueKey('muscleMapFigureTip');
   static const workoutMuscleMap = ValueKey('workoutMuscleMap');

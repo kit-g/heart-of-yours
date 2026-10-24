@@ -118,10 +118,14 @@ class WorkoutItem extends StatelessWidget {
                           icon: const Icon(Icons.more_horiz),
                           onSelected: (option) => _onTapOption(context, option, workout),
                           itemBuilder: (context) {
-                            return _WorkoutOption.values.map(
+                            return _options(context).map(
                               (option) {
                                 final (:copy, :style, :icon) = _item(context, option);
                                 return PopupMenuItem<_WorkoutOption>(
+                                  key: switch (option) {
+                                    .copyForAi => AppKeys.copyForAiWorkout(workout.id),
+                                    .edit || .saveAsTemplate || .repeat || .delete => null,
+                                  },
                                   height: 40,
                                   value: option,
                                   child: Row(
@@ -335,7 +339,19 @@ class WorkoutItem extends StatelessWidget {
         return onSaveAsTemplate?.call(workout);
       case _WorkoutOption.edit:
         return onEditWorkout?.call(workout);
+      case _WorkoutOption.copyForAi:
+        return copyWorkoutForAi(context, workout);
     }
+  }
+
+  /// The menu's items. Copy for AI (#259) is one while it is on, and while it
+  /// is still on offer: the item is the offer, spent the first time it is
+  /// seen, and asked about only if tapped (`docs/opt-in.md`).
+  static Iterable<_WorkoutOption> _options(BuildContext context) {
+    final preferences = Preferences.of(context);
+    final copies = preferences.isOn(.copyForAi) || preferences.shouldOffer(.copyForAi);
+    if (copies) preferences.markOffered(.copyForAi);
+    return _WorkoutOption.values.where((option) => option != .copyForAi || copies);
   }
 
   _WorkoutOptionBundle _item(BuildContext context, _WorkoutOption option) {
@@ -357,16 +373,16 @@ class WorkoutItem extends StatelessWidget {
         style: textTheme.titleSmall,
         icon: const Icon(Icons.fitness_center_rounded, size: 16),
       ),
+      .copyForAi => (
+        copy: L.of(context).copyForAi,
+        style: textTheme.titleSmall,
+        icon: const Icon(Icons.auto_awesome_outlined, size: 16),
+      ),
       .delete => (
         copy: L.of(context).delete,
         style: textTheme.titleSmall?.copyWith(color: colorScheme.error),
         icon: Icon(Icons.delete, size: 16, color: colorScheme.error),
       ),
-      // _WorkoutOption.share => (
-      //     copy: L.of(context).share,
-      //     style: textTheme.titleSmall,
-      //     icon: const Icon(Icons.share, size: 16),
-      //   ),
     };
   }
 
@@ -522,10 +538,10 @@ class _Stat extends StatelessWidget {
 }
 
 enum _WorkoutOption {
-  // share,
   edit,
   saveAsTemplate,
   repeat,
+  copyForAi,
   delete,
 }
 

@@ -184,8 +184,11 @@ String recordKindShort(BuildContext context, RecordKind kind) {
 
 /// The label copy for a record kind — here rather than on the enum because
 /// presentation owns copy; the enum carries identifiers only.
-String recordKindLabel(BuildContext context, RecordKind kind) {
-  final l = L.of(context);
+String recordKindLabel(BuildContext context, RecordKind kind) => recordKindName(L.of(context), kind);
+
+/// [recordKindLabel] where there is no context to hand, only the copy: Copy
+/// for AI's text is written in a sheet's async gap.
+String recordKindName(L l, RecordKind kind) {
   return switch (kind) {
     .maxWeight => l.maxWeight,
     .oneRepMax => l.estimatedOneRepMax,
