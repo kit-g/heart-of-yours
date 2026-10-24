@@ -197,6 +197,116 @@ mixin _Stats on _LocalDatabase implements StatsService {
           ).toList(),
         );
   }
+
+  /// Finished workouts that started in [from, to), each with how long it was
+  /// trained: start to end, less its pauses (#134). A recap's sessions
+  /// (#154). Never its calories: the recap is shareable, and a health value
+  /// never leaves the device's own screens.
+  Future<List<({String id, DateTime start, Duration trained})>> getRecapWorkouts(
+    DateTime from,
+    DateTime to, {
+    String? userId,
+  }) {
+    if (userId == null) return Future.value(const []);
+    return _db
+        .rawQuery(
+          sql.recapWorkouts,
+          [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
+        )
+        .then(
+          (rows) => rows.map(
+            (row) {
+              final start = DateTime.parse(row['start'] as String);
+              final paused = switch (row['pauses']) {
+                String s when s.isNotEmpty => switch (jsonDecode(s)) {
+                  List pauses => pauses.fold(
+                    Duration.zero,
+                    (sum, pause) => sum + WorkoutPause.fromJson(pause as Map).duration,
+                  ),
+                  _ => Duration.zero,
+                },
+                _ => Duration.zero,
+              };
+              final trained = DateTime.parse(row['end'] as String).difference(start) - paused;
+              return (
+                id: row['id'] as String,
+                start: start.toLocal(),
+                // a clock changed mid-workout can leave end before start
+                trained: trained.isNegative ? Duration.zero : trained,
+              );
+            },
+          ).toList(),
+        );
+  }
+
+  /// Every completed working set, oldest workout first, of each exercise done
+  /// in a finished workout started in [from, to), from the exercise's first
+  /// time up to [to]: a recap's sets, and the history that says whether a
+  /// record set in the period beat anything (#154). Warm-ups are left out, as
+  /// they are from records and the muscle map.
+  ///
+  /// Each set carries what its exercise is, as [getLensSets] reads it, and
+  /// its category, which says what its numbers measure: null for an exercise
+  /// the device has no row for. Weights in kilograms, as stored.
+  Future<
+    List<
+      ({
+        String workoutId,
+        String exerciseId,
+        DateTime start,
+        Category? category,
+        Movement movement,
+        MuscleTagging muscles,
+        Target target,
+        double? weight,
+        int? reps,
+        double? duration,
+        double? distance,
+      })
+    >
+  >
+  getRecapSets(DateTime from, DateTime to, {String? userId}) {
+    if (userId == null) return Future.value(const []);
+    final [fromUtc, toUtc] = [from.toUtc().toIso8601String(), to.toUtc().toIso8601String()];
+    return _db.rawQuery(sql.recapSets, [userId, toUtc, userId, fromUtc, toUtc]).then(
+      (rows) {
+        // an exercise's blobs, decoded once rather than once per set: a year's
+        // history is thousands of rows over a few dozen exercises
+        final exercises = <String, (Movement, MuscleTagging)>{};
+        return rows.map(
+          (row) {
+            final exerciseId = row['exercise_id'] as String;
+            final (movement, muscles) = exercises.putIfAbsent(
+              exerciseId,
+              () => (
+                switch (_blob(row['movement'])) {
+                  Map<String, dynamic> m => Movement.fromJson(m),
+                  null => Movement.empty(),
+                },
+                switch (_blob(row['muscles'])) {
+                  Map<String, dynamic> m => MuscleTagging.fromJson(m),
+                  null => MuscleTagging.empty(),
+                },
+              ),
+            );
+            return (
+              workoutId: row['workout_id'] as String,
+              exerciseId: exerciseId,
+              start: DateTime.parse(row['start'] as String).toLocal(),
+              category: Category.values.where((each) => each.value == row['category']).firstOrNull,
+              movement: movement,
+              muscles: muscles,
+              target: _target(row['target']),
+              weight: (row['weight'] as num?)?.toDouble(),
+              reps: (row['reps'] as num?)?.toInt(),
+              duration: (row['duration'] as num?)?.toDouble(),
+              distance: (row['distance'] as num?)?.toDouble(),
+            );
+          },
+        ).toList();
+      },
+    );
+  }
 }
 
 /// What a finished workout amounted to, for the dashboard's training charts

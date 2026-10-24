@@ -150,8 +150,9 @@ void main() {
     // test font
     tester.view.physicalSize = const Size(1194, 420);
     await tester.pumpTimes();
-    // the last feature on the page: far below the fold
-    final last = Feature.values.last;
+    // the last feature on the page: far below the fold. Recaps has no row
+    // until a screen shows one (#154)
+    final last = Feature.values.where((feature) => feature != .recaps).last;
     router.config.go('/profile/settings/features?feature=${last.value}');
     await tester.pumpTimes(25);
 
