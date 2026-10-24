@@ -814,8 +814,9 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.whatsNew, _Guideline.androidTapTarget, null),
   (_Screen.whatsNew, _Guideline.iosTapTarget, null),
 
-  // Rest timers (lib/presentation/routes/settings/rest_timers.dart): one row,
-  // its thumbnail, duration and clear button.
+  // Rest timers (lib/presentation/routes/settings/rest_timers.dart): default
+  // rest's three kinds (#174), then one exercise's row, its thumbnail,
+  // duration and clear button.
   (_Screen.restTimers, _Guideline.labeledTapTarget, null),
   (_Screen.restTimers, _Guideline.textContrastLight, null),
   (_Screen.restTimers, _Guideline.textContrastDark, null),
@@ -1020,6 +1021,10 @@ void main() {
     }
     if (screen == _Screen.rpePicker) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on'});
+    }
+    // default rest (#174) on, so the page's kinds are held to it as well
+    if (screen == _Screen.restTimers) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-defaultRest': 'on'});
     }
     if (screen == _Screen.pausedWorkout || screen == _Screen.finishAtLastSet) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-pauseWorkout': 'on'});
@@ -1775,7 +1780,7 @@ void main() {
         await tester.pumpTimes();
         await tester.tapByKey(AppKeys.restTimers);
         await tester.pumpTimes();
-        expect(find.byType(ListTile), findsOneWidget);
+        expect(find.byType(ListTile), findsNWidgets(RestKind.values.length + 1));
     }
     await tester.pumpTimes();
   }

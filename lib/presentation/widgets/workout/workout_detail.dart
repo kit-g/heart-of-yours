@@ -30,6 +30,8 @@ import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/formatters.dart';
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart' show PreviousSet;
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart';
+import 'package:heart/presentation/widgets/feature_copy.dart';
+import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/widgets/menu.dart';
 import 'package:heart/presentation/widgets/popping_text.dart';
@@ -45,6 +47,7 @@ import 'package:material_ui/material_ui.dart';
 import 'rest.dart';
 import 'timer.dart';
 
+part 'default_rest.dart';
 part 'empty_state.dart';
 part 'exercise_item.dart';
 part 'exercise_note.dart';
@@ -114,6 +117,11 @@ class WorkoutDetail extends StatefulWidget {
   final void Function(Iterable<Exercise>) onAddExercises;
   final bool needsCancelWorkoutButton;
   final bool allowsCompletingSet;
+
+  /// Whether the one offer of default rest (#174) may appear under an
+  /// exercise: the active workout's sheet, where a tick starts a rest — not a
+  /// past workout being edited, where it does not.
+  final bool offersDefaultRest;
   final Iterable<WorkoutImage>? workoutImages;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
   final String? workoutId;
@@ -144,6 +152,7 @@ class WorkoutDetail extends StatefulWidget {
     required this.onAddExercises,
     this.needsCancelWorkoutButton = true,
     required this.allowsCompletingSet,
+    this.offersDefaultRest = false,
     this.workoutImages,
     this.onDeleteImage,
     this.onTapImage,
@@ -442,6 +451,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                       },
                       selector: (_, provider) => provider.pointedAtExercise == set.id,
                     ),
+                    if (widget.offersDefaultRest) _DefaultRestOffer(exercise: set),
                   ],
                 );
               },
@@ -1031,6 +1041,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                 onDragExercise: workouts.append,
                 onSwapExercise: workouts.swap,
                 allowsCompletingSet: true,
+                offersDefaultRest: true,
                 onAddSet: workouts.addSet,
                 onNoteChanged: workouts.setNote,
                 onRemoveSet: workouts.removeSet,

@@ -25,6 +25,11 @@ class WorkoutDetailKeys {
   static const addExerciseButton = Key('WorkoutDetail.addExerciseButton');
   static const discardAndStart = Key('WorkoutDetail.discardAndStart');
 
+  /// The one offer of default rest (#174) and its two answers.
+  static const defaultRestOffer = Key('WorkoutDetail.defaultRestOffer');
+  static const defaultRestAccept = Key('WorkoutDetail.defaultRestAccept');
+  static const defaultRestDecline = Key('WorkoutDetail.defaultRestDecline');
+
   /// The workout's own note under its title (#235), which opens its editor.
   static const workoutNote = Key('WorkoutDetail.workoutNote');
 

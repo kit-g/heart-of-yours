@@ -60,7 +60,15 @@ enum Feature {
   /// feature promises not to be. A program's own "Not today" is Programs',
   /// and stays with it. Skips sync whatever the answer; off, the button and
   /// the plain days in History go.
-  notToday('notToday');
+  notToday('notToday'),
+
+  /// A rest after every set, for exercises without a timer of their own
+  /// (#174): one length per `RestKind`, each editable in Settings › Rest
+  /// timers. A per-exercise timer always wins, and so does a program's planned
+  /// rest. Offered once, under the exercise whose set was just ticked with no
+  /// rest to start. The lengths are this device's, like the timers they stand
+  /// in for; off, they are kept, unused.
+  defaultRest('defaultRest');
 
   final String value;
 
