@@ -113,8 +113,8 @@ dependencies {
     implementation 'androidx.core:core:1.19.1'
     // App Functions (#289): the assistant calls the app's functions in-process
     // on Android 16+; the compiler generates the service and its metadata
-    implementation 'androidx.appfunctions:appfunctions:1.0.0-alpha13'
-    ksp 'androidx.appfunctions:appfunctions-compiler:1.0.0-alpha13'
+    implementation 'androidx.appfunctions:appfunctions:1.0.0-beta01'
+    ksp 'androidx.appfunctions:appfunctions-compiler:1.0.0-beta01'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0'
     // the Wear OS app's Data Layer (#250), and awaiting its tasks
     implementation 'com.google.android.gms:play-services-wearable:20.0.1'
