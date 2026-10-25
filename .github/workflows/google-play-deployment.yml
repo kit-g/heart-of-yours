@@ -215,5 +215,8 @@ jobs:
           packageName: ${{ inputs.app_id }}
           releaseFiles: ${{ steps.wear.outputs.aab }}
           releaseName: ${{ steps.release.outputs.name }}
-          track: "wear:${{ inputs.track }}"
+          # the Wear OS form factor has production, open testing and internal
+          # tracks but no closed one: where the phone goes to alpha, the watch
+          # goes to internal, and both are promoted to production together
+          track: "wear:${{ inputs.track == 'alpha' && 'internal' || inputs.track }}"
           status: ${{ inputs.status }}
