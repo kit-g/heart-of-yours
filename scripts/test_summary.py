@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn dart-test JSON reports into one markdown table for the GitHub job summary.
+"""Turn test reports into one markdown table for the GitHub job summary.
 
 Every test job in `.github/workflows/unit-tests.yml` runs its make target with
 REPORTS_DIR set, which makes `flutter test` drop a JSON report into
@@ -8,7 +8,9 @@ REPORTS_DIR set, which makes `flutter test` drop a JSON report into
 
 Input: `dart test --file-reporter=json` output — newline-delimited events.
 Counted from `testDone` events, ignoring the synthetic "loading …" suites the
-reporter emits per file.
+reporter emits per file. And JUnit XML, which Gradle writes for the Android
+native tests (one `TEST-<class>.xml` per class): every XML file under one
+directory is one suite, named after the directory.
 
 Usage:  test_summary.py <report-dir>
 
@@ -24,6 +26,7 @@ from __future__ import annotations
 import json
 import pathlib
 import sys
+import xml.etree.ElementTree as ElementTree
 from dataclasses import dataclass, field
 
 
@@ -83,6 +86,30 @@ def parse_dart(path: pathlib.Path) -> Suite:
     return suite
 
 
+def parse_junit(directory: pathlib.Path) -> Suite:
+    """Count the test cases in every JUnit XML report under [directory]."""
+    suite = Suite(name=directory.name)
+    for path in sorted(directory.glob("*.xml")):
+        try:
+            root = ElementTree.parse(path).getroot()
+        except ElementTree.ParseError:
+            continue
+        for case in root.iter("testcase"):
+            suite.seconds += float(case.get("time") or 0)
+            # an Element with no children is falsy, so compare against None
+            failed = case.find("failure") is not None or case.find("error") is not None
+            match (failed, case.find("skipped") is not None):
+                case (True, _):
+                    suite.failed += 1
+                    suite.failures.append(f"{case.get('classname', '')} {case.get('name', '')}".strip())
+                case (False, True):
+                    suite.skipped += 1
+                case _:
+                    suite.passed += 1
+    suite.seconds = round(suite.seconds, 1)
+    return suite
+
+
 def render(suites: list[Suite]) -> str:
     out: list[str] = ["## Test results", ""]
 
@@ -126,6 +153,7 @@ def render(suites: list[Suite]) -> str:
 def main() -> int:
     reports = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "test-reports")
     suites = [parse_dart(path) for path in sorted(reports.rglob("*.json"))]
+    suites += [parse_junit(directory) for directory in sorted({path.parent for path in reports.rglob("*.xml")})]
     print(render(suites))
     return 0
 
