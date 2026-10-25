@@ -455,6 +455,7 @@ class HeartApp extends StatelessWidget {
             exercises: db,
             goals: LocalGoals(db),
             programs: LocalPrograms(db),
+            ratedSets: db.getRatedSetCount,
           ),
         ),
       ],

@@ -308,4 +308,36 @@ void main() {
       expect((records['heaviest'] as Map)['weight'], 140);
     });
   });
+
+  // #244: the before-and-after count an import's RPE offer turns on
+  group('rated sets are counted', () {
+    test("only those with an RPE, in the user's finished workouts", () async {
+      expect(await local.getRatedSetCount(user), 0);
+
+      await local.storeWorkoutHistory([
+        server(
+          'w1',
+          sets: [
+            set('s1', weight: 60, type: 'warmup'),
+            set('s2', weight: 100, rpe: 8.5),
+            set('s3', weight: 100, rpe: 9),
+          ],
+        ),
+      ], user);
+      await local.storeWorkoutHistory([
+        server('w2', sets: [set('s4', weight: 100, rpe: 7)]),
+      ], 'someone-else');
+
+      expect(await local.getRatedSetCount(user), 2);
+    });
+
+    test("and an unfinished workout's ratings are not", () async {
+      await local.storeWorkoutHistory([
+        server('w1', sets: [set('s1', weight: 100, rpe: 8)]),
+      ], user);
+      await db.update('workouts', {'end': null});
+
+      expect(await local.getRatedSetCount(user), 0);
+    });
+  });
 }

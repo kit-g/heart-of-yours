@@ -92,11 +92,18 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
   /// pounds export read as kilograms is stored 2.2 times too heavy, silently.
   final _unit = ValueNotifier<MeasurementUnit?>(null);
 
+  /// Whether the import on screen brought ratings with it (#244): the store
+  /// holds more rated sets after it than before. Only ever opens the RPE
+  /// offer's slot under the report; whether anything shows there is the RPE
+  /// answer's business.
+  final _ratingsArrived = ValueNotifier<bool>(false);
+
   @override
   void dispose() {
     _outcome.dispose();
     _source.dispose();
     _unit.dispose();
+    _ratingsArrived.dispose();
     super.dispose();
   }
 
@@ -269,9 +276,15 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
                             ),
                             onCancel: () => _outcome.value = null,
                           ),
-                        _Imported(:final report, :final alongside) => _ImportReportView(
-                          report: report,
-                          alongside: alongside,
+                        _Imported(:final report, :final alongside) => Column(
+                          crossAxisAlignment: .stretch,
+                          children: [
+                            _ImportReportView(
+                              report: report,
+                              alongside: alongside,
+                            ),
+                            _ImportRpeOffer(ratingsArrived: _ratingsArrived),
+                          ],
                         ),
                         _Rejected(:final reason, :final source, :final newer) => _ImportRejectionView(
                           reason: reason,
@@ -361,6 +374,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
 
     startLoading();
     _outcome.value = null;
+    _ratingsArrived.value = false;
     try {
       final text = await file.readAsString();
       final format = _formatOf(source, text);
@@ -473,7 +487,14 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
     final workouts = Workouts.of(context);
     final exercises = Exercises.of(context);
     final backfill = Backfill.of(context);
+    final dataImport = DataImport.of(context);
     final userId = Auth.of(context).user?.id;
+    // what the store holds before the import, for the RPE offer to compare
+    // against once its workouts are down
+    final ratedBefore = switch (userId) {
+      String uid => await dataImport.ratedSets(uid),
+      null => 0,
+    };
 
     final report = await Api.instance.importWorkouts(
       csv,
@@ -493,13 +514,17 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
     // `initHistory` only ever asks for the newest page, and this device's
     // mark was earned against the account as it stood before the import
     // (heart-of-yours#113).
+    //
+    // Only then can the store say whether the import brought ratings: the
+    // report counts workouts and sets, not RPEs (#244).
+    final outcome = _Imported(report);
     unawaited(
       exercises
           .init()
           .then((_) => workouts.initHistory())
           .then(
             (_) => switch (userId) {
-              String uid => backfill.resync(uid),
+              String uid => backfill.resync(uid).then((_) => _noticeRatings(outcome, uid, ratedBefore, dataImport)),
               null => null,
             },
           )
@@ -507,7 +532,16 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
             (e, s) => widget.onError?.call(e, stacktrace: s),
           ),
     );
-    return _Imported(report);
+    return outcome;
+  }
+
+  /// Opens the RPE offer's slot when [uid]'s store holds more rated sets than
+  /// the [before] counted ahead of the import — unless the page has moved on
+  /// from [outcome] by then: closed, or another file picked.
+  Future<void> _noticeRatings(_Imported outcome, String uid, int before, DataImport dataImport) async {
+    final after = await dataImport.ratedSets(uid);
+    if (!mounted || !identical(_outcome.value, outcome)) return;
+    if (after > before) _ratingsArrived.value = true;
   }
 
   /// Heart's own JSON: the app reads it into the store, then shows it.
@@ -532,7 +566,10 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
       null => throw StateError('an import with no session to import into'),
     };
 
+    final ratedBefore = await dataImport.ratedSets(uid);
     final report = await dataImport.import(file, uid, createCustom: createCustom);
+    // the store is what the file was read into, so it can answer at once
+    final ratingsArrived = await dataImport.ratedSets(uid) > ratedBefore;
 
     final account = !auth.isAnonymous;
     if (account) await upsync.claim(from: uid, to: uid);
@@ -547,6 +584,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
           ),
     );
 
+    if (mounted) _ratingsArrived.value = ratingsArrived;
     return _Imported(
       WorkoutImportReport(
         workoutsFound: report.workoutsFound,
@@ -560,6 +598,52 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
         rowsSkipped: report.rowsSkipped,
       ),
       alongside: (templates: report.templates, folders: report.folders, goals: report.goals),
+    );
+  }
+}
+
+/// The one ask for RPE (#244), under the report of an import that brought
+/// rated sets. An import is the one moment the app learns that this user rates
+/// sets, so that is where it asks; the ask itself follows `docs/opt-in.md`
+/// like every other: once, then the one notice on a no, and nothing at all
+/// when RPE is already on or already declined.
+class const _ImportRpeOffer({required final ValueListenable<bool> ratingsArrived}) extends StatelessWidget {
+  static const _feature = Feature.rpe;
+
+  @override
+  Widget build(BuildContext context) {
+    final preferences = Preferences.watch(context);
+    final L(:rpeImportOfferTitle, :rpeImportOfferBody) = L.of(context);
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: ratingsArrived,
+      builder: (context, arrived, _) {
+        final Widget? child = switch (preferences) {
+          _ when !arrived => null,
+          _ when preferences.owesDeclineNotice(_feature) => FeatureDeclinedNotice(
+            onDismiss: () => preferences.acknowledgeDeclineNotice(_feature),
+          ),
+          _ when preferences.shouldOffer(_feature) => FeatureOffer(
+            key: AppKeys.rpeImportOffer,
+            acceptKey: AppKeys.rpeImportAccept,
+            declineKey: AppKeys.rpeImportDecline,
+            icon: _feature.icon,
+            title: rpeImportOfferTitle,
+            body: rpeImportOfferBody,
+            onAnswer: (yes) => preferences.answerOffer(_feature, yes: yes),
+            onShown: () => preferences.markOffered(_feature),
+          ),
+          _ => null,
+        };
+
+        return switch (child) {
+          Widget child => Padding(
+            padding: const .only(top: 24),
+            child: child,
+          ),
+          null => const SizedBox.shrink(),
+        };
+      },
     );
   }
 }
