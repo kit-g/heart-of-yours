@@ -186,6 +186,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '9.8.0'
+          # its build table and cache report say only that the task ran; the
+          # counts and failing test names are Test Summary's android row
+          add-job-summary: never
 
       # the google-services plugin wants its file for any task of the module;
       # the deploy job fetches the real one, the tests need only its shape
