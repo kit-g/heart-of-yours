@@ -202,6 +202,17 @@ jobs:
           # Play Console; a completed release ships them as written.
           whatsNewDirectory: release_notes/whatsnew
 
+      # the signed watch bundle, kept for a week: Play asks for some
+      # declarations (a foreground service's purpose) only from a bundle
+      # uploaded in the console, which the API's refusal never leaves behind
+      - name: "Keep the Wear OS bundle"
+        if: steps.wear.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: wear-bundle-${{ inputs.flavor }}
+          path: ${{ steps.wear.outputs.aab }}
+          retention-days: 7
+
       # The watch's bundle goes to the Wear OS form factor's own track. Until the
       # form factor is added to the app in the Play Console, that track does not
       # exist and the upload is refused: a warning on the run, never a failed
