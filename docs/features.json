@@ -127,6 +127,45 @@
       "highlight": false
     },
     {
+      "id": "default-rest",
+      "category": "train",
+      "title": "Default rest",
+      "pitch": "A rest after every set, even without a timer of your own: one length for compound lifts, one for isolation, one for bodyweight and cardio. Optional, and each length is yours to change.",
+      "since": "1.16.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "plate-calculator",
+      "category": "train",
+      "title": "Plate calculator",
+      "pitch": "While you type a barbell or machine weight, see which plates go on each side. Set the bar for each exercise and untick the plates your gym doesn't have. Optional.",
+      "since": "1.16.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "warm-ups",
+      "category": "train",
+      "title": "Warm-up sets",
+      "pitch": "Warm-ups worked out from your first working set and rounded to what you can load, on a ramp you can change. Optional.",
+      "since": "1.16.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
       "id": "lock-screen-workout",
       "category": "train",
       "title": "Your workout on the lock screen",
@@ -177,6 +216,18 @@
       "highlight": true
     },
     {
+      "id": "wear-os",
+      "category": "train",
+      "title": "Heart on Wear OS",
+      "pitch": "Log sets from a Wear OS watch with last time's numbers, rest and heart rate, which goes into Health Connect if you let it. The watch keeps logging when the phone is out of reach.",
+      "since": "1.16.0",
+      "tier": "free",
+      "platforms": [
+        "android"
+      ],
+      "highlight": false
+    },
+    {
       "id": "templates",
       "category": "train",
       "title": "Templates, as many as you like",
@@ -193,7 +244,7 @@
       "id": "programs",
       "category": "train",
       "title": "Programs",
-      "pitch": "19 ready-made programs with the research behind them, or one from your own templates. Heart schedules the sessions, sets each set's target and adds weight when you earn it.",
+      "pitch": "19 ready-made programs with the research behind them, or one from your own templates. Heart schedules the sessions, sets each target and adds weight when you earn it. Add sessions as you go.",
       "since": "1.15.0",
       "tier": "free",
       "platforms": [
@@ -359,6 +410,19 @@
       "highlight": true
     },
     {
+      "id": "training-charts",
+      "category": "progress",
+      "title": "Training charts",
+      "pitch": "Volume, working sets and average workout length by week or month, and a heatmap of the days you trained a lift. Add the ones you want to your profile.",
+      "since": "1.16.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
       "id": "dashboard",
       "category": "progress",
       "title": "A dashboard you arrange",
@@ -377,6 +441,19 @@
       "title": "Muscle map",
       "pitch": "A body map on your profile and on every finished workout, shaded by how many sets each muscle group got, with a list and a week-by-week view. Optional; you choose which parts show.",
       "since": "1.10.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "template-muscle-map",
+      "category": "progress",
+      "title": "A muscle map for templates",
+      "pitch": "See which muscles a template works while you plan it and before you start it. Part of the optional muscle map.",
+      "since": "1.16.0",
       "tier": "free",
       "platforms": [
         "ios",

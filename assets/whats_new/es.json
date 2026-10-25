@@ -1,5 +1,45 @@
 [
   {
+    "version": "1.16.0",
+    "items": [
+      {
+        "id": "wear-os",
+        "title": "Heart en Wear OS",
+        "body": "Registra series desde la muñeca con un reloj Wear OS, con el descanso, los números de la última vez y tu pulso, que pasa a Health Connect si lo permites. Abre Heart en el reloj para empezar."
+      },
+      {
+        "id": "plate-calculator",
+        "title": "Calculadora de discos",
+        "body": "Mientras escribes el peso de una barra o una máquina, ve **qué discos** van a cada lado. Elige la barra de cada ejercicio y desmarca los discos que no hay en tu gimnasio."
+      },
+      {
+        "id": "warm-ups",
+        "title": "Series de calentamiento",
+        "body": "Calentamientos calculados a partir de tu primera serie efectiva y redondeados a lo que puedes cargar. Añádelos desde el menú del ejercicio y ajusta la progresión bajo el interruptor."
+      },
+      {
+        "id": "default-rest",
+        "title": "Descanso predeterminado",
+        "body": "Un descanso tras cada serie, también en ejercicios sin temporizador: uno para ejercicios compuestos, otro para aislamiento y otro para peso corporal y cardio. El temporizador propio de un ejercicio sigue mandando."
+      },
+      {
+        "id": "add-session",
+        "title": "Añade una sesión a un programa",
+        "body": "Añade una de tus plantillas a un programa que ya sigues, desde la página del programa o desde el menú de la plantilla en su carpeta. Tus semanas y pesos iniciales no cambian."
+      },
+      {
+        "id": "template-muscle-map",
+        "title": "Mapa muscular en plantillas",
+        "body": "Mira qué músculos trabaja una plantilla mientras la preparas y antes de empezarla."
+      },
+      {
+        "id": "training-charts",
+        "title": "Gráficos nuevos",
+        "body": "Volumen, series efectivas y duración media de los entrenamientos por semana o por mes, y un mapa de los días en que entrenaste un ejercicio. Añádelos a tu perfil."
+      }
+    ]
+  },
+  {
     "version": "1.15.0",
     "items": [
       {

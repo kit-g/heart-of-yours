@@ -1,7 +1,56 @@
 [
   {
-    "version": "1.15.0",
+    "version": "1.16.0",
     "date": null,
+    "items": [
+      {
+        "id": "wear-os",
+        "title": "Heart on Wear OS",
+        "body": "Log sets from your wrist on a Wear OS watch, with rest, last time's numbers and your heart rate, which goes into Health Connect if you let it. Open Heart on the watch to start.",
+        "platforms": [
+          "android"
+        ]
+      },
+      {
+        "id": "plate-calculator",
+        "title": "Plate calculator",
+        "body": "While you type a barbell or machine weight, see **which plates** go on each side. Set the bar for each exercise, and untick the plates your gym doesn't have.",
+        "feature": "plateCalculator"
+      },
+      {
+        "id": "warm-ups",
+        "title": "Warm-up sets",
+        "body": "Warm-ups worked out from your first working set and rounded to what you can load. Add them from an exercise's menu, and change the ramp under the switch.",
+        "feature": "warmups"
+      },
+      {
+        "id": "default-rest",
+        "title": "Default rest",
+        "body": "A rest after every set, even for exercises without a timer: one length for compound lifts, one for isolation, one for bodyweight and cardio. An exercise's own timer still wins.",
+        "feature": "defaultRest"
+      },
+      {
+        "id": "add-session",
+        "title": "Add a session to a program",
+        "body": "Add one of your templates to a program you're already running, from the program's page or from the template's menu in its folder. Your weeks and starting weights stay as they are.",
+        "feature": "programs"
+      },
+      {
+        "id": "template-muscle-map",
+        "title": "A muscle map for templates",
+        "body": "See which muscles a template works while you plan it and before you start it.",
+        "feature": "muscleMap"
+      },
+      {
+        "id": "training-charts",
+        "title": "New charts",
+        "body": "Volume, working sets and average workout length by week or month, and a heatmap of the days you trained a lift. Add them to your profile."
+      }
+    ]
+  },
+  {
+    "version": "1.15.0",
+    "date": "2026-10-18",
     "items": [
       {
         "id": "programs",

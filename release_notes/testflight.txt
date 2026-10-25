@@ -1,31 +1,35 @@
-Programs: train to a plan, not just a log.
+Plates, warm-ups and rest, worked out for you.
 
-Pick one of 19 ready-made programs, each with the research behind it, or
-turn a folder of your templates into one. Heart schedules the sessions,
-fills in the targets and adds weight when you earn it. Starting weights
-come from your own history, and you can set any lift's by hand.
-
-- Not today: set a session, or any day, aside with one tap. Say why if you like.
-- Things to go easy on: a knee, your spine, overhead pressing. Heart marks
-  what is harder on them and suggests kinder swaps.
-- Your program's sessions in your calendar.
-- Supersets and circuits.
-- Rep ranges and targets in templates.
-- Sets a week, by muscle or movement pattern, and how push and pull,
-  hinge and squat balance.
-- Goals on a movement pattern or a muscle.
-- Records show on the set that set them, in History too.
-- Choose the day your week starts.
-- Previous can show the last time you ran that template.
+- Plate calculator: while you type a barbell or machine weight, see
+  which plates go on each side. Set the bar for each exercise and untick
+  the plates your gym doesn't have.
+- Warm-up sets, worked out from your first working set and rounded to
+  what you can load. Change the ramp in Settings.
+- Default rest after every set: one length for compound lifts, one for
+  isolation, one for bodyweight and cardio. An exercise's own timer
+  still wins.
+- Add a session to a program you're already running, from its page or
+  from its folder. Your weeks and starting weights stay as they are.
+- A muscle map for your templates, as you plan them and before you start.
+- New charts: volume, working sets and average workout length by week or
+  month, and the days you trained a lift.
+- Apple Watch: a set fits on one screen, Done included, on every size.
+- Clearer Spanish, French and Russian.
 
 What to test
-- Start a ready-made program: the days it asks for, and the starting
-  weights it takes from your history.
-- A program session: targets on every set, the note at the top, finishing
-  it, and the Done page's training max line with Undo.
-- Not today on a program day, then Undo.
-- Update over 1.14 with a workout left open: it should resume and finish.
-- Calendar: the permission prompt, and the events in Calendar.
-- Back from a program reached from History, a chart or Profile returns
-  where you were.
-- iPad: the program page and the library in both orientations.
+- Plate calculator: the offer the first time you type a barbell weight,
+  a weight the plates can't make, changing the bar, unticking plates.
+- Warm-ups: the offer under a barbell exercise, then Add warm-up sets
+  from the exercise menu.
+- Default rest: the offer after a set with no timer, the countdown's
+  length, an exercise with its own timer.
+- Programs: add a session from the program page and from a template's
+  menu in its folder, then remove it and undo. Add one with no signal.
+- The exercise menu in a workout: every row, a long superset name, the
+  weight unit choice.
+- A bodyweight exercise done without added weight shows its reps as
+  Previous next time.
+- Apple Watch: tick sets without scrolling, edit weight and reps with the
+  crown, a template set starts at its target.
+- A program's page from the library, and back from After this.
+- Add each new chart to Profile and switch week and month.

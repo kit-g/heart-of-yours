@@ -1,5 +1,45 @@
 [
   {
+    "version": "1.16.0",
+    "items": [
+      {
+        "id": "wear-os",
+        "title": "Heart sur Wear OS",
+        "body": "Notez vos séries au poignet avec une montre Wear OS, avec le repos, vos chiffres de la dernière fois et votre fréquence cardiaque, qui va dans Health Connect si vous l'autorisez. Ouvrez Heart sur la montre pour commencer."
+      },
+      {
+        "id": "plate-calculator",
+        "title": "Calculateur de disques",
+        "body": "Pendant que vous saisissez la charge d'une barre ou d'une machine, voyez **quels disques** mettre de chaque côté. Choisissez la barre de chaque exercice et décochez les disques que votre salle n'a pas."
+      },
+      {
+        "id": "warm-ups",
+        "title": "Séries d'échauffement",
+        "body": "Des échauffements calculés d'après votre première série de travail et arrondis à ce que vous pouvez charger. Ajoutez-les depuis le menu de l'exercice et réglez la progression sous l'interrupteur."
+      },
+      {
+        "id": "default-rest",
+        "title": "Repos par défaut",
+        "body": "Un repos après chaque série, même pour les exercices sans minuteur : une durée pour les polyarticulaires, une pour l'isolation, une pour le poids du corps et le cardio. Le minuteur propre à un exercice reste prioritaire."
+      },
+      {
+        "id": "add-session",
+        "title": "Ajouter une séance à un programme",
+        "body": "Ajoutez l'un de vos modèles à un programme en cours, depuis la page du programme ou depuis le menu du modèle dans son dossier. Vos semaines et vos charges de départ ne bougent pas."
+      },
+      {
+        "id": "template-muscle-map",
+        "title": "Une carte musculaire pour les modèles",
+        "body": "Voyez quels muscles un modèle sollicite pendant que vous le préparez et avant de le lancer."
+      },
+      {
+        "id": "training-charts",
+        "title": "Nouveaux graphiques",
+        "body": "Volume, séries de travail et durée moyenne des séances par semaine ou par mois, et une carte des jours où vous avez travaillé un exercice. Ajoutez-les à votre profil."
+      }
+    ]
+  },
+  {
     "version": "1.15.0",
     "items": [
       {
