@@ -180,15 +180,90 @@ String? _history(BuildContext context, String key) {
 }
 
 /// How often, how long and for how many weeks, in a line.
-String _facts(L copy, LibraryProgram program) {
+String _facts(L copy, LibraryProgram program) => [for (final (_, fact) in _factsOf(copy, program)) fact].join(' · ');
+
+/// How often, how long and for how many weeks, each with the icon its badge
+/// wears on the program's page.
+List<(IconData, String)> _factsOf(L copy, LibraryProgram program) {
   return [
-    if (program.perWeek case final int perWeek) copy.libraryPerWeek(perWeek),
-    if (program.minutes case final int minutes) copy.libraryMinutes(minutes),
-    switch (program.weeks) {
-      final int weeks => copy.programWeeks(weeks),
-      null => copy.programOngoing,
-    },
-  ].join(' · ');
+    if (program.perWeek case final int perWeek) (Icons.event_repeat_rounded, copy.libraryPerWeek(perWeek)),
+    if (program.minutes case final int minutes) (Icons.timer_outlined, copy.libraryMinutes(minutes)),
+    (
+      Icons.date_range_rounded,
+      switch (program.weeks) {
+        final int weeks => copy.programWeeks(weeks),
+        null => copy.programOngoing,
+      },
+    ),
+  ];
+}
+
+/// What a program needs, in a badge's words: the library's filter says
+/// "None", which on its own beside a program says nothing.
+String _needs(L copy, LibraryEquipment equipment) {
+  return switch (equipment) {
+    .none => copy.libraryNoEquipment,
+    .home => copy.libraryEquipmentHome,
+    .gym => copy.libraryEquipmentGym,
+  };
+}
+
+/// A fact of a program at a glance: an icon and a few words on the quiet
+/// fill chips wear, squared to the 8pt corner buttons have.
+class _Badge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const new({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: const .all(primaryButtonRadius),
+      ),
+      child: Padding(
+        padding: const .symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: .min,
+          spacing: 6,
+          children: [
+            Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+            Flexible(
+              child: Text(label, style: textTheme.labelLarge?.copyWith(color: colorScheme.onSurface)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// What the user has done with a program, small: "Following now".
+class _HistoryPill extends StatelessWidget {
+  final String programKey;
+  final String history;
+
+  const new({required this.programKey, required this.history});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return DecoratedBox(
+      key: AppKeys.libraryHistory(programKey),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer,
+        borderRadius: const .all(.circular(8)),
+      ),
+      child: Padding(
+        padding: const .symmetric(horizontal: 6, vertical: 2),
+        child: Text(history, style: textTheme.labelSmall?.copyWith(color: colorScheme.onSecondaryContainer)),
+      ),
+    );
+  }
 }
 
 /// A library program as the library lists it: its name, the facts that pick
@@ -229,20 +304,7 @@ class _LibraryCard extends StatelessWidget {
                   Expanded(child: Text(program.name.of(tag), style: textTheme.titleMedium)),
                   // what the user has done with it, small, beside its name
                   if (_history(context, program.key) case final String history)
-                    DecoratedBox(
-                      key: AppKeys.libraryHistory(program.key),
-                      decoration: BoxDecoration(
-                        color: colorScheme.secondaryContainer,
-                        borderRadius: const .all(.circular(8)),
-                      ),
-                      child: Padding(
-                        padding: const .symmetric(horizontal: 6, vertical: 2),
-                        child: Text(
-                          history,
-                          style: textTheme.labelSmall?.copyWith(color: colorScheme.onSecondaryContainer),
-                        ),
-                      ),
-                    ),
+                    _HistoryPill(programKey: program.key, history: history),
                 ],
               ),
               Text(_facts(copy, program), style: muted),
@@ -304,22 +366,29 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
     final tag = languageTag();
     final exercises = Exercises.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    final muted = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
 
-    Widget heading(String text) {
+    // each part of the plan under a heading with its own mark, so the page
+    // reads as parts rather than one run of paragraphs
+    Widget heading(String text, IconData icon) {
       return Padding(
-        padding: const .only(top: 24, bottom: 6),
-        child: Text(text, style: textTheme.titleSmall),
+        padding: const .only(top: 24, bottom: 8),
+        child: Row(
+          spacing: 8,
+          children: [
+            Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
+            Expanded(child: Text(text, style: textTheme.titleSmall)),
+          ],
+        ),
       );
     }
 
     Widget claims(Iterable<LibraryClaim> claims) => _Claims(claims: claims.toList(), tag: tag);
 
-    List<Widget> section(String title, ContentText? text, String on) {
+    List<Widget> section(String title, IconData icon, ContentText? text, String on) {
       return switch (text) {
         null => const [],
         final ContentText text => [
-          heading(title),
+          heading(title, icon),
           Text(text.of(tag), style: textTheme.bodyMedium),
           claims(program.claimsAbout(on)),
         ],
@@ -351,35 +420,57 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
               child: SizedBox(
                 width: min(constraints.maxWidth, readableWidth),
                 child: ListView(
+                  // its own place to keep a scroll offset: without it, a
+                  // program opened from "After this" opened where the one
+                  // before it had been scrolled to
+                  key: PageStorageKey(program.key),
                   padding: const .all(16),
                   children: [
-                    Text(_facts(copy, program), style: muted),
                     if (_history(context, program.key) case final String history) ...[
-                      const SizedBox(height: 4),
-                      Text(history, key: AppKeys.libraryHistory(program.key), style: textTheme.labelLarge),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: _HistoryPill(programKey: program.key, history: history),
+                      ),
+                      const SizedBox(height: 12),
                     ],
+                    // what decides whether it fits, taken in at a glance
+                    Wrap(
+                      key: AppKeys.libraryFacts,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final (icon, fact) in _factsOf(copy, program)) _Badge(icon: icon, label: fact),
+                        if (program.audience case final LibraryAudience audience)
+                          _Badge(icon: Icons.person_outline_rounded, label: _audienceLabel(copy, audience)),
+                        if (program.equipment case final LibraryEquipment equipment)
+                          _Badge(icon: Icons.fitness_center_rounded, label: _needs(copy, equipment)),
+                      ],
+                    ),
                     if (program.note case final ContentText note) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       Text(note.of(tag), style: textTheme.bodyLarge),
                     ],
                     if (program.claimsAbout('program') case final about when about.isNotEmpty) ...[
-                      heading(copy.libraryWhy),
+                      heading(copy.libraryWhy, Icons.lightbulb_outline_rounded),
                       claims(about),
                     ],
                     if (program.safety.map(library.safety).nonNulls.toList() case final notes when notes.isNotEmpty)
                       _SafetyNotes(notes: notes, tag: tag),
-                    ...section(copy.libraryWho, program.who, 'who'),
-                    ...section(copy.libraryWeek, program.week, 'week'),
-                    ...section(copy.programGrowth, program.grows, 'grows'),
+                    ...section(copy.libraryWho, Icons.person_outline_rounded, program.who, 'who'),
+                    ...section(copy.libraryWeek, Icons.calendar_view_week_rounded, program.week, 'week'),
+                    ...section(copy.programGrowth, Icons.trending_up_rounded, program.grows, 'grows'),
                     if (rules.isNotEmpty) claims(rules),
                     if (program.deload case final Deload deload) ...[
-                      const SizedBox(height: 8),
-                      Text(copy.libraryDeload(deload.every), style: textTheme.bodyMedium),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: _Badge(icon: Icons.trending_down_rounded, label: copy.libraryDeload(deload.every)),
+                      ),
                       claims(program.claimsAbout('deload')),
                     ],
-                    ...section(copy.libraryMisses, program.misses, 'misses'),
+                    ...section(copy.libraryMisses, Icons.replay_rounded, program.misses, 'misses'),
                     if (program.phases.isNotEmpty) ...[
-                      heading(copy.libraryPhases),
+                      heading(copy.libraryPhases, Icons.timeline_rounded),
                       for (final phase in program.phases)
                         _PhaseLine(
                           name: phase.name?.of(tag),
@@ -392,7 +483,7 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
                       claims(program.claimsAbout('phases')),
                       claims(program.claimsAbout('tests')),
                     ],
-                    heading(copy.programSessions),
+                    heading(copy.programSessions, Icons.list_alt_rounded),
                     claims(program.claimsAbout('rest')),
                     for (final session in program.sessions)
                       _LibrarySessionCard(
@@ -412,20 +503,24 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
                     const SizedBox(height: 16),
                     const GoEasyRow(),
                     if (next.isNotEmpty) ...[
-                      heading(copy.libraryNext),
+                      heading(copy.libraryNext, Icons.east_rounded),
                       for (final each in next)
+                        // the go-easy row's shape, inset and ink (#488)
                         ListTile(
                           key: AppKeys.libraryNext(each.key),
-                          contentPadding: .zero,
+                          contentPadding: GoEasyRow.padding,
+                          shape: GoEasyRow.shape,
+                          hoverColor: Colors.transparent,
+                          leading: const Icon(Icons.auto_stories_outlined),
                           title: Text(each.name.of(tag)),
-                          subtitle: Text(_facts(copy, each), style: textTheme.bodySmall),
+                          subtitle: Text(_facts(copy, each)),
                           trailing: const Icon(Icons.chevron_right_rounded),
                           onTap: () => widget.onLibraryProgram(each.key),
                         ),
                       claims(program.claimsAbout('next')),
                     ],
                     if (sources.isNotEmpty) ...[
-                      heading(copy.librarySources),
+                      heading(copy.librarySources, Icons.menu_book_outlined),
                       for (final source in sources) _SourceEntry(source: source, tag: tag),
                     ],
                   ],
@@ -719,7 +814,8 @@ class _SafetyNotes extends StatelessWidget {
   }
 }
 
-/// A phase in a line: its name, how long it runs, and its sessions.
+/// A phase: its name and sessions on the left, how long it runs as a badge
+/// on the right.
 class _PhaseLine extends StatelessWidget {
   final String? name;
   final String length;
@@ -730,16 +826,26 @@ class _PhaseLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final muted = textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant);
     return Padding(
-      padding: const .only(bottom: 6),
-      child: Column(
-        crossAxisAlignment: .start,
+      padding: const .only(bottom: 10),
+      child: Row(
+        spacing: 12,
         children: [
-          Text([?name, length].join(' · '), style: textTheme.bodyMedium),
-          Text(
-            sessions.join(', '),
-            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: .start,
+              spacing: 2,
+              children: switch (name) {
+                final String name => [
+                  Text(name, style: textTheme.bodyLarge),
+                  Text(sessions.join(', '), style: muted),
+                ],
+                null => [Text(sessions.join(', '), style: textTheme.bodyLarge)],
+              },
+            ),
           ),
+          _Badge(icon: Icons.date_range_rounded, label: length),
         ],
       ),
     );
@@ -747,7 +853,9 @@ class _PhaseLine extends StatelessWidget {
 }
 
 /// A session of a library program: its exercises, each with its sets, rest,
-/// and what it can be swapped for, and the research about any of it.
+/// and what it can be swapped for, and the research about any of it. An
+/// exercise reads across the card: what it is on the left, what to do on the
+/// right.
 class _LibrarySessionCard extends StatelessWidget {
   final LibrarySession session;
   final Template preview;
@@ -772,77 +880,126 @@ class _LibrarySessionCard extends StatelessWidget {
     final muted = textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant);
     final exercises = preview.toList();
 
+    Widget exercise(WorkoutExercise exercise) {
+      final (:sets, :then) = _sets(copy, exercise);
+      return Padding(
+        padding: const .symmetric(vertical: 10),
+        child: Column(
+          crossAxisAlignment: .start,
+          children: [
+            // the aims as wide as they need, up to a little under half the
+            // card; the name takes the rest
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return Row(
+                  crossAxisAlignment: .start,
+                  spacing: 12,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: .start,
+                        spacing: 2,
+                        children: [
+                          Text(exercise.exercise.name, style: textTheme.bodyLarge),
+                          if (exercise.superset != null &&
+                              exercises.where((each) => each.superset == exercise.superset).length > 1)
+                            Text(
+                              copy.librarySuperset,
+                              style: textTheme.labelSmall?.copyWith(color: colorScheme.primary),
+                            ),
+                          if (goEasyMarks(context, exercise.exercise) case final marks when marks.isNotEmpty)
+                            GoEasyMarker(marks: marks, exercise: exercise.exercise, candidates: Exercises.of(context)),
+                          if (exercise.pattern case final String pattern)
+                            Text(copy.libraryOrAny(PatternFilter(pattern).label(copy)), style: muted),
+                        ],
+                      ),
+                    ),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: constraints.maxWidth * .45),
+                      child: Column(
+                        crossAxisAlignment: .end,
+                        spacing: 2,
+                        children: [
+                          Text(
+                            sets,
+                            textAlign: .end,
+                            style: textTheme.bodyMedium?.copyWith(fontFeatures: const [.tabularFigures()]),
+                          ),
+                          for (final each in then) Text(each, textAlign: .end, style: muted),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            _Claims(claims: exerciseClaims(exercise.id).toList(), tag: tag),
+          ],
+        ),
+      );
+    }
+
     return Container(
+      key: AppKeys.librarySession(session.id),
       margin: const .only(bottom: 8),
-      padding: const .all(12),
+      padding: const .fromLTRB(16, 14, 16, 4),
       decoration: BoxDecoration(
         border: Border.all(color: dividerColor, width: .5),
         borderRadius: const .all(.circular(12)),
       ),
       child: Column(
-        crossAxisAlignment: .start,
-        spacing: 8,
+        crossAxisAlignment: .stretch,
         children: [
           Row(
             spacing: 8,
             children: [
               Expanded(child: Text(session.name.of(tag), style: textTheme.titleMedium)),
-              if (test) Text(copy.libraryTest, style: textTheme.labelMedium?.copyWith(color: colorScheme.primary)),
+              if (test) _Badge(icon: Icons.speed_rounded, label: copy.libraryTest),
             ],
           ),
-          if (session.note case final ContentText note) Text(note.of(tag), style: muted),
-          _Claims(claims: claims, tag: tag),
-          for (final exercise in exercises)
-            Column(
-              crossAxisAlignment: .start,
-              spacing: 2,
-              children: [
-                Row(
-                  spacing: 6,
-                  children: [
-                    Flexible(child: Text(exercise.exercise.name, style: textTheme.bodyLarge)),
-                    if (exercise.superset != null &&
-                        exercises.where((each) => each.superset == exercise.superset).length > 1)
-                      Text(copy.librarySuperset, style: textTheme.labelSmall?.copyWith(color: colorScheme.primary)),
-                  ],
-                ),
-                Text(_setsLine(copy, exercise), style: muted),
-                if (goEasyMarks(context, exercise.exercise) case final marks when marks.isNotEmpty)
-                  GoEasyMarker(marks: marks, exercise: exercise.exercise, candidates: Exercises.of(context)),
-                if (exercise.pattern case final String pattern)
-                  Text(copy.libraryOrAny(PatternFilter(pattern).label(copy)), style: muted),
-                _Claims(claims: exerciseClaims(exercise.id).toList(), tag: tag),
-              ],
+          if (session.note case final ContentText note)
+            Padding(
+              padding: const .only(top: 4),
+              child: Text(note.of(tag), style: muted),
             ),
+          _Claims(claims: claims, tag: tag),
+          const SizedBox(height: 4),
+          for (final (index, each) in exercises.indexed) ...[
+            if (index > 0) Divider(height: 1, thickness: .5, color: dividerColor),
+            exercise(each),
+          ],
         ],
       ),
     );
   }
 }
 
-/// An exercise's sets in a line: "3 × 8–12 · 1:30 rest", the main sets apart
-/// from the lighter ones after them, and each set's own aim where they differ.
-String _setsLine(L copy, WorkoutExercise exercise) {
+/// An exercise's sets, the main ones apart from what follows them: "3 × 8–12",
+/// or each set's own aim where they differ, then the lighter sets, the reps in
+/// all and the rest, each its own line.
+({String sets, List<String> then}) _sets(L copy, WorkoutExercise exercise) {
   final sets = exercise.toList();
   final main = sets.where((set) => set.target?.supplemental != true).toList();
   final lighter = sets.length - main.length;
   final aims = main.map((set) => _aim(copy, set.target)).toList();
   final first = aims.firstOrNull ?? '';
 
-  return [
-    switch (aims.every((aim) => aim == first)) {
+  return (
+    sets: switch (aims.every((aim) => aim == first)) {
       true => copy.librarySets(main.length, first),
       false => aims.join(', '),
     },
-    if (lighter > 0) copy.libraryLighterSets(lighter),
-    if (exercise.totalReps case final TargetRange total)
-      copy.libraryTotalReps(switch (total) {
-        TargetRange(isExact: true, :final min) => '${min.round()}',
-        TargetRange(:final min, max: null) => '${min.round()}+',
-        TargetRange(:final min, :final num max) => '${min.round()}–${max.round()}',
-      }),
-    if (exercise.rest case final int rest when rest > 0) copy.libraryRest(_clock(copy, rest)),
-  ].join(' · ');
+    then: [
+      if (lighter > 0) copy.libraryLighterSets(lighter),
+      if (exercise.totalReps case final TargetRange total)
+        copy.libraryTotalReps(switch (total) {
+          TargetRange(isExact: true, :final min) => '${min.round()}',
+          TargetRange(:final min, max: null) => '${min.round()}+',
+          TargetRange(:final min, :final num max) => '${min.round()}–${max.round()}',
+        }),
+      if (exercise.rest case final int rest when rest > 0) copy.libraryRest(_clock(copy, rest)),
+    ],
+  );
 }
 
 /// What a set aims for: its reps, time or distance, a share of a max, and

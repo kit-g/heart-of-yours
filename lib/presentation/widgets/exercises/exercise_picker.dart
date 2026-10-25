@@ -196,38 +196,36 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                     ),
                   ),
                 ),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: switch (exercises.hasOwn) {
-                    false => const SizedBox.shrink(),
-                    true => ChoiceChip(
-                      selectedColor: colorScheme.tertiaryContainer,
-                      // the tick is a second foreground on that fill, with its
-                      // own colour slot the chip theme leaves unset — so it
-                      // stayed dark while the label went light
-                      checkmarkColor: colorScheme.onTertiaryContainer,
-                      // The accent fill needs the accent's own ink. The chip
-                      // theme sets no label style at all, so a selected chip
-                      // keeps the unselected one and reads as dark text on the
-                      // accent — while the two filter buttons beside it switch
-                      // to onTertiaryContainer for exactly this reason.
-                      //
-                      // Set here rather than on the theme because the three
-                      // selectable chips in the app do not agree on a selected
-                      // fill: this one overrides to the accent, while the
-                      // movement sheet's and the new-exercise dialog's take
-                      // Material's secondaryContainer. One label colour across
-                      // all of them would be wrong for two.
-                      labelStyle: switch (exercises.showingMine) {
-                        true => textTheme.labelLarge?.copyWith(color: colorScheme.onTertiaryContainer),
-                        false => null,
-                      },
-                      label: Text(mine),
-                      selected: exercises.showingMine,
-                      onSelected: (v) => exercises.showingMine = v,
-                    ),
-                  },
-                ),
+                // in the row only when there is something of the user's to
+                // show: an empty slot here still took the row's 8pt gap and
+                // pushed Target and Category off-centre (#488)
+                if (exercises.hasOwn)
+                  ChoiceChip(
+                    selectedColor: colorScheme.tertiaryContainer,
+                    // the tick is a second foreground on that fill, with its
+                    // own colour slot the chip theme leaves unset — so it
+                    // stayed dark while the label went light
+                    checkmarkColor: colorScheme.onTertiaryContainer,
+                    // The accent fill needs the accent's own ink. The chip
+                    // theme sets no label style at all, so a selected chip
+                    // keeps the unselected one and reads as dark text on the
+                    // accent — while the two filter buttons beside it switch
+                    // to onTertiaryContainer for exactly this reason.
+                    //
+                    // Set here rather than on the theme because the three
+                    // selectable chips in the app do not agree on a selected
+                    // fill: this one overrides to the accent, while the
+                    // movement sheet's and the new-exercise dialog's take
+                    // Material's secondaryContainer. One label colour across
+                    // all of them would be wrong for two.
+                    labelStyle: switch (exercises.showingMine) {
+                      true => textTheme.labelLarge?.copyWith(color: colorScheme.onTertiaryContainer),
+                      false => null,
+                    },
+                    label: Text(mine),
+                    selected: exercises.showingMine,
+                    onSelected: (v) => exercises.showingMine = v,
+                  ),
               ],
             ),
           ),
