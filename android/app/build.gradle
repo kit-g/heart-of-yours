@@ -121,7 +121,7 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.11.0'
     // a Wear OS watch's readings into Health Connect (#461); the health
     // plugin's own version, so the app carries one client
-    implementation 'androidx.health.connect:connect-client:1.2.0-alpha02'
+    implementation 'androidx.health.connect:connect-client:1.2.0-alpha06'
 
     testImplementation 'junit:junit:4.13.2'
     // org.json on the JVM, for the plans' tests; on the device it is the platform's
