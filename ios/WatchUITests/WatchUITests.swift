@@ -14,12 +14,22 @@ import XCTest
 /// Health's permission sheet (#184): a remote view, in no element tree, and a
 /// sheet dismissed by relaunching the app counts as declined — after which
 /// only erasing the simulator asks again. Tap through that one by hand.
+///
+/// Without a phone, a debug build reads the phone's state from a file instead:
+/// pass a payload as `test/fixtures/watch/` holds them, as
+/// `TEST_RUNNER_FIXTURE=/absolute/path.json`, and each step launches on it,
+/// with what the watch sends applied there as the phone would apply it.
 final class WatchUITests: XCTestCase {
     private let app = XCUIApplication()
 
     override func setUp() {
         continueAfterFailure = false
-        app.activate()
+        if let fixture = ProcessInfo.processInfo.environment["FIXTURE"] {
+            app.launchArguments = ["-fixture", fixture]
+            app.launch()
+        } else {
+            app.activate()
+        }
         // every step starts on the set up next; the pager keeps whichever page
         // the last one left it on
         app.swipeRight()

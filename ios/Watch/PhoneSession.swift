@@ -52,6 +52,10 @@ final class PhoneSession: NSObject, ObservableObject {
         queued.contains(where: \.transferred)
     }
 
+    /// Started from a fixture rather than the phone (debug builds only): commands
+    /// apply here, as the phone would apply them, and go nowhere.
+    private(set) var standalone = false
+
     /// Whether the phone can hear a message right now. Out of reach, commands
     /// queue instead.
     @Published private(set) var reachable = false
@@ -136,6 +140,9 @@ final class PhoneSession: NSObject, ObservableObject {
     }
 
     func activate() {
+        #if DEBUG
+        if let path = UserDefaults.standard.string(forKey: "fixture") { return stand(on: path) }
+        #endif
         guard WCSession.isSupported() else { return }
         let session = WCSession.default
         session.delegate = self
@@ -143,6 +150,12 @@ final class PhoneSession: NSObject, ObservableObject {
     }
 
     func send(_ command: Command) {
+        #if DEBUG
+        if standalone {
+            phoneState = phoneState.applying(command, at: .now)
+            return show()
+        }
+        #endif
         let session = WCSession.default
         guard session.activationState == .activated else { return }
         let at = Date()
@@ -166,6 +179,22 @@ final class PhoneSession: NSObject, ObservableObject {
         })
         show()
     }
+
+    #if DEBUG
+    /// The phone's state read from a file instead of the phone, for driving a
+    /// simulator without one — a payload as `test/fixtures/watch/` holds them,
+    /// passed as a launch argument (the simulator reads the host's files):
+    ///
+    ///     xcrun simctl launch <watch> me.heart-of.ios.dev.watchkitapp -fixture /path/to/workout.json
+    private func stand(on path: String) {
+        guard let data = FileManager.default.contents(atPath: path),
+              let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return }
+        standalone = true
+        reachable = true
+        apply(payload)
+    }
+    #endif
 
     /// Hands [id] to the system to deliver once the phone is back.
     private func transfer(_ id: String, message: [String: Any]) {

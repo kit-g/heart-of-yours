@@ -25,7 +25,8 @@ struct HeartWatchApp: App {
                 // workout — see `WorkoutSession` for why never otherwise
                 .task(id: SessionTrigger(state: phone.state, active: phase == .active)) {
                     switch phone.state {
-                    case .workout(let workout) where phase == .active:
+                    // a fixture is no workout to measure, nor to ask Health about
+                    case .workout(let workout) where phase == .active && !phone.standalone:
                         await session.start(workout)
                     case .workout:
                         break
