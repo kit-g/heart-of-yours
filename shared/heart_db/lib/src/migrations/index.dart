@@ -175,4 +175,9 @@ const _migrations = <int, List<String>>{
     addProgramActionSlot,
     addProgramActionStage,
   ],
+  28: [
+    createAnomalies,
+    anomaliesSetIndex,
+    anomaliesWorkoutIndex,
+  ],
 };

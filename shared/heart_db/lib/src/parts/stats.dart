@@ -137,7 +137,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
     if (userId == null) return Future.value(const []);
     return _db
         .rawQuery(
-          sql.muscleSets,
+          _counted(sql.muscleSets),
           [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
         )
         .then(
@@ -184,7 +184,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
     if (userId == null) return Future.value(const []);
     return _db
         .rawQuery(
-          sql.lensSets,
+          _counted(sql.lensSets),
           [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
         )
         .then(

@@ -318,7 +318,7 @@ mixin _Exercises on _LocalDatabase
   @override
   Future<Map?> getRecord(String userId, Exercise exercise) {
     return _db
-        .rawQuery(sql.recordSets, [userId, exercise.id])
+        .rawQuery(_counted(sql.recordSets), [userId, exercise.id])
         .then(
           (rows) => _foldRecords(exercise.category, rows),
         );
@@ -329,7 +329,7 @@ mixin _Exercises on _LocalDatabase
   /// beats it. Null when the exercise had not been performed by then.
   Future<Map?> getRecordAsOf(String userId, Exercise exercise, String workoutId) {
     return _db
-        .rawQuery(sql.recordSetsAsOf, [userId, exercise.id, workoutId, workoutId])
+        .rawQuery(_counted(sql.recordSetsAsOf), [userId, exercise.id, workoutId, workoutId])
         .then((rows) => _foldRecords(exercise.category, rows));
   }
 
@@ -427,7 +427,7 @@ mixin _Exercises on _LocalDatabase
     String query, {
     int? limit,
   }) {
-    return _db.rawQuery(query, [userId, exercise.id, limit ?? 30]).then(
+    return _db.rawQuery(_counted(query), [userId, exercise.id, limit ?? 30]).then(
       (rows) {
         return rows.map(
           (row) {
@@ -465,7 +465,7 @@ mixin _Exercises on _LocalDatabase
       .totalTimeUnderTension => metrics.getTotalTimeUnderTensionHistory,
     };
 
-    return _db.rawQuery(query, [userId, exerciseName, limit]).then(
+    return _db.rawQuery(_counted(query), [userId, exerciseName, limit]).then(
       (rows) {
         return rows.map(
           (row) {
