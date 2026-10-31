@@ -90,6 +90,8 @@ class WorkoutItem extends StatelessWidget {
                     children: [
                       // a day records fell: how many, as of that workout
                       _RecordCount(workout: workout),
+                      // something in it looks off, and is not decided (#428)
+                      _ToReview(workout: workout),
                       // a program's session: the program, in the Workout tab
                       PartOfProgram(
                         programId: workout.programId,
@@ -547,6 +549,36 @@ enum _WorkoutOption {
 
 /// How many records [workout] set that beat an earlier value — a trophy and
 /// the count on its card, as of that day. Absent where none did.
+/// A quiet flag on a workout with an entry still to look at (#428), while
+/// that feature is on; nothing otherwise. Not a control: the card's own tap
+/// opens the workout, where the entries are marked.
+class _ToReview extends StatelessWidget {
+  final Workout workout;
+
+  const new({required this.workout});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Preferences.watch(context).isOn(.entryReview)) return const SizedBox.shrink();
+    final anomalies = Provider.of<Anomalies?>(context);
+    if (anomalies == null || !anomalies.ofWorkout(workout.id).any((each) => each.status == .pending)) {
+      return const SizedBox.shrink();
+    }
+    final label = L.of(context).workoutHasEntriesToReview;
+    return Tooltip(
+      message: label,
+      excludeFromSemantics: true,
+      child: Semantics(
+        label: label,
+        child: Padding(
+          padding: const .symmetric(horizontal: 6),
+          child: Icon(Icons.flag_outlined, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+      ),
+    );
+  }
+}
+
 class _RecordCount extends StatelessWidget {
   final Workout workout;
 

@@ -29,6 +29,7 @@ extension FeatureCopy on Feature {
       .copyForAi => l.copyForAi,
       .liveRecords => l.liveRecords,
       .workoutSounds => l.workoutSounds,
+      .entryReview => l.entryReview,
     };
   }
 
@@ -56,6 +57,7 @@ extension FeatureCopy on Feature {
       .copyForAi => l.copyForAiSubtitle,
       .liveRecords => l.liveRecordsSubtitle,
       .workoutSounds => l.workoutSoundsSubtitle,
+      .entryReview => l.entryReviewSubtitle,
     };
   }
 
@@ -78,6 +80,7 @@ extension FeatureCopy on Feature {
       .copyForAi => Icons.auto_awesome_outlined,
       .liveRecords => Icons.emoji_events_rounded,
       .workoutSounds => Icons.volume_up_rounded,
+      .entryReview => Icons.flag_outlined,
     };
   }
 
@@ -110,6 +113,8 @@ extension FeatureCopy on Feature {
         .android => [l.watchAppAwayNoteAndroid],
         _ => [l.watchAppAwayNote, l.watchAlwaysOnNote],
       },
+      // that off is not a delete: the decisions wait for the next on
+      .entryReview => [l.entryReviewNote],
     };
   }
 }

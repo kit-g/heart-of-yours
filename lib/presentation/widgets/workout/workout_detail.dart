@@ -27,6 +27,7 @@ import 'package:heart/presentation/widgets/countdown.dart';
 import 'package:heart/presentation/widgets/duration_picker.dart';
 import 'package:heart/presentation/widgets/feature_copy.dart';
 import 'package:heart/presentation/widgets/feature_offer.dart';
+import 'package:heart/presentation/widgets/entry_review.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/exercises/exercise_picker_dialog.dart' show showSingleExercisePicker;
 import 'package:heart/presentation/widgets/exercises/movement_copy.dart';

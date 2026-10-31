@@ -20,6 +20,7 @@ import 'package:heart/core/utils/whats_new.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/theme/tokens.dart';
+import 'package:heart/core/utils/anomalies.dart';
 import 'package:heart/core/utils/api_tokens.dart';
 import 'package:heart/core/utils/backfill.dart';
 import 'package:heart/core/utils/exercises.dart';
@@ -34,6 +35,7 @@ import 'package:heart/core/utils/templates.dart';
 import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/navigation/entry_review.dart';
 import 'package:heart/presentation/navigation/goals_widget.dart';
 import 'package:heart/presentation/navigation/home_widgets.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
@@ -286,6 +288,16 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        // Suspicious entries (#428): kept and synced whatever the switch says;
+        // the switch decides what is marked and counted (EntryReviewPresenter)
+        ChangeNotifierProvider<Anomalies>(
+          create: (context) => Anomalies(
+            service: LocalAnomalies(db),
+            remoteService: api,
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
         // The developer API's tokens (#271): server-only, read when their page
         // opens, gated by the same remote leg as everything else.
         ChangeNotifierProvider<ApiTokens>(
@@ -425,6 +437,7 @@ class HeartApp extends StatelessWidget {
                 Exercises.of(context).userId = user?.id;
                 Charts.of(context).userId = user?.id;
                 Goals.of(context).userId = user?.id;
+                Anomalies.of(context).userId = user?.id;
                 Health.of(context).userId = user?.id;
                 PreviousExercises.of(context).userId = user?.id;
                 Stats.of(context).userId = user?.id;
@@ -479,15 +492,18 @@ class HeartApp extends StatelessWidget {
         ),
       ],
       builder: (_, _) {
-        return Consumer<AppTheme>(
-          builder: (_, theme, _) {
-            return _App(
-              theme: theme,
-              config: appConfig,
-              router: router,
-              hasLocalNotifications: hasLocalNotifications ?? true,
-            );
-          },
+        return EntryReviewPresenter(
+          leaveOutDiscarded: (on) => db.leavesOutDiscarded = on,
+          child: Consumer<AppTheme>(
+            builder: (_, theme, _) {
+              return _App(
+                theme: theme,
+                config: appConfig,
+                router: router,
+                hasLocalNotifications: hasLocalNotifications ?? true,
+              );
+            },
+          ),
         );
       },
     );
@@ -547,6 +563,9 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     if (!mounted) return;
     Health.of(context).onResume();
     Auth.of(context).ensureSession();
+    // the sweep that flags entries runs nightly: a phone left open overnight
+    // learns of the morning's flags when it comes back
+    Anomalies.of(context).pull();
   }
 
   /// Localized backend content (the exercise catalog) is served per request
@@ -937,6 +956,7 @@ Future<void> _initApp(
     // token is on the client. The profile may have started a goals run before
     // it was; this one then follows it with the server's copy.
     Goals.of(context).init();
+    Anomalies.of(context).init();
     // the replay resumes from the ledger, so a launch mid-run picks up where
     // the last one stopped
     if (owed && userId != null) upsync.run(userId);
@@ -1118,6 +1138,7 @@ void _resync(BuildContext context, Upsync upsync) {
   final programs = Programs.of(context);
   final backfill = Backfill.of(context);
   Goals.of(context).init();
+  Anomalies.of(context).init();
   exercises.init(locale: languageTag()).then<void>(
     (hasExercises) {
       if (!hasExercises) return;

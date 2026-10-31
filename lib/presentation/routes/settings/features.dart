@@ -101,7 +101,22 @@ class _FeaturesPageState extends State<FeaturesPage> {
       .warmups => const _FeatureSwitch(.warmups, extra: _WarmupScheme()),
       // the sound, the volume, and the cues that are not the rest's
       .workoutSounds => const _FeatureSwitch(.workoutSounds, extra: _WorkoutSoundsSettings()),
+      .entryReview => const _EntryReviewSwitch(),
       _ => _FeatureSwitch(feature),
+    };
+  }
+}
+
+/// Suspicious entries' switch (#428), only for an account: the server finds
+/// them, and an anonymous session has nothing on a server to find.
+class _EntryReviewSwitch extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (Auth.watch(context).isAnonymous) {
+      true => const SizedBox.shrink(),
+      false => const _FeatureSwitch(.entryReview),
     };
   }
 }

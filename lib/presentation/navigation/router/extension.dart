@@ -164,6 +164,24 @@ extension on BuildContext {
     return goNamed(_historySkipName, pathParameters: {'skipId': skipId});
   }
 
+  /// The suspicious entries (#428), in History.
+  void goToEntryReview() {
+    return goNamed(_historyReviewName);
+  }
+
+  /// A workout from the suspicious entries' list (#428), within History:
+  /// pushed on a phone, so Back returns to the list; in the pane on a tablet,
+  /// where the History button returns to it.
+  void openReviewedWorkout(String workoutId) {
+    final path = '$_historyPath/$workoutId';
+    switch (LayoutProvider.of(this)) {
+      case .compact:
+        push(path);
+      case .wide:
+        go(path);
+    }
+  }
+
   /// Pushes on a phone, replaces on a tablet.
   ///
   /// Compact puts the detail on top of the list as its own screen, so pushing

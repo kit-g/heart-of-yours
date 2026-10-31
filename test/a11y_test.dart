@@ -22,6 +22,7 @@ import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_models/heart_models.dart' as models show Page;
 import 'package:heart_state/heart_state.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -79,6 +80,8 @@ enum _Screen {
   plateCalculator,
   history,
   historyNotToday,
+  entryReviewOffer,
+  entryReview,
   skipPage,
   notTodaySheet,
   calendar,
@@ -664,6 +667,28 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
 
+  // Suspicious entries (#428): the one offer at the top of History
+  // (lib/presentation/routes/history/entry_review_page.dart), and the list
+  // the History button opens once the feature is on.
+  (_Screen.entryReviewOffer, _Guideline.labeledTapTarget, null),
+  (_Screen.entryReviewOffer, _Guideline.textContrastLight, null),
+  (_Screen.entryReviewOffer, _Guideline.textContrastDark, null),
+  (
+    _Screen.entryReviewOffer,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.entryReviewOffer,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (_Screen.entryReview, _Guideline.labeledTapTarget, null),
+  (_Screen.entryReview, _Guideline.textContrastLight, null),
+  (_Screen.entryReview, _Guideline.textContrastDark, null),
+  (_Screen.entryReview, _Guideline.androidTapTarget, null),
+  (_Screen.entryReview, _Guideline.iosTapTarget, null),
+
   // A day set aside, on its own page (#391,
   // lib/presentation/routes/history/skip_page.dart): what a calendar event's
   // link opens.
@@ -1171,6 +1196,41 @@ void main() {
         );
         var reads = 0;
         when(db.getRatedSetCount(any)).thenAnswer((_) async => reads++ == 0 ? 0 : 1);
+      case _Screen.entryReviewOffer || _Screen.entryReview:
+        // a set that looks like a pound slip, still to decide, and a workout
+        // left running, left out
+        final anomalies = [
+          Anomaly.fromJson({
+            'id': 'a1',
+            'workoutId': 'w1',
+            'workoutStart': '2026-10-01T08:00:00.000Z',
+            'setId': 's1',
+            'exerciseName': 'Bench Press',
+            'reason': AnomalyReason.outlierWeight,
+            'observed': {'weight': 630, 'reps': 5},
+            'typical': 100,
+            'status': 'pending',
+            'detectedAt': '2026-10-02T03:37:00.000Z',
+          }),
+          Anomaly.fromJson({
+            'id': 'a2',
+            'workoutId': 'w2',
+            'workoutStart': '2026-09-20T08:00:00.000Z',
+            'reason': AnomalyReason.durationLeftRunning,
+            'observed': {'seconds': 30000},
+            'status': 'invalid',
+            'detectedAt': '2026-09-21T03:37:00.000Z',
+          }),
+        ];
+        when(db.getAnomalies(any)).thenAnswer((_) async => anomalies);
+        when(db.unsyncedAnomalies(any)).thenAnswer((_) async => []);
+        when(db.storeAnomalies(any, any)).thenAnswer((_) async {});
+        when(
+          api.getAnomalies(userId: anyNamed('userId'), cursor: anyNamed('cursor'), limit: anyNamed('limit')),
+        ).thenAnswer((_) async => models.Page(items: anomalies, hasMore: false));
+        if (screen == _Screen.entryReview) {
+          SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-entryReview': 'on'});
+        }
       case _Screen.muscleMapOffer || _Screen.muscleMap:
         // history to map, and for the card, a device that has said yes
         when(
@@ -1832,6 +1892,19 @@ void main() {
         await tester.tap(find.tooltip('Calendar'));
       case _Screen.history:
         await tester.tapByKey(AppKeys.historyStack);
+      case _Screen.entryReviewOffer || _Screen.entryReview:
+        // read here for the reason the upsync run is started here: `_initApp`
+        // never gets this far in a widget test
+        await Anomalies.of(tester.element(find.byType(MaterialApp))).init();
+        await tester.tapByKey(AppKeys.historyStack);
+        await tester.pumpTimes();
+        if (screen == _Screen.entryReviewOffer) {
+          expect(find.byKey(AppKeys.entryReviewOffer), findsOneWidget);
+        } else {
+          await tester.tapByKey(AppKeys.entryReviewButton);
+          await tester.pumpTimes();
+          expect(find.byKey(AppKeys.anomalyRow('a2')), findsOneWidget);
+        }
       case _Screen.exercises:
         await tester.tapByKey(AppKeys.exercisesStack);
       case _Screen.settings || _Screen.anonymousSettings:
