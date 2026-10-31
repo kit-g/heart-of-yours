@@ -238,6 +238,38 @@ void main() {
       expect(stored.movement.groups, ['elbow_flexion']);
     });
 
+    // nor muscles (#176): the tagging the user picked on the atlas stays, so
+    // the muscle map and the pattern lens keep counting the custom's sets
+    test("a custom's muscles survive the server's copy, which has none", () async {
+      Exercise curl({bool tagged = false}) => Exercise.fromJson({
+        'id': 'id-curl',
+        'name': 'My Curl',
+        'category': 'Dumbbell',
+        'target': 'Arms',
+        'own': true,
+        if (tagged)
+          'muscles': {
+            'primary': {
+              'ids': ['biceps_brachii_caput_longum_l', 'biceps_brachii_caput_longum_r'],
+            },
+            'secondary': {
+              'ids': ['brachialis_l', 'brachialis_r'],
+            },
+          },
+      });
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [curl(tagged: true)]));
+      when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[curl()]);
+
+      await sut.init();
+
+      expect(sut.lookup('id-curl')?.muscles.primary.ids, [
+        'biceps_brachii_caput_longum_l',
+        'biceps_brachii_caput_longum_r',
+      ]);
+      final [stored] = verify(local.storeExercises(captureAny, userId: 'u1')).captured.single as List<Exercise>;
+      expect(stored.muscles.secondary?.ids, ['brachialis_l', 'brachialis_r']);
+    });
+
     test("the server's own movement on a custom wins over the device's", () async {
       Exercise curl(String group) => Exercise.fromJson({
         'id': 'id-curl',

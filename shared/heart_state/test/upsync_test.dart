@@ -85,14 +85,19 @@ class _Server extends Fake implements UpsyncService {
     if (unreadable.contains(id)) throw ArgumentError('Invalid value for GoalMetric: aMetricFromTheFuture');
   }
 
-  /// The server keeps no movement on a custom exercise (#343).
-  bool dropsMovement = false;
+  /// The server keeps no movement (#343) and no muscles (#176) on a custom
+  /// exercise.
+  bool dropsTags = false;
 
   @override
   Future<Replayed<Exercise>> replayExercise(Exercise exercise) async {
     _reach(.exercise, exercise.id);
-    final row = switch (dropsMovement) {
-      true => Exercise.fromJson({...exercise.toMap()..remove('movement')}),
+    final row = switch (dropsTags) {
+      true => Exercise.fromJson({
+        ...exercise.toMap()
+          ..remove('movement')
+          ..remove('muscles'),
+      }),
       false => exercise,
     };
     return switch (merged[exercise.id]) {
@@ -427,13 +432,33 @@ void main() {
         },
       });
       when(exercises.getExercises(userId: uid)).thenAnswer((_) async => (null, [bench, patterned]));
-      server.dropsMovement = true;
+      server.dropsTags = true;
       await sut.claim(from: uid, to: uid);
 
       await sut.run(uid);
 
       final stored = verify(exercises.storeExercises(captureAny, userId: uid)).captured.single as Iterable<Exercise>;
       expect(stored.single.movement.groups, ['chest_fly']);
+    });
+
+    test("a custom's muscles stay when the server's copy has none (#176)", () async {
+      seedStore();
+      final tagged = Exercise.fromJson({
+        ...custom.toMap(),
+        'muscles': {
+          'primary': {
+            'groups': ['chest'],
+          },
+        },
+      });
+      when(exercises.getExercises(userId: uid)).thenAnswer((_) async => (null, [bench, tagged]));
+      server.dropsTags = true;
+      await sut.claim(from: uid, to: uid);
+
+      await sut.run(uid);
+
+      final stored = verify(exercises.storeExercises(captureAny, userId: uid)).captured.single as Iterable<Exercise>;
+      expect(stored.single.muscles.primary.groups, ['chest']);
     });
 
     test('into an account with history: 200s are counted as already there', () async {
