@@ -103,7 +103,14 @@ enum Feature {
   /// Asked once, in context: the first time a ticked set would have been a
   /// record, the offer sits under that set. Computes nothing it stores; off,
   /// nothing is read.
-  liveRecords('liveRecords');
+  liveRecords('liveRecords'),
+
+  /// Suspicious entries (#428, heart-api#42): the sets and durations the
+  /// server found odd, marked where the app shows them, each kept or
+  /// discarded by the user. Asked once, the first time the server has one
+  /// pending. Off, nothing is marked and a discarded entry counts again;
+  /// the anomalies and the decisions stay stored and synced either way.
+  entryReview('entryReview');
 
   final String value;
 

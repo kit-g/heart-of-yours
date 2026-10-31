@@ -22,6 +22,15 @@ class _Alarms extends Alarms {
   void onSignOut() => calls++;
 }
 
+class _Anomalies extends Anomalies {
+  int calls = 0;
+
+  new() : super(service: MockLocalAnomalyService(), remoteService: MockAnomalyService());
+
+  @override
+  void onSignOut() => calls++;
+}
+
 class _Auth extends Auth {
   int calls = 0;
 
@@ -258,6 +267,7 @@ Directory _packageRoot() {
 void main() {
   group('clearState fan-out', () {
     late _Alarms alarms;
+    late _Anomalies anomalies;
     late _ApiTokens apiTokens;
     late _Auth auth;
     late _Backfill backfill;
@@ -276,6 +286,7 @@ void main() {
 
     Future<void> pumpProviders(WidgetTester tester) async {
       alarms = _Alarms();
+      anomalies = _Anomalies();
       apiTokens = _ApiTokens();
       auth = _Auth();
       backfill = _Backfill();
@@ -295,6 +306,7 @@ void main() {
         MultiProvider(
           providers: [
             ChangeNotifierProvider<Alarms>.value(value: alarms),
+            ChangeNotifierProvider<Anomalies>.value(value: anomalies),
             ChangeNotifierProvider<ApiTokens>.value(value: apiTokens),
             ChangeNotifierProvider<Auth>.value(value: auth),
             ChangeNotifierProvider<Backfill>.value(value: backfill),
@@ -323,6 +335,7 @@ void main() {
     List<int> counts() {
       return [
         alarms.calls,
+        anomalies.calls,
         apiTokens.calls,
         auth.calls,
         charts.calls,
@@ -359,6 +372,7 @@ void main() {
 
   group('eraseState', () {
     late _Alarms alarms;
+    late _Anomalies anomalies;
     late _ApiTokens apiTokens;
     late _Backfill backfill;
     late _Charts charts;
@@ -385,6 +399,7 @@ void main() {
     }) async {
       SharedPreferences.setMockInitialValues({Preferences.onboardingSeenKey: true});
       alarms = _Alarms();
+      anomalies = _Anomalies();
       apiTokens = _ApiTokens();
       backfill = _Backfill();
       charts = _Charts();
@@ -414,6 +429,7 @@ void main() {
         MultiProvider(
           providers: [
             ChangeNotifierProvider<Alarms>.value(value: alarms),
+            ChangeNotifierProvider<Anomalies>.value(value: anomalies),
             ChangeNotifierProvider<ApiTokens>.value(value: apiTokens),
             ChangeNotifierProvider<Auth>.value(value: auth),
             ChangeNotifierProvider<Backfill>.value(value: backfill),
@@ -444,6 +460,7 @@ void main() {
     List<int> counts() {
       return [
         alarms.calls,
+        anomalies.calls,
         apiTokens.calls,
         charts.calls,
         exercises.calls,
@@ -536,13 +553,14 @@ void main() {
       );
     });
 
-    test('the fan-out list is the fifteen known notifiers', () {
+    test('the fan-out list is the sixteen known notifiers', () {
       final clear = File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync();
       final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
       final fanned = {for (final match in fanOutCall.allMatches(clear)) match.group(1)!};
 
       expect(fanned, {
         'Alarms',
+        'Anomalies',
         'ApiTokens',
         'Auth',
         'Backfill',
