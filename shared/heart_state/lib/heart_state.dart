@@ -4,6 +4,7 @@ export 'package:provider/provider.dart';
 export 'package:shared_preferences/shared_preferences.dart';
 
 export 'src/alarms.dart';
+export 'src/anomalies.dart';
 export 'src/analytics.dart';
 export 'src/api_tokens.dart';
 export 'src/auth.dart';

@@ -110,7 +110,14 @@ enum Feature {
   /// exercise whose rest first runs out with the app on screen. Off, the
   /// rest timer sounds as it did in 1.9 — the notification's system sound,
   /// and nothing of the app's own.
-  workoutSounds('workoutSounds');
+  workoutSounds('workoutSounds'),
+
+  /// Suspicious entries (#428, heart-api#42): the sets and durations the
+  /// server found odd, marked where the app shows them, each kept or
+  /// discarded by the user. Asked once, the first time the server has one
+  /// pending. Off, nothing is marked and a discarded entry counts again;
+  /// the anomalies and the decisions stay stored and synced either way.
+  entryReview('entryReview');
 
   final String value;
 
