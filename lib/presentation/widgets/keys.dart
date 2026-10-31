@@ -296,4 +296,6 @@ abstract final class AppKeys {
   /// choices.
   static const newExercisePattern = Key('NewExercise.pattern');
   static Key newExercisePatternOption(String? pattern) => Key('NewExercise.pattern.${pattern ?? 'none'}');
+  static const musclePickerRole = Key('MusclePicker.role');
+  static const musclePickerFigures = Key('MusclePicker.figures');
 }

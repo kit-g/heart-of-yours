@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
+import 'package:heart/presentation/widgets/exercises/muscle_picker.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/selection_controls.dart';
 import 'package:heart_language/heart_language.dart';
@@ -24,6 +25,9 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
   // (#343)
   final pattern = ValueNotifier<String?>(editable?.movement.groups.firstOrNull);
   final patternKey = GlobalKey();
+  // tagged on the body atlas, so the muscle map counts its sets (#176)
+  final initialRoles = rolesOf(editable?.muscles ?? MuscleTagging.empty());
+  final roles = ValueNotifier(initialRoles);
   final loading = ValueNotifier(false);
   final nameController = TextEditingController();
   return showDialog(
@@ -61,18 +65,22 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: ListenableBuilder(
-                          listenable: Listenable.merge([loading, target, category, pattern, nameController]),
+                          listenable: Listenable.merge([loading, target, category, pattern, roles, nameController]),
                           builder: (_, _) {
-                            final (l, t, c, p, n) = (
+                            final (l, t, c, p, r, n) = (
                               loading.value,
                               target.value,
                               category.value,
                               pattern.value,
+                              roles.value,
                               nameController.value,
                             );
+                            final retagged = !sameRoles(r, initialRoles);
                             final enough = switch (editable) {
                               Exercise e =>
-                                t != null && c != null && (e.category != c || e.movement.groups.firstOrNull != p),
+                                t != null &&
+                                    c != null &&
+                                    (e.category != c || e.movement.groups.firstOrNull != p || retagged),
                               null => t != null && c != null && n.text.isNotEmpty,
                             };
                             final movement = _withPattern(editable?.movement ?? Movement.empty(), p);
@@ -94,10 +102,16 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                                           target: t,
                                           isMine: true,
                                           movement: movement,
+                                          tags: taggingOf(r),
                                         );
                                         await Exercises.of(context).makeExercise(exercise);
                                       } else {
-                                        final edited = editable.copyWith(category: c, movement: movement);
+                                        final edited = editable.copyWith(
+                                          category: c,
+                                          movement: movement,
+                                          // untouched, the tagging stays exactly as it was
+                                          tags: retagged ? taggingOf(r) : null,
+                                        );
                                         await Exercises.of(context).editExercise(edited);
                                       }
                                       loading.value = false;
@@ -231,6 +245,7 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                               );
                             },
                           ),
+                          MusclePicker(roles: roles),
                         ],
                       ),
                     ),
