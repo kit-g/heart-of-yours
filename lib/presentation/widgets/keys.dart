@@ -62,6 +62,12 @@ abstract final class AppKeys {
 
   /// The muscle map (#136) on the profile: the one offer, its two answers,
   /// the notice a no earns, and the card itself.
+  static const recapsOffer = ValueKey('recapsOffer');
+  static const recapsAccept = ValueKey('recapsAccept');
+  static const recapsDecline = ValueKey('recapsDecline');
+  static const recapCard = ValueKey('recapCard');
+  static const recapsEntry = ValueKey('recapsEntry');
+  static const monthlyReport = ValueKey('monthlyReport');
   static const muscleMapOffer = ValueKey('muscleMapOffer');
   static const muscleMapAccept = ValueKey('muscleMapAccept');
   static const muscleMapDecline = ValueKey('muscleMapDecline');

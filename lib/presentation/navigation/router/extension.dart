@@ -120,6 +120,15 @@ extension on BuildContext {
     return goNamed(_featuresName);
   }
 
+  void goToRecaps() {
+    return goNamed(_recapsName);
+  }
+
+  /// [month]'s recap, by its first day: `/profile/recaps/2026-09`.
+  void goToMonthlyReport(DateTime month) {
+    return goNamed(_monthlyReportName, pathParameters: {_monthParam: _monthKey(month)});
+  }
+
   void goToApiTokens() {
     return goNamed(_apiTokensName);
   }
