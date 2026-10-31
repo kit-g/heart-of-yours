@@ -80,6 +80,7 @@ abstract final class AppKeys {
   static const restSoundPicker = Key('Features.workoutSounds.rest');
   static const soundVolumePicker = Key('Features.workoutSounds.volume');
   static const setDoneSound = Key('Features.workoutSounds.setDone');
+  static const recordSound = Key('Features.workoutSounds.record');
 
   static const muscleMapCard = ValueKey('muscleMapCard');
 

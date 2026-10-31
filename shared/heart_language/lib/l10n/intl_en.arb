@@ -5414,6 +5414,8 @@
   "@soundVolumeHigh": {"description": "Volume choice for the workout sounds: loud. One short word, on a segmented control", "type": "text", "placeholders": {}},
   "setDoneSoundLabel": "A sound on every ticked set",
   "@setDoneSoundLabel": {"description": "Checkbox under the workout sounds switch: also play a short sound each time a set is ticked off", "type": "text", "placeholders": {}},
+  "recordSoundLabel": "A sound on every new record",
+  "@recordSoundLabel": {"description": "Checkbox under the workout sounds switch, shown while live records is on: also play a short sound when a ticked set is a new record", "type": "text", "placeholders": {}},
   "workoutSoundsOfferTitle": "Hear when your rest is over?",
   "@workoutSoundsOfferTitle": {"description": "Title of the one-time offer of workout sounds, shown in a workout under the exercise whose rest just ended", "type": "text", "placeholders": {}},
   "workoutSoundsOfferBody": "Pick a sound and how loud it plays. It stays quiet when your phone is on silent, and only dips your music for a moment.",

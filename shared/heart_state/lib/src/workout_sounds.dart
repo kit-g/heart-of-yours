@@ -184,8 +184,8 @@ class WorkoutSounds with ChangeNotifier {
     if (_on && setDoneSound) _play(_setDoneFile);
   }
 
-  /// A personal record was set. Nothing calls it yet: the hook the live
-  /// record note (#160) sounds through when it lands.
+  /// A personal record was set: what the live record note (#160) sounds
+  /// through.
   void record() {
     if (_on && recordSound) _play(_recordFile);
   }

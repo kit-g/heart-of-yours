@@ -437,6 +437,23 @@ class _WorkoutSoundsSettings extends StatelessWidget {
           contentPadding: const .symmetric(horizontal: 8),
           shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
         ),
+        // only where a record is noticed as it happens (#160): nothing else
+        // would sound it
+        if (Preferences.watch(context).isOn(.liveRecords))
+          CheckboxListTile.adaptive(
+            key: AppKeys.recordSound,
+            value: sounds.recordSound,
+            onChanged: (checked) {
+              HapticFeedback.selectionClick();
+              sounds.setRecordSound(on: checked ?? false);
+            },
+            title: Text(l.recordSoundLabel),
+            controlAffinity: ListTileControlAffinity.trailing,
+            dense: true,
+            visualDensity: .compact,
+            contentPadding: const .symmetric(horizontal: 8),
+            shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+          ),
       ],
     );
   }

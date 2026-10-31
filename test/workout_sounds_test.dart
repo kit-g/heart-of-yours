@@ -171,6 +171,20 @@ void main() {
       expect(sounds.restNotificationSound, 'rest_bell');
     });
 
+    testWidgets('the record sound is offered only while live records is on', (tester) async {
+      answered(.on);
+      await openFeatures(tester);
+      final context = tester.element(find.byType(MaterialApp));
+      expect(find.byKey(AppKeys.recordSound), findsNothing);
+
+      Preferences.of(context).setFeature(.liveRecords, on: true);
+      await tester.pumpTimes();
+      await tester.ensureVisible(find.byKey(AppKeys.recordSound));
+      await tester.tapByKey(AppKeys.recordSound);
+      await tester.pumpTimes();
+      expect(WorkoutSounds.of(context).recordSound, isTrue);
+    });
+
     testWidgets('off, none of it is there', (tester) async {
       answered(.off);
       await openFeatures(tester);

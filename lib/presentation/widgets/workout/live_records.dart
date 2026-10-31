@@ -166,6 +166,7 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
 
   void _show(_LiveNote note) {
     HapticFeedback.lightImpact();
+    WorkoutSounds.of(context).record();
     _note.value = note;
     _noteTimer?.cancel();
     _noteTimer = Timer(_noteFor, _withdraw);
