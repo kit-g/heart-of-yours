@@ -209,17 +209,23 @@ private const val DETENT = 48f
 private const val MAX = 1000.0
 
 /// Shorter, longer, or over: the three things the phone's countdown offers.
+/// Skip has a row of its own: three to a row leaves too little of a small round
+/// screen for "Пропустить" or "Passer" (#502).
 @Composable
 fun RestControls(workoutId: String, controls: PhoneState.Workout.Controls, send: (Command) -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        listOf(
-            controls.subtract to Command.AdjustRest(workoutId, -10),
-            controls.add to Command.AdjustRest(workoutId, 10),
-            controls.skip to Command.SkipRest(workoutId),
-        ).forEach { (label, command) ->
-            FilledTonalButton(onClick = { send(command) }, modifier = Modifier.weight(1f)) {
-                Text(label, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf(
+                controls.subtract to Command.AdjustRest(workoutId, -10),
+                controls.add to Command.AdjustRest(workoutId, 10),
+            ).forEach { (label, command) ->
+                FilledTonalButton(onClick = { send(command) }, modifier = Modifier.weight(1f)) {
+                    Text(label, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                }
             }
+        }
+        FilledTonalButton(onClick = { send(Command.SkipRest(workoutId)) }, modifier = Modifier.fillMaxWidth()) {
+            Text(controls.skip, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, maxLines = 1)
         }
     }
 }

@@ -501,10 +501,18 @@ struct RestControls: View {
     @EnvironmentObject private var phone: PhoneSession
 
     var body: some View {
-        HStack(spacing: 4) {
-            Button(controls.subtract) { phone.send(.adjustRest(workoutId: workoutId, seconds: -10)) }
-            Button(controls.add) { phone.send(.adjustRest(workoutId: workoutId, seconds: 10)) }
-            Button(controls.skip) { phone.send(.skipRest(workoutId: workoutId)) }
+        // Skip on a row of its own: three to a row leaves too little of a 40 mm
+        // screen for "Пропустить" or "Passer" (#502)
+        VStack(spacing: 4) {
+            HStack(spacing: 4) {
+                Button(controls.subtract) { phone.send(.adjustRest(workoutId: workoutId, seconds: -10)) }
+                Button(controls.add) { phone.send(.adjustRest(workoutId: workoutId, seconds: 10)) }
+            }
+            Button {
+                phone.send(.skipRest(workoutId: workoutId))
+            } label: {
+                Text(controls.skip).frame(maxWidth: .infinity)
+            }
         }
         .font(.footnote)
         .buttonStyle(.bordered)

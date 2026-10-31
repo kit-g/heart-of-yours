@@ -198,7 +198,9 @@ private fun Rest(rest: PhoneState.Workout.Rest, now: Long, accent: Color) {
     // dimmed, a countdown would be wrong between the minute's redraws: when
     // the rest ends is true all minute long
     if (LocalDimmed.current) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        // centred: the page's top is where a round screen is narrowest, and a
+        // label at either end meets its edge (#502)
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Muted(rest.label)
             Text(timeOfDay(rest.end), style = MaterialTheme.typography.numeralSmall)
         }
