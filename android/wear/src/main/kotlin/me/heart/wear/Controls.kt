@@ -57,6 +57,13 @@ fun SetControls(
     controls: PhoneState.Workout.Controls,
     accent: Color,
     send: (Command) -> Unit,
+    /// Whether this set offers the stopwatch (#484).
+    timed: Boolean = false,
+    /// When its stopwatch started, null while it isn't running. Kept by the
+    /// page: a lowered wrist takes these controls away, and not the hold.
+    holding: Long? = null,
+    onHold: (Long?) -> Unit = {},
+    now: Long = 0,
 ) {
     // a new set — or the same set sent again with new values — starts over
     var weight by remember(set) { mutableDoubleStateOf(set.weight ?: 0.0) }
@@ -83,24 +90,65 @@ fun SetControls(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        Button(
-            onClick = {
-                send(
-                    Command.Complete(
-                        workoutId = workoutId,
-                        setId = set.setId,
-                        // only what this set takes: a reps-only set sends no weight
-                        weight = set.weight?.let { weight },
-                        reps = set.reps?.let { reps.toInt() },
-                    ),
+        val done = { seconds: Int? ->
+            onHold(null)
+            send(
+                Command.Complete(
+                    workoutId = workoutId,
+                    setId = set.setId,
+                    // only what this set takes: a reps-only set sends no weight
+                    weight = set.weight?.let { weight },
+                    reps = set.reps?.let { reps.toInt() },
+                    seconds = seconds,
+                ),
+            )
+        }
+        when {
+            // the hold is on: Done logs what it took, as the phone's does (#171)
+            holding != null -> {
+                val elapsed = (now - holding).coerceAtLeast(0)
+                Text(
+                    clock(elapsed, up = true),
+                    style = MaterialTheme.typography.numeralSmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
                 )
-            },
-            // a counted set needs a count; the phone would refuse it anyway
-            enabled = set.reps == null || reps >= 1,
-            colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(controls.done, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Button(
+                    onClick = { done((elapsed / 1000).toInt().coerceAtLeast(1)) },
+                    colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(controls.done, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                }
+                FilledTonalButton(onClick = { onHold(null) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(controls.cancel, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                }
+            }
+            else -> {
+                if (timed) {
+                    Button(
+                        onClick = { onHold(System.currentTimeMillis()) },
+                        colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(controls.start, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                    }
+                }
+                // with a stopwatch on offer, Done is the quiet way: ticked as prescribed
+                val quiet = timed
+                Button(
+                    onClick = { done(null) },
+                    // a counted set needs a count; the phone would refuse it anyway
+                    enabled = set.reps == null || reps >= 1,
+                    colors = when (quiet) {
+                        true -> ButtonDefaults.filledTonalButtonColors()
+                        false -> ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(controls.done, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                }
+            }
         }
     }
 
