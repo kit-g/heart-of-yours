@@ -5423,5 +5423,19 @@
   "restSoundChannel": "Rest timers: {sound}",
   "@restSoundChannel": {"description": "Name of an Android notification channel, shown in the system's notification settings: rest timer notifications that play {sound}, the name of a sound such as 'Bell'", "type": "text", "placeholders": {"sound": {"type": "String"}}},
   "restSilentChannel": "Rest timers: silent",
-  "@restSilentChannel": {"description": "Name of an Android notification channel, shown in the system's notification settings: rest timer notifications that make no sound", "type": "text", "placeholders": {}}
+  "@restSilentChannel": {"description": "Name of an Android notification channel, shown in the system's notification settings: rest timer notifications that make no sound", "type": "text", "placeholders": {}},
+  "exerciseMuscles": "Muscles",
+  "@exerciseMuscles": {"description": "Section title in the new/edit custom exercise dialog, above the body figures where the user tags which muscles the exercise works", "type": "text", "placeholders": {}},
+  "exerciseMusclesPrimary": "Primary",
+  "@exerciseMusclesPrimary": {"description": "Custom exercise dialog: segment of a two-way switch; taps on the body figures then tag a muscle as one this exercise mainly works", "type": "text", "placeholders": {}},
+  "exerciseMusclesSecondary": "Secondary",
+  "@exerciseMusclesSecondary": {"description": "Custom exercise dialog: segment of a two-way switch; taps on the body figures then tag a muscle as one this exercise works in support", "type": "text", "placeholders": {}},
+  "exerciseMusclesHelp": "Choose Primary or Secondary, then tap the muscles this exercise works. Tap one again to untag it.",
+  "@exerciseMusclesHelp": {"description": "Custom exercise dialog, behind the question mark on the body figures: how to tag muscles. 'Primary' and 'Secondary' are the two segments of the switch above the figures and must match their wording", "type": "text", "placeholders": {}},
+  "exerciseMusclesPickerFigure": "Body map for tagging the muscles this exercise works",
+  "@exerciseMusclesPickerFigure": {"description": "Screen-reader label for the body figures in the custom exercise dialog, where muscles are tagged; the lines under the figures say what is tagged", "type": "text", "placeholders": {}},
+  "exerciseMusclesPrimaryList": "Primary: {groups}",
+  "@exerciseMusclesPrimaryList": {"description": "Custom exercise dialog, under the body figures: the muscle groups tagged as primary; {groups} is a comma-separated list such as 'Chest, Arms'", "type": "text", "placeholders": {"groups": {}}},
+  "exerciseMusclesSecondaryList": "Secondary: {groups}",
+  "@exerciseMusclesSecondaryList": {"description": "Custom exercise dialog, under the body figures: the muscle groups tagged as secondary; {groups} is a comma-separated list such as 'Shoulders, Core'", "type": "text", "placeholders": {"groups": {}}}
 }
