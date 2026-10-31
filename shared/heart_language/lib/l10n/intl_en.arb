@@ -2566,9 +2566,9 @@
     "type": "text",
     "placeholders": {}
   },
-  "healthInviteBody": "Heart can show your resting heart rate, sleep, steps and body mass next to your workouts. It reads them from your phone's health store, and keeps them on this device.",
+  "healthInviteBody": "Heart can show your resting heart rate, heart rate variability, sleep, steps, active energy and body mass next to your workouts. It reads them from your phone's health store, and keeps them on this device.",
   "@healthInviteBody": {
-    "description": "Body of the card offering to read health data. The last clause is a genuine selling point, not fine print \u2014 keep it plain and avoid words like private or secure",
+    "description": "Body of the card offering to read health data. Names every metric Heart asks permission for, in the words the health app uses \u2014 Play review checks this card against the permission list. The last clause is a genuine selling point, not fine print \u2014 keep it plain and avoid words like private or secure",
     "type": "text",
     "placeholders": {}
   },
