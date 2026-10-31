@@ -290,6 +290,18 @@ List<T> _sorted<T>(Iterable<T> items, int Function(T a, T b) compare) {
   return indexed.map((each) => each.$2).toList();
 }
 
+/// The calendar months before [now]'s with a finished workout in them, newest
+/// first, each with how many: what a list of past recaps offers. The month
+/// under way is not one of them until it is over.
+Map<DateTime, int> recapMonths(Iterable<RecapWorkout> workouts, {required DateTime now}) {
+  final current = DateTime(now.year, now.month);
+  final months = workouts
+      .map((workout) => DateTime(workout.start.year, workout.start.month))
+      .where((month) => month.isBefore(current))
+      .fold(<DateTime, int>{}, (counts, month) => counts..update(month, (count) => count + 1, ifAbsent: () => 1));
+  return {for (final month in months.keys.toList()..sort((a, b) => b.compareTo(a))) month: months[month]!};
+}
+
 /// A lens row and the kilograms its sets moved.
 typedef _Row = ({LensSets lens, double volume});
 
