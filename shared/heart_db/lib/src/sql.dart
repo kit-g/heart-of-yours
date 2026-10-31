@@ -9,6 +9,23 @@
 /// it.
 final discarded = RegExp(r'/\*discarded:(\w+)\*/');
 
+/// Where a read of a workout's time learns that the user discarded it (#428).
+/// A discarded duration takes only the time: the workout still counts. As
+/// written it selects a plain 0; while the feature is on, whether there is such
+/// a decision for the workout the alias names.
+final discardedTime = RegExp(r'/\*discardedTime:(\w+)\*/ 0');
+
+/// [discardedTime]'s expression, for the alias it names.
+String timeLeftOut(String alias) {
+  return """EXISTS (
+      SELECT 1
+      FROM anomalies
+      WHERE anomalies.workout_id = $alias.id
+        AND anomalies.set_id IS NULL
+        AND anomalies.status = 'invalid'
+  )""";
+}
+
 /// [discarded]'s clause, for the alias it names.
 String leaveOutDiscarded(String alias) {
   return """AND NOT EXISTS (
@@ -558,6 +575,7 @@ WHERE workouts.user_id = ?
   AND workouts.id IS NOT ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 ORDER BY workouts.start, workouts.id;
 ''';
 
@@ -749,7 +767,8 @@ SELECT
     id,
     start,
     "end",
-    pauses
+    pauses,
+    /*discardedTime:workouts*/ 0 AS time_left_out
 FROM workouts
 WHERE user_id = ?
   AND "end" IS NOT NULL
@@ -785,6 +804,7 @@ WHERE w.user_id = ?
   AND w.start < ?
   AND s.completed
   AND s.set_type IS NOT 'warmup'
+  /*discarded:s*/
   AND we.exercise_id IN (
       SELECT pwe.exercise_id
       FROM workouts pw
@@ -835,6 +855,7 @@ SELECT
     w.start AS start,
     w."end" AS "end",
     w.pauses AS pauses,
+    /*discardedTime:w*/ 0 AS time_left_out,
     count(s.id) AS sets,
     coalesce(
         sum(

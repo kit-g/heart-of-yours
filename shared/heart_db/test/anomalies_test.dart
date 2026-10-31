@@ -135,6 +135,31 @@ void main() {
       expect(lens.sets, 1);
     });
 
+    test('drops out of a recap, the training charts and the last-record read while it is on', () async {
+      final window = (start, start.add(const Duration(days: 1)));
+      Future<(int, double, Object?)> counts() async {
+        final recap = await local.getRecapSets(window.$1, window.$2, userId: userId);
+        final [totals] = await local.getTrainingTotals(window.$1, window.$2, userId: userId);
+        final heaviest = switch (await local.getRecordWithout(userId, bench, 'none')) {
+          {'heaviest': {'weight': final Object? weight}} => weight,
+          _ => null,
+        };
+        return (recap.length, totals.volume, heaviest);
+      }
+
+      local.leavesOutDiscarded = false;
+      final (allSets, allVolume, allHeaviest) = await counts();
+      expect(allSets, 2);
+      expect(allVolume, 100 * 5 + 630 * 5);
+      expect(allHeaviest, 630);
+
+      local.leavesOutDiscarded = true;
+      final (sets, volume, heaviest) = await counts();
+      expect(sets, 1);
+      expect(volume, 100 * 5);
+      expect(heaviest, 100);
+    });
+
     test('stays in the log', () async {
       local.leavesOutDiscarded = true;
 
@@ -149,6 +174,35 @@ void main() {
 
       await local.storeAnomalies([anomaly('a1')], userId);
       expect(await heaviest(), 630);
+    });
+  });
+
+  group('a discarded duration', () {
+    final window = (start, start.add(const Duration(days: 1)));
+
+    setUp(
+      () => local.storeAnomalies([
+        anomaly('a1', setId: null, status: 'invalid', reason: 'duration_left_running'),
+      ], userId),
+    );
+
+    test('keeps its time while the feature is off', () async {
+      local.leavesOutDiscarded = false;
+
+      final [recap] = await local.getRecapWorkouts(window.$1, window.$2, userId: userId);
+      expect(recap.trained, const Duration(hours: 1));
+      final [totals] = await local.getTrainingTotals(window.$1, window.$2, userId: userId);
+      expect(totals.duration, const Duration(hours: 1));
+    });
+
+    test('takes only the time while it is on: the workout and its sets still count', () async {
+      local.leavesOutDiscarded = true;
+
+      final [recap] = await local.getRecapWorkouts(window.$1, window.$2, userId: userId);
+      expect(recap.trained, Duration.zero);
+      final [totals] = await local.getTrainingTotals(window.$1, window.$2, userId: userId);
+      expect(totals.duration, Duration.zero);
+      expect(totals.sets, 2);
     });
   });
 

@@ -258,9 +258,11 @@ List<(num, DateTime)> trainingSeries(
         final num? value = switch (metric) {
           .volume => workouts.fold<double>(0, (sum, row) => sum + row.volume),
           .sets => workouts.fold<int>(0, (sum, row) => sum + row.sets),
-          .duration => switch (workouts) {
+          // a workout with no time, such as a discarded duration (#428), says
+          // nothing about how long a session runs
+          .duration => switch (workouts.where((row) => row.duration > Duration.zero).toList()) {
             [] => null,
-            _ => workouts.fold<int>(0, (sum, row) => sum + row.duration.inSeconds) / workouts.length,
+            final timed => timed.fold<int>(0, (sum, row) => sum + row.duration.inSeconds) / timed.length,
           },
         };
         return switch (value) {

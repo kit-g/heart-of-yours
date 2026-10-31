@@ -337,7 +337,7 @@ mixin _Exercises on _LocalDatabase
   /// progress has to beat (#160). Null when nothing else holds the exercise.
   Future<Map?> getRecordWithout(String userId, Exercise exercise, String workoutId) {
     return _db
-        .rawQuery(sql.recordSetsWithout, [userId, exercise.id, workoutId])
+        .rawQuery(_counted(sql.recordSetsWithout), [userId, exercise.id, workoutId])
         .then((rows) => _foldRecords(exercise.category, rows));
   }
 

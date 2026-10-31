@@ -16,7 +16,10 @@ abstract class _LocalDatabase {
 
   /// [query] with its `/*discarded*/` markers filled in or left as comments.
   String _counted(String query) {
-    return leavesOutDiscarded ? query.replaceAllMapped(sql.discarded, (m) => sql.leaveOutDiscarded(m[1]!)) : query;
+    if (!leavesOutDiscarded) return query;
+    return query
+        .replaceAllMapped(sql.discarded, (m) => sql.leaveOutDiscarded(m[1]!))
+        .replaceAllMapped(sql.discardedTime, (m) => sql.timeLeftOut(m[1]!));
   }
 
   /// What each table's columns actually are.
