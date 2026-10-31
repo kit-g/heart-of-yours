@@ -13,6 +13,9 @@ import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/appbar_textfield.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/copy_for_ai.dart';
+import 'package:heart/presentation/widgets/entry_review.dart';
+import 'package:heart/presentation/widgets/feature_copy.dart';
+import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/feedback_button.dart';
 import 'package:heart/presentation/widgets/health/metric.dart';
 import 'package:heart/presentation/widgets/image.dart';
@@ -35,6 +38,7 @@ import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
+part 'entry_review_page.dart';
 part 'page.dart';
 part 'skip_item.dart';
 part 'skip_page.dart';

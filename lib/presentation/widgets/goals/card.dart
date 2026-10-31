@@ -26,13 +26,13 @@ class GoalsCard extends StatefulWidget {
 }
 
 class _GoalsCardState extends State<GoalsCard> {
-  ({int workouts, LensSetsReader read})? _lens;
+  ({WorkoutAggregation workouts, LensSetsReader read})? _lens;
 
   /// One reader for every row, renewed when the rows re-read — on the same
-  /// signal [GoalRow] re-reads on, the workout count.
+  /// signal [GoalRow] re-reads on, a new aggregation from [Stats].
   LensSetsReader _lensSets() {
-    final workouts = widget.workouts.workoutCount;
-    if (_lens case (workouts: final shared, :final read) when shared == workouts) return read;
+    final workouts = widget.workouts;
+    if (_lens case (workouts: final shared, :final read) when identical(shared, workouts)) return read;
     final read = sharedLensSets(Stats.of(context).getLensSets);
     _lens = (workouts: workouts, read: read);
     return read;

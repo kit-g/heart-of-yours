@@ -479,6 +479,12 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
           // the one offer of live records (#160), under the set that would
           // have been one; nothing on every other row
           _LiveRecordOffer(setId: set.id),
+          // a suspicious entry (#428), on a past workout's page
+          if (EntryReviewScope.ofSet(context, set.id) case final Anomaly anomaly)
+            Padding(
+              padding: const .symmetric(horizontal: 16),
+              child: AnomalyMark(anomaly: anomaly),
+            ),
         ],
       ),
     );

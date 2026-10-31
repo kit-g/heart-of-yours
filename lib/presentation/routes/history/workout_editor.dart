@@ -176,72 +176,76 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               // the records this workout set, as of it, beside their sets
               child: _RecordsOf(
                 workout: workout,
-                child: PreviousScope(
-                  before: workout.start,
-                  templateId: workout.templateId,
-                  child: WorkoutDetail(
-                    exercises: workout,
-                    needsCancelWorkoutButton: false,
-                    slivers: [
-                      const SliverToBoxAdapter(child: RecordCountRow()),
-                      SliverToBoxAdapter(
-                        child: _WorkoutTimesSummary(
-                          workout: workout,
-                          onTap: () => _openTimesDialog(context, workout),
-                        ),
-                      ),
-                      if (workout.note case String note)
+                // and what looks off in it, while that is on (#428)
+                child: EntryReviewScope(
+                  workoutId: workout.id,
+                  child: PreviousScope(
+                    before: workout.start,
+                    templateId: workout.templateId,
+                    child: WorkoutDetail(
+                      exercises: workout,
+                      needsCancelWorkoutButton: false,
+                      slivers: [
+                        const SliverToBoxAdapter(child: RecordCountRow()),
                         SliverToBoxAdapter(
-                          child: WorkoutNote(note: note, onChanged: _setNote),
+                          child: _WorkoutTimesSummary(
+                            workout: workout,
+                            onTap: () => _openTimesDialog(context, workout),
+                          ),
                         ),
-                    ],
-                    // what the session worked, as a summary under it (#223)
-                    trailingSlivers: [
-                      SliverToBoxAdapter(
-                        child: WorkoutMuscleMap(
-                          workout: workout,
-                          padding: const .fromLTRB(16, 16, 16, 32),
+                        if (workout.note case String note)
+                          SliverToBoxAdapter(
+                            child: WorkoutNote(note: note, onChanged: _setNote),
+                          ),
+                      ],
+                      // what the session worked, as a summary under it (#223)
+                      trailingSlivers: [
+                        SliverToBoxAdapter(
+                          child: WorkoutMuscleMap(
+                            workout: workout,
+                            padding: const .fromLTRB(16, 16, 16, 32),
+                          ),
                         ),
-                      ),
-                    ],
-                    controller: Scrolls.of(context).editWorkoutScrollController,
-                    onDragExercise: _notifier.append,
-                    onSwapExercise: _notifier.swap,
-                    onAddSet: _notifier.addSet,
-                    onNoteChanged: _notifier.setNote,
-                    onRemoveSet: _notifier.removeSet,
-                    onSetType: _notifier.setSetType,
-                    onSetRpe: _notifier.setRpe,
-                    onRemoveExercise: _notifier.removeExercise,
-                    onGroup: _notifier.group,
-                    onLeaveGroup: _notifier.leaveGroup,
-                    onSetDone: _notifier.markSet,
-                    workoutImages: workout.images?.values,
-                    onTapImage: widget.onTapImage,
-                    onAddExercises: (exercises) async {
-                      final preferences = Exercises.of(context);
-                      for (final each in exercises.toList()) {
-                        await Future.delayed(
-                          // for different IDs
-                          const Duration(milliseconds: 2),
-                          () => _notifier.add(each, note: preferences.noteFor(each.id)),
+                      ],
+                      controller: Scrolls.of(context).editWorkoutScrollController,
+                      onDragExercise: _notifier.append,
+                      onSwapExercise: _notifier.swap,
+                      onAddSet: _notifier.addSet,
+                      onNoteChanged: _notifier.setNote,
+                      onRemoveSet: _notifier.removeSet,
+                      onSetType: _notifier.setSetType,
+                      onSetRpe: _notifier.setRpe,
+                      onRemoveExercise: _notifier.removeExercise,
+                      onGroup: _notifier.group,
+                      onLeaveGroup: _notifier.leaveGroup,
+                      onSetDone: _notifier.markSet,
+                      workoutImages: workout.images?.values,
+                      onTapImage: widget.onTapImage,
+                      onAddExercises: (exercises) async {
+                        final preferences = Exercises.of(context);
+                        for (final each in exercises.toList()) {
+                          await Future.delayed(
+                            // for different IDs
+                            const Duration(milliseconds: 2),
+                            () => _notifier.add(each, note: preferences.noteFor(each.id)),
+                          );
+                        }
+                      },
+                      allowsCompletingSet: true,
+                      onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
+                      onDeleteImage: (image) {
+                        return showDeleteImageDialog(
+                          context,
+                          workout,
+                          image,
+                          onDeleted: (context) async {
+                            Navigator.of(context, rootNavigator: true).pop();
+                            _notifier.detachImageFromWorkout(image);
+                            await Workouts.of(context).detachImageFromWorkout(workout, image);
+                          },
                         );
-                      }
-                    },
-                    allowsCompletingSet: true,
-                    onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
-                    onDeleteImage: (image) {
-                      return showDeleteImageDialog(
-                        context,
-                        workout,
-                        image,
-                        onDeleted: (context) async {
-                          Navigator.of(context, rootNavigator: true).pop();
-                          _notifier.detachImageFromWorkout(image);
-                          await Workouts.of(context).detachImageFromWorkout(workout, image);
-                        },
-                      );
-                    },
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -610,6 +614,8 @@ class _WorkoutTimesSummary extends StatelessWidget {
                 children: [
                   Icon(Icons.schedule_rounded, size: 18, color: colorScheme.onSurfaceVariant),
                   Text(elapsed.formatted(context), style: muted),
+                  // a timer left running (#428)
+                  if (EntryReviewScope.ofDuration(context) case final Anomaly anomaly) AnomalyMark(anomaly: anomaly),
                 ],
               ),
           ],

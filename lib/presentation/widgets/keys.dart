@@ -89,6 +89,17 @@ abstract final class AppKeys {
   static const copyForAiCopy = ValueKey('copyForAiCopy');
   static const copyForAiShare = ValueKey('copyForAiShare');
   static Key copyForAiWorkout(String id) => ValueKey('copyForAiWorkout.$id');
+
+  /// Suspicious entries (#428): the one offer and its answers in History, the
+  /// way to the list, a mark beside an entry and the decision it opens.
+  static const entryReviewOffer = Key('EntryReview.offer');
+  static const entryReviewAccept = Key('EntryReview.accept');
+  static const entryReviewDecline = Key('EntryReview.decline');
+  static const entryReviewButton = Key('EntryReview.button');
+  static const entryReviewPage = Key('EntryReview.page');
+  static Key anomalyMark(String id) => Key('EntryReview.mark.$id');
+  static Key anomalyRow(String id) => Key('EntryReview.row.$id');
+  static Key anomalyDecision(String decision) => Key('EntryReview.decision.$decision');
   static const muscleMapHeatmap = ValueKey('muscleMapHeatmap');
   static const muscleMapFigureTip = ValueKey('muscleMapFigureTip');
   static const workoutMuscleMap = ValueKey('workoutMuscleMap');

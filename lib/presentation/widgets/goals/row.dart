@@ -67,7 +67,9 @@ class _GoalRowState extends State<GoalRow> {
       goal.id,
       exercise?.name,
       goal.cadence,
-      widget.workouts.workoutCount,
+      // by identity: [Stats] replaces it whenever what the counts read changed —
+      // a workout finished or deleted, or an entry discarded (#428)
+      widget.workouts,
       settings.firstWeekday,
       // a program's count moves with its own sessions
       widget.feeds.map((feed) => feed.position.thisWeek).join(','),
