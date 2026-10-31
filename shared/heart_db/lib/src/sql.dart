@@ -1,3 +1,24 @@
+/// Where a count leaves out the sets the user discarded (#428): every query
+/// that counts sets — records, charts, the muscle map and the pattern lens,
+/// and through them goal progress — carries `/*discarded:<alias>*/` after its
+/// warm-up clause. As written it is a comment, and the count is the one it was
+/// before suspicious entries existed. While the feature is on,
+/// [LocalDatabase.leavesOutDiscarded], the marker becomes [leaveOutDiscarded]
+/// over the query's own alias for `sets`. The log itself (a workout, an
+/// exercise's history, last time) is never filtered: a discarded set stays in
+/// it.
+final discarded = RegExp(r'/\*discarded:(\w+)\*/');
+
+/// [discarded]'s clause, for the alias it names.
+String leaveOutDiscarded(String alias) {
+  return """AND NOT EXISTS (
+      SELECT 1
+      FROM anomalies
+      WHERE anomalies.set_id = $alias.id
+        AND anomalies.status = 'invalid'
+  )""";
+}
+
 /// The session in progress *on this device*.
 ///
 /// `synced = 0` is what makes it this device's: the app never posts an
@@ -491,6 +512,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 ORDER BY workouts.start, workouts.id;
 ''';
 
@@ -512,6 +534,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
   AND (workouts.id = ? OR workouts.start < (SELECT start FROM workouts WHERE id = ?))
 ORDER BY workouts.start, workouts.id;
 ''';
@@ -549,6 +572,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
@@ -566,6 +590,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id 
 ORDER BY "when" DESC
 LIMIT ?
@@ -583,6 +608,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id 
 ORDER BY "when" DESC
 LIMIT ?
@@ -600,6 +626,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
@@ -683,6 +710,7 @@ WHERE w.user_id = ?
   AND w.start < ?
   AND s.completed
   AND s.set_type IS NOT 'warmup'
+  /*discarded:s*/
 GROUP BY w.id, we.exercise_id
 ;
 ''';
@@ -708,6 +736,7 @@ WHERE w.user_id = ?
   AND w.start < ?
   AND s.completed
   AND s.set_type IS NOT 'warmup'
+  /*discarded:s*/
 GROUP BY w.id, we.exercise_id
 ;
 ''';

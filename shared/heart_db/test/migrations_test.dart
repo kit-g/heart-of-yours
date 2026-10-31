@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 27);
+          expect(await userVersion(db), 28);
           expect(
             await tables(db),
             {
@@ -163,6 +163,7 @@ void main() {
               'skips',
               'content',
               'go_easy',
+              'anomalies',
             },
           );
 
@@ -519,7 +520,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 27);
+          expect(await userVersion(db), 28);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -745,7 +746,7 @@ void main() {
 
       await LocalDatabase.init();
       db = await raw();
-      expect(await userVersion(db), 27);
+      expect(await userVersion(db), 28);
       expect(
         await columns(db, 'program_actions'),
         allOf(containsPair('exercise_id', 'TEXT'), containsPair('slot', 'TEXT'), containsPair('stage', 'INTEGER')),
@@ -755,6 +756,24 @@ void main() {
       await db.close();
     },
   );
+
+  test('v28 keeps the anomalies the server found, and a store from before holds none (#428)', () async {
+    await LocalDatabase.init(version: 27);
+    var db = await raw();
+    expect(await tables(db), isNot(contains('anomalies')));
+    await db.close();
+
+    await LocalDatabase.init();
+    db = await raw();
+    expect(await userVersion(db), 28);
+    expect(
+      await columns(db, 'anomalies'),
+      allOf(containsPair('set_id', 'TEXT'), containsPair('status', 'TEXT'), containsPair('synced', 'INTEGER')),
+    );
+    expect(await indexesOn(db, 'anomalies'), containsAll({'anomalies_set_idx', 'anomalies_workout_idx'}));
+    expect(await db.query('anomalies'), isEmpty);
+    await db.close();
+  });
 
   test('v13 upgrades through production init without losing replay confirmations', () async {
     await LocalDatabase.init(version: 13);
@@ -766,7 +785,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 27);
+    expect(await userVersion(db), 28);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
@@ -820,7 +839,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 27);
+          expect(await userVersion(db), 28);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');
