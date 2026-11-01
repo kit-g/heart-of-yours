@@ -10,6 +10,10 @@ class WorkoutDetailKeys {
   static const programBaseEditor = Key('WorkoutDetail.programBase');
   static Key recordPill(String kind) => Key('WorkoutDetail.recordPill.$kind');
   static const recordCount = Key('WorkoutDetail.recordCount');
+  static const liveRecordNote = Key('WorkoutDetail.liveRecordNote');
+  static const liveRecordsOffer = Key('WorkoutDetail.liveRecordsOffer');
+  static const liveRecordsAccept = Key('WorkoutDetail.liveRecordsAccept');
+  static const liveRecordsDecline = Key('WorkoutDetail.liveRecordsDecline');
   static Key openSlotFor(String exerciseId) => Key('WorkoutDetail.openSlot.$exerciseId');
   static const programBaseField = Key('WorkoutDetail.programBase.field');
   static const programBaseSave = Key('WorkoutDetail.programBase.save');

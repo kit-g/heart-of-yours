@@ -25,6 +25,7 @@ import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/programs.dart';
+import 'package:heart/core/utils/live_records.dart';
 import 'package:heart/core/utils/record_book.dart';
 import 'package:heart/core/utils/charts.dart';
 import 'package:heart/core/utils/stats.dart';
@@ -127,6 +128,9 @@ class HeartApp extends StatelessWidget {
           },
         ),
         Provider<RecordBook>(create: (_) => RecordBook(asOf: db.getRecordAsOf)),
+        ChangeNotifierProvider<LiveRecords>(
+          create: (_) => LiveRecords(without: db.getRecordWithout, onError: reportToSentry),
+        ),
         ChangeNotifierProvider<Stats>(
           create: (_) => Stats(
             onError: reportToSentry,
