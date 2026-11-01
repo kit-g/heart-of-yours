@@ -428,7 +428,7 @@ void main() {
       final sent = link.sent.last as WatchWorkout;
       expect(sent.set?.position, 'Set 1 of 2');
       expect(sent.exercises, hasLength(1));
-      final (:id, :name, :unit, :weighted, :counted, :sets, step: _, rest: _) = sent.exercises.single;
+      final (:id, :name, :unit, :weighted, :counted, :sets, step: _, rest: _, timed: _) = sent.exercises.single;
       expect(id, workout.first.id);
       expect(name, 'Bench Press (Barbell)');
       expect(unit, 'lbs');
@@ -528,6 +528,50 @@ void main() {
 
       final set = (link.sent.last as WatchWorkout).exercises.single.sets.single;
       expect(set.previous, contains('12'));
+    });
+
+    group('a hold, timed on the wrist (#484)', () {
+      Future<ExerciseSet> holding(WidgetTester tester, {required bool stopwatch}) async {
+        final hang = Exercise.fromJson({
+          'id': 'id-hang',
+          'name': 'Dead Hang',
+          'category': 'Duration',
+          'target': 'Back',
+          'archived': false,
+        });
+        preferences
+          ..setFeature(.watchApp, on: true)
+          ..setFeature(.setStopwatch, on: stopwatch);
+        workout = Workout.fromExercises([WorkoutExercise(starter: ExerciseSet(hang))], name: 'Home');
+        when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+        await pump(tester);
+        await workouts.init();
+        await tester.pumpAndSettle();
+        return workout.first.first;
+      }
+
+      testWidgets('offers the stopwatch while the set stopwatch is on', (tester) async {
+        await holding(tester, stopwatch: true);
+
+        expect((link.sent.last as WatchWorkout).exercises.single.timed, isTrue);
+        expect(link.sent.last.toMap()['start'], 'Start');
+      });
+
+      testWidgets('not while it is off', (tester) async {
+        await holding(tester, stopwatch: false);
+
+        expect((link.sent.last as WatchWorkout).exercises.single.timed, isFalse);
+      });
+
+      testWidgets('the time it took goes on the set, and ticks it', (tester) async {
+        final hang = await holding(tester, stopwatch: true);
+
+        link.command(WatchComplete(workout.id, setId: hang.id, seconds: 45));
+        await tester.pump();
+
+        expect(hang.isCompleted, isTrue);
+        expect(hang.duration, 45);
+      });
     });
 
     testWidgets('a warm-up reads as one on the watch, and only plain sets are numbered', (tester) async {

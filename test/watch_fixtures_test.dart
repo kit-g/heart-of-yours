@@ -57,6 +57,8 @@ void main() {
     pause: 'Pause',
     resume: 'Resume',
     paused: 'Paused',
+    start: 'Start',
+    cancel: 'Cancel',
   );
 
   final exercises = <WatchExercise>[
@@ -67,6 +69,7 @@ void main() {
       step: 2.5,
       weighted: true,
       counted: true,
+      timed: false,
       rest: 90,
       sets: [
         (
@@ -111,6 +114,7 @@ void main() {
       step: 2.5,
       weighted: false,
       counted: true,
+      timed: false,
       rest: null,
       sets: [
         (
@@ -210,7 +214,13 @@ void main() {
       WatchFinishWorkout,
       WatchPauseWorkout,
       WatchResumeWorkout,
+      WatchComplete,
     ]);
+    expect(
+      (WatchCommand.fromMap(commands.last) as WatchComplete).seconds,
+      45,
+      reason: 'the stopwatch on a hold (#484)',
+    );
     final tick = WatchCommand.fromMap(commands.first) as WatchComplete;
     expect(
       (tick.setId, tick.weight, tick.reps, tick.at),
