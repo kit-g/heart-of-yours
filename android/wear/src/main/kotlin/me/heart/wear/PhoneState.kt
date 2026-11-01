@@ -77,6 +77,8 @@ sealed interface PhoneState {
             /// Its rest timer in seconds; null for none.
             val rest: Int?,
             val sets: List<Row>,
+            /// Whether its sets offer the stopwatch (#484).
+            val timed: Boolean = false,
         ) {
             data class Row(
                 val id: String,
@@ -121,6 +123,9 @@ sealed interface PhoneState {
             val pause: String,
             val resume: String,
             val paused: String,
+            /// The stopwatch's labels (#484); empty from a phone that predates it.
+            val start: String = "",
+            val cancel: String = "",
         )
     }
 
@@ -200,6 +205,7 @@ sealed interface PhoneState {
                 unit = json.string("unit"),
                 step = json.double("step") ?: 1.0,
                 weighted = json.optBoolean("weighted", false),
+                timed = json.optBoolean("timed", false),
                 counted = json.optBoolean("counted", false),
                 rest = json.int("rest"),
                 sets = json.objects("sets").mapNotNull { row ->
@@ -246,6 +252,8 @@ sealed interface PhoneState {
                 pause = text("pause") ?: "",
                 resume = text("resume") ?: "",
                 paused = text("paused") ?: "",
+                start = text("start") ?: "",
+                cancel = text("cancel") ?: "",
             )
         }
     }

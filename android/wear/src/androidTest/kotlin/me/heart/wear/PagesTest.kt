@@ -66,6 +66,35 @@ class PagesTest {
         assertEquals(listOf(Command.SkipRest("w1")), sent)
     }
 
+    /// The set up next, offering the stopwatch (#484).
+    private fun timed(): PhoneState.Workout {
+        val workout = resting().copy(rest = null)
+        return workout.copy(exercises = workout.exercises.map { it.copy(timed = true) })
+    }
+
+    @Test
+    fun aHoldIsTimedAndLogsWhatItTook() {
+        show(timed())
+        compose.onNode(page).performScrollToNode(hasText("Start"))
+        compose.onNodeWithText("Start").performClick()
+        compose.waitForIdle()
+        compose.mainClock.autoAdvance = true
+        Thread.sleep(1100)
+        compose.onNode(page).performScrollToNode(hasText("Done"))
+        compose.onNodeWithText("Done").performClick()
+        val tick = sent.single() as Command.Complete
+        assertEquals("b3", tick.setId)
+        assertTrue((tick.seconds ?: 0) >= 1)
+    }
+
+    @Test
+    fun aHoldCanBeTickedAsPrescribed() {
+        show(timed())
+        compose.onNode(page).performScrollToNode(hasText("Done"))
+        compose.onNodeWithText("Done").performClick()
+        assertEquals(listOf(Command.Complete("w1", "b3", 62.5, 5)), sent)
+    }
+
     @Test
     fun withEverySetTickedFinishAsksFirst() {
         show(fixture("workout_paused_done.json"))

@@ -10,7 +10,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -92,6 +95,9 @@ private fun UpNextPage(workout: PhoneState.Workout, reachable: Boolean, waiting:
     val dimmed = LocalDimmed.current
     val ticking by ticking()
     val now = if (dimmed) LocalAmbientTick.current else ticking
+    // the stopwatch on a hold (#484): which set, and since when. Here, not in the
+    // controls, which a lowered wrist takes away mid-hold
+    var hold by rememberSaveable { mutableStateOf<Pair<String, Long>?>(null) }
     val list = rememberTransformingLazyColumnState()
     // back to the top, which is what is worth a glance: with the wrist down,
     // and when the moment moves on — a new set up next, a rest begun
@@ -159,7 +165,19 @@ private fun UpNextPage(workout: PhoneState.Workout, reachable: Boolean, waiting:
             }
             val set = workout.set
             when {
-                controls != null && set != null -> item { SetControls(workout.workoutId, set, controls, accent, send) }
+                controls != null && set != null -> item {
+                    SetControls(
+                        workout.workoutId,
+                        set,
+                        controls,
+                        accent,
+                        send,
+                        timed = workout.exercises.firstOrNull { it.id == set.exerciseId }?.timed == true,
+                        holding = hold?.takeIf { it.first == set.setId }?.second,
+                        onHold = { since -> hold = since?.let { set.setId to it } },
+                        now = now,
+                    )
+                }
                 // every set ticked: the one thing left to do
                 controls != null -> item { FinishControl(workout.workoutId, controls, accent, send) }
                 set != null -> {

@@ -4300,6 +4300,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "watchStopwatchStart": "Start",
+  "@watchStopwatchStart": {
+    "description": "Button on the watch for a timed set: starts counting the hold. Done then logs the time",
+    "type": "text",
+    "placeholders": {}
+  },
   "stopwatchPause": "Pause",
   "@stopwatchPause": {
     "description": "Button in the set stopwatch: stops the count for now, without logging anything",

@@ -65,6 +65,10 @@ typedef WatchExercise = ({
   bool weighted,
   bool counted,
 
+  /// Whether the watch offers its sets a stopwatch (#484): an exercise that
+  /// logs a time, while the set stopwatch (#171) is on.
+  bool timed,
+
   /// Its rest timer in seconds, null when it has none — so a watch with the
   /// phone out of reach (#206) can start the rest a tick starts.
   int? rest,
@@ -97,6 +101,8 @@ typedef WatchSetRow = ({
 /// The watch's controls, as copy — labels and what it says when it cannot act.
 typedef WatchControls = ({
   String done,
+  String start,
+  String cancel,
   String skip,
   String add,
   String subtract,
@@ -214,6 +220,7 @@ final class WatchWorkout extends WatchState {
             'step': exercise.step,
             'weighted': exercise.weighted,
             'counted': exercise.counted,
+            if (exercise.timed) 'timed': true,
             'rest': ?exercise.rest,
             'sets': [
               for (final row in exercise.sets)
@@ -233,6 +240,8 @@ final class WatchWorkout extends WatchState {
       ],
       if (controls case WatchControls controls) ...{
         'done': controls.done,
+        'start': controls.start,
+        'cancel': controls.cancel,
         'skip': controls.skip,
         'add': controls.add,
         'subtract': controls.subtract,
@@ -321,6 +330,7 @@ sealed class WatchCommand {
         setId: setId,
         weight: (map['weight'] as num?)?.toDouble(),
         reps: (map['reps'] as num?)?.toInt(),
+        seconds: (map['seconds'] as num?)?.toInt(),
         at: at,
       ),
       {'action': 'skipRest', 'workoutId': String workoutId} => WatchSkipRest(workoutId, at: at),
@@ -355,13 +365,15 @@ sealed class WatchCommand {
 }
 
 /// Tick [setId], with the values the watch shows for it — in the unit the
-/// phone sent ([WatchSet.unit]).
+/// phone sent ([WatchSet.unit]) — and, from its stopwatch (#484), the time the
+/// hold took.
 final class WatchComplete extends WatchCommand {
   final String setId;
   final double? weight;
   final int? reps;
+  final int? seconds;
 
-  const new(super.workoutId, {required this.setId, this.weight, this.reps, super.at});
+  const new(super.workoutId, {required this.setId, this.weight, this.reps, this.seconds, super.at});
 }
 
 final class WatchSkipRest extends WatchCommand {
