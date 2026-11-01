@@ -1,8 +1,8 @@
 package me.heart.wear
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,13 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnScope
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.foundation.pager.HorizontalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
@@ -39,6 +40,8 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ProgressIndicatorDefaults
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
+import androidx.wear.compose.material3.lazy.TransformationSpec
+import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import kotlinx.coroutines.delay
 import android.text.format.DateFormat
@@ -105,118 +108,116 @@ private fun UpNextPage(workout: PhoneState.Workout, reachable: Boolean, waiting:
         list.scrollToItem(0)
     }
 
-    // Wear's margin, a share of the screen; the round edge takes the rest
-    val margin = (LocalConfiguration.current.screenWidthDp * 0.052f).dp
+    val spec = rememberTransformationSpec()
+    val set = workout.set
+    // what the crown has made of the set, held here for the same reason as the
+    // hold, and because the dialog it opens lives outside the list
+    val draft = remember(set) { set?.let(::SetDraft) }
+    // out of reach too (#465): what is done here queues, and reaches the
+    // phone when it is back
+    val controls = workout.controls?.takeIf { !dimmed }
+    val reading by Measuring.now.collectAsStateWithLifecycle()
+    val measured = reading?.takeIf { it.workoutId == workout.workoutId }
+
     ScreenScaffold(scrollState = list) { padding ->
         TransformingLazyColumn(
             state = list,
-            contentPadding = PaddingValues(
-                start = margin,
-                end = margin,
-                top = padding.calculateTopPadding(),
-                bottom = padding.calculateBottomPadding(),
-            ),
+            contentPadding = listPadding(padding),
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            // out of reach too (#465): what is done here queues, and reaches the
-            // phone when it is back
-            val controls = workout.controls?.takeIf { !dimmed }
             // paused (#134), that leads, with the way back: nothing else on
             // the page moves until the clock does
             if (workout.pausedAt != null) {
-                when (controls) {
-                    null -> workout.controls?.let { copy ->
-                        item {
-                            Text(
-                                copy.paused,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = accent,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
+                workout.controls?.let { copy ->
+                    item {
+                        Text(
+                            copy.paused,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = accent,
+                            textAlign = TextAlign.Center,
+                            modifier = line(spec),
+                        )
                     }
-                    else -> item { Paused(workout.workoutId, controls, accent, send) }
                 }
+                controls?.let { item { ResumeButton(workout.workoutId, it, accent, send, spec) } }
             }
             workout.rest?.let { rest ->
-                item { Rest(rest, now, accent) }
+                item { Rest(rest, now, accent, line(spec)) }
                 if (controls != null && now < rest.end) {
-                    item { RestControls(workout.workoutId, controls, send) }
+                    item { RestControls(workout.workoutId, controls, send, line(spec)) }
                 }
             }
             if (workout.exercise.isNotEmpty()) {
-                item {
-                    Text(
-                        workout.exercise,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = accent,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center,
-                        // where a round screen is narrowest when it leads
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 28.dp),
-                    )
-                }
+                item { ExerciseHeader(workout.exercise, accent, spec, large = true) }
             }
-            workout.set?.position?.let { position ->
-                item { Muted(position) }
+            set?.position?.let { position ->
+                item { Muted(position, line(spec)) }
             }
-            val set = workout.set
             when {
-                controls != null && set != null -> item {
-                    SetControls(
-                        workout.workoutId,
-                        set,
-                        controls,
-                        accent,
-                        send,
-                        timed = workout.exercises.firstOrNull { it.id == set.exerciseId }?.timed == true,
-                        holding = hold?.takeIf { it.first == set.setId }?.second,
-                        onHold = { since -> hold = since?.let { set.setId to it } },
-                        now = now,
-                    )
-                }
+                controls != null && set != null && draft != null -> setControls(
+                    workout.workoutId,
+                    set,
+                    draft,
+                    controls,
+                    accent,
+                    send,
+                    spec,
+                    timed = workout.exercises.firstOrNull { it.id == set.exerciseId }?.timed == true,
+                    holding = hold?.takeIf { it.first == set.setId }?.second,
+                    onHold = { since -> hold = since?.let { set.setId to it } },
+                    now = now,
+                )
                 // every set ticked: the one thing left to do
-                controls != null -> item { FinishControl(workout.workoutId, controls, accent, send) }
+                controls != null -> item { FinishControl(workout.workoutId, controls, accent, send, spec) }
                 set != null -> {
                     values(set)?.let { values ->
-                        item { Text(values, style = MaterialTheme.typography.displaySmall) }
+                        item {
+                            Text(
+                                values,
+                                style = MaterialTheme.typography.displaySmall,
+                                textAlign = TextAlign.Center,
+                                modifier = line(spec),
+                            )
+                        }
                     }
-                    set.previous?.let { previous -> item { Muted(previous) } }
+                    set.previous?.let { previous -> item { Muted(previous, line(spec)) } }
                 }
             }
             // the phone away, or back and still being handed what it missed
             controls?.let { copy ->
                 when {
-                    !reachable -> item { Away(copy.unreachable) }
-                    waiting -> item { Away(copy.sending.ifEmpty { copy.unreachable }) }
+                    !reachable -> item { Away(copy.unreachable, line(spec)) }
+                    waiting -> item { Away(copy.sending.ifEmpty { copy.unreachable }, line(spec)) }
                 }
             }
-            item { Footer(workout, now, controls, send) }
+            footer(workout, now, measured, controls, send, spec)
         }
+    }
+
+    if (set != null && draft != null && controls != null) {
+        SetValueDialog(set, draft, controls, accent)
     }
 }
 
 /// The rest countdown, and what it says once it has run out. The phone's next
 /// state would take the rest away anyway; this covers the wait for it.
 @Composable
-private fun Rest(rest: PhoneState.Workout.Rest, now: Long, accent: Color) {
+private fun Rest(rest: PhoneState.Workout.Rest, now: Long, accent: Color, modifier: Modifier) {
     if (now >= rest.end) {
         Text(
             rest.over,
             style = MaterialTheme.typography.titleMedium,
             color = accent,
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier,
         )
         return
     }
     // dimmed, a countdown would be wrong between the minute's redraws: when
     // the rest ends is true all minute long
     if (LocalDimmed.current) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             Muted(rest.label)
             Text(timeOfDay(rest.end), style = MaterialTheme.typography.numeralSmall)
         }
@@ -224,8 +225,7 @@ private fun Rest(rest: PhoneState.Workout.Rest, now: Long, accent: Color) {
     }
     val left = rest.end - now
     Column(
-        Modifier
-            .fillMaxWidth()
+        modifier
             // it leads the page, where a round screen is narrowest
             .padding(horizontal = 20.dp)
             .clearAndSetSemantics { contentDescription = "${rest.label} ${clock(left, up = false)}" },
@@ -247,18 +247,24 @@ private fun Rest(rest: PhoneState.Workout.Rest, now: Long, accent: Color) {
 }
 
 /// Where the workout stands: its name, and how long it has run — or where it
-/// stood when it was paused.
-@Composable
-private fun Footer(workout: PhoneState.Workout, now: Long, controls: PhoneState.Workout.Controls?, send: (Command) -> Unit) {
+/// stood when it was paused. What the watch measures (#461), while it measures
+/// this workout: heart rate and energy, labelled in the phone's words. What
+/// reaches Health Connect, and only with the user's say, is [Readings]'s
+/// business, never this page's.
+private fun TransformingLazyColumnScope.footer(
+    workout: PhoneState.Workout,
+    now: Long,
+    measured: Measuring.Reading?,
+    controls: PhoneState.Workout.Controls?,
+    send: (Command) -> Unit,
+    spec: TransformationSpec,
+) {
     val until = workout.pausedAt?.takeIf { it >= workout.clock } ?: now
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, start = 12.dp, end = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
+    item {
+        Row(
+            line(spec).padding(top = 8.dp, start = 12.dp, end = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        ) {
             Muted(workout.title, Modifier.weight(1f, fill = false))
             Muted(
                 when (LocalDimmed.current) {
@@ -267,38 +273,37 @@ private fun Footer(workout: PhoneState.Workout, now: Long, controls: PhoneState.
                 },
             )
         }
-        workout.controls?.let { copy -> Vitals(workout.workoutId, copy) }
-        // pausing is the phone's opt-in (#134): off, no control
-        if (workout.pausable && workout.pausedAt == null && controls != null) {
-            PauseButton(workout.workoutId, controls, send)
+    }
+    val copy = workout.controls
+    if (measured != null && copy != null) {
+        item {
+            Row(line(spec), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)) {
+                measured.heartRate?.let { bpm ->
+                    val text = "${bpm.roundToInt()} ${copy.bpm}"
+                    Muted(text, Modifier.semantics(mergeDescendants = true) { contentDescription = "${copy.heartRate} $text" })
+                }
+                measured.energy?.let { kcal ->
+                    val text = "${kcal.roundToInt()} ${copy.kcal}"
+                    Muted(text, Modifier.semantics(mergeDescendants = true) { contentDescription = "${copy.energy} $text" })
+                }
+            }
         }
     }
-}
-
-/// What the watch measures (#461), while it measures this workout: heart rate
-/// and energy, labelled in the phone's words. What reaches Health Connect, and
-/// only with the user's say, is [Readings]'s business, never this page's.
-@Composable
-private fun Vitals(workoutId: String, controls: PhoneState.Workout.Controls) {
-    val reading by Measuring.now.collectAsStateWithLifecycle()
-    val now = reading?.takeIf { it.workoutId == workoutId } ?: return
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        now.heartRate?.let { bpm ->
-            val text = "${bpm.roundToInt()} ${controls.bpm}"
-            Muted(text, Modifier.semantics(mergeDescendants = true) { contentDescription = "${controls.heartRate} $text" })
-        }
-        now.energy?.let { kcal ->
-            val text = "${kcal.roundToInt()} ${controls.kcal}"
-            Muted(text, Modifier.semantics(mergeDescendants = true) { contentDescription = "${controls.energy} $text" })
+    // pausing is the phone's opt-in (#134): off, no control
+    if (workout.pausable && workout.pausedAt == null && controls != null) {
+        item {
+            Box(line(spec), contentAlignment = Alignment.Center) {
+                PauseButton(workout.workoutId, controls, send)
+            }
         }
     }
 }
 
 /// The phone out of reach, or catching up: one line, with a phone.
 @Composable
-private fun Away(text: String) {
+private fun Away(text: String, modifier: Modifier) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        modifier.padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -326,6 +331,7 @@ private fun Muted(text: String, modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
+        textAlign = TextAlign.Center,
     )
 }
 

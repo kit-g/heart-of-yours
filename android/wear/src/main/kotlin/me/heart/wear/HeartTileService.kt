@@ -51,6 +51,7 @@ class HeartTileService : TileService() {
         const val MARK = "mark"
         const val INK = 0xFFF1F2E9.toInt()
         const val MUTED = 0xFF9BA092.toInt()
+        const val EDGE = 20f
 
         /// One entry now, and one from when the rest ends, so a countdown that
         /// runs out gives way to the set up next on its own — the Apple Watch
@@ -69,18 +70,14 @@ class HeartTileService : TileService() {
         }
 
         fun layout(context: Context, workout: Snapshot?, resting: Boolean): LayoutElementBuilders.LayoutElement {
-            val open = ModifiersBuilders.Modifiers.Builder()
-                .setClickable(
-                    ModifiersBuilders.Clickable.Builder()
-                        .setId("open")
-                        .setOnClick(
-                            ActionBuilders.LaunchAction.Builder()
-                                .setAndroidActivity(
-                                    ActionBuilders.AndroidActivity.Builder()
-                                        .setPackageName(context.packageName)
-                                        .setClassName(MainActivity::class.java.name)
-                                        .build(),
-                                )
+            val open = ModifiersBuilders.Clickable.Builder()
+                .setId("open")
+                .setOnClick(
+                    ActionBuilders.LaunchAction.Builder()
+                        .setAndroidActivity(
+                            ActionBuilders.AndroidActivity.Builder()
+                                .setPackageName(context.packageName)
+                                .setClassName(MainActivity::class.java.name)
                                 .build(),
                         )
                         .build(),
@@ -90,7 +87,14 @@ class HeartTileService : TileService() {
             val column = LayoutElementBuilders.Column.Builder()
                 .setWidth(expand())
                 .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-                .setModifiers(open)
+                .setModifiers(
+                    // clear of the round edge: a two-line name sits above the
+                    // middle, where the screen has started to narrow
+                    ModifiersBuilders.Modifiers.Builder()
+                        .setClickable(open)
+                        .setPadding(ModifiersBuilders.Padding.Builder().setStart(dp(EDGE)).setEnd(dp(EDGE)).build())
+                        .build(),
+                )
                 .addContent(
                     LayoutElementBuilders.Image.Builder()
                         .setResourceId(MARK)
@@ -150,6 +154,7 @@ class HeartTileService : TileService() {
         private fun text(value: String, size: Float, color: Int, lines: Int = 1) = LayoutElementBuilders.Text.Builder()
             .setText(value)
             .setMaxLines(lines)
+            .setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_ELLIPSIZE)
             .setFontStyle(LayoutElementBuilders.FontStyle.Builder().setSize(sp(size)).setColor(argb(color)).build())
             .build()
 

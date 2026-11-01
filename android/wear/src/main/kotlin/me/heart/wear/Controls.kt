@@ -3,12 +3,16 @@ package me.heart.wear
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
@@ -33,6 +37,9 @@ import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnScope
 import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
@@ -41,22 +48,34 @@ import androidx.wear.compose.material3.FilledTonalButton
 import androidx.wear.compose.material3.FilledTonalIconButton
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.IconButtonDefaults
+import androidx.wear.compose.material3.LocalContentColor
 import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
+import androidx.wear.compose.material3.lazy.TransformationSpec
 import kotlin.math.max
 
-/// The next set's values and its tick (#460). The values start as the phone
-/// sent them and the rotary input moves whichever one is open; they only
-/// become the set's when Done sends them. The watch moves on at once, and the
-/// phone's answer is what stands. The twin of `SetControls` in
-/// ios/Watch/WorkoutView.swift.
-@Composable
-fun SetControls(
+/// What the set up next would be logged as: as the phone sent it until the
+/// crown moves it. A new set, or the same set sent again with new values,
+/// starts over.
+@Stable
+internal class SetDraft(set: PhoneState.Workout.UpNext) {
+    var weight by mutableDoubleStateOf(set.weight ?: 0.0)
+    var reps by mutableDoubleStateOf((set.reps ?: 0).toDouble())
+    var editing by mutableStateOf<Field?>(null)
+}
+
+/// The next set's values and its tick (#460). The values only become the set's
+/// when Done sends them. The watch moves on at once, and the phone's answer is
+/// what stands. The twin of `SetControls` in ios/Watch/WorkoutView.swift.
+internal fun TransformingLazyColumnScope.setControls(
     workoutId: String,
     set: PhoneState.Workout.UpNext,
+    draft: SetDraft,
     controls: PhoneState.Workout.Controls,
     accent: Color,
     send: (Command) -> Unit,
+    spec: TransformationSpec,
     /// Whether this set offers the stopwatch (#484).
     timed: Boolean = false,
     /// When its stopwatch started, null while it isn't running. Kept by the
@@ -65,97 +84,119 @@ fun SetControls(
     onHold: (Long?) -> Unit = {},
     now: Long = 0,
 ) {
-    // a new set — or the same set sent again with new values — starts over
-    var weight by remember(set) { mutableDoubleStateOf(set.weight ?: 0.0) }
-    var reps by remember(set) { mutableDoubleStateOf((set.reps ?: 0).toDouble()) }
-    var editing by remember(set) { mutableStateOf<Field?>(null) }
-
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (set.weight != null || set.reps != null) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    if (set.weight != null || set.reps != null) {
+        item {
+            Row(line(spec), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (set.weight != null && set.unit != null) {
-                    ValuePill(number(weight), set.unit, Modifier.weight(1f)) { editing = Field.Weight }
+                    ValuePill(number(draft.weight), set.unit, Modifier.weight(1f)) { draft.editing = Field.Weight }
                 }
                 if (set.reps != null) {
-                    ValuePill(number(reps), controls.reps, Modifier.weight(1f)) { editing = Field.Reps }
+                    ValuePill(number(draft.reps), controls.reps, Modifier.weight(1f)) { draft.editing = Field.Reps }
                 }
             }
         }
-        set.previous?.let { previous ->
+    }
+    set.previous?.let { previous ->
+        item {
             Text(
                 previous,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = line(spec),
             )
         }
-        val done = { seconds: Int? ->
-            onHold(null)
-            send(
-                Command.Complete(
-                    workoutId = workoutId,
-                    setId = set.setId,
-                    // only what this set takes: a reps-only set sends no weight
-                    weight = set.weight?.let { weight },
-                    reps = set.reps?.let { reps.toInt() },
-                    seconds = seconds,
-                ),
-            )
-        }
-        when {
-            // the hold is on: Done logs what it took, as the phone's does (#171)
-            holding != null -> {
-                val elapsed = (now - holding).coerceAtLeast(0)
+    }
+    val done = { seconds: Int? ->
+        onHold(null)
+        send(
+            Command.Complete(
+                workoutId = workoutId,
+                setId = set.setId,
+                // only what this set takes: a reps-only set sends no weight
+                weight = set.weight?.let { draft.weight },
+                reps = set.reps?.let { draft.reps.toInt() },
+                seconds = seconds,
+            ),
+        )
+    }
+    when {
+        // the hold is on: Done logs what it took, as the phone's does (#171)
+        holding != null -> {
+            val elapsed = (now - holding).coerceAtLeast(0)
+            item {
                 Text(
                     clock(elapsed, up = true),
                     style = MaterialTheme.typography.numeralSmall,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = line(spec),
                 )
+            }
+            item {
                 Button(
                     onClick = { done((elapsed / 1000).toInt().coerceAtLeast(1)) },
                     colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black),
-                    modifier = Modifier.fillMaxWidth(),
+                    transformation = SurfaceTransformation(spec),
+                    modifier = button(spec),
                 ) {
                     Text(controls.done, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                 }
-                FilledTonalButton(onClick = { onHold(null) }, modifier = Modifier.fillMaxWidth()) {
+            }
+            item {
+                FilledTonalButton(
+                    onClick = { onHold(null) },
+                    transformation = SurfaceTransformation(spec),
+                    modifier = button(spec),
+                ) {
                     Text(controls.cancel, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                 }
             }
-            else -> {
-                if (timed) {
+        }
+        else -> {
+            if (timed) {
+                item {
                     Button(
                         onClick = { onHold(System.currentTimeMillis()) },
                         colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black),
-                        modifier = Modifier.fillMaxWidth(),
+                        transformation = SurfaceTransformation(spec),
+                        modifier = button(spec),
                     ) {
                         Text(controls.start, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                     }
                 }
-                // with a stopwatch on offer, Done is the quiet way: ticked as prescribed
-                val quiet = timed
+            }
+            item {
                 Button(
                     onClick = { done(null) },
                     // a counted set needs a count; the phone would refuse it anyway
-                    enabled = set.reps == null || reps >= 1,
-                    colors = when (quiet) {
+                    enabled = set.reps == null || draft.reps >= 1,
+                    // with a stopwatch on offer, Done is the quiet way: ticked as prescribed
+                    colors = when (timed) {
                         true -> ButtonDefaults.filledTonalButtonColors()
                         false -> ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    transformation = SurfaceTransformation(spec),
+                    modifier = button(spec),
                 ) {
                     Text(controls.done, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                 }
             }
         }
     }
+}
 
-    Dialog(visible = editing != null, onDismissRequest = { editing = null }) {
-        when (editing) {
-            Field.Weight -> ValueEditor(weight, set.step, set.unit.orEmpty(), accent) { weight = it }
-            Field.Reps -> ValueEditor(reps, 1.0, controls.reps, accent) { reps = it }
+/// The value the set's pills open.
+@Composable
+internal fun SetValueDialog(
+    set: PhoneState.Workout.UpNext,
+    draft: SetDraft,
+    controls: PhoneState.Workout.Controls,
+    accent: Color,
+) {
+    Dialog(visible = draft.editing != null, onDismissRequest = { draft.editing = null }) {
+        when (draft.editing) {
+            Field.Weight -> ValueEditor(draft.weight, set.step, set.unit.orEmpty(), accent) { draft.weight = it }
+            Field.Reps -> ValueEditor(draft.reps, 1.0, controls.reps, accent) { draft.reps = it }
             null -> Unit
         }
     }
@@ -171,14 +212,21 @@ internal enum class Field { Weight, Reps }
 internal fun ValuePill(text: String, unit: String, modifier: Modifier = Modifier, open: () -> Unit) {
     FilledTonalButton(
         onClick = open,
+        // half a small watch, and a weight and "Повторы" to fit in it
+        contentPadding = PaddingValues(horizontal = 6.dp),
         modifier = modifier.semantics(mergeDescendants = true) {
             contentDescription = unit
             stateDescription = text
         },
     ) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text, style = MaterialTheme.typography.titleMedium)
-            Text(unit, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+            Text(
+                unit,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
         }
     }
 }
@@ -232,9 +280,11 @@ internal fun ValueEditor(value: Double, step: Double, unit: String, accent: Colo
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(unit, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(number(current), style = MaterialTheme.typography.displayMedium, maxLines = 1)
+        // under the value, not beside it: a small watch has no room for all
+        // three in a row, and a weight can run to six characters
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Stepper(R.drawable.ic_minus, accent) { nudge(-1) }
-            Text(number(current), style = MaterialTheme.typography.displayMedium, maxLines = 1)
             Stepper(R.drawable.ic_plus, accent) { nudge(1) }
         }
     }
@@ -258,15 +308,26 @@ private const val MAX = 1000.0
 
 /// Shorter, longer, or over: the three things the phone's countdown offers.
 @Composable
-fun RestControls(workoutId: String, controls: PhoneState.Workout.Controls, send: (Command) -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+fun RestControls(workoutId: String, controls: PhoneState.Workout.Controls, send: (Command) -> Unit, modifier: Modifier = Modifier) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         listOf(
             controls.subtract to Command.AdjustRest(workoutId, -10),
             controls.add to Command.AdjustRest(workoutId, 10),
             controls.skip to Command.SkipRest(workoutId),
         ).forEach { (label, command) ->
-            FilledTonalButton(onClick = { send(command) }, modifier = Modifier.weight(1f)) {
-                Text(label, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+            FilledTonalButton(
+                onClick = { send(command) },
+                contentPadding = PaddingValues(horizontal = 4.dp),
+                modifier = Modifier.weight(if (command is Command.SkipRest) 1.4f else 1f),
+            ) {
+                // a share of a small watch, and "Пропустить" to fit in it
+                BasicText(
+                    label,
+                    Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Center, color = LocalContentColor.current),
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MaterialTheme.typography.labelSmall.fontSize),
+                )
             }
         }
     }
@@ -276,12 +337,19 @@ fun RestControls(workoutId: String, controls: PhoneState.Workout.Controls, send:
 /// cannot be undone from the wrist. The phone does the finishing — saves,
 /// writes Health, shows the summary — and this goes idle when it has.
 @Composable
-fun FinishControl(workoutId: String, controls: PhoneState.Workout.Controls, accent: Color, send: (Command) -> Unit) {
+fun TransformingLazyColumnItemScope.FinishControl(
+    workoutId: String,
+    controls: PhoneState.Workout.Controls,
+    accent: Color,
+    send: (Command) -> Unit,
+    spec: TransformationSpec,
+) {
     var confirming by remember { mutableStateOf(false) }
     Button(
         onClick = { confirming = true },
         colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black),
-        modifier = Modifier.fillMaxWidth(),
+        transformation = SurfaceTransformation(spec),
+        modifier = button(spec),
     ) {
         Text(controls.finish, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
     }
@@ -310,26 +378,23 @@ fun FinishControl(workoutId: String, controls: PhoneState.Workout.Controls, acce
     }
 }
 
-/// The workout is paused (#134): saying so, and the way back.
+/// The way back from a pause (#134).
 @Composable
-fun Paused(workoutId: String, controls: PhoneState.Workout.Controls, accent: Color, send: (Command) -> Unit) {
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        // it leads the page, where a round screen is narrowest
-        Text(
-            controls.paused,
-            style = MaterialTheme.typography.titleMedium,
-            color = accent,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Button(
-            onClick = { send(Command.Resume(workoutId)) },
-            icon = { Icon(painterResource(R.drawable.ic_play), contentDescription = null) },
-            colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(controls.resume)
-        }
+fun TransformingLazyColumnItemScope.ResumeButton(
+    workoutId: String,
+    controls: PhoneState.Workout.Controls,
+    accent: Color,
+    send: (Command) -> Unit,
+    spec: TransformationSpec,
+) {
+    Button(
+        onClick = { send(Command.Resume(workoutId)) },
+        icon = { Icon(painterResource(R.drawable.ic_play), contentDescription = null) },
+        colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black),
+        transformation = SurfaceTransformation(spec),
+        modifier = button(spec),
+    ) {
+        Text(controls.resume)
     }
 }
 

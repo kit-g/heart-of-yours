@@ -2,7 +2,6 @@ package me.heart.wear
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,14 +17,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
@@ -34,7 +32,10 @@ import androidx.wear.compose.material3.FilledTonalButton
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
+import androidx.wear.compose.material3.lazy.TransformationSpec
+import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 
 /// The second page (#464): every set of the workout, done or not. A set is a
 /// way in to its editor while the phone can hear; out of reach it is only a
@@ -49,40 +50,26 @@ fun WorkoutList(workout: PhoneState.Workout, reachable: Boolean, unsynced: Set<S
     LaunchedEffect(workout.exercises) { editing = null }
 
     val list = rememberTransformingLazyColumnState()
-    val margin = (LocalConfiguration.current.screenWidthDp * 0.052f).dp
+    val spec = rememberTransformationSpec()
     ScreenScaffold(scrollState = list) { padding ->
         TransformingLazyColumn(
             state = list,
-            contentPadding = PaddingValues(
-                start = margin,
-                end = margin,
-                top = padding.calculateTopPadding(),
-                bottom = padding.calculateBottomPadding(),
-            ),
+            contentPadding = listPadding(padding),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             workout.exercises.forEach { exercise ->
-                item(key = "h-${exercise.id}") {
-                    Text(
-                        exercise.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = accent,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
-                    )
-                }
+                item(key = "h-${exercise.id}") { ExerciseHeader(exercise.name, accent, spec) }
                 exercise.sets.forEachIndexed { index, row ->
                     item(key = row.id) {
-                        val line = @Composable { Line(index, row, exercise, workout, accent, row.id in unsynced) }
+                        val content = @Composable { Line(index, row, exercise, workout, accent, row.id in unsynced) }
                         when (controls) {
                             // a button's own padding, for a line that is not one
-                            null -> Column(Modifier.padding(horizontal = 18.dp)) { line() }
+                            null -> Column(line(spec).padding(horizontal = 18.dp)) { content() }
                             else -> FilledTonalButton(
                                 onClick = { editing = exercise to row },
-                                modifier = Modifier.fillMaxWidth(),
-                            ) { line() }
+                                transformation = SurfaceTransformation(spec),
+                                modifier = button(spec),
+                            ) { content() }
                         }
                     }
                 }
@@ -181,21 +168,13 @@ private fun SetEditor(
     }
 
     val list = rememberTransformingLazyColumnState()
+    val spec = rememberTransformationSpec()
     ScreenScaffold(scrollState = list) { padding ->
-        TransformingLazyColumn(state = list, contentPadding = padding, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            item {
-                Text(
-                    exercise.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = accent,
-                    maxLines = 2,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-                )
-            }
+        TransformingLazyColumn(state = list, contentPadding = listPadding(padding), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            item { ExerciseHeader(exercise.name, accent, spec) }
             if (exercise.weighted || exercise.counted) {
                 item {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(line(spec), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         if (exercise.weighted && exercise.unit != null) {
                             ValuePill(number(weight), exercise.unit, Modifier.weight(1f)) { field = Field.Weight }
                         }
@@ -207,7 +186,7 @@ private fun SetEditor(
             }
             if (row.done) {
                 item {
-                    Prominent(controls.save, accent, enabled = counts) {
+                    Prominent(controls.save, accent, enabled = counts, spec) {
                         if (sentWeight != row.weight || sentReps != row.reps) {
                             send(Command.Edit(workoutId, row.id, sentWeight, sentReps))
                         }
@@ -215,22 +194,21 @@ private fun SetEditor(
                     }
                 }
                 item {
-                    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-                        FilledTonalButton(
-                            onClick = {
-                                send(Command.Untick(workoutId, row.id))
-                                close()
-                            },
-                            colors = ButtonDefaults.filledTonalButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(controls.notDone, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-                        }
+                    FilledTonalButton(
+                        onClick = {
+                            send(Command.Untick(workoutId, row.id))
+                            close()
+                        },
+                        colors = ButtonDefaults.filledTonalButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        transformation = SurfaceTransformation(spec),
+                        modifier = button(spec),
+                    ) {
+                        Text(controls.notDone, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                     }
                 }
             } else {
                 item {
-                    Prominent(controls.done, accent, enabled = counts) {
+                    Prominent(controls.done, accent, enabled = counts, spec) {
                         send(Command.Complete(workoutId, row.id, sentWeight, sentReps))
                         close()
                     }
@@ -241,16 +219,21 @@ private fun SetEditor(
 }
 
 @Composable
-private fun Prominent(label: String, accent: Color, enabled: Boolean, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-        Button(
-            onClick = onClick,
-            enabled = enabled,
-            colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(label, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-        }
+private fun TransformingLazyColumnItemScope.Prominent(
+    label: String,
+    accent: Color,
+    enabled: Boolean,
+    spec: TransformationSpec,
+    onClick: () -> Unit,
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black),
+        transformation = SurfaceTransformation(spec),
+        modifier = button(spec),
+    ) {
+        Text(label, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
     }
 }
 
