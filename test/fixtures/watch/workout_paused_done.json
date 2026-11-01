@@ -66,6 +66,8 @@
     }
   ],
   "done": "Done",
+  "start": "Start",
+  "cancel": "Cancel",
   "skip": "Skip",
   "add": "+10s",
   "subtract": "-10s",

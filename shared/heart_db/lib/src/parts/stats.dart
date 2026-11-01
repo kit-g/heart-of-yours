@@ -107,7 +107,8 @@ mixin _Stats on _LocalDatabase implements StatsService {
   /// week through [getWorkoutCountBetween] instead.
   Future<int> getWeeklyWorkoutCount(DateTime d, {String? userId}) {
     final monday = getMonday(d);
-    return getWorkoutCountBetween(monday, monday.add(const Duration(days: 7)), userId: userId);
+    // by the calendar: a week holding the clocks' change isn't 168 hours
+    return getWorkoutCountBetween(monday, DateTime(monday.year, monday.month, monday.day + 7), userId: userId);
   }
 
   /// Completed sets per exercise per finished workout started in [from, to),

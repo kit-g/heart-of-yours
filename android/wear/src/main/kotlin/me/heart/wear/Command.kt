@@ -11,7 +11,14 @@ sealed interface Command {
     /// The set it is about, for those that are about one.
     val setId: String? get() = null
 
-    data class Complete(override val workoutId: String, override val setId: String, val weight: Double?, val reps: Int?) : Command
+    /// [seconds] is the time the watch's stopwatch took for a hold (#484).
+    data class Complete(
+        override val workoutId: String,
+        override val setId: String,
+        val weight: Double?,
+        val reps: Int?,
+        val seconds: Int? = null,
+    ) : Command
 
     data class SkipRest(override val workoutId: String) : Command
 
@@ -39,7 +46,7 @@ sealed interface Command {
             .put("id", id)
             .put("at", at)
         when (this) {
-            is Complete -> json.put("action", "complete").put("setId", setId).putOpt("weight", weight).putOpt("reps", reps)
+            is Complete -> json.put("action", "complete").put("setId", setId).putOpt("weight", weight).putOpt("reps", reps).putOpt("seconds", seconds)
             is Edit -> json.put("action", "edit").put("setId", setId).putOpt("weight", weight).putOpt("reps", reps)
             is Untick -> json.put("action", "untick").put("setId", setId)
             is SkipRest -> json.put("action", "skipRest")
@@ -59,7 +66,9 @@ sealed interface Command {
             val weight = if (json.isNull("weight")) null else json.optDouble("weight")
             val reps = if (json.isNull("reps")) null else json.optInt("reps")
             return when (json.optString("action")) {
-                "complete" -> setId?.let { Complete(workoutId, it, weight, reps) }
+                "complete" -> setId?.let {
+                    Complete(workoutId, it, weight, reps, if (json.isNull("seconds")) null else json.optInt("seconds"))
+                }
                 "edit" -> setId?.let { Edit(workoutId, it, weight, reps) }
                 "untick" -> setId?.let { Untick(workoutId, it) }
                 "skipRest" -> SkipRest(workoutId)

@@ -70,6 +70,8 @@ enum WatchState: Equatable {
             var step: Double
             var weighted: Bool
             var counted: Bool
+            /// Whether its sets offer the stopwatch (#484).
+            var timed: Bool = false
             /// Its rest timer, in seconds; nil for none. What a tick starts
             /// while the phone is out of reach (#206).
             var rest: Int?
@@ -104,6 +106,7 @@ enum WatchState: Equatable {
                 step = (payload["step"] as? NSNumber)?.doubleValue ?? 1
                 weighted = payload["weighted"] as? Bool ?? false
                 counted = payload["counted"] as? Bool ?? false
+                timed = payload["timed"] as? Bool ?? false
                 rest = (payload["rest"] as? NSNumber)?.intValue
                 sets = (payload["sets"] as? [Any] ?? []).compactMap { row in
                     guard let row = row as? [String: Any], let id = row["id"] as? String else { return nil }
@@ -159,6 +162,9 @@ enum WatchState: Equatable {
             var pause: String = ""
             var resume: String = ""
             var paused: String = ""
+            /// The stopwatch's labels (#484); empty from a phone that predates it.
+            var start: String = ""
+            var cancel: String = ""
 
             /// Nil unless every label the controls cannot do without is there;
             /// the rest default to empty, for a phone that predates them.
@@ -196,6 +202,8 @@ enum WatchState: Equatable {
                 pause = text("pause") ?? ""
                 resume = text("resume") ?? ""
                 paused = text("paused") ?? ""
+                start = text("start") ?? ""
+                cancel = text("cancel") ?? ""
             }
 
             init(
@@ -318,7 +326,7 @@ extension WatchState {
         guard case .workout(var workout) = self, workout.workoutId == command.workoutId else { return self }
 
         switch command {
-        case let .complete(_, setId, weight, reps):
+        case let .complete(_, setId, weight, reps, _):
             // ticked already: the phone ignores it, and so does this
             guard let (e, r) = workout.locate(setId), !workout.exercises[e].sets[r].done else { return self }
             workout.exercises[e].sets[r].weight = weight ?? workout.exercises[e].sets[r].weight

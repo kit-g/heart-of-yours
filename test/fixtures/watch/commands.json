@@ -7,5 +7,6 @@
   {"event": "command", "action": "adjustRest", "workoutId": "w1", "seconds": -10, "id": "c6", "at": 1792692100000},
   {"event": "command", "action": "finish", "workoutId": "w1", "id": "c7", "at": 1792692110000},
   {"event": "command", "action": "pause", "workoutId": "w1", "id": "c8", "at": 1792692120000},
-  {"event": "command", "action": "resume", "workoutId": "w1", "id": "c9", "at": 1792692130000}
+  {"event": "command", "action": "resume", "workoutId": "w1", "id": "c9", "at": 1792692130000},
+  {"event": "command", "action": "complete", "workoutId": "w1", "setId": "h1", "seconds": 45, "id": "c10", "at": 1792692140000}
 ]
