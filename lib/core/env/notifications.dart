@@ -107,13 +107,19 @@ Future<void> onOngoingNotificationAction(NotificationResponse response) async {
     // a tick starts the exercise's rest, with the notification the app would
     // have scheduled for its end
     case (_doneAction, OngoingDone done, OngoingRest rest):
+      final tone = await _readRestTone(reload: true);
       await _guarded(
         () => _plugin.zonedSchedule(
           id: _currentExercise,
           title: done.restTitle,
           body: done.restBody,
           scheduledDate: TZDateTime.from(rest.end, local),
-          notificationDetails: _details(title: done.restTitle, body: done.restBody, subtitle: done.restSubtitle),
+          notificationDetails: _details(
+            title: done.restTitle,
+            body: done.restBody,
+            subtitle: done.restSubtitle,
+            tone: tone,
+          ),
           androidScheduleMode: .exactAllowWhileIdle,
           payload: done.exerciseId,
         ),
@@ -168,7 +174,11 @@ Future<void> _moveRestNotification(DateTime? end) async {
         title: request.title,
         body: request.body,
         scheduledDate: TZDateTime.from(when, local),
-        notificationDetails: _details(title: request.title ?? '', body: request.body),
+        notificationDetails: _details(
+          title: request.title ?? '',
+          body: request.body,
+          tone: await _readRestTone(reload: true),
+        ),
         androidScheduleMode: .exactAllowWhileIdle,
         payload: request.payload,
       );
@@ -424,19 +434,48 @@ Future<bool?> requestNotificationPermission(TargetPlatform platform) async {
   };
 }
 
+/// [tone] is the workout sounds' (#169), for the "rest complete" notification;
+/// null is the system's sound, the 1.9 behaviour, and every other
+/// notification's. [quiet] silences it on Android while the app is on screen
+/// and plays the sound itself ([quietRestNotification]).
 NotificationDetails _details({
   required String title,
   String? body,
   String? subtitle,
+  RestTone? tone,
+  bool quiet = false,
 }) {
+  final darwin = switch (tone) {
+    null => DarwinNotificationDetails(subtitle: subtitle),
+    // on screen the app plays the sound itself, at the volume chosen: the
+    // notification only sounds when the app is away
+    (sound: silentNotification, channel: _) => DarwinNotificationDetails(subtitle: subtitle, presentSound: false),
+    (:String sound, channel: _) => DarwinNotificationDetails(
+      subtitle: subtitle,
+      presentSound: false,
+      sound: '$sound.wav',
+    ),
+  };
+  // a channel's sound is fixed when it is made, so each sound has its own
+  final (channelId, channelName, androidSound) = switch (tone) {
+    null => (_defaultChannelId, _defaultChannelName, null),
+    (sound: silentNotification, :String channel) => ('$_defaultChannelId silent', channel, null),
+    (:String sound, :String channel) => (
+      '$_defaultChannelId $sound',
+      channel,
+      RawResourceAndroidNotificationSound(sound),
+    ),
+  };
   return NotificationDetails(
-    iOS: DarwinNotificationDetails(subtitle: subtitle),
+    iOS: darwin,
     android: AndroidNotificationDetails(
-      _defaultChannelId,
-      _defaultChannelName,
+      channelId,
+      channelName,
       icon: _androidIcon,
       enableVibration: false,
-      playSound: true,
+      playSound: tone?.sound != silentNotification,
+      sound: androidSound,
+      silent: quiet && tone != null,
       styleInformation: switch ((body, subtitle)) {
         (String b, String s) => BigTextStyleInformation('$s\n$b'),
         (String b, null) => BigTextStyleInformation(b),
@@ -444,7 +483,88 @@ NotificationDetails _details({
         (null, null) => null,
       },
     ),
-    macOS: DarwinNotificationDetails(subtitle: subtitle),
+    macOS: darwin,
+  );
+}
+
+/// The "rest complete" notification's sound while workout sounds are on
+/// (#169) — a [NotificationSound] that is not null — and, for Android, the
+/// name of the channel that carries it, which is copy.
+typedef RestTone = ({String sound, String channel});
+
+/// Where the app leaves the [RestTone] for every surface that schedules the
+/// rest's notification without it: the ongoing notification's buttons, on an
+/// isolate of their own (#141), and on iOS the Live Activity's and Siri's
+/// intents (`OngoingWorkoutIntents.schedule`, which reads the first key as
+/// `flutter.workoutSounds.restNotification`). Absent is the system's sound.
+const _restToneSound = 'workoutSounds.restNotification';
+const _restToneChannel = 'workoutSounds.restChannel';
+
+/// Leaves [tone] for the surfaces that schedule the rest's notification on
+/// their own ([_restToneSound]); null takes it away, back to the system's.
+Future<void> publishRestTone(RestTone? tone) async {
+  final prefs = await SharedPreferences.getInstance();
+  switch (tone) {
+    case (:String sound, :String channel):
+      await prefs.setString(_restToneSound, sound);
+      await prefs.setString(_restToneChannel, channel);
+    case null:
+      await prefs.remove(_restToneSound);
+      await prefs.remove(_restToneChannel);
+  }
+}
+
+/// [reload] for the buttons' isolate, whose copy of the store is as old as
+/// the isolate: the app may have changed the tone since. Never on the app's
+/// own, where a reload could drop another write still on its way to disk.
+Future<RestTone?> _readRestTone({bool reload = false}) async {
+  final prefs = await SharedPreferences.getInstance();
+  if (reload) await prefs.reload();
+  return switch ((prefs.getString(_restToneSound), prefs.getString(_restToneChannel))) {
+    (String sound, String channel) => (sound: sound, channel: channel),
+    _ => null,
+  };
+}
+
+/// The "rest complete" notification as last scheduled from this isolate, for
+/// [quietRestNotification] to post again, subtitle and all.
+({String exerciseId, DateTime time, String title, String? body, String? subtitle})? _lastRest;
+
+/// Whether the app is on screen and sounds the rest's end itself (#169).
+bool _quiet = false;
+
+/// Android only: with the app on screen, the rest's notification goes up
+/// silent, because the app plays the end of the rest itself, at the volume
+/// chosen — iOS does the same through `presentSound`. Called as the app comes
+/// and goes; a rest still to end is posted again with the right sound. With
+/// workout sounds off there is nothing to quiet: the system's sound is 1.9's.
+Future<void> quietRestNotification({required bool quiet}) async {
+  if (quiet == _quiet) return;
+  _quiet = quiet;
+  final rest = _lastRest;
+  if (rest == null || !rest.time.isAfter(DateTime.now())) return;
+  final tone = await _readRestTone();
+  if (tone == null) return;
+  final pending = await _plugin.pendingNotificationRequests();
+  if (!pending.any((request) => request.id == _currentExercise)) return;
+  await _scheduleRest(rest, tone);
+}
+
+Future<void> _scheduleRest(
+  ({String exerciseId, DateTime time, String title, String? body, String? subtitle}) rest,
+  RestTone? tone,
+) {
+  final details = _details(title: rest.title, body: rest.body, subtitle: rest.subtitle, tone: tone, quiet: _quiet);
+  return _guarded(
+    () => _plugin.zonedSchedule(
+      id: _currentExercise,
+      title: rest.title,
+      body: rest.body,
+      scheduledDate: TZDateTime.from(rest.time, local),
+      notificationDetails: details,
+      androidScheduleMode: .exactAllowWhileIdle,
+      payload: rest.exerciseId,
+    ),
   );
 }
 
@@ -586,18 +706,9 @@ Future<void> scheduleExerciseNotification(
   final delay = time.difference(DateTime.now());
   if (delay.isNegative) return;
 
-  final details = _details(title: title, body: body, subtitle: subtitle);
-  return _guarded(
-    () => _plugin.zonedSchedule(
-      id: _currentExercise,
-      title: title,
-      body: body,
-      scheduledDate: TZDateTime.from(time, local),
-      notificationDetails: details,
-      androidScheduleMode: .exactAllowWhileIdle,
-      payload: exerciseId,
-    ),
-  );
+  final rest = (exerciseId: exerciseId, time: time, title: title, body: body, subtitle: subtitle);
+  _lastRest = rest;
+  return _scheduleRest(rest, await _readRestTone());
 }
 
 /// Schedules the "you've gone idle" notification for an active workout at
@@ -632,6 +743,7 @@ Future<void> cancelWorkoutTimeoutNotification() {
 /// skipped rest timer. Narrower than [cancelAllNotifications] on purpose: the
 /// workout-timeout notification must survive a skip.
 Future<void> cancelExerciseNotification() {
+  _lastRest = null;
   return _plugin.cancel(id: _currentExercise);
 }
 

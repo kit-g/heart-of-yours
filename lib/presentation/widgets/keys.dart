@@ -75,6 +75,13 @@ abstract final class AppKeys {
   static const rpeImportOffer = ValueKey('rpeImportOffer');
   static const rpeImportAccept = ValueKey('rpeImportAccept');
   static const rpeImportDecline = ValueKey('rpeImportDecline');
+
+  /// Workout sounds' choices under its switch in Settings › Features (#169).
+  static const restSoundPicker = Key('Features.workoutSounds.rest');
+  static const soundVolumePicker = Key('Features.workoutSounds.volume');
+  static const setDoneSound = Key('Features.workoutSounds.setDone');
+  static const recordSound = Key('Features.workoutSounds.record');
+
   static const muscleMapCard = ValueKey('muscleMapCard');
 
   /// Copy for AI (#259): its offer and answers, the ways in, and its sheet.

@@ -790,6 +790,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
         _hasDurationError.value = false;
         workouts.markEdited(set);
         workouts.markSetAsComplete(exercise, set);
+        _sound(context);
         _startTimer(context);
         return;
       }
@@ -854,6 +855,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
 
       if (set.canBeCompleted) {
         workouts.markSetAsComplete(exercise, set);
+        _sound(context);
         _startTimer(context);
       }
 
@@ -889,6 +891,12 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
         }
         _hasCrossedDismissThreshold.value = false;
     }
+  }
+
+  /// A tick in the active workout is heard, when the user chose that (#169);
+  /// one in a past workout being edited is not.
+  void _sound(BuildContext context) {
+    if (Workouts.of(context).activeWorkout?.contains(exercise) ?? false) WorkoutSounds.of(context).setDone();
   }
 
   /// After a tick: the rest, and in a superset (#159) the member that comes

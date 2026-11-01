@@ -63,6 +63,7 @@ part 'set_item.dart';
 part 'set_stopwatch.dart';
 part 'rpe.dart';
 part 'set_type.dart';
+part 'sounds_offer.dart';
 part 'superset.dart';
 part 'target.dart';
 part 'text_field_button.dart';
@@ -467,6 +468,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                       selector: (_, provider) => provider.pointedAtExercise == set.id,
                     ),
                     if (widget.offersDefaultRest) _DefaultRestOffer(exercise: set),
+                    _SoundsOffer(exercise: set),
                   ],
                 );
               },

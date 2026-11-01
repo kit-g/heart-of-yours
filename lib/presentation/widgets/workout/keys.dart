@@ -45,6 +45,11 @@ class WorkoutDetailKeys {
   static const defaultRestAccept = Key('WorkoutDetail.defaultRestAccept');
   static const defaultRestDecline = Key('WorkoutDetail.defaultRestDecline');
 
+  /// The one offer of workout sounds (#169) and its two answers.
+  static const soundsOffer = Key('WorkoutDetail.soundsOffer');
+  static const soundsAccept = Key('WorkoutDetail.soundsAccept');
+  static const soundsDecline = Key('WorkoutDetail.soundsDecline');
+
   /// The workout's own note under its title (#235), which opens its editor.
   static const workoutNote = Key('WorkoutDetail.workoutNote');
 

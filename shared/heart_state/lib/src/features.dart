@@ -103,7 +103,14 @@ enum Feature {
   /// Asked once, in context: the first time a ticked set would have been a
   /// record, the offer sits under that set. Computes nothing it stores; off,
   /// nothing is read.
-  liveRecords('liveRecords');
+  liveRecords('liveRecords'),
+
+  /// The rest's end, a ticked set and a record, heard (#169): a choice of
+  /// rest sound, a volume, and the two optional cues. Asked once, under the
+  /// exercise whose rest first runs out with the app on screen. Off, the
+  /// rest timer sounds as it did in 1.9 — the notification's system sound,
+  /// and nothing of the app's own.
+  workoutSounds('workoutSounds');
 
   final String value;
 

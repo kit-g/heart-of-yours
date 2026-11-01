@@ -83,6 +83,8 @@ class MainActivity : FlutterFragmentActivity() {
         WidgetsChannel.register(this, flutterEngine.dartExecutor.binaryMessenger)
         // the Wear OS app (#250)
         WatchChannel.register(this, flutterEngine.dartExecutor.binaryMessenger)
+        // the workout sounds' player (#169)
+        SoundsChannel.register(this, flutterEngine.dartExecutor.binaryMessenger)
     }
 
     // Google's documented signal: the system setting is "true" whenever the app
