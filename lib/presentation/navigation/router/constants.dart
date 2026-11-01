@@ -46,6 +46,10 @@ const _newApiTokenPath = 'new';
 const _newApiTokenName = 'newApiToken';
 const _featuresPath = 'features';
 const _featuresName = 'features';
+const _recapsPath = 'recaps';
+const _recapsName = 'recaps';
+const _monthlyReportName = 'monthlyReport';
+const _monthParam = 'month';
 // the feature the Features page opens at (#239), by `Feature.value` — a
 // universal link's as much as What's new's
 const _featureQuery = 'feature';

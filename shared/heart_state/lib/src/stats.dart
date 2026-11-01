@@ -164,6 +164,17 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
+  /// The finished months with workouts in them, newest first, each with its
+  /// count (#154): the list of recaps there are to open. The month under way
+  /// is left out until it is over.
+  Future<Map<DateTime, int>> getRecapMonths({DateTime? now}) async {
+    final today = now ?? DateTime.now();
+    // every finished workout before this month: the earliest the mirror can
+    // hold is the account's first, and an old year is a cheap row
+    final workouts = await _service.getRecapWorkouts(DateTime(1970), DateTime(today.year, today.month), userId: userId);
+    return recapMonths(workouts, now: today);
+  }
+
   /// A training chart's points (#137), newest first: one per week (starting on
   /// [firstWeekday]) or month, each dated by its first day.
   ///

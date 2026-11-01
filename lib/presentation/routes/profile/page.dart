@@ -8,12 +8,18 @@ class ProfilePage extends StatefulWidget {
   /// Where the no-account dialog's action lands: the login page.
   final VoidCallback onLogIn;
 
+  /// Every past month's recap, and one month's (#154).
+  final VoidCallback onRecaps;
+  final ValueChanged<DateTime> onMonthlyReport;
+
   const new({
     super.key,
     required this.onSettings,
     required this.onAccount,
     required this.onAvatar,
     required this.onLogIn,
+    required this.onRecaps,
+    required this.onMonthlyReport,
   });
 
   @override
@@ -192,6 +198,8 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                 workouts: workouts,
                 emptyState: emptyState,
               ),
+              // opt-in (#154): off, an empty sliver that reads nothing
+              _RecapsSection(workouts: workouts, onRecaps: widget.onRecaps, onMonth: widget.onMonthlyReport),
               // opt-in (#136): off, this is an empty sliver and nothing else
               _MuscleMapSection(workouts: workouts),
               // baseline (#341): sets and sessions a week by pattern or muscle

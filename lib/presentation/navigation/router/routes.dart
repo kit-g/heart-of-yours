@@ -17,6 +17,8 @@ RouteBase _profileRoute() {
         onSettings: context.goToSettings,
         onAccount: context.goToAccountManagement,
         onLogIn: context.goToLogin,
+        onRecaps: context.goToRecaps,
+        onMonthlyReport: context.goToMonthlyReport,
         onAvatar: () {
           final user = Auth.of(context).user;
           if (user?.localAvatar != null) {
@@ -32,6 +34,21 @@ RouteBase _profileRoute() {
     },
     name: _profileName,
     routes: [
+      GoRoute(
+        path: _recapsPath,
+        // off, a link here is one the app has no screen for (`docs/opt-in.md`)
+        redirect: (context, _) => Preferences.of(context).isOn(.recaps) ? null : _profilePath,
+        builder: (context, _) => RecapsPage(onMonth: context.goToMonthlyReport),
+        name: _recapsName,
+        routes: [
+          GoRoute(
+            path: ':$_monthParam',
+            redirect: (_, state) => _monthOf(state.pathParameters[_monthParam]) == null ? _profilePath : null,
+            builder: (_, state) => MonthlyReportPage(month: _monthOf(state.pathParameters[_monthParam])!),
+            name: _monthlyReportName,
+          ),
+        ],
+      ),
       GoRoute(
         path: _settingsPath,
         builder: (context, _) {
@@ -1133,4 +1150,18 @@ RouteBase _workoutOverRoute() {
       );
     },
   );
+}
+
+/// `2026-09`: a month in a path, by its first day.
+String _monthKey(DateTime month) => '${month.year}-${month.month.toString().padLeft(2, '0')}';
+
+/// The month a path names, or null for anything that is not `yyyy-MM`.
+DateTime? _monthOf(String? key) {
+  return switch (key?.split('-')) {
+    [final year, final month] when month.length == 2 => switch ((int.tryParse(year), int.tryParse(month))) {
+      (final int year, final int month) when month >= 1 && month <= 12 => DateTime(year, month),
+      _ => null,
+    },
+    _ => null,
+  };
 }

@@ -21,6 +21,7 @@ import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/login/login.dart';
 import 'package:heart/presentation/routes/onboarding/onboarding.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
+import 'package:heart/presentation/routes/recaps/recaps.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/settings/upgrade_app.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';

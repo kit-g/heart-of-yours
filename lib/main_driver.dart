@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoNavigationBarBackButton;
 // `flutter_driver` is a dev_dependency on purpose. The lint guards published
 // packages, whose consumers do not get dev_dependencies — nothing depends on
@@ -26,14 +27,29 @@ import 'main.dart' as app;
 /// No new attack surface in debug: the VM service is already open — that is how
 /// hot reload works — and it exposes `evaluate`, which is strictly more powerful
 /// than tapping a button. In release the VM service does not exist at all.
+///
+/// `--dart-define=HEART_TODAY=2026-10-03` moves what [clock] says to that day,
+/// still ticking, for what reads it: the recap card shows only in a month's
+/// first days (#154), and a screenshot should not wait for one. The
+/// simulator's own date is left alone.
 Future<void> main() {
-  // must come before anything that touches a binding: this installs its own
-  // (`_DriverBinding`), and constructing `WidgetsFlutterBinding` first leaves it
-  // asserting "Binding is already initialized". `bootstrap` calling
-  // `ensureInitialized` afterwards is fine — it returns the existing instance.
-  enableFlutterDriverExtension(finders: [_ByTooltipMessage(), _PageBack()]);
-  return app.main();
+  Future<void> run() {
+    // must come before anything that touches a binding: this installs its own
+    // (`_DriverBinding`), and constructing `WidgetsFlutterBinding` first leaves
+    // it asserting "Binding is already initialized". `bootstrap` calling
+    // `ensureInitialized` afterwards is fine — it returns the existing instance.
+    enableFlutterDriverExtension(finders: [_ByTooltipMessage(), _PageBack()]);
+    return app.main();
+  }
+
+  return switch (DateTime.tryParse(const String.fromEnvironment('HEART_TODAY'))) {
+    // the binding is made inside the zone, so the frames it schedules run there
+    final DateTime today => withClock(Clock(() => DateTime.now().add(today.difference(_launched))), run),
+    null => run(),
+  };
 }
+
+final _launched = DateTime.now();
 
 // flutter_driver's own `ByTooltipMessage` and `PageBack` match
 // flutter/material.dart's Tooltip and flutter/cupertino.dart's back button.

@@ -99,6 +99,8 @@ enum _Screen {
   whatsNew,
   restTimers,
   features,
+  recaps,
+  monthlyReport,
   upsyncRunning,
   upsyncFailed,
   upsyncDone,
@@ -884,6 +886,19 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.restTimers, _Guideline.androidTapTarget, null),
   (_Screen.restTimers, _Guideline.iosTapTarget, null),
 
+  // Recaps (#154): the list of past months and one month's report
+  // (lib/presentation/routes/recaps/), the feature on.
+  (_Screen.recaps, _Guideline.labeledTapTarget, null),
+  (_Screen.recaps, _Guideline.textContrastLight, null),
+  (_Screen.recaps, _Guideline.textContrastDark, null),
+  (_Screen.recaps, _Guideline.androidTapTarget, null),
+  (_Screen.recaps, _Guideline.iosTapTarget, null),
+  (_Screen.monthlyReport, _Guideline.labeledTapTarget, null),
+  (_Screen.monthlyReport, _Guideline.textContrastLight, null),
+  (_Screen.monthlyReport, _Guideline.textContrastDark, null),
+  (_Screen.monthlyReport, _Guideline.androidTapTarget, null),
+  (_Screen.monthlyReport, _Guideline.iosTapTarget, null),
+
   // Features (lib/presentation/routes/settings/features.dart, #226): the
   // opt-in switches, the muscle map on so its options unfold under it.
   (_Screen.features, _Guideline.labeledTapTarget, null),
@@ -1085,6 +1100,37 @@ void main() {
     }
     if (screen == _Screen.templateMuscles) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
+    }
+    if (screen == _Screen.recaps || screen == _Screen.monthlyReport) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'weightUnit': 'metric', 'feature-recaps': 'on'});
+      final start = DateTime(2026, 9, 7, 18);
+      when(db.getRecapWorkouts(any, any, userId: anyNamed('userId'))).thenAnswer(
+        (_) async => [(id: 'muffin-1', start: start, trained: const Duration(minutes: 50))],
+      );
+      when(db.getRecapSets(any, any, userId: anyNamed('userId'))).thenAnswer(
+        (_) async => [
+          (
+            workoutId: 'muffin-1',
+            exerciseId: 'muffin-bench',
+            start: start,
+            category: Category.barbell,
+            movement: Movement.fromJson({
+              'groups': ['horizontal_press'],
+            }),
+            muscles: MuscleTagging.fromJson({
+              'primary': {
+                'ids': <String>[],
+                'groups': ['chest'],
+              },
+            }),
+            target: Target.chest,
+            weight: 60.0,
+            reps: 5,
+            duration: null,
+            distance: null,
+          ),
+        ],
+      );
     }
     if (screen == _Screen.rpePicker) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on'});
@@ -1785,6 +1831,14 @@ void main() {
         await tester.tapByKey(AppKeys.exercisesStack);
       case _Screen.settings || _Screen.anonymousSettings:
         await tester.tap(find.byIcon(Icons.settings_rounded));
+      case _Screen.recaps:
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps');
+        await tester.pumpTimes();
+        expect(find.text('September 2026'), findsOneWidget);
+      case _Screen.monthlyReport:
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps/2026-09');
+        await tester.pumpTimes();
+        expect(find.byKey(AppKeys.monthlyReport), findsOneWidget);
       case _Screen.features:
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();

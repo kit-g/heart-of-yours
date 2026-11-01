@@ -87,6 +87,24 @@ void main() {
   const primary = MuscleTagging.defaultPrimaryShare;
   const secondary = MuscleTagging.defaultSecondaryShare;
 
+  group('recapMonths', () {
+    test('the finished months with workouts, newest first, each counted', () {
+      expect(recapMonths(workouts, now: afterwards), {
+        DateTime(2026, 9): 4,
+        DateTime(2026, 8): 1,
+      });
+    });
+
+    test('the month under way is not one until it is over', () {
+      expect(recapMonths(workouts, now: DateTime(2026, 11, 1)).keys.first, DateTime(2026, 10));
+      expect(recapMonths(workouts, now: DateTime(2026, 9, 30)).keys, [DateTime(2026, 8)]);
+    });
+
+    test('nothing logged, nothing to list', () {
+      expect(recapMonths(const [], now: afterwards), isEmpty);
+    });
+  });
+
   group('RecapPeriod', () {
     test('a month runs from midnight on the 1st to midnight on the next 1st', () {
       expect(september.span, RecapSpan.month);

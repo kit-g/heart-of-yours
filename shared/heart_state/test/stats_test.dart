@@ -233,6 +233,19 @@ void main() {
       expect(recap.volume, 300);
       expect(notifications, 0);
     });
+
+    test('getRecapMonths reads every finished workout before this month, for the user', () async {
+      service.recapWorkoutsToReturn = [
+        (id: 'w1', start: DateTime(2026, 9, 2, 18), trained: const Duration(minutes: 50)),
+        (id: 'w2', start: DateTime(2026, 7, 2, 18), trained: const Duration(minutes: 50)),
+      ];
+      stats.userId = 'u1';
+
+      final months = await stats.getRecapMonths(now: DateTime(2026, 10, 18));
+
+      expect(service.recapCalls, [(DateTime(1970), DateTime(2026, 10), 'u1')]);
+      expect(months, {DateTime(2026, 9): 1, DateTime(2026, 7): 1});
+    });
   });
 
   group('training charts (#137)', () {
