@@ -63,7 +63,7 @@ final class PhoneSession: NSObject, ObservableObject {
     private let announcedKey = "phone.openedAnnounced"
 
     enum Command: Equatable {
-        case complete(workoutId: String, setId: String, weight: Double?, reps: Int?)
+        case complete(workoutId: String, setId: String, weight: Double?, reps: Int?, seconds: Int? = nil)
         case skipRest(workoutId: String)
         case adjustRest(workoutId: String, seconds: Int)
         case finish(workoutId: String)
@@ -77,10 +77,11 @@ final class PhoneSession: NSObject, ObservableObject {
 
         var message: [String: Any] {
             switch self {
-            case let .complete(workoutId, setId, weight, reps):
+            case let .complete(workoutId, setId, weight, reps, seconds):
                 var message: [String: Any] = ["event": "command", "action": "complete", "workoutId": workoutId, "setId": setId]
                 message["weight"] = weight
                 message["reps"] = reps
+                message["seconds"] = seconds
                 return message
             case let .edit(workoutId, setId, weight, reps):
                 var message: [String: Any] = ["event": "command", "action": "edit", "workoutId": workoutId, "setId": setId]
@@ -104,7 +105,7 @@ final class PhoneSession: NSObject, ObservableObject {
 
         var workoutId: String {
             switch self {
-            case let .complete(workoutId, _, _, _), let .edit(workoutId, _, _, _), let .untick(workoutId, _),
+            case let .complete(workoutId, _, _, _, _), let .edit(workoutId, _, _, _), let .untick(workoutId, _),
                  let .skipRest(workoutId), let .adjustRest(workoutId, _), let .finish(workoutId),
                  let .pause(workoutId), let .resume(workoutId):
                 workoutId
@@ -113,7 +114,7 @@ final class PhoneSession: NSObject, ObservableObject {
 
         var setId: String? {
             switch self {
-            case let .complete(_, setId, _, _), let .edit(_, setId, _, _), let .untick(_, setId): setId
+            case let .complete(_, setId, _, _, _), let .edit(_, setId, _, _), let .untick(_, setId): setId
             case .skipRest, .adjustRest, .finish, .pause, .resume: nil
             }
         }
@@ -124,7 +125,11 @@ final class PhoneSession: NSObject, ObservableObject {
             let reps = (message["reps"] as? NSNumber)?.intValue
             guard let workoutId = message["workoutId"] as? String else { return nil }
             switch (message["action"] as? String, message["setId"] as? String) {
-            case let ("complete", setId?): self = .complete(workoutId: workoutId, setId: setId, weight: weight, reps: reps)
+            case let ("complete", setId?):
+                self = .complete(
+                    workoutId: workoutId, setId: setId, weight: weight, reps: reps,
+                    seconds: (message["seconds"] as? NSNumber)?.intValue
+                )
             case let ("edit", setId?): self = .edit(workoutId: workoutId, setId: setId, weight: weight, reps: reps)
             case let ("untick", setId?): self = .untick(workoutId: workoutId, setId: setId)
             case ("skipRest", _): self = .skipRest(workoutId: workoutId)

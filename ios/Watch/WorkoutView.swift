@@ -50,6 +50,10 @@ struct UpNextPage: View {
     /// wrist comes up, and the rest dims.
     @Environment(\.isLuminanceReduced) private var dimmed
 
+    /// The stopwatch on a hold (#484). Here, not in the controls, which a
+    /// lowered wrist takes away mid-hold.
+    @State private var hold: SetControls.Hold?
+
     var body: some View {
         // for the bottom toolbar, where the page's one action sits (#492)
         NavigationStack {
@@ -81,7 +85,11 @@ struct UpNextPage: View {
                         // out of reach too (#206): what is done here queues, and
                         // reaches the phone when it is back
                         if let set = workout.set {
-                            SetControls(workoutId: workout.workoutId, set: set, controls: controls, accent: workout.accent)
+                            SetControls(
+                                workoutId: workout.workoutId, set: set, controls: controls, accent: workout.accent,
+                                timed: workout.exercises.first { $0.id == set.exerciseId }?.timed ?? false,
+                                hold: $hold
+                            )
                         }
                         // the phone away, or back and still being handed what it missed
                         switch (phone.reachable, phone.waiting) {
@@ -528,7 +536,21 @@ struct SetControls: View {
     let set: WatchState.Workout.UpNext
     let controls: WatchState.Workout.Controls
     let accent: Color
+    /// Whether this set offers the stopwatch (#484).
+    var timed = false
+    @Binding var hold: Hold?
     @EnvironmentObject private var phone: PhoneSession
+
+    /// A stopwatch running on a set.
+    struct Hold: Equatable {
+        let setId: String
+        let start: Date
+    }
+
+    /// When this set's stopwatch started, nil while it isn't running.
+    private var holding: Date? {
+        hold.flatMap { $0.setId == set.setId ? $0.start : nil }
+    }
 
     @State private var weight: Double = 0
     @State private var reps: Double = 0
@@ -554,6 +576,19 @@ struct SetControls: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
+
+            // the hold is on: Done logs what it took, as the phone's does (#171)
+            if let holding {
+                Text(holding, style: .timer)
+                    .font(.title2.monospacedDigit())
+                    .foregroundStyle(accent)
+                Button(controls.cancel) { hold = nil }
+                    .buttonStyle(.bordered)
+            } else if timed {
+                // with a stopwatch on offer, Done is the quiet way: ticked as prescribed
+                Button(controls.done) { complete(seconds: nil) }
+                    .buttonStyle(.bordered)
+            }
         }
         // one column with Done, which the toolbar centres beneath
         .frame(maxWidth: .infinity)
@@ -561,22 +596,20 @@ struct SetControls: View {
         // logging the set is what the page is for (#492)
         .toolbar {
             ToolbarItem(placement: .bottomBar) {
-                Button {
-                    phone.send(.complete(
-                        workoutId: workoutId,
-                        setId: set.setId,
-                        // only what this set takes: a reps-only set sends no weight
-                        weight: set.weight.map { _ in weight },
-                        reps: set.reps.map { _ in Int(reps) }
-                    ))
-                } label: {
-                    Text(controls.done)
-                        .frame(maxWidth: .infinity)
+                switch (holding, timed) {
+                case let (start?, _):
+                    primary(controls.done) {
+                        complete(seconds: max(1, Int(Date().timeIntervalSince(start))))
+                    }
+                case (nil, true):
+                    primary(controls.start) {
+                        hold = Hold(setId: set.setId, start: Date())
+                    }
+                case (nil, false):
+                    primary(controls.done) { complete(seconds: nil) }
+                        // a counted set needs a count; the phone would refuse it anyway
+                        .disabled(set.reps != nil && reps < 1)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(accent)
-                // a counted set needs a count; the phone would refuse it anyway
-                .disabled(set.reps != nil && reps < 1)
             }
         }
         // a new set — or the same set sent again with new values — starts over
@@ -592,6 +625,27 @@ struct SetControls: View {
                 ValueEditor(value: $reps, step: 1, unit: controls.reps, accent: accent)
             }
         }
+    }
+
+    private func primary(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(accent)
+    }
+
+    private func complete(seconds: Int?) {
+        hold = nil
+        phone.send(.complete(
+            workoutId: workoutId,
+            setId: set.setId,
+            // only what this set takes: a reps-only set sends no weight
+            weight: set.weight.map { _ in weight },
+            reps: set.reps.map { _ in Int(reps) },
+            seconds: seconds
+        ))
     }
 
     private func values(compact: Bool, times: Bool = false) -> some View {

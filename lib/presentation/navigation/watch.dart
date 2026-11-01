@@ -264,6 +264,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
           step: _step(exercise),
           weighted: _measures(exercise).$1,
           counted: _measures(exercise).$2,
+          timed: Preferences.of(context).isOn(.setStopwatch) && timedOf(exercise),
           // none mid-round in a superset (#159): the watch rests as the phone does
           rest: restAfter(context, exercise),
           sets: [
@@ -491,6 +492,8 @@ class _WatchPresenterState extends State<WatchPresenter> {
     final phone = _phone(l);
     return (
       done: l.watchSetDone,
+      start: l.watchStopwatchStart,
+      cancel: l.cancel,
       skip: l.skip,
       add: l.addSeconds,
       subtract: l.subtractSeconds,

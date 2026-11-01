@@ -41,8 +41,17 @@ CommandOutcome applyWorkoutCommand(BuildContext context, WatchCommand command) {
   if (workout == null || workout.id != command.workoutId) return .stale;
 
   switch (command) {
-    case WatchComplete(:final setId, :final weight, :final reps, :final at):
-      return switch (_complete(context, workouts, workout, setId, weight: weight, reps: reps, at: at)) {
+    case WatchComplete(:final setId, :final weight, :final reps, :final seconds, :final at):
+      return switch (_complete(
+        context,
+        workouts,
+        workout,
+        setId,
+        weight: weight,
+        reps: reps,
+        seconds: seconds,
+        at: at,
+      )) {
         true => .ticked,
         false => .stale,
       };
@@ -133,12 +142,13 @@ bool _complete(
   String setId, {
   double? weight,
   int? reps,
+  int? seconds,
   DateTime? at,
 }) {
   // gone, or ticked already (a double tap, or the phone got there first)
   if (_find(workout, setId) case (WorkoutExercise exercise, ExerciseSet set) when !set.isCompleted) {
-    if (weight != null || reps != null) {
-      workouts.editSet(set, weight: kilogramsOf(context, exercise, weight), reps: reps);
+    if (weight != null || reps != null || seconds != null) {
+      workouts.editSet(set, weight: kilogramsOf(context, exercise, weight), reps: reps, duration: seconds);
     }
     if (set.canBeCompleted) {
       workouts.markSetAsComplete(exercise, set, at: at);
@@ -159,7 +169,8 @@ bool _complete(
 
 /// Whether [exercise]'s sets take a weight, and whether they take a count —
 /// what a second actor may fill in. A carry's or a hold's load is a weight;
-/// its distance or time is the phone's, as a run's is.
+/// its distance or time is the phone's, as a run's is. A hold's time can come
+/// from the watch's stopwatch, which is [timedOf]'s to say.
 (bool weighted, bool counted) measuresOf(WorkoutExercise exercise) {
   final weighted = switch (exercise.exercise.category) {
     .barbell ||
@@ -224,5 +235,20 @@ bool restSurfaces(AppLifecycleState? state) {
   return switch (state) {
     .resumed || .inactive => true,
     _ => false,
+  };
+}
+
+/// Whether [exercise] logs a time, which a stopwatch can take (#171, #484).
+bool timedOf(WorkoutExercise exercise) {
+  return switch (exercise.exercise.category) {
+    .duration || .weightedDuration => true,
+    .barbell ||
+    .dumbbell ||
+    .machine ||
+    .assistedBodyWeight ||
+    .weightedBodyWeight ||
+    .repsOnly ||
+    .weightedDistance ||
+    .cardio => false,
   };
 }
