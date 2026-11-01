@@ -89,7 +89,8 @@ void main() {
 
   group('sync', () {
     test('reads each metric from its own watermark, overlapping by a day', () async {
-      final lastStep = DateTime(2026, 7, 30, 14, 20);
+      // inside the 90 days a first read opens on, whatever day this runs
+      final lastStep = DateTime.now().subtract(const Duration(days: 30));
       store.watermarks[HealthMetric.steps] = lastStep;
 
       await sut.init();
