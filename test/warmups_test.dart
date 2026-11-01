@@ -227,10 +227,14 @@ void main() {
         expect(prefs.warmupScheme.last, (percent: 85, reps: 2));
         expect(find.text('85% × 2'), findsOneWidget);
 
+        await tester.ensureVisible(find.byTooltip('Remove 40% × 5'));
+        await tester.pumpTimes();
         await tester.tap(find.byTooltip('Remove 40% × 5'));
         await tester.pumpTimes();
         expect(prefs.warmupScheme, [(percent: 60, reps: 3), (percent: 85, reps: 2)]);
 
+        await tester.ensureVisible(find.byKey(const ValueKey('warmup-scheme-reset')));
+        await tester.pumpTimes();
         await tester.tapByKey(const ValueKey('warmup-scheme-reset'));
         await tester.pumpTimes();
         expect(prefs.warmupScheme, defaultWarmupScheme);
