@@ -82,7 +82,14 @@ enum Feature {
   /// rest. Offered once, under the exercise whose set was just ticked with no
   /// rest to start. The lengths are this device's, like the timers they stand
   /// in for; off, they are kept, unused.
-  defaultRest('defaultRest');
+  defaultRest('defaultRest'),
+
+  /// What a month and a year of training added up to (#154, #155), and the
+  /// cards that share them (#166): workouts, time, sets, volume, the muscles
+  /// and patterns trained, the records set. Computed on the device from what
+  /// is already logged and never stored, so off costs nothing and on rebuilds
+  /// it all. Never a health value, on screen or on a card.
+  recaps('recaps');
 
   final String value;
 

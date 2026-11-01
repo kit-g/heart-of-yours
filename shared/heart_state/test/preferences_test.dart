@@ -505,6 +505,7 @@ void main() {
         'plateCalculator',
         'warmups',
         'defaultRest',
+        'recaps',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });

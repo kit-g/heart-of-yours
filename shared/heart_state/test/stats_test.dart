@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/lens.dart';
+import 'package:heart_state/src/recaps.dart';
 import 'package:heart_state/src/stats.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -74,6 +75,22 @@ class RecordingStatsService implements LocalStatsService {
   Future<List<WorkoutTotals>> getTrainingTotals(DateTime from, DateTime to, {String? userId}) async {
     totalsCalls.add((from, to, userId));
     return totalsToReturn;
+  }
+
+  final List<(DateTime, DateTime, String?)> recapCalls = [];
+  List<RecapWorkout> recapWorkoutsToReturn = [];
+  List<RecapSet> recapSetsToReturn = [];
+
+  @override
+  Future<List<RecapWorkout>> getRecapWorkouts(DateTime from, DateTime to, {String? userId}) async {
+    recapCalls.add((from, to, userId));
+    return recapWorkoutsToReturn;
+  }
+
+  @override
+  Future<List<RecapSet>> getRecapSets(DateTime from, DateTime to, {String? userId}) async {
+    recapCalls.add((from, to, userId));
+    return recapSetsToReturn;
   }
 }
 
@@ -177,6 +194,43 @@ void main() {
 
       expect(await stats.getLensSets(from, to), isEmpty);
       expect(service.lensSetsCalls, [(from, to, 'u1')]);
+      expect(notifications, 0);
+    });
+
+    test('getRecap reads the period for the user and folds it, holding nothing or notifying', () async {
+      final period = RecapPeriod.month(DateTime(2026, 9, 18));
+      final start = DateTime(2026, 9, 2, 18);
+      service.recapWorkoutsToReturn = [(id: 'w1', start: start, trained: const Duration(minutes: 50))];
+      service.recapSetsToReturn = [
+        (
+          workoutId: 'w1',
+          exerciseId: 'bench',
+          start: start,
+          category: Category.barbell,
+          movement: Movement.empty(),
+          muscles: MuscleTagging.empty(),
+          target: Target.chest,
+          weight: 60.0,
+          reps: 5,
+          duration: null,
+          distance: null,
+        ),
+      ];
+      stats.userId = 'u1';
+
+      final recap = await stats.getRecap(
+        period,
+        firstWeekday: DateTime.monday,
+        weightUnit: MeasurementUnit.metric,
+        now: DateTime(2026, 10, 1),
+      );
+
+      expect(service.recapCalls, [
+        (DateTime(2026, 9), DateTime(2026, 10), 'u1'),
+        (DateTime(2026, 9), DateTime(2026, 10), 'u1'),
+      ]);
+      expect(recap.workouts, 1);
+      expect(recap.volume, 300);
       expect(notifications, 0);
     });
   });
