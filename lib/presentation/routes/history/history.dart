@@ -12,6 +12,7 @@ import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/appbar_textfield.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/copy_for_ai.dart';
 import 'package:heart/presentation/widgets/feedback_button.dart';
 import 'package:heart/presentation/widgets/health/metric.dart';
 import 'package:heart/presentation/widgets/image.dart';

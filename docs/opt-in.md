@@ -107,6 +107,11 @@ ticket doesn't say:
   hidden per user — so **the first command that arrives is the yes**. Off, a
   command link is treated like any link the app has no screen for, and the
   app's own UI shows nothing of the feature but its switch.
+- Copy for AI (`Feature.copyForAi`, #259) is offered as **a menu item**: "Copy
+  for AI" in a History workout's ⋯ menu. Seeing the item is showing the
+  offer (it stays for that session, then reads as no); tapping it opens the
+  ask, and yes goes straight on to the copy. Nothing interrupts a user who
+  never reaches for it.
 
 ### Default on
 

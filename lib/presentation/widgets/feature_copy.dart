@@ -26,6 +26,7 @@ extension FeatureCopy on Feature {
       .warmups => l.warmups,
       .defaultRest => l.defaultRest,
       .recaps => l.recaps,
+      .copyForAi => l.copyForAi,
     };
   }
 
@@ -50,6 +51,7 @@ extension FeatureCopy on Feature {
       .warmups => l.warmupsSubtitle,
       .defaultRest => l.defaultRestSubtitle,
       .recaps => l.recapsSubtitle,
+      .copyForAi => l.copyForAiSubtitle,
     };
   }
 
@@ -69,6 +71,7 @@ extension FeatureCopy on Feature {
       .warmups => Icons.stairs_rounded,
       .defaultRest => Icons.hourglass_bottom_rounded,
       .recaps => Icons.insights_rounded,
+      .copyForAi => Icons.auto_awesome_outlined,
     };
   }
 
@@ -91,6 +94,8 @@ extension FeatureCopy on Feature {
       .notToday => [l.notTodayNote],
       // the rounding, which no control says
       .warmups => [l.warmupsNote],
+      // the line the text never crosses: health data stays on the device
+      .copyForAi => [l.copyForAiNote],
       // where Apple keeps Always On: Heart has no switch of its own for it.
       // Wear OS has no per-app one to point at
       .watchApp => switch (platform) {
