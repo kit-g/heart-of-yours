@@ -1,16 +1,24 @@
 package me.heart.wear
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.wear.compose.material3.AppScaffold
 import androidx.test.platform.app.InstrumentationRegistry
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -110,9 +118,47 @@ class PagesTest {
     @Test
     fun awayFromThePhoneTheControlsStayAndSaySo() {
         show(resting(), reachable = false)
+        compose.onNode(page).performScrollToNode(hasText("Done"))
         compose.onNodeWithText("Done").assertExists()
         compose.onNode(page).performScrollToNode(hasText("Syncs with your phone when it's back"))
         compose.onNodeWithText("Syncs with your phone when it's back").assertIsDisplayed()
+    }
+
+    /// Play's review refused a build for this (Wear OS "watch shapes"): the
+    /// first line of a list, a long name, ran past the round edge and under the
+    /// time.
+    @Test
+    fun aListStartsInsideTheRoundScreen() {
+        val name = "Triceps Pushdown (Cable)"
+        val workout = resting().let { w ->
+            w.copy(rest = null, exercise = name, exercises = w.exercises.map { it.copy(name = name) })
+        }
+        var page by mutableStateOf(0)
+        compose.setContent {
+            HeartTheme {
+                AppScaffold {
+                    when (page) {
+                        0 -> WorkoutScreen(workout, reachable = true, send = {})
+                        else -> WorkoutList(workout, reachable = true, unsynced = emptySet(), send = {})
+                    }
+                }
+            }
+        }
+        listOf(0, 1).forEach {
+            page = it
+            compose.waitForIdle()
+            assertClearOfTheEdge(compose.onAllNodesWithText(name)[0].fetchSemanticsNode().boundsInRoot)
+        }
+    }
+
+    private fun assertClearOfTheEdge(bounds: Rect) {
+        val radius = compose.onRoot().fetchSemanticsNode().size.width / 2f
+        // the time has the top of the screen, about a tenth of it
+        assertTrue("$bounds runs under the time", bounds.top >= radius * 2 * 0.13f)
+        listOf(bounds.topLeft, bounds.topRight, bounds.bottomLeft, bounds.bottomRight).forEach { corner ->
+            val distance = (corner - Offset(radius, radius)).getDistance()
+            assertTrue("$bounds runs past the round edge, $distance from the centre of $radius", distance <= radius)
+        }
     }
 
     @Test
