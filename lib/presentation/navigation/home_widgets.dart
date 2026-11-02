@@ -44,6 +44,9 @@ class _HomeWidgetsPresenterState extends State<HomeWidgetsPresenter> {
   /// Null where nothing provides it (tests that don't need it).
   Health? _health;
 
+  /// What the user discarded (#428); null where nothing provides it.
+  Anomalies? _anomalies;
+
   /// What was last told, encoded, so the same snapshot is not sent again on
   /// every set ticked; null before the first.
   String? _published;
@@ -76,11 +79,17 @@ class _HomeWidgetsPresenterState extends State<HomeWidgetsPresenter> {
       _health?.removeListener(_sync);
       _health = health?..addListener(_sync);
     }
+    final anomalies = Provider.of<Anomalies?>(context, listen: false);
+    if (!identical(anomalies, _anomalies)) {
+      _anomalies?.removeListener(_sync);
+      _anomalies = anomalies?..addListener(_sync);
+    }
     _sync();
   }
 
   @override
   void dispose() {
+    _anomalies?.removeListener(_sync);
     _health?.removeListener(_sync);
     _workouts?.removeListener(_sync);
     _preferences?.removeListener(_sync);
@@ -117,7 +126,14 @@ class _HomeWidgetsPresenterState extends State<HomeWidgetsPresenter> {
     final now = DateTime.now();
     final preset = (_theme ?? AppTheme.of(context)).preset;
     return TrainingSnapshot(
-      days: trainingDays(workouts.history, since: DateTime(now.year, now.month, now.day - _span)),
+      days: trainingDays(
+        workouts.history,
+        since: DateTime(now.year, now.month, now.day - _span),
+        leftOut: switch ((_anomalies, _preferences?.isOn(.entryReview))) {
+          (final Anomalies anomalies, true) => (sets: anomalies.discardedSets, durations: anomalies.discardedDurations),
+          _ => (sets: const {}, durations: const {}),
+        },
+      ),
       unit: _preferences?.weightUnit ?? .metric,
       accent: preset.light.accent.toARGB32(),
       accentDark: preset.dark.accent.toARGB32(),

@@ -320,8 +320,10 @@ RouteBase _historyRoute() {
   return ShellRoute(
     navigatorKey: navigatorKey,
     builder: (context, state, child) {
-      // a workout or a skip (#391) in the detail pane
+      // a workout or a skip (#391) in the detail pane, or the suspicious
+      // entries (#428)
       final workoutId = state.pathParameters['workoutId'] ?? state.pathParameters['skipId'];
+      final reviewing = state.topRoute?.name == _historyReviewName;
 
       return switch (LayoutProvider.of(context)) {
         LayoutSize.compact => child,
@@ -344,13 +346,14 @@ RouteBase _historyRoute() {
           onTapSkip: (skip) {
             if (skip.id case final String id) context.goToSkip(id);
           },
+          onEntryReview: context.goToEntryReview,
           onOpenActiveWorkout: () {
             HapticFeedback.mediumImpact();
             context.goToActiveWorkout();
           },
-          detail: switch (workoutId) {
-            String() => child, // workout selected
-            null => null,
+          detail: switch ((workoutId, reviewing)) {
+            (String(), _) || (_, true) => child, // workout selected, or the list
+            (null, false) => null,
           },
         ),
       };
@@ -376,6 +379,7 @@ RouteBase _historyRoute() {
               onTapSkip: (skip) {
                 if (skip.id case final String id) context.goToSkip(id);
               },
+              onEntryReview: context.goToEntryReview,
               onOpenActiveWorkout: () {
                 HapticFeedback.mediumImpact();
                 context.goToActiveWorkout();
@@ -386,6 +390,20 @@ RouteBase _historyRoute() {
         },
         name: _historyName,
         routes: [
+          // before ':workoutId', which would take the word for an id
+          GoRoute(
+            path: 'review',
+            builder: (context, state) {
+              return EntryReviewPage(
+                onOpenWorkout: context.openReviewedWorkout,
+                onClose: switch (LayoutProvider.of(context)) {
+                  .compact => null,
+                  .wide => context.goToHistory,
+                },
+              );
+            },
+            name: _historyReviewName,
+          ),
           GoRoute(
             path: 'skips/:skipId',
             builder: (context, state) {

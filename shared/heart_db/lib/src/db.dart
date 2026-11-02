@@ -8,6 +8,20 @@ const _clearDatabase = bool.fromEnvironment('CLEAR_DATABASE');
 abstract class _LocalDatabase {
   Database get _db;
 
+  /// Whether the counts leave out the sets the user discarded (#428): on
+  /// while suspicious entries is, which the app decides. Off, every count
+  /// reads every set, as it did before the feature existed; the anomalies
+  /// stay stored either way. See `sql.discarded`.
+  bool leavesOutDiscarded = false;
+
+  /// [query] with its `/*discarded*/` markers filled in or left as comments.
+  String _counted(String query) {
+    if (!leavesOutDiscarded) return query;
+    return query
+        .replaceAllMapped(sql.discarded, (m) => sql.leaveOutDiscarded(m[1]!))
+        .replaceAllMapped(sql.discardedTime, (m) => sql.timeLeftOut(m[1]!));
+  }
+
   /// What each table's columns actually are.
   ///
   /// Cached for the life of the connection: every migration runs inside [init],
@@ -67,6 +81,7 @@ abstract class _LocalDatabase {
 
 class LocalDatabase extends _LocalDatabase
     with
+        _Anomalies,
         _Charts,
         _Content,
         _Erase,
@@ -103,7 +118,7 @@ class LocalDatabase extends _LocalDatabase
 
   new _(this._db);
 
-  static Future<LocalDatabase> init({int version = 27, Database? other, bool isWeb = false}) async {
+  static Future<LocalDatabase> init({int version = 28, Database? other, bool isWeb = false}) async {
     if (other != null) return LocalDatabase._(other);
 
     const name = 'heart.db';

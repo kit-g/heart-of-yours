@@ -318,6 +318,17 @@ void main() {
       expect(series, [(3600.0, DateTime(2026, 10, 12)), (3000.0, DateTime(2026, 9, 28))]);
     });
 
+    test('a workout with no time leaves the average duration alone', () async {
+      service.totalsToReturn = [
+        workout(DateTime(2026, 10, 12, 9), minutes: 60),
+        workout(DateTime(2026, 10, 13, 9), minutes: 0),
+      ];
+
+      final series = await stats.getTrainingSeries(.duration, .week, firstWeekday: DateTime.monday, now: now);
+
+      expect(series.first, (3600.0, DateTime(2026, 10, 12)));
+    });
+
     test('nothing but zeros is no series at all', () async {
       service.totalsToReturn = [workout(DateTime(2026, 10, 12, 9), volume: 0)];
 

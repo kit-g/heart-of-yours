@@ -99,7 +99,22 @@ class _FeaturesPageState extends State<FeaturesPage> {
       .watchApp => const _WatchAppSwitch(),
       // the ramp itself, which only the switch's own page can hold
       .warmups => const _FeatureSwitch(.warmups, extra: _WarmupScheme()),
+      .entryReview => const _EntryReviewSwitch(),
       _ => _FeatureSwitch(feature),
+    };
+  }
+}
+
+/// Suspicious entries' switch (#428), only for an account: the server finds
+/// them, and an anonymous session has nothing on a server to find.
+class _EntryReviewSwitch extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (Auth.watch(context).isAnonymous) {
+      true => const SizedBox.shrink(),
+      false => const _FeatureSwitch(.entryReview),
     };
   }
 }

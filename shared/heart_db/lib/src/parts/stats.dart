@@ -137,7 +137,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
     if (userId == null) return Future.value(const []);
     return _db
         .rawQuery(
-          sql.muscleSets,
+          _counted(sql.muscleSets),
           [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
         )
         .then(
@@ -184,7 +184,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
     if (userId == null) return Future.value(const []);
     return _db
         .rawQuery(
-          sql.lensSets,
+          _counted(sql.lensSets),
           [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
         )
         .then(
@@ -222,7 +222,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
     if (userId == null) return Future.value(const []);
     return _db
         .rawQuery(
-          sql.recapWorkouts,
+          _counted(sql.recapWorkouts),
           [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
         )
         .then(
@@ -243,8 +243,13 @@ mixin _Stats on _LocalDatabase implements StatsService {
               return (
                 id: row['id'] as String,
                 start: start.toLocal(),
-                // a clock changed mid-workout can leave end before start
-                trained: trained.isNegative ? Duration.zero : trained,
+                // a clock changed mid-workout can leave end before start, and
+                // a discarded duration (#428) takes the time, not the workout
+                trained: switch (row['time_left_out']) {
+                  1 => Duration.zero,
+                  _ when trained.isNegative => Duration.zero,
+                  _ => trained,
+                },
               );
             },
           ).toList(),
@@ -280,7 +285,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
   getRecapSets(DateTime from, DateTime to, {String? userId}) {
     if (userId == null) return Future.value(const []);
     final [fromUtc, toUtc] = [from.toUtc().toIso8601String(), to.toUtc().toIso8601String()];
-    return _db.rawQuery(sql.recapSets, [userId, toUtc, userId, fromUtc, toUtc]).then(
+    return _db.rawQuery(_counted(sql.recapSets), [userId, toUtc, userId, fromUtc, toUtc]).then(
       (rows) {
         // an exercise's blobs, decoded once rather than once per set: a year's
         // history is thousands of rows over a few dozen exercises
@@ -334,7 +339,7 @@ mixin _TrainingTotals on _LocalDatabase {
     if (userId == null) return Future.value(const []);
     return _db
         .rawQuery(
-          sql.trainingTotals,
+          _counted(sql.trainingTotals),
           [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
         )
         .then(
@@ -346,8 +351,9 @@ mixin _TrainingTotals on _LocalDatabase {
               return (
                 start: start.toLocal(),
                 // a clock that moved backwards between start and end is not a
-                // negative workout
+                // negative workout, and a discarded duration (#428) is no time
                 duration: switch (end.difference(start) - _paused(row['pauses'])) {
+                  _ when row['time_left_out'] == 1 => Duration.zero,
                   Duration d when d.isNegative => Duration.zero,
                   Duration d => d,
                 },

@@ -9,6 +9,10 @@ class HistoryPage extends StatefulWidget {
 
   /// A day set aside with "Not today" (#312): opens its page (#391).
   final void Function(TrainingSkip)? onTapSkip;
+
+  /// Opens the list of suspicious entries (#428). Without it, or with the
+  /// feature off, History has no way there.
+  final VoidCallback? onEntryReview;
   final VoidCallback onOpenActiveWorkout;
   final Widget? detail;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
@@ -25,6 +29,7 @@ class HistoryPage extends StatefulWidget {
     this.onTapWorkout,
     this.onDeleteWorkout,
     this.onTapSkip,
+    this.onEntryReview,
     required this.onOpenActiveWorkout,
     this.detail,
     this.onTapImage,
@@ -73,6 +78,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                 icon: const Icon(Icons.auto_awesome_outlined),
                 onPressed: () => copyPeriodForAi(context),
               ),
+            if (widget.onEntryReview case final VoidCallback open) _EntryReviewButton(onPressed: open),
             IconButton(
               tooltip: L.of(context).calendar,
               icon: const Icon(Icons.calendar_month_rounded),
@@ -91,6 +97,8 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
             centerTitle: true,
           ),
         ),
+        // the one ask for suspicious entries, once there is one (#428)
+        const SliverToBoxAdapter(child: _EntryReviewOffer()),
         if (images.isNotEmpty)
           SliverToBoxAdapter(
             child: Column(

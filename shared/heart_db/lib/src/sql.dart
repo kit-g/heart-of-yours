@@ -1,3 +1,41 @@
+/// Where a count leaves out the sets the user discarded (#428): every query
+/// that counts sets — records, charts, the muscle map and the pattern lens,
+/// and through them goal progress — carries `/*discarded:<alias>*/` after its
+/// warm-up clause. As written it is a comment, and the count is the one it was
+/// before suspicious entries existed. While the feature is on,
+/// [LocalDatabase.leavesOutDiscarded], the marker becomes [leaveOutDiscarded]
+/// over the query's own alias for `sets`. The log itself (a workout, an
+/// exercise's history, last time) is never filtered: a discarded set stays in
+/// it.
+final discarded = RegExp(r'/\*discarded:(\w+)\*/');
+
+/// Where a read of a workout's time learns that the user discarded it (#428).
+/// A discarded duration takes only the time: the workout still counts. As
+/// written it selects a plain 0; while the feature is on, whether there is such
+/// a decision for the workout the alias names.
+final discardedTime = RegExp(r'/\*discardedTime:(\w+)\*/ 0');
+
+/// [discardedTime]'s expression, for the alias it names.
+String timeLeftOut(String alias) {
+  return """EXISTS (
+      SELECT 1
+      FROM anomalies
+      WHERE anomalies.workout_id = $alias.id
+        AND anomalies.set_id IS NULL
+        AND anomalies.status = 'invalid'
+  )""";
+}
+
+/// [discarded]'s clause, for the alias it names.
+String leaveOutDiscarded(String alias) {
+  return """AND NOT EXISTS (
+      SELECT 1
+      FROM anomalies
+      WHERE anomalies.set_id = $alias.id
+        AND anomalies.status = 'invalid'
+  )""";
+}
+
 /// The session in progress *on this device*.
 ///
 /// `synced = 0` is what makes it this device's: the app never posts an
@@ -491,6 +529,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 ORDER BY workouts.start, workouts.id;
 ''';
 
@@ -512,6 +551,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
   AND (workouts.id = ? OR workouts.start < (SELECT start FROM workouts WHERE id = ?))
 ORDER BY workouts.start, workouts.id;
 ''';
@@ -535,6 +575,7 @@ WHERE workouts.user_id = ?
   AND workouts.id IS NOT ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 ORDER BY workouts.start, workouts.id;
 ''';
 
@@ -549,6 +590,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
@@ -566,6 +608,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id 
 ORDER BY "when" DESC
 LIMIT ?
@@ -583,6 +626,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id 
 ORDER BY "when" DESC
 LIMIT ?
@@ -600,6 +644,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
@@ -683,6 +728,7 @@ WHERE w.user_id = ?
   AND w.start < ?
   AND s.completed
   AND s.set_type IS NOT 'warmup'
+  /*discarded:s*/
 GROUP BY w.id, we.exercise_id
 ;
 ''';
@@ -708,6 +754,7 @@ WHERE w.user_id = ?
   AND w.start < ?
   AND s.completed
   AND s.set_type IS NOT 'warmup'
+  /*discarded:s*/
 GROUP BY w.id, we.exercise_id
 ;
 ''';
@@ -720,7 +767,8 @@ SELECT
     id,
     start,
     "end",
-    pauses
+    pauses,
+    /*discardedTime:workouts*/ 0 AS time_left_out
 FROM workouts
 WHERE user_id = ?
   AND "end" IS NOT NULL
@@ -756,6 +804,7 @@ WHERE w.user_id = ?
   AND w.start < ?
   AND s.completed
   AND s.set_type IS NOT 'warmup'
+  /*discarded:s*/
   AND we.exercise_id IN (
       SELECT pwe.exercise_id
       FROM workouts pw
@@ -806,6 +855,7 @@ SELECT
     w.start AS start,
     w."end" AS "end",
     w.pauses AS pauses,
+    /*discardedTime:w*/ 0 AS time_left_out,
     count(s.id) AS sets,
     coalesce(
         sum(

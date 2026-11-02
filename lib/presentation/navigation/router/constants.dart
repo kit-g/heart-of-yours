@@ -22,6 +22,7 @@ const _historyName = 'history';
 const _historyPath = '/$_historyName'; // a callback in bottom navigation bar in app_frame.dart relies on this
 const _historyEditName = 'edit';
 const _historySkipName = 'skip';
+const _historyReviewName = 'entryReview';
 const _exercisesName = 'exercises';
 const _exercisesPath = '/$_exercisesName';
 const _exerciseDetailName = 'exerciseDetail';
