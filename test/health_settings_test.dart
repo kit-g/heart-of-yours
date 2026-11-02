@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/presentation/widgets/health/metric.dart';
 import 'package:heart/presentation/widgets/health/settings.dart';
 import 'package:heart_health/heart_health.dart';
 import 'package:heart_language/heart_language.dart';
@@ -53,6 +54,18 @@ void main() {
     // The words that would overclaim. Workouts do sync; only this does not.
     expect(find.textContaining('private'), findsNothing);
     expect(find.textContaining('secure'), findsNothing);
+  });
+
+  // Play rejected 1.13.0 when the invitation left out HRV: every permission
+  // asked for has to be named where the feature is described. English is the
+  // source the other locales translate, so it is the one checked by word.
+  test('the invitation and settings name every metric Heart asks for', () {
+    final l = lookupL(const Locale('en'));
+    for (final metric in Health.tracked) {
+      final name = metric.label(l).toLowerCase();
+      expect(l.healthInviteBody.toLowerCase(), contains(name), reason: '${metric.value} missing from the invitation');
+      expect(l.healthSettingsBody.toLowerCase(), contains(name), reason: '${metric.value} missing from Settings');
+    }
   });
 
   testWidgets('is absent where there is no health store', (tester) async {
