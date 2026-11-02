@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -37,7 +35,6 @@ import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnScope
 import androidx.wear.compose.material3.AlertDialog
@@ -48,7 +45,6 @@ import androidx.wear.compose.material3.FilledTonalButton
 import androidx.wear.compose.material3.FilledTonalIconButton
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.IconButtonDefaults
-import androidx.wear.compose.material3.LocalContentColor
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
@@ -307,28 +303,23 @@ private const val DETENT = 48f
 private const val MAX = 1000.0
 
 /// Shorter, longer, or over: the three things the phone's countdown offers.
+/// Skip has a row of its own: three to a row leaves too little of a small round
+/// screen for "Пропустить" or "Passer" (#502).
 @Composable
 fun RestControls(workoutId: String, controls: PhoneState.Workout.Controls, send: (Command) -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        listOf(
-            controls.subtract to Command.AdjustRest(workoutId, -10),
-            controls.add to Command.AdjustRest(workoutId, 10),
-            controls.skip to Command.SkipRest(workoutId),
-        ).forEach { (label, command) ->
-            FilledTonalButton(
-                onClick = { send(command) },
-                contentPadding = PaddingValues(horizontal = 4.dp),
-                modifier = Modifier.weight(if (command is Command.SkipRest) 1.4f else 1f),
-            ) {
-                // a share of a small watch, and "Пропустить" to fit in it
-                BasicText(
-                    label,
-                    Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Center, color = LocalContentColor.current),
-                    maxLines = 1,
-                    autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MaterialTheme.typography.labelSmall.fontSize),
-                )
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf(
+                controls.subtract to Command.AdjustRest(workoutId, -10),
+                controls.add to Command.AdjustRest(workoutId, 10),
+            ).forEach { (label, command) ->
+                FilledTonalButton(onClick = { send(command) }, modifier = Modifier.weight(1f)) {
+                    Text(label, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                }
             }
+        }
+        FilledTonalButton(onClick = { send(Command.SkipRest(workoutId)) }, modifier = Modifier.fillMaxWidth()) {
+            Text(controls.skip, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, maxLines = 1)
         }
     }
 }

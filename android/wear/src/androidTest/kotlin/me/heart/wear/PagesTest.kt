@@ -58,6 +58,8 @@ class PagesTest {
     @Test
     fun theSetUpNextIsTickedWithTheValuesShown() {
         show(resting())
+        // the rest's controls lead, so the set sits below them
+        compose.onNode(page).performScrollToNode(hasText("Set 2 of 2"))
         compose.onNodeWithText("Bench Press (Barbell)").assertIsDisplayed()
         compose.onNodeWithText("Set 2 of 2").assertIsDisplayed()
         compose.onNode(page).performScrollToNode(hasText("Done"))
