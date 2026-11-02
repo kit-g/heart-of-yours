@@ -106,7 +106,9 @@ SELECT
                 'plan', json(_ex.plan),
                 -- sets this build could not read, put back by toWorkout (#277)
                 'unread', json(_ex.unread),
-                'sets', (
+                -- json(): a subquery's result may not stay marked as JSON, and json_object
+                -- would store it as a string; SQLite 3.54.1 does exactly that
+                'sets', json((
                     SELECT json_group_array(
                         json_object(
                             'id', _sets.id,
@@ -123,7 +125,7 @@ SELECT
                     )
                     FROM _sets
                     WHERE exercise_id = _ex.id
-                )
+                ))
             )
         )
         FROM _ex
@@ -195,7 +197,9 @@ SELECT
                 'plan', json(_ex.plan),
                 -- sets this build could not read, put back by toWorkout (#277)
                 'unread', json(_ex.unread),
-                'sets', (
+                -- json(): a subquery's result may not stay marked as JSON, and json_object
+                -- would store it as a string; SQLite 3.54.1 does exactly that
+                'sets', json((
                     SELECT json_group_array(
                         json_object(
                             'id', _sets.id,
@@ -212,7 +216,7 @@ SELECT
                     )
                     FROM _sets
                     WHERE exercise_id = _ex.id
-                )
+                ))
             )
         )
         FROM _ex
@@ -282,7 +286,9 @@ SELECT
                 'plan', json(_ex.plan),
                 -- sets this build could not read, put back by toWorkout (#277)
                 'unread', json(_ex.unread),
-                'sets', (
+                -- json(): a subquery's result may not stay marked as JSON, and json_object
+                -- would store it as a string; SQLite 3.54.1 does exactly that
+                'sets', json((
                     SELECT json_group_array(
                         json_object(
                             'id', _sets.id,
@@ -299,7 +305,7 @@ SELECT
                     )
                     FROM _sets
                     WHERE exercise_id = _ex.id
-                )
+                ))
             )
         )
         FROM _ex
