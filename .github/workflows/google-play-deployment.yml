@@ -201,6 +201,10 @@ jobs:
           # and capped at 500 characters each. A draft keeps them editable in the
           # Play Console; a completed release ships them as written.
           whatsNewDirectory: release_notes/whatsnew
+          # Play refuses to commit a prod edit it would have to send for review
+          # itself while the Console holds changes of its own (v1.17.0, twice).
+          # Prod uploads as an edit not yet sent: review starts from the Console.
+          changesNotSentForReview: ${{ inputs.flavor == 'prod' }}
 
       # the signed watch bundle, kept for a week: Play asks for some
       # declarations (a foreground service's purpose) only from a bundle
@@ -231,3 +235,4 @@ jobs:
           # goes to internal, and both are promoted to production together
           track: "wear:${{ inputs.track == 'alpha' && 'internal' || inputs.track }}"
           status: ${{ inputs.status }}
+          changesNotSentForReview: ${{ inputs.flavor == 'prod' }}
