@@ -110,7 +110,14 @@ enum Feature {
   /// discarded by the user. Asked once, the first time the server has one
   /// pending. Off, nothing is marked and a discarded entry counts again;
   /// the anomalies and the decisions stay stored and synced either way.
-  entryReview('entryReview');
+  entryReview('entryReview'),
+
+  /// Sets and sessions a week by movement pattern or muscle group, the
+  /// profile card (#341). Shipped as core and made opt-in after the first
+  /// feedback from experienced lifters (#526). Asked once, in the card's slot
+  /// on the profile, and never while the muscle map's offer is up. Reads only
+  /// what the workouts carry; goals on a pattern count the same sets either way.
+  weeklySets('weeklySets');
 
   final String value;
 
