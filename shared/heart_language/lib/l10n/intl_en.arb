@@ -5463,9 +5463,5 @@
   "anomalyMarkLabel": "{label}: decide what to do with this entry",
   "@anomalyMarkLabel": {"description": "Screen reader label of the mark beside a suspicious entry (#428); label is the mark's text, such as 'Unusual weight'", "type": "text", "placeholders": {"label": {}}},
   "weeklySetsSubtitle": "Sets and sessions each week, by movement or muscle group, on your profile",
-  "@weeklySetsSubtitle": {"description": "Settings › Features subtitle for Sets a week, the profile card counting each week's sets by movement pattern or muscle group (#526)", "type": "text", "placeholders": {}},
-  "weeklySetsOfferTitle": "How often do you press, pull and squat?",
-  "@weeklySetsOfferTitle": {"description": "Title of the one-time card on the profile offering to turn on Sets a week (#526): it counts sets by movement pattern", "type": "text", "placeholders": {}},
-  "weeklySetsOfferBody": "A card on your profile that counts each week's sets and sessions, by movement or by muscle group.",
-  "@weeklySetsOfferBody": {"description": "Body of the one-time card offering Sets a week on the profile (#526)", "type": "text", "placeholders": {}}
+  "@weeklySetsSubtitle": {"description": "Settings › Features subtitle for Sets a week, the profile card counting each week's sets by movement pattern or muscle group (#526)", "type": "text", "placeholders": {}}
 }
