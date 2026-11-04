@@ -302,4 +302,8 @@ abstract final class AppKeys {
   static Key newExercisePatternOption(String? pattern) => Key('NewExercise.pattern.${pattern ?? 'none'}');
   static const musclePickerRole = Key('MusclePicker.role');
   static const musclePickerFigures = Key('MusclePicker.figures');
+
+  /// The picker's offer to create an exercise named after a search that
+  /// found nothing (#529).
+  static const pickerCreateExercise = Key('ExercisePicker.createExercise');
 }

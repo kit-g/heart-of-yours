@@ -18,9 +18,12 @@ final _formatter = FilteringTextInputFormatter.deny(RegExp(r'\p{Cc}', unicode: t
 // a pattern's label runs to "Trunk Lateral Rotation"; 56pt steps (the popup's)
 const _patternMenuWidth = 280.0;
 
-Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
+/// Creates an exercise, or edits [editable], and answers with the one saved:
+/// null when the dialog was closed or the save failed. [name] fills in a new
+/// exercise's name, such as a search that found nothing (#529).
+Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editable, String? name}) {
   final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
-  final L(:createNewExercise, :save, :name, category: categoryCopy, target: targetCopy) = L.of(context);
+  final L(:createNewExercise, :save, name: nameCopy, category: categoryCopy, target: targetCopy) = L.of(context);
   final category = ValueNotifier<Category?>(editable?.category);
   final target = ValueNotifier<Target?>(editable?.target);
   // one of the library's patterns, or none: optional, and never asked twice
@@ -31,8 +34,8 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
   final initialRoles = rolesOf(editable?.muscles ?? MuscleTagging.empty());
   final roles = ValueNotifier(initialRoles);
   final loading = ValueNotifier(false);
-  final nameController = TextEditingController();
-  return showDialog(
+  final nameController = TextEditingController(text: name);
+  return showDialog<Exercise>(
     barrierDismissible: true,
     context: context,
     builder: (context) {
@@ -94,6 +97,7 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                                   if (c != null && t != null) {
                                     final messenger = ScaffoldMessenger.of(context);
                                     final root = Navigator.of(context, rootNavigator: true);
+                                    Exercise? saved;
                                     try {
                                       loading.value = true;
                                       if (editable == null) {
@@ -107,6 +111,7 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                                           tags: taggingOf(r),
                                         );
                                         await Exercises.of(context).makeExercise(exercise);
+                                        saved = exercise;
                                       } else {
                                         final edited = editable.copyWith(
                                           category: c,
@@ -115,6 +120,7 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                                           tags: retagged ? taggingOf(r) : null,
                                         );
                                         await Exercises.of(context).editExercise(edited);
+                                        saved = edited;
                                       }
                                       loading.value = false;
                                     } on ArgumentError catch (e) {
@@ -122,7 +128,7 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                                     } catch (e) {
                                       messenger.snack('$e');
                                     } finally {
-                                      root.pop();
+                                      root.pop(saved);
                                       loading.value = false;
                                     }
                                   }
@@ -143,7 +149,7 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            name,
+                            nameCopy,
                             style: textTheme.titleMedium,
                           ),
                           if (editable == null)

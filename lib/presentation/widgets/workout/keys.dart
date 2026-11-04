@@ -19,6 +19,7 @@ class WorkoutDetailKeys {
   static const programBaseSave = Key('WorkoutDetail.programBase.save');
   static Key programBaseEdit(String key) => Key('WorkoutDetail.programBase.edit.$key');
   static const addExercises = Key('WorkoutDetail.addExercises');
+  static const newExercise = Key('WorkoutDetail.newExercise');
   static const platesOffer = Key('WorkoutDetail.platesOffer');
   static const platesAccept = Key('WorkoutDetail.platesAccept');
   static const platesDecline = Key('WorkoutDetail.platesDecline');
