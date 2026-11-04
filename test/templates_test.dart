@@ -49,7 +49,6 @@ void main() {
   }
 
   setUp(() {
-    SharedPreferences.setMockInitialValues(pastOnboarding());
     db = MockLocalDatabase();
     api = MockApi();
     cdn = MockCdn();
@@ -217,6 +216,44 @@ void main() {
 
       expect(find.byIcon(Icons.folder_outlined), findsOneWidget);
       expect(Preferences.of(context).isFolderCollapsed('f1'), isTrue);
+    });
+  });
+
+  group('example templates are a switch, on by default (#528)', () {
+    Finder sample() => find.text('Sample Day', skipOffstage: false);
+    Finder header() => find.text('Example templates', skipOffstage: false);
+
+    void answered(String? answer) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-sampleTemplates': ?answer,
+      });
+      when(cdn.getSampleTemplates()).thenAnswer((_) async => [template(id: 's1', order: 0, name: 'Sample Day')]);
+    }
+
+    testWidgets('never answered, the grid is there', (tester) async {
+      answered(null);
+      await openWorkoutTab(tester);
+
+      expect(header(), findsOneWidget);
+      expect(sample(), findsOneWidget);
+    });
+
+    testWidgets('off, the tab has no grid, and the user\'s own stay', (tester) async {
+      answered('off');
+      when(db.getTemplates(userId)).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push Day')]);
+      await openWorkoutTab(tester);
+
+      expect(find.text('Push Day'), findsOneWidget);
+      expect(header(), findsNothing);
+      expect(sample(), findsNothing);
+      // kept, not dropped: the switch shows them again
+      final context = tester.element(find.byType(MaterialApp));
+      expect(Templates.of(context).samples.map((each) => each.id), ['s1']);
+
+      Preferences.of(context).setFeature(.sampleTemplates, on: true);
+      await tester.pumpTimes();
+      expect(sample(), findsOneWidget);
     });
   });
 

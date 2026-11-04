@@ -128,6 +128,11 @@ Sets a week (`Feature.weeklySets`, #526) is the second, and the first core
 feature made a choice after it shipped: the profile card was core under #341,
 and feedback from experienced lifters asked for a way to turn it off. Default
 on keeps it where everyone already had it, and the switch removes it.
+Example templates (`Feature.sampleTemplates`, #528) followed for the same
+reason. Off, the Workout tab ends with the user's own templates, and neither
+the assistant nor a pinned shortcut can name a sample. Off is the UI only: the
+samples are still fetched and kept, and a copy made from one is the user's own
+template either way.
 
 ## Answers follow the account
 

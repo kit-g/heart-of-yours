@@ -47,7 +47,6 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
       :yourWorkouts,
       templates: copy,
       :template,
-      :exampleTemplates,
       :newFolder,
       :noFolder,
       :noTemplatesYet,
@@ -175,17 +174,33 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           templates: unfiled,
           card: (template) => _userCard(context, template),
         ),
+        // opt-in (#528): off, this is an empty sliver and nothing else
+        _samples(context, templates, preferences),
+      ],
+    );
+  }
+
+  /// The example templates' slot (#528): the grid under its header while the
+  /// feature is on, which it is by default; off, nothing, and the tab ends
+  /// with the user's own, as if samples had never been built.
+  Widget _samples(BuildContext context, Templates templates, Preferences preferences) {
+    return switch (preferences.isOn(.sampleTemplates)) {
+      true => _sampleGrid(context, templates),
+      false => const SliverToBoxAdapter(),
+    };
+  }
+
+  /// The samples under their header, as they were before #528 made them a
+  /// choice.
+  Widget _sampleGrid(BuildContext context, Templates templates) {
+    return SliverMainAxisGroup(
+      slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: .spaceBetween,
-              children: [
-                Text(
-                  exampleTemplates,
-                  style: textTheme.headlineSmall,
-                ),
-              ],
+            padding: const .all(8),
+            child: Text(
+              L.of(context).exampleTemplates,
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
         ),
