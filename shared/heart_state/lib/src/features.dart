@@ -118,7 +118,15 @@ enum Feature {
   /// so it is never asked about and the Settings switch is the answer. Reads
   /// only what the workouts carry; goals on a pattern count the same sets
   /// either way.
-  weeklySets('weeklySets', defaultOn: true);
+  weeklySets('weeklySets', defaultOn: true),
+
+  /// The example templates under the user's own on the Workout tab, and in
+  /// the shortcuts that name templates. Shipped as core and made a choice
+  /// after the first feedback from experienced lifters (#528): on by default
+  /// ([defaultOn]), never asked about. Off is the UI only: the samples are
+  /// still fetched and kept, and a template copied from one is the user's own
+  /// either way.
+  sampleTemplates('sampleTemplates', defaultOn: true);
 
   final String value;
 

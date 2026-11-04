@@ -510,6 +510,7 @@ void main() {
         'liveRecords',
         'entryReview',
         'weeklySets',
+        'sampleTemplates',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });
