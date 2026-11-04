@@ -81,6 +81,9 @@ class _ExercisesPageState extends State<ExercisesPage> {
       backgroundColor: backgroundColor,
       onExerciseSelected: widget.onExercise,
       highlightedName: widget.selectedId,
+      // the search that found nothing is the name the new one most likely
+      // has; created, it is what that search finds (#529)
+      onCreateExercise: (name) => showNewExerciseDialog(context, name: name),
     );
 
     return Scaffold(

@@ -28,6 +28,10 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
   /// as ever.
   final List<Exercise> suggested;
 
+  /// Creates an exercise named after a search that found nothing (#529). Null
+  /// where a new exercise could not answer, and the offer is left out.
+  final void Function(String name)? onCreateExercise;
+
   final _categoryKey = GlobalKey();
   final _targetKey = GlobalKey();
 
@@ -43,6 +47,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     this.showsRecent = true,
     this.refuses,
     this.suggested = const [],
+    this.onCreateExercise,
   });
 
   @override
@@ -348,6 +353,10 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                   if (suggestions.isNotEmpty || recent.isNotEmpty)
                     SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerAllExercises)),
                   list(found),
+                  if (onCreateExercise case final create? when searching && found.isEmpty)
+                    SliverToBoxAdapter(
+                      child: _CreateExercise(name: value.text.trim(), onCreate: create),
+                    ),
                 ],
               );
             },
@@ -475,6 +484,34 @@ class _SectionHeader extends StatelessWidget {
           style: Theme.of(context).sectionHeader,
         ),
       ),
+    );
+  }
+}
+
+/// The way out of a search that found nothing: an exercise of the user's own
+/// by that name, through the new-exercise dialog with the name filled in
+/// (#529).
+class _CreateExercise extends StatelessWidget {
+  final String name;
+  final void Function(String name) onCreate;
+
+  const new({required this.name, required this.onCreate});
+
+  @override
+  Widget build(BuildContext context) {
+    final L(:pickerCreateExercise, :pickerCreateExerciseHint) = L.of(context);
+    final ThemeData(:colorScheme) = Theme.of(context);
+
+    return ListTile(
+      key: AppKeys.pickerCreateExercise,
+      leading: Icon(Icons.add_circle_outline_rounded, color: colorScheme.primary),
+      title: Text(
+        pickerCreateExercise(name),
+        maxLines: 2,
+        overflow: .ellipsis,
+      ),
+      subtitle: Text(pickerCreateExerciseHint),
+      onTap: () => onCreate(name),
     );
   }
 }

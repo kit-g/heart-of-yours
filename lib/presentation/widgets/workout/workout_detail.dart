@@ -31,6 +31,7 @@ import 'package:heart/presentation/widgets/entry_review.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/exercises/exercise_picker_dialog.dart' show showSingleExercisePicker;
 import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
+import 'package:heart/presentation/widgets/exercises/new_exercise_dialog.dart';
 import 'package:heart/presentation/widgets/formatters.dart';
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart' show PreviousSet;
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart';
@@ -485,13 +486,24 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
     ) = Theme.of(
       context,
     );
-    final L(:add, :close) = L.of(context);
+    final L(:add, :close, :newExercise) = L.of(context);
     // captured before the dialog: the cleanup below outlives this State's context
     final allExercises = Exercises.of(context);
     return showDialog(
       context: context,
       builder: (context) {
         final exercises = Exercises.watch(context);
+
+        // A new exercise is picked the way an existing one is: ticked, for
+        // Add to bring in with the rest. The search shows it, so the tick is
+        // in view (#529).
+        Future<void> create([String? name]) async {
+          if (await showNewExerciseDialog(context, name: name) case Exercise made) {
+            exercises.select(made);
+            _searchController.text = made.name;
+          }
+        }
+
         return Card(
           child: ExercisePicker(
             appBar: SliverPersistentHeader(
@@ -517,6 +529,13 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                           Text(
                             L.of(context).selected(selected),
                           ),
+                        IconButton(
+                          key: WorkoutDetailKeys.newExercise,
+                          tooltip: newExercise,
+                          visualDensity: const VisualDensity(horizontal: -4, vertical: -1),
+                          onPressed: create,
+                          icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+                        ),
                         PrimaryButton.shrunk(
                           key: WorkoutDetailKeys.addExerciseButton,
                           child: Center(
@@ -539,6 +558,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
             backgroundColor: color,
             searchController: _searchController,
             focusNode: _focusNode,
+            onCreateExercise: create,
             onExerciseSelected: (exercise, _) {
               if (exercises.hasSelected(exercise)) {
                 exercises.deselect(exercise);
