@@ -5491,5 +5491,7 @@
   "next": "Next",
   "@next": {"description": "Button that moves on to the next step, such as from picking a past workout's times to filling it in (#530)", "type": "text", "placeholders": {}},
   "endAfterStart": "The end has to come after the start.",
-  "@endAfterStart": {"description": "Validation shown when a workout being logged after the fact would end at or before its start (#530)", "type": "text", "placeholders": {}}
+  "@endAfterStart": {"description": "Validation shown when a workout being logged after the fact would end at or before its start (#530)", "type": "text", "placeholders": {}},
+  "exerciseAlreadyInLibrary": "Already in the library as {name}",
+  "@exerciseAlreadyInLibrary": {"description": "Under the name field of the new-exercise dialog, while the name typed matches a library exercise but for case or punctuation (#529). {name} is that exercise's name. Informs, does not refuse", "type": "text", "placeholders": {"name": {}}}
 }
