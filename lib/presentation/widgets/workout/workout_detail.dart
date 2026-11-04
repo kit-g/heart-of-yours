@@ -503,6 +503,9 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
               ..clearFilters()
               ..select(made);
             _searchController.text = made.name;
+            // the search was the way in, not something still being typed: its
+            // cursor and handle would otherwise stay behind under the field
+            _focusNode.unfocus();
           }
         }
 

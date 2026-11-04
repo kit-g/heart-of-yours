@@ -15,6 +15,10 @@ import 'package:material_ui/material_ui.dart';
 // as a pasted tab or line break, stay out (#527).
 final _formatter = FilteringTextInputFormatter.deny(RegExp(r'\p{Cc}', unicode: true));
 
+/// A name as a library search would hear it: letters and digits only, any
+/// case — "Farmer's walk" and "Farmer's Walk" are one name.
+String _nameKey(String name) => name.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '');
+
 // a pattern's label runs to "Trunk Lateral Rotation"; 56pt steps (the popup's)
 const _patternMenuWidth = 280.0;
 
@@ -157,6 +161,29 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                               controller: nameController,
                               inputFormatters: [_formatter],
                               selectionControls: context.platformSpecificSelectionControls(),
+                            ),
+                          // the same name in the library, told apart only by case
+                          // or punctuation: said, not refused, since a machine at
+                          // one gym can share a name with the library's (#529)
+                          if (editable == null)
+                            ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: nameController,
+                              builder: (context, value, _) {
+                                final key = _nameKey(value.text);
+                                final twin = switch (key.isEmpty) {
+                                  true => null,
+                                  false => Exercises.of(
+                                    context,
+                                  ).where((each) => _nameKey(each.name) == key).firstOrNull,
+                                };
+                                return switch (twin) {
+                                  Exercise twin => Text(
+                                    L.of(context).exerciseAlreadyInLibrary(twin.name),
+                                    style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                  ),
+                                  null => const SizedBox.shrink(),
+                                };
+                              },
                             )
                           else
                             Center(
