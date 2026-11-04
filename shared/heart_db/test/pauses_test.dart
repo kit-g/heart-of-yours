@@ -155,6 +155,21 @@ void main() {
       expect(await reopened.getPausedAt(workout.id), open);
     });
 
+    test('a moved start comes back after a cold start, with the pauses it cut (#530)', () async {
+      final start = DateTime.utc(2026, 10, 3, 18, 5);
+      final cut = WorkoutPause(start: start, end: DateTime.utc(2026, 10, 3, 18, 9, 40));
+      final open = DateTime.utc(2026, 10, 3, 18, 30);
+      await local.setWorkoutStart(workout.id, start, [cut], open);
+
+      final reopened = await LocalDatabase.init(other: db);
+      final active = (await reopened.getActiveWorkout(user))!;
+
+      expect(active.start, start);
+      expect(active.pauses.single.start, start);
+      expect(active.single.single.id, set.id, reason: 'the sets stay where they were');
+      expect(await reopened.getPausedAt(workout.id), open);
+    });
+
     test('resumed, it is open no longer', () async {
       await local.setWorkoutPauses(workout.id, const [], DateTime.utc(2026, 10, 3, 18, 30));
       await local.setWorkoutPauses(workout.id, [WorkoutPause.fromJson(pauses.first)], null);

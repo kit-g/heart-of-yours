@@ -289,6 +289,22 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     );
   }
 
+  /// The active workout's start, moved (#530), in one write with its pauses
+  /// as the move left them: a start moved past a pause cuts it, and a cold
+  /// start must not find the one without the other.
+  Future<void> setWorkoutStart(String workoutId, DateTime start, List<WorkoutPause> pauses, DateTime? pausedAt) async {
+    await _db.update(
+      _workouts,
+      {
+        'start': start.toIso8601String(),
+        'pauses': _encodePauses(pauses),
+        'paused_at': pausedAt?.toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [workoutId],
+    );
+  }
+
   /// When [workoutId] was paused, if it still is: what a cold start comes back
   /// to.
   Future<DateTime?> getPausedAt(String workoutId) async {
