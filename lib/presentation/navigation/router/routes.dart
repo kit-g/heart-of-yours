@@ -142,6 +142,7 @@ RouteBase _workoutRoute() {
         goToProgram: (program) => context.goToProgram(program.id!),
         goToNewProgram: (folder) => context.goToNewProgram(folder.id!),
         goToLibrary: context.goToProgramLibrary,
+        onLogPastWorkout: context.logPast,
       );
     },
     name: _workoutName,
@@ -324,6 +325,8 @@ RouteBase _historyRoute() {
       // entries (#428)
       final workoutId = state.pathParameters['workoutId'] ?? state.pathParameters['skipId'];
       final reviewing = state.topRoute?.name == _historyReviewName;
+      // a workout being logged after the fact (#530) has no id yet
+      final logging = state.topRoute?.name == _historyLogName;
 
       return switch (LayoutProvider.of(context)) {
         LayoutSize.compact => child,
@@ -347,11 +350,12 @@ RouteBase _historyRoute() {
             if (skip.id case final String id) context.goToSkip(id);
           },
           onEntryReview: context.goToEntryReview,
+          onLogPastWorkout: context.logPast,
           onOpenActiveWorkout: () {
             HapticFeedback.mediumImpact();
             context.goToActiveWorkout();
           },
-          detail: switch ((workoutId, reviewing)) {
+          detail: switch ((workoutId, reviewing || logging)) {
             (String(), _) || (_, true) => child, // workout selected, or the list
             (null, false) => null,
           },
@@ -380,6 +384,7 @@ RouteBase _historyRoute() {
                 if (skip.id case final String id) context.goToSkip(id);
               },
               onEntryReview: context.goToEntryReview,
+              onLogPastWorkout: context.logPast,
               onOpenActiveWorkout: () {
                 HapticFeedback.mediumImpact();
                 context.goToActiveWorkout();
@@ -403,6 +408,30 @@ RouteBase _historyRoute() {
               );
             },
             name: _historyReviewName,
+          ),
+          // before ':workoutId' too: a workout that already happened, being
+          // filled in (#530). It lives in what it was opened with, so a
+          // location without it (a restored or typed one) goes to the list
+          GoRoute(
+            path: 'log',
+            redirect: (_, state) {
+              return switch (state.extra) {
+                PastWorkout _ => null,
+                _ => _historyPath,
+              };
+            },
+            builder: (context, state) {
+              final past = state.extra as PastWorkout;
+              return WorkoutEditor(
+                copy: past.workout,
+                logTo: past.logTo,
+                onClose: switch (LayoutProvider.of(context)) {
+                  .compact => null,
+                  .wide => context.goToHistory,
+                },
+              );
+            },
+            name: _historyLogName,
           ),
           GoRoute(
             path: 'skips/:skipId',

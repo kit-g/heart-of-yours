@@ -8,6 +8,7 @@ class _TemplatesLayout extends StatefulWidget {
   final void Function(Program) goToProgram;
   final void Function(TemplateFolder) goToNewProgram;
   final VoidCallback goToLibrary;
+  final VoidCallback? onLogPastWorkout;
 
   const new({
     required this.goToTemplateEditor,
@@ -15,6 +16,7 @@ class _TemplatesLayout extends StatefulWidget {
     required this.goToProgram,
     required this.goToNewProgram,
     required this.goToLibrary,
+    this.onLogPastWorkout,
   });
 
   @override
@@ -70,7 +72,11 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
             title: Text(yourWorkouts),
           ),
         ),
-        NewWorkoutHeader(openWorkoutSheet: widget.onNewWorkout),
+        NewWorkoutHeader(
+          openWorkoutSheet: widget.onNewWorkout,
+          // a past workout (#530), beside the empty one, while it is on
+          onLogPastWorkout: preferences.isOn(.pastWorkouts) ? widget.onLogPastWorkout : null,
+        ),
         if (preferences.isOn(.notToday)) const _NotToday(),
         _ProgramsSection(
           onOpen: widget.goToProgram,

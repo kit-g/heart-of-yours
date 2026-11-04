@@ -18,17 +18,32 @@ enum _Unfolded { none, start, end }
 ///
 /// The duration it shows leaves out [pauses] (#134), cut to the times as
 /// edited, the way the server cuts them on save.
+///
+/// [title] and [action] stand in for "Adjust Start/End Time" and Save where
+/// the times are a step rather than an edit: a past workout's, picked before
+/// it is filled in (#530), which also has to last ([needsLength]).
 Future<void> showAdjustTimesDialog(
   BuildContext context, {
   required DateTime start,
   required DateTime? end,
   required Future<void> Function(DateTime start, DateTime? end) onSave,
   Iterable<WorkoutPause> pauses = const [],
+  String? title,
+  String? action,
+  bool needsLength = false,
 }) {
   return showAdaptiveDialog<void>(
     context: context,
     barrierDismissible: true,
-    builder: (_) => _AdjustTimesDialog(start: start, end: end, onSave: onSave, pauses: pauses),
+    builder: (_) => _AdjustTimesDialog(
+      start: start,
+      end: end,
+      onSave: onSave,
+      pauses: pauses,
+      title: title,
+      action: action,
+      needsLength: needsLength,
+    ),
   );
 }
 
@@ -37,8 +52,19 @@ class _AdjustTimesDialog extends StatefulWidget {
   final DateTime? end;
   final Future<void> Function(DateTime start, DateTime? end) onSave;
   final Iterable<WorkoutPause> pauses;
+  final String? title;
+  final String? action;
+  final bool needsLength;
 
-  const new({required this.start, required this.end, required this.onSave, required this.pauses});
+  const new({
+    required this.start,
+    required this.end,
+    required this.onSave,
+    required this.pauses,
+    this.title,
+    this.action,
+    required this.needsLength,
+  });
 
   @override
   State<_AdjustTimesDialog> createState() => _AdjustTimesDialogState();
@@ -89,10 +115,15 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
 
   Future<void> _save() async {
     final end = _end.value;
-    if (end != null && end.isBefore(_start.value)) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(L.of(context).endBeforeStart)),
-      );
+    final l = L.of(context);
+    final refusal = switch (end) {
+      DateTime end when end.isBefore(_start.value) => l.endBeforeStart,
+      // the wheels can meet: a workout of no time at all is no workout
+      DateTime end when widget.needsLength && !end.isAfter(_start.value) => l.endAfterStart,
+      _ => null,
+    };
+    if (refusal != null) {
+      ScaffoldMessenger.maybeOf(context)?.snack(refusal);
       return;
     }
     _saving.value = true;
@@ -156,7 +187,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                       onPressed: saving ? null : () => Navigator.of(context).pop(),
                     ),
                     Expanded(
-                      child: Text(adjustTimes, textAlign: .center, style: textTheme.titleMedium),
+                      child: Text(widget.title ?? adjustTimes, textAlign: .center, style: textTheme.titleMedium),
                     ),
                     switch (saving) {
                       true => const SizedBox(
@@ -171,7 +202,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                         child: PrimaryButton.shrunk(
                           backgroundColor: colorScheme.secondaryContainer,
                           onPressed: _save,
-                          child: Text(save),
+                          child: Text(widget.action ?? save),
                         ),
                       ),
                     },

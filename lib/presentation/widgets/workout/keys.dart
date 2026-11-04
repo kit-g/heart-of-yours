@@ -32,6 +32,9 @@ class WorkoutDetailKeys {
   static Key plateNearest(String total) => Key('WorkoutDetail.plateNearest.$total');
   static Key barOption(String bar) => Key('WorkoutDetail.barOption.$bar');
   static const startNewWorkout = Key('WorkoutDetail.startNewWorkout');
+
+  /// Past workouts (#530): the way in beside an empty workout.
+  static const logPastWorkout = Key('WorkoutDetail.logPastWorkout');
   static const finishWorkout = Key('WorkoutDetail.finishWorkout');
   static const timer = Key('WorkoutDetail.timer');
   static const resume = Key('WorkoutDetail.resume');

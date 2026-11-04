@@ -821,41 +821,68 @@ const _divider = Divider(
 class NewWorkoutHeader extends StatelessWidget {
   final VoidCallback openWorkoutSheet;
 
+  /// Logs a workout that already happened (#530), from a button beside the
+  /// empty one's. Without it the empty one has the row to itself.
+  final VoidCallback? onLogPastWorkout;
+
   const new({
     super.key,
     required this.openWorkoutSheet,
+    this.onLogPastWorkout,
   });
 
   @override
   Widget build(BuildContext context) {
+    final start = _start(context);
     return SliverPersistentHeader(
       pinned: true,
       delegate: FixedHeightHeaderDelegate(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        child: PrimaryButton.wide(
-          key: WorkoutDetailKeys.startNewWorkout,
-          onPressed: () => _startWorkout(context),
-          child: Center(
-            child: Selector<Workouts, bool>(
-              selector: (_, provider) => provider.hasActiveWorkout,
-              builder: (_, hasActiveWorkout, _) {
-                return switch (hasActiveWorkout) {
-                  true => Text(L.of(context).goToWorkout),
-                  // the label says "new", and the plus says it again without a
-                  // verb — the same pairing the template button next door uses
-                  false => Row(
-                    mainAxisSize: .min,
-                    children: [
-                      const Icon(Icons.add_rounded, size: 18),
-                      Text(L.of(context).startNewWorkout),
-                    ],
-                  ),
-                };
-              },
-            ),
+        child: switch (onLogPastWorkout) {
+          VoidCallback log => Row(
+            spacing: 8,
+            children: [
+              Expanded(child: start),
+              Tooltip(
+                message: L.of(context).logPastWorkout,
+                child: PrimaryButton.shrunk(
+                  key: WorkoutDetailKeys.logPastWorkout,
+                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                  onPressed: log,
+                  child: const Icon(Icons.edit_calendar_rounded, size: 18),
+                ),
+              ),
+            ],
           ),
-        ),
+          null => start,
+        },
         height: 40,
+      ),
+    );
+  }
+
+  Widget _start(BuildContext context) {
+    return PrimaryButton.wide(
+      key: WorkoutDetailKeys.startNewWorkout,
+      onPressed: () => _startWorkout(context),
+      child: Center(
+        child: Selector<Workouts, bool>(
+          selector: (_, provider) => provider.hasActiveWorkout,
+          builder: (_, hasActiveWorkout, _) {
+            return switch (hasActiveWorkout) {
+              true => Text(L.of(context).goToWorkout),
+              // the label says "new", and the plus says it again without a
+              // verb — the same pairing the template button next door uses
+              false => Row(
+                mainAxisSize: .min,
+                children: [
+                  const Icon(Icons.add_rounded, size: 18),
+                  Text(L.of(context).startNewWorkout),
+                ],
+              ),
+            };
+          },
+        ),
       ),
     );
   }

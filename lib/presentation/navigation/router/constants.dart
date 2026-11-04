@@ -23,6 +23,7 @@ const _historyPath = '/$_historyName'; // a callback in bottom navigation bar in
 const _historyEditName = 'edit';
 const _historySkipName = 'skip';
 const _historyReviewName = 'entryReview';
+const _historyLogName = 'logWorkout';
 const _exercisesName = 'exercises';
 const _exercisesPath = '/$_exercisesName';
 const _exerciseDetailName = 'exerciseDetail';
