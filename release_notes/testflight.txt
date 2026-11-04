@@ -1,35 +1,37 @@
-Plates, warm-ups and rest, worked out for you.
+Your month in numbers, your training for an AI, and records as they happen.
 
-- Plate calculator: while you type a barbell or machine weight, see
-  which plates go on each side. Set the bar for each exercise and untick
-  the plates your gym doesn't have.
-- Warm-up sets, worked out from your first working set and rounded to
-  what you can load. Change the ramp in Settings.
-- Default rest after every set: one length for compound lifts, one for
-  isolation, one for bodyweight and cardio. An exercise's own timer
-  still wins.
-- Add a session to a program you're already running, from its page or
-  from its folder. Your weeks and starting weights stay as they are.
-- A muscle map for your templates, as you plan them and before you start.
-- New charts: volume, working sets and average workout length by week or
-  month, and the days you trained a lift.
-- Apple Watch: a set fits on one screen, Done included, on every size.
-- Clearer Spanish, French and Russian.
+- Recaps: early each month, last month on your profile: workouts, time,
+  sets, volume, the muscles and patterns you trained, the records you set.
+- Copy for AI: a workout, a month or one exercise's history as text any
+  assistant reads well. Nothing from Apple Health goes with it.
+- Live records: a quiet note the moment a ticked set beats your best.
+- Second look: Heart points out entries that look like a slip, like a
+  workout left running for hours, and you keep each one or leave it out
+  of your records and charts.
+- Log a past workout: say when it was, then what you did, and it goes
+  straight to History.
+- Create an exercise from the picker while you build a template or a
+  workout, and tag the muscles it works on the body map.
+- Apple Watch: time a hold from the wrist.
+- Sets a week and the example templates now have switches in Settings.
+  Both stay on unless you turn them off.
 
 What to test
-- Plate calculator: the offer the first time you type a barbell weight,
-  a weight the plates can't make, changing the bar, unticking plates.
-- Warm-ups: the offer under a barbell exercise, then Add warm-up sets
-  from the exercise menu.
-- Default rest: the offer after a set with no timer, the countdown's
-  length, an exercise with its own timer.
-- Programs: add a session from the program page and from a template's
-  menu in its folder, then remove it and undo. Add one with no signal.
-- The exercise menu in a workout: every row, a long superset name, the
-  weight unit choice.
-- A bodyweight exercise done without added weight shows its reps as
-  Previous next time.
-- Apple Watch: tick sets without scrolling, edit weight and reps with the
-  crown, a template set starts at its target.
-- A program's page from the library, and back from After this.
-- Add each new chart to Profile and switch week and month.
+- Recaps: turn it on, check the profile card and the Recaps list, open
+  last month's report, share it. A month with no workouts.
+- Copy for AI: from a History workout's menu, then a month, then an
+  exercise's history. Copy, Share, switching tabs. Paste it somewhere.
+- Live records: the offer under the first set that would be a record,
+  then a record on a weight, on reps, on a warm-up (it should not count).
+- Second look (signed in): a workout left running, an odd weight. Keep
+  one, leave one out, and check the charts and records follow.
+- Past workouts: turn on in Settings > Features, log one from History,
+  move the start and watch the end follow, finish with an untouched set.
+- Create an exercise from the picker with a filter on, with a name
+  already in the library, in Cyrillic.
+- A template with only spaces as its name should not save.
+- Apple Watch: start a hold's stopwatch from the watch, stop it, see
+  the time on the phone. Rest screen: -10s, +10s and Skip on one row.
+- Finish a workout on iPad: the sheet holds still while the dialog is up.
+- Turn Sets a week and Example templates off and on: the profile and
+  Workout tab reflow, and Siri shortcuts follow.

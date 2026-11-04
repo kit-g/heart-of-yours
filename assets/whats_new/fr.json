@@ -1,5 +1,50 @@
 [
   {
+    "version": "1.17.0",
+    "items": [
+      {
+        "id": "recaps",
+        "title": "Bilans",
+        "body": "Au début de chaque mois, le mois dernier sur votre profil : séances, temps, séries, volume, les muscles et schémas travaillés et les records battus. Chaque mois reste dans une liste, et un bilan se partage en carte."
+      },
+      {
+        "id": "copy-for-ai",
+        "title": "Copier pour une IA",
+        "body": "Une séance, un mois ou l’historique d’un exercice en texte qu’un assistant IA lit bien. Rien sur votre santé n’y figure."
+      },
+      {
+        "id": "live-records",
+        "title": "Records en direct",
+        "body": "Une note discrète dès qu’une série cochée bat votre record."
+      },
+      {
+        "id": "second-look",
+        "title": "Relecture",
+        "body": "Heart signale les saisies qui ressemblent à une erreur, comme une séance restée ouverte des heures. **Gardez-la** ou **écartez-la** de vos records et graphiques. Nécessite un compte."
+      },
+      {
+        "id": "past-workouts",
+        "title": "Saisir une séance passée",
+        "body": "Pour une séance déjà faite : d’abord quand, puis ce que vous avez fait, et elle va directement dans l’Historique."
+      },
+      {
+        "id": "create-from-picker",
+        "title": "Créer un exercice depuis la liste",
+        "body": "Cherchez un exercice absent et créez-le sur-le-champ, en préparant un modèle ou pendant une séance. Vos propres exercices peuvent indiquer les muscles qu’ils travaillent."
+      },
+      {
+        "id": "watch-holds",
+        "title": "Chronométrer depuis la montre",
+        "body": "Avec le chronomètre de série activé, lancez et arrêtez une série chronométrée depuis votre Apple Watch ou votre montre Wear OS, et le temps arrive sur le téléphone."
+      },
+      {
+        "id": "switches",
+        "title": "Séries par semaine et exemples de modèles",
+        "body": "Les deux se désactivent désormais. Ils restent activés tant que vous ne les coupez pas."
+      }
+    ]
+  },
+  {
     "version": "1.16.0",
     "items": [
       {
