@@ -202,7 +202,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
               _RecapsSection(workouts: workouts, onRecaps: widget.onRecaps, onMonth: widget.onMonthlyReport),
               // opt-in (#136): off, this is an empty sliver and nothing else
               _MuscleMapSection(workouts: workouts),
-              // baseline (#341): sets and sessions a week by pattern or muscle
+              // opt-in (#526): sets and sessions a week by pattern or muscle (#341)
               _WeeklyLensSection(workouts: workouts),
               // With no workouts logged, the band above is two empty tiles and
               // the notice is the only other thing on the page; it lines up

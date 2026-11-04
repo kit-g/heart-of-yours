@@ -112,6 +112,12 @@ ticket doesn't say:
   offer (it stays for that session, then reads as no); tapping it opens the
   ask, and yes goes straight on to the copy. Nothing interrupts a user who
   never reaches for it.
+- Sets a week (`Feature.weeklySets`, #526) is the first core feature made
+  opt-in afterwards: the profile card shipped as core under #341, and
+  feedback from experienced lifters made it a choice. Anyone who had it is
+  asked like everyone else. It also sets the rule for the profile: **one
+  offer at a time**. While the muscle map's offer is up, this one waits for a
+  later session.
 
 ### Default on
 

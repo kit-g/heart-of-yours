@@ -29,6 +29,7 @@ extension FeatureCopy on Feature {
       .copyForAi => l.copyForAi,
       .liveRecords => l.liveRecords,
       .entryReview => l.entryReview,
+      .weeklySets => l.lensTitle,
     };
   }
 
@@ -56,6 +57,7 @@ extension FeatureCopy on Feature {
       .copyForAi => l.copyForAiSubtitle,
       .liveRecords => l.liveRecordsSubtitle,
       .entryReview => l.entryReviewSubtitle,
+      .weeklySets => l.weeklySetsSubtitle,
     };
   }
 
@@ -78,6 +80,7 @@ extension FeatureCopy on Feature {
       .copyForAi => Icons.auto_awesome_outlined,
       .liveRecords => Icons.emoji_events_rounded,
       .entryReview => Icons.flag_outlined,
+      .weeklySets => Icons.view_week_rounded,
     };
   }
 
@@ -96,7 +99,8 @@ extension FeatureCopy on Feature {
       .plateCalculator ||
       .defaultRest ||
       .recaps ||
-      .liveRecords => const [],
+      .liveRecords ||
+      .weeklySets => const [],
       // what syncs and what doesn't: the line health data never crosses
       .notToday => [l.notTodayNote],
       // the rounding, which no control says

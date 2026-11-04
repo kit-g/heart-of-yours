@@ -1123,6 +1123,9 @@ void main() {
     if (screen == _Screen.plateCalculator) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-plateCalculator': 'on'});
     }
+    if (screen == _Screen.weeklyLens || screen == _Screen.weeklyBalance) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-weeklySets': 'on'});
+    }
     if (screen == _Screen.templateMuscles) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
     }
