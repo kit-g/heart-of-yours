@@ -83,17 +83,23 @@ Future<void> _apply(
         String id => templates.lookup(id),
         null => null,
       };
+      // a sample with samples switched off (#528) reads as one this device
+      // does not have: off, the app has no samples to start
+      final usable = switch (template) {
+        Template template when templates.samples.contains(template) && !preferences.isOn(.sampleTemplates) => null,
+        _ => template,
+      };
       // a template this device does not have — deleted, say, under a shortcut
       // pinned to the home screen: the tab underneath lists the ones it does,
       // and a line says why that is what opened
-      if (templateId != null && template == null) {
+      if (templateId != null && usable == null) {
         ScaffoldMessenger.maybeOf(context)?.snack(L.of(context).shortcutTemplateGone);
         return;
       }
 
       await startWorkoutOverActive(
         context,
-        () => switch (template) {
+        () => switch (usable) {
           Template template => workouts.startWorkout(
             source: templates.samples.contains(template) ? .sample : .template,
             template: startingWorkout(context, template),

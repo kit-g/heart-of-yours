@@ -179,6 +179,34 @@ void main() {
     expect(Workouts.of(context).activeWorkout?.name, 'Legs');
   });
 
+  group('a link to a sample (#528)', () {
+    void withSample() {
+      when(cdn.getSampleTemplates()).thenAnswer((_) async => [template(id: 's1', name: 'Full Body')]);
+    }
+
+    testWidgets('starts it while samples are on, as they are by default', (tester) async {
+      SharedPreferences.setMockInitialValues(pastOnboarding());
+      withSample();
+      coldStartOn(tester, 'heart://app/start?template=s1');
+      final router = HeartRouter();
+      final context = await launch(tester, router);
+
+      expect(Workouts.of(context).activeWorkout?.name, 'Full Body');
+      expect(sheetOpen(router), isTrue);
+    });
+
+    testWidgets('off, is one the device does not have', (tester) async {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-sampleTemplates': 'off'});
+      withSample();
+      coldStartOn(tester, 'heart://app/start?template=s1');
+      final router = HeartRouter();
+      final context = await launch(tester, router);
+
+      expect(Workouts.of(context).hasActiveWorkout, isFalse);
+      expect(find.text(copy(tester).shortcutTemplateGone), findsOneWidget);
+    });
+  });
+
   testWidgets('finish with no workout running lands on the workouts tab', (tester) async {
     coldStartOn(tester, 'heart://app/finish');
     final router = HeartRouter();

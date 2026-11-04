@@ -5473,5 +5473,9 @@
   "anomalyKept": "Kept",
   "@anomalyKept": {"description": "Status of a suspicious entry the user kept (#428)", "type": "text", "placeholders": {}},
   "anomalyMarkLabel": "{label}: decide what to do with this entry",
-  "@anomalyMarkLabel": {"description": "Screen reader label of the mark beside a suspicious entry (#428); label is the mark's text, such as 'Unusual weight'", "type": "text", "placeholders": {"label": {}}}
+  "@anomalyMarkLabel": {"description": "Screen reader label of the mark beside a suspicious entry (#428); label is the mark's text, such as 'Unusual weight'", "type": "text", "placeholders": {"label": {}}},
+  "weeklySetsSubtitle": "Sets and sessions each week, by movement or muscle group, on your profile",
+  "@weeklySetsSubtitle": {"description": "Settings › Features subtitle for Sets a week, the profile card counting each week's sets by movement pattern or muscle group (#526)", "type": "text", "placeholders": {}},
+  "sampleTemplatesSubtitle": "A few ready-made templates below your own, to train with as they are or to copy",
+  "@sampleTemplatesSubtitle": {"description": "Settings › Features subtitle for Example templates, the ready-made templates listed under the user's own on the Workout tab (#528)", "type": "text", "placeholders": {}}
 }

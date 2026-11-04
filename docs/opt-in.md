@@ -115,7 +115,7 @@ ticket doesn't say:
 
 ### Default on
 
-Programs (`Feature.programs`, #340) is the one feature that is **on until the
+Programs (`Feature.programs`, #340) was the first feature **on until the
 user turns it off**, rather than off until they say yes: it is too large a part
 of the app to hide behind an ask. `Feature.defaultOn` marks it. Never answered,
 it reads as on, so its in-context offer (#345) was retired and nothing ever
@@ -123,6 +123,16 @@ asks. Everything else in the contract holds: the switch in Settings › Features
 is live both ways, an explicit off stays off and the app looks as if Programs
 had never been built, and the data stays whole either way. The default is not
 an answer: only a switch the user actually flipped syncs to the account.
+
+Sets a week (`Feature.weeklySets`, #526) is the second, and the first core
+feature made a choice after it shipped: the profile card was core under #341,
+and feedback from experienced lifters asked for a way to turn it off. Default
+on keeps it where everyone already had it, and the switch removes it.
+Example templates (`Feature.sampleTemplates`, #528) followed for the same
+reason. Off, the Workout tab ends with the user's own templates, and neither
+the assistant nor a pinned shortcut can name a sample. Off is the UI only: the
+samples are still fetched and kept, and a copy made from one is the user's own
+template either way.
 
 ## Answers follow the account
 
