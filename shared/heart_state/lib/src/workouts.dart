@@ -603,6 +603,28 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  /// Puts [workout], one that already happened, into this user's history: a
+  /// workout logged after the fact (#530) rather than lived through. It was
+  /// never the active workout, so the one in progress, if any, is left exactly
+  /// as it was, and nothing a live session runs (the clock, rest, the lock
+  /// screen, the watch) hears of it.
+  ///
+  /// It lands as a finish does, through [saveWorkout]: the mirror, the server
+  /// for an account (an anonymous session keeps it for [syncPendingWorkouts]),
+  /// and every reader of [historyRevision]. Returns it as it ended up.
+  ///
+  /// A set ticked with nothing in it is no set: it goes with the unticked ones
+  /// [Workout.removeEmptySets] drops, so the history holds what was done.
+  Future<Workout> logWorkout(Workout workout) {
+    assert(workout.end != null, 'A workout logged after the fact has ended');
+    assert(workout.id != _activeWorkoutId, 'The active workout finishes, it is not logged');
+    workout
+        .expand((exercise) => exercise)
+        .where((set) => !set.canBeCompleted)
+        .forEach((set) => set.isCompleted = false);
+    return saveWorkout(workout);
+  }
+
   /// Re-attempts the server save for any finished workout persisted locally but
   /// never confirmed on the server — e.g. a save that failed on a flaky network.
   /// Successful saves flip to synced via [storeWorkoutHistory]; failures are left
