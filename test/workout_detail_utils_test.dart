@@ -265,13 +265,19 @@ void main() {
     testWidgets('typed but unticked set: discarding drops it and finishes anyway', (tester) async {
       final exercise = Exercise(name: 'Pull Up', category: Category.repsOnly, target: Target.back);
       final workout = Workout(name: 'W')..add(exercise);
-      final set = workout.first.first;
+      final done = workout.first.first;
 
       final context = await startWorkoutOn(tester, workout);
       final l = L.of(tester.element(find.byKey(WorkoutDetailKeys.finishWorkout)));
 
-      // typed, never ticked
-      await tester.enterTextAndWait(fieldsIn(set).first, '12');
+      // one set done, a second typed and never ticked
+      await tester.enterTextAndWait(fieldsIn(done).first, '10');
+      await tester.tapByKey(WorkoutDetailKeys.doneFor(exercise.id, 1));
+      await tester.pumpTimes();
+      Workouts.of(context).addSet(workout.first);
+      await tester.pumpTimes();
+      final typed = workout.first.last;
+      await tester.enterTextAndWait(fieldsIn(typed).first, '12');
       await tester.pumpTimes();
 
       await tester.tapByKey(WorkoutDetailKeys.finishWorkout);
@@ -282,7 +288,29 @@ void main() {
       await tester.pumpTimes();
 
       expect(Workouts.of(context).hasActiveWorkout, isFalse);
-      expect(set.isCompleted, isFalse);
+      expect(typed.isCompleted, isFalse);
+    });
+
+    testWidgets('typed but unticked, nothing ticked: no finishing without them, which would save an empty workout', (
+      tester,
+    ) async {
+      final exercise = Exercise(name: 'Pull Up', category: Category.repsOnly, target: Target.back);
+      final workout = Workout(name: 'W')..add(exercise);
+      final set = workout.first.first;
+
+      final context = await startWorkoutOn(tester, workout);
+      final l = L.of(tester.element(find.byKey(WorkoutDetailKeys.finishWorkout)));
+
+      await tester.enterTextAndWait(fieldsIn(set).first, '12');
+      await tester.pumpTimes();
+
+      await tester.tapByKey(WorkoutDetailKeys.finishWorkout);
+      await tester.pumpTimes();
+
+      expect(find.text(l.untickedSetsTitle), findsOneWidget);
+      expect(find.text(l.discardUntickedSets), findsNothing);
+      expect(find.text(l.saveUntickedSets), findsOneWidget);
+      expect(Workouts.of(context).hasActiveWorkout, isTrue);
     });
 
     testWidgets('typed but unticked set: saving ticks it before finishing', (tester) async {

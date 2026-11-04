@@ -86,7 +86,7 @@ extension FeatureCopy on Feature {
       .entryReview => Icons.flag_outlined,
       .weeklySets => Icons.view_week_rounded,
       .sampleTemplates => Icons.grid_view_rounded,
-      .pastWorkouts => Icons.edit_calendar_rounded,
+      .pastWorkouts => Icons.more_time_rounded,
     };
   }
 

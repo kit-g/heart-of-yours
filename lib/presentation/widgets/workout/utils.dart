@@ -260,14 +260,16 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
                   onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
                   child: Center(child: Text(notReadyToFinish)),
                 ),
-                PrimaryButton.wide(
-                  backgroundColor: switch (typed) {
-                    true => colorScheme.surfaceContainerHighest,
-                    false => null,
-                  },
-                  onPressed: finishNow,
-                  child: Center(child: Text(discardUntickedSets)),
-                ),
+                // as below: nothing ticked, nothing to finish without them
+                if (isStarted)
+                  PrimaryButton.wide(
+                    backgroundColor: switch (typed) {
+                      true => colorScheme.surfaceContainerHighest,
+                      false => null,
+                    },
+                    onPressed: finishNow,
+                    child: Center(child: Text(discardUntickedSets)),
+                  ),
                 if (typed)
                   PrimaryButton.wide(
                     child: Center(child: Text(saveUntickedSets)),
@@ -316,11 +318,14 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
                   },
                   child: Center(child: Text(notReadyToFinish)),
                 ),
-                PrimaryButton.wide(
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  onPressed: finishNow,
-                  child: Center(child: Text(discardUntickedSets)),
-                ),
+                // with nothing ticked, finishing without them would save an
+                // empty workout: the answer is absent, not a trap
+                if (isStarted)
+                  PrimaryButton.wide(
+                    backgroundColor: colorScheme.surfaceContainerHighest,
+                    onPressed: finishNow,
+                    child: Center(child: Text(discardUntickedSets)),
+                  ),
                 PrimaryButton.wide(
                   child: Center(child: Text(saveUntickedSets)),
                   onPressed: () {
