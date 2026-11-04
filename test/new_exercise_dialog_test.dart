@@ -109,4 +109,20 @@ void main() {
     final context = tester.element(find.byType(MaterialApp));
     expect(Exercises.of(context).any((e) => e.name == 'Abandoned Exercise'), isFalse);
   });
+
+  testWidgets('a name keeps any script and its punctuation (#527)', (tester) async {
+    await pumpToNewExerciseDialog(tester);
+
+    for (final name in ['Жим лёжа', 'Press francés', "Farmer's walk", 'T-bar row (pause)']) {
+      await tester.enterTextAndWait(nameField(), name);
+      expect(tester.widget<TextField>(nameField()).controller?.text, name);
+    }
+
+    await tester.enterTextAndWait(nameField(), 'Тяга\tблока');
+    expect(
+      tester.widget<TextField>(nameField()).controller?.text,
+      'Тягаблока',
+      reason: 'a control character stays out',
+    );
+  });
 }

@@ -10,8 +10,10 @@ import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
-// letters, digits and whitespace
-final _formatter = FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9 ]'));
+// A name is display copy in any script, with the punctuation real names carry
+// ("T-bar row", "Farmer's walk", "Жим лёжа"): only control characters, such
+// as a pasted tab or line break, stay out (#527).
+final _formatter = FilteringTextInputFormatter.deny(RegExp(r'\p{Cc}', unicode: true));
 
 // a pattern's label runs to "Trunk Lateral Rotation"; 56pt steps (the popup's)
 const _patternMenuWidth = 280.0;
