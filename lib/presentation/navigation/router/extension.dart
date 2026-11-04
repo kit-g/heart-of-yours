@@ -169,6 +169,15 @@ extension on BuildContext {
     return goNamed(_historyReviewName);
   }
 
+  /// A workout that already happened, being filled in (#530), in History:
+  /// pushed over the list, or in its detail pane.
+  void goToLogWorkout(PastWorkout past) {
+    return goNamed(_historyLogName, extra: past);
+  }
+
+  /// Asks when a past workout was, then opens it to fill in (#530).
+  void logPast() => logPastWorkout(this, open: goToLogWorkout);
+
   /// A workout from the suspicious entries' list (#428), within History:
   /// pushed on a phone, so Back returns to the list; in the pane on a tablet,
   /// where the History button returns to it.

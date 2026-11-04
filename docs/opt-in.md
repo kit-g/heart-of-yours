@@ -112,6 +112,12 @@ ticket doesn't say:
   offer (it stays for that session, then reads as no); tapping it opens the
   ask, and yes goes straight on to the copy. Nothing interrupts a user who
   never reaches for it.
+- Past workouts (`Feature.pastWorkouts`, #530) are the first feature with
+  **no ask at all**: its switch in Settings › Features is the only way on.
+  An offer has to come at the moment the feature would help, and nothing in
+  ordinary use marks a lifter who logs after the fact, so any moment chosen
+  would be a guess and the offer a nag. Off, the Workout tab and History have
+  no way in; a workout already logged this way is an ordinary workout.
 
 ### Default on
 

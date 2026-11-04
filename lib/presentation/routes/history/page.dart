@@ -13,6 +13,10 @@ class HistoryPage extends StatefulWidget {
   /// Opens the list of suspicious entries (#428). Without it, or with the
   /// feature off, History has no way there.
   final VoidCallback? onEntryReview;
+
+  /// Logs a workout that already happened (#530). Without it, or with the
+  /// feature off, History has no way in.
+  final VoidCallback? onLogPastWorkout;
   final VoidCallback onOpenActiveWorkout;
   final Widget? detail;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
@@ -30,6 +34,7 @@ class HistoryPage extends StatefulWidget {
     this.onDeleteWorkout,
     this.onTapSkip,
     this.onEntryReview,
+    this.onLogPastWorkout,
     required this.onOpenActiveWorkout,
     this.detail,
     this.onTapImage,
@@ -79,6 +84,14 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                 onPressed: () => copyPeriodForAi(context),
               ),
             if (widget.onEntryReview case final VoidCallback open) _EntryReviewButton(onPressed: open),
+            // a workout that already happened (#530), while it is on
+            if ((widget.onLogPastWorkout, preferences.isOn(.pastWorkouts)) case (final VoidCallback log, true))
+              IconButton(
+                key: AppKeys.logPastWorkout,
+                tooltip: L.of(context).logPastWorkout,
+                icon: const Icon(Icons.edit_calendar_rounded),
+                onPressed: log,
+              ),
             IconButton(
               tooltip: L.of(context).calendar,
               icon: const Icon(Icons.calendar_month_rounded),

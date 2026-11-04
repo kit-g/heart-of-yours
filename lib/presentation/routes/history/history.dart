@@ -1,5 +1,6 @@
 library;
 
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:heart/core/utils/image_picker.dart';
@@ -28,6 +29,7 @@ import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/skip_sheet.dart' show SkipReasonCopy;
 import 'package:heart/presentation/widgets/workout/adjust_times_dialog.dart';
+import 'package:heart/presentation/widgets/workout/past_workout.dart';
 import 'package:heart/presentation/widgets/workout/previous_scope.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';

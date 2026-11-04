@@ -98,6 +98,9 @@ abstract final class AppKeys {
   static const entryReviewButton = Key('EntryReview.button');
   static const entryReviewPage = Key('EntryReview.page');
   static Key anomalyMark(String id) => Key('EntryReview.mark.$id');
+
+  /// Past workouts (#530): the way in from History's app bar.
+  static const logPastWorkout = Key('History.logPastWorkout');
   static Key anomalyRow(String id) => Key('EntryReview.row.$id');
   static Key anomalyDecision(String decision) => Key('EntryReview.decision.$decision');
   static const muscleMapHeatmap = ValueKey('muscleMapHeatmap');

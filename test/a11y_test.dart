@@ -80,6 +80,8 @@ enum _Screen {
   plateCalculator,
   history,
   historyNotToday,
+  pastWorkoutTimes,
+  pastWorkoutEditor,
   entryReviewOffer,
   entryReview,
   skipPage,
@@ -651,6 +653,37 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
 
+  // A workout logged after the fact (#530): History with its way in, the
+  // times asked first (lib/presentation/widgets/workout/adjust_times_dialog.dart),
+  // then History's editor on the new workout with a set filled in
+  // (lib/presentation/routes/history/workout_editor.dart).
+  (_Screen.pastWorkoutTimes, _Guideline.labeledTapTarget, null),
+  (_Screen.pastWorkoutTimes, _Guideline.textContrastLight, null),
+  (_Screen.pastWorkoutTimes, _Guideline.textContrastDark, null),
+  (
+    _Screen.pastWorkoutTimes,
+    _Guideline.androidTapTarget,
+    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:202; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
+  ),
+  (
+    _Screen.pastWorkoutTimes,
+    _Guideline.iosTapTarget,
+    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:202; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
+  ),
+  (_Screen.pastWorkoutEditor, _Guideline.labeledTapTarget, null),
+  (_Screen.pastWorkoutEditor, _Guideline.textContrastLight, null),
+  (_Screen.pastWorkoutEditor, _Guideline.textContrastDark, null),
+  (
+    _Screen.pastWorkoutEditor,
+    _Guideline.androidTapTarget,
+    'the editor\'s own density: Save and the options button at the house 32pt (lib/presentation/routes/history/workout_editor.dart; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), Add exercises at 32pt, the column headers and the set rows at 24pt (lib/presentation/widgets/workout/workout_detail.dart, set_item.dart) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.pastWorkoutEditor,
+    _Guideline.iosTapTarget,
+    'the editor\'s own density: Save and the options button at the house 32pt (lib/presentation/routes/history/workout_editor.dart; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), Add exercises at 32pt, the column headers and the set rows at 24pt (lib/presentation/widgets/workout/workout_detail.dart, set_item.dart) — visual-density change, out of scope',
+  ),
+
   // A day set aside with "Not today" among the workouts (#312,
   // lib/presentation/routes/history/skip_item.dart).
   (_Screen.historyNotToday, _Guideline.labeledTapTarget, null),
@@ -1164,6 +1197,9 @@ void main() {
     if (screen == _Screen.restTimers) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-defaultRest': 'on'});
     }
+    if (screen == _Screen.pastWorkoutTimes || screen == _Screen.pastWorkoutEditor) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-pastWorkouts': 'on'});
+    }
     if (screen == _Screen.pausedWorkout || screen == _Screen.finishAtLastSet) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-pauseWorkout': 'on'});
     }
@@ -1375,6 +1411,9 @@ void main() {
             sourceDeleted: false,
           ),
         );
+      case _Screen.pastWorkoutEditor:
+        when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench]));
+        when(db.storeMeasurements(any)).thenAnswer((_) async {});
       case _Screen.restTimers:
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench]));
         when(api.getExercises()).thenAnswer((_) async => [_bench]);
@@ -1887,6 +1926,29 @@ void main() {
         await tester.tap(find.tooltip('Calendar'));
       case _Screen.history:
         await tester.tapByKey(AppKeys.historyStack);
+      case _Screen.pastWorkoutTimes || _Screen.pastWorkoutEditor:
+        final context = tester.element(find.byType(MaterialApp));
+        await Exercises.of(context).init();
+        await tester.tapByKey(AppKeys.historyStack);
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.logPastWorkout);
+        await tester.pumpTimes();
+        expect(find.text('When was it?'), findsOneWidget);
+        if (screen == _Screen.pastWorkoutEditor) {
+          await tester.tap(find.text('Next'));
+          await tester.pumpTimes();
+          await tester.tapByKey(WorkoutDetailKeys.addExercises);
+          await tester.pumpTimes();
+          await tester.tap(find.text('Bench Press').last);
+          await tester.pumpTimes();
+          await tester.tapByKey(WorkoutDetailKeys.addExerciseButton);
+          await tester.pumpTimes();
+          await tester.enterText(find.byKey(WorkoutDetailKeys.weightFor(_bench.id, 1)), '100');
+          await tester.enterText(find.byKey(WorkoutDetailKeys.repsFor(_bench.id, 1)), '5');
+          FocusManager.instance.primaryFocus?.unfocus();
+          await tester.pumpTimes();
+          expect(find.text('Log Workout'), findsOneWidget);
+        }
       case _Screen.entryReviewOffer || _Screen.entryReview:
         // read here for the reason the upsync run is started here: `_initApp`
         // never gets this far in a widget test
