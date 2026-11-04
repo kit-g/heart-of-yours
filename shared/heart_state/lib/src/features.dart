@@ -126,7 +126,16 @@ enum Feature {
   /// ([defaultOn]), never asked about. Off is the UI only: the samples are
   /// still fetched and kept, and a template copied from one is the user's own
   /// either way.
-  sampleTemplates('sampleTemplates', defaultOn: true);
+  sampleTemplates('sampleTemplates', defaultOn: true),
+
+  /// The active workout's start, set by hand, and its end when it finishes
+  /// (#530): for a workout logged after the fact, whose clock would otherwise
+  /// count from the tap on Start and end at the tap on Finish. Settings-only,
+  /// like keep-awake: nothing on the way tells a workout logged late from one
+  /// logged live, and a guess would ask the wrong people. Off, the clock is
+  /// not a control; a finished workout's times stay editable in History
+  /// either way, which is core.
+  workoutTimes('workoutTimes');
 
   final String value;
 

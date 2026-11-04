@@ -511,6 +511,7 @@ void main() {
         'entryReview',
         'weeklySets',
         'sampleTemplates',
+        'workoutTimes',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });

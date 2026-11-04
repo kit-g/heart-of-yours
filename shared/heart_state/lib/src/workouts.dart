@@ -34,6 +34,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// that has not ended.
   final Future<void> Function(String workoutId, List<WorkoutPause> pauses, DateTime? pausedAt)? _persistPauses;
   final Future<DateTime?> Function(String workoutId)? _pausedAtOf;
+
+  /// Stores the active workout's start once it is moved (#530), with its
+  /// pauses as the move left them, and the open one.
+  final Future<void> Function(String workoutId, DateTime start, List<WorkoutPause> pauses, DateTime? pausedAt)?
+  _persistStart;
   final String? Function(String exerciseId)? _noteFor;
   final _progress = SplayTreeSet<WorkoutImage>(_compareImages);
 
@@ -58,6 +63,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     this._persistPlan,
     this._persistPauses,
     this._pausedAtOf,
+    this._persistStart,
     this._noteFor,
     this.analytics,
     RemoteAccess? remote,
@@ -85,6 +91,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _edited.clear();
     _activeWorkoutId = null;
     _pausedAt = null;
+    _startMoved = false;
     userId = null;
     historyInitialized = false;
     _historyCursor = null;
@@ -444,6 +451,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     workout.end = null;
     _edited.clear();
     _pausedAt = null;
+    _startMoved = false;
     _workouts[workout.id] = workout;
     _activeWorkoutId = workout.id;
 
@@ -535,6 +543,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     // a finish placed back in time, was never part of it
     _closePause(active, end);
     _pausedAt = null;
+    _startMoved = false;
     active
       ..finish(end)
       // a finish placed back in time — the idle offer's, a late watch's — ends
@@ -722,6 +731,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     );
     _edited.clear();
     _pausedAt = null;
+    _startMoved = false;
     if (_activeWorkoutId case String id) {
       _workouts.remove(id);
       try {
@@ -985,6 +995,38 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (!_closePause(workout, at?.toUtc() ?? DateTime.timestamp())) _pausedAt = null;
     notifyListeners();
     await _storePauses();
+  }
+
+  /// Whether the active workout's start was moved this session ([moveStart]):
+  /// a workout logged after the fact, whose finish is offered an end other
+  /// than now. Kept in memory only — after a cold start the finish ends now,
+  /// and History's editor can still move it.
+  bool get startMoved => _startMoved;
+  bool _startMoved = false;
+
+  /// Moves the active workout's start to [start] (#530): a workout logged
+  /// after the fact began before Start was tapped. Refused in the future,
+  /// where nothing has begun yet. A pause the new start passes is cut to it,
+  /// as the server cuts one outside the workout, and an open one begun
+  /// before it is taken to begin there. The clocks — the sheet's, the lock
+  /// screen's, the watch's — read [clockStart] and follow.
+  Future<void> moveStart(DateTime start) async {
+    final workout = activeWorkout;
+    final now = DateTime.timestamp();
+    final at = start.toUtc();
+    if (workout == null || at.isAfter(now) || at.isAtSameMomentAs(workout.start)) return;
+
+    workout
+      ..start = at
+      ..pauses = _clipPauses(workout.pauses, at, now);
+    if (_pausedAt case DateTime from when from.isBefore(at)) _pausedAt = at;
+    _startMoved = true;
+    notifyListeners();
+    try {
+      await _persistStart?.call(workout.id, at, workout.pauses, _pausedAt);
+    } catch (error, s) {
+      onError?.call(error, stacktrace: s);
+    }
   }
 
   /// Ends the open pause at [at], if there is one and [at] comes after it, and
