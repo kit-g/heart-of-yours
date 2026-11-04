@@ -214,6 +214,21 @@ void main() {
       expectInWorkout(tester);
     });
 
+    testWidgets('a filter the new one fails is lifted, so it shows ticked', (tester) async {
+      await openWorkoutPicker(tester);
+      final exercises = Exercises.of(tester.element(find.byType(MaterialApp)));
+      // Chest, while the new one is a legs exercise (finishDialog)
+      exercises.addFilter(Target.chest);
+      await tester.pumpTimes();
+
+      await createFromButton(tester);
+
+      expect(exercises.filters, isEmpty);
+      expect(find.text(name), findsWidgets, reason: 'in the list, not only selected');
+      await addPicked(tester);
+      expectInWorkout(tester);
+    });
+
     testWidgets('closing the dialog leaves nothing made and nothing ticked', (tester) async {
       await openWorkoutPicker(tester);
       await tester.tap(find.byTooltip('New exercise'));

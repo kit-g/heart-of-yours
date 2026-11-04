@@ -496,76 +496,84 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
 
         // A new exercise is picked the way an existing one is: ticked, for
         // Add to bring in with the rest. The search shows it, so the tick is
-        // in view (#529).
+        // in view (#529), and no filter the new one fails stands in the way.
         Future<void> create([String? name]) async {
           if (await showNewExerciseDialog(context, name: name) case Exercise made) {
-            exercises.select(made);
+            exercises
+              ..clearFilters()
+              ..select(made);
             _searchController.text = made.name;
           }
         }
 
-        return Card(
-          child: ExercisePicker(
-            appBar: SliverPersistentHeader(
-              pinned: true,
-              delegate: FixedHeightHeaderDelegate(
-                backgroundColor: color,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      tooltip: close,
-                      visualDensity: const VisualDensity(horizontal: -4, vertical: -1),
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        size: 18,
-                      ),
-                    ),
-                    Row(
-                      spacing: 16,
+        // a list of names, at a dialog's width: the whole of a tablet window
+        // is a long way for the eye to travel from a name to its tick
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: dialogWidth),
+            child: Card(
+              child: ExercisePicker(
+                appBar: SliverPersistentHeader(
+                  pinned: true,
+                  delegate: FixedHeightHeaderDelegate(
+                    backgroundColor: color,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        if (exercises.selected.length case int selected when selected > 1)
-                          Text(
-                            L.of(context).selected(selected),
-                          ),
                         IconButton(
-                          key: WorkoutDetailKeys.newExercise,
-                          tooltip: newExercise,
-                          visualDensity: const VisualDensity(horizontal: -4, vertical: -1),
-                          onPressed: create,
-                          icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
-                        ),
-                        PrimaryButton.shrunk(
-                          key: WorkoutDetailKeys.addExerciseButton,
-                          child: Center(
-                            child: Text(add),
+                          tooltip: close,
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            size: 18,
                           ),
-                          onPressed: () async {
-                            widget.onAddExercises(exercises.selected);
-                            Navigator.pop(context);
-                          },
+                        ),
+                        Row(
+                          spacing: 16,
+                          children: [
+                            if (exercises.selected.length case int selected when selected > 1)
+                              Text(
+                                L.of(context).selected(selected),
+                              ),
+                            IconButton(
+                              key: WorkoutDetailKeys.newExercise,
+                              tooltip: newExercise,
+                              onPressed: create,
+                              icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+                            ),
+                            PrimaryButton.shrunk(
+                              key: WorkoutDetailKeys.addExerciseButton,
+                              child: Center(
+                                child: Text(add),
+                              ),
+                              onPressed: () async {
+                                widget.onAddExercises(exercises.selected);
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                    // the house minimum tap target, for the two icon buttons
+                    height: 48,
+                    borderRadius: const .all(.circular(12)),
+                  ),
                 ),
-                height: 40,
-                borderRadius: const .all(.circular(12)),
+                exercises: exercises,
+                backgroundColor: color,
+                searchController: _searchController,
+                focusNode: _focusNode,
+                onCreateExercise: create,
+                onExerciseSelected: (exercise, _) {
+                  if (exercises.hasSelected(exercise)) {
+                    exercises.deselect(exercise);
+                  } else {
+                    exercises.select(exercise);
+                  }
+                },
               ),
             ),
-            exercises: exercises,
-            backgroundColor: color,
-            searchController: _searchController,
-            focusNode: _focusNode,
-            onCreateExercise: create,
-            onExerciseSelected: (exercise, _) {
-              if (exercises.hasSelected(exercise)) {
-                exercises.deselect(exercise);
-              } else {
-                exercises.select(exercise);
-              }
-            },
           ),
         );
       },
