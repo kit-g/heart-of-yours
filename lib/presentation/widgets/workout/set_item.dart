@@ -922,25 +922,32 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
 
   Future<void> _scheduleNotification(DateTime when) => scheduleRestNotification(context, exercise, when);
 
+  /// Reads the set into its fields, silently, as [_syncFromSet] does: what a
+  /// template prescribed is not the user's typing. Through the listeners it
+  /// counted as typed ([Workouts.markEdited]), so finishing an untouched
+  /// template offered to save every prescribed set as done.
   void _initTextControllers(BuildContext context) {
     final prefs = Preferences.of(context);
     var ExerciseSet(:reps, :weight, :distance, :duration) = set;
 
-    if (weight != null) {
-      _weightController.text = prefs.weight(weight, unit: _unitOverride);
+    void seed(TextEditingController field, VoidCallback listener, String? shown) {
+      if (shown == null) return;
+      field
+        ..removeListener(listener)
+        ..text = shown
+        ..addListener(listener);
     }
 
-    if (reps != null) {
-      _repsController.text = reps.toString();
-    }
-
-    if (distance != null) {
-      _distanceController.text = _shownDistance(prefs, distance);
-    }
-
-    if (duration != null) {
-      _durationController.text = duration.toDuration();
-    }
+    seed(_weightController, _weightListener, switch (weight) {
+      double weight => prefs.weight(weight, unit: _unitOverride),
+      null => null,
+    });
+    seed(_repsController, _repsListener, reps?.toString());
+    seed(_distanceController, _distanceListener, switch (distance) {
+      double distance => _shownDistance(prefs, distance),
+      null => null,
+    });
+    seed(_durationController, _durationListener, duration?.toDuration());
   }
 
   /// Parses the weight input from `_weightController` and updates the set's weight measurement.

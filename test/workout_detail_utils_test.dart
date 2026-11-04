@@ -239,6 +239,23 @@ void main() {
       expect(Workouts.of(context).hasActiveWorkout, isTrue);
     });
 
+    testWidgets('a template\'s prescribed values are not the user\'s typing: finishing untouched offers the cancel', (
+      tester,
+    ) async {
+      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      final workout = Workout(name: 'Push')..add(exercise);
+      workout.first.first.setMeasurements(weight: 60, reps: 5);
+
+      final context = await startWorkoutOn(tester, workout);
+      final l = L.of(tester.element(find.byKey(WorkoutDetailKeys.finishWorkout)));
+
+      expect(Workouts.of(context).hasTypedButUntickedSets, isFalse);
+      await tester.tapByKey(WorkoutDetailKeys.finishWorkout);
+      await tester.pumpTimes();
+      expect(find.text(l.untickedSetsTitle), findsNothing);
+      expect(find.text(l.cancelWorkoutTitle), findsOneWidget);
+    });
+
     testWidgets('finishing a fully completed workout ends the session', (tester) async {
       final exercise = Exercise(name: 'Pull Up', category: Category.repsOnly, target: Target.back);
       final workout = Workout(name: 'W')..add(exercise);
