@@ -24,6 +24,7 @@ void main() {
     required Future<void> Function(DateTime start, DateTime? end) onSave,
     TargetPlatform platform = TargetPlatform.android,
     List<WorkoutPause> pauses = const [],
+    bool needsLength = false,
   }) {
     return tester.pumpWidget(
       MaterialApp(
@@ -41,6 +42,7 @@ void main() {
                     end: end,
                     onSave: onSave,
                     pauses: pauses,
+                    needsLength: needsLength,
                   ),
                   child: const Text('open'),
                 ),
@@ -222,5 +224,35 @@ void main() {
     // the dialog is still up, unharmed, and the value did not change
     expect(find.text('Adjust Start/End Time'), findsOneWidget);
     expect(find.text('Start time'), findsOneWidget);
+  });
+
+  testWidgets('logging after the fact, moving the start carries the end along (#530)', (tester) async {
+    DateTime? savedStart;
+    DateTime? savedEnd;
+    await pump(
+      tester,
+      start: start,
+      end: end,
+      needsLength: true,
+      platform: TargetPlatform.iOS,
+      onSave: (s, e) async {
+        savedStart = s;
+        savedEnd = e;
+      },
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start time'));
+    await tester.pumpAndSettle();
+    final earlier = start.subtract(const Duration(days: 1));
+    tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker)).onDateTimeChanged(earlier);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(savedStart, earlier);
+    expect(savedEnd, end.subtract(const Duration(days: 1)), reason: 'the same length, a day earlier');
   });
 }

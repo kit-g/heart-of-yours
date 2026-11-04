@@ -85,6 +85,24 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
     super.dispose();
   }
 
+  /// A workout being filled in after the fact ([needsLength]) keeps its
+  /// length when its start moves: picking yesterday's evening carries the end
+  /// along, never later than now, rather than leaving it at now and making a
+  /// thirty-hour session. A finished workout's times move one at a time.
+  void _moveStart(DateTime start) {
+    final previous = _start.value;
+    _start.value = start;
+    if (!widget.needsLength) return;
+    if (_end.value case DateTime end) {
+      final moved = end.add(start.difference(previous));
+      final now = DateTime.now();
+      _end.value = switch (moved.isAfter(now)) {
+        true => now,
+        false => moved,
+      };
+    }
+  }
+
   /// The day and time in the reader's language, "Wed, Nov 4, 1:26 AM":
   /// never an ISO date, which reads as a database's.
   String _formatValue(DateTime dt) => DateFormat.MMMEd(L.of(context).localeName).add_jm().format(dt);
@@ -247,7 +265,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                           context,
                           initial: _start.value,
                           maximum: maximum,
-                          onChanged: (value) => _start.value = value,
+                          onChanged: _moveStart,
                         ),
                       },
                     ),
@@ -257,7 +275,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                         brightness: brightness,
                         initial: _start.value,
                         maximum: maximum,
-                        onChanged: (value) => _start.value = value,
+                        onChanged: _moveStart,
                       ),
                   ],
                 );
