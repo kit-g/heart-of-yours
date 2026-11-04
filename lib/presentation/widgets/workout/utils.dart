@@ -171,25 +171,31 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
   }
 
   final actions = [
-    Column(
-      spacing: 8,
-      children: [
-        PrimaryButton.wide(
-          backgroundColor: colorScheme.surfaceContainerHighest,
-          onPressed: () {
-            Navigator.of(context, rootNavigator: true).pop();
-          },
-          child: Center(
-            child: Text(notReadyToFinish),
-          ),
-        ),
-        PrimaryButton.wide(
-          onPressed: finishNow,
-          child: Center(
-            child: Text(readyToFinish),
-          ),
-        ),
-      ],
+    // its colors read inside the dialog, so a theme that changes while it is
+    // open repaints the buttons too
+    Builder(
+      builder: (context) {
+        return Column(
+          spacing: 8,
+          children: [
+            PrimaryButton.wide(
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+              child: Center(
+                child: Text(notReadyToFinish),
+              ),
+            ),
+            PrimaryButton.wide(
+              onPressed: finishNow,
+              child: Center(
+                child: Text(readyToFinish),
+              ),
+            ),
+          ],
+        );
+      },
     ),
   ];
 
@@ -243,31 +249,38 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
         ],
       ),
       actions: [
-        Column(
-          spacing: 8,
-          children: [
-            PrimaryButton.wide(
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-              child: Center(child: Text(notReadyToFinish)),
-            ),
-            PrimaryButton.wide(
-              backgroundColor: switch (typed) {
-                true => colorScheme.surfaceContainerHighest,
-                false => null,
-              },
-              onPressed: finishNow,
-              child: Center(child: Text(discardUntickedSets)),
-            ),
-            if (typed)
-              PrimaryButton.wide(
-                child: Center(child: Text(saveUntickedSets)),
-                onPressed: () {
-                  workouts.completeTypedSets();
-                  finishNow();
-                },
-              ),
-          ],
+        Builder(
+          builder: (context) {
+            final ThemeData(:colorScheme) = Theme.of(context);
+            return Column(
+              spacing: 8,
+              children: [
+                PrimaryButton.wide(
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+                  child: Center(child: Text(notReadyToFinish)),
+                ),
+                // as below: nothing ticked, nothing to finish without them
+                if (isStarted)
+                  PrimaryButton.wide(
+                    backgroundColor: switch (typed) {
+                      true => colorScheme.surfaceContainerHighest,
+                      false => null,
+                    },
+                    onPressed: finishNow,
+                    child: Center(child: Text(discardUntickedSets)),
+                  ),
+                if (typed)
+                  PrimaryButton.wide(
+                    child: Center(child: Text(saveUntickedSets)),
+                    onPressed: () {
+                      workouts.completeTypedSets();
+                      finishNow();
+                    },
+                  ),
+              ],
+            );
+          },
         ),
       ],
     );
@@ -292,29 +305,37 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
         textAlign: .center,
       ),
       actions: [
-        Column(
-          spacing: 8,
-          children: [
-            PrimaryButton.wide(
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              onPressed: () {
-                Navigator.of(context, rootNavigator: true).pop();
-              },
-              child: Center(child: Text(notReadyToFinish)),
-            ),
-            PrimaryButton.wide(
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              onPressed: finishNow,
-              child: Center(child: Text(discardUntickedSets)),
-            ),
-            PrimaryButton.wide(
-              child: Center(child: Text(saveUntickedSets)),
-              onPressed: () {
-                workouts.completeTypedSets();
-                finishNow();
-              },
-            ),
-          ],
+        Builder(
+          builder: (context) {
+            final ThemeData(:colorScheme) = Theme.of(context);
+            return Column(
+              spacing: 8,
+              children: [
+                PrimaryButton.wide(
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  onPressed: () {
+                    Navigator.of(context, rootNavigator: true).pop();
+                  },
+                  child: Center(child: Text(notReadyToFinish)),
+                ),
+                // with nothing ticked, finishing without them would save an
+                // empty workout: the answer is absent, not a trap
+                if (isStarted)
+                  PrimaryButton.wide(
+                    backgroundColor: colorScheme.surfaceContainerHighest,
+                    onPressed: finishNow,
+                    child: Center(child: Text(discardUntickedSets)),
+                  ),
+                PrimaryButton.wide(
+                  child: Center(child: Text(saveUntickedSets)),
+                  onPressed: () {
+                    workouts.completeTypedSets();
+                    finishNow();
+                  },
+                ),
+              ],
+            );
+          },
         ),
       ],
     );
@@ -366,35 +387,41 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
       color: colorScheme.error,
     ),
     actions: [
-      Column(
-        spacing: 8,
-        children: [
-          PrimaryButton.wide(
-            backgroundColor: colorScheme.surfaceContainerHighest,
-            child: Center(
-              child: Text(resumeWorkout),
-            ),
-            onPressed: () {
-              Navigator.of(context, rootNavigator: true).pop();
-            },
-          ),
-          PrimaryButton.wide(
-            backgroundColor: colorScheme.errorContainer,
-            child: Center(
-              child: Text(
-                cancelWorkout,
-                style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+      // its colors read inside the dialog, as the finish's do
+      Builder(
+        builder: (dialog) {
+          final ThemeData(:colorScheme, :textTheme) = Theme.of(dialog);
+          return Column(
+            spacing: 8,
+            children: [
+              PrimaryButton.wide(
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                child: Center(
+                  child: Text(resumeWorkout),
+                ),
+                onPressed: () {
+                  Navigator.of(context, rootNavigator: true).pop();
+                },
               ),
-            ),
-            onPressed: () {
-              Navigator.of(context, rootNavigator: true).pop();
-              Navigator.of(context).maybePop();
-              cancelAllNotifications();
-              Workouts.of(context).cancelActiveWorkout();
-              onFinish?.call();
-            },
-          ),
-        ],
+              PrimaryButton.wide(
+                backgroundColor: colorScheme.errorContainer,
+                child: Center(
+                  child: Text(
+                    cancelWorkout,
+                    style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context, rootNavigator: true).pop();
+                  Navigator.of(context).maybePop();
+                  cancelAllNotifications();
+                  Workouts.of(context).cancelActiveWorkout();
+                  onFinish?.call();
+                },
+              ),
+            ],
+          );
+        },
       ),
     ],
   );

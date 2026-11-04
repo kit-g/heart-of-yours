@@ -222,6 +222,7 @@ const _ok = 'ok';
 
 const _workoutStarted = 'workout_started';
 const _workoutFinished = 'workout_finished';
+const _workoutLogged = 'workout_logged';
 const _workoutCancelled = 'workout_cancelled';
 const _workoutEdited = 'workout_edited';
 const _templateCreated = 'template_created';
@@ -457,6 +458,17 @@ class Analytics {
       _setCount: setCount,
       _durationMin: durationMin,
       _untickedSets: untickedSets,
+    });
+  }
+
+  /// A workout put into history after it happened (#530), rather than lived
+  /// through: the same counts as [workoutFinished], kept apart so the habit
+  /// loop's finishes stay the sessions the app actually ran.
+  void workoutLogged({required int exerciseCount, required int setCount, required int durationMin}) {
+    _log(_workoutLogged, {
+      _exerciseCount: exerciseCount,
+      _setCount: setCount,
+      _durationMin: durationMin,
     });
   }
 

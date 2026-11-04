@@ -89,6 +89,13 @@ Future<bool> _offer(BuildContext context) async {
 
 const _icon = Icons.auto_awesome_outlined;
 
+/// The preview's one height: about a dozen lines of the text, on any choice.
+const _previewHeight = 240.0;
+
+/// The row under the period switch, the month's arrows' height whichever
+/// period it explains.
+const _stepRowHeight = 48.0;
+
 Future<void> _show(BuildContext context, _Scope scope) {
   return showModalBottomSheet<void>(
     context: context,
@@ -323,8 +330,10 @@ class _CopySheetState extends State<_CopySheet> {
             ValueListenableBuilder<String?>(
               valueListenable: _text,
               builder: (_, text, _) {
+                // one height whatever it holds, so a choice above never moves
+                // the buttons below
                 return Container(
-                  constraints: const BoxConstraints(maxHeight: 280, minHeight: 120),
+                  height: _previewHeight,
                   decoration: BoxDecoration(
                     border: .all(color: dividerColor, width: .5),
                     borderRadius: const .all(.circular(12)),
@@ -363,21 +372,18 @@ class _CopySheetState extends State<_CopySheet> {
             ValueListenableBuilder<String?>(
               valueListenable: _text,
               builder: (context, text, _) {
-                // nothing to hand over, nothing to press: the line above says why
-                if (text == null || text.isEmpty) return const SizedBox(height: 48);
+                // nothing to hand over, nothing to press: the line above says
+                // why, and the row keeps its height
+                if (text == null || text.isEmpty) return const SizedBox(height: primaryButtonMinHeight);
                 return Row(
                   mainAxisAlignment: .end,
                   spacing: 8,
                   children: [
                     _ShareButton(text: text),
-                    // the share button's 48pt target, so the pair lines up
-                    SizedBox(
-                      height: 48,
-                      child: PrimaryButton.shrunk(
-                        key: AppKeys.copyForAiCopy,
-                        onPressed: () => _copy(context, text),
-                        child: Center(widthFactor: 1, child: Text(l.copyForAiCopy)),
-                      ),
+                    PrimaryButton.shrunk(
+                      key: AppKeys.copyForAiCopy,
+                      onPressed: () => _copy(context, text),
+                      child: Text(l.copyForAiCopy),
                     ),
                   ],
                 );
@@ -441,8 +447,23 @@ class _CopySheetState extends State<_CopySheet> {
                   ),
                 ],
               ),
-              .program => Text(running?.name ?? '', textAlign: .center, style: textTheme.titleSmall),
-              .weeks => const SizedBox.shrink(),
+              .program => SizedBox(
+                height: _stepRowHeight,
+                child: Center(
+                  child: Text(running?.name ?? '', textAlign: .center, style: textTheme.titleSmall),
+                ),
+              ),
+              // the four weeks by their dates, in the row the month steps take
+              .weeks => SizedBox(
+                height: _stepRowHeight,
+                child: Center(
+                  child: Text(
+                    '${DateFormat.MMMd(l.localeName).format(_fourWeeksAgo)} – '
+                    '${DateFormat.MMMd(l.localeName).format(_now)}',
+                    style: textTheme.titleSmall,
+                  ),
+                ),
+              ),
             },
           ],
         );
@@ -500,11 +521,18 @@ class _ShareButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
+    final ThemeData(:colorScheme) = Theme.of(context);
+    return PrimaryButton.shrunk(
       key: AppKeys.copyForAiShare,
-      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-      icon: const Icon(Icons.ios_share_rounded, size: 18),
-      label: Text(L.of(context).share),
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      child: Row(
+        mainAxisSize: .min,
+        spacing: 6,
+        children: [
+          Icon(Icons.ios_share_rounded, size: 16, color: colorScheme.onSurface),
+          Text(L.of(context).share, style: TextStyle(color: colorScheme.onSurface)),
+        ],
+      ),
       onPressed: () {
         // where the iPad's popover points; ignored everywhere else
         final origin = switch (context.findRenderObject()) {

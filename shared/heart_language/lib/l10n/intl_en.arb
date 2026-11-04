@@ -198,7 +198,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "noAccountBodyLocal": "Your health data never leaves your phone. Without an account, neither does anything else: your workouts, templates and goals live on this device only.",
+  "noAccountBodyLocal": "Your health data never leaves this device. Without an account, neither does anything else: your workouts, templates and goals live here only.",
   "@noAccountBodyLocal": {
     "description": "No-account dialog, first paragraph: where the data lives. Reads as one with the health-data promise",
     "type": "text",
@@ -1700,7 +1700,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "eraseDataBody": "Your workouts, templates, custom exercises, goals and chart settings are deleted from this phone, together with Heart's copy of your health data. Your phone's own health records are not touched. Without an account there is no backup — this cannot be undone.",
+  "eraseDataBody": "Your workouts, templates, custom exercises, goals and chart settings are deleted from this device, together with Heart's copy of your health data. The records in your health app are not touched. Without an account there is no backup — this cannot be undone.",
   "@eraseDataBody": {
     "description": "Erase-my-data dialog body. Must name the health data as included (it is device-only and lives in the same store) while making clear the operating system's health store itself is untouched, and say plainly that nothing can bring the data back",
     "type": "text",
@@ -2548,7 +2548,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "healthDeleteBody": "This clears what Heart has read onto this device. Nothing in your phone's health store changes, and Heart will read it again the next time it syncs.",
+  "healthDeleteBody": "This clears what Heart has read onto this device. Nothing in your health app changes, and Heart will read it again the next time it syncs.",
   "@healthDeleteBody": {
     "description": "Confirmation body. Reassures that the operating system health store is untouched and the data comes back on the next sync",
     "type": "text",
@@ -2578,7 +2578,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "healthInviteBody": "Heart can show your resting heart rate, heart rate variability, sleep, steps, active energy and body mass next to your workouts. It reads them from your phone's health store, and keeps them on this device.",
+  "healthInviteBody": "Heart can show your resting heart rate, heart rate variability, sleep, steps, active energy and body mass next to your workouts. It reads them from your health app, and keeps them on this device.",
   "@healthInviteBody": {
     "description": "Body of the card offering to read health data. Names every metric Heart asks permission for, in the words the health app uses \u2014 Play review checks this card against the permission list. The last clause is a genuine selling point, not fine print \u2014 keep it plain and avoid words like private or secure",
     "type": "text",
@@ -2668,7 +2668,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "healthSettingsBody": "Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your phone's health store. They stay on this device.",
+  "healthSettingsBody": "Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your health app. They stay on this device.",
   "@healthSettingsBody": {
     "description": "Settings section body. Names exactly what Heart reads and restates where it is kept. Say 'on this device', never 'private' or 'secure' \u2014 workouts do sync to a server and only health data does not",
     "type": "text",
@@ -2833,7 +2833,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "exportNoHealthData": "Your health data is not included — it never leaves your phone.",
+  "exportNoHealthData": "Your health data is not included — it never leaves this device.",
   "@exportNoHealthData": {
     "description": "Export page, the device-only health promise restated: no health data is in the file",
     "type": "text",
@@ -5060,7 +5060,7 @@
   "@recaps": {"description": "Settings › Features title for monthly and yearly training recaps (#154, #155)", "type": "text", "placeholders": {}},
   "recapsSubtitle": "Your month and your year of training, in numbers",
   "@recapsSubtitle": {"description": "Settings › Features subtitle for Recaps (#154): workouts, time, volume, muscles and records per month and per year", "type": "text", "placeholders": {}},
-  "notTodayNote": "The day and its reason sync. Anything from Health stays on this phone.",
+  "notTodayNote": "The day and its reason sync. Anything from Health stays on this device.",
   "@notTodayNote": {"description": "Note under the Not today switch (#312): what syncs and what stays on the phone", "type": "text", "placeholders": {}},
   "notTodayDay": "Today is set aside",
   "@notTodayDay": {"description": "Sheet title after Not today on a plain day (#312)", "type": "text", "placeholders": {}},
@@ -5086,7 +5086,7 @@
   "@skipSetsWeek": {"description": "A skip's page (#312): working sets in the seven days before", "type": "text", "placeholders": {"sets": {"type": "int"}}},
   "skipRecovering": "Still recovering: {groups}",
   "@skipRecovering": {"description": "A skip's page (#312): muscle groups trained in the two days before", "type": "text", "placeholders": {"groups": {"type": "String"}}},
-  "skipFromHealth": "From Health, on this phone only",
+  "skipFromHealth": "From Health, on this device only",
   "@skipFromHealth": {"description": "A skip's page (#312): note under the readings from Apple Health / Health Connect", "type": "text", "placeholders": {}},
   "exerciseMusclesFigure": "Body map of the muscles this exercise works",
   "@exerciseMusclesFigure": {"description": "Screen-reader label for the body figures on an exercise's About page; the target chips above them name the muscles", "type": "text", "placeholders": {}},
@@ -5491,5 +5491,7 @@
   "next": "Next",
   "@next": {"description": "Button that moves on to the next step, such as from picking a past workout's times to filling it in (#530)", "type": "text", "placeholders": {}},
   "endAfterStart": "The end has to come after the start.",
-  "@endAfterStart": {"description": "Validation shown when a workout being logged after the fact would end at or before its start (#530)", "type": "text", "placeholders": {}}
+  "@endAfterStart": {"description": "Validation shown when a workout being logged after the fact would end at or before its start (#530)", "type": "text", "placeholders": {}},
+  "exerciseAlreadyInLibrary": "Already in the library as {name}",
+  "@exerciseAlreadyInLibrary": {"description": "Under the name field of the new-exercise dialog, while the name typed matches a library exercise but for case or punctuation (#529). {name} is that exercise's name. Informs, does not refuse", "type": "text", "placeholders": {"name": {}}}
 }

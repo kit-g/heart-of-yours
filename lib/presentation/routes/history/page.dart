@@ -89,7 +89,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
               IconButton(
                 key: AppKeys.logPastWorkout,
                 tooltip: L.of(context).logPastWorkout,
-                icon: const Icon(Icons.edit_calendar_rounded),
+                icon: const Icon(Icons.more_time_rounded),
                 onPressed: log,
               ),
             IconButton(

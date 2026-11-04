@@ -615,14 +615,21 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   ///
   /// A set ticked with nothing in it is no set: it goes with the unticked ones
   /// [Workout.removeEmptySets] drops, so the history holds what was done.
-  Future<Workout> logWorkout(Workout workout) {
+  Future<Workout> logWorkout(Workout workout) async {
     assert(workout.end != null, 'A workout logged after the fact has ended');
     assert(workout.id != _activeWorkoutId, 'The active workout finishes, it is not logged');
     workout
         .expand((exercise) => exercise)
         .where((set) => !set.canBeCompleted)
         .forEach((set) => set.isCompleted = false);
-    return saveWorkout(workout);
+    final saved = await saveWorkout(workout);
+    // counted after the save, as a finish is: what history holds
+    analytics?.workoutLogged(
+      exerciseCount: saved.length,
+      setCount: saved.expand((exercise) => exercise).length,
+      durationMin: saved.duration?.inMinutes ?? 0,
+    );
+    return saved;
   }
 
   /// Re-attempts the server save for any finished workout persisted locally but
