@@ -5467,5 +5467,11 @@
   "weeklySetsOfferTitle": "How often do you press, pull and squat?",
   "@weeklySetsOfferTitle": {"description": "Title of the one-time card on the profile offering to turn on Sets a week (#526): it counts sets by movement pattern", "type": "text", "placeholders": {}},
   "weeklySetsOfferBody": "A card on your profile that counts each week's sets and sessions, by movement or by muscle group.",
-  "@weeklySetsOfferBody": {"description": "Body of the one-time card offering Sets a week on the profile (#526)", "type": "text", "placeholders": {}}
+  "@weeklySetsOfferBody": {"description": "Body of the one-time card offering Sets a week on the profile (#526)", "type": "text", "placeholders": {}},
+  "sampleTemplatesSubtitle": "A few ready-made templates below your own, to train with as they are or to copy",
+  "@sampleTemplatesSubtitle": {"description": "Settings › Features subtitle for Example templates, the ready-made templates listed under the user's own on the Workout tab (#528)", "type": "text", "placeholders": {}},
+  "sampleTemplatesOfferTitle": "Want a few templates to start from?",
+  "@sampleTemplatesOfferTitle": {"description": "Title of the one-time card on the Workout tab, under the user's own templates, offering to show the ready-made example templates (#528)", "type": "text", "placeholders": {}},
+  "sampleTemplatesOfferBody": "Ready-made workouts below your own templates. Start one as it is, or copy it and make it yours.",
+  "@sampleTemplatesOfferBody": {"description": "Body of the one-time card offering the example templates on the Workout tab (#528)", "type": "text", "placeholders": {}}
 }
