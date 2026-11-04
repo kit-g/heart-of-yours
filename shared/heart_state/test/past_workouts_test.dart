@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/remote.dart';
+import 'package:heart_state/src/analytics.dart';
 import 'package:heart_state/src/workouts.dart';
 import 'package:mockito/mockito.dart';
 
@@ -35,6 +36,8 @@ void main() {
     return workout;
   }
 
+  late ReportedAnalytics reported;
+
   setUp(() {
     reset(local);
     reset(remote);
@@ -44,7 +47,13 @@ void main() {
     when(remote.saveWorkout(any)).thenAnswer((inv) async => inv.positionalArguments.first as Workout);
 
     access = RemoteAccess();
-    sut = Workouts(service: local, remoteService: remote, remote: access)..userId = 'u1';
+    reported = ReportedAnalytics();
+    sut = Workouts(
+      service: local,
+      remoteService: remote,
+      remote: access,
+      analytics: Analytics(service: reported),
+    )..userId = 'u1';
   });
 
   test('a past workout lands in history with its own times, stored and sent', () async {
@@ -107,5 +116,15 @@ void main() {
     verify(local.finishWorkout(any, 'u1')).called(1);
     verifyNever(local.storeWorkoutHistory(any, any));
     expect(sut.history.map((each) => each.id), [saved.id]);
+  });
+
+  test('it is counted as logged, not finished, with what history keeps', () async {
+    await sut.logWorkout(past());
+
+    final logged = reported.parametersOf('workout_logged');
+    expect(logged['exercise_count'], 1);
+    expect(logged['set_count'], 1);
+    expect(logged['duration_min'], end.difference(start).inMinutes);
+    expect(reported.names, isNot(contains('workout_finished')));
   });
 }
