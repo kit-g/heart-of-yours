@@ -5477,5 +5477,19 @@
   "weeklySetsSubtitle": "Sets and sessions each week, by movement or muscle group, on your profile",
   "@weeklySetsSubtitle": {"description": "Settings › Features subtitle for Sets a week, the profile card counting each week's sets by movement pattern or muscle group (#526)", "type": "text", "placeholders": {}},
   "sampleTemplatesSubtitle": "A few ready-made templates below your own, to train with as they are or to copy",
-  "@sampleTemplatesSubtitle": {"description": "Settings › Features subtitle for Example templates, the ready-made templates listed under the user's own on the Workout tab (#528)", "type": "text", "placeholders": {}}
+  "@sampleTemplatesSubtitle": {"description": "Settings › Features subtitle for Example templates, the ready-made templates listed under the user's own on the Workout tab (#528)", "type": "text", "placeholders": {}},
+  "pastWorkouts": "Past workouts",
+  "@pastWorkouts": {"description": "Title of the opt-in feature in Settings › Features for logging a workout that already happened, after the fact (#530)", "type": "text", "placeholders": {}},
+  "pastWorkoutsSubtitle": "Log a workout after it happened: first when, then what you did",
+  "@pastWorkoutsSubtitle": {"description": "Subtitle under the Past workouts switch in Settings › Features: the user picks when the workout was, then fills in its exercises and sets (#530)", "type": "text", "placeholders": {}},
+  "logPastWorkout": "Log a past workout",
+  "@logPastWorkout": {"description": "Tooltip and screen-reader label of the buttons on the Workout tab and in History that start logging a workout that already happened (#530)", "type": "text", "placeholders": {}},
+  "logWorkout": "Log Workout",
+  "@logWorkout": {"description": "Header of the editor for a workout being logged after the fact, styled like 'Edit Workout' (#530)", "type": "text", "placeholders": {}},
+  "whenWasIt": "When was it?",
+  "@whenWasIt": {"description": "Title of the dialog where the user picks the date, start and end of a workout they are logging after the fact (#530)", "type": "text", "placeholders": {}},
+  "next": "Next",
+  "@next": {"description": "Button that moves on to the next step, such as from picking a past workout's times to filling it in (#530)", "type": "text", "placeholders": {}},
+  "endAfterStart": "The end has to come after the start.",
+  "@endAfterStart": {"description": "Validation shown when a workout being logged after the fact would end at or before its start (#530)", "type": "text", "placeholders": {}}
 }

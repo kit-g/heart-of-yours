@@ -50,8 +50,10 @@ extension MoreL on L {
     return intl.DateFormat.Md(localeName).format(when.toLocal());
   }
 
-  String defaultWorkoutName() {
-    final now = DateTime.now();
+  /// "Tue, Nov 3, Evening" and the like, for a workout that started [at]: now,
+  /// unless it is one logged after the fact (#530), named for when it was.
+  String defaultWorkoutName([DateTime? at]) {
+    final now = at?.toLocal() ?? DateTime.now();
     final when = intl.DateFormat('EEE, MMM d', localeName).format(now);
 
     return switch (now.hour) {
