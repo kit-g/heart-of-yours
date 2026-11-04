@@ -170,17 +170,31 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                   workouts: WorkoutAggregation.dummy(),
                 ),
               ),
-              Column(
-                children: [
-                  Text(
-                    workoutsPerWeekTitle,
-                    style: textTheme.titleMedium,
+              // on the card's own surface: over the faded chart alone, the bars'
+              // numbers showed through the words
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainer,
+                  borderRadius: const .all(.circular(12)),
+                ),
+                child: Padding(
+                  padding: const .symmetric(horizontal: 16, vertical: 10),
+                  child: Column(
+                    mainAxisSize: .min,
+                    children: [
+                      Text(
+                        workoutsPerWeekTitle,
+                        style: textTheme.titleMedium,
+                        textAlign: .center,
+                      ),
+                      Text(
+                        workoutsPerWeekBody,
+                        style: textTheme.bodyLarge,
+                        textAlign: .center,
+                      ),
+                    ],
                   ),
-                  Text(
-                    workoutsPerWeekBody,
-                    style: textTheme.bodyLarge,
-                  ),
-                ],
+                ),
               ),
             ],
           );
