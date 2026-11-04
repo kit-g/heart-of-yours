@@ -76,8 +76,6 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
   final _unfolded = ValueNotifier<_Unfolded>(.none);
   final _saving = ValueNotifier<bool>(false);
 
-  static final _valueFormat = DateFormat('yyyy-MM-dd, ').add_jm();
-
   @override
   void dispose() {
     _start.dispose();
@@ -87,7 +85,9 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
     super.dispose();
   }
 
-  String _formatValue(DateTime dt) => _valueFormat.format(dt);
+  /// The day and time in the reader's language, "Wed, Nov 4, 1:26 AM":
+  /// never an ISO date, which reads as a database's.
+  String _formatValue(DateTime dt) => DateFormat.MMMEd(L.of(context).localeName).add_jm().format(dt);
 
   /// [start]..[end] less the part of every pause that falls inside it.
   Duration _trained(DateTime start, DateTime end) {
