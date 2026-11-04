@@ -5477,5 +5477,15 @@
   "weeklySetsSubtitle": "Sets and sessions each week, by movement or muscle group, on your profile",
   "@weeklySetsSubtitle": {"description": "Settings › Features subtitle for Sets a week, the profile card counting each week's sets by movement pattern or muscle group (#526)", "type": "text", "placeholders": {}},
   "sampleTemplatesSubtitle": "A few ready-made templates below your own, to train with as they are or to copy",
-  "@sampleTemplatesSubtitle": {"description": "Settings › Features subtitle for Example templates, the ready-made templates listed under the user's own on the Workout tab (#528)", "type": "text", "placeholders": {}}
+  "@sampleTemplatesSubtitle": {"description": "Settings › Features subtitle for Example templates, the ready-made templates listed under the user's own on the Workout tab (#528)", "type": "text", "placeholders": {}},
+  "workoutTimes": "Start and end times",
+  "@workoutTimes": {"description": "Title of the opt-in feature in Settings › Features that lets the user set the active workout's start time, and its end time when finishing, for a workout logged after training (#530)", "type": "text", "placeholders": {}},
+  "workoutTimesSubtitle": "Set when a workout began and ended, for one you log after training",
+  "@workoutTimesSubtitle": {"description": "Subtitle under the start-and-end-times switch in Settings › Features, saying what it does (#530)", "type": "text", "placeholders": {}},
+  "changeStartTime": "Change when this workout started",
+  "@changeStartTime": {"description": "Tooltip and screen-reader label of the active workout's elapsed clock, which opens a picker for the workout's start time (#530)", "type": "text", "placeholders": {}},
+  "changeEndTime": "Change when this workout ended",
+  "@changeEndTime": {"description": "Tooltip and screen-reader label of the end-time row in the finish-workout dialog, which opens a picker for the workout's end time (#530)", "type": "text", "placeholders": {}},
+  "workoutEndsNow": "Now",
+  "@workoutEndsNow": {"description": "Value of the 'End time' row in the finish-workout dialog before the user picks one: the workout ends the moment it is finished (#530)", "type": "text", "placeholders": {}}
 }
