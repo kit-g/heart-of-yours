@@ -13,6 +13,7 @@ import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart/presentation/widgets/appbar_textfield.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetailKeys;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -49,13 +50,15 @@ void main() {
   }
 
   setUp(() {
-    SharedPreferences.setMockInitialValues(pastOnboarding());
     db = MockLocalDatabase();
     api = MockApi();
     cdn = MockCdn();
     harness = const TestAppHarness();
 
     stubStartup(db, api);
+    // the samples as they were before #528; the opt-in group below asks for
+    // its own answers
+    SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-sampleTemplates': 'on'});
     when(db.startWorkout(any, any)).thenAnswer((_) async {});
 
     // The templates/folders baseline: nothing anywhere, so every test starts
@@ -217,6 +220,101 @@ void main() {
 
       expect(find.byIcon(Icons.folder_outlined), findsOneWidget);
       expect(Preferences.of(context).isFolderCollapsed('f1'), isTrue);
+    });
+  });
+
+  group('example templates are opt-in (#528)', () {
+    Finder offer() => find.byKey(AppKeys.sampleTemplatesOffer, skipOffstage: false);
+    Finder sample() => find.text('Sample Day', skipOffstage: false);
+    Finder header() => find.text('Example templates', skipOffstage: false);
+
+    void answered(String? answer) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-sampleTemplates': ?answer,
+      });
+      when(cdn.getSampleTemplates()).thenAnswer((_) async => [template(id: 's1', order: 0, name: 'Sample Day')]);
+    }
+
+    testWidgets('never asked, the offer sits where the grid would', (tester) async {
+      answered(null);
+      await openWorkoutTab(tester);
+
+      expect(offer(), findsOneWidget);
+      expect(sample(), findsNothing);
+      expect(header(), findsNothing);
+    });
+
+    testWidgets('on a tablet, the offer keeps a reading width', (tester) async {
+      tester.view.physicalSize = const Size(1366, 1024);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      answered(null);
+      await openWorkoutTab(tester);
+
+      final card = find.descendant(of: offer(), matching: find.byType(Container)).first;
+      expect(tester.getSize(card).width, lessThanOrEqualTo(readableWidth));
+    });
+
+    testWidgets('with no samples to show, nothing is offered', (tester) async {
+      answered(null);
+      when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+      await openWorkoutTab(tester);
+
+      expect(offer(), findsNothing);
+      final context = tester.element(find.byType(MaterialApp));
+      expect(Preferences.of(context).featureAnswer(.sampleTemplates), FeatureAnswer.unasked);
+    });
+
+    testWidgets('yes shows the grid', (tester) async {
+      answered(null);
+      await openWorkoutTab(tester);
+
+      await tester.ensureVisible(find.byKey(AppKeys.sampleTemplatesAccept));
+      await tester.tapByKey(AppKeys.sampleTemplatesAccept);
+      await tester.pumpTimes();
+
+      expect(offer(), findsNothing);
+      expect(header(), findsOneWidget);
+      expect(sample(), findsOneWidget);
+    });
+
+    testWidgets('no leaves the one notice, then nothing', (tester) async {
+      answered(null);
+      await openWorkoutTab(tester);
+
+      await tester.ensureVisible(find.byKey(AppKeys.sampleTemplatesDecline));
+      await tester.tapByKey(AppKeys.sampleTemplatesDecline);
+      await tester.pumpTimes();
+
+      expect(offer(), findsNothing);
+      expect(sample(), findsNothing);
+      expect(find.byKey(AppKeys.featureDeclinedNotice, skipOffstage: false), findsOneWidget);
+
+      await tester.ensureVisible(find.byTooltip('Close'));
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.featureDeclinedNotice, skipOffstage: false), findsNothing);
+      expect(header(), findsNothing);
+    });
+
+    testWidgets('off, the tab has neither grid nor offer, and the user\'s own stay', (tester) async {
+      answered('off');
+      when(db.getTemplates(userId)).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push Day')]);
+      await openWorkoutTab(tester);
+
+      expect(find.text('Push Day'), findsOneWidget);
+      expect(offer(), findsNothing);
+      expect(header(), findsNothing);
+      expect(sample(), findsNothing);
+      // kept, not dropped: the switch shows them again
+      final context = tester.element(find.byType(MaterialApp));
+      expect(Templates.of(context).samples.map((each) => each.id), ['s1']);
+
+      Preferences.of(context).setFeature(.sampleTemplates, on: true);
+      await tester.pumpTimes();
+      expect(sample(), findsOneWidget);
     });
   });
 

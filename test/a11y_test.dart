@@ -58,6 +58,7 @@ enum _Screen {
   newChartDialog,
   noAccountDialog,
   workout,
+  sampleTemplatesOffer,
   programs,
   programPage,
   newProgram,
@@ -386,6 +387,21 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
 
   (_Screen.workout, _Guideline.labeledTapTarget, null),
+  // The example templates' one-time offer (#528), in the grid's slot on the
+  // Workout tab (lib/presentation/routes/workout/templates.dart).
+  (_Screen.sampleTemplatesOffer, _Guideline.labeledTapTarget, null),
+  (_Screen.sampleTemplatesOffer, _Guideline.textContrastLight, null),
+  (_Screen.sampleTemplatesOffer, _Guideline.textContrastDark, null),
+  (
+    _Screen.sampleTemplatesOffer,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items, and the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart), are below 48x48 — visual-density change, out of scope',
+  ),
+  (
+    _Screen.sampleTemplatesOffer,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items, and the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart), are below 44x44 — visual-density change, out of scope',
+  ),
   // Programs on the Workout tab (#345, #347, #348): the band, the program
   // page and the new-program screen
   // (lib/presentation/routes/workout/{programs,program_page,program_form}.dart).
@@ -1398,7 +1414,8 @@ void main() {
           _Screen.libraryStartDays ||
           _Screen.goEasy ||
           _Screen.skipPage ||
-          _Screen.notTodaySheet:
+          _Screen.notTodaySheet ||
+          _Screen.sampleTemplatesOffer:
         // things to go easy on (#396): the whole map, a knee listed
         when(cdn.getGoEasy(etag: anyNamed('etag'))).thenAnswer((_) async => (body: _goEasy, etag: null));
         when(db.getGoEasy(any)).thenAnswer((_) async => {'knee'});
@@ -1410,6 +1427,8 @@ void main() {
           ...pastOnboarding(),
           'feature-programs': 'on',
           if (screen == _Screen.notTodaySheet) 'feature-notToday': 'on',
+          // the samples as they were before #528: the grid, not its offer
+          if (screen != _Screen.sampleTemplatesOffer) 'feature-sampleTemplates': 'on',
         });
         // the day before a skip (#312): what its page reads
         when(db.getLensSets(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => []);
@@ -1784,7 +1803,8 @@ void main() {
           _Screen.libraryStartDays ||
           _Screen.goEasy ||
           _Screen.skipPage ||
-          _Screen.notTodaySheet:
+          _Screen.notTodaySheet ||
+          _Screen.sampleTemplatesOffer:
         await tester.tapByKey(AppKeys.workoutStack);
         await tester.pumpTimes();
         // read here for the reason the upsync run is started here: `_initApp`
@@ -1850,6 +1870,12 @@ void main() {
             await tester.tapByKey(AppKeys.notTodayDay);
             await tester.pumpTimes();
             expect(find.byKey(AppKeys.skipSheet), findsOneWidget);
+          case _Screen.sampleTemplatesOffer:
+            await tester.scrollUntilVisible(
+              find.byKey(AppKeys.sampleTemplatesOffer),
+              200,
+              scrollable: find.byType(Scrollable).first,
+            );
           default:
             break;
         }

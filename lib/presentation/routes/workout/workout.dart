@@ -24,6 +24,8 @@ import 'package:heart/presentation/widgets/part_of_program.dart';
 import 'package:heart/presentation/widgets/appbar_textfield.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/date_picker.dart';
+import 'package:heart/presentation/widgets/feature_copy.dart';
+import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/widgets/responsive/columns.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';

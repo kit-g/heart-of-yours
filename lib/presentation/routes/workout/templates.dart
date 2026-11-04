@@ -47,7 +47,6 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
       :yourWorkouts,
       templates: copy,
       :template,
-      :exampleTemplates,
       :newFolder,
       :noFolder,
       :noTemplatesYet,
@@ -175,17 +174,58 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           templates: unfiled,
           card: (template) => _userCard(context, template),
         ),
+        // opt-in (#528): off, this is an empty sliver and nothing else
+        _samples(context, templates, preferences),
+      ],
+    );
+  }
+
+  /// The example templates' slot (#528): the grid under its header when the
+  /// feature is on, its one offer or the decline notice, or nothing — the tab
+  /// then ends with the user's own, as if samples had never been built. The
+  /// offer waits for samples to arrive: an ask with nothing behind it would
+  /// spend the one chance on an empty grid.
+  Widget _samples(BuildContext context, Templates templates, Preferences preferences) {
+    const feature = Feature.sampleTemplates;
+    final l = L.of(context);
+    Widget slot(Widget child) {
+      return SliverToBoxAdapter(
+        child: Padding(padding: const .fromLTRB(8, 8, 8, 16), child: child),
+      );
+    }
+
+    return switch (preferences) {
+      _ when preferences.isOn(feature) => _sampleGrid(context, templates),
+      _ when preferences.owesDeclineNotice(feature) => slot(
+        FeatureDeclinedNotice(onDismiss: () => preferences.acknowledgeDeclineNotice(feature)),
+      ),
+      _ when preferences.shouldOffer(feature) && templates.samples.isNotEmpty => slot(
+        FeatureOffer(
+          key: AppKeys.sampleTemplatesOffer,
+          acceptKey: AppKeys.sampleTemplatesAccept,
+          declineKey: AppKeys.sampleTemplatesDecline,
+          icon: feature.icon,
+          title: l.sampleTemplatesOfferTitle,
+          body: l.sampleTemplatesOfferBody,
+          onAnswer: (yes) => preferences.answerOffer(feature, yes: yes),
+          onShown: () => preferences.markOffered(feature),
+        ),
+      ),
+      _ => const SliverToBoxAdapter(),
+    };
+  }
+
+  /// The samples under their header, as they were before #528 made them a
+  /// choice.
+  Widget _sampleGrid(BuildContext context, Templates templates) {
+    return SliverMainAxisGroup(
+      slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: .spaceBetween,
-              children: [
-                Text(
-                  exampleTemplates,
-                  style: textTheme.headlineSmall,
-                ),
-              ],
+            padding: const .all(8),
+            child: Text(
+              L.of(context).exampleTemplates,
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
         ),

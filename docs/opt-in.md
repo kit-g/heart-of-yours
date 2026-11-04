@@ -118,6 +118,12 @@ ticket doesn't say:
   asked like everyone else. It also sets the rule for the profile: **one
   offer at a time**. While the muscle map's offer is up, this one waits for a
   later session.
+- Example templates (`Feature.sampleTemplates`, #528) follow it, for the same
+  reason: the offer takes the grid's slot on the Workout tab, for a brand-new
+  user too, and only once there are samples to show. Off, the tab ends with
+  the user's own templates, and neither the assistant nor a pinned shortcut
+  can name a sample. Off is the UI only: the samples are still fetched and
+  kept, and a copy made from one is the user's own template either way.
 
 ### Default on
 

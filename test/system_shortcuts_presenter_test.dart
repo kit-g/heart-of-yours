@@ -71,7 +71,9 @@ void main() {
   }
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+    // no user, so every template here is a sample (see below): named only while
+    // samples are on (#528)
+    SharedPreferences.setMockInitialValues({'feature-sampleTemplates': 'on'});
     preferences = Preferences();
     await preferences.init();
     db = MockLocalDatabase();
@@ -212,6 +214,25 @@ void main() {
     preferences.setFeature(.shortcuts, on: true);
     await tester.pump();
     expect(recorder.enabled, [true, false, true]);
+  });
+
+  testWidgets('samples are named only while they are on (#528)', (tester) async {
+    when(db.getTemplates(null)).thenAnswer((_) async => [template(id: 's1', name: 'Full Body')]);
+    when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+    preferences.setFeature(.sampleTemplates, on: false);
+    await pump(tester);
+    await templates.init();
+    await tester.pump();
+    expect(templates.samples, isNotEmpty);
+    expect(recorder.told.last, isEmpty);
+
+    preferences.setFeature(.sampleTemplates, on: true);
+    await tester.pump();
+    expect(recorder.told.last, [const ShortcutTemplate(id: 's1', name: 'Full Body')]);
+
+    preferences.setFeature(.sampleTemplates, on: false);
+    await tester.pump();
+    expect(recorder.told.last, isEmpty);
   });
 
   testWidgets('a template without a name is left out', (tester) async {
