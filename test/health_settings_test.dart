@@ -167,7 +167,7 @@ void main() {
       // Someone reading this must not think years of Apple Health history are
       // about to go.
       expect(find.textContaining("Heart's copy"), findsOneWidget);
-      expect(find.textContaining('Nothing in your phone'), findsOneWidget);
+      expect(find.textContaining('Nothing in your health app'), findsOneWidget);
       expect(find.textContaining('read it again'), findsOneWidget);
     });
 
