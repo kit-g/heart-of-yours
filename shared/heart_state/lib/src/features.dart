@@ -110,12 +110,20 @@ enum Feature {
   /// discarded by the user. Asked once, the first time the server has one
   /// pending. Off, nothing is marked and a discarded entry counts again;
   /// the anomalies and the decisions stay stored and synced either way.
-  entryReview('entryReview');
+  entryReview('entryReview'),
+
+  /// Sets and sessions a week by movement pattern or muscle group, the
+  /// profile card (#341). Shipped as core and made a choice after the first
+  /// feedback from experienced lifters (#526): on by default ([defaultOn]),
+  /// so it is never asked about and the Settings switch is the answer. Reads
+  /// only what the workouts carry; goals on a pattern count the same sets
+  /// either way.
+  weeklySets('weeklySets', defaultOn: true);
 
   final String value;
 
   /// On until the user turns it off in Settings, rather than off until they
-  /// say yes: the one exception to the ask-once rule (`docs/opt-in.md`,
+  /// say yes: the exception to the ask-once rule (`docs/opt-in.md`,
   /// *Default on*). Never asked about; an explicit off stays off.
   final bool defaultOn;
 
