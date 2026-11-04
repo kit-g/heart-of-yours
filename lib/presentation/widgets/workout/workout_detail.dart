@@ -46,6 +46,7 @@ import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart' show DateFormat, NumberFormat;
 import 'package:material_ui/material_ui.dart';
 
+import 'adjust_times_dialog.dart';
 import 'rest.dart';
 import 'timer.dart';
 
@@ -1031,6 +1032,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
         programs.position(program, now: DateTime.now(), firstWeekday: firstWeekdayOf(context)).lighter,
       null => false,
     };
+    final movesStart = Preferences.watch(context).isOn(.workoutTimes);
 
     return DraggableScrollableSheet(
       initialChildSize: 1.0,
@@ -1185,21 +1187,32 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                                                 child: const Icon(Icons.play_arrow_rounded),
                                               ),
                                             ),
-                                          WorkoutTimer(
-                                            key: WorkoutDetailKeys.timer,
-                                            start: workouts.clockStart ?? start,
-                                            pausedAt: workouts.pausedAt,
-                                            style: textTheme.titleSmall?.copyWith(
-                                              // stopped, it steps back from the accent
-                                              color: workouts.isPaused
-                                                  ? colorScheme.onSurfaceVariant
-                                                  : colorScheme.tertiary,
-                                              // the preset's display face carries the
-                                              // numbers worth a shout
-                                              fontFamily: textTheme.headlineMedium?.fontFamily,
-                                              // ticks every second; keep the digits from
-                                              // jostling the row as they change
-                                              fontFeatures: const [FontFeature.tabularFigures()],
+                                          _StartClock(
+                                            // workout times (#530): the clock is the way to
+                                            // its start; off, it is only a clock
+                                            onTap: switch (movesStart) {
+                                              true => () => _moveStart(context, start),
+                                              false => null,
+                                            },
+                                            child: WorkoutTimer(
+                                              key: WorkoutDetailKeys.timer,
+                                              start: workouts.clockStart ?? start,
+                                              pausedAt: workouts.pausedAt,
+                                              style: textTheme.titleSmall?.copyWith(
+                                                // stopped, it steps back from the accent
+                                                color: workouts.isPaused
+                                                    ? colorScheme.onSurfaceVariant
+                                                    : colorScheme.tertiary,
+                                                // the preset's display face carries the
+                                                // numbers worth a shout
+                                                fontFamily: textTheme.headlineMedium?.fontFamily,
+                                                // ticks every second; keep the digits from
+                                                // jostling the row as they change
+                                                fontFeatures: const [FontFeature.tabularFigures()],
+                                                // a control, linkified like History's times
+                                                decoration: movesStart ? TextDecoration.underline : null,
+                                                decorationStyle: movesStart ? .dotted : null,
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -1263,6 +1276,19 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
           ),
         );
       },
+    );
+  }
+
+  /// Workout times (#530): the start in the picker History's editor uses, with
+  /// no end yet, so the start can go no later than now.
+  Future<void> _moveStart(BuildContext context, DateTime start) {
+    final workouts = widget.workouts;
+    return showAdjustTimesDialog(
+      context,
+      start: start.toLocal(),
+      end: null,
+      pauses: workouts.activeWorkout?.pauses ?? const [],
+      onSave: (start, _) => workouts.moveStart(start),
     );
   }
 
@@ -1362,5 +1388,34 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     if (localImage != null) {
       workouts.attachImageToActiveWorkout(localImage);
     }
+  }
+}
+
+/// The active workout's clock, a control when [onTap] is given (#530): it
+/// announces itself as one, and the dotted underline its style carries says
+/// so to the eye. Without [onTap] it is exactly the clock it always was.
+class _StartClock extends StatelessWidget {
+  final VoidCallback? onTap;
+  final Widget child;
+
+  const new({this.onTap, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (onTap) {
+      final VoidCallback onTap => Tooltip(
+        message: L.of(context).changeStartTime,
+        child: Semantics(
+          button: true,
+          child: InkWell(
+            key: WorkoutDetailKeys.startTime,
+            onTap: onTap,
+            borderRadius: const .all(.circular(6)),
+            child: Padding(padding: const .symmetric(horizontal: 2, vertical: 4), child: child),
+          ),
+        ),
+      ),
+      null => child,
+    };
   }
 }

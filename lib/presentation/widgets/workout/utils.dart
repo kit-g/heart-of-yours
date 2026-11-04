@@ -143,6 +143,28 @@ Future<bool> askReplaceInProgram(
 
 Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {VoidCallback? onFinish}) async {
   final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+
+  // Workout times (#530): a start moved by hand is a workout logged after the
+  // fact, which did not end now either. Its end is a row in this dialog, the
+  // one every finish passes through, rather than a step of its own: left
+  // alone it ends now, as any finish does. Read when Finish is tapped; the
+  // row draws its own copy.
+  final offersEnd = Preferences.of(context).isOn(.workoutTimes) && workouts.startMoved;
+  DateTime? end;
+  Widget withEnd(Widget content) {
+    return switch (offersEnd) {
+      true => Column(
+        mainAxisSize: .min,
+        spacing: 12,
+        children: [
+          content,
+          _FinishEnd(workouts: workouts, onChanged: (at) => end = at),
+        ],
+      ),
+      false => content,
+    };
+  }
+
   final Workouts(:activeWorkout) = workouts;
   final Workout(:isValid, :isStarted) = activeWorkout!;
   final L(
@@ -166,7 +188,7 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
   /// Finishes, and tells the caller it has.
   void finishNow() {
     Navigator.of(context, rootNavigator: true).pop();
-    finishWorkout(context, workouts);
+    finishWorkout(context, workouts, at: end);
     onFinish?.call();
   }
 
@@ -202,9 +224,11 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
         Icons.check_circle_outline_rounded,
         color: colorScheme.onPrimaryContainer,
       ),
-      content: Text(
-        finishWorkoutBody,
-        textAlign: .center,
+      content: withEnd(
+        Text(
+          finishWorkoutBody,
+          textAlign: .center,
+        ),
       ),
       actions: actions,
     );
@@ -223,24 +247,26 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
       title: Text(untickedSetsTitle),
       titleTextStyle: textTheme.titleMedium,
       icon: Icon(Icons.checklist_rounded, color: colorScheme.error),
-      content: Column(
-        mainAxisSize: .min,
-        crossAxisAlignment: .start,
-        spacing: 4,
-        children: [
-          Text(untickedPlanBody),
-          for (final (exercise, sets) in unticked)
-            Text(
-              L
-                  .of(context)
-                  .untickedSetsOf(
-                    exercise.exercise.name,
-                    sets.length,
-                    sets.map((set) => _setLabel(L.of(context), exercise, set)).join(', '),
-                  ),
-              style: textTheme.bodyMedium?.copyWith(fontWeight: .w600),
-            ),
-        ],
+      content: withEnd(
+        Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .start,
+          spacing: 4,
+          children: [
+            Text(untickedPlanBody),
+            for (final (exercise, sets) in unticked)
+              Text(
+                L
+                    .of(context)
+                    .untickedSetsOf(
+                      exercise.exercise.name,
+                      sets.length,
+                      sets.map((set) => _setLabel(L.of(context), exercise, set)).join(', '),
+                    ),
+                style: textTheme.bodyMedium?.copyWith(fontWeight: .w600),
+              ),
+          ],
+        ),
       ),
       actions: [
         Column(
@@ -287,9 +313,11 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
         Icons.checklist_rounded,
         color: colorScheme.error,
       ),
-      content: Text(
-        untickedSetsBody,
-        textAlign: .center,
+      content: withEnd(
+        Text(
+          untickedSetsBody,
+          textAlign: .center,
+        ),
       ),
       actions: [
         Column(
@@ -332,9 +360,11 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
         Icons.error_outline_rounded,
         color: colorScheme.error,
       ),
-      content: Text(
-        finishWorkoutWarningBody,
-        textAlign: .center,
+      content: withEnd(
+        Text(
+          finishWorkoutWarningBody,
+          textAlign: .center,
+        ),
       ),
       actions: actions,
     );
@@ -574,6 +604,100 @@ Future<void> finishWorkout(BuildContext context, Workouts workouts, {DateTime? a
   );
 
   return finishing;
+}
+
+/// The finish dialog's end row (#530), for a workout whose start was moved:
+/// now, until the user picks a time in the same picker the start took — which
+/// can move the start again too. [onChanged] hears the end picked.
+class _FinishEnd extends StatefulWidget {
+  final Workouts workouts;
+  final ValueChanged<DateTime> onChanged;
+
+  const new({required this.workouts, required this.onChanged});
+
+  @override
+  State<_FinishEnd> createState() => _FinishEndState();
+}
+
+class _FinishEndState extends State<_FinishEnd> {
+  final _end = ValueNotifier<DateTime?>(null);
+
+  @override
+  void dispose() {
+    _end.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pick(BuildContext context) async {
+    final workouts = widget.workouts;
+    final start = workouts.activeWorkout?.start.toLocal();
+    if (start == null) return;
+    return showAdjustTimesDialog(
+      context,
+      start: start,
+      end: _end.value ?? DateTime.now(),
+      pauses: workouts.activeWorkout?.pauses ?? const [],
+      onSave: (picked, end) async {
+        if (picked != start) await workouts.moveStart(picked);
+        if (end == null || !mounted) return;
+        _end.value = end;
+        widget.onChanged(end);
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final l = L.of(context);
+    return Tooltip(
+      message: l.changeEndTime,
+      child: Semantics(
+        button: true,
+        child: InkWell(
+          key: WorkoutDetailKeys.endTime,
+          onTap: () => _pick(context),
+          borderRadius: const .all(.circular(8)),
+          child: Padding(
+            padding: const .symmetric(horizontal: 8, vertical: 10),
+            child: Row(
+              mainAxisAlignment: .spaceBetween,
+              spacing: 12,
+              children: [
+                Text(l.endTime, style: textTheme.titleSmall),
+                ValueListenableBuilder(
+                  valueListenable: _end,
+                  builder: (context, end, _) {
+                    return Text(
+                      switch (end) {
+                        DateTime end => _endCopy(l, end),
+                        null => l.workoutEndsNow,
+                      },
+                      style: textTheme.titleSmall?.copyWith(
+                        color: colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                        decorationStyle: .dotted,
+                        decorationColor: colorScheme.primary,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The time alone on the day it is finished, the date with it on another.
+  static String _endCopy(L l, DateTime end) {
+    final format = switch (DateUtils.isSameDay(end, DateTime.now())) {
+      true => DateFormat.jm(l.localeName),
+      false => DateFormat.MMMd(l.localeName).add_jm(),
+    };
+    return format.format(end);
+  }
 }
 
 /// Set by the idle reminder's tap (#134); the active workout's sheet raises

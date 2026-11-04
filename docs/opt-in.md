@@ -118,6 +118,14 @@ ticket doesn't say:
   asked like everyone else. It also sets the rule for the profile: **one
   offer at a time**. While the muscle map's offer is up, this one waits for a
   later session.
+- Start and end times (`Feature.workoutTimes`, #530) is Settings-only, like
+  keep-awake, though its ticket proposed an ask. The only moment to ask in is
+  a heuristic (a finish moments after Start, sets already ticked), and a guess
+  that asks the wrong people is the nag the contract exists to prevent. On,
+  the active workout's clock opens its start, and a finish after the start
+  moved offers the end. Off, the clock is only a clock. A finished workout's
+  times stay editable in History either way: that editor is core, and this
+  feature only brings it to the workout still running.
 
 ### Default on
 

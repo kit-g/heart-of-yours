@@ -33,6 +33,11 @@ class WorkoutDetailKeys {
   static const startNewWorkout = Key('WorkoutDetail.startNewWorkout');
   static const finishWorkout = Key('WorkoutDetail.finishWorkout');
   static const timer = Key('WorkoutDetail.timer');
+
+  /// The elapsed clock as a control (#530), with workout times on: it opens
+  /// the start's picker. And the finish dialog's end row, once it was moved.
+  static const startTime = Key('WorkoutDetail.startTime');
+  static const endTime = Key('WorkoutDetail.endTime');
   static const resume = Key('WorkoutDetail.resume');
   static const keepGoing = Key('WorkoutDetail.keepGoing');
   static const finishAtLastSet = Key('WorkoutDetail.finishAtLastSet');

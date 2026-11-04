@@ -30,6 +30,7 @@ extension FeatureCopy on Feature {
       .liveRecords => l.liveRecords,
       .entryReview => l.entryReview,
       .weeklySets => l.lensTitle,
+      .workoutTimes => l.workoutTimes,
     };
   }
 
@@ -58,6 +59,7 @@ extension FeatureCopy on Feature {
       .liveRecords => l.liveRecordsSubtitle,
       .entryReview => l.entryReviewSubtitle,
       .weeklySets => l.weeklySetsSubtitle,
+      .workoutTimes => l.workoutTimesSubtitle,
     };
   }
 
@@ -81,6 +83,7 @@ extension FeatureCopy on Feature {
       .liveRecords => Icons.emoji_events_rounded,
       .entryReview => Icons.flag_outlined,
       .weeklySets => Icons.view_week_rounded,
+      .workoutTimes => Icons.edit_calendar_rounded,
     };
   }
 
@@ -100,7 +103,8 @@ extension FeatureCopy on Feature {
       .defaultRest ||
       .recaps ||
       .liveRecords ||
-      .weeklySets => const [],
+      .weeklySets ||
+      .workoutTimes => const [],
       // what syncs and what doesn't: the line health data never crosses
       .notToday => [l.notTodayNote],
       // the rounding, which no control says
