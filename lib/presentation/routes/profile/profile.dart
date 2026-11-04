@@ -21,7 +21,6 @@ import 'package:heart/presentation/widgets/chart_dimension.dart';
 import 'package:heart/presentation/widgets/exercise_chart.dart';
 import 'package:heart/presentation/widgets/exercises/exercise_picker_dialog.dart';
 import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
-import 'package:heart/presentation/widgets/feature_copy.dart';
 import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart';
 import 'package:heart/presentation/widgets/feedback_button.dart';

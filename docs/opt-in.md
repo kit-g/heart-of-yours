@@ -112,16 +112,10 @@ ticket doesn't say:
   offer (it stays for that session, then reads as no); tapping it opens the
   ask, and yes goes straight on to the copy. Nothing interrupts a user who
   never reaches for it.
-- Sets a week (`Feature.weeklySets`, #526) is the first core feature made
-  opt-in afterwards: the profile card shipped as core under #341, and
-  feedback from experienced lifters made it a choice. Anyone who had it is
-  asked like everyone else. It also sets the rule for the profile: **one
-  offer at a time**. While the muscle map's offer is up, this one waits for a
-  later session.
 
 ### Default on
 
-Programs (`Feature.programs`, #340) is the one feature that is **on until the
+Programs (`Feature.programs`, #340) was the first feature **on until the
 user turns it off**, rather than off until they say yes: it is too large a part
 of the app to hide behind an ask. `Feature.defaultOn` marks it. Never answered,
 it reads as on, so its in-context offer (#345) was retired and nothing ever
@@ -129,6 +123,11 @@ asks. Everything else in the contract holds: the switch in Settings › Features
 is live both ways, an explicit off stays off and the app looks as if Programs
 had never been built, and the data stays whole either way. The default is not
 an answer: only a switch the user actually flipped syncs to the account.
+
+Sets a week (`Feature.weeklySets`, #526) is the second, and the first core
+feature made a choice after it shipped: the profile card was core under #341,
+and feedback from experienced lifters asked for a way to turn it off. Default
+on keeps it where everyone already had it, and the switch removes it.
 
 ## Answers follow the account
 

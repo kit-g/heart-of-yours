@@ -12,8 +12,8 @@ import 'mocks.mocks.dart';
 import 'support/harness.dart';
 
 /// The weekly sets card on the profile (#341): sets and sessions a week, by
-/// movement pattern or by muscle group. Opt-in since #526: the card tests run
-/// with it on, and the offer has a group of its own at the end.
+/// movement pattern or by muscle group. On by default, with a switch since
+/// #526: the group at the end covers the switch.
 void main() {
   late MockLocalDatabase db;
   late MockApi api;
@@ -62,7 +62,7 @@ void main() {
     required List<LensSets> rows,
     bool history = true,
     Size size = const Size(1200, 2400),
-    Map<String, Object> features = const {'feature-weeklySets': 'on'},
+    Map<String, Object> features = const {},
   }) async {
     SharedPreferences.setMockInitialValues({...pastOnboarding(), ...features});
     when(
@@ -295,48 +295,21 @@ void main() {
     });
   });
 
-  group('opt-in (#526)', () {
+  group('the switch (#526)', () {
     final rows = [
       row('w1', today, patterns: ['horizontal_press'], sets: 4),
     ];
-    Finder offer() => find.byKey(AppKeys.weeklySetsOffer, skipOffstage: false);
 
-    testWidgets('never asked, it offers itself in place of the card', (tester) async {
-      // the muscle map answered, so its offer is not the one on the profile
-      await pumpProfile(tester, rows: rows, features: {'feature-muscleMap': 'off'});
+    testWidgets('never answered, the card is there: on by default', (tester) async {
+      await pumpProfile(tester, rows: rows);
 
-      expect(card(), findsNothing);
-      expect(offer(), findsOneWidget);
-    });
-
-    testWidgets("waits while the muscle map's offer is up", (tester) async {
-      await pumpProfile(tester, rows: rows, features: const {});
-
-      expect(find.byKey(AppKeys.muscleMapOffer, skipOffstage: false), findsOneWidget);
-      expect(offer(), findsNothing);
-      expect(card(), findsNothing);
-    });
-
-    testWidgets('yes shows the card', (tester) async {
-      await pumpProfile(tester, rows: rows, features: {'feature-muscleMap': 'off'});
-
-      await tester.ensureVisible(find.byKey(AppKeys.weeklySetsAccept));
-      await tester.tapByKey(AppKeys.weeklySetsAccept);
-      await tester.pumpTimes();
-
-      expect(offer(), findsNothing);
       expect(card(), findsOneWidget);
     });
 
-    testWidgets('off, the profile has neither card nor offer', (tester) async {
-      await pumpProfile(
-        tester,
-        rows: rows,
-        features: {'feature-muscleMap': 'off', 'feature-weeklySets': 'off'},
-      );
+    testWidgets('switched off, the profile has no card', (tester) async {
+      await pumpProfile(tester, rows: rows, features: {'feature-weeklySets': 'off'});
 
       expect(card(), findsNothing);
-      expect(offer(), findsNothing);
     });
   });
 }

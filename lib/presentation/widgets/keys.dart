@@ -71,9 +71,6 @@ abstract final class AppKeys {
   static const muscleMapOffer = ValueKey('muscleMapOffer');
   static const muscleMapAccept = ValueKey('muscleMapAccept');
   static const muscleMapDecline = ValueKey('muscleMapDecline');
-  static const weeklySetsOffer = ValueKey('weeklySetsOffer');
-  static const weeklySetsAccept = ValueKey('weeklySetsAccept');
-  static const weeklySetsDecline = ValueKey('weeklySetsDecline');
   static const featureDeclinedNotice = ValueKey('featureDeclinedNotice');
   static const rpeImportOffer = ValueKey('rpeImportOffer');
   static const rpeImportAccept = ValueKey('rpeImportAccept');

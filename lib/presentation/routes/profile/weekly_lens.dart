@@ -24,47 +24,22 @@ const _lensBarsWidth = 96.0;
 /// count toward it, where the library has one (a pattern; not a muscle).
 typedef _LensLine = ({String label, List<LensCount> weeks, ExerciseFilter? filter});
 
-/// The weekly sets card's slot on the profile (#341), opt-in since #526: the
-/// card when it is on, its one offer or the decline notice, or nothing — and
-/// nothing while there is nothing logged to count.
+/// The weekly sets card's slot on the profile (#341): on by default, and a
+/// switch in Settings since #526. Off, or with nothing logged to count, the
+/// slot is empty and the profile reflows.
 class const _WeeklyLensSection({
   required final WorkoutAggregation workouts,
 }) extends StatelessWidget {
-  static const _feature = Feature.weeklySets;
-
   @override
   Widget build(BuildContext context) {
-    final preferences = Preferences.watch(context);
-    final l = L.of(context);
-
-    final Widget? child = switch (preferences) {
-      _ when workouts.isEmpty => null,
-      _ when preferences.isOn(_feature) => _WeeklyLensCard(workouts: workouts),
-      _ when preferences.owesDeclineNotice(_feature) => FeatureDeclinedNotice(
-        onDismiss: () => preferences.acknowledgeDeclineNotice(_feature),
-      ),
-      // one offer on the profile at a time: the muscle map's, just above, goes
-      // first, and this one waits for a session without it
-      _ when preferences.shouldOffer(_feature) && !preferences.shouldOffer(.muscleMap) => FeatureOffer(
-        key: AppKeys.weeklySetsOffer,
-        acceptKey: AppKeys.weeklySetsAccept,
-        declineKey: AppKeys.weeklySetsDecline,
-        icon: _feature.icon,
-        title: l.weeklySetsOfferTitle,
-        body: l.weeklySetsOfferBody,
-        onAnswer: (yes) => preferences.answerOffer(_feature, yes: yes),
-        onShown: () => preferences.markOffered(_feature),
-      ),
-      _ => null,
-    };
-
+    final shown = workouts.isNotEmpty && Preferences.watch(context).isOn(.weeklySets);
     return SliverToBoxAdapter(
-      child: switch (child) {
-        Widget child => Padding(
+      child: switch (shown) {
+        true => Padding(
           padding: const .only(left: 16, right: 16, bottom: 8),
-          child: child,
+          child: _WeeklyLensCard(workouts: workouts),
         ),
-        null => const SizedBox.shrink(),
+        false => const SizedBox.shrink(),
       },
     );
   }
