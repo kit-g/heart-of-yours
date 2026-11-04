@@ -117,7 +117,16 @@ enum Feature {
   /// feedback from experienced lifters (#526). Asked once, in the card's slot
   /// on the profile, and never while the muscle map's offer is up. Reads only
   /// what the workouts carry; goals on a pattern count the same sets either way.
-  weeklySets('weeklySets');
+  weeklySets('weeklySets'),
+
+  /// The active workout's start, set by hand, and its end when it finishes
+  /// (#530): for a workout logged after the fact, whose clock would otherwise
+  /// count from the tap on Start and end at the tap on Finish. Settings-only,
+  /// like keep-awake: nothing on the way tells a workout logged late from one
+  /// logged live, and a guess would ask the wrong people. Off, the clock is
+  /// not a control; a finished workout's times stay editable in History
+  /// either way, which is core.
+  workoutTimes('workoutTimes');
 
   final String value;
 
