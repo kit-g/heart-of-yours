@@ -509,18 +509,18 @@ struct RestControls: View {
     @EnvironmentObject private var phone: PhoneSession
 
     var body: some View {
-        // Skip on a row of its own: three to a row leaves too little of a 40 mm
-        // screen for "Пропустить" or "Passer" (#502)
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                Button(controls.subtract) { phone.send(.adjustRest(workoutId: workoutId, seconds: -10)) }
-                Button(controls.add) { phone.send(.adjustRest(workoutId: workoutId, seconds: 10)) }
-            }
+        // one row, so the set's Done beneath never covers any of it; Skip is
+        // its glyph, named for VoiceOver, since "Пропустить" or "Passer" leaves
+        // a 40 mm screen no room for three words to a row (#502)
+        HStack(spacing: 4) {
+            Button(controls.subtract) { phone.send(.adjustRest(workoutId: workoutId, seconds: -10)) }
+            Button(controls.add) { phone.send(.adjustRest(workoutId: workoutId, seconds: 10)) }
             Button {
                 phone.send(.skipRest(workoutId: workoutId))
             } label: {
-                Text(controls.skip).frame(maxWidth: .infinity)
+                Image(systemName: "forward.end.fill")
             }
+            .accessibilityLabel(controls.skip)
         }
         .font(.footnote)
         .buttonStyle(.bordered)
