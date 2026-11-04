@@ -126,7 +126,16 @@ enum Feature {
   /// ([defaultOn]), never asked about. Off is the UI only: the samples are
   /// still fetched and kept, and a template copied from one is the user's own
   /// either way.
-  sampleTemplates('sampleTemplates', defaultOn: true);
+  sampleTemplates('sampleTemplates', defaultOn: true),
+
+  /// Logging a workout that already happened (#530): when it was, then what
+  /// was done, saved straight to History like any finished workout. No live
+  /// session, so no clock, rest timers, lock screen or watch. Opt-in from
+  /// Settings only, with no in-app offer: nothing in ordinary use marks a
+  /// lifter who logs after the fact, so an offer would be a guess. Off, the
+  /// ways in are gone; a workout logged this way is an ordinary workout and
+  /// stays.
+  pastWorkouts('pastWorkouts');
 
   final String value;
 
