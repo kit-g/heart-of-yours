@@ -148,6 +148,7 @@ class HeartApp extends StatelessWidget {
             persistPlan: db.setWorkoutExercisePlan,
             persistPauses: db.setWorkoutPauses,
             pausedAtOf: db.getPausedAt,
+            persistStart: db.setWorkoutStart,
             noteFor: Exercises.of(context).noteFor,
             remoteService: api,
             remote: RemoteAccess.of(context),

@@ -71,6 +71,7 @@ enum _Screen {
   workoutNote,
   pausedWorkout,
   finishAtLastSet,
+  finishWithEnd,
   setTypeMenu,
   setTargetDialog,
   templateMuscles,
@@ -551,6 +552,25 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
   (
     _Screen.finishAtLastSet,
+    _Guideline.iosTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  // Workout times (#530): the finish of a workout whose start was moved, with
+  // its end row (lib/presentation/widgets/workout/utils.dart, _FinishEnd).
+  (_Screen.finishWithEnd, _Guideline.labeledTapTarget, null),
+  (_Screen.finishWithEnd, _Guideline.textContrastLight, null),
+  (
+    _Screen.finishWithEnd,
+    _Guideline.textContrastDark,
+    'the finish dialog reads its button colours once, from the context it opened in (lib/presentation/widgets/workout/utils.dart:145), so "No, one more set!" keeps its light fill when dark arrives under the open dialog (utils.dart:200) — predates #530',
+  ),
+  (
+    _Screen.finishWithEnd,
+    _Guideline.androidTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.finishWithEnd,
     _Guideline.iosTapTarget,
     'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
   ),
@@ -1164,8 +1184,16 @@ void main() {
     if (screen == _Screen.restTimers) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-defaultRest': 'on'});
     }
+    // workout times (#530) on too, so the clock is held to it as a control
     if (screen == _Screen.pausedWorkout || screen == _Screen.finishAtLastSet) {
-      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-pauseWorkout': 'on'});
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-pauseWorkout': 'on',
+        'feature-workoutTimes': 'on',
+      });
+    }
+    if (screen == _Screen.finishWithEnd) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-workoutTimes': 'on'});
     }
 
     // The upsync row shows on the profile of an account whose store is still
@@ -1642,6 +1670,22 @@ void main() {
           await tester.pumpTimes();
           expect(find.byKey(WorkoutDetailKeys.finishAtLastSet), findsOneWidget);
         }
+      case _Screen.finishWithEnd:
+        final workout = Workout(name: 'Late')..add(_squat);
+        final workouts = Workouts.of(tester.element(find.byType(MaterialApp)));
+        await workouts.startWorkout(source: .template, template: workout);
+        await workouts.moveStart(DateTime.timestamp().subtract(const Duration(hours: 2)));
+        final exercise = workouts.activeWorkout!.first;
+        await workouts.markSetAsComplete(exercise, exercise.first);
+        await tester.tapByKey(AppKeys.workoutStack);
+        await tester.pumpTimes();
+        if (find.byType(WorkoutDetail).evaluate().isEmpty) {
+          await tester.tapByKey(WorkoutDetailKeys.startNewWorkout);
+        }
+        await tester.pumpTimes();
+        await tester.tapByKey(WorkoutDetailKeys.finishWorkout);
+        await tester.pumpTimes();
+        expect(find.byKey(WorkoutDetailKeys.endTime), findsOneWidget);
       case _Screen.programWorkout:
         final context = tester.element(find.byType(MaterialApp));
         await Programs.of(context).init();

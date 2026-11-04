@@ -31,6 +31,7 @@ extension FeatureCopy on Feature {
       .entryReview => l.entryReview,
       .weeklySets => l.lensTitle,
       .sampleTemplates => l.exampleTemplates,
+      .workoutTimes => l.workoutTimes,
     };
   }
 
@@ -60,6 +61,7 @@ extension FeatureCopy on Feature {
       .entryReview => l.entryReviewSubtitle,
       .weeklySets => l.weeklySetsSubtitle,
       .sampleTemplates => l.sampleTemplatesSubtitle,
+      .workoutTimes => l.workoutTimesSubtitle,
     };
   }
 
@@ -84,6 +86,7 @@ extension FeatureCopy on Feature {
       .entryReview => Icons.flag_outlined,
       .weeklySets => Icons.view_week_rounded,
       .sampleTemplates => Icons.grid_view_rounded,
+      .workoutTimes => Icons.edit_calendar_rounded,
     };
   }
 
@@ -105,6 +108,7 @@ extension FeatureCopy on Feature {
       .liveRecords ||
       .weeklySets ||
       .sampleTemplates => const [],
+      .workoutTimes => const [],
       // what syncs and what doesn't: the line health data never crosses
       .notToday => [l.notTodayNote],
       // the rounding, which no control says
