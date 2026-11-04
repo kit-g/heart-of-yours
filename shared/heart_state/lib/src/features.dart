@@ -117,7 +117,14 @@ enum Feature {
   /// feedback from experienced lifters (#526). Asked once, in the card's slot
   /// on the profile, and never while the muscle map's offer is up. Reads only
   /// what the workouts carry; goals on a pattern count the same sets either way.
-  weeklySets('weeklySets');
+  weeklySets('weeklySets'),
+
+  /// The example templates under the user's own on the Workout tab, and in
+  /// the shortcuts that name templates. Shipped as core and made opt-in after
+  /// the first feedback from experienced lifters (#528). Asked once, in the
+  /// grid's slot. Off is the UI only: the samples are still fetched and kept,
+  /// and a template copied from one is the user's own either way.
+  sampleTemplates('sampleTemplates');
 
   final String value;
 
