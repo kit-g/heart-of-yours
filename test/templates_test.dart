@@ -357,6 +357,28 @@ void main() {
       verify(api.editTemplate(any)).called(1);
     });
 
+    testWidgets('a name of only spaces is no name: Save stays off', (tester) async {
+      when(db.getTemplates(userId)).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push Day')]);
+
+      await openWorkoutTab(tester);
+      final card = find.ancestor(of: find.text('Push Day'), matching: find.byType(Card)).first;
+      await tester.tap(find.descendant(of: card, matching: find.byIcon(Icons.more_horiz)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.descendant(of: find.byType(AppBarTextField), matching: find.byType(TextField)),
+        '   ',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TemplateEditor), findsOneWidget, reason: 'nothing saved, the editor stays');
+      verifyNever(db.updateTemplate(any));
+    });
+
     group('targets (#173)', () {
       Future<void> openEditor(WidgetTester tester) async {
         await openWorkoutTab(tester);

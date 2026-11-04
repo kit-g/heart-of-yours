@@ -50,7 +50,8 @@ class _TemplateEditorState extends State<TemplateEditor> {
             ValueListenableBuilder<TextEditingValue>(
               valueListenable: _controller,
               builder: (_, value, _) {
-                final enabled = (templates.editable?.isNotEmpty ?? false) && value.text.isNotEmpty;
+                // a name of spaces is no name: the one saved is trimmed
+                final enabled = (templates.editable?.isNotEmpty ?? false) && value.text.trim().isNotEmpty;
                 return AnimatedOpacity(
                   opacity: enabled ? 1 : .3,
                   duration: const Duration(milliseconds: 200),
