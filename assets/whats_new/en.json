@@ -1,7 +1,59 @@
 [
   {
-    "version": "1.16.0",
+    "version": "1.17.0",
     "date": null,
+    "items": [
+      {
+        "id": "recaps",
+        "title": "Recaps",
+        "body": "Early each month, last month on your profile: workouts, time, sets, volume, the muscles and patterns you trained and the records you set. Every month stays in a list, and a report can be shared as a card.",
+        "feature": "recaps"
+      },
+      {
+        "id": "copy-for-ai",
+        "title": "Copy for AI",
+        "body": "A workout, a month or one exercise's history as text any AI assistant reads well. Nothing about your health goes with it.",
+        "feature": "copyForAi"
+      },
+      {
+        "id": "live-records",
+        "title": "Live records",
+        "body": "A quiet note the moment a ticked set beats your best.",
+        "feature": "liveRecords"
+      },
+      {
+        "id": "second-look",
+        "title": "Second look",
+        "body": "Heart points out entries that look like a slip, such as a workout left running for hours. **Keep** each one, or **leave it out** of your records and charts. Needs an account.",
+        "feature": "entryReview"
+      },
+      {
+        "id": "past-workouts",
+        "title": "Log a past workout",
+        "body": "For a workout that already happened: say when it was, then what you did, and it goes straight to History.",
+        "feature": "pastWorkouts"
+      },
+      {
+        "id": "create-from-picker",
+        "title": "Create an exercise from the picker",
+        "body": "Search for an exercise that isn't there and create it on the spot, while you build a template or during a workout. Your own exercises can be tagged with the muscles they work."
+      },
+      {
+        "id": "watch-holds",
+        "title": "Time a hold from your watch",
+        "body": "With the set stopwatch on, start and stop a timed set from your Apple Watch or Wear OS watch, and the time lands on your phone.",
+        "feature": "setStopwatch"
+      },
+      {
+        "id": "switches",
+        "title": "Sets a week and example templates",
+        "body": "Both are now switches. They stay on unless you turn them off."
+      }
+    ]
+  },
+  {
+    "version": "1.16.0",
+    "date": "2026-10-25",
     "items": [
       {
         "id": "wear-os",
