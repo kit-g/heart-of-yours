@@ -39,6 +39,7 @@ mixin _Erase on _LocalDatabase {
           'DELETE FROM $_workoutExercises WHERE workout_id IN (SELECT id FROM $_workouts WHERE user_id = ?)',
           [userId],
         );
+        batch.delete(_workoutPlans, where: 'user_id = ?', whereArgs: [userId]);
         batch.delete(_workouts, where: 'user_id = ?', whereArgs: [userId]);
         batch.rawDelete(
           'DELETE FROM $_templatesExercises WHERE template_id IN (SELECT id FROM $_templates WHERE user_id = ?)',
