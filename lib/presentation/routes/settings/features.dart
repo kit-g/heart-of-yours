@@ -100,7 +100,37 @@ class _FeaturesPageState extends State<FeaturesPage> {
       // the ramp itself, which only the switch's own page can hold
       .warmups => const _FeatureSwitch(.warmups, extra: _WarmupScheme()),
       .entryReview => const _EntryReviewSwitch(),
+      .coachPeople => const _CoachPeopleSwitch(),
+      .yourCoach => const _YourCoachSwitch(),
       _ => _FeatureSwitch(feature),
+    };
+  }
+}
+
+/// Coach people's switch (#566), only for an account that may coach: in the
+/// beta the server grants that by hand, and the profile says whether it holds it.
+class _CoachPeopleSwitch extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (Auth.watch(context).user?.mayCoach ?? false) {
+      true => const _FeatureSwitch(.coachPeople),
+      false => const SizedBox.shrink(),
+    };
+  }
+}
+
+/// Your coach's switch (#566), only once it has been asked about: an
+/// invitation is the ask (#553), and before one there is nothing to switch.
+class _YourCoachSwitch extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (Preferences.watch(context).featureAnswer(.yourCoach)) {
+      .unasked => const SizedBox.shrink(),
+      .pending || .on || .off => const _FeatureSwitch(.yourCoach),
     };
   }
 }

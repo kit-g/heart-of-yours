@@ -512,6 +512,8 @@ void main() {
         'weeklySets',
         'sampleTemplates',
         'pastWorkouts',
+        'coachPeople',
+        'yourCoach',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });

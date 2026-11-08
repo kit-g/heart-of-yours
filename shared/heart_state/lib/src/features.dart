@@ -135,7 +135,22 @@ enum Feature {
   /// lifter who logs after the fact, so an offer would be a guess. Off, the
   /// ways in are gone; a workout logged this way is an ordinary workout and
   /// stays.
-  pastWorkouts('pastWorkouts');
+  pastWorkouts('pastWorkouts'),
+
+  /// Coaching from the coach's side (#168, #566): a space of its own with
+  /// clients, messages, the programs sent to them, and the coach's own page,
+  /// behind one Coaching button on Profile. Settings-only, with no ask, and in
+  /// the beta its switch shows only for an account holding the `coach`
+  /// entitlement. Off, the button and the space are gone; the connections and
+  /// everything sent through them stay on the server.
+  coachPeople('coachPeople'),
+
+  /// Coaching from the student's side (#168, #566): asked when an invitation
+  /// arrives (#553), and in Settings only once asked. The server turns it on
+  /// when an invitation is accepted, under this key, so the key is the
+  /// server's too. Off pauses the connection: the coach stops seeing new
+  /// workouts, and only the student resumes it.
+  yourCoach('yourCoach');
 
   final String value;
 

@@ -150,8 +150,9 @@ void main() {
     // test font
     tester.view.physicalSize = const Size(1194, 420);
     await tester.pumpTimes();
-    // the last feature on the page: far below the fold
-    final last = Feature.values.last;
+    // the last row every account sees: far below the fold. The coaching rows
+    // after it show only for a coach, or once an invitation has asked (#566)
+    final last = Feature.values.lastWhere((feature) => feature != .coachPeople && feature != .yourCoach);
     router.config.go('/profile/settings/features?feature=${last.value}');
     await tester.pumpTimes(25);
 
