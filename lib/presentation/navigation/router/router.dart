@@ -15,6 +15,7 @@ import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/navigation/program_link.dart';
 import 'package:heart/presentation/navigation/shortcuts.dart';
+import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/done/done.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
@@ -83,6 +84,7 @@ final class HeartRouter {
               ),
             ],
           ),
+          _coachingRoute(),
           _upgradeRequiredRoute(),
           _onboardingRoute(),
           _activeWorkoutRoute(),

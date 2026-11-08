@@ -12,8 +12,18 @@ enum _AuthPages {
 RouteBase _profileRoute() {
   return GoRoute(
     path: _profilePath,
+    // the app opens in the space it was left in (#566): Profile itself, not
+    // anything under it, so Settings stays reachable from Coaching
+    redirect: (context, state) {
+      if (state.fullPath != _profilePath) return null;
+      return switch (Preferences.of(context).inCoachingSpace && coachingSpaceOn(context)) {
+        true => _coachingClientsPath,
+        false => null,
+      };
+    },
     builder: (context, _) {
       return ProfilePage(
+        onCoaching: context.goToCoaching,
         onSettings: context.goToSettings,
         onAccount: context.goToAccountManagement,
         onLogIn: context.goToLogin,
@@ -1211,4 +1221,53 @@ DateTime? _monthOf(String? key) {
     },
     _ => null,
   };
+}
+
+/// The Coaching space (#566): its own shell and tabs, there only while
+/// [coachingSpaceOn]. Off, a link into it is one the app has no screen for.
+RouteBase _coachingRoute() {
+  String? off(BuildContext context, GoRouterState _) => coachingSpaceOn(context) ? null : _profilePath;
+
+  GoRoute page(String path, String name, Widget Function(VoidCallback onYourTraining) build) {
+    return GoRoute(
+      path: path,
+      name: name,
+      redirect: off,
+      builder: (context, _) => build(context.leaveCoaching),
+    );
+  }
+
+  return StatefulShellRoute.indexedStack(
+    pageBuilder: (context, state, shell) {
+      return NoTransitionPage<void>(
+        key: state.pageKey,
+        child: CoachingFrame(
+          shell: shell,
+          onYourTraining: context.leaveCoaching,
+          onBackToWorkout: () {
+            // the sheet goes over the Workout tab, as a Live Activity's tap
+            // does, once the router has left the space: pushed in the same
+            // frame, it would land over Coaching
+            final router = GoRouter.of(context);
+            context.leaveCoaching(to: _workoutName);
+            WidgetsBinding.instance.addPostFrameCallback((_) => _pushActiveWorkoutOnce(router));
+          },
+        ),
+      );
+    },
+    branches: [
+      StatefulShellBranch(
+        routes: [page(_coachingClientsPath, _coachingClientsName, (back) => ClientsPage(onYourTraining: back))],
+      ),
+      StatefulShellBranch(
+        routes: [page(_coachingMessagesPath, _coachingMessagesName, (back) => CoachMessagesPage(onYourTraining: back))],
+      ),
+      StatefulShellBranch(
+        routes: [page(_coachingProgramsPath, _coachingProgramsName, (back) => CoachProgramsPage(onYourTraining: back))],
+      ),
+      StatefulShellBranch(
+        routes: [page(_coachingMePath, _coachingMeName, (back) => CoachMePage(onYourTraining: back))],
+      ),
+    ],
+  );
 }

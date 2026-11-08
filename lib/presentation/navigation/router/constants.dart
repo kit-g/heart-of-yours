@@ -85,3 +85,13 @@ const _filteredExercisesName = 'filteredExercises';
 const _filteredExercisesPath = '/filtered-exercises';
 const _onboardingName = 'welcome';
 const _onboardingPath = '/$_onboardingName';
+// the Coaching space (#566): a shell of its own, beside the app's
+const _coachingPath = '/coaching';
+const _coachingClientsName = 'coachingClients';
+const _coachingClientsPath = '$_coachingPath/clients';
+const _coachingMessagesName = 'coachingMessages';
+const _coachingMessagesPath = '$_coachingPath/messages';
+const _coachingProgramsName = 'coachingPrograms';
+const _coachingProgramsPath = '$_coachingPath/programs';
+const _coachingMeName = 'coachingMe';
+const _coachingMePath = '$_coachingPath/me';

@@ -309,4 +309,14 @@ abstract final class AppKeys {
   /// The picker's offer to create an exercise named after a search that
   /// found nothing (#529).
   static const pickerCreateExercise = Key('ExercisePicker.createExercise');
+
+  /// The Coaching space (#566): the way in on Profile, the way back out, its
+  /// tabs, and the line that leads back to a workout still going.
+  static const coachingButton = Key('Profile.coaching');
+  static const coachingYourTraining = Key('Coaching.yourTraining');
+  static const coachingClientsStack = Key('Coaching.clientsStack');
+  static const coachingMessagesStack = Key('Coaching.messagesStack');
+  static const coachingProgramsStack = Key('Coaching.programsStack');
+  static const coachingMeStack = Key('Coaching.meStack');
+  static const coachingBackToWorkout = Key('Coaching.backToWorkout');
 }
