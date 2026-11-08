@@ -45,12 +45,11 @@ satisfied or explicitly flagged in the handoff.
    round-trips it, with a switch in Settings › Features. If the ticket
    didn't answer "is this opt-in?", building it as opt-in is the default,
    and the handoff says so.
-7. **Git** — an agent never commits or pushes (`agents/hooks/guard.sh`
-   enforces it; the user's own interactive session may). Leave work in the tree and run
-   `git add -N .` so new files appear in `git diff`. Your worktree may be
-   stacked on another agent's branch rather than `main` (the launcher's
-   `--base`); your work is still exactly `git diff HEAD`, and the handoff
-   names the base so the reviewer diffs and the PR targets the right branch.
+7. **Git** — an agent never commits or pushes; the user's own interactive
+   session may. Leave work in the tree and run `git add -N .` so new files
+   appear in `git diff`. If your worktree is stacked on another branch rather
+   than `main`, the handoff names the base so the reviewer diffs and the PR
+   targets the right branch.
 8. **Self-review** — run the `review-handoff` skill on the finished tree
    before writing the handoff. Fix what it finds, re-run, and leave
    `REVIEW.md` describing the tree as handed off. The reviewer runs the same
