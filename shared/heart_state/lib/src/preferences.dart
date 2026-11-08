@@ -25,6 +25,9 @@ const _healthAsked = 'healthAsked';
 // read natively too, as `flutter.watchReadings` (android/app WatchReadings.kt)
 const _watchReadings = 'watchReadings';
 const _coachingSpace = 'coachingSpace';
+const _coachName = 'coachName';
+const _coachFingerprint = 'coachFingerprint';
+const _pendingInvitation = 'pendingInvitation';
 const _notificationsReminderDismissed = 'notificationsReminderDismissed';
 const _installed = 'installed';
 const _lockScreenWorkout = 'lockScreenWorkout';
@@ -103,6 +106,43 @@ class Preferences with ChangeNotifier {
   bool get inCoachingSpace => _prefs?.getBool(_coachingSpace) ?? false;
 
   Future<bool>? setInCoachingSpace({required bool inside}) => _prefs?.setBool(_coachingSpace, inside);
+
+  /// A coach's name as their invitation showed it (#553), by the connection it
+  /// made: what this device can call them until connections carry names
+  /// (heart-api#409). Per device.
+  String? coachName(String connectionId) => _prefs?.getString('$_coachName-$connectionId');
+
+  Future<bool>? rememberCoachName(String connectionId, String name) {
+    return _prefs?.setString('$_coachName-$connectionId', name);
+  }
+
+  /// The coach's key fingerprint from their invitation link's fragment
+  /// (#553), by the connection it made: what their keys are checked against
+  /// once devices hold them (#555). The part of a link after `#` never
+  /// reaches a server, so this device is the only place it is.
+  String? coachFingerprint(String connectionId) => _prefs?.getString('$_coachFingerprint-$connectionId');
+
+  Future<bool>? rememberCoachFingerprint(String connectionId, String fingerprint) {
+    return _prefs?.setString('$_coachFingerprint-$connectionId', fingerprint);
+  }
+
+  /// An invitation link opened in a session without an account (#553): kept
+  /// while the person makes one, then opened again. `token` and the link's
+  /// fragment, if it had one.
+  ({String token, String? fingerprint})? get pendingInvitation {
+    return switch (_prefs?.getStringList(_pendingInvitation)) {
+      [final String token] => (token: token, fingerprint: null),
+      [final String token, final String fingerprint] => (token: token, fingerprint: fingerprint),
+      _ => null,
+    };
+  }
+
+  Future<bool>? setPendingInvitation(({String token, String? fingerprint})? invitation) {
+    return switch (invitation) {
+      (:final token, :final fingerprint) => _prefs?.setStringList(_pendingInvitation, [token, ?fingerprint]),
+      null => _prefs?.remove(_pendingInvitation),
+    };
+  }
 
   Future<bool>? setFirstWeekday(int weekday) {
     final write = _prefs?.setInt(_firstWeekday, weekday);
