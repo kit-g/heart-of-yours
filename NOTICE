@@ -48,8 +48,9 @@ Not ours, and not covered by the licence above
     Apache License 2.0.
   - The muscle artwork in the flutter_body_atlas package is Ryan Graves'
     work under CC BY 4.0; the app credits it on its licence page.
-  - Sofia's profile photo in the screenshots (docs/screenshots/) was made
-    with an image-generation model.
+  - Sofia's profile photo in the screenshots (docs/screenshots/) and the
+    barbell illustration (assets/svg/barbell.svg, traced to a vector) were
+    made with image-generation models.
   - Exercise images and animations are served from the CDN, are not in this
     repository, and are not covered by any licence here.
   - heart_models and heart_design come from heart-api under the Apache
