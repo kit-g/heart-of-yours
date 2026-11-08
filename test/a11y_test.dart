@@ -102,6 +102,7 @@ enum _Screen {
   coachingMessages,
   coachingPrograms,
   coachingMe,
+  coachingInviteDialog,
   newApiToken,
   apiTokenRevealed,
   revokeApiTokenDialog,
@@ -923,6 +924,13 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingMe, _Guideline.androidTapTarget, null),
   (_Screen.coachingMe, _Guideline.iosTapTarget, null),
 
+  // the invite dialog (#553): a field, a line of prose and two buttons
+  (_Screen.coachingInviteDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingInviteDialog, _Guideline.textContrastLight, null),
+  (_Screen.coachingInviteDialog, _Guideline.textContrastDark, null),
+  (_Screen.coachingInviteDialog, _Guideline.androidTapTarget, null),
+  (_Screen.coachingInviteDialog, _Guideline.iosTapTarget, null),
+
   (_Screen.apiTokens, _Guideline.labeledTapTarget, null),
   (_Screen.apiTokens, _Guideline.textContrastLight, null),
   (_Screen.apiTokens, _Guideline.textContrastDark, null),
@@ -1235,6 +1243,7 @@ void main() {
       _Screen.coachingMessages: AppKeys.coachingMessagesStack,
       _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
       _Screen.coachingMe: AppKeys.coachingMeStack,
+      _Screen.coachingInviteDialog: AppKeys.coachingClientsStack,
     };
     if (coaching.containsKey(screen)) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-coachPeople': 'on'});
@@ -1250,6 +1259,8 @@ void main() {
       });
       when(api.getConnections()).thenAnswer((_) async => []);
       when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
+      when(api.getInvitations(cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: <Invitation>[], cursor: null));
     }
     if (screen == _Screen.pausedWorkout || screen == _Screen.finishAtLastSet) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-pauseWorkout': 'on'});
@@ -2094,11 +2105,21 @@ void main() {
           default:
             break;
         }
-      case _Screen.coachingClients || _Screen.coachingMessages || _Screen.coachingPrograms || _Screen.coachingMe:
+      case _Screen.coachingClients ||
+          _Screen.coachingMessages ||
+          _Screen.coachingPrograms ||
+          _Screen.coachingMe ||
+          _Screen.coachingInviteDialog:
         await tester.tapByKey(AppKeys.coachingButton);
         await tester.pumpTimes();
         await tester.tapByKey(coaching[screen]!);
         await tester.pumpTimes();
+        if (screen == _Screen.coachingInviteDialog) {
+          await tester.tapByKey(AppKeys.coachingInvite);
+          await tester.pumpTimes();
+          await tester.enterText(find.byKey(AppKeys.coachingInviteName), 'Biscuit');
+          await tester.pumpTimes();
+        }
       case _Screen.whatsNew:
         // rootBundle caches each load's future, and one cached under an
         // earlier test's fake clock never delivers to a later test
