@@ -69,9 +69,9 @@ class LocalPrograms implements LocalProgramService {
   Future<List<ProgramOwed>> getProgramsOwed(String userId) async {
     return [
       for (final (:row, :id, :programId, :change) in await _db.getProgramsOwed(userId))
-        if ((ProgramRow.values.asNameMap()[row], ProgramChange.values.asNameMap()[change]) case (
+        if ((ProgramRow.values.asNameMap()[row], ProgramOwedChange.values.asNameMap()[change]) case (
           final ProgramRow row,
-          final ProgramChange change,
+          final ProgramOwedChange change,
         ))
           (row: row, id: id, programId: programId, change: change),
     ];
