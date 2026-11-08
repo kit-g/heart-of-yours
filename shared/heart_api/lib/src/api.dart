@@ -1001,6 +1001,75 @@ class Api
     if (code != 204) throw json;
   }
 
+  // ---- connections (coaching, #552) ----
+
+  /// Every connection of the account, both directions, ended ones included.
+  /// Read whole: a connection this build can't read is dropped, not fatal,
+  /// since the server's roles and domains may grow ahead of the app.
+  Future<List<Connection>> getConnections() async {
+    final (json, code) = await get(Router.connections);
+    return switch ((code, json)) {
+      (200, {'connections': List l}) => _readable(l, Connection.fromJson),
+      _ => throw json,
+    };
+  }
+
+  /// What the student of a coach connection opens to their coach beyond
+  /// workouts since accepting. The list replaces the old one. Only the student
+  /// may: the coach gets `403 forbidden`, thrown whole like every refusal.
+  Future<Connection> setConnectionShares(String connectionKey, Set<ConnectionShare> shares) async {
+    final (json, code) = await put(
+      Router.connectionShares(connectionKey),
+      body: {
+        'shares': [for (final share in shares) share.name],
+      },
+    );
+    return switch ((code, json)) {
+      (200, Map json) => Connection.fromJson(json),
+      _ => throw json,
+    };
+  }
+
+  /// Moves a connection to [status]: pausing a coach connection, and resuming
+  /// it, which only its student may.
+  Future<Connection> setConnectionStatus(String connectionKey, ConnectionStatus status) async {
+    final (json, code) = await put(Router.connection(connectionKey), body: {'status': status.name});
+    return switch ((code, json)) {
+      (200, Map json) => Connection.fromJson(json),
+      _ => throw json,
+    };
+  }
+
+  /// Ends a connection for both people. The row stays, as `severed`.
+  Future<void> endConnection(String connectionKey) async {
+    final (json, code) = await delete(Router.connection(connectionKey));
+    if (code != 204) throw json;
+  }
+
+  /// The workouts the account has hidden from every connection, and since when.
+  Future<List<HiddenWorkout>> getHiddenWorkouts() async {
+    final (json, code) = await get(Router.hiddenWorkouts);
+    return switch ((code, json)) {
+      (200, {'workouts': List l}) => [for (final each in l.cast<Map>()) HiddenWorkout.fromJson(each)],
+      _ => throw json,
+    };
+  }
+
+  /// Hides a workout from every connection, peers too. [at] is when the device
+  /// says it happened.
+  Future<void> hideWorkout(String workoutId, {DateTime? at}) async {
+    final (json, code) = await put(
+      Router.workoutHidden(workoutId),
+      body: {'at': ?at?.toUtc().toIso8601String()},
+    );
+    if (code != 204) throw json;
+  }
+
+  Future<void> unhideWorkout(String workoutId) async {
+    final (json, code) = await delete(Router.workoutHidden(workoutId));
+    if (code != 204) throw json;
+  }
+
   /// [json] with its `purpose` only when it is one this build can name.
   ///
   /// The server's enum may grow ahead of the app in the stores, and
@@ -1173,6 +1242,23 @@ abstract final class Router {
   static const workoutImports = '$workouts/imports';
   static const accountTokens = '$accounts/tokens';
   static const programs = 'v1/programs';
+  static const connections = 'v1/connections';
+  static const hiddenWorkouts = '$workouts/hidden';
+
+  /// A connection by its key, `uid|ROLE|DOMAIN`, as it is: the client builds
+  /// every URL with `Uri.https`, which encodes the pipes once. Encoding here
+  /// too would send `%257C`.
+  static String connection(String connectionKey) {
+    return '$connections/$connectionKey';
+  }
+
+  static String connectionShares(String connectionKey) {
+    return '${connection(connectionKey)}/shares';
+  }
+
+  static String workoutHidden(String workoutId) {
+    return '$workouts/$workoutId/hidden';
+  }
 
   static String program(String programId) {
     return '$programs/$programId';
