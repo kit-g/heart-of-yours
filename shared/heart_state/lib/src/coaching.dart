@@ -11,19 +11,19 @@ import 'remote.dart';
 ///
 /// Defined here, like `ApiTokenService`: it is the app's view of a handful of
 /// routes, not a contract the server implements. The app adapts `Api` onto it.
-/// A connection's routes take its key, `uid|ROLE|DOMAIN` ([Connection.id]).
+/// A connection's routes take its [Connection.connectionId].
 abstract interface class CoachingService {
   /// Every connection, both directions, ended ones included.
   Future<List<Connection>> getConnections();
 
   /// Replaces what the student of a coach connection shares. Only the student
   /// may.
-  Future<Connection> setConnectionShares(String connectionKey, Set<ConnectionShare> shares);
+  Future<Connection> setConnectionShares(String connectionId, Set<ConnectionShare> shares);
 
-  Future<Connection> setConnectionStatus(String connectionKey, ConnectionStatus status);
+  Future<Connection> setConnectionStatus(String connectionId, ConnectionStatus status);
 
   /// Ends it for both people. The server keeps the row, as `severed`.
-  Future<void> endConnection(String connectionKey);
+  Future<void> endConnection(String connectionId);
 
   Future<List<HiddenWorkout>> getHiddenWorkouts();
 
@@ -143,23 +143,23 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
   /// Throws what the service threw; the list here changes only once the
   /// server has agreed.
   Future<void> setShares(Connection coach, Set<ConnectionShare> shares) async {
-    _replace(await _service.setConnectionShares(coach.id, shares));
+    _replace(await _service.setConnectionShares(_idOf(coach), shares));
   }
 
   /// Stops [connection]'s coach reading anything logged from now on. Either
   /// side may pause; only the student resumes.
   Future<void> pause(Connection connection) async {
-    _replace(await _service.setConnectionStatus(connection.id, .paused));
+    _replace(await _service.setConnectionStatus(_idOf(connection), .paused));
   }
 
   Future<void> resume(Connection connection) async {
-    _replace(await _service.setConnectionStatus(connection.id, .active));
+    _replace(await _service.setConnectionStatus(_idOf(connection), .active));
   }
 
   /// Ends [connection] for both people. It stays in [all] as ended, and out of
   /// [clients] and [coaches].
   Future<void> end(Connection connection) async {
-    await _service.endConnection(connection.id);
+    await _service.endConnection(_idOf(connection));
     _replace(
       Connection(
         targetId: connection.targetId,
@@ -188,8 +188,17 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
+  /// What every connection route takes. A connection without one is an old
+  /// pending peer request, never a coaching one, and can't be addressed.
+  static String _idOf(Connection connection) {
+    return switch (connection.connectionId) {
+      final String id => id,
+      null => throw StateError('a connection without a connectionId cannot be addressed'),
+    };
+  }
+
   void _replace(Connection updated) {
-    final index = _connections.indexWhere((each) => each.id == updated.id);
+    final index = _connections.indexWhere((each) => each.connectionId == updated.connectionId);
     switch (index) {
       case -1:
         _connections.add(updated);

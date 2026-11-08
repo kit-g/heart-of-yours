@@ -1817,27 +1817,18 @@ void main() {
   group('connections (#552)', () {
     // what the server answered in heart-api's own run of these routes
     final coach = <String, dynamic>{
-      'id': 'CoachDanaUid551191|STUDENT|FITNESS',
       'targetId': 'CoachDanaUid551191',
-      'role': 'STUDENT',
-      'domain': 'FITNESS',
+      'role': 'student',
+      'domain': 'fitness',
       'status': 'active',
       'createdAt': '2026-11-07T21:05:34.981347Z',
       'connectionId': '01a1b7d4-bd0d-7eec-a569-2bc08ea3787f',
       'acceptedAt': '2026-11-07T21:05:34.981347Z',
       'shares': ['history'],
     };
-    const key = 'CoachDanaUid551191|STUDENT|FITNESS';
+    const id = '01a1b7d4-bd0d-7eec-a569-2bc08ea3787f';
 
-    test("a connection's key reaches the server encoded once", () {
-      // the client builds every URL this way
-      expect(
-        Uri.https('api.example.com', Router.connectionShares(key)).toString(),
-        'https://api.example.com/v1/connections/CoachDanaUid551191%7CSTUDENT%7CFITNESS/shares',
-      );
-    });
-
-    test('getConnections reads both ids, the acceptance and the shares', () async {
+    test('getConnections reads the id every route takes, the acceptance and the shares', () async {
       _response(
         client: client,
         method: 'GET',
@@ -1850,7 +1841,6 @@ void main() {
 
       final connection = (await api.getConnections()).single;
 
-      expect(connection.id, key);
       expect(connection.connectionId, '01a1b7d4-bd0d-7eec-a569-2bc08ea3787f');
       expect(connection.role, ConnectionRole.student);
       expect(connection.domain, ConnectionDomain.fitness);
@@ -1867,7 +1857,7 @@ void main() {
         statusCode: 200,
         body: {
           'connections': [
-            {...coach, 'domain': 'CLIMBING'},
+            {...coach, 'domain': 'climbing'},
             coach,
           ],
         },
@@ -1879,7 +1869,7 @@ void main() {
       _response(
         client: client,
         method: 'PUT',
-        path: Router.connectionShares(key),
+        path: Router.connectionShares(id),
         statusCode: 200,
         body: {
           ...coach,
@@ -1887,12 +1877,12 @@ void main() {
         },
       );
 
-      final connection = await api.setConnectionShares(key, {.history, .goals});
+      final connection = await api.setConnectionShares(id, {.history, .goals});
 
       expect(connection.shares, ['history', 'goals']);
       final sent = verify(
         client.put(
-          Uri.https('api.example.com', Router.connectionShares(key)),
+          Uri.https('api.example.com', Router.connectionShares(id)),
           headers: anyNamed('headers'),
           body: captureAnyNamed('body'),
         ),
@@ -1906,7 +1896,7 @@ void main() {
       _response(
         client: client,
         method: 'PUT',
-        path: Router.connectionShares(key),
+        path: Router.connectionShares(id),
         statusCode: 403,
         body: {
           'error': 'forbidden',
@@ -1914,14 +1904,14 @@ void main() {
           'reason': 'Only the student of a live coaching connection chooses what it shares.',
         },
       );
-      expect(api.setConnectionShares(key, {.history}), throwsA(containsPair('code', 'forbidden')));
+      expect(api.setConnectionShares(id, {.history}), throwsA(containsPair('code', 'forbidden')));
     });
 
     test('setConnectionStatus sends the status by name', () async {
       _response(
         client: client,
         method: 'PUT',
-        path: Router.connection(key),
+        path: Router.connection(id),
         statusCode: 200,
         body: {
           ...coach,
@@ -1929,10 +1919,10 @@ void main() {
         },
       );
 
-      expect((await api.setConnectionStatus(key, .paused)).status, ConnectionStatus.paused);
+      expect((await api.setConnectionStatus(id, .paused)).status, ConnectionStatus.paused);
       final sent = verify(
         client.put(
-          Uri.https('api.example.com', Router.connection(key)),
+          Uri.https('api.example.com', Router.connection(id)),
           headers: anyNamed('headers'),
           body: captureAnyNamed('body'),
         ),
@@ -1941,8 +1931,8 @@ void main() {
     });
 
     test('endConnection is a 204', () async {
-      _response(client: client, method: 'DELETE', path: Router.connection(key), statusCode: 204, body: {});
-      await api.endConnection(key);
+      _response(client: client, method: 'DELETE', path: Router.connection(id), statusCode: 204, body: {});
+      await api.endConnection(id);
     });
 
     test('hiding, listing and unhiding a workout', () async {
