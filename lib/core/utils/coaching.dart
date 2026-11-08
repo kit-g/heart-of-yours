@@ -35,4 +35,42 @@ class RemoteCoaching implements CoachingService {
 
   @override
   Future<void> unhideWorkout(String workoutId) => _api.unhideWorkout(workoutId);
+
+  @override
+  Future<Invitation> createInvitation(String name, {String? programId}) {
+    return _api.createInvitation(name, programId: programId);
+  }
+
+  @override
+  Future<({List<Invitation> items, String? cursor})> getInvitations({String? cursor}) {
+    return _api.getInvitations(cursor: cursor);
+  }
+
+  @override
+  Future<Invitation> resendInvitation(String invitationId) => _api.resendInvitation(invitationId);
+
+  @override
+  Future<void> cancelInvitation(String invitationId) => _api.cancelInvitation(invitationId);
+
+  @override
+  Future<InvitationPreview?> previewInvitation(String token) => _api.previewInvitation(token);
+
+  @override
+  Future<AcceptedInvitation> acceptInvitation(String token, Set<ConnectionShare> shares) {
+    return _api.acceptInvitation(token, shares);
+  }
+
+  @override
+  Future<void> declineInvitation(String token) => _api.declineInvitation(token);
+
+  @override
+  Future<void> blockInviter(String token) => _api.blockInviter(token);
+
+  @override
+  Future<({List<BlockedPerson> items, String? cursor})> getBlocks({String? cursor}) {
+    return _api.getBlocks(cursor: cursor);
+  }
+
+  @override
+  Future<void> liftBlock(String userId) => _api.liftBlock(userId);
 }

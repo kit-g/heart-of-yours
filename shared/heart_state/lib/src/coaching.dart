@@ -30,6 +30,46 @@ abstract interface class CoachingService {
   Future<void> hideWorkout(String workoutId, {DateTime? at});
 
   Future<void> unhideWorkout(String workoutId);
+
+  // ---- invitations (#553) ----
+
+  /// A one-person link for someone the coach calls [name]. The answer carries
+  /// its token, readable only now and on a resend.
+  Future<Invitation> createInvitation(String name, {String? programId});
+
+  Future<({List<Invitation> items, String? cursor})> getInvitations({String? cursor});
+
+  Future<Invitation> resendInvitation(String invitationId);
+
+  Future<void> cancelInvitation(String invitationId);
+
+  /// Null for a token the server never made.
+  Future<InvitationPreview?> previewInvitation(String token);
+
+  Future<AcceptedInvitation> acceptInvitation(String token, Set<ConnectionShare> shares);
+
+  Future<void> declineInvitation(String token);
+
+  Future<void> blockInviter(String token);
+
+  Future<({List<BlockedPerson> items, String? cursor})> getBlocks({String? cursor});
+
+  Future<void> liftBlock(String userId);
+}
+
+/// What became of an invitation, by the `status` the server names.
+enum InvitationStatus {
+  pending,
+  accepted,
+  declined,
+  canceled,
+  expired;
+
+  /// A status this build doesn't know reads as [expired]: no longer good,
+  /// which is all a coach can do anything with.
+  static InvitationStatus of(Invitation invitation) {
+    return values.firstWhere((each) => each.name == invitation.status, orElse: () => expired);
+  }
 }
 
 /// The account entitlement that lets it invite people to be coached. Granted
@@ -72,6 +112,8 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
 
   final _connections = <Connection>[];
   final _hidden = <String, DateTime>{};
+  final _invitations = <Invitation>[];
+  final _blocks = <BlockedPerson>[];
 
   CoachingStatus _status = .idle;
 
@@ -109,10 +151,24 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
 
   bool isHidden(String workoutId) => _hidden.containsKey(workoutId);
 
+  /// The coach's invitations, newest first, however they ended: only after
+  /// [loadInvitations].
+  List<Invitation> get invitations => UnmodifiableListView(_invitations);
+
+  /// The ones still waiting for an answer.
+  Iterable<Invitation> get pendingInvitations {
+    return _invitations.where((each) => InvitationStatus.of(each) == .pending);
+  }
+
+  /// Who this account has blocked: only after [loadBlocks].
+  List<BlockedPerson> get blocks => UnmodifiableListView(_blocks);
+
   @override
   void onSignOut() {
     _connections.clear();
     _hidden.clear();
+    _invitations.clear();
+    _blocks.clear();
     _status = .idle;
     notifyListeners();
   }
@@ -185,6 +241,111 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
   Future<void> unhide(String workoutId) async {
     await _service.unhideWorkout(workoutId);
     _hidden.remove(workoutId);
+    notifyListeners();
+  }
+
+  // ---- a coach's invitations (#553) ----
+
+  /// Reads the coach's invitations, every page of them: a coach has a handful.
+  Future<void> loadInvitations() async {
+    if (!_remote.allowed) return;
+    final all = <Invitation>[];
+    String? cursor;
+    do {
+      final page = await _service.getInvitations(cursor: cursor);
+      all.addAll(page.items);
+      cursor = page.cursor;
+    } while (cursor != null);
+    _invitations
+      ..clear()
+      ..addAll(all);
+    notifyListeners();
+  }
+
+  /// A link for someone the coach calls [name], listed at the top. The token
+  /// rides back on the answer and is kept nowhere here: sharing it is the
+  /// caller's job.
+  Future<Invitation> invite(String name, {String? programId}) async {
+    final invitation = await _service.createInvitation(name, programId: programId);
+    _invitations.insert(0, invitation);
+    notifyListeners();
+    return invitation;
+  }
+
+  /// A fresh link, and a fresh week, for [invitation]. The old link stops
+  /// working.
+  Future<Invitation> resend(Invitation invitation) async {
+    final renewed = await _service.resendInvitation(invitation.id);
+    _replaceInvitation(renewed);
+    return renewed;
+  }
+
+  Future<void> cancel(Invitation invitation) async {
+    await _service.cancelInvitation(invitation.id);
+    _replaceInvitation(
+      Invitation(
+        id: invitation.id,
+        name: invitation.name,
+        status: InvitationStatus.canceled.name,
+        role: invitation.role,
+        domain: invitation.domain,
+        expiresAt: invitation.expiresAt,
+        createdAt: invitation.createdAt,
+      ),
+    );
+  }
+
+  void _replaceInvitation(Invitation updated) {
+    final index = _invitations.indexWhere((each) => each.id == updated.id);
+    switch (index) {
+      case -1:
+        _invitations.insert(0, updated);
+      default:
+        _invitations[index] = updated;
+    }
+    notifyListeners();
+  }
+
+  // ---- answering one (#553) ----
+
+  /// What a link says: whether it is good and, while it is, who sent it. Null
+  /// for a link the server never made.
+  Future<InvitationPreview?> preview(String token) => _service.previewInvitation(token);
+
+  /// Accepts a link, sharing [shares] beyond the workouts logged from now on.
+  /// The coach joins [coaches] at once.
+  Future<AcceptedInvitation> accept(String token, Set<ConnectionShare> shares) async {
+    final accepted = await _service.acceptInvitation(token, shares);
+    _replace(accepted.connection);
+    return accepted;
+  }
+
+  Future<void> decline(String token) => _service.declineInvitation(token);
+
+  /// Blocks whoever sent the link, though nobody is connected yet.
+  Future<void> blockInviter(String token) => _service.blockInviter(token);
+
+  // ---- blocks (#553) ----
+
+  Future<void> loadBlocks() async {
+    if (!_remote.allowed) return;
+    final all = <BlockedPerson>[];
+    String? cursor;
+    do {
+      final page = await _service.getBlocks(cursor: cursor);
+      all.addAll(page.items);
+      cursor = page.cursor;
+    } while (cursor != null);
+    _blocks
+      ..clear()
+      ..addAll(all);
+    notifyListeners();
+  }
+
+  /// Lifts a block. It restores nothing: what it ended stays ended.
+  Future<void> lift(BlockedPerson person) async {
+    await _service.liftBlock(person.id);
+    _blocks.removeWhere((each) => each.id == person.id);
     notifyListeners();
   }
 
