@@ -26,13 +26,13 @@ enum ProgramRow { program, action, base, session, skip }
 const _noProgram = '';
 
 /// What was done to a row on this device.
-enum ProgramChange { created, edited, deleted, deletedKeepingTemplates }
+enum ProgramOwedChange { created, edited, deleted, deletedKeepingTemplates }
 
 /// A write the server has not confirmed: its remote leg failed, or was never
 /// reached (a dead network, a killed app, a token still on its way). Kept in
 /// the mirror until [Programs.init] sends it again, as `synced` keeps a
 /// finished workout owed.
-typedef ProgramOwed = ({ProgramRow row, String id, String programId, ProgramChange change});
+typedef ProgramOwed = ({ProgramRow row, String id, String programId, ProgramOwedChange change});
 
 /// The mirror's half of programs (#346): `LocalDatabase` behind an adapter in
 /// the app, as [LocalTemplateFolderService] is. Defined here rather than in
@@ -795,8 +795,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     }
     if (reached) {
       final change = switch (keepTemplates) {
-        true => ProgramChange.deletedKeepingTemplates,
-        false => ProgramChange.deleted,
+        true => ProgramOwedChange.deletedKeepingTemplates,
+        false => ProgramOwedChange.deleted,
       };
       await _owe(.program, id, change, programId: id);
     }
@@ -1414,7 +1414,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Records that the server has not confirmed [change] to [row] [id] yet.
   /// Only with an account: an anonymous session's store goes up whole, with
   /// the upsync, when one arrives.
-  Future<void> _owe(ProgramRow row, String id, ProgramChange change, {required String programId}) async {
+  Future<void> _owe(ProgramRow row, String id, ProgramOwedChange change, {required String programId}) async {
     final uid = userId;
     if (uid == null || !_remote.account) return;
     final key = (row, id);
@@ -1424,7 +1424,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       programId: programId,
       // an edit to a row the server has never had is still its create
       change: switch ((_owed[key]?.change, change)) {
-        (.created, .edited) => ProgramChange.created,
+        (.created, .edited) => ProgramOwedChange.created,
         _ => change,
       },
     );

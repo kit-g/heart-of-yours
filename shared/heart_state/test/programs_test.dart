@@ -323,8 +323,8 @@ void main() {
       remote.failing = true;
       final created = await programs.create(Program(name: 'Upper / Lower'), sessions: [session('s1')]);
       expect(local.owed.map((each) => (each.row, each.change)), [
-        (ProgramRow.program, ProgramChange.created),
-        (ProgramRow.session, ProgramChange.edited),
+        (ProgramRow.program, ProgramOwedChange.created),
+        (ProgramRow.session, ProgramOwedChange.edited),
       ]);
 
       remote.failing = false;
@@ -583,7 +583,7 @@ void main() {
 
       await programs.join(followed, extra('s3'));
       expect(local.owed.map((each) => (each.row, each.id, each.change)), [
-        (ProgramRow.session, 's3', ProgramChange.edited),
+        (ProgramRow.session, 's3', ProgramOwedChange.edited),
       ]);
 
       final [stored, ..._] = verify(templates.storeTemplates(captureAny, userId: uid)).captured;
@@ -685,7 +685,7 @@ void main() {
 
       await programs.leave(followed, session('s2'));
       expect(local.owed.map((each) => (each.row, each.id, each.change)), [
-        (ProgramRow.session, 's2', ProgramChange.deleted),
+        (ProgramRow.session, 's2', ProgramOwedChange.deleted),
       ]);
 
       remote
