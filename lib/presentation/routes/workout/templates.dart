@@ -221,9 +221,14 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
               onStartWorkout: (template) async {
                 final started = await startWorkoutOverActive(
                   context,
-                  () => Workouts.of(
+                  () => startPlanned(
                     context,
-                  ).startWorkout(source: .sample, template: startingWorkout(context, template), applyPinnedNotes: true),
+                    Workouts.of(
+                      context,
+                    ),
+                    template,
+                    source: .sample,
+                  ),
                 );
                 if (started) widget.onNewWorkout();
               },
@@ -246,9 +251,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
   Future<void> _startSession(BuildContext context, Template session) async {
     final started = await startWorkoutOverActive(
       context,
-      () =>
-          Workouts.of(context)
-              .startWorkout(source: .program, template: startingWorkout(context, session), applyPinnedNotes: true),
+      () => startPlanned(context, Workouts.of(context), session, source: .program),
     );
     if (started) widget.onNewWorkout();
   }
@@ -304,9 +307,14 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
       onStartWorkout: (template) async {
         final started = await startWorkoutOverActive(
           context,
-          () => Workouts.of(
+          () => startPlanned(
             context,
-          ).startWorkout(source: .template, template: startingWorkout(context, template), applyPinnedNotes: true),
+            Workouts.of(
+              context,
+            ),
+            template,
+            source: .template,
+          ),
         );
         if (started) widget.onNewWorkout();
       },
@@ -630,11 +638,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
         // tells the two sources apart.
         final started = await startWorkoutOverActive(
           context,
-          () => Workouts.of(context).startWorkout(
-            source: allowsEditing ? .template : .sample,
-            template: startingWorkout(context, template),
-            applyPinnedNotes: true,
-          ),
+          () => startPlanned(context, Workouts.of(context), template, source: allowsEditing ? .template : .sample),
         );
         if (started) widget.onNewWorkout();
       },

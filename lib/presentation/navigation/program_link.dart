@@ -71,11 +71,7 @@ Future<void> runProgramSessionLink(
       case (OccurrenceAhead(), final Template session) when !program.archived:
         final started = await startWorkoutOverActive(
           context,
-          () => workouts.startWorkout(
-            source: .program,
-            template: startingWorkout(context, session),
-            applyPinnedNotes: true,
-          ),
+          () => startPlanned(context, workouts, session, source: .program),
         );
         if (started) analytics.programLinkOpened(outcome: .started);
         // started, or the running one kept: either way there is one to show

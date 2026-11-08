@@ -733,13 +733,25 @@ Future<void> showDeleteImageDialog(
   );
 }
 
+/// Starts [template] as [startingWorkout] lays it out, pinned notes and all,
+/// with the plan a program's session carries (#566).
+Future<void> startPlanned(
+  BuildContext context,
+  Workouts workouts,
+  Template template, {
+  required WorkoutSource source,
+}) {
+  final (:workout, :plan) = startingWorkout(context, template);
+  return workouts.startWorkout(source: source, template: workout, plan: plan, applyPinnedNotes: true);
+}
+
 /// [template] as the workout it starts. A program's session, while Programs
 /// is on, comes with its targets as the program has them this time (#349):
 /// a share of a base as a weight on the user's plates, a lighter cycle
-/// lighter. Anything else starts as it was written.
-Workout startingWorkout(BuildContext context, Template template) {
+/// lighter. Anything else starts as it was written, with no plan.
+PlannedWorkout startingWorkout(BuildContext context, Template template) {
   final preferences = Preferences.of(context);
-  if (template.programId == null || !preferences.isOn(.programs)) return template.toWorkout();
+  if (template.programId == null || !preferences.isOn(.programs)) return (workout: template.toWorkout(), plan: null);
   final exercises = Exercises.of(context);
   return Programs.of(context).plan(
     template,
