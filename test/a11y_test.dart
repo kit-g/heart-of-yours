@@ -98,6 +98,10 @@ enum _Screen {
   importRpeOffer,
   exportData,
   apiTokens,
+  coachingClients,
+  coachingMessages,
+  coachingPrograms,
+  coachingMe,
   newApiToken,
   apiTokenRevealed,
   revokeApiTokenDialog,
@@ -894,6 +898,31 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.exportData, _Guideline.androidTapTarget, null),
   (_Screen.exportData, _Guideline.iosTapTarget, null),
 
+  // the Coaching space's empty tabs (#566): an app bar, a line of prose and the bar
+  (_Screen.coachingClients, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingClients, _Guideline.textContrastLight, null),
+  (_Screen.coachingClients, _Guideline.textContrastDark, null),
+  (_Screen.coachingClients, _Guideline.androidTapTarget, null),
+  (_Screen.coachingClients, _Guideline.iosTapTarget, null),
+
+  (_Screen.coachingMessages, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingMessages, _Guideline.textContrastLight, null),
+  (_Screen.coachingMessages, _Guideline.textContrastDark, null),
+  (_Screen.coachingMessages, _Guideline.androidTapTarget, null),
+  (_Screen.coachingMessages, _Guideline.iosTapTarget, null),
+
+  (_Screen.coachingPrograms, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingPrograms, _Guideline.textContrastLight, null),
+  (_Screen.coachingPrograms, _Guideline.textContrastDark, null),
+  (_Screen.coachingPrograms, _Guideline.androidTapTarget, null),
+  (_Screen.coachingPrograms, _Guideline.iosTapTarget, null),
+
+  (_Screen.coachingMe, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingMe, _Guideline.textContrastLight, null),
+  (_Screen.coachingMe, _Guideline.textContrastDark, null),
+  (_Screen.coachingMe, _Guideline.androidTapTarget, null),
+  (_Screen.coachingMe, _Guideline.iosTapTarget, null),
+
   (_Screen.apiTokens, _Guideline.labeledTapTarget, null),
   (_Screen.apiTokens, _Guideline.textContrastLight, null),
   (_Screen.apiTokens, _Guideline.textContrastDark, null),
@@ -1199,6 +1228,28 @@ void main() {
     }
     if (screen == _Screen.pastWorkoutTimes || screen == _Screen.pastWorkoutEditor) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-pastWorkouts': 'on'});
+    }
+    // the Coaching space (#566): Coach people on, for an account that may coach
+    final coaching = {
+      _Screen.coachingClients: AppKeys.coachingClientsStack,
+      _Screen.coachingMessages: AppKeys.coachingMessagesStack,
+      _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
+      _Screen.coachingMe: AppKeys.coachingMeStack,
+    };
+    if (coaching.containsKey(screen)) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-coachPeople': 'on'});
+      when(api.registerAccount(any)).thenAnswer((invocation) async {
+        final user = invocation.positionalArguments.single as User;
+        return User(
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          settings: user.settings,
+          entitlements: const ['coach'],
+        );
+      });
+      when(api.getConnections()).thenAnswer((_) async => []);
+      when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
     }
     if (screen == _Screen.pausedWorkout || screen == _Screen.finishAtLastSet) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-pauseWorkout': 'on'});
@@ -2043,6 +2094,11 @@ void main() {
           default:
             break;
         }
+      case _Screen.coachingClients || _Screen.coachingMessages || _Screen.coachingPrograms || _Screen.coachingMe:
+        await tester.tapByKey(AppKeys.coachingButton);
+        await tester.pumpTimes();
+        await tester.tapByKey(coaching[screen]!);
+        await tester.pumpTimes();
       case _Screen.whatsNew:
         // rootBundle caches each load's future, and one cached under an
         // earlier test's fake clock never delivers to a later test

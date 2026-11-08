@@ -24,6 +24,7 @@ const _healthInviteDismissed = 'healthInviteDismissed';
 const _healthAsked = 'healthAsked';
 // read natively too, as `flutter.watchReadings` (android/app WatchReadings.kt)
 const _watchReadings = 'watchReadings';
+const _coachingSpace = 'coachingSpace';
 const _notificationsReminderDismissed = 'notificationsReminderDismissed';
 const _installed = 'installed';
 const _lockScreenWorkout = 'lockScreenWorkout';
@@ -95,6 +96,13 @@ class Preferences with ChangeNotifier {
     notifyListeners();
     return write;
   }
+
+  /// Whether the app was last left in the Coaching space (#566), so it opens
+  /// there again. Per device, and only a place: whether the space is there at
+  /// all is Coach people's switch. Nothing draws from it, so nobody is told.
+  bool get inCoachingSpace => _prefs?.getBool(_coachingSpace) ?? false;
+
+  Future<bool>? setInCoachingSpace({required bool inside}) => _prefs?.setBool(_coachingSpace, inside);
 
   Future<bool>? setFirstWeekday(int weekday) {
     final write = _prefs?.setInt(_firstWeekday, weekday);

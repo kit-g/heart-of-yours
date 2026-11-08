@@ -30,7 +30,20 @@ import 'support/harness.dart';
 
 const _signInWithAppleChannel = MethodChannel('com.aboutyou.dart_packages.sign_in_with_apple');
 
-enum _Screen { onboarding, login, profile, workout, history, exercises, settings, importData }
+enum _Screen {
+  onboarding,
+  login,
+  profile,
+  workout,
+  history,
+  exercises,
+  settings,
+  importData,
+  coachingClients,
+  coachingMessages,
+  coachingPrograms,
+  coachingMe,
+}
 
 void main() {
   late MockLocalDatabase db;
@@ -119,6 +132,24 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     }
 
+    // the Coaching space (#566): Coach people on, for an account that may coach
+    final coaching = {
+      _Screen.coachingClients: AppKeys.coachingClientsStack,
+      _Screen.coachingMessages: AppKeys.coachingMessagesStack,
+      _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
+      _Screen.coachingMe: AppKeys.coachingMeStack,
+    };
+    if (coaching.containsKey(screen)) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-coachPeople': 'on'});
+      when(api.isAuthenticated).thenReturn(true);
+      when(api.registerAccount(any)).thenAnswer((invocation) async {
+        final user = invocation.positionalArguments.single as User;
+        return User(id: user.id, email: user.email, settings: user.settings, entitlements: const ['coach']);
+      });
+      when(api.getConnections()).thenAnswer((_) async => []);
+      when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
+    }
+
     // no user means an anonymous session; the login page is reached from its
     // profile's no-account dialog, never by redirect
     final firebase = switch (screen) {
@@ -164,6 +195,10 @@ void main() {
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
         await tester.tap(find.byIcon(Icons.upload_file_rounded));
+      case _Screen.coachingClients || _Screen.coachingMessages || _Screen.coachingPrograms || _Screen.coachingMe:
+        await tester.tapByKey(AppKeys.coachingButton);
+        await tester.pumpTimes();
+        await tester.tapByKey(coaching[screen]!);
     }
     await tester.pumpTimes();
   }

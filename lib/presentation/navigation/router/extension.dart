@@ -9,6 +9,19 @@ extension on BuildContext {
     return goNamed(_profileName);
   }
 
+  /// Into the Coaching space (#566), remembered so the app opens there next.
+  void goToCoaching() {
+    Preferences.of(this).setInCoachingSpace(inside: true);
+    return goNamed(_coachingClientsName);
+  }
+
+  /// Out of the Coaching space, back to the user's own training: Profile,
+  /// unless [to] names another of its routes.
+  void leaveCoaching({String to = _profileName}) {
+    Preferences.of(this).setInCoachingSpace(inside: false);
+    return goNamed(to);
+  }
+
   /// The login page, by name: nothing redirects here on mobile, so this is
   /// how an anonymous session gets to an account. Gone to, not pushed: the
   /// route's own redirect is what sends a fresh account on to the profile, and

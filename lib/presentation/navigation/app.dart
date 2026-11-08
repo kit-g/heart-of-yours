@@ -35,6 +35,7 @@ import 'package:heart/core/utils/templates.dart';
 import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/navigation/coaching.dart';
 import 'package:heart/presentation/navigation/entry_review.dart';
 import 'package:heart/presentation/navigation/goals_widget.dart';
 import 'package:heart/presentation/navigation/home_widgets.dart';
@@ -490,15 +491,19 @@ class HeartApp extends StatelessWidget {
       builder: (_, _) {
         return EntryReviewPresenter(
           leaveOutDiscarded: (on) => db.leavesOutDiscarded = on,
-          child: Consumer<AppTheme>(
-            builder: (_, theme, _) {
-              return _App(
-                theme: theme,
-                config: appConfig,
-                router: router,
-                hasLocalNotifications: hasLocalNotifications ?? true,
-              );
-            },
+          // coaching's connections, read only with a coaching switch on (#566)
+          child: CoachingPresenter(
+            onSpaceAvailable: router.refresh,
+            child: Consumer<AppTheme>(
+              builder: (_, theme, _) {
+                return _App(
+                  theme: theme,
+                  config: appConfig,
+                  router: router,
+                  hasLocalNotifications: hasLocalNotifications ?? true,
+                );
+              },
+            ),
           ),
         );
       },
