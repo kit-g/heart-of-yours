@@ -45,6 +45,19 @@ RUN flutter --version \
  && (flutter precache --linux || flutter precache --linux) \
  && flutter config --enable-native-assets
 
+# Rust for the encryption package (shared/sealbox): the toolchain its
+# rust-toolchain.toml pins, with every target that file lists, installed while
+# the build still has an open network. rustup would otherwise fetch them on
+# first use, behind the firewall. Crates come from crates.io at runtime.
+ARG RUST_VERSION=1.89.0
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+      | sh -s -- -y --no-modify-path --profile minimal --default-toolchain ${RUST_VERSION} -c clippy,rustfmt \
+ && /home/agent/.cargo/bin/rustup target add --toolchain ${RUST_VERSION} \
+      aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios \
+      aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android \
+      aarch64-apple-darwin x86_64-apple-darwin x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
+ENV PATH="/home/agent/.cargo/bin:${PATH}"
+
 # Claude Code (native installer)
 RUN curl -fsSL https://claude.ai/install.sh | bash
 

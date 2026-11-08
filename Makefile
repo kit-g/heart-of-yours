@@ -22,7 +22,7 @@ TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 CODEGEN_TARGETS := $(addprefix codegen-,$(CODEGEN_PACKAGES))
 
 .PHONY: bootstrap deps hooks codegen codegen-app codegen-heart_language lint format format-check test test-app \
-        test-scripts profiles reclaim wear wear-install wear-test wear-pages $(TEST_TARGETS) $(CODEGEN_TARGETS)
+        test-scripts test-sealbox profiles reclaim wear wear-install wear-test wear-pages $(TEST_TARGETS) $(CODEGEN_TARGETS)
 
 bootstrap: hooks deps codegen codegen-app
 	@echo "Ready. Note: lib/firebase_options.dart and lib/firebase_options_prod.dart"
@@ -112,7 +112,7 @@ format-check:
 format:
 	git ls-files -co --exclude-standard '*.dart' | xargs dart format
 
-test: $(TEST_TARGETS) test-app test-scripts
+test: $(TEST_TARGETS) test-app test-scripts test-sealbox
 
 # With REPORTS_DIR set (CI), each suite also writes a dart-test JSON report
 # there for the Test Summary job to aggregate; locally nothing changes.
@@ -129,6 +129,14 @@ $(filter-out test-heart_language,$(TEST_TARGETS)): test-%: codegen-%
 
 test-app: codegen-app codegen-heart_language
 	$(call suite_test,,app)
+
+# The encryption package (#565): its Rust crate, then its Dart API over the
+# library the build hook compiles. dart test from inside the package, since a
+# test run from the root builds native code only for what the app depends on.
+# Needs Rust (rustup); rust-toolchain.toml installs the toolchain and targets.
+test-sealbox:
+	cd shared/sealbox/rust && cargo fmt --check && cargo clippy --all-targets --locked -- -D warnings && cargo test --locked
+	cd shared/sealbox && $(if $(REPORTS_DIR),mkdir -p "$(REPORTS_DIR)" && )dart test $(if $(REPORTS_DIR),--file-reporter="json:$(REPORTS_DIR)/sealbox.json")
 
 # the repo's own Python tooling (the translation merge driver)
 test-scripts:
