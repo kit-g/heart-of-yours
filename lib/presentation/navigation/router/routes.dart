@@ -1271,3 +1271,26 @@ RouteBase _coachingRoute() {
     ],
   );
 }
+
+/// A coach's invitation link (#553), whichever switch is on: the page is Your
+/// coach's ask. A link without a token is one the app has no screen for.
+RouteBase _invitationRoute() {
+  return GoRoute(
+    path: _invitationPath,
+    redirect: (_, state) => switch (state.uri.queryParameters[_invitationToken]) {
+      final String token when token.isNotEmpty => null,
+      _ => _profilePath,
+    },
+    builder: (context, state) {
+      return InvitationPage(
+        token: state.uri.queryParameters[_invitationToken]!,
+        fingerprint: switch (state.uri.fragment) {
+          '' => null,
+          final String fragment => fragment,
+        },
+        onDone: context.goToProfile,
+        onMakeAccount: context.goToLogin,
+      );
+    },
+  );
+}

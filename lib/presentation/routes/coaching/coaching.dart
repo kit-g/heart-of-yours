@@ -19,6 +19,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
 
 part 'frame.dart';
+part 'invitation.dart';
 part 'invite.dart';
 part 'pages.dart';
 

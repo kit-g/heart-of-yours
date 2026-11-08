@@ -18,6 +18,7 @@ import 'dart:convert';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -43,6 +44,7 @@ enum _Screen {
   coachingMessages,
   coachingPrograms,
   coachingMe,
+  invitation,
 }
 
 void main() {
@@ -139,6 +141,11 @@ void main() {
       _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
       _Screen.coachingMe: AppKeys.coachingMeStack,
     };
+    if (screen == _Screen.invitation) {
+      when(api.previewInvitation('t1')).thenAnswer(
+        (_) async => InvitationPreview.fromJson({'inviterName': 'Alexandra', 'good': true}),
+      );
+    }
     if (coaching.containsKey(screen)) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-coachPeople': 'on'});
       when(api.isAuthenticated).thenReturn(true);
@@ -195,6 +202,8 @@ void main() {
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
         await tester.tap(find.byIcon(Icons.upload_file_rounded));
+      case _Screen.invitation:
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/invite.html?t=t1');
       case _Screen.coachingClients || _Screen.coachingMessages || _Screen.coachingPrograms || _Screen.coachingMe:
         await tester.tapByKey(AppKeys.coachingButton);
         await tester.pumpTimes();

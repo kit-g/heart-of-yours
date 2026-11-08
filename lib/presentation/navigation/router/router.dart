@@ -85,6 +85,7 @@ final class HeartRouter {
             ],
           ),
           _coachingRoute(),
+          _invitationRoute(),
           _upgradeRequiredRoute(),
           _onboardingRoute(),
           _activeWorkoutRoute(),
@@ -346,6 +347,13 @@ final class HeartRouter {
 
   void refresh() {
     return config.refresh();
+  }
+
+  /// A coach's invitation (#553), as its link would open it.
+  void openInvitation(String token, {String? fingerprint}) {
+    return config.go(
+      Uri(path: _invitationPath, queryParameters: {_invitationToken: token}, fragment: fingerprint).toString(),
+    );
   }
 
   void goToExercise(String exerciseId) {

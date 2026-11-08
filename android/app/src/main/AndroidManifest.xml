@@ -273,6 +273,11 @@
                     android:host="${deepLink}"
                     android:pathPrefix="/avatar"
                     android:scheme="https" />
+                <!-- a coach's invitation (#553); the site answers it on the web too -->
+                <data
+                    android:host="${deepLink}"
+                    android:path="/invite.html"
+                    android:scheme="https" />
                 <data
                     android:host="${deepLink}"
                     android:pathPrefix="/login"

@@ -95,3 +95,7 @@ const _coachingProgramsName = 'coachingPrograms';
 const _coachingProgramsPath = '$_coachingPath/programs';
 const _coachingMeName = 'coachingMe';
 const _coachingMePath = '$_coachingPath/me';
+// what a coach's invitation link opens (#553): the site's own path, which iOS
+// and Android both hand to the app
+const _invitationPath = '/invite.html';
+const _invitationToken = 't';

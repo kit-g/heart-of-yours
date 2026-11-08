@@ -494,6 +494,7 @@ class HeartApp extends StatelessWidget {
           // coaching's connections, read only with a coaching switch on (#566)
           child: CoachingPresenter(
             onSpaceAvailable: router.refresh,
+            onPendingInvitation: (token, fingerprint) => router.openInvitation(token, fingerprint: fingerprint),
             child: Consumer<AppTheme>(
               builder: (_, theme, _) {
                 return _App(
