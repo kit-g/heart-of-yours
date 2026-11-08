@@ -15,6 +15,7 @@ workspace:
   - "shared/heart_health"
   - "shared/heart_language"
   - "shared/heart_state"
+  - "shared/sealbox"
 
 dependencies:
   app_settings: ^9.0.1
