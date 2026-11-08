@@ -114,6 +114,16 @@ flutter:
     - assets/icons/
     - assets/svg/
     - assets/whats_new/
+    # each font's licence, for the licence page (core/env/licenses.dart)
+    - assets/fonts/DM_Sans/OFL.txt
+    - assets/fonts/Golos_Text/OFL.txt
+    - assets/fonts/IBM_Plex_Sans/OFL.txt
+    - assets/fonts/Lato/OFL.txt
+    - assets/fonts/Literata/OFL.txt
+    - assets/fonts/Noto_Sans/OFL.txt
+    - assets/fonts/Onest/OFL.txt
+    - assets/fonts/Rubik/OFL.txt
+    - assets/fonts/Unbounded/OFL.txt
 
   fonts:
     - family: "Lato"
