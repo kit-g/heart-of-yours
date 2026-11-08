@@ -319,4 +319,13 @@ abstract final class AppKeys {
   static const coachingProgramsStack = Key('Coaching.programsStack');
   static const coachingMeStack = Key('Coaching.meStack');
   static const coachingBackToWorkout = Key('Coaching.backToWorkout');
+
+  /// Inviting someone to be coached (#553): the action, the empty state's
+  /// button, the name, the button that makes the link, and each invitation.
+  static const coachingInviteAction = Key('Coaching.inviteAction');
+  static const coachingInvite = Key('Coaching.invite');
+  static const coachingInviteName = Key('Coaching.inviteName');
+  static const coachingMakeLink = Key('Coaching.makeLink');
+
+  static Key coachingInvitation(String id) => Key('Coaching.invitation.$id');
 }
