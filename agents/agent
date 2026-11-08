@@ -60,12 +60,8 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 
 if [[ $BUILD == 1 ]] || ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
-  # the Rust the encryption package pins, or the Dockerfile's own default
-  RUST_VERSION="$(sed -n 's/^channel = "\(.*\)"/\1/p' "$DEFAULT_REPO/shared/sealbox/rust/rust-toolchain.toml" 2>/dev/null || true)"
   docker build -t "$IMAGE" \
-    --build-arg FLUTTER_VERSION="$(cat "$DEFAULT_REPO/.flutter-version")" \
-    --build-arg RUST_VERSION="${RUST_VERSION:-1.89.0}" \
-    "$HERE"
+    --build-arg FLUTTER_VERSION="$(cat "$DEFAULT_REPO/.flutter-version")" "$HERE"
 fi
 
 # Resolve the GitHub issue on the host, with your gh auth, before the

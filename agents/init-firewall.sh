@@ -19,8 +19,6 @@ ALLOWED_DOMAINS=(
   # package ecosystems (pub get, flutter artifacts, npm-hosted plugins, uv/PyPI)
   pub.dev pub.dartlang.org storage.googleapis.com registry.npmjs.org
   pypi.org files.pythonhosted.org
-  # Rust: crates for the encryption package, and toolchains when its pin moves
-  index.crates.io static.crates.io static.rust-lang.org
   # GitHub (issues, clones of public deps)
   github.com api.github.com codeload.github.com
   objects.githubusercontent.com raw.githubusercontent.com
