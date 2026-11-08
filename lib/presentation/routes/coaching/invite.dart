@@ -110,7 +110,12 @@ class _InviteFormState extends State<_InviteForm> {
           mainAxisAlignment: .end,
           spacing: 8,
           children: [
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l.cancel)),
+            // the theme's buttons are compact; a dialog's answers stay a full tap target
+            TextButton(
+              style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l.cancel),
+            ),
             // a link needs someone to be for: absent rather than dead until then
             ValueListenableBuilder<TextEditingValue>(
               valueListenable: _name,
@@ -118,6 +123,7 @@ class _InviteFormState extends State<_InviteForm> {
                 true => const SizedBox.shrink(),
                 false => FilledButton(
                   key: AppKeys.coachingMakeLink,
+                  style: FilledButton.styleFrom(minimumSize: const Size(64, 48)),
                   onPressed: _submit,
                   child: Text(l.coachingMakeLink),
                 ),
