@@ -12,9 +12,9 @@ class _Server implements CoachingService {
 
   var reads = 0;
 
-  Connection _write(String key, Connection Function(Connection) change) {
+  Connection _write(String id, Connection Function(Connection) change) {
     if (refuse case final refusal?) throw refusal;
-    final index = connections.indexWhere((each) => each.id == key);
+    final index = connections.indexWhere((each) => each.connectionId == id);
     return connections[index] = change(connections[index]);
   }
 
@@ -25,18 +25,18 @@ class _Server implements CoachingService {
   }
 
   @override
-  Future<Connection> setConnectionShares(String connectionKey, Set<ConnectionShare> shares) async {
-    return _write(connectionKey, (each) => _with(each, shares: [for (final share in shares) share.name]));
+  Future<Connection> setConnectionShares(String connectionId, Set<ConnectionShare> shares) async {
+    return _write(connectionId, (each) => _with(each, shares: [for (final share in shares) share.name]));
   }
 
   @override
-  Future<Connection> setConnectionStatus(String connectionKey, ConnectionStatus status) async {
-    return _write(connectionKey, (each) => _with(each, status: status));
+  Future<Connection> setConnectionStatus(String connectionId, ConnectionStatus status) async {
+    return _write(connectionId, (each) => _with(each, status: status));
   }
 
   @override
-  Future<void> endConnection(String connectionKey) async {
-    _write(connectionKey, (each) => _with(each, status: .severed));
+  Future<void> endConnection(String connectionId) async {
+    _write(connectionId, (each) => _with(each, status: .severed));
   }
 
   @override

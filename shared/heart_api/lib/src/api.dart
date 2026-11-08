@@ -1017,9 +1017,9 @@ class Api
   /// What the student of a coach connection opens to their coach beyond
   /// workouts since accepting. The list replaces the old one. Only the student
   /// may: the coach gets `403 forbidden`, thrown whole like every refusal.
-  Future<Connection> setConnectionShares(String connectionKey, Set<ConnectionShare> shares) async {
+  Future<Connection> setConnectionShares(String connectionId, Set<ConnectionShare> shares) async {
     final (json, code) = await put(
-      Router.connectionShares(connectionKey),
+      Router.connectionShares(connectionId),
       body: {
         'shares': [for (final share in shares) share.name],
       },
@@ -1032,8 +1032,8 @@ class Api
 
   /// Moves a connection to [status]: pausing a coach connection, and resuming
   /// it, which only its student may.
-  Future<Connection> setConnectionStatus(String connectionKey, ConnectionStatus status) async {
-    final (json, code) = await put(Router.connection(connectionKey), body: {'status': status.name});
+  Future<Connection> setConnectionStatus(String connectionId, ConnectionStatus status) async {
+    final (json, code) = await put(Router.connection(connectionId), body: {'status': status.name});
     return switch ((code, json)) {
       (200, Map json) => Connection.fromJson(json),
       _ => throw json,
@@ -1041,8 +1041,8 @@ class Api
   }
 
   /// Ends a connection for both people. The row stays, as `severed`.
-  Future<void> endConnection(String connectionKey) async {
-    final (json, code) = await delete(Router.connection(connectionKey));
+  Future<void> endConnection(String connectionId) async {
+    final (json, code) = await delete(Router.connection(connectionId));
     if (code != 204) throw json;
   }
 
@@ -1245,15 +1245,13 @@ abstract final class Router {
   static const connections = 'v1/connections';
   static const hiddenWorkouts = '$workouts/hidden';
 
-  /// A connection by its key, `uid|ROLE|DOMAIN`, as it is: the client builds
-  /// every URL with `Uri.https`, which encodes the pipes once. Encoding here
-  /// too would send `%257C`.
-  static String connection(String connectionKey) {
-    return '$connections/$connectionKey';
+  /// A connection by its `connectionId`, a UUID.
+  static String connection(String connectionId) {
+    return '$connections/$connectionId';
   }
 
-  static String connectionShares(String connectionKey) {
-    return '${connection(connectionKey)}/shares';
+  static String connectionShares(String connectionId) {
+    return '${connection(connectionId)}/shares';
   }
 
   static String workoutHidden(String workoutId) {
