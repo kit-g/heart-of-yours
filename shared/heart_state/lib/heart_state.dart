@@ -7,6 +7,7 @@ export 'src/alarms.dart';
 export 'src/anomalies.dart';
 export 'src/analytics.dart';
 export 'src/api_tokens.dart';
+export 'src/coaching.dart';
 export 'src/auth.dart';
 export 'src/backfill.dart';
 export 'src/charts.dart';

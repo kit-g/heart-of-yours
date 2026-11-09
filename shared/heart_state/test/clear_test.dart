@@ -137,6 +137,20 @@ class _ApiTokens extends ApiTokens {
   void onSignOut() => calls++;
 }
 
+class _Coaching extends Coaching {
+  int calls = 0;
+
+  new() : super(service: _NoCoachingService());
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoCoachingService implements CoachingService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
 class _Goals extends Goals {
   int calls = 0;
 
@@ -269,6 +283,7 @@ void main() {
     late _Alarms alarms;
     late _Anomalies anomalies;
     late _ApiTokens apiTokens;
+    late _Coaching coaching;
     late _Auth auth;
     late _Backfill backfill;
     late _Charts charts;
@@ -288,6 +303,7 @@ void main() {
       alarms = _Alarms();
       anomalies = _Anomalies();
       apiTokens = _ApiTokens();
+      coaching = _Coaching();
       auth = _Auth();
       backfill = _Backfill();
       charts = _Charts();
@@ -308,6 +324,7 @@ void main() {
             ChangeNotifierProvider<Alarms>.value(value: alarms),
             ChangeNotifierProvider<Anomalies>.value(value: anomalies),
             ChangeNotifierProvider<ApiTokens>.value(value: apiTokens),
+            ChangeNotifierProvider<Coaching>.value(value: coaching),
             ChangeNotifierProvider<Auth>.value(value: auth),
             ChangeNotifierProvider<Backfill>.value(value: backfill),
             ChangeNotifierProvider<Charts>.value(value: charts),
@@ -337,6 +354,7 @@ void main() {
         alarms.calls,
         anomalies.calls,
         apiTokens.calls,
+        coaching.calls,
         auth.calls,
         charts.calls,
         exercises.calls,
@@ -374,6 +392,7 @@ void main() {
     late _Alarms alarms;
     late _Anomalies anomalies;
     late _ApiTokens apiTokens;
+    late _Coaching coaching;
     late _Backfill backfill;
     late _Charts charts;
     late _Exercises exercises;
@@ -401,6 +420,7 @@ void main() {
       alarms = _Alarms();
       anomalies = _Anomalies();
       apiTokens = _ApiTokens();
+      coaching = _Coaching();
       backfill = _Backfill();
       charts = _Charts();
       exercises = _Exercises();
@@ -431,6 +451,7 @@ void main() {
             ChangeNotifierProvider<Alarms>.value(value: alarms),
             ChangeNotifierProvider<Anomalies>.value(value: anomalies),
             ChangeNotifierProvider<ApiTokens>.value(value: apiTokens),
+            ChangeNotifierProvider<Coaching>.value(value: coaching),
             ChangeNotifierProvider<Auth>.value(value: auth),
             ChangeNotifierProvider<Backfill>.value(value: backfill),
             ChangeNotifierProvider<Charts>.value(value: charts),
@@ -462,6 +483,7 @@ void main() {
         alarms.calls,
         anomalies.calls,
         apiTokens.calls,
+        coaching.calls,
         charts.calls,
         exercises.calls,
         goals.calls,
@@ -553,7 +575,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the sixteen known notifiers', () {
+    test('the fan-out list is the seventeen known notifiers', () {
       final clear = File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync();
       final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
       final fanned = {for (final match in fanOutCall.allMatches(clear)) match.group(1)!};
@@ -565,6 +587,7 @@ void main() {
         'Auth',
         'Backfill',
         'Charts',
+        'Coaching',
         'Exercises',
         'Goals',
         'Health',

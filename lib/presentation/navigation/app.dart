@@ -21,6 +21,7 @@ import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/anomalies.dart';
 import 'package:heart/core/utils/api_tokens.dart';
+import 'package:heart/core/utils/coaching.dart';
 import 'package:heart/core/utils/backfill.dart';
 import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
@@ -295,6 +296,16 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<ApiTokens>(
           create: (context) => ApiTokens(
             service: RemoteApiTokens(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // Coaching's connections and hidden workouts (#552, #566): server-only,
+        // and read only once a coaching feature is on, so with both off nothing
+        // goes over the wire.
+        ChangeNotifierProvider<Coaching>(
+          create: (context) => Coaching(
+            service: RemoteCoaching(api),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),
