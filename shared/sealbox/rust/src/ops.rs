@@ -151,6 +151,20 @@ fn comparison_id(args: &Args) -> Result<u64> {
         .ok_or_else(|| bad_input("comparison is missing"))
 }
 
+/// [requested] one-time keys on top of [stored], or `bad_input` when the
+/// device would hold more than [MAX_ONE_TIME_KEYS]. Compared without adding,
+/// and without narrowing first, so no count wraps past the limit on a 32-bit
+/// device.
+fn one_time_key_count(requested: u64, stored: usize) -> Result<usize> {
+    let room = MAX_ONE_TIME_KEYS.saturating_sub(stored);
+    match usize::try_from(requested) {
+        Ok(count) if count <= room => Ok(count),
+        _ => Err(bad_input(format!(
+            "a device holds at most {MAX_ONE_TIME_KEYS} one-time keys"
+        ))),
+    }
+}
+
 /// Runs one operation.
 pub fn call(input: &Value) -> Result<Value> {
     let args = Args(input);
@@ -158,12 +172,7 @@ pub fn call(input: &Value) -> Result<Value> {
         // ---- a device's account: its identity, signing key and one-time keys ----
         "accountNew" => {
             let storage_key = args.storage_key()?;
-            let count = args.count("oneTimeKeys")?.unwrap_or(20) as usize;
-            if count > MAX_ONE_TIME_KEYS {
-                return Err(bad_input(format!(
-                    "at most {MAX_ONE_TIME_KEYS} one-time keys"
-                )));
-            }
+            let count = one_time_key_count(args.count("oneTimeKeys")?.unwrap_or(20), 0)?;
             let mut account = Account::new();
             account.generate_one_time_keys(count);
             account.generate_fallback_key();
@@ -188,14 +197,10 @@ pub fn call(input: &Value) -> Result<Value> {
         }
         "accountOneTimeKeys" => {
             let mut account = args.account()?;
-            let count = args
+            let requested = args
                 .count("count")?
-                .ok_or_else(|| bad_input("count is missing"))? as usize;
-            if account.stored_one_time_key_count() + count > MAX_ONE_TIME_KEYS {
-                return Err(bad_input(format!(
-                    "a device holds at most {MAX_ONE_TIME_KEYS} one-time keys"
-                )));
-            }
+                .ok_or_else(|| bad_input("count is missing"))?;
+            let count = one_time_key_count(requested, account.stored_one_time_key_count())?;
             account.generate_one_time_keys(count);
             let one_time_keys = keys_json(account.one_time_keys());
             account.mark_keys_as_published();
@@ -350,12 +355,40 @@ pub fn call(input: &Value) -> Result<Value> {
 
         // ---- comparing a code, to know no one sits between two devices ----
         "comparisonStart" => {
-            let (id, public_key) = comparisons::start();
-            Ok(json!({ "comparison": id, "publicKey": public_key }))
+            let (id, public_key) = comparisons::start().ok_or_else(|| {
+                OpError::new(
+                    "too_many_comparisons",
+                    format!(
+                        "at most {} comparisons run at once",
+                        comparisons::MAX_RUNNING
+                    ),
+                )
+            })?;
+            let commitment = comparisons::commitment(
+                &Curve25519PublicKey::from_base64(&public_key).expect("its own key reads back"),
+            );
+            Ok(json!({
+                "comparison": id,
+                "publicKey": public_key,
+                "commitment": encode(&commitment),
+            }))
         }
         "comparisonEstablish" => {
             let id = comparison_id(&args)?;
             let their_key = args.curve_key("publicKey")?;
+            // the side that showed its key first holds the other's commitment,
+            // made before that side could see it: a key chosen afterwards to
+            // grind the code into a match doesn't fit it
+            if let Value::String(_) = &input["commitment"] {
+                let expected = args.bytes("commitment")?;
+                if expected != comparisons::commitment(&their_key) {
+                    comparisons::end(id);
+                    return Err(OpError::new(
+                        "commitment_mismatch",
+                        "their key isn't the one they committed to: start over",
+                    ));
+                }
+            }
             match comparisons::take(id) {
                 Some(Comparison::Started(sas)) => {
                     let established = sas

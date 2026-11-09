@@ -13,6 +13,11 @@ pub(crate) enum Comparison {
     Established(EstablishedSas),
 }
 
+/// How many comparisons may be running at once. A comparison holds key
+/// material, and one the caller never ended would otherwise stay for the life
+/// of the process.
+pub(crate) const MAX_RUNNING: usize = 16;
+
 static NEXT: AtomicU64 = AtomicU64::new(1);
 static RUNNING: Mutex<Option<HashMap<u64, Comparison>>> = Mutex::new(None);
 
@@ -23,14 +28,28 @@ fn running() -> MutexGuard<'static, Option<HashMap<u64, Comparison>>> {
         .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
-pub(crate) fn start() -> (u64, String) {
+/// A new comparison, or `None` while [MAX_RUNNING] are already running.
+pub(crate) fn start() -> Option<(u64, String)> {
+    let mut running = running();
+    let map = running.get_or_insert_with(HashMap::new);
+    if map.len() >= MAX_RUNNING {
+        return None;
+    }
     let sas = Sas::new();
     let public_key = sas.public_key().to_base64();
     let id = NEXT.fetch_add(1, Ordering::Relaxed);
-    running()
-        .get_or_insert_with(HashMap::new)
-        .insert(id, Comparison::Started(sas));
-    (id, public_key)
+    map.insert(id, Comparison::Started(sas));
+    Some((id, public_key))
+}
+
+/// What a side sends before it may see the other's key: SHA-256 over its own,
+/// under a context of this crate's. Matrix's comparison does the same.
+pub(crate) fn commitment(key: &vodozemac::Curve25519PublicKey) -> Vec<u8> {
+    use sha2::{Digest, Sha256};
+    let mut hash = Sha256::new();
+    hash.update(b"sealbox-comparison-commitment");
+    hash.update(key.as_bytes());
+    hash.finalize().to_vec()
 }
 
 pub(crate) fn take(id: u64) -> Option<Comparison> {

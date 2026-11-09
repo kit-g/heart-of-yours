@@ -1,18 +1,6 @@
-# rustup installs this toolchain and every target the build hook can ask for
+# The pinned toolchain. Targets are added as a build needs them (hook/build.dart),
+# so a host that never builds for a phone never downloads a phone's std.
 [toolchain]
 channel = "1.89.0"
 profile = "minimal"
 components = ["clippy", "rustfmt"]
-targets = [
-  "aarch64-apple-ios",
-  "aarch64-apple-ios-sim",
-  "x86_64-apple-ios",
-  "aarch64-linux-android",
-  "armv7-linux-androideabi",
-  "x86_64-linux-android",
-  "i686-linux-android",
-  "aarch64-apple-darwin",
-  "x86_64-apple-darwin",
-  "x86_64-unknown-linux-gnu",
-  "aarch64-unknown-linux-gnu",
-]

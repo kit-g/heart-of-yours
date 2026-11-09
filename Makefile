@@ -133,10 +133,11 @@ test-app: codegen-app codegen-heart_language
 # The encryption package (#565): its Rust crate, then its Dart API over the
 # library the build hook compiles. dart test from inside the package, since a
 # test run from the root builds native code only for what the app depends on.
-# Needs Rust (rustup); rust-toolchain.toml installs the toolchain and targets.
+# Needs Rust (rustup): rust-toolchain.toml pins the toolchain, and the hook adds
+# each target as it builds for it. REPORTS_DIR is made absolute: the recipe cd's.
 test-sealbox:
 	cd shared/sealbox/rust && cargo fmt --check && cargo clippy --all-targets --locked -- -D warnings && cargo test --locked
-	cd shared/sealbox && $(if $(REPORTS_DIR),mkdir -p "$(REPORTS_DIR)" && )dart test $(if $(REPORTS_DIR),--file-reporter="json:$(REPORTS_DIR)/sealbox.json")
+	cd shared/sealbox && $(if $(REPORTS_DIR),mkdir -p "$(abspath $(REPORTS_DIR))" && )dart test $(if $(REPORTS_DIR),--file-reporter="json:$(abspath $(REPORTS_DIR))/sealbox.json")
 
 # the repo's own Python tooling (the translation merge driver)
 test-scripts:

@@ -225,22 +225,51 @@ final class Sealbox {
 }
 
 /// Two people comparing a code, to know no one sits between their devices.
+///
+/// The order matters, because whoever moves the keys could otherwise wait for
+/// one side's key and grind its own until the codes match. The side that will
+/// see the other's key first sends its [commitment] before anything else; the
+/// other then sends its [publicKey]; then the first sends its own, and the
+/// second checks it against the commitment in [establish]. Matrix's
+/// comparison runs the same way.
+///
 /// Lives in memory only: [end] it when done, and start over after a restart.
+/// One dropped without [end] is ended when it is collected, and at most 16 run
+/// at once.
 final class Comparison {
-  new _(this._id, this.publicKey);
+  new _(this._id, this.publicKey, this.commitment) {
+    _finalizer.attach(this, _id, detach: this);
+  }
 
-  /// Starts one. Send [publicKey] to the other device.
+  static final _finalizer = Finalizer<int>((id) => call('comparisonEnd', {'comparison': id}));
+
+  /// Starts one. `too_many_comparisons` while 16 are already running.
   factory start() {
     final answer = call('comparisonStart');
-    return Comparison._(answer['comparison'] as int, answer['publicKey'] as String);
+    return Comparison._(
+      answer['comparison'] as int,
+      answer['publicKey'] as String,
+      answer['commitment'] as String,
+    );
   }
 
   final int _id;
+
+  /// Send it to the other device, after its commitment, if it sends one.
   final String publicKey;
 
-  /// Takes the other device's public key.
-  void establish(String theirPublicKey) =>
-      call('comparisonEstablish', {'comparison': _id, 'publicKey': theirPublicKey});
+  /// A hash of [publicKey], sent before it by the side that will see the other
+  /// key first.
+  final String commitment;
+
+  /// Takes the other device's public key, checking it against the
+  /// [theirCommitment] it sent first, when it did. A key that doesn't match
+  /// throws `commitment_mismatch` and ends the comparison.
+  void establish(String theirPublicKey, {String? theirCommitment}) => call('comparisonEstablish', {
+    'comparison': _id,
+    'publicKey': theirPublicKey,
+    'commitment': ?theirCommitment,
+  });
 
   /// The code both screens show under the same [info]: three numbers, and the
   /// same as seven emoji indices.
@@ -257,7 +286,10 @@ final class Comparison {
   bool verifyMac(String input, String info, String mac) =>
       call('comparisonVerifyMac', {'comparison': _id, 'input': input, 'info': info, 'mac': mac})['valid'] as bool;
 
-  void end() => call('comparisonEnd', {'comparison': _id});
+  void end() {
+    _finalizer.detach(this);
+    call('comparisonEnd', {'comparison': _id});
+  }
 }
 
 Map<String, Object?> _message(PairwiseMessage message) => {'type': message.type, 'body': message.body};

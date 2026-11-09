@@ -3,19 +3,28 @@ import 'dart:io';
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
 
-/// Builds the Rust library for the target with cargo, or takes a prebuilt one
-/// from `prebuilt/<rust triple>/` when that holds it, for machines without Rust.
+/// Builds the Rust library for the target with cargo. A machine without Rust
+/// takes a prebuilt one from `prebuilt/<rust triple>/` instead, and only then:
+/// where cargo is there, the source is what ships, never a library that may
+/// be older than it. macOS and Linux build hosts only.
 void main(List<String> args) => build(args, (input, output) async {
   if (!input.config.buildCodeAssets) return;
+  if (Platform.isWindows) {
+    throw UnsupportedError('sealbox builds on macOS and Linux hosts; Windows is not one yet');
+  }
   final code = input.config.code;
   final triple = _rustTriple(code);
   final library = code.targetOS.dylibFileName('sealbox');
   final rust = input.packageRoot.resolve('rust/');
-
   final prebuilt = input.packageRoot.resolve('prebuilt/$triple/$library');
-  final built = switch (File.fromUri(prebuilt).existsSync()) {
-    true => prebuilt,
-    false => await _cargo(input, code, triple, rust, library),
+
+  final built = switch (_cargoHome()) {
+    final String cargoHome => await _cargo(code, triple, rust, library, cargoHome),
+    null when File.fromUri(prebuilt).existsSync() => prebuilt,
+    null => throw Exception(
+      'sealbox needs Rust to build for $triple: install it with rustup (https://rustup.rs), '
+      'or put a prebuilt $library in prebuilt/$triple/.',
+    ),
   };
 
   output.assets.code.add(
@@ -26,41 +35,75 @@ void main(List<String> args) => build(args, (input, output) async {
     rust.resolve('Cargo.lock'),
     rust.resolve('rust-toolchain.toml'),
     ...Directory.fromUri(rust.resolve('src/')).listSync(recursive: true).whereType<File>().map((file) => file.uri),
+    // added, replaced or removed, a prebuilt changes what ships
+    prebuilt,
   ]);
 });
 
-Future<Uri> _cargo(BuildInput input, CodeConfig code, String triple, Uri rust, String library) async {
+/// Where cargo and rustup live, when they are installed.
+String? _cargoHome() {
   final home = Platform.environment['HOME'] ?? '';
   final cargoHome = Platform.environment['CARGO_HOME'] ?? '$home/.cargo';
-  final cargo = '$cargoHome/bin/cargo';
-  if (!File(cargo).existsSync()) {
-    throw Exception(
-      'sealbox needs Rust to build for $triple: install it with rustup (https://rustup.rs), '
-      'or put a prebuilt $library in prebuilt/$triple/.',
-    );
-  }
+  return switch (File('$cargoHome/bin/cargo').existsSync()) {
+    true => cargoHome,
+    false => null,
+  };
+}
 
-  // Nothing is inherited: Xcode's SDKROOT, for one, breaks linking cargo's own
-  // build scripts for the host.
+/// What cargo and rustup need to reach crates.io and the toolchains through
+/// whatever network the machine has: proxies and certificate settings.
+const _network = [
+  'HTTP_PROXY',
+  'HTTPS_PROXY',
+  'NO_PROXY',
+  'ALL_PROXY',
+  'http_proxy',
+  'https_proxy',
+  'no_proxy',
+  'all_proxy',
+  'SSL_CERT_FILE',
+  'SSL_CERT_DIR',
+  'CARGO_HTTP_CAINFO',
+  'CARGO_HTTP_PROXY',
+  'CARGO_REGISTRIES_CRATES_IO_PROTOCOL',
+  'RUSTUP_DIST_SERVER',
+  'RUSTUP_UPDATE_ROOT',
+  'RUSTUP_HOME',
+];
+
+Future<Uri> _cargo(CodeConfig code, String triple, Uri rust, String library, String cargoHome) async {
+  final home = Platform.environment['HOME'] ?? '';
+
+  // Built rather than inherited: Xcode's SDKROOT, for one, breaks linking
+  // cargo's own build scripts for the host. Only the network settings come
+  // through, so a machine behind a proxy can still fetch crates and targets.
   final environment = {
     'HOME': home,
     'PATH': '$cargoHome/bin:/usr/bin:/bin:/usr/sbin:/sbin',
     'CARGO_HOME': cargoHome,
     'CARGO_TARGET_DIR': rust.resolve('target/').toFilePath(),
-    'RUSTUP_HOME': ?Platform.environment['RUSTUP_HOME'],
+    for (final name in _network)
+      if (Platform.environment[name] case final String value) name: value,
     if (code.targetOS == OS.android) ..._androidLinker(code, triple),
   };
 
-  final result = await Process.run(
-    cargo,
-    ['build', '--release', '--lib', '--locked', '--target', triple],
-    workingDirectory: rust.toFilePath(),
-    environment: environment,
-    includeParentEnvironment: false,
-  );
-  if (result.exitCode != 0) {
-    throw Exception('cargo failed for $triple:\n${result.stdout}\n${result.stderr}');
+  Future<void> run(String tool, List<String> arguments) async {
+    final result = await Process.run(
+      '$cargoHome/bin/$tool',
+      arguments,
+      workingDirectory: rust.toFilePath(),
+      environment: environment,
+      includeParentEnvironment: false,
+    );
+    if (result.exitCode != 0) {
+      throw Exception('$tool failed for $triple:\n${result.stdout}\n${result.stderr}');
+    }
   }
+
+  // the pinned toolchain's standard library for this target only: a host that
+  // never builds for a phone never downloads one
+  await run('rustup', ['target', 'add', triple]);
+  await run('cargo', ['build', '--release', '--lib', '--locked', '--target', triple]);
   return rust.resolve('target/$triple/release/$library');
 }
 

@@ -55,18 +55,27 @@ The library won't do these. Each one that can be shown is pinned by a test in
 - **Save what a call returns before acting on it.** State that isn't saved gets used twice.
 - **Replace one-time keys as they're used,** keeping at most 50, and rotate the fallback key now and
   then.
-- **End comparisons.** They live in memory between `Comparison.start()` and `end()`, and a restart
-  abandons them.
+- **Commit before revealing, in a comparison.** Whoever moves the keys could otherwise wait for one
+  side's key and grind its own until the short codes match. The side that will see the other's key
+  first sends its `commitment` before anything else; the other sends its `publicKey`; then the first
+  sends its own, which the second checks with `establish(key, theirCommitment: …)`. A key that
+  doesn't match ends the comparison. Matrix's comparison runs the same way.
+- **End comparisons.** They live in memory between `Comparison.start()` and `end()`, a restart
+  abandons them, and at most 16 run at once. One dropped without `end()` is ended when it is
+  collected, but that is a backstop, not a plan.
 
 ## Building
 
-`hook/build.dart` runs cargo for the target, or uses `prebuilt/<rust triple>/` if that holds a
-library, for machines without Rust. Cargo inherits nothing from the build's environment, since
-Xcode's `SDKROOT` breaks linking cargo's own build scripts. For Android it links with the NDK's clang,
-found next to the C compiler the build hands every hook.
+`hook/build.dart` runs cargo for the target whenever Rust is installed, so the source is always what
+ships. Only a machine without Rust takes a library from `prebuilt/<rust triple>/`. Cargo inherits
+nothing from the build's environment but the network settings (proxies, certificates, rustup's
+servers), since Xcode's `SDKROOT` breaks linking cargo's own build scripts. For Android it links with
+the NDK's clang, found next to the C compiler the build hands every hook. macOS and Linux build
+hosts only.
 
-`rust/rust-toolchain.toml` pins Rust and lists every target, and rustup installs them on first use.
-About 0.6 to 0.9 MB per architecture.
+`rust/rust-toolchain.toml` pins Rust, and the hook adds each target's standard library as it first
+builds for it, so a host that never builds for a phone never downloads one. About 0.6 to 0.9 MB per
+architecture.
 
 ```sh
 make test-sealbox   # cargo fmt, clippy and tests, then the Dart tests through the real library

@@ -223,6 +223,43 @@ fn an_old_device_vouches_for_a_new_one() {
     op("comparisonEnd", json!({ "comparison": two["comparison"] }));
 }
 
+/// The side that would see the other's key first gets its commitment before
+/// that: a key picked afterwards, to grind the short code into a match, is
+/// refused, and the comparison has to start over.
+#[test]
+fn a_key_must_be_the_one_committed_to() {
+    let starter = op("comparisonStart", json!({}));
+    let accepter = op("comparisonStart", json!({}));
+    let relay = op("comparisonStart", json!({}));
+
+    // the accepter's own key, with its commitment: fine
+    op(
+        "comparisonEstablish",
+        json!({ "comparison": starter["comparison"], "publicKey": accepter["publicKey"], "commitment": accepter["commitment"] }),
+    );
+
+    // a relay's key under the accepter's commitment: refused, and gone
+    let other = op("comparisonStart", json!({}));
+    assert_eq!(
+        fails(
+            "comparisonEstablish",
+            json!({ "comparison": other["comparison"], "publicKey": relay["publicKey"], "commitment": accepter["commitment"] }),
+        ),
+        "commitment_mismatch"
+    );
+    assert_eq!(
+        fails(
+            "comparisonCode",
+            json!({ "comparison": other["comparison"], "info": "x" })
+        ),
+        "no_comparison"
+    );
+
+    for each in [&starter, &accepter, &relay] {
+        op("comparisonEnd", json!({ "comparison": each["comparison"] }));
+    }
+}
+
 #[test]
 fn a_code_needs_an_established_comparison() {
     let started = op("comparisonStart", json!({}));
@@ -361,6 +398,29 @@ fn a_device_holds_at_most_fifty_one_time_keys() {
         ),
         "bad_input"
     );
+}
+
+/// A count that can't fit, or would wrap a 32-bit device's arithmetic past the
+/// limit, is refused rather than truncated.
+#[test]
+fn a_huge_one_time_key_count_is_refused() {
+    let device = device();
+    for count in [u64::MAX, u64::from(u32::MAX), 1u64 << 32] {
+        assert_eq!(
+            fails(
+                "accountOneTimeKeys",
+                json!({ "storageKey": storage_key(), "account": device.account, "count": count })
+            ),
+            "bad_input"
+        );
+        assert_eq!(
+            fails(
+                "accountNew",
+                json!({ "storageKey": storage_key(), "oneTimeKeys": count })
+            ),
+            "bad_input"
+        );
+    }
 }
 
 #[test]

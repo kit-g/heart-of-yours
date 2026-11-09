@@ -86,7 +86,8 @@ void main() {
     final two = Comparison.start();
     addTearDown(one.end);
     addTearDown(two.end);
-    one.establish(two.publicKey);
+    // two committed first, so one checks two's key against it
+    one.establish(two.publicKey, theirCommitment: two.commitment);
     two.establish(one.publicKey);
     final (mine, theirs) = (one.code('add a device'), two.code('add a device'));
     expect(mine.decimals, theirs.decimals);
@@ -104,6 +105,18 @@ void main() {
     expect(
       Sealbox.verifySignature(signingKey: old.signingKey, message: old.identityKey, signature: signature),
       isFalse,
+    );
+  });
+
+  test('a key other than the one committed to is refused', () {
+    final one = Comparison.start();
+    final two = Comparison.start();
+    final relay = Comparison.start();
+    addTearDown(two.end);
+    addTearDown(relay.end);
+    expect(
+      () => one.establish(relay.publicKey, theirCommitment: two.commitment),
+      throwsA(isA<SealboxException>().having((e) => e.code, 'code', 'commitment_mismatch')),
     );
   });
 
