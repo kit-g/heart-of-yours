@@ -28,6 +28,7 @@ const _coachingSpace = 'coachingSpace';
 const _coachName = 'coachName';
 const _coachFingerprint = 'coachFingerprint';
 const _pendingInvitation = 'pendingInvitation';
+const _coachPauseOwed = 'coachPauseOwed';
 const _notificationsReminderDismissed = 'notificationsReminderDismissed';
 const _installed = 'installed';
 const _lockScreenWorkout = 'lockScreenWorkout';
@@ -136,6 +137,13 @@ class Preferences with ChangeNotifier {
       _ => null,
     };
   }
+
+  /// Your coach was turned off and some coach couldn't be paused yet (#553):
+  /// tried again until every one is, so the switch never reads off while a
+  /// coach still sees new workouts. Per device: it's this device's attempt.
+  bool get coachPauseOwed => _prefs?.getBool(_coachPauseOwed) ?? false;
+
+  Future<bool>? setCoachPauseOwed({required bool owed}) => _prefs?.setBool(_coachPauseOwed, owed);
 
   Future<bool>? setPendingInvitation(({String token, String? fingerprint})? invitation) {
     return switch (invitation) {

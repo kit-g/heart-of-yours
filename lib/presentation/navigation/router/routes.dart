@@ -1277,13 +1277,18 @@ RouteBase _coachingRoute() {
 RouteBase _invitationRoute() {
   return GoRoute(
     path: _invitationPath,
+    // a token the server could have made, or no screen: the API refuses any
+    // other before it reaches a path
     redirect: (_, state) => switch (state.uri.queryParameters[_invitationToken]) {
-      final String token when token.isNotEmpty => null,
+      final String token when _invitationTokenShape.hasMatch(token) => null,
       _ => _profilePath,
     },
     builder: (context, state) {
+      final token = state.uri.queryParameters[_invitationToken]!;
       return InvitationPage(
-        token: state.uri.queryParameters[_invitationToken]!,
+        // a second link over the first is a new page, with its own preview
+        key: ValueKey(token),
+        token: token,
         fingerprint: switch (state.uri.fragment) {
           '' => null,
           final String fragment => fragment,

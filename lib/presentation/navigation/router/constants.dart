@@ -99,3 +99,5 @@ const _coachingMePath = '$_coachingPath/me';
 // and Android both hand to the app
 const _invitationPath = '/invite.html';
 const _invitationToken = 't';
+// what an invitation token looks like when the server made it: base64url
+final _invitationTokenShape = RegExp(r'^[A-Za-z0-9_-]{1,128}$');

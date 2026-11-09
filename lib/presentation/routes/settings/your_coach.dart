@@ -1,9 +1,26 @@
 part of 'settings.dart';
 
-/// Under Your coach's switch, while it is on (#553): each coach, what they see
-/// beyond the workouts logged since accepting, and pausing or leaving them.
-class _YourCoaches extends StatelessWidget {
+/// Under Your coach's switch (#553): each coach, what they see beyond the
+/// workouts logged since accepting, and leaving them. Shown whatever the switch
+/// says, so a student can leave a coach without turning coaching back on; the
+/// switch itself is the pause.
+class _YourCoaches extends StatefulWidget {
   const new();
+
+  @override
+  State<_YourCoaches> createState() => _YourCoachesState();
+}
+
+class _YourCoachesState extends State<_YourCoaches> {
+  @override
+  void initState() {
+    super.initState();
+    // read here too: with the switch off nothing else reads them, and leaving
+    // a coach mustn't need coaching turned back on
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && Coaching.of(context).status == .idle) Coaching.of(context).load();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,29 +76,13 @@ class _CoachCard extends StatelessWidget {
             Text(l.yourCoachPaused, style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
           share(.history, l.invitationShareHistory),
           share(.goals, l.invitationShareGoals),
-          Wrap(
-            spacing: 8,
-            children: [
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(minimumSize: const Size(64, 48)),
-                onPressed: () => _try(
-                  context,
-                  () => switch (paused) {
-                    true => Coaching.of(context).resume(coach),
-                    false => Coaching.of(context).pause(coach),
-                  },
-                ),
-                child: Text(switch (paused) {
-                  true => l.yourCoachResume,
-                  false => l.yourCoachPause,
-                }),
-              ),
-              TextButton(
-                style: TextButton.styleFrom(minimumSize: const Size(64, 48), foregroundColor: colorScheme.error),
-                onPressed: () => _leave(context, name ?? l.yourCoach),
-                child: Text(l.yourCoachLeave),
-              ),
-            ],
+          Align(
+            alignment: .centerLeft,
+            child: TextButton(
+              style: TextButton.styleFrom(minimumSize: const Size(64, 48), foregroundColor: colorScheme.error),
+              onPressed: () => _leave(context, name ?? l.yourCoach),
+              child: Text(l.yourCoachLeave),
+            ),
           ),
         ],
       ),
@@ -173,6 +174,6 @@ Future<void> _try(BuildContext context, Future<void> Function() change) async {
   try {
     await change();
   } catch (_) {
-    messenger.showSnackBar(SnackBar(content: Text(failed)));
+    messenger.snack(failed);
   }
 }

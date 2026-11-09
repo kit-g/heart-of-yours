@@ -5610,10 +5610,6 @@
   "@invitationFailed": {"description": "Shown when answering an invitation fails for an unexpected reason (#553)", "type": "text", "placeholders": {}},
   "yourCoachPaused": "Paused: they don't see what you log",
   "@yourCoachPaused": {"description": "Under a coach in Settings while the connection is paused (#553)", "type": "text", "placeholders": {}},
-  "yourCoachPause": "Pause",
-  "@yourCoachPause": {"description": "Button that pauses what a coach sees (#553)", "type": "text", "placeholders": {}},
-  "yourCoachResume": "Resume",
-  "@yourCoachResume": {"description": "Button that resumes a paused coach connection (#553)", "type": "text", "placeholders": {}},
   "yourCoachLeave": "Leave",
   "@yourCoachLeave": {"description": "Button that ends a coach connection, and the confirming button in its dialog (#553)", "type": "text", "placeholders": {}},
   "yourCoachLeaveTitle": "Leave {name}?",
@@ -5627,5 +5623,9 @@
   "coachingCancelFailed": "Couldn't cancel the invitation. Try again.",
   "@coachingCancelFailed": {"description": "Shown when withdrawing an invitation fails (#553)", "type": "text", "placeholders": {}},
   "coachingClientCount": "{count, plural, =1{One person you coach} other{{count} people you coach}}",
-  "@coachingClientCount": {"description": "On the Clients tab while the coach has clients, before the roster lists them (#553, #559). {count} is how many", "type": "text", "placeholders": {"count": {"type": "int"}}}
+  "@coachingClientCount": {"description": "On the Clients tab while the coach has clients, before the roster lists them (#553, #559). {count} is how many", "type": "text", "placeholders": {"count": {"type": "int"}}},
+  "invitationLoadFailed": "Couldn't open this invitation",
+  "@invitationLoadFailed": {"description": "Title of the invitation page when the link couldn't be read, for a reason other than the link (#553)", "type": "text", "placeholders": {}},
+  "invitationLoadFailedBody": "The link may still be good. Check your connection, then try again.",
+  "@invitationLoadFailedBody": {"description": "Under invitationLoadFailed (#553): the link may still be good", "type": "text", "placeholders": {}}
 }

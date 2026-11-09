@@ -134,8 +134,9 @@ class _YourCoachSwitch extends StatelessWidget {
       .pending || .on || .off => const Column(
         crossAxisAlignment: .stretch,
         children: [
-          // each coach, under the switch while it is on (#553)
-          _FeatureSwitch(.yourCoach, extra: _YourCoaches()),
+          _FeatureSwitch(.yourCoach),
+          // each coach, whatever the switch says: leaving needs no switch on
+          Padding(padding: .symmetric(horizontal: 16), child: _YourCoaches()),
           // a block made from an invitation outlives a no to it
           _Blocked(),
         ],

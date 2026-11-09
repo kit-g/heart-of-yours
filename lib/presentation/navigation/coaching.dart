@@ -35,6 +35,9 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
   /// never mistaken for a flip of the switch.
   bool? _coached;
 
+  /// A flip being followed, so another doesn't start over it.
+  bool _following = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -63,14 +66,23 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
     if (preferences == null || auth == null || !preferences.isInitialized) return;
     // a link kept while the person made an account: before the switches,
     // since following a first invitation is how Your coach gets turned on
-    if (preferences.pendingInvitation case (:final token, :final fingerprint) when !auth.isAnonymous) {
+    // an account, settled: before Firebase's first answer there is no user at
+    // all, and that is not the same as one with an account
+    if (preferences.pendingInvitation case (:final token, :final fingerprint)
+        when auth.user != null && !auth.isAnonymous) {
       preferences.setPendingInvitation(null);
       widget.onPendingInvitation(token, fingerprint);
     }
     final (coachPeople, coached) = (preferences.isOn(.coachPeople), preferences.isOn(.yourCoach));
     final was = _coached;
     _coached = coached;
-    if (was != null && was != coached && !auth.isAnonymous) _followSwitch(on: coached);
+    final account = auth.user != null && !auth.isAnonymous && RemoteAccess.of(context).allowed;
+    if (account && was != null && was != coached) {
+      _followSwitch(on: coached);
+    } else if (account && !coached && preferences.coachPauseOwed) {
+      // off, and a pause that didn't go through last time
+      _followSwitch(on: false);
+    }
     // both off: coaching was never built, and nothing about the account is read
     if (!coachPeople && !coached) {
       _space = false;
@@ -100,24 +112,44 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
 
   /// Your coach off pauses every coach: the coach stops seeing new workouts
   /// and is told so, rather than a student believing coaching is off while
-  /// data keeps flowing. On resumes them: only the student can (#553).
+  /// data keeps flowing. On resumes them, which only the student can (#553).
+  /// The switch is the only pause a student has, so on resumes every paused
+  /// coach.
+  ///
+  /// The list is read fresh first: a flip that arrives from another device,
+  /// by settings sync, finds that device's pauses already made. Each coach is
+  /// tried on its own, and a pause that fails is owed until it goes through.
   Future<void> _followSwitch({required bool on}) async {
+    if (_following) return;
+    _following = true;
     final coaching = Coaching.of(context);
+    final preferences = Preferences.of(context);
+    var failed = false;
     try {
-      // switched on, the list may never have been read
-      if (on) await coaching.load();
+      await coaching.load();
+      if (coaching.status != .loaded) {
+        failed = true;
+        return;
+      }
       for (final coach in coaching.coaches.toList()) {
-        switch ((on, coach.status)) {
-          case (false, .active):
-            await coaching.pause(coach);
-          case (true, .paused):
-            await coaching.resume(coach);
-          default:
-            break;
+        try {
+          switch ((on, coach.status)) {
+            case (false, .active):
+              await coaching.pause(coach);
+            case (true, .paused):
+              await coaching.resume(coach);
+            default:
+              break;
+          }
+        } catch (error, stacktrace) {
+          failed = true;
+          coaching.onError?.call(error, stacktrace: stacktrace);
         }
       }
-    } catch (error, stacktrace) {
-      coaching.onError?.call(error, stacktrace: stacktrace);
+    } finally {
+      _following = false;
+      // owed only while off: on, there is nothing left to pause
+      await preferences.setCoachPauseOwed(owed: !on && failed);
     }
   }
 

@@ -343,4 +343,5 @@ abstract final class AppKeys {
   static const yourCoachLeaveConfirm = Key('YourCoach.leaveConfirm');
 
   static Key yourCoachUnblock(String userId) => Key('YourCoach.unblock.$userId');
+  static const invitationRetry = Key('Invitation.retry');
 }
