@@ -236,9 +236,7 @@ class ProgramPage extends StatelessWidget {
   Future<void> _start(BuildContext context, Template session) async {
     final started = await startWorkoutOverActive(
       context,
-      () =>
-          Workouts.of(context)
-              .startWorkout(source: .program, template: startingWorkout(context, session), applyPinnedNotes: true),
+      () => startPlanned(context, Workouts.of(context), session, source: .program),
     );
     if (started) onOpenActiveWorkout();
   }

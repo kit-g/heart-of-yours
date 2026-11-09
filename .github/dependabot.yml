@@ -4,13 +4,6 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    ignore:
-      # Firebase 5 brings firebase-ios-sdk 13 (gtm-session-fetcher 4+), which
-      # google_sign_in_ios 6.3.8 (GoogleSignIn 9, gtm-session-fetcher 3) can't
-      # resolve beside: the iOS build fails in SPM. Lift once google_sign_in_ios
-      # moves to GoogleSignIn 10.
-      - dependency-name: "firebase_*"
-        update-types: [ "version-update:semver-major" ]
     groups:
       minor-and-patch:
         update-types: [ minor, patch ]
