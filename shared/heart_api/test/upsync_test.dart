@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 
-import 'api_test.mocks.dart';
+import 'support/http.dart';
 
 /// The wire side of the upsync replay contract (heart-api#66): every create
 /// carries the client id, `201` and `200` are told apart, a name match comes
