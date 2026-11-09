@@ -2134,6 +2134,14 @@ void main() {
       expect(api.acceptInvitation(token, {}), throwsA(containsPair('code', 'invitation_gone')));
     });
 
+    test('a token that is not one the server makes never reaches a path', () {
+      for (final crafted in ['../../v1/accounts/x', 'a/b', 'a b', '', 'a%2F..']) {
+        expect(() => Router.invitationLink(crafted), throwsArgumentError, reason: crafted);
+        expect(() => api.previewInvitation(crafted), throwsArgumentError, reason: crafted);
+      }
+      verifyNever(client.get(any, headers: anyNamed('headers')));
+    });
+
     test('declining, blocking, listing and lifting blocks', () async {
       _response(client: client, method: 'POST', path: Router.invitationLinkDecline(token), statusCode: 204, body: {});
       _response(client: client, method: 'POST', path: Router.invitationLinkBlock(token), statusCode: 204, body: {});
