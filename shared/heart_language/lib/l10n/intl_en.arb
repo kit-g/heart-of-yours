@@ -5623,5 +5623,9 @@
   "yourCoachBlocked": "Blocked",
   "@yourCoachBlocked": {"description": "Heading over the people the user has blocked, under Your coach in Settings (#553)", "type": "text", "placeholders": {}},
   "yourCoachUnblock": "Unblock",
-  "@yourCoachUnblock": {"description": "Button lifting a block (#553)", "type": "text", "placeholders": {}}
+  "@yourCoachUnblock": {"description": "Button lifting a block (#553)", "type": "text", "placeholders": {}},
+  "coachingCancelFailed": "Couldn't cancel the invitation. Try again.",
+  "@coachingCancelFailed": {"description": "Shown when withdrawing an invitation fails (#553)", "type": "text", "placeholders": {}},
+  "coachingClientCount": "{count, plural, =1{One person you coach} other{{count} people you coach}}",
+  "@coachingClientCount": {"description": "On the Clients tab while the coach has clients, before the roster lists them (#553, #559). {count} is how many", "type": "text", "placeholders": {"count": {"type": "int"}}}
 }

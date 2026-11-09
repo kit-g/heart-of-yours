@@ -1017,11 +1017,14 @@ class Api
   /// What the student of a coach connection opens to their coach beyond
   /// workouts since accepting. The list replaces the old one. Only the student
   /// may: the coach gets `403 forbidden`, thrown whole like every refusal.
-  Future<Connection> setConnectionShares(String connectionId, Set<ConnectionShare> shares) async {
+  ///
+  /// By name, not by [ConnectionShare]: a share a newer server added is one
+  /// this build must send back as it found it, or replacing the list revokes it.
+  Future<Connection> setConnectionShares(String connectionId, Set<String> shares) async {
     final (json, code) = await put(
       Router.connectionShares(connectionId),
       body: {
-        'shares': [for (final share in shares) share.name],
+        'shares': [...shares],
       },
     );
     return switch ((code, json)) {
@@ -1346,8 +1349,18 @@ abstract final class Router {
 
   static String invitationResend(String invitationId) => '${invitation(invitationId)}/resend';
 
-  /// A link by its secret: base64url, so it goes into the path as it is.
-  static String invitationLink(String token) => '$invitationLinks/$token';
+  /// A link by its secret. The token comes from a link anyone can write, so
+  /// it is held to what the server makes, base64url, before it reaches a path:
+  /// `Uri.https` resolves `..`, and an unchecked one would send the account's
+  /// requests anywhere on the API.
+  static String invitationLink(String token) {
+    if (!_invitationToken.hasMatch(token)) {
+      throw ArgumentError.value(token, 'token', 'not an invitation token');
+    }
+    return '$invitationLinks/$token';
+  }
+
+  static final _invitationToken = RegExp(r'^[A-Za-z0-9_-]{1,128}$');
 
   static String invitationLinkAccept(String token) => '${invitationLink(token)}/accept';
 

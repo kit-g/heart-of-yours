@@ -1877,7 +1877,7 @@ void main() {
         },
       );
 
-      final connection = await api.setConnectionShares(id, {.history, .goals});
+      final connection = await api.setConnectionShares(id, {'history', 'goals'});
 
       expect(connection.shares, ['history', 'goals']);
       final sent = verify(
@@ -1904,7 +1904,7 @@ void main() {
           'reason': 'Only the student of a live coaching connection chooses what it shares.',
         },
       );
-      expect(api.setConnectionShares(id, {.history}), throwsA(containsPair('code', 'forbidden')));
+      expect(api.setConnectionShares(id, {'history'}), throwsA(containsPair('code', 'forbidden')));
     });
 
     test('setConnectionStatus sends the status by name', () async {
@@ -2132,6 +2132,14 @@ void main() {
         },
       );
       expect(api.acceptInvitation(token, {}), throwsA(containsPair('code', 'invitation_gone')));
+    });
+
+    test('a token that is not one the server makes never reaches a path', () {
+      for (final crafted in ['../../v1/accounts/x', 'a/b', 'a b', '', 'a%2F..']) {
+        expect(() => Router.invitationLink(crafted), throwsArgumentError, reason: crafted);
+        expect(() => api.previewInvitation(crafted), throwsArgumentError, reason: crafted);
+      }
+      verifyNever(client.get(any, headers: anyNamed('headers')));
     });
 
     test('declining, blocking, listing and lifting blocks', () async {

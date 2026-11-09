@@ -129,6 +129,21 @@ void main() {
     expect(find.byType(ClientsPage), findsOneWidget);
   });
 
+  testWidgets('left by any other way, a Live Activity or a link, Profile is Profile again', (tester) async {
+    account(coach: true);
+    // wide: under the test font the Workout tab's header overflows a phone
+    await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
+    expect(find.byType(ClientsPage), findsOneWidget);
+
+    GoRouter.of(tester.element(find.byType(ClientsPage))).go('/workout');
+    await tester.pumpTimes();
+    await tester.tapByKey(AppKeys.profileStack);
+    await tester.pumpTimes();
+
+    expect(find.byType(ProfilePage), findsOneWidget);
+    expect(find.byType(ClientsPage), findsNothing);
+  });
+
   testWidgets('left in the space but switched off since, the app opens on Profile', (tester) async {
     account(coach: true);
     await pump(tester, {'feature-coachPeople': 'off', 'coachingSpace': true});
@@ -217,6 +232,43 @@ void main() {
 
       expect(find.text('Inviting is open to testers for now.'), findsOneWidget);
       expect(share.shared, isEmpty);
+    });
+
+    testWidgets('a coach with clients and nothing waiting is not told there are no clients', (tester) async {
+      account(coach: true);
+      when(api.getConnections()).thenAnswer(
+        (_) async => [
+          Connection(
+            targetId: 'riley',
+            role: .coach,
+            domain: .fitness,
+            status: .active,
+            createdAt: DateTime.utc(2026, 11, 8),
+            connectionId: 'c1',
+          ),
+        ],
+      );
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      expect(find.text('No clients yet'), findsNothing);
+      expect(find.text('One person you coach'), findsOneWidget);
+    });
+
+    testWidgets('a cancel that fails says so, and the invitation stays', (tester) async {
+      account(coach: true);
+      when(api.getInvitations(cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (items: [invitation()], cursor: null),
+      );
+      when(api.cancelInvitation('i1')).thenAnswer((_) async => throw StateError('offline'));
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      await tester.tap(find.byTooltip('More options'));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Cancel invitation'));
+      await tester.pumpTimes();
+
+      expect(find.text("Couldn't cancel the invitation. Try again."), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingInvitation('i1')), findsOneWidget);
     });
 
     testWidgets('a waiting invitation can be cancelled from its menu', (tester) async {
