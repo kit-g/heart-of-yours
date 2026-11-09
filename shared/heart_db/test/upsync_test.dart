@@ -50,6 +50,12 @@ void main() {
       'user_id': uid,
       'synced': 0,
     });
+    // a program workout's plan, owed to the server (#566)
+    await db.insert('workout_plans', {
+      'workout_id': '$uid-workout',
+      'user_id': uid,
+      'plan': '{"exercises":[]}',
+    });
     await db.insert('workout_exercises', {
       'id': '$uid-workout-exercise',
       'workout_id': '$uid-workout',
@@ -138,7 +144,16 @@ void main() {
       }
       expect(
         swept,
-        containsAll(['workouts', 'exercises', 'exercise_details', 'templates', 'template_folders', 'charts', 'goals']),
+        containsAll([
+          'workouts',
+          'workout_plans',
+          'exercises',
+          'exercise_details',
+          'templates',
+          'template_folders',
+          'charts',
+          'goals',
+        ]),
       );
       // the children ride along with their parents, untouched
       expect(await count('sets', where: 'exercise_id = ?', args: ['$anonymous-workout-exercise']), 1);
