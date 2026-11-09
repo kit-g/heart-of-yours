@@ -1073,6 +1073,101 @@ class Api
     if (code != 204) throw json;
   }
 
+  // ---- invitations (coaching, #553) ----
+
+  /// A one-person link from a coach, for someone they call [name], optionally
+  /// with a library program the person gets on accepting. `201`, carrying the
+  /// link's secret `token`, the one time besides a resend that it is readable.
+  /// `403 coaching_beta` for an account that may not coach yet, thrown whole.
+  Future<Invitation> createInvitation(String name, {String? programId}) async {
+    final (json, code) = await post(Router.invitations, body: {'name': name, 'programId': ?programId});
+    return switch ((code, json)) {
+      (201, Map json) => Invitation.fromJson(json),
+      _ => throw json,
+    };
+  }
+
+  /// The coach's links, newest first, however they ended. Never a token.
+  Future<({List<Invitation> items, String? cursor})> getInvitations({String? cursor}) async {
+    final (json, code) = await get(Router.invitations, query: _cursor(cursor));
+    return switch ((code, json)) {
+      (200, {'invitations': List l}) => (items: _readable(l, Invitation.fromJson), cursor: json['cursor'] as String?),
+      _ => throw json,
+    };
+  }
+
+  /// A new token and a new week for a link nobody has answered; the old token
+  /// stops working.
+  Future<Invitation> resendInvitation(String invitationId) async {
+    final (json, code) = await post(Router.invitationResend(invitationId));
+    return switch ((code, json)) {
+      (200, Map json) => Invitation.fromJson(json),
+      _ => throw json,
+    };
+  }
+
+  /// Withdraws a link. Withdrawing one that's gone is not an error.
+  Future<void> cancelInvitation(String invitationId) async {
+    final (json, code) = await delete(Router.invitation(invitationId));
+    if (code != 204) throw json;
+  }
+
+  /// What a link says to anyone who opens it, signed in or not: whether it is
+  /// still good and, while it is, the coach's name and photo. Null for a token
+  /// the server never made.
+  Future<InvitationPreview?> previewInvitation(String token) async {
+    final (json, code) = await get(Router.invitationLink(token));
+    return switch ((code, json)) {
+      (200, Map json) => InvitationPreview.fromJson(json),
+      (404, _) => null,
+      _ => throw json,
+    };
+  }
+
+  /// Accepts a link, opening [shares] to the coach. One step: the connection,
+  /// the shares, and "Your coach" on in the account's settings. Accepting again
+  /// answers the same connection. `400 invitation_gone` for a link that is no
+  /// longer good, `400 own_invitation` for one's own, thrown whole.
+  Future<AcceptedInvitation> acceptInvitation(String token, Set<ConnectionShare> shares) async {
+    final (json, code) = await post(
+      Router.invitationLinkAccept(token),
+      body: {
+        'shares': [for (final share in shares) share.name],
+      },
+    );
+    return switch ((code, json)) {
+      (200, Map json) => AcceptedInvitation.fromJson(json),
+      _ => throw json,
+    };
+  }
+
+  Future<void> declineInvitation(String token) async {
+    final (json, code) = await post(Router.invitationLinkDecline(token));
+    if (code != 204) throw json;
+  }
+
+  /// Blocks whoever made the link, though no connection exists yet: their next
+  /// link reads as one that is no longer good.
+  Future<void> blockInviter(String token) async {
+    final (json, code) = await post(Router.invitationLinkBlock(token));
+    if (code != 204) throw json;
+  }
+
+  /// Who the account has blocked, newest first.
+  Future<({List<BlockedPerson> items, String? cursor})> getBlocks({String? cursor}) async {
+    final (json, code) = await get(Router.blocks, query: _cursor(cursor));
+    return switch ((code, json)) {
+      (200, {'blocks': List l}) => (items: _readable(l, BlockedPerson.fromJson), cursor: json['cursor'] as String?),
+      _ => throw json,
+    };
+  }
+
+  /// Lifts a block. It restores nothing: a connection it ended stays ended.
+  Future<void> liftBlock(String userId) async {
+    final (json, code) = await delete(Router.block(userId));
+    if (code != 204) throw json;
+  }
+
   /// What a program workout was asked to be (#558, #566). `204`; the server
   /// keeps the first plan it gets, so sending again is harmless. A refusal is
   /// thrown whole: `400 invalid_plan` for a shape it can't read, `404` for a
@@ -1255,6 +1350,34 @@ abstract final class Router {
   static const accountTokens = '$accounts/tokens';
   static const programs = 'v1/programs';
   static const connections = 'v1/connections';
+  static const invitations = 'v1/invitations';
+  static const invitationLinks = 'v1/invitation-links';
+  static const blocks = 'v1/blocks';
+
+  static String invitation(String invitationId) => '$invitations/$invitationId';
+
+  static String invitationResend(String invitationId) => '${invitation(invitationId)}/resend';
+
+  /// A link by its secret. The token comes from a link anyone can write, so
+  /// it is held to what the server makes, base64url, before it reaches a path:
+  /// `Uri.https` resolves `..`, and an unchecked one would send the account's
+  /// requests anywhere on the API.
+  static String invitationLink(String token) {
+    if (!_invitationToken.hasMatch(token)) {
+      throw ArgumentError.value(token, 'token', 'not an invitation token');
+    }
+    return '$invitationLinks/$token';
+  }
+
+  static final _invitationToken = RegExp(r'^[A-Za-z0-9_-]{1,128}$');
+
+  static String invitationLinkAccept(String token) => '${invitationLink(token)}/accept';
+
+  static String invitationLinkDecline(String token) => '${invitationLink(token)}/decline';
+
+  static String invitationLinkBlock(String token) => '${invitationLink(token)}/block';
+
+  static String block(String userId) => '$blocks/$userId';
   static const hiddenWorkouts = '$workouts/hidden';
 
   /// A connection by its `connectionId`, a UUID.
@@ -1348,6 +1471,15 @@ abstract final class Router {
   static String exerciseMoves(String exerciseId) {
     return '$exercises/$exerciseId/moves';
   }
+}
+
+/// A page's query: none at all for the first, since an empty map would still
+/// put a bare `?` on the URL.
+Map<String, dynamic>? _cursor(String? cursor) {
+  return switch (cursor) {
+    final String cursor => {'cursor': cursor},
+    null => null,
+  };
 }
 
 /// The items of a list response this build can read, in order.

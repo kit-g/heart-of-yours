@@ -54,6 +54,85 @@ class _Server implements CoachingService {
   Future<void> unhideWorkout(String workoutId) async {
     hidden.remove(workoutId);
   }
+
+  // ---- invitations ----
+
+  final invitations = <Invitation>[];
+  final blocked = <BlockedPerson>[];
+  final declined = <String>[];
+  final blockedLinks = <String>[];
+  var tokens = 0;
+
+  /// Pages of two, as a paging server would hand them over.
+  static const _page = 2;
+
+  Invitation _invitation(String id, String name, {String status = 'pending', String? token}) {
+    return Invitation(
+      id: id,
+      name: name,
+      status: status,
+      role: 'COACH',
+      domain: 'fitness',
+      expiresAt: DateTime.utc(2026, 11, 15),
+      createdAt: DateTime.utc(2026, 11, 8),
+      token: token,
+    );
+  }
+
+  @override
+  Future<Invitation> createInvitation(String name, {String? programId}) async {
+    if (refuse case final refusal?) throw refusal;
+    final invitation = _invitation('i${invitations.length}', name, token: 'token-${tokens++}');
+    invitations.insert(0, invitation);
+    return invitation;
+  }
+
+  @override
+  Future<({List<Invitation> items, String? cursor})> getInvitations({String? cursor}) async {
+    final start = int.parse(cursor ?? '0');
+    final end = (start + _page).clamp(0, invitations.length);
+    return (items: invitations.sublist(start, end), cursor: end < invitations.length ? '$end' : null);
+  }
+
+  @override
+  Future<Invitation> resendInvitation(String invitationId) async {
+    final old = invitations.firstWhere((each) => each.id == invitationId);
+    return _invitation(old.id, old.name, token: 'token-${tokens++}');
+  }
+
+  @override
+  Future<void> cancelInvitation(String invitationId) async {}
+
+  @override
+  Future<InvitationPreview?> previewInvitation(String token) async {
+    return switch (token) {
+      'good' => InvitationPreview.fromJson({'inviterName': 'Alex', 'good': true}),
+      'gone' => InvitationPreview.fromJson({'good': false}),
+      _ => null,
+    };
+  }
+
+  @override
+  Future<AcceptedInvitation> acceptInvitation(String token, Set<ConnectionShare> shares) async {
+    if (refuse case final refusal?) throw refusal;
+    final connection = _connection('alex', .student, shares: [for (final share in shares) share.name]);
+    connections.add(connection);
+    return AcceptedInvitation(connection);
+  }
+
+  @override
+  Future<void> declineInvitation(String token) async => declined.add(token);
+
+  @override
+  Future<void> blockInviter(String token) async => blockedLinks.add(token);
+
+  @override
+  Future<({List<BlockedPerson> items, String? cursor})> getBlocks({String? cursor}) async {
+    return (items: List.of(blocked), cursor: null);
+  }
+
+  @override
+  Future<void> liftBlock(String userId) async => blocked.removeWhere((each) => each.id == userId);
 }
 
 Connection _connection(
@@ -208,6 +287,88 @@ void main() {
     expect(coaching.all, isEmpty);
     expect(coaching.hiddenWorkouts, isEmpty);
     expect(coaching.status, CoachingStatus.idle);
+  });
+
+  group('invitations (#553)', () {
+    test('every page of them is read, newest first', () async {
+      for (final name in ['Muffin', 'Biscuit', 'Pepper']) {
+        await server.createInvitation(name);
+      }
+      await coaching.loadInvitations();
+      expect(coaching.invitations.map((each) => each.name), ['Pepper', 'Biscuit', 'Muffin']);
+    });
+
+    test('a new one is at the top, carrying the token to share', () async {
+      await coaching.loadInvitations();
+      final invitation = await coaching.invite('Muffin');
+      expect(invitation.token, isNotNull);
+      expect(coaching.invitations.first.name, 'Muffin');
+      expect(coaching.pendingInvitations, hasLength(1));
+    });
+
+    test('a refused one throws and lists nothing', () async {
+      server.refuse = {'code': 'coaching_beta'};
+      await expectLater(coaching.invite('Muffin'), throwsA(containsPair('code', 'coaching_beta')));
+      expect(coaching.invitations, isEmpty);
+    });
+
+    test('resending replaces the link; cancelling leaves it listed, canceled', () async {
+      final first = await coaching.invite('Muffin');
+      final renewed = await coaching.resend(first);
+      expect(renewed.token, isNot(first.token));
+      expect(coaching.invitations.single.token, renewed.token);
+
+      await coaching.cancel(coaching.invitations.single);
+      expect(InvitationStatus.of(coaching.invitations.single), InvitationStatus.canceled);
+      expect(coaching.pendingInvitations, isEmpty);
+    });
+
+    test('a status this build does not know reads as no longer good', () {
+      final invitation = Invitation(
+        id: 'i',
+        name: 'Muffin',
+        status: 'withdrawn-by-moon',
+        role: 'COACH',
+        domain: 'fitness',
+        expiresAt: DateTime.utc(2026),
+        createdAt: DateTime.utc(2026),
+      );
+      expect(InvitationStatus.of(invitation), InvitationStatus.expired);
+    });
+
+    test('accepting a link puts the coach among this account\'s coaches at once', () async {
+      expect((await coaching.preview('good'))?.inviterName, 'Alex');
+      expect((await coaching.preview('gone'))?.good, isFalse);
+      expect(await coaching.preview('never'), isNull);
+
+      await coaching.accept('good', {.history});
+
+      expect(coaching.coaches.single.targetId, 'alex');
+      expect(coaching.coaches.single.shares, ['history']);
+    });
+
+    test('declining and blocking a link go to the server', () async {
+      await coaching.decline('good');
+      await coaching.blockInviter('good');
+      expect(server.declined, ['good']);
+      expect(server.blockedLinks, ['good']);
+    });
+
+    test('blocks are listed, and lifting one takes it off', () async {
+      server.blocked.add(BlockedPerson.fromJson({'id': 'alex', 'name': 'Alex', 'since': '2026-11-07T21:05:35Z'}));
+      await coaching.loadBlocks();
+      expect(coaching.blocks.single.name, 'Alex');
+
+      await coaching.lift(coaching.blocks.single);
+      expect(coaching.blocks, isEmpty);
+      expect(server.blocked, isEmpty);
+    });
+
+    test('signing out forgets invitations and blocks too', () async {
+      await coaching.invite('Muffin');
+      coaching.onSignOut();
+      expect(coaching.invitations, isEmpty);
+    });
   });
 
   test('the coach entitlement is read off the account', () {
