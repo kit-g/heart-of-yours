@@ -118,6 +118,15 @@ ticket doesn't say:
   ordinary use marks a lifter who logs after the fact, so any moment chosen
   would be a guess and the offer a nag. Off, the Workout tab and History have
   no way in; a workout already logged this way is an ordinary workout.
+- Coaching (#566) is two features, because it is two people's choices. **Coach
+  people** (`Feature.coachPeople`) has no ask, like Past workouts, and is the
+  first switch that depends on the account: during the beta it shows only for an
+  account holding the `coach` entitlement, which the server grants by hand. Off,
+  or without the entitlement, Profile has no Coaching button and a link into the
+  space lands on Profile. **Your coach** (`Feature.yourCoach`) is asked when an
+  invitation arrives (#553), and shows in Settings › Features only once asked.
+  It is also the first answer the server writes: accepting an invitation turns
+  `extra.features.yourCoach` on, so the key is the server's as much as the app's.
 
 ### Default on
 

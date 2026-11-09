@@ -10,6 +10,9 @@ class ProfilePage extends StatefulWidget {
 
   /// Every past month's recap, and one month's (#154).
   final VoidCallback onRecaps;
+
+  /// Into the Coaching space (#566), while Coach people is on.
+  final VoidCallback onCoaching;
   final ValueChanged<DateTime> onMonthlyReport;
 
   const new({
@@ -19,6 +22,7 @@ class ProfilePage extends StatefulWidget {
     required this.onAvatar,
     required this.onLogIn,
     required this.onRecaps,
+    required this.onCoaching,
     required this.onMonthlyReport,
   });
 
@@ -118,6 +122,14 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
           ),
         ),
         actions: [
+          // opt-in (#566): off, Settings is the first action, as before
+          if (coachingSpaceOn(context, listen: true))
+            IconButton(
+              key: AppKeys.coachingButton,
+              tooltip: L.of(context).coaching,
+              onPressed: widget.onCoaching,
+              icon: const Icon(Icons.groups_rounded),
+            ),
           IconButton(
             tooltip: switch (unread) {
               true => settingsWhatsNewUnread,
