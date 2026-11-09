@@ -3,7 +3,12 @@ part of 'coaching.dart';
 /// The Coaching space's tabs, through [TabFrame], with the way back to the
 /// user's own training at the foot of the rail, and a line leading back to a
 /// workout of theirs still going.
-class CoachingFrame extends StatelessWidget {
+///
+/// It also keeps [Preferences.inCoachingSpace] true for as long as it is on
+/// screen, and false once it goes, whichever way the user left: the way back,
+/// a Live Activity, a shortcut, a link. A process killed inside the space
+/// never clears it, which is what reopens the app there.
+class CoachingFrame extends StatefulWidget {
   final StatefulNavigationShell shell;
 
   /// Back to the user's own space.
@@ -20,7 +25,27 @@ class CoachingFrame extends StatelessWidget {
   });
 
   @override
+  State<CoachingFrame> createState() => _CoachingFrameState();
+}
+
+class _CoachingFrameState extends State<CoachingFrame> {
+  late final Preferences _preferences;
+
+  @override
+  void initState() {
+    super.initState();
+    _preferences = Preferences.of(context)..setInCoachingSpace(inside: true);
+  }
+
+  @override
+  void dispose() {
+    _preferences.setInCoachingSpace(inside: false);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final CoachingFrame(:shell, :onYourTraining, :onBackToWorkout) = widget;
     // switched off, or an account that may no longer coach, from inside the
     // space: it goes, as if it had never been built
     if (!coachingSpaceOn(context, listen: true)) {
