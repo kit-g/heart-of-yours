@@ -61,6 +61,8 @@ jobs:
           - heart_charts
           - heart_language
           - heart_health
+          # the encryption package: Rust, through rust-toolchain.toml and the runner's rustup
+          - sealbox
 
     steps:
       - uses: actions/checkout@v7
