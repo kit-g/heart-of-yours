@@ -9,14 +9,13 @@ extension on BuildContext {
     return goNamed(_profileName);
   }
 
-  /// Into the Coaching space (#566), remembered so the app opens there next.
-  void goToCoaching() {
-    Preferences.of(this).setInCoachingSpace(inside: true);
-    return goNamed(_coachingClientsName);
-  }
+  /// Into the Coaching space (#566). The space remembers itself while it is on
+  /// screen (`CoachingFrame`), so the app opens there next.
+  void goToCoaching() => goNamed(_coachingClientsName);
 
   /// Out of the Coaching space, back to the user's own training: Profile,
-  /// unless [to] names another of its routes.
+  /// unless [to] names another of its routes. Cleared before going, since
+  /// Profile's redirect reads it.
   void leaveCoaching({String to = _profileName}) {
     Preferences.of(this).setInCoachingSpace(inside: false);
     return goNamed(to);
