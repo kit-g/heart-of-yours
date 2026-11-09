@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 /// Attribution that Flutter's licence page cannot find on its own.
 ///
@@ -14,6 +15,7 @@ import 'package:flutter/foundation.dart';
 /// `flutter_body_atlas`' own `LICENSE` would reach every consumer, not just
 /// this app.
 void registerLicenses() {
+  LicenseRegistry.addLicense(_fonts);
   LicenseRegistry.addLicense(
     () => Stream.value(
       const LicenseEntryWithLineBreaks(
@@ -32,3 +34,28 @@ void registerLicenses() {
     ),
   );
 }
+
+/// The bundled fonts, each under the SIL Open Font License.
+///
+/// The fonts ship as assets rather than as packages, so the registry never
+/// sees them, and the OFL requires its text and each font's copyright line to
+/// travel with every copy. Each family's `OFL.txt` sits beside its files, as
+/// Google Fonts distributes them. Collectors run only when the licence page
+/// opens, so the reads cost nothing at launch.
+Stream<LicenseEntry> _fonts() async* {
+  for (final (family, folder) in _fontFolders) {
+    yield LicenseEntryWithLineBreaks([family], await rootBundle.loadString('assets/fonts/$folder/OFL.txt'));
+  }
+}
+
+const _fontFolders = [
+  ('DM Sans', 'DM_Sans'),
+  ('Golos Text', 'Golos_Text'),
+  ('IBM Plex Sans', 'IBM_Plex_Sans'),
+  ('Lato', 'Lato'),
+  ('Literata', 'Literata'),
+  ('Noto Sans', 'Noto_Sans'),
+  ('Onest', 'Onest'),
+  ('Rubik', 'Rubik'),
+  ('Unbounded', 'Unbounded'),
+];
