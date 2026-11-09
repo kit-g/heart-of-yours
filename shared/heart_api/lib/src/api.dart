@@ -1017,11 +1017,14 @@ class Api
   /// What the student of a coach connection opens to their coach beyond
   /// workouts since accepting. The list replaces the old one. Only the student
   /// may: the coach gets `403 forbidden`, thrown whole like every refusal.
-  Future<Connection> setConnectionShares(String connectionId, Set<ConnectionShare> shares) async {
+  ///
+  /// By name, not by [ConnectionShare]: a share a newer server added is one
+  /// this build must send back as it found it, or replacing the list revokes it.
+  Future<Connection> setConnectionShares(String connectionId, Set<String> shares) async {
     final (json, code) = await put(
       Router.connectionShares(connectionId),
       body: {
-        'shares': [for (final share in shares) share.name],
+        'shares': [...shares],
       },
     );
     return switch ((code, json)) {

@@ -25,8 +25,8 @@ class _Server implements CoachingService {
   }
 
   @override
-  Future<Connection> setConnectionShares(String connectionId, Set<ConnectionShare> shares) async {
-    return _write(connectionId, (each) => _with(each, shares: [for (final share in shares) share.name]));
+  Future<Connection> setConnectionShares(String connectionId, Set<String> shares) async {
+    return _write(connectionId, (each) => _with(each, shares: [...shares]));
   }
 
   @override
@@ -220,6 +220,15 @@ void main() {
     await coaching.setShares(coaching.coaches.single, {.history, .goals});
 
     expect(coaching.coaches.single.shares, ['history', 'goals']);
+  });
+
+  test('a share this build does not know goes back as it came', () async {
+    server.connections.add(_connection('alex', .student, shares: ['history', 'photos']));
+    await coaching.load();
+
+    await coaching.setShares(coaching.coaches.single, {.goals});
+
+    expect(coaching.coaches.single.shares.toSet(), {'goals', 'photos'});
   });
 
   test('a refused write throws and changes nothing here', () async {

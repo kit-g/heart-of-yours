@@ -112,6 +112,21 @@ void main() {
     expect(find.byType(ClientsPage), findsOneWidget);
   });
 
+  testWidgets('left by any other way, a Live Activity or a link, Profile is Profile again', (tester) async {
+    account(coach: true);
+    // wide: under the test font the Workout tab's header overflows a phone
+    await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
+    expect(find.byType(ClientsPage), findsOneWidget);
+
+    GoRouter.of(tester.element(find.byType(ClientsPage))).go('/workout');
+    await tester.pumpTimes();
+    await tester.tapByKey(AppKeys.profileStack);
+    await tester.pumpTimes();
+
+    expect(find.byType(ProfilePage), findsOneWidget);
+    expect(find.byType(ClientsPage), findsNothing);
+  });
+
   testWidgets('left in the space but switched off since, the app opens on Profile', (tester) async {
     account(coach: true);
     await pump(tester, {'feature-coachPeople': 'off', 'coachingSpace': true});
