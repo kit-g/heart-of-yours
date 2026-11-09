@@ -1,0 +1,60 @@
+Heart of Yours: the app
+Copyright 2025-2026 Kit Gerasimov and the Heart of Yours contributors
+
+This repository is under the GNU General Public License v3.0 (LICENSE), with
+the two additional permissions below. That covers the app, the packages in
+shared/, and everything else here except what the last section names.
+
+The store listing copy (docs/store-copy/) and the README's screenshots
+(docs/screenshots/) are all rights reserved.
+
+Additional permissions under GNU GPL version 3 section 7
+
+1. App stores. If you convey this Program, or any covered work, through an
+   application store or similar distribution service (such as Apple's App
+   Store or Google Play) whose terms, usage rules or technical measures
+   impose restrictions on recipients beyond those of this License, the
+   licensors of this Program grant you additional permission to convey it
+   there, provided you make the Corresponding Source available to its
+   recipients under this License as section 6 requires. This permission
+   does not cover restrictions you add yourself.
+
+2. Platform SDKs. If you modify this Program, or any covered work, by linking
+   or combining it with the software development kits of Apple Inc. or
+   Google LLC (or a modified version of them), including Firebase and Google
+   Play services, containing parts covered by the terms of their own
+   licences, the licensors of this Program grant you additional permission
+   to convey the resulting work. Corresponding Source for a non-source form
+   of such a combination shall not include the source code for the parts of
+   those SDKs.
+
+Trademarks
+
+"Heart of Yours", "Heart" as the app's name, and the Heart logo (the app
+icons in assets/icons/, android/, ios/, macos/ and web/) are trademarks of
+the project. No licence above grants permission to use them, except to say
+truthfully where a copy came from. A fork must use its own name and icon.
+
+Not ours, and not covered by the licence above
+
+  - The fonts in assets/fonts/ (DM Sans, Golos Text, IBM Plex Sans, Lato,
+    Literata, Noto Sans, Onest, Rubik, Unbounded) are under the SIL Open
+    Font License 1.1. Each family's OFL.txt, with its copyright line, sits
+    beside its files and is shown on the app's licence page.
+  - assets/fonts/Icons.ttf holds the Apple and Google logos for the sign-in
+    buttons, built with Fontello from its bundled icon sets. The logos are
+    trademarks of Apple Inc. and Google LLC.
+  - assets/svg/mobile_upgrade.svg is a Material Symbols icon by Google,
+    Apache License 2.0.
+  - The muscle artwork in the flutter_body_atlas package is Ryan Graves'
+    work under CC BY 4.0; the app credits it on its licence page.
+  - Sofia's profile photo in the screenshots (docs/screenshots/) and the
+    barbell illustration (assets/svg/barbell.svg, traced to a vector) were
+    made with image-generation models.
+  - Exercise images and animations are served from the CDN, are not in this
+    repository, and are not covered by any licence here.
+  - heart_models and heart_design come from heart-api under the Apache
+    License 2.0, in their own LICENSE files.
+
+Dependencies installed by pub, CocoaPods, Swift Package Manager or Gradle
+keep their own licences.

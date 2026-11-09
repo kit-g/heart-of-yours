@@ -180,4 +180,7 @@ const _migrations = <int, List<String>>{
     anomaliesSetIndex,
     anomaliesWorkoutIndex,
   ],
+  29: [
+    createWorkoutPlans,
+  ],
 };

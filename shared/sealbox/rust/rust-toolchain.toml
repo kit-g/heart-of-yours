@@ -1,0 +1,6 @@
+# The pinned toolchain. Targets are added as a build needs them (hook/build.dart),
+# so a host that never builds for a phone never downloads a phone's std.
+[toolchain]
+channel = "1.89.0"
+profile = "minimal"
+components = ["clippy", "rustfmt"]

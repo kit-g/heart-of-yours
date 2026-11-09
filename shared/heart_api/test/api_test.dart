@@ -2186,6 +2186,49 @@ void main() {
     });
   });
 
+  group('workout plans (#566)', () {
+    const workoutId = '01a1b7d4-c1db-7eba-8005-c926c367acf8';
+    const plan = WorkoutPlan({
+      'exercises': [
+        {
+          'sets': [
+            {'weight': 110, 'setId': '01a1b7d4-c1db-7fc9-b20f-e61fcc3b5aa5'},
+          ],
+        },
+      ],
+    });
+
+    test('saveWorkoutPlan sends the plan under its key', () async {
+      _response(client: client, method: 'PUT', path: Router.workoutPlan(workoutId), statusCode: 204, body: {});
+
+      await api.saveWorkoutPlan(workoutId, plan);
+
+      final sent = verify(
+        client.put(
+          Uri.https('api.example.com', Router.workoutPlan(workoutId)),
+          headers: anyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured.single;
+      expect(jsonDecode(sent as String), {'plan': plan.plan});
+    });
+
+    test("saveWorkoutPlan throws the server's refusal whole", () async {
+      _response(
+        client: client,
+        method: 'PUT',
+        path: Router.workoutPlan(workoutId),
+        statusCode: 400,
+        body: {
+          'error': 'bad request',
+          'code': 'invalid_plan',
+          'reason': 'plan must be {exercises: [{sets: [{weight, setId}]}]}',
+        },
+      );
+      expect(api.saveWorkoutPlan(workoutId, plan), throwsA(containsPair('code', 'invalid_plan')));
+    });
+  });
+
   group('exercise history move', () {
     const report = {
       'sourceId': 'source',

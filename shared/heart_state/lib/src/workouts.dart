@@ -12,6 +12,7 @@ import 'remote.dart';
 import 'set_stopwatch.dart';
 import 'supersets.dart';
 import 'warmups.dart';
+import 'workout_plans.dart';
 
 typedef WorkoutId = String;
 
@@ -35,6 +36,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final Future<void> Function(String workoutId, List<WorkoutPause> pauses, DateTime? pausedAt)? _persistPauses;
   final Future<DateTime?> Function(String workoutId)? _pausedAtOf;
   final String? Function(String exerciseId)? _noteFor;
+
+  /// Where a program workout's plan waits until its workout is on the server,
+  /// and the route that takes it (#566). Absent in tests that don't need them.
+  final LocalWorkoutPlanService? _localPlans;
+  final RemoteWorkoutPlanService? _remotePlans;
   final _progress = SplayTreeSet<WorkoutImage>(_compareImages);
 
   /// Ids of sets in the active workout the user has typed a measurement into.
@@ -59,6 +65,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     this._persistPauses,
     this._pausedAtOf,
     this._noteFor,
+    this._localPlans,
+    this._remotePlans,
     this.analytics,
     RemoteAccess? remote,
   }) : _localService = service,
@@ -414,24 +422,28 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// sample, one of the user's own, and a past workout being repeated all
   /// arrive as a `Workout`. Which one it was is the question retention turns
   /// on, and only the surface that offered it knows.
+  ///
+  /// [plan] is what a program's session was asked to be (#566): kept beside
+  /// the workout, and sent once the workout is on the server.
   Future<void> startWorkout({
     required WorkoutSource source,
     String? name,
     Workout? template,
+    WorkoutPlan? plan,
     bool applyPinnedNotes = false,
-  }) {
+  }) async {
     assert(name == null || template == null, 'Pass only the name or the full workout');
     // Checked before any state moves. Without a session the workout could
     // never reach the mirror, and a half-started one — live in memory, absent
     // from SQLite — fails every set insert on a foreign key and then fails
     // the finish.
     final uid = userId;
-    if (uid == null) return Future.value();
+    if (uid == null) return;
     // One at a time (#228). Starting over an active workout used to orphan it:
     // still unfinished in the mirror, and back as "active" the moment the new
     // one finished. Callers ask the user and [cancelActiveWorkout] first.
     assert(!hasActiveWorkout, 'Cancel the active workout before starting another');
-    if (hasActiveWorkout) return Future.value();
+    if (hasActiveWorkout) return;
     final workout = template ?? Workout(name: name);
     _startedFrom = source;
     _untickedAtPrompt = 0;
@@ -448,7 +460,44 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _activeWorkoutId = workout.id;
 
     notifyListeners();
-    return _localService.startWorkout(workout, uid);
+    await _localService.startWorkout(workout, uid);
+    if (plan != null) await _keepPlan(workout.id, uid, plan);
+  }
+
+  /// A plan not kept is a comparison lost, never a workout lost: the start
+  /// goes on whatever happens here.
+  Future<void> _keepPlan(String workoutId, String uid, WorkoutPlan plan) async {
+    try {
+      await _localPlans?.storeWorkoutPlan(workoutId, uid, plan.plan);
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+    }
+  }
+
+  /// Sends the plans of workouts the server already has (#566). The server
+  /// keeps the first plan it gets, so a retry is harmless. One it refused as
+  /// malformed is dropped, since sending it again can't help; anything else,
+  /// an outage or a workout it hasn't got yet, waits for the next try.
+  Future<void> sendWorkoutPlans() async {
+    if (!_remote.allowed) return;
+    final (local, remote, uid) = (_localPlans, _remotePlans, userId);
+    if (local == null || remote == null || uid == null) return;
+    final List<({String workoutId, Map<String, dynamic> plan})> owed;
+    try {
+      owed = await local.getUnsentWorkoutPlans(uid);
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+      return;
+    }
+    for (final (:workoutId, :plan) in owed) {
+      try {
+        await remote.saveWorkoutPlan(workoutId, WorkoutPlan(plan));
+        await local.markWorkoutPlanSent(workoutId);
+      } catch (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+        if (error case {'code': 'invalid_plan'}) await local.markWorkoutPlanSent(workoutId);
+      }
+    }
   }
 
   /// The finish most recently started, or null before one this session.
@@ -596,6 +645,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         await _localService.storeWorkoutHistory([saved], id);
       }
       _historyWritten();
+      // the workout is there now, so its plan can follow
+      await sendWorkoutPlans();
       return saved;
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
@@ -656,6 +707,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         }
       }
       if (pending.isNotEmpty) _historyWritten();
+      // the workouts just sent, and any earlier one whose plan never made it
+      await sendWorkoutPlans();
     }
   }
 
