@@ -129,8 +129,18 @@ class _YourCoachSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (Preferences.watch(context).featureAnswer(.yourCoach)) {
+      // never invited: nothing here, and nothing asked of the server
       .unasked => const SizedBox.shrink(),
-      .pending || .on || .off => const _FeatureSwitch(.yourCoach),
+      .pending || .on || .off => const Column(
+        crossAxisAlignment: .stretch,
+        children: [
+          _FeatureSwitch(.yourCoach),
+          // each coach, whatever the switch says: leaving needs no switch on
+          Padding(padding: .symmetric(horizontal: 16), child: _YourCoaches()),
+          // a block made from an invitation outlives a no to it
+          _Blocked(),
+        ],
+      ),
     };
   }
 }

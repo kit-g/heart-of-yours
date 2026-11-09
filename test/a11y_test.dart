@@ -103,6 +103,7 @@ enum _Screen {
   coachingPrograms,
   coachingMe,
   coachingInviteDialog,
+  invitation,
   newApiToken,
   apiTokenRevealed,
   revokeApiTokenDialog,
@@ -931,6 +932,13 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingInviteDialog, _Guideline.androidTapTarget, null),
   (_Screen.coachingInviteDialog, _Guideline.iosTapTarget, null),
 
+  // what a coach's invitation link opens (#553): prose, two switches, three answers
+  (_Screen.invitation, _Guideline.labeledTapTarget, null),
+  (_Screen.invitation, _Guideline.textContrastLight, null),
+  (_Screen.invitation, _Guideline.textContrastDark, null),
+  (_Screen.invitation, _Guideline.androidTapTarget, null),
+  (_Screen.invitation, _Guideline.iosTapTarget, null),
+
   (_Screen.apiTokens, _Guideline.labeledTapTarget, null),
   (_Screen.apiTokens, _Guideline.textContrastLight, null),
   (_Screen.apiTokens, _Guideline.textContrastDark, null),
@@ -1245,6 +1253,12 @@ void main() {
       _Screen.coachingMe: AppKeys.coachingMeStack,
       _Screen.coachingInviteDialog: AppKeys.coachingClientsStack,
     };
+    // the page a coach's invitation link opens (#553)
+    if (screen == _Screen.invitation) {
+      when(api.previewInvitation('t1')).thenAnswer(
+        (_) async => InvitationPreview.fromJson({'inviterName': 'Alex', 'good': true}),
+      );
+    }
     if (coaching.containsKey(screen)) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-coachPeople': 'on'});
       when(api.registerAccount(any)).thenAnswer((invocation) async {
@@ -2120,6 +2134,9 @@ void main() {
           await tester.enterText(find.byKey(AppKeys.coachingInviteName), 'Biscuit');
           await tester.pumpTimes();
         }
+      case _Screen.invitation:
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/invite.html?t=t1');
+        await tester.pumpTimes();
       case _Screen.whatsNew:
         // rootBundle caches each load's future, and one cached under an
         // earlier test's fake clock never delivers to a later test

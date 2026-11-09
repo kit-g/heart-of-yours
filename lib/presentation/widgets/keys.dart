@@ -328,4 +328,20 @@ abstract final class AppKeys {
   static const coachingMakeLink = Key('Coaching.makeLink');
 
   static Key coachingInvitation(String id) => Key('Coaching.invitation.$id');
+
+  /// The page an invitation link opens (#553), and its answers.
+  static const invitationPage = Key('Invitation.page');
+  static const invitationShareHistory = Key('Invitation.shareHistory');
+  static const invitationShareGoals = Key('Invitation.shareGoals');
+  static const invitationAccept = Key('Invitation.accept');
+  static const invitationDecline = Key('Invitation.decline');
+  static const invitationBlock = Key('Invitation.block');
+  static const invitationMakeAccount = Key('Invitation.makeAccount');
+
+  /// Your coach in Settings (#553): each coach, leaving one, and lifting a block.
+  static Key yourCoach(String id) => Key('YourCoach.$id');
+  static const yourCoachLeaveConfirm = Key('YourCoach.leaveConfirm');
+
+  static Key yourCoachUnblock(String userId) => Key('YourCoach.unblock.$userId');
+  static const invitationRetry = Key('Invitation.retry');
 }
