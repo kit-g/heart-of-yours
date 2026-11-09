@@ -24,7 +24,9 @@ class _ClientsPageState extends State<ClientsPage> {
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
-    final waiting = Coaching.watch(context).pendingInvitations.toList();
+    final coaching = Coaching.watch(context);
+    final waiting = coaching.pendingInvitations.toList();
+    final clients = coaching.clients.length;
     return _CoachingPage(
       title: l.coachingClients,
       onYourTraining: widget.onYourTraining,
@@ -36,8 +38,8 @@ class _ClientsPageState extends State<ClientsPage> {
           icon: const Icon(Icons.person_add_alt_1_rounded),
         ),
       ],
-      child: switch (waiting) {
-        [] => _Empty(
+      child: switch ((clients, waiting)) {
+        (0, []) => _Empty(
           icon: Icons.groups_rounded,
           title: l.coachingNoClients,
           body: l.coachingNoClientsBody,
@@ -48,7 +50,17 @@ class _ClientsPageState extends State<ClientsPage> {
             label: Text(l.coachingInvite),
           ),
         ),
-        _ => ListView(children: [_WaitingInvitations(invitations: waiting)]),
+        _ => ListView(
+          children: [
+            // who they are comes with the roster (#559)
+            if (clients > 0)
+              ListTile(
+                leading: const Icon(Icons.groups_rounded),
+                title: Text(l.coachingClientCount(clients)),
+              ),
+            if (waiting.isNotEmpty) _WaitingInvitations(invitations: waiting),
+          ],
+        ),
       },
     );
   }
