@@ -8,9 +8,21 @@ import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:share_plus_platform_interface/share_plus_platform_interface.dart';
 
 import 'mocks.mocks.dart';
 import 'support/harness.dart';
+
+class _FakeShare extends SharePlatform with MockPlatformInterfaceMixin {
+  final shared = <ShareParams>[];
+
+  @override
+  Future<ShareResult> share(ShareParams params) async {
+    shared.add(params);
+    return ShareResult.unavailable;
+  }
+}
 
 /// The Coaching space (#566): there only with Coach people on, for an account
 /// that may coach; otherwise the app is as it was before coaching was built.
@@ -34,6 +46,9 @@ void main() {
     });
   }
 
+  final share = _FakeShare();
+  setUpAll(() => SharePlatform.instance = share);
+
   setUp(() {
     db = MockLocalDatabase();
     api = MockApi();
@@ -41,6 +56,8 @@ void main() {
     stubStartup(db, api);
     when(api.getConnections()).thenAnswer((_) async => []);
     when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
+    when(api.getInvitations(cursor: anyNamed('cursor'))).thenAnswer((_) async => (items: <Invitation>[], cursor: null));
+    share.shared.clear();
   });
 
   /// A phone by default. Settings is swept wide, as the a11y harness does:
@@ -163,6 +180,115 @@ void main() {
     expect(find.byType(ClientsPage), findsNothing, reason: 'back in their own space');
     expect(find.byKey(AppKeys.workoutStack), findsOneWidget, reason: 'on the Workout tab, the sheet over it');
     expect(Preferences.of(tester.element(find.byType(Scaffold).first)).inCoachingSpace, isFalse);
+  });
+
+  group('inviting someone (#553)', () {
+    Invitation invitation({String? token, String status = 'pending'}) => Invitation(
+      id: 'i1',
+      name: 'Biscuit',
+      status: status,
+      role: 'COACH',
+      domain: 'fitness',
+      expiresAt: DateTime.utc(2026, 11, 15),
+      createdAt: DateTime.utc(2026, 11, 8),
+      token: token,
+    );
+
+    testWidgets('a name makes a link, which goes to the share sheet and waits on Clients', (tester) async {
+      account(coach: true);
+      when(api.createInvitation(any, programId: anyNamed('programId')))
+          .thenAnswer((_) async => invitation(token: 'abc'));
+      // wide: under the test font the dialog's buttons overflow a phone
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
+
+      await tester.tapByKey(AppKeys.coachingInvite);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.coachingMakeLink), findsNothing, reason: 'no one to make it for yet');
+      await tester.enterText(find.byKey(AppKeys.coachingInviteName), '  Biscuit ');
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingMakeLink);
+      await tester.pumpTimes();
+
+      verify(api.createInvitation('Biscuit', programId: null)).called(1);
+      expect(share.shared.single.text, contains('/invite.html?t=abc'));
+      expect(find.byKey(AppKeys.coachingInvitation('i1')), findsOneWidget);
+      expect(find.text('Waiting to hear back'), findsOneWidget);
+    });
+
+    testWidgets("the beta's refusal says so, and shares nothing", (tester) async {
+      account(coach: true);
+      when(api.createInvitation(any, programId: anyNamed('programId'))).thenAnswer(
+        (_) async => throw {'code': 'coaching_beta'},
+      );
+      // wide: under the test font the dialog's buttons overflow a phone
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
+
+      await tester.tapByKey(AppKeys.coachingInvite);
+      await tester.pumpTimes();
+      await tester.enterText(find.byKey(AppKeys.coachingInviteName), 'Biscuit');
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingMakeLink);
+      await tester.pumpTimes();
+
+      expect(find.text('Inviting is open to testers for now.'), findsOneWidget);
+      expect(share.shared, isEmpty);
+    });
+
+    testWidgets('a coach with clients and nothing waiting is not told there are no clients', (tester) async {
+      account(coach: true);
+      when(api.getConnections()).thenAnswer(
+        (_) async => [
+          Connection(
+            targetId: 'riley',
+            role: .coach,
+            domain: .fitness,
+            status: .active,
+            createdAt: DateTime.utc(2026, 11, 8),
+            connectionId: 'c1',
+          ),
+        ],
+      );
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      expect(find.text('No clients yet'), findsNothing);
+      expect(find.text('One person you coach'), findsOneWidget);
+    });
+
+    testWidgets('a cancel that fails says so, and the invitation stays', (tester) async {
+      account(coach: true);
+      when(api.getInvitations(cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (items: [invitation()], cursor: null),
+      );
+      when(api.cancelInvitation('i1')).thenAnswer((_) async => throw StateError('offline'));
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      await tester.tap(find.byTooltip('More options'));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Cancel invitation'));
+      await tester.pumpTimes();
+
+      expect(find.text("Couldn't cancel the invitation. Try again."), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingInvitation('i1')), findsOneWidget);
+    });
+
+    testWidgets('a waiting invitation can be cancelled from its menu', (tester) async {
+      account(coach: true);
+      when(api.getInvitations(cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (items: [invitation()], cursor: null),
+      );
+      when(api.cancelInvitation('i1')).thenAnswer((_) async {});
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      expect(find.byKey(AppKeys.coachingInvitation('i1')), findsOneWidget);
+
+      await tester.tap(find.byTooltip('More options'));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Cancel invitation'));
+      await tester.pumpTimes();
+
+      verify(api.cancelInvitation('i1')).called(1);
+      expect(find.byKey(AppKeys.coachingInvitation('i1')), findsNothing);
+      expect(find.byKey(AppKeys.coachingInvite), findsOneWidget, reason: 'back to the empty state, and its button');
+    });
   });
 
   group('Settings › Features', () {

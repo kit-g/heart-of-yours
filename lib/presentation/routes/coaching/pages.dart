@@ -1,19 +1,67 @@
 part of 'coaching.dart';
 
-/// The people this account coaches. Empty until someone accepts an
-/// invitation (#553); the roster itself is #559.
-class ClientsPage extends StatelessWidget {
+/// The people this account coaches, and the invitations still waiting for an
+/// answer (#553). The roster itself is #559.
+class ClientsPage extends StatefulWidget {
   final VoidCallback onYourTraining;
 
   const new({super.key, required this.onYourTraining});
 
   @override
+  State<ClientsPage> createState() => _ClientsPageState();
+}
+
+class _ClientsPageState extends State<ClientsPage> {
+  @override
+  void initState() {
+    super.initState();
+    // read on opening, as the tokens page is: the list is the server's
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Coaching.of(context).loadInvitations().catchError((_) {});
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l = L.of(context);
+    final coaching = Coaching.watch(context);
+    final waiting = coaching.pendingInvitations.toList();
+    final clients = coaching.clients.length;
     return _CoachingPage(
       title: l.coachingClients,
-      onYourTraining: onYourTraining,
-      child: _Empty(icon: Icons.groups_rounded, title: l.coachingNoClients, body: l.coachingNoClientsBody),
+      onYourTraining: widget.onYourTraining,
+      actions: [
+        IconButton(
+          key: AppKeys.coachingInviteAction,
+          tooltip: l.coachingInvite,
+          onPressed: () => inviteSomeone(context),
+          icon: const Icon(Icons.person_add_alt_1_rounded),
+        ),
+      ],
+      child: switch ((clients, waiting)) {
+        (0, []) => _Empty(
+          icon: Icons.groups_rounded,
+          title: l.coachingNoClients,
+          body: l.coachingNoClientsBody,
+          action: FilledButton.icon(
+            key: AppKeys.coachingInvite,
+            onPressed: () => inviteSomeone(context),
+            icon: const Icon(Icons.person_add_alt_1_rounded),
+            label: Text(l.coachingInvite),
+          ),
+        ),
+        _ => ListView(
+          children: [
+            // who they are comes with the roster (#559)
+            if (clients > 0)
+              ListTile(
+                leading: const Icon(Icons.groups_rounded),
+                title: Text(l.coachingClientCount(clients)),
+              ),
+            if (waiting.isNotEmpty) _WaitingInvitations(invitations: waiting),
+          ],
+        ),
+      },
     );
   }
 }
@@ -98,7 +146,10 @@ class _CoachingPage extends StatelessWidget {
   final VoidCallback onYourTraining;
   final Widget child;
 
-  const new({required this.title, required this.onYourTraining, required this.child});
+  /// The page's own actions, before the way back.
+  final List<Widget> actions;
+
+  const new({required this.title, required this.onYourTraining, required this.child, this.actions = const []});
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +157,7 @@ class _CoachingPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(title),
         actions: [
+          ...actions,
           if (LayoutProvider.of(context) == .compact) _YourTrainingButton(onPressed: onYourTraining),
           const SizedBox(width: 8),
         ],
@@ -127,7 +179,10 @@ class _Empty extends StatelessWidget {
   final String title;
   final String body;
 
-  const new({required this.icon, required this.title, required this.body});
+  /// What to do about it, when there is something to do.
+  final Widget? action;
+
+  const new({required this.icon, required this.title, required this.body, this.action});
 
   @override
   Widget build(BuildContext context) {
@@ -147,6 +202,7 @@ class _Empty extends StatelessWidget {
               style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
               textAlign: .center,
             ),
+            if (action case final Widget action) ...[const SizedBox(height: 24), action],
           ],
         ),
       ),
