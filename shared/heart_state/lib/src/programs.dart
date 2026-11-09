@@ -372,9 +372,10 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// [session] as the workout to start (#349): [planSession] with its
-  /// program's position, bases and stages. A template no
-  /// followed program holds starts as [Template.toWorkout] does.
-  Workout plan(
+  /// program's position, bases and stages, and what it was asked to be. A
+  /// template no followed program holds starts as [Template.toWorkout] does,
+  /// with no plan.
+  PlannedWorkout plan(
     Template session, {
     required DateTime now,
     required int firstWeekday,
@@ -385,7 +386,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       final String id => _programs[id],
       null => null,
     };
-    if (id == null || program == null || program.archived) return session.toWorkout();
+    if (id == null || program == null || program.archived) return (workout: session.toWorkout(), plan: null);
     return planSession(
       session,
       program: program,

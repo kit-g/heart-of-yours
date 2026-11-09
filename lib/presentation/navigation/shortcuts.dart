@@ -100,10 +100,11 @@ Future<void> _apply(
       await startWorkoutOverActive(
         context,
         () => switch (usable) {
-          Template template => workouts.startWorkout(
+          Template template => startPlanned(
+            context,
+            workouts,
+            template,
             source: templates.samples.contains(template) ? .sample : .template,
-            template: startingWorkout(context, template),
-            applyPinnedNotes: true,
           ),
           null => workouts.startWorkout(source: .blank, name: L.of(context).defaultWorkoutName()),
         },

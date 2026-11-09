@@ -27,6 +27,7 @@ import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/programs.dart';
+import 'package:heart/core/utils/workout_plans.dart';
 import 'package:heart/core/utils/live_records.dart';
 import 'package:heart/core/utils/record_book.dart';
 import 'package:heart/core/utils/charts.dart';
@@ -150,6 +151,10 @@ class HeartApp extends StatelessWidget {
             persistPauses: db.setWorkoutPauses,
             pausedAtOf: db.getPausedAt,
             noteFor: Exercises.of(context).noteFor,
+            // a program workout's plan, kept from the start and sent once
+            // the workout is on the server (#566)
+            localPlans: LocalWorkoutPlans(db),
+            remotePlans: RemoteWorkoutPlans(api),
             remoteService: api,
             remote: RemoteAccess.of(context),
             analytics: analytics,

@@ -1073,6 +1073,15 @@ class Api
     if (code != 204) throw json;
   }
 
+  /// What a program workout was asked to be (#558, #566). `204`; the server
+  /// keeps the first plan it gets, so sending again is harmless. A refusal is
+  /// thrown whole: `400 invalid_plan` for a shape it can't read, `404` for a
+  /// workout it doesn't have yet.
+  Future<void> saveWorkoutPlan(String workoutId, WorkoutPlan plan) async {
+    final (json, code) = await put(Router.workoutPlan(workoutId), body: plan.toMap());
+    if (code != 204) throw json;
+  }
+
   /// [json] with its `purpose` only when it is one this build can name.
   ///
   /// The server's enum may grow ahead of the app in the stores, and
@@ -1326,6 +1335,10 @@ abstract final class Router {
 
   static String workout(String workoutId) {
     return '$workouts/$workoutId';
+  }
+
+  static String workoutPlan(String workoutId) {
+    return '$workouts/$workoutId/plan';
   }
 
   static String accountToken(String tokenId) {

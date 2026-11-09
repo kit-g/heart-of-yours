@@ -156,6 +156,8 @@ const _schema = [
   createAnomalies,
   anomaliesSetIndex,
   anomaliesWorkoutIndex,
+  // v29
+  createWorkoutPlans,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
