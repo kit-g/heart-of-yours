@@ -18,7 +18,8 @@ abstract interface class CoachingService {
 
   /// Replaces what the student of a coach connection shares. Only the student
   /// may.
-  Future<Connection> setConnectionShares(String connectionId, Set<ConnectionShare> shares);
+  /// By name: one this build doesn't know goes back as it came.
+  Future<Connection> setConnectionShares(String connectionId, Set<String> shares);
 
   Future<Connection> setConnectionStatus(String connectionId, ConnectionStatus status);
 
@@ -142,8 +143,13 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
   /// What a student opens to [coach] beyond workouts since accepting.
   /// Throws what the service threw; the list here changes only once the
   /// server has agreed.
+  ///
+  /// The server replaces the whole list, so a share this build doesn't know,
+  /// one a newer app turned on, goes back exactly as it came.
   Future<void> setShares(Connection coach, Set<ConnectionShare> shares) async {
-    _replace(await _service.setConnectionShares(_idOf(coach), shares));
+    final known = {for (final share in ConnectionShare.values) share.name};
+    final kept = coach.shares.where((share) => !known.contains(share));
+    _replace(await _service.setConnectionShares(_idOf(coach), {for (final share in shares) share.name, ...kept}));
   }
 
   /// Stops [connection]'s coach reading anything logged from now on. Either
