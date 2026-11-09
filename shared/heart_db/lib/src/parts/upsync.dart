@@ -44,6 +44,7 @@ mixin _Upsync on _LocalDatabase {
         );
         for (final table in [
           _workouts,
+          _workoutPlans,
           _templates,
           _templateFolders,
           _programs,
