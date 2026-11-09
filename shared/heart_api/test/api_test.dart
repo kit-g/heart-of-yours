@@ -1877,7 +1877,7 @@ void main() {
         },
       );
 
-      final connection = await api.setConnectionShares(id, {.history, .goals});
+      final connection = await api.setConnectionShares(id, {'history', 'goals'});
 
       expect(connection.shares, ['history', 'goals']);
       final sent = verify(
@@ -1904,7 +1904,7 @@ void main() {
           'reason': 'Only the student of a live coaching connection chooses what it shares.',
         },
       );
-      expect(api.setConnectionShares(id, {.history}), throwsA(containsPair('code', 'forbidden')));
+      expect(api.setConnectionShares(id, {'history'}), throwsA(containsPair('code', 'forbidden')));
     });
 
     test('setConnectionStatus sends the status by name', () async {

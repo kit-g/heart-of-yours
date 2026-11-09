@@ -15,7 +15,7 @@ class RemoteCoaching implements CoachingService {
   Future<List<Connection>> getConnections() => _api.getConnections();
 
   @override
-  Future<Connection> setConnectionShares(String connectionId, Set<ConnectionShare> shares) {
+  Future<Connection> setConnectionShares(String connectionId, Set<String> shares) {
     return _api.setConnectionShares(connectionId, shares);
   }
 
