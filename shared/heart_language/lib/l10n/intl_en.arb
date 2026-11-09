@@ -5553,5 +5553,9 @@
   "coachingInviteBeta": "Inviting is open to testers for now.",
   "@coachingInviteBeta": {"description": "Shown when the server refuses an invitation because coaching is only open to testers (#553)", "type": "text", "placeholders": {}},
   "coachingInviteFailed": "Couldn't make the link. Try again.",
-  "@coachingInviteFailed": {"description": "Shown when an invitation link could not be made, for any reason but the beta (#553)", "type": "text", "placeholders": {}}
+  "@coachingInviteFailed": {"description": "Shown when an invitation link could not be made, for any reason but the beta (#553)", "type": "text", "placeholders": {}},
+  "coachingCancelFailed": "Couldn't cancel the invitation. Try again.",
+  "@coachingCancelFailed": {"description": "Shown when withdrawing an invitation fails (#553)", "type": "text", "placeholders": {}},
+  "coachingClientCount": "{count, plural, =1{One person you coach} other{{count} people you coach}}",
+  "@coachingClientCount": {"description": "On the Clients tab while the coach has clients, before the roster lists them (#553, #559). {count} is how many", "type": "text", "placeholders": {"count": {"type": "int"}}}
 }

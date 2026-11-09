@@ -22,14 +22,10 @@ Future<void> inviteSomeone(BuildContext context) async {
   try {
     invitation = await Coaching.of(context).invite(name);
   } catch (error) {
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(switch (error) {
-          {'code': 'coaching_beta'} => l.coachingInviteBeta,
-          _ => l.coachingInviteFailed,
-        }),
-      ),
-    );
+    messenger.snack(switch (error) {
+      {'code': 'coaching_beta'} => l.coachingInviteBeta,
+      _ => l.coachingInviteFailed,
+    });
     return;
   }
   // made either way: it waits on Clients, and "Share a new link" sends it again
@@ -46,7 +42,7 @@ Future<void> shareAgain(BuildContext context, Invitation invitation) async {
   try {
     renewed = await Coaching.of(context).resend(invitation);
   } catch (_) {
-    messenger.showSnackBar(SnackBar(content: Text(l.coachingInviteFailed)));
+    messenger.snack(l.coachingInviteFailed);
     return;
   }
   if (renewed.token case final String token) await _share(l, config, token, origin);
@@ -164,10 +160,14 @@ class _WaitingInvitations extends StatelessWidget {
             leading: const Icon(Icons.schedule_send_outlined),
             title: Text(invitation.name),
             subtitle: Text(l.coachingInviteUntil(format.format(invitation.expiresAt.toLocal()))),
-            trailing: IconButton(
-              tooltip: l.moreOptions,
-              icon: const Icon(Icons.more_horiz_rounded),
-              onPressed: () => _menu(context, invitation),
+            // its own context, so the menu and the iPad's share popover open
+            // at this row's button rather than at the top of the list
+            trailing: Builder(
+              builder: (button) => IconButton(
+                tooltip: l.moreOptions,
+                icon: const Icon(Icons.more_horiz_rounded),
+                onPressed: () => _menu(button, invitation),
+              ),
             ),
           ),
       ],
@@ -198,7 +198,13 @@ class _WaitingInvitations extends StatelessWidget {
       case .shareAgain:
         await shareAgain(context, invitation);
       case .cancel:
-        await Coaching.of(context).cancel(invitation);
+        final messenger = ScaffoldMessenger.of(context);
+        final failed = L.of(context).coachingCancelFailed;
+        try {
+          await Coaching.of(context).cancel(invitation);
+        } catch (_) {
+          messenger.snack(failed);
+        }
       case null:
         break;
     }
