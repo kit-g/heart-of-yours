@@ -193,6 +193,28 @@ final class WatchUITests: XCTestCase {
         XCTAssertTrue(editor.waitForExistence(timeout: 5))
     }
 
+    /// Opens the count of the set up next in the value editor, and leaves it
+    /// open — with last time under it, when there was one (#586).
+    func testOpenRepsEditor() {
+        let reps = app.buttons["Reps"]
+        XCTAssertTrue(reps.waitForExistence(timeout: 10))
+
+        reps.tap()
+
+        let editor = app.descendants(matching: .any).matching(NSPredicate(format: "label == 'Reps'")).firstMatch
+        XCTAssertTrue(editor.waitForExistence(timeout: 5))
+    }
+
+    /// In the value editor, takes last time's value with one tap (#586).
+    func testUseLastTime() {
+        let last = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Last time'")).firstMatch
+        XCTAssertTrue(last.waitForExistence(timeout: 5))
+
+        last.tap()
+
+        XCTAssertFalse(last.exists, "matched, the line is only said, not offered")
+    }
+
     /// Closes whatever sheet is open with the system's close button, the
     /// top-left one — it has no label to find it by.
     func testCloseSheet() {

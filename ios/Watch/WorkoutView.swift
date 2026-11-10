@@ -397,9 +397,15 @@ struct SetEditor: View {
             .navigationDestination(item: $field) { field in
                 switch field {
                 case .weight:
-                    ValueEditor(value: $weight, step: exercise.step, unit: exercise.unit ?? "", accent: accent)
+                    ValueEditor(
+                        value: $weight, step: exercise.step, unit: exercise.unit ?? "", accent: accent,
+                        last: row.lastWeight, line: row.previous
+                    )
                 case .reps:
-                    ValueEditor(value: $reps, step: 1, unit: controls.reps, accent: accent)
+                    ValueEditor(
+                        value: $reps, step: 1, unit: controls.reps, accent: accent,
+                        last: row.lastReps.map(Double.init), line: row.previous
+                    )
                 }
             }
         }
@@ -620,9 +626,15 @@ struct SetControls: View {
         .sheet(item: $editing) { field in
             switch field {
             case .weight:
-                ValueEditor(value: $weight, step: set.step, unit: set.unit ?? "", accent: accent)
+                ValueEditor(
+                    value: $weight, step: set.step, unit: set.unit ?? "", accent: accent,
+                    last: set.lastWeight, line: set.previous
+                )
             case .reps:
-                ValueEditor(value: $reps, step: 1, unit: controls.reps, accent: accent)
+                ValueEditor(
+                    value: $reps, step: 1, unit: controls.reps, accent: accent,
+                    last: set.lastReps.map(Double.init), line: set.previous
+                )
             }
         }
     }
@@ -769,6 +781,11 @@ struct ValueEditor: View {
     let step: Double
     let unit: String
     let accent: Color
+    /// This value last time, which a tap on [line] sets (#586): a range that
+    /// starts the count at its floor is often far from where it ends.
+    var last: Double? = nil
+    /// Last time, as the set page shows it: "Last time: 60 kg × 14".
+    var line: String? = nil
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -806,6 +823,27 @@ struct ValueEditor: View {
             }
             .buttonStyle(.bordered)
             .tint(accent)
+
+            if let line {
+                switch last {
+                // one tap to last time's value; already there, it is only said
+                case let last? where last != value:
+                    Button { value = last } label: {
+                        Text(line)
+                            .font(.footnote)
+                            .foregroundStyle(accent)
+                            .multilineTextAlignment(.center)
+                            .frame(minHeight: 44)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                default:
+                    Text(line)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
         }
         .task { focused = true }
     }

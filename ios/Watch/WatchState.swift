@@ -58,6 +58,10 @@ enum WatchState: Equatable {
             var step: Double
             /// The same set last session, as a finished line ("Last time: …").
             var previous: String?
+            /// Its values last time, in [unit], for the editor to offer in one
+            /// tap (#586); nil where last time had none.
+            var lastWeight: Double? = nil
+            var lastReps: Int? = nil
             /// "Set 2 of 3".
             var position: String?
         }
@@ -92,6 +96,9 @@ enum WatchState: Equatable {
                 var type: String?
                 var position: String = ""
                 var previous: String?
+                /// As `UpNext`'s (#586).
+                var lastWeight: Double? = nil
+                var lastReps: Int? = nil
                 var next: String = ""
             }
 
@@ -119,6 +126,8 @@ enum WatchState: Equatable {
                         type: row["type"] as? String,
                         position: row["position"] as? String ?? "",
                         previous: row["previous"] as? String,
+                        lastWeight: (row["lastWeight"] as? NSNumber)?.doubleValue,
+                        lastReps: (row["lastReps"] as? NSNumber)?.intValue,
                         next: row["next"] as? String ?? ""
                     )
                 }
@@ -269,6 +278,8 @@ enum WatchState: Equatable {
                     unit: payload["unit"] as? String,
                     step: (payload["step"] as? NSNumber)?.doubleValue ?? 1,
                     previous: payload["previous"] as? String,
+                    lastWeight: (payload["lastWeight"] as? NSNumber)?.doubleValue,
+                    lastReps: (payload["lastReps"] as? NSNumber)?.intValue,
                     position: payload["position"] as? String
                 )
             default:
@@ -428,6 +439,8 @@ private extension WatchState.Workout {
             unit: target.unit,
             step: target.step,
             previous: row.previous,
+            lastWeight: row.lastWeight,
+            lastReps: row.lastReps,
             position: row.position
         )
     }
