@@ -99,6 +99,7 @@ enum _Screen {
   exportData,
   apiTokens,
   coachingClients,
+  coachingActivity,
   coachingMessages,
   coachingPrograms,
   coachingMe,
@@ -907,6 +908,14 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingClients, _Guideline.androidTapTarget, null),
   (_Screen.coachingClients, _Guideline.iosTapTarget, null),
 
+  // the roster (#559): filter chips, rows with seven dots and "looked at",
+  // and the clients' activity
+  (_Screen.coachingActivity, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingActivity, _Guideline.textContrastLight, null),
+  (_Screen.coachingActivity, _Guideline.textContrastDark, null),
+  (_Screen.coachingActivity, _Guideline.androidTapTarget, null),
+  (_Screen.coachingActivity, _Guideline.iosTapTarget, null),
+
   (_Screen.coachingMessages, _Guideline.labeledTapTarget, null),
   (_Screen.coachingMessages, _Guideline.textContrastLight, null),
   (_Screen.coachingMessages, _Guideline.textContrastDark, null),
@@ -1248,6 +1257,7 @@ void main() {
     // the Coaching space (#566): Coach people on, for an account that may coach
     final coaching = {
       _Screen.coachingClients: AppKeys.coachingClientsStack,
+      _Screen.coachingActivity: AppKeys.coachingClientsStack,
       _Screen.coachingMessages: AppKeys.coachingMessagesStack,
       _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
       _Screen.coachingMe: AppKeys.coachingMeStack,
@@ -1275,6 +1285,43 @@ void main() {
       when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
       when(api.getInvitations(cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: <Invitation>[], cursor: null));
+      // a roster to read, but none for the invite dialog, which opens from
+      // the empty tab's button
+      final clients = switch (screen) {
+        _Screen.coachingClients || _Screen.coachingActivity => [
+          ClientSummary(
+            connectionId: 'c-sam',
+            studentId: 'sam',
+            name: 'Sam',
+            status: 'active',
+            programName: 'Strength block',
+            programWeek: 2,
+            programWeeks: 6,
+            recent: [DateTime.utc(2026, 11, 7, 18)],
+            reasons: const ['note', 'lighter'],
+          ),
+          ClientSummary(connectionId: 'c-riley', studentId: 'riley', name: 'Riley', status: 'paused'),
+        ],
+        _ => <ClientSummary>[],
+      };
+      when(api.getClients(former: anyNamed('former'), cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: clients, cursor: null));
+      when(api.getCoachFeed(cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          items: [
+            CoachFeedItem(
+              kind: 'workout',
+              id: 'w1',
+              studentId: 'sam',
+              name: 'Sam',
+              at: DateTime.utc(2026, 11, 7, 18),
+              title: 'Day B',
+            ),
+            CoachFeedItem(kind: 'skip', id: 's1', studentId: 'sam', name: 'Sam', at: DateTime.utc(2026, 11, 6, 18)),
+          ],
+          cursor: null,
+        ),
+      );
     }
     if (screen == _Screen.pausedWorkout || screen == _Screen.finishAtLastSet) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-pauseWorkout': 'on'});
@@ -2120,6 +2167,7 @@ void main() {
             break;
         }
       case _Screen.coachingClients ||
+          _Screen.coachingActivity ||
           _Screen.coachingMessages ||
           _Screen.coachingPrograms ||
           _Screen.coachingMe ||
@@ -2128,6 +2176,10 @@ void main() {
         await tester.pumpTimes();
         await tester.tapByKey(coaching[screen]!);
         await tester.pumpTimes();
+        if (screen == _Screen.coachingActivity) {
+          await tester.tapByKey(AppKeys.coachingActivityView);
+          await tester.pumpTimes();
+        }
         if (screen == _Screen.coachingInviteDialog) {
           await tester.tapByKey(AppKeys.coachingInvite);
           await tester.pumpTimes();

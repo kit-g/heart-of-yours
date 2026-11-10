@@ -329,6 +329,18 @@ abstract final class AppKeys {
 
   static Key coachingInvitation(String id) => Key('Coaching.invitation.$id');
 
+  /// The roster (#559): Clients or Activity, a reason to filter by, each
+  /// client's row and its "looked at", and the former ones.
+  static const coachingRosterView = Key('Coaching.rosterView');
+  static const coachingActivityView = Key('Coaching.activityView');
+  static const coachingFormerClients = Key('Coaching.formerClients');
+
+  static Key coachingReasonFilter(String? reason) => Key('Coaching.reason.${reason ?? 'all'}');
+
+  static Key coachingClient(String connectionId) => Key('Coaching.client.$connectionId');
+
+  static Key coachingMarkReviewed(String connectionId) => Key('Coaching.reviewed.$connectionId');
+
   /// The page an invitation link opens (#553), and its answers.
   static const invitationPage = Key('Invitation.page');
   static const invitationShareHistory = Key('Invitation.shareHistory');

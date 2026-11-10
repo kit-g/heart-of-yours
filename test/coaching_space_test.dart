@@ -57,6 +57,10 @@ void main() {
     when(api.getConnections()).thenAnswer((_) async => []);
     when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
     when(api.getInvitations(cursor: anyNamed('cursor'))).thenAnswer((_) async => (items: <Invitation>[], cursor: null));
+    when(api.getClients(former: anyNamed('former'), cursor: anyNamed('cursor')))
+        .thenAnswer((_) async => (items: <ClientSummary>[], cursor: null));
+    when(api.getCoachFeed(cursor: anyNamed('cursor')))
+        .thenAnswer((_) async => (items: <CoachFeedItem>[], cursor: null));
     share.shared.clear();
   });
 
@@ -89,6 +93,7 @@ void main() {
     expect(find.byType(ProfilePage), findsOneWidget);
     expect(find.byKey(AppKeys.coachingButton), findsNothing);
     verifyNever(api.getConnections());
+    verifyNever(api.getClients(former: anyNamed('former'), cursor: anyNamed('cursor')));
   });
 
   testWidgets('on, but for an account that may not coach, it is still not there', (tester) async {
@@ -234,26 +239,6 @@ void main() {
       expect(share.shared, isEmpty);
     });
 
-    testWidgets('a coach with clients and nothing waiting is not told there are no clients', (tester) async {
-      account(coach: true);
-      when(api.getConnections()).thenAnswer(
-        (_) async => [
-          Connection(
-            targetId: 'riley',
-            role: .coach,
-            domain: .fitness,
-            status: .active,
-            createdAt: DateTime.utc(2026, 11, 8),
-            connectionId: 'c1',
-          ),
-        ],
-      );
-      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
-
-      expect(find.text('No clients yet'), findsNothing);
-      expect(find.text('One person you coach'), findsOneWidget);
-    });
-
     testWidgets('a cancel that fails says so, and the invitation stays', (tester) async {
       account(coach: true);
       when(api.getInvitations(cursor: anyNamed('cursor'))).thenAnswer(
@@ -322,6 +307,154 @@ void main() {
       await openFeatures(tester);
       await tester.scrollUntilVisible(find.text('Your coach'), 200);
       expect(find.text('Your coach'), findsOneWidget);
+    });
+  });
+
+  group('the roster (#559)', () {
+    final sam = ClientSummary(
+      connectionId: 'c-sam',
+      studentId: 'sam',
+      name: 'Sam',
+      status: 'active',
+      programName: 'Strength block',
+      programWeek: 2,
+      programWeeks: 6,
+      recent: [DateTime.now().toUtc()],
+      reasons: ['note', 'gap'],
+    );
+    final riley = ClientSummary(connectionId: 'c-riley', studentId: 'riley', name: 'Riley', status: 'paused');
+    final pip = ClientSummary(connectionId: 'c-pip', studentId: 'pip', name: 'Pip', status: 'active', reasons: ['gap']);
+
+    void clients(List<ClientSummary> clients) {
+      when(api.getClients(former: false, cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: clients, cursor: null));
+    }
+
+    testWidgets('who needs a word comes first, with why in words, and a look clears what it can', (tester) async {
+      account(coach: true);
+      clients([sam, pip, riley]);
+      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      expect(find.text('No clients yet'), findsNothing);
+      expect(find.text('Strength block · week 2 of 6'), findsOneWidget);
+      expect(find.text("Left a note · Hasn't trained lately"), findsOneWidget);
+      expect(find.text('No program · Paused'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Semantics && widget.properties.label == 'Trained 1 of the last 7 days',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(AppKeys.coachingMarkReviewed('c-riley')), findsNothing, reason: 'nothing to look at');
+      expect(find.byKey(AppKeys.coachingMarkReviewed('c-pip')), findsNothing, reason: 'a look clears no gap');
+
+      await tester.tapByKey(AppKeys.coachingMarkReviewed('c-sam'));
+      await tester.pumpTimes();
+
+      verify(api.markReviewed('c-sam', at: anyNamed('at'))).called(1);
+      expect(
+        find.descendant(of: find.byKey(AppKeys.coachingClient('c-sam')), matching: find.text("Hasn't trained lately")),
+        findsOneWidget,
+        reason: 'a gap holds until it stops being true',
+      );
+      expect(find.byKey(AppKeys.coachingReasonFilter('note')), findsNothing, reason: 'nobody left with a note');
+      expect(
+        find.byKey(AppKeys.coachingMarkReviewed('c-sam')),
+        findsNothing,
+        reason: 'a look would clear nothing more',
+      );
+    });
+
+    testWidgets('a reason filters the roster, and a word this build lacks still counts', (tester) async {
+      account(coach: true);
+      clients([
+        sam,
+        ClientSummary(connectionId: 'c-pip', studentId: 'pip', name: 'Pip', status: 'active', reasons: ['shrug']),
+        riley,
+      ]);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      await tester.tapByKey(AppKeys.coachingReasonFilter('note'));
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.coachingClient('c-sam')), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClient('c-pip')), findsNothing);
+      expect(find.byKey(AppKeys.coachingFormerClients), findsNothing, reason: 'only with everyone showing');
+
+      // the chips are one line that scrolls sideways
+      await tester.ensureVisible(find.byKey(AppKeys.coachingReasonFilter('shrug')));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingReasonFilter('shrug'));
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.coachingClient('c-pip')), findsOneWidget);
+      expect(find.text('Needs a word'), findsWidgets);
+
+      await tester.ensureVisible(find.byKey(AppKeys.coachingReasonFilter(null)));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingReasonFilter(null));
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.coachingClient('c-riley')), findsOneWidget);
+    });
+
+    testWidgets('a wide page makes it a table', (tester) async {
+      account(coach: true);
+      clients([sam, riley]);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
+
+      expect(find.text('Last 7 days'), findsOneWidget);
+      expect(find.text('Program'), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClient('c-sam')), findsOneWidget);
+    });
+
+    testWidgets('former clients are read only when opened', (tester) async {
+      account(coach: true);
+      clients([sam]);
+      when(api.getClients(former: true, cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          items: [ClientSummary(connectionId: 'c-old', studentId: 'old', name: 'Pepper', status: 'severed')],
+          cursor: null,
+        ),
+      );
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      verifyNever(api.getClients(former: true, cursor: anyNamed('cursor')));
+
+      await tester.scrollUntilVisible(
+        find.byKey(AppKeys.coachingFormerClients),
+        200,
+        scrollable: find.descendant(of: find.byType(ClientsPage), matching: find.byType(Scrollable)).first,
+      );
+      await tester.tapByKey(AppKeys.coachingFormerClients);
+      await tester.pumpTimes();
+
+      verify(api.getClients(former: true, cursor: anyNamed('cursor'))).called(1);
+      expect(find.text('Pepper'), findsOneWidget);
+    });
+
+    testWidgets('Activity is what they all did, in words, and a kind without words is left out', (tester) async {
+      account(coach: true);
+      clients([sam]);
+      final at = DateTime.utc(2026, 11, 7, 18);
+      when(api.getCoachFeed(cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          items: [
+            CoachFeedItem(kind: 'workout', id: 'w1', studentId: 'sam', name: 'Sam', at: at, title: 'Day B'),
+            CoachFeedItem(kind: 'skip', id: 's1', studentId: 'sam', name: 'Sam', at: at),
+            CoachFeedItem(kind: 'cheer', id: 'x1', studentId: 'sam', name: 'Sam', at: at),
+            CoachFeedItem(kind: 'ending', id: 'e1', studentId: 'sam', name: 'Sam', at: at, title: 'Strength block'),
+          ],
+          cursor: null,
+        ),
+      );
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      verifyNever(api.getCoachFeed(cursor: anyNamed('cursor')));
+
+      await tester.tapByKey(AppKeys.coachingActivityView);
+      await tester.pumpTimes();
+
+      expect(find.text('Sam finished Day B'), findsOneWidget);
+      expect(find.text('Sam skipped a session'), findsOneWidget);
+      expect(find.text('Sam is near the end of Strength block'), findsOneWidget);
+      expect(find.byType(ListTile), findsNWidgets(3));
     });
   });
 }
