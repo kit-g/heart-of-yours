@@ -48,6 +48,11 @@ typedef WatchSet = ({
   /// The same set last time, as finished copy; null when there was none.
   String? previous,
 
+  /// Its values last time, in [unit], for the editor to offer in one tap
+  /// (#586); null where last time had none.
+  double? lastWeight,
+  int? lastReps,
+
   /// Where it sits in its exercise, as copy: "Set 2 of 3".
   String position,
 });
@@ -95,6 +100,10 @@ typedef WatchSetRow = ({
   bool done,
   String position,
   String? previous,
+
+  /// As [WatchSet.lastWeight] and [WatchSet.lastReps] (#586).
+  double? lastWeight,
+  int? lastReps,
   String next,
 });
 
@@ -209,6 +218,8 @@ final class WatchWorkout extends WatchState {
         'unit': ?set.unit,
         'step': set.step,
         'previous': ?set.previous,
+        'lastWeight': ?set.lastWeight,
+        'lastReps': ?set.lastReps,
         'position': set.position,
       },
       'exercises': [
@@ -233,6 +244,8 @@ final class WatchWorkout extends WatchState {
                   'done': row.done,
                   'position': row.position,
                   'previous': ?row.previous,
+                  'lastWeight': ?row.lastWeight,
+                  'lastReps': ?row.lastReps,
                   'next': row.next,
                 },
             ],

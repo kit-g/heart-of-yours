@@ -284,6 +284,8 @@ class _WatchPresenterState extends State<WatchPresenter> {
                   unit: _unitLabel(exercise, l),
                   l: l,
                 ),
+                lastWeight: _lastWeight(exercise, index),
+                lastReps: _lastReps(exercise, index),
                 next: nextSetLine(context, set, index + 1),
               ),
           ],
@@ -381,6 +383,8 @@ class _WatchPresenterState extends State<WatchPresenter> {
         },
         step: _step(exercise),
         previous: _lastTime(exercise, number - 1, weighted: weighted, unit: unitLabel, l: l),
+        lastWeight: _lastWeight(exercise, number - 1),
+        lastReps: _lastReps(exercise, number - 1),
         position: _position(exercise, number - 1, l),
       );
     }
@@ -437,6 +441,23 @@ class _WatchPresenterState extends State<WatchPresenter> {
         '$reps ${l.reps}',
       ),
       (false, {'reps': int reps}) => l.watchLastTime('$reps ${l.reps}'),
+      _ => null,
+    };
+  }
+
+  /// The same set's weight last time, in the unit it is shown in, for the
+  /// watch's editor to offer (#586); null for a set without weight.
+  double? _lastWeight(WorkoutExercise exercise, int index) {
+    return switch ((_measures(exercise).$1, _previous().matching(exercise, index))) {
+      (true, {'weight': num weight}) => Preferences.of(context).weightValue(weight, unit: _unit(exercise)),
+      _ => null,
+    };
+  }
+
+  /// The same set's count last time (#586); null for a set without one.
+  int? _lastReps(WorkoutExercise exercise, int index) {
+    return switch ((_measures(exercise).$2, _previous().matching(exercise, index))) {
+      (true, {'reps': int reps}) => reps,
       _ => null,
     };
   }
