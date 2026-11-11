@@ -253,13 +253,15 @@ void main() {
       );
     });
 
-    testWidgets('with Your coach off, it still waits, and names nobody', (tester) async {
+    testWidgets('with Your coach off, it still waits, and still says whose it is', (tester) async {
       withSent(yourCoach: false);
       await openWorkoutTab(tester);
 
       final card = find.byKey(AppKeys.programWaiting('c1'));
-      expect(find.descendant(of: card, matching: find.text('Waiting for you to start it')), findsOneWidget);
-      expect(find.textContaining('Muffin'), findsNothing);
+      expect(
+        find.descendant(of: card, matching: find.text('From Muffin · Waiting for you to start it')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('starting it asks, then replaces what the user follows', (tester) async {
