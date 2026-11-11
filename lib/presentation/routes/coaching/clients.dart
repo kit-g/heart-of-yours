@@ -21,22 +21,37 @@ class ClientsPage extends StatefulWidget {
   State<ClientsPage> createState() => _ClientsPageState();
 }
 
+/// The roster and the invitations, read again from the server.
+Future<void> _reloadClients(BuildContext context) {
+  return Future.wait([
+    Roster.of(context).load(),
+    Coaching.of(context).loadInvitations().catchError((_) {}),
+  ]);
+}
+
 class _ClientsPageState extends State<ClientsPage> {
   final _view = ValueNotifier(_ClientsView.roster);
+
+  /// A coach shares a link from another app and comes back to see whether it
+  /// was taken: the tab stays alive the whole time, so opening it once is
+  /// not enough.
+  late final _lifecycle = AppLifecycleListener(onResume: _reload);
+
+  void _reload() {
+    if (mounted) _reloadClients(context);
+  }
 
   @override
   void initState() {
     super.initState();
+    _lifecycle;
     // read on opening, as the tokens page is: the list is the server's
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      Roster.of(context).load();
-      Coaching.of(context).loadInvitations().catchError((_) {});
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
   }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _view.dispose();
     super.dispose();
   }
@@ -149,22 +164,25 @@ class _RosterViewState extends State<_RosterView> {
               final String reason => roster.withReason(reason).toList(),
               null => roster.clients,
             };
-            return ListView(
-              padding: const .only(bottom: 24),
-              children: [
-                if (reasons.isNotEmpty)
-                  _ReasonFilter(reasons: reasons, picked: reason, onPicked: (each) => _reason.value = each),
-                if (table && clients.isNotEmpty) const _TableHeader(),
-                for (final client in clients)
-                  switch (table) {
-                    true => _ClientRow(client: client),
-                    false => _ClientTile(client: client),
-                  },
-                if (reason == null) ...[
-                  if (widget.waiting.isNotEmpty) _WaitingInvitations(invitations: widget.waiting),
-                  if (roster.clients.isNotEmpty) const _FormerClients(),
+            return RefreshIndicator.adaptive(
+              onRefresh: () => _reloadClients(context),
+              child: ListView(
+                padding: const .only(bottom: 24),
+                children: [
+                  if (reasons.isNotEmpty)
+                    _ReasonFilter(reasons: reasons, picked: reason, onPicked: (each) => _reason.value = each),
+                  if (table && clients.isNotEmpty) const _TableHeader(),
+                  for (final client in clients)
+                    switch (table) {
+                      true => _ClientRow(client: client),
+                      false => _ClientTile(client: client),
+                    },
+                  if (reason == null) ...[
+                    if (widget.waiting.isNotEmpty) _WaitingInvitations(invitations: widget.waiting),
+                    if (roster.clients.isNotEmpty) const _FormerClients(),
+                  ],
                 ],
-              ],
+              ),
             );
           },
         );
