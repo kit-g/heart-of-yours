@@ -4,10 +4,10 @@ part of 'workout.dart';
 /// something else waits for them to start it, since it replaces what they are
 /// on; one that arrives while they follow nothing simply runs.
 
-/// Who sent [program], as its page and its card say it: only while Your coach
-/// is on, since off, coaching was never built and a program is the user's.
+/// Who sent [program], as its page and its card say it. Named even with Your
+/// coach off: a program the user didn't make, waiting on them, has to say
+/// where it came from.
 String? _sentBy(BuildContext context, Program program) {
-  if (!Preferences.watch(context).isOn(.yourCoach)) return null;
   return switch (program.coachName?.trim()) {
     final String name when name.isNotEmpty => L.of(context).programFromCoach(name),
     _ => null,
