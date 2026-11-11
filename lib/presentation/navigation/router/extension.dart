@@ -23,6 +23,20 @@ extension on BuildContext {
     pushNamed(_coachingClientWorkoutName, pathParameters: {'connectionId': connectionId, 'workoutId': workoutId});
   }
 
+  /// A client's copy of their program (#558).
+  void pushCoachingClientProgram(String connectionId, String programId) {
+    pushNamed(_coachingClientProgramName, pathParameters: {'connectionId': connectionId, 'programId': programId});
+  }
+
+  /// The template editor on the session [ClientPrograms] is drafting.
+  void pushCoachingClientSession(String connectionId, String programId, {required bool isNew}) {
+    pushNamed(
+      _coachingClientSessionName,
+      pathParameters: {'connectionId': connectionId, 'programId': programId},
+      queryParameters: {'new': '$isNew'},
+    );
+  }
+
   /// A program of the coach's library (#557).
   void goToCoachingProgram(String programId) {
     return goNamed(_coachingProgramName, pathParameters: {'programId': programId});

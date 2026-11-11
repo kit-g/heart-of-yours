@@ -102,6 +102,7 @@ enum _Screen {
   coachingActivity,
   coachingClient,
   coachingReview,
+  coachingClientCopy,
   coachingMessages,
   coachingPrograms,
   coachingProgram,
@@ -947,6 +948,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingReview, _Guideline.textContrastDark, null),
   (_Screen.coachingReview, _Guideline.androidTapTarget, null),
   (_Screen.coachingReview, _Guideline.iosTapTarget, null),
+  // a client's copy, edited by both (#558): its sessions and history
+  (_Screen.coachingClientCopy, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingClientCopy, _Guideline.textContrastLight, null),
+  (_Screen.coachingClientCopy, _Guideline.textContrastDark, null),
+  (_Screen.coachingClientCopy, _Guideline.androidTapTarget, null),
+  (_Screen.coachingClientCopy, _Guideline.iosTapTarget, null),
 
   (_Screen.coachingMessages, _Guideline.labeledTapTarget, null),
   (_Screen.coachingMessages, _Guideline.textContrastLight, null),
@@ -1314,6 +1321,7 @@ void main() {
       _Screen.coachingActivity: AppKeys.coachingClientsStack,
       _Screen.coachingClient: AppKeys.coachingClientsStack,
       _Screen.coachingReview: AppKeys.coachingClientsStack,
+      _Screen.coachingClientCopy: AppKeys.coachingClientsStack,
       _Screen.coachingMessages: AppKeys.coachingMessagesStack,
       _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
       _Screen.coachingProgram: AppKeys.coachingProgramsStack,
@@ -1350,12 +1358,17 @@ void main() {
           ClientSummary(connectionId: 'c-sam', studentId: 'sam', name: 'Sam', status: 'active'),
           ClientSummary(connectionId: 'c-pip', studentId: 'pip', name: 'Pip', status: 'active'),
         ],
-        _Screen.coachingClients || _Screen.coachingActivity || _Screen.coachingClient || _Screen.coachingReview => [
+        _Screen.coachingClients ||
+        _Screen.coachingActivity ||
+        _Screen.coachingClient ||
+        _Screen.coachingReview ||
+        _Screen.coachingClientCopy => [
           ClientSummary(
             connectionId: 'c-sam',
             studentId: 'sam',
             name: 'Sam',
             status: 'active',
+            programId: 'copy',
             programName: 'Strength block',
             programWeek: 2,
             programWeeks: 6,
@@ -1419,6 +1432,37 @@ void main() {
       });
       when(api.getClientWorkouts('sam', cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: [dayB], cursor: null));
+      when(api.getClientProgram('sam', 'copy')).thenAnswer(
+        (_) async => CoachProgramView.fromJson({
+          'program': {
+            'id': 'copy',
+            'name': 'Strength block',
+            'perWeek': 2,
+            'weeks': 6,
+            'sessions': ['s1'],
+            'sessionRevisions': {'s1': 0},
+          },
+          'sessions': [
+            {'id': 's1', 'name': 'Day A', 'order': 0, 'programId': 'copy', 'exercises': <Object>[]},
+          ],
+          'position': {'week': 2},
+        }),
+      );
+      when(api.getClientProgramChanges('sam', 'copy', since: anyNamed('since'))).thenAnswer(
+        (_) async => [
+          ProgramChange(
+            id: 'ch1',
+            programId: 'copy',
+            sessionId: 's1',
+            actorId: 'sam',
+            kind: 'edit',
+            revision: 1,
+            after: const {'name': 'Day A'},
+            before: const {'name': 'Day A'},
+            at: DateTime.utc(2026, 11, 9, 18),
+          ),
+        ],
+      );
       when(api.getClientSkips('sam')).thenAnswer((_) async => [TrainingSkip(at: DateTime.utc(2026, 11, 6, 18))]);
       when(api.getClientWorkoutPlan('sam', 'w1')).thenAnswer(
         (_) async => const WorkoutPlan({
@@ -2305,6 +2349,7 @@ void main() {
           _Screen.coachingActivity ||
           _Screen.coachingClient ||
           _Screen.coachingReview ||
+          _Screen.coachingClientCopy ||
           _Screen.coachingMessages ||
           _Screen.coachingPrograms ||
           _Screen.coachingProgram ||
@@ -2319,8 +2364,14 @@ void main() {
           await tester.tapByKey(AppKeys.coachingActivityView);
           await tester.pumpTimes();
         }
-        if (screen == _Screen.coachingClient || screen == _Screen.coachingReview) {
+        if (screen == _Screen.coachingClient ||
+            screen == _Screen.coachingReview ||
+            screen == _Screen.coachingClientCopy) {
           await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingClientCopy) {
+          await tester.tapByKey(AppKeys.coachingClientProgram);
           await tester.pumpTimes();
         }
         if (screen == _Screen.coachingReview) {

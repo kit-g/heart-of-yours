@@ -9,7 +9,10 @@ class ClientPage extends StatelessWidget {
   /// Opens one of the client's workouts, target beside done.
   final ValueChanged<String> onOpenWorkout;
 
-  const new({super.key, required this.connectionId, required this.onOpenWorkout});
+  /// Opens the client's copy of their program.
+  final ValueChanged<String> onOpenProgram;
+
+  const new({super.key, required this.connectionId, required this.onOpenWorkout, required this.onOpenProgram});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +29,7 @@ class ClientPage extends StatelessWidget {
         alignment: .topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: readableWidth),
-          child: _ClientView(connectionId: connectionId, onOpenWorkout: onOpenWorkout),
+          child: _ClientView(connectionId: connectionId, onOpenWorkout: onOpenWorkout, onOpenProgram: onOpenProgram),
         ),
       ),
     );
@@ -59,12 +62,19 @@ class _Skipped implements _Entry {
 class _ClientView extends StatefulWidget {
   final String connectionId;
   final ValueChanged<String> onOpenWorkout;
+  final ValueChanged<String> onOpenProgram;
 
   /// The pane beside the roster names the client itself; a page has its
   /// title for that.
   final Widget? leading;
 
-  const new({super.key, required this.connectionId, required this.onOpenWorkout, this.leading});
+  const new({
+    super.key,
+    required this.connectionId,
+    required this.onOpenWorkout,
+    required this.onOpenProgram,
+    this.leading,
+  });
 
   @override
   State<_ClientView> createState() => _ClientViewState();
@@ -133,6 +143,15 @@ class _ClientViewState extends State<_ClientView> {
             ?widget.leading,
             // a page names them in its title
             _ClientHeader(client: client, named: widget.leading != null),
+            // their program, which both of them edit (#558)
+            if (client case ClientSummary(programId: final String programId, programName: final String name))
+              ListTile(
+                key: AppKeys.coachingClientProgram,
+                leading: const Icon(Icons.event_repeat_rounded),
+                title: Text(name, maxLines: 1, overflow: .ellipsis),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => widget.onOpenProgram(programId),
+              ),
             Padding(
               padding: const .fromLTRB(16, 16, 16, 4),
               child: Text(l.coachingClientWorkouts, style: Theme.of(context).textTheme.titleMedium),

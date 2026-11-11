@@ -322,6 +322,15 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        // A coach's work on a client's copy (#558): server-only, read when
+        // the coach opens it.
+        ChangeNotifierProvider<ClientPrograms>(
+          create: (context) => ClientPrograms(
+            service: RemoteClientPrograms(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
         // A coach's library (#557): server-only, read when the Programs tab
         // of the Coaching space opens. A body names exercises by id, which
         // the coach's own catalog turns back into exercises.
