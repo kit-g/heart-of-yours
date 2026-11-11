@@ -16,6 +16,11 @@ abstract final class Router {
   static const invitations = 'v1/invitations';
   static const invitationLinks = 'v1/invitation-links';
   static const blocks = 'v1/blocks';
+  static const coachClients = 'v1/coach/clients';
+  static const coachFeed = 'v1/coach/feed';
+
+  /// Where a coach says they have looked at a client, by the connection's id.
+  static String coachClientReviewed(String connectionId) => '$coachClients/$connectionId/reviewed';
 
   static String invitation(String invitationId) => '$invitations/$invitationId';
 

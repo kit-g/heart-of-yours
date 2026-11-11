@@ -3,6 +3,7 @@
 /// on Profile, while Coach people is on.
 library;
 
+import 'package:clock/clock.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/utils/visual.dart';
@@ -10,6 +11,7 @@ import 'package:heart/presentation/widgets/avatar.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
+import 'package:heart/presentation/widgets/setting_picker.dart';
 import 'package:heart/presentation/widgets/tab_frame.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -18,6 +20,8 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
 
+part 'activity.dart';
+part 'clients.dart';
 part 'frame.dart';
 part 'invitation.dart';
 part 'invite.dart';

@@ -22,6 +22,7 @@ import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/anomalies.dart';
 import 'package:heart/core/utils/api_tokens.dart';
 import 'package:heart/core/utils/coaching.dart';
+import 'package:heart/core/utils/roster.dart';
 import 'package:heart/core/utils/backfill.dart';
 import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
@@ -307,6 +308,15 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Coaching>(
           create: (context) => Coaching(
             service: RemoteCoaching(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // A coach's roster and feed (#559): server-only, read when the
+        // Clients tab opens, which is there only with Coach people on.
+        ChangeNotifierProvider<Roster>(
+          create: (context) => Roster(
+            service: RemoteRoster(api),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),
