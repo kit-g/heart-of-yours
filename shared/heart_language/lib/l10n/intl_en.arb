@@ -5760,5 +5760,19 @@
   "coachingProgramDeleteFailed": "Couldn't delete it. Try again.",
   "@coachingProgramDeleteFailed": {"description": "Shown when deleting a library program failed (#557)", "type": "text", "placeholders": {}},
   "coachingProgramOptions": "Program options",
-  "@coachingProgramOptions": {"description": "Tooltip of the menu on a library program's page (#557)", "type": "text", "placeholders": {}}
+  "@coachingProgramOptions": {"description": "Tooltip of the menu on a library program's page (#557)", "type": "text", "placeholders": {}},
+  "programFromCoach": "From {coach}",
+  "@programFromCoach": {"description": "Under a program a coach sent (#557): who sent it. {coach} is their name in Heart", "type": "text", "placeholders": {"coach": {"type": "String"}}},
+  "programWaiting": "Waiting for you to start it",
+  "@programWaiting": {"description": "On a program a coach sent while the user follows another, until they start it (#557)", "type": "text", "placeholders": {}},
+  "programStartSentTitle": "Start {name}?",
+  "@programStartSentTitle": {"description": "Title of the dialog starting a program a coach sent, when it replaces what the user follows (#557)", "type": "text", "placeholders": {"name": {"type": "String"}}},
+  "programStartSentBody": "You'll stop following {programs}. Its history stays.",
+  "@programStartSentBody": {"description": "Body of that dialog. {programs} names what the user follows now, comma-separated (#557)", "type": "text", "placeholders": {"programs": {"type": "String"}}},
+  "programNotYet": "Not yet",
+  "@programNotYet": {"description": "Button in that dialog that leaves the program waiting (#557)", "type": "text", "placeholders": {}},
+  "programStartedSent": "You started {name}",
+  "@programStartedSent": {"description": "Shown once a program a coach sent has started (#557)", "type": "text", "placeholders": {"name": {"type": "String"}}},
+  "programStartSentFailed": "Couldn't start it. Try again.",
+  "@programStartSentFailed": {"description": "Shown when starting a program a coach sent failed (#557)", "type": "text", "placeholders": {}}
 }
