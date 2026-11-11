@@ -69,7 +69,7 @@ void main() {
 
   /// A phone by default. Settings is swept wide, as the a11y harness does:
   /// under the test font its pickers overflow a phone's width.
-  Future<void> pump(WidgetTester tester, Map<String, Object> prefs, {bool wide = false}) async {
+  Future<void> pump(WidgetTester tester, Map<String, Object> prefs, {bool wide = false, KeyVault? keyVault}) async {
     tester.view.physicalSize = wide ? const Size(1200, 2400) : const Size(1179, 2556);
     tester.view.devicePixelRatio = wide ? 1 : 3;
     addTearDown(tester.view.resetPhysicalSize);
@@ -84,6 +84,7 @@ void main() {
         mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
         signedIn: true,
       ),
+      keyVault: keyVault,
       settle: false,
     );
     await tester.pumpTimes();
@@ -221,6 +222,24 @@ void main() {
       expect(share.shared.single.text, contains('/invite.html?t=abc'));
       expect(find.byKey(AppKeys.coachingInvitation('i1')), findsOneWidget);
       expect(find.text('Waiting to hear back'), findsOneWidget);
+    });
+
+    testWidgets("with keys on the device, the link carries their fingerprint after '#' (#555)", (tester) async {
+      account(coach: true);
+      when(api.createInvitation(any, programId: anyNamed('programId')))
+          .thenAnswer((_) async => invitation(token: 'abc'));
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true, keyVault: MemoryKeyVault());
+
+      await tester.tapByKey(AppKeys.coachingInvite);
+      await tester.pumpTimes();
+      await tester.enterText(find.byKey(AppKeys.coachingInviteName), 'Biscuit');
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingMakeLink);
+      await tester.pumpTimes();
+
+      final fingerprint = await DeviceKeys.of(tester.element(find.byType(Navigator).first)).fingerprint();
+      expect(fingerprint, hasLength(22));
+      expect(share.shared.single.text, contains('/invite.html?t=abc#$fingerprint'));
     });
 
     testWidgets("the beta's refusal says so, and shares nothing", (tester) async {

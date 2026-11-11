@@ -31,6 +31,7 @@ import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/programs.dart';
 import 'package:heart/core/utils/pushes.dart';
+import 'package:heart/core/utils/device_keys.dart';
 import 'package:heart/core/utils/workout_plans.dart';
 import 'package:heart/core/utils/live_records.dart';
 import 'package:heart/core/utils/record_book.dart';
@@ -49,6 +50,7 @@ import 'package:heart/presentation/navigation/keep_awake.dart';
 import 'package:heart/presentation/navigation/pause.dart';
 import 'package:heart/presentation/navigation/program_calendar.dart';
 import 'package:heart/presentation/navigation/pushes.dart';
+import 'package:heart/presentation/navigation/device_keys.dart';
 import 'package:heart/presentation/navigation/system_shortcuts.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/navigation/watch.dart';
@@ -80,6 +82,11 @@ class HeartApp extends StatelessWidget {
   /// notifications at all. A test passes its own.
   final PushClient? pushClient;
 
+  /// Where this device keeps its encryption keys (#555): the Keychain or the
+  /// Keystore on a phone, none on the web or in a test unless it brings one.
+  /// Without one, keys never run.
+  final KeyVault? keyVault;
+
   const new({
     super.key,
     required this.appConfig,
@@ -92,6 +99,7 @@ class HeartApp extends StatelessWidget {
     this.firebaseAuth,
     this.calendar,
     this.pushClient,
+    this.keyVault,
   });
 
   @override
@@ -326,6 +334,16 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Pushes>(
           create: (context) => Pushes(
             service: RemotePushes(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // This device's encryption keys and what carries them (#555): made and
+        // published only while a coaching switch is on (DeviceKeysPresenter).
+        ChangeNotifierProvider<DeviceKeys>(
+          create: (context) => DeviceKeys(
+            service: RemoteDeviceKeys(api),
+            vault: keyVault,
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),
@@ -705,7 +723,9 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
                                   (true, false) => FirebasePushClient(Theme.of(context).platform),
                                   _ => null,
                                 },
-                            child: child ?? const SizedBox.shrink(),
+                            // this device's encryption keys (#555), by the
+                            // push client's rule
+                            child: DeviceKeysPresenter(child: child ?? const SizedBox.shrink()),
                           ),
                         ),
                       ),

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:heart/core/env/analytics.dart';
 import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/key_vault.dart';
 import 'package:heart/core/env/launch_screen.dart';
 import 'package:heart/core/env/questions.dart';
 import 'package:heart/core/env/licenses.dart';
@@ -250,6 +251,12 @@ Future<void> _runner({
           appConfig: appConfig,
           firebaseAuth: firebase,
           router: router,
+          // encryption keys (#555) live in the Keychain or the Keystore: a
+          // phone's, never the web's
+          keyVault: switch ((kIsWeb, defaultTargetPlatform)) {
+            (false, .iOS || .android) => const SecureKeyVault(),
+            _ => null,
+          },
         ),
       );
     },

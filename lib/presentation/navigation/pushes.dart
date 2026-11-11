@@ -40,10 +40,12 @@ class PushPresenter extends StatefulWidget {
 bool pushesOn(BuildContext context, {bool listen = false}) {
   final preferences = Provider.of<Preferences>(context, listen: listen);
   final auth = Provider.of<Auth>(context, listen: listen);
-  return _pushesOn(preferences, auth);
+  return coachingRuns(preferences, auth);
 }
 
-bool _pushesOn(Preferences preferences, Auth auth) {
+/// The rule behind [pushesOn], which device keys (#555) follow too: both run
+/// for coaching and for nothing else.
+bool coachingRuns(Preferences preferences, Auth auth) {
   final account = auth.user != null && !auth.isAnonymous;
   final space = preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false);
   return account && (space || preferences.isOn(.yourCoach));
@@ -110,7 +112,7 @@ class _PushPresenterState extends State<PushPresenter> {
     // before Firebase's first answer there is no user at all, which is not
     // the same as a session without an account: nothing is decided yet
     if (auth.user == null && _live == null) return;
-    final live = _pushesOn(preferences, auth);
+    final live = coachingRuns(preferences, auth);
     if (live != _live) {
       _live = live;
       unawaited(switch (live) {
@@ -218,9 +220,12 @@ class _PushPresenterState extends State<PushPresenter> {
       case .invitationAccepted:
         // the new connection arrives on the next read of them
         await Coaching.of(context).load();
-      // messages (#556) and device keys (#555) are not built yet: nothing on
-      // the device holds a thread or a device list to refresh
-      case .threadCleared || .devicesChanged:
+      case .devicesChanged:
+        // someone this device shares keys with added or removed one (#555)
+        if (push.userId case final String userId) await DeviceKeys.of(context).devicesChanged(userId);
+      // messages (#556) are not built yet: nothing on the device holds a
+      // thread to refresh
+      case .threadCleared:
       // nothing to fetch: the tap opens where the news is read
       case .coachingMessage || .workoutDigest || .commentCreated || null:
         break;

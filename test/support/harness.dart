@@ -103,6 +103,9 @@ class TestAppHarness {
     DeviceCalendar? calendar,
     // the push client's transport (#567): none unless a test brings its own
     PushClient? pushClient,
+    // where encryption keys live (#555): none, so keys never run, unless a
+    // test brings its own
+    KeyVault? keyVault,
   }) async {
     final cfg = appConfig ?? AppConfig.test(allowsFeedbackFeature: false);
 
@@ -128,6 +131,7 @@ class TestAppHarness {
         router: router ?? HeartRouter(),
         calendar: calendar,
         pushClient: pushClient,
+        keyVault: keyVault,
       ),
     );
 
@@ -177,4 +181,18 @@ extension ExtWidgetTester on WidgetTester {
     await enterText(finder, text);
     await pump();
   }
+}
+
+/// Encryption keys' vault (#555), in memory: what a test brings for keys to run.
+class MemoryKeyVault implements KeyVault {
+  final entries = <String, String>{};
+
+  @override
+  Future<String?> read(String key) async => entries[key];
+
+  @override
+  Future<void> write(String key, String value) async => entries[key] = value;
+
+  @override
+  Future<void> delete(String key) async => entries.remove(key);
 }

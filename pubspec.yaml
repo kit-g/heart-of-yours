@@ -40,6 +40,9 @@ dependencies:
   # 23.x is a pre-release, and its Android side needs compileSdk 37: it
   # failed v1.12.0's Play builds. Stay on the stable major.
   flutter_local_notifications: ^23.0.0-dev.5
+  # a device's encryption keys (#555): the Keychain and the Keystore, on this
+  # device only and out of backups
+  flutter_secure_storage: ^11.2.0
   flutter_svg: ^2.3.2
   flutter_web_plugins: { sdk: flutter }
   go_router: ^18.1.3

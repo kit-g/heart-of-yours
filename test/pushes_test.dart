@@ -66,7 +66,12 @@ void main() {
     when(api.setPushSetting(any, any, connectionId: anyNamed('connectionId'))).thenAnswer((_) async {});
   });
 
-  Future<void> pump(WidgetTester tester, Map<String, Object> prefs, {bool anonymous = false}) async {
+  Future<void> pump(
+    WidgetTester tester,
+    Map<String, Object> prefs, {
+    bool anonymous = false,
+    KeyVault? keyVault,
+  }) async {
     // swept wide, as the a11y harness does: under the test font Settings'
     // pickers overflow a phone's width
     tester.view.physicalSize = const Size(1200, 2400);
@@ -84,6 +89,7 @@ void main() {
         signedIn: true,
       ),
       pushClient: client,
+      keyVault: keyVault,
       settle: false,
     );
     await tester.pumpTimes();
@@ -176,6 +182,18 @@ void main() {
 
     verify(api.getProgram('p1')).called(1);
     verifyNever(api.getPrograms());
+    expect(client.calls, isNot(contains('show')), reason: 'a silent push shows nothing');
+  });
+
+  testWidgets("a silent push that someone's devices changed reads that person's devices (#555)", (tester) async {
+    when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => []);
+    await pump(tester, {'feature-yourCoach': 'on'}, keyVault: MemoryKeyVault());
+    clearInteractions(api);
+
+    client.arrivals.add((push: Push.of({'topic': 'security.devices_changed', 'userId': 'dana'})!, title: null));
+    await tester.pumpTimes();
+
+    verify(api.getCryptoDevices(userId: 'dana')).called(1);
     expect(client.calls, isNot(contains('show')), reason: 'a silent push shows nothing');
   });
 

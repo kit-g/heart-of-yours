@@ -138,6 +138,13 @@ ticket doesn't say:
   opens the app's own page only while pushes run, and the system's otherwise,
   as it always did.
 
+- Device keys for end-to-end encryption (#555) follow the push client's rule
+  exactly: an account and a coaching switch on, no switch or ask of their own.
+  Until then no key is made and nothing reaches `/keys`. Turning the switches
+  off stops them and keeps the keys on the device, inert, so turning back on is
+  the same device; it never removes the device from the server. The keys live
+  in the Keychain or the Keystore, this device only and out of every backup.
+
 ### Default on
 
 Programs (`Feature.programs`, #340) was the first feature **on until the
