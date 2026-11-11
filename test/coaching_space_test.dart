@@ -376,10 +376,19 @@ void main() {
       expect(find.text('No clients yet'), findsOneWidget);
 
       clients([sam]);
-      tester.binding.handleAppLifecycleStateChanged(.inactive);
-      tester.binding.handleAppLifecycleStateChanged(.resumed);
-      await tester.pumpTimes();
+      void comeBack() {
+        tester.binding.handleAppLifecycleStateChanged(.inactive);
+        tester.binding.handleAppLifecycleStateChanged(.resumed);
+      }
 
+      // a quick switch away and back reads nothing
+      comeBack();
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.coachingClient('c-sam')), findsNothing);
+
+      await tester.pump(const Duration(minutes: 1));
+      comeBack();
+      await tester.pumpTimes();
       expect(find.byKey(AppKeys.coachingClient('c-sam')), findsOneWidget);
     });
 
