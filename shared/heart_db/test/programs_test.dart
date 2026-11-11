@@ -77,6 +77,27 @@ void main() {
       });
     });
 
+    test("a coach's copy keeps who sent it and since when it waits, and starting it clears the wait (#557)", () async {
+      final sent = Program.fromJson({
+        ...program().toMap(),
+        'coachId': 'coach-muffin',
+        'coachName': 'Muffin',
+        'waitingSince': '2026-11-10T12:00:00.000Z',
+      });
+
+      await local.storeProgram(sent, userId);
+      final [stored] = await local.getPrograms(userId);
+
+      expect(stored.coachId, 'coach-muffin');
+      expect(stored.coachName, 'Muffin');
+      expect(stored.waitingSince, DateTime.utc(2026, 11, 10, 12));
+
+      await local.storeProgram(Program.fromJson({...stored.toMap()}..remove('waitingSince')), userId);
+      final [started] = await local.getPrograms(userId);
+      expect(started.waitingSince, isNull);
+      expect(started.coachName, 'Muffin');
+    });
+
     test('sessions keep the stored order, lose a deleted template and gain one filed elsewhere', () async {
       await local.storeTemplates([
         session('t1', order: 0),
