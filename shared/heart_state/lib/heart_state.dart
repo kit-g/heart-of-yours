@@ -9,6 +9,7 @@ export 'src/analytics.dart';
 export 'src/api_tokens.dart';
 export 'src/coach_library.dart';
 export 'src/coaching.dart';
+export 'src/device_keys.dart';
 export 'src/auth.dart';
 export 'src/backfill.dart';
 export 'src/charts.dart';

@@ -179,6 +179,20 @@ class _NoPushService implements RemotePushService {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
+class _DeviceKeys extends DeviceKeys {
+  int calls = 0;
+
+  new() : super(service: _NoKeyService(), vault: null);
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoKeyService implements RemoteKeyService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
 class _Library extends CoachLibrary {
   int calls = 0;
 
@@ -338,6 +352,7 @@ void main() {
     late _Programs programs;
     late _Roster roster;
     late _Pushes pushes;
+    late _DeviceKeys keys;
     late _Library library;
     late _Timers timers;
     late _Upsync upsync;
@@ -361,6 +376,7 @@ void main() {
       programs = _Programs();
       roster = _Roster();
       pushes = _Pushes();
+      keys = _DeviceKeys();
       library = _Library();
       timers = _Timers();
       upsync = _Upsync();
@@ -385,6 +401,7 @@ void main() {
             ChangeNotifierProvider<Programs>.value(value: programs),
             ChangeNotifierProvider<Roster>.value(value: roster),
             ChangeNotifierProvider<Pushes>.value(value: pushes),
+            ChangeNotifierProvider<DeviceKeys>.value(value: keys),
             ChangeNotifierProvider<CoachLibrary>.value(value: library),
             ChangeNotifierProvider<Timers>.value(value: timers),
             ChangeNotifierProvider<Upsync>.value(value: upsync),
@@ -417,6 +434,7 @@ void main() {
         programs.calls,
         roster.calls,
         pushes.calls,
+        keys.calls,
         library.calls,
         timers.calls,
         upsync.calls,
@@ -458,6 +476,7 @@ void main() {
     late _Programs programs;
     late _Roster roster;
     late _Pushes pushes;
+    late _DeviceKeys keys;
     late _Library library;
     late _Timers timers;
     late _Upsync upsync;
@@ -489,6 +508,7 @@ void main() {
       programs = _Programs();
       roster = _Roster();
       pushes = _Pushes();
+      keys = _DeviceKeys();
       library = _Library();
       timers = _Timers();
       upsync = _Upsync();
@@ -524,6 +544,7 @@ void main() {
             ChangeNotifierProvider<Programs>.value(value: programs),
             ChangeNotifierProvider<Roster>.value(value: roster),
             ChangeNotifierProvider<Pushes>.value(value: pushes),
+            ChangeNotifierProvider<DeviceKeys>.value(value: keys),
             ChangeNotifierProvider<CoachLibrary>.value(value: library),
             ChangeNotifierProvider<Timers>.value(value: timers),
             ChangeNotifierProvider<Upsync>.value(value: upsync),
@@ -557,6 +578,7 @@ void main() {
         programs.calls,
         roster.calls,
         pushes.calls,
+        keys.calls,
         library.calls,
         timers.calls,
         upsync.calls,
@@ -641,7 +663,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the twenty known notifiers', () {
+    test('the fan-out list is the twenty-one known notifiers', () {
       final clear = File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync();
       final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
       final fanned = {for (final match in fanOutCall.allMatches(clear)) match.group(1)!};
@@ -655,6 +677,7 @@ void main() {
         'Charts',
         'CoachLibrary',
         'Coaching',
+        'DeviceKeys',
         'Exercises',
         'Goals',
         'Health',

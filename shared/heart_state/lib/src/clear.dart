@@ -8,6 +8,7 @@ import 'backfill.dart';
 import 'charts.dart';
 import 'coach_library.dart';
 import 'coaching.dart';
+import 'device_keys.dart';
 import 'exercises.dart';
 import 'goals.dart';
 import 'health.dart';
@@ -61,6 +62,7 @@ void clearUserState(BuildContext context) {
   Charts.of(context).onSignOut();
   CoachLibrary.of(context).onSignOut();
   Coaching.of(context).onSignOut();
+  DeviceKeys.of(context).onSignOut();
   Exercises.of(context).onSignOut();
   Goals.of(context).onSignOut();
   Health.of(context).onSignOut();
