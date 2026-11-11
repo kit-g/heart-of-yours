@@ -22,6 +22,7 @@ import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/anomalies.dart';
 import 'package:heart/core/utils/api_tokens.dart';
 import 'package:heart/core/utils/coaching.dart';
+import 'package:heart/core/utils/library.dart';
 import 'package:heart/core/utils/roster.dart';
 import 'package:heart/core/utils/backfill.dart';
 import 'package:heart/core/utils/exercises.dart';
@@ -317,6 +318,17 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Roster>(
           create: (context) => Roster(
             service: RemoteRoster(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // A coach's library (#557): server-only, read when the Programs tab
+        // of the Coaching space opens. A body names exercises by id, which
+        // the coach's own catalog turns back into exercises.
+        ChangeNotifierProvider<CoachLibrary>(
+          create: (context) => CoachLibrary(
+            service: RemoteCoachLibrary(api),
+            exerciseOf: (id) => Exercises.of(context).lookup(id),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),

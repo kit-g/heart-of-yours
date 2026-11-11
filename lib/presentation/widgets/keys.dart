@@ -211,6 +211,9 @@ abstract final class AppKeys {
 
   /// "From a folder" on the Workout tab's Programs header (#348).
   static const programsFromFolder = Key('Programs.fromFolder');
+  static const programFormName = Key('Programs.form.name');
+  static const programFormNote = Key('Programs.form.note');
+  static const programFormSave = Key('Programs.form.save');
 
   /// One program's band on the Workout tab (#347), and its Start button.
   static Key programBand(String? programId) => Key('Programs.band.$programId');
@@ -340,6 +343,28 @@ abstract final class AppKeys {
   static Key coachingClient(String connectionId) => Key('Coaching.client.$connectionId');
 
   static Key coachingMarkReviewed(String connectionId) => Key('Coaching.reviewed.$connectionId');
+
+  /// A coach's library (#557): a new program, each program and session, and
+  /// what a program's page does.
+  static const coachingNewProgram = Key('Coaching.newProgram');
+  static const coachingNewProgramEmpty = Key('Coaching.newProgram.empty');
+  static const coachingAddSession = Key('Coaching.addSession');
+  static const coachingSendProgram = Key('Coaching.sendProgram');
+  static const coachingSendConfirm = Key('Coaching.sendProgram.confirm');
+  static const coachingProgramMenu = Key('Coaching.programMenu');
+  static const coachingDeleteProgram = Key('Coaching.deleteProgram');
+  static const coachingDeleteConfirm = Key('Coaching.deleteProgram.confirm');
+  static const coachingUnsavedRetry = Key('Coaching.unsaved.retry');
+
+  static Key coachingLibraryProgram(String id) => Key('Coaching.library.$id');
+
+  static Key coachingLibrarySession(String id) => Key('Coaching.library.session.$id');
+
+  static Key coachingRemoveSession(String id) => Key('Coaching.library.removeSession.$id');
+
+  static Key coachingSendTo(String connectionId) => Key('Coaching.sendTo.$connectionId');
+
+  static Key coachingHolder(String connectionId) => Key('Coaching.holder.$connectionId');
 
   /// The page an invitation link opens (#553), and its answers.
   static const invitationPage = Key('Invitation.page');

@@ -13,6 +13,29 @@ extension on BuildContext {
   /// screen (`CoachingFrame`), so the app opens there next.
   void goToCoaching() => goNamed(_coachingClientsName);
 
+  /// A program of the coach's library (#557).
+  void goToCoachingProgram(String programId) {
+    return goNamed(_coachingProgramName, pathParameters: {'programId': programId});
+  }
+
+  void goToNewCoachingProgram() => goNamed(_coachingNewProgramName);
+
+  void goToCoachingPrograms() => goNamed(_coachingProgramsName);
+
+  void pushCoachingProgramEdit(String programId) {
+    pushNamed(_coachingProgramEditName, pathParameters: {'programId': programId});
+  }
+
+  /// The template editor on the session the library holds: pushed, so saving
+  /// or leaving it comes back to the program.
+  void pushCoachingProgramSession(String programId, {required bool isNew}) {
+    pushNamed(
+      _coachingProgramSessionName,
+      pathParameters: {'programId': programId},
+      queryParameters: {'new': '$isNew'},
+    );
+  }
+
   /// Out of the Coaching space, back to the user's own training: Profile,
   /// unless [to] names another of its routes. Cleared before going, since
   /// Profile's redirect reads it.

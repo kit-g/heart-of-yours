@@ -17,23 +17,6 @@ class CoachMessagesPage extends StatelessWidget {
   }
 }
 
-/// The programs a coach writes for clients, apart from their own (#557).
-class CoachProgramsPage extends StatelessWidget {
-  final VoidCallback onYourTraining;
-
-  const new({super.key, required this.onYourTraining});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = L.of(context);
-    return _CoachingPage(
-      title: l.coachingPrograms,
-      onYourTraining: onYourTraining,
-      child: _Empty(icon: Icons.event_repeat_rounded, title: l.coachingNoPrograms, body: l.coachingNoProgramsBody),
-    );
-  }
-}
-
 /// The coach as their clients see them: the name and photo they use in Heart.
 class CoachMePage extends StatelessWidget {
   final VoidCallback onYourTraining;

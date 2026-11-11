@@ -327,12 +327,11 @@ class CoachLibrary with ChangeNotifier, TemplateDrafting implements SignOutState
     return save(program.copyWith(sessions: [...program.sessions.where((each) => each.id != session.id)]));
   }
 
-  /// Moves the session at [from] to [to], [ReorderableListView]'s way: [to]
-  /// counts the session being moved.
+  /// Moves the session at [from] to [to], its place once it has moved.
   Future<bool> moveSession(CoachLibraryProgram program, int from, int to) {
     final sessions = [...program.sessions];
     final moved = sessions.removeAt(from);
-    sessions.insert(to > from ? to - 1 : to, moved);
+    sessions.insert(to, moved);
     return save(program.copyWith(sessions: sessions));
   }
 
