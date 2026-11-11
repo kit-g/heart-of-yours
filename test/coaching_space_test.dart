@@ -369,6 +369,20 @@ void main() {
       );
     });
 
+    testWidgets('someone who accepts while the coach is away is there when the app comes back', (tester) async {
+      account(coach: true);
+      clients([]);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      expect(find.text('No clients yet'), findsOneWidget);
+
+      clients([sam]);
+      tester.binding.handleAppLifecycleStateChanged(.inactive);
+      tester.binding.handleAppLifecycleStateChanged(.resumed);
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingClient('c-sam')), findsOneWidget);
+    });
+
     testWidgets('a reason filters the roster, and a word this build lacks still counts', (tester) async {
       account(coach: true);
       clients([
