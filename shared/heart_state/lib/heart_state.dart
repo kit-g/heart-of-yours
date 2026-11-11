@@ -36,6 +36,7 @@ export 'src/programs.dart';
 export 'src/recaps.dart';
 export 'src/remote.dart';
 export 'src/rest_defaults.dart';
+export 'src/roster.dart';
 export 'src/stats.dart';
 export 'src/set_stopwatch.dart';
 export 'src/skips.dart';
