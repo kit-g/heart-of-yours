@@ -205,14 +205,16 @@ final class WatchUITests: XCTestCase {
         XCTAssertTrue(editor.waitForExistence(timeout: 5))
     }
 
-    /// In the value editor, takes last time's value with one tap (#586).
-    func testUseLastTime() {
-        let last = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Last time'")).firstMatch
-        XCTAssertTrue(last.waitForExistence(timeout: 5))
+    /// In the value editor, takes the first earlier value on offer — last
+    /// session's, or the set before's — with one tap (#586).
+    func testUseEarlier() {
+        let offer = app.buttons.matching(NSPredicate(format: "label CONTAINS ': '")).firstMatch
+        XCTAssertTrue(offer.waitForExistence(timeout: 5))
+        let label = offer.label
 
-        last.tap()
+        offer.tap()
 
-        XCTAssertFalse(last.exists, "matched, the line is only said, not offered")
+        XCTAssertFalse(app.buttons[label].exists, "matched, the line is only said, not offered")
     }
 
     /// Closes whatever sheet is open with the system's close button, the

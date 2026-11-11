@@ -406,12 +406,12 @@ struct SetEditor: View {
                 case .weight:
                     ValueEditor(
                         value: $weight, step: exercise.step, unit: exercise.unit ?? "", accent: accent,
-                        last: row.lastWeight, line: row.previous
+                        offers: [row.last, row.before].compactMap { $0?.offer(.weight) }
                     )
                 case .reps:
                     ValueEditor(
                         value: $reps, step: 1, unit: controls.reps, accent: accent,
-                        last: row.lastReps.map(Double.init), line: row.previous
+                        offers: [row.last, row.before].compactMap { $0?.offer(.reps) }
                     )
                 }
             }
@@ -585,8 +585,8 @@ struct SetControls: View {
                 }
             }
 
-            if let previous = set.previous {
-                Text(previous)
+            if let last = set.last {
+                Text(last.line)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -640,12 +640,12 @@ struct SetControls: View {
             case .weight:
                 ValueEditor(
                     value: $weight, step: set.step, unit: set.unit ?? "", accent: accent,
-                    last: set.lastWeight, line: set.previous
+                    offers: [set.last, set.before].compactMap { $0?.offer(.weight) }
                 )
             case .reps:
                 ValueEditor(
                     value: $reps, step: 1, unit: controls.reps, accent: accent,
-                    last: set.lastReps.map(Double.init), line: set.previous
+                    offers: [set.last, set.before].compactMap { $0?.offer(.reps) }
                 )
             }
         }
@@ -793,11 +793,10 @@ struct ValueEditor: View {
     let step: Double
     let unit: String
     let accent: Color
-    /// This value last time, which a tap on [line] sets (#586): a range that
-    /// starts the count at its floor is often far from where it ends.
-    var last: Double? = nil
-    /// Last time, as the set page shows it: "Last time: 60 kg × 14".
-    var line: String? = nil
+    /// Values this one held earlier, which a tap sets (#586): last session's,
+    /// and the set before's — a range that starts the count at its floor is
+    /// often far from where it ends.
+    var offers: [Offer] = []
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -836,16 +835,16 @@ struct ValueEditor: View {
             .buttonStyle(.bordered)
             .tint(accent)
 
-            if let line {
-                // one tap to last time's value; already there, it is only said
-                switch last {
-                case let last? where last != value:
-                    Button { value = last } label: {
-                        LastTimeLine(line: line, accent: accent, offered: true)
+            // one tap to an earlier value; already there, it is only said
+            ForEach(offers, id: \.line) { offer in
+                switch offer.value {
+                case let earlier? where earlier != value:
+                    Button { value = earlier } label: {
+                        LastTimeLine(line: offer.line, accent: accent, offered: true)
                     }
                     .buttonStyle(.plain)
                 default:
-                    LastTimeLine(line: line, accent: accent, offered: false)
+                    LastTimeLine(line: offer.line, accent: accent, offered: false)
                 }
             }
         }
@@ -857,7 +856,26 @@ struct ValueEditor: View {
     }
 }
 
-/// Last time's line under a value (#586). Offered, a quiet outline says it
+extension ValueEditor {
+    /// An earlier value on offer: its line, and the value a tap sets — nil
+    /// where that set had none, and the line is only said.
+    struct Offer {
+        let line: String
+        let value: Double?
+    }
+}
+
+extension WatchState.Workout.Earlier {
+    /// This as the editor of one of its values offers it.
+    func offer(_ field: ValueField) -> ValueEditor.Offer {
+        switch field {
+        case .weight: .init(line: line, value: weight)
+        case .reps: .init(line: line, value: reps.map(Double.init))
+        }
+    }
+}
+
+/// An earlier value's line under a value (#586). Offered, a quiet outline says it
 /// can be tapped — the bare line read as a caption, a filled button pulled the
 /// eye off the number. Said, the same line in the same place without it, so
 /// nothing moves when the value gets there.
@@ -925,7 +943,7 @@ extension WorkoutView {
         accent: .orange,
         set: .init(
             exerciseId: "e", setId: "s2", weight: 62.5, reps: 5, unit: "kg", step: 2.5,
-            previous: "Last time: 60 kg × 5", position: "Set 2 of 3"
+            last: .init(line: "Thu: 60 kg × 5", weight: 60, reps: 5), position: "Set 2 of 3"
         ),
         exercises: [
             .init(id: "e", name: "Bench Press (Barbell)", unit: "kg", step: 2.5, weighted: true, counted: true, sets: [
