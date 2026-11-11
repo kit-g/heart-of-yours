@@ -47,4 +47,7 @@ class RemoteTemplateFiling implements RemoteTemplateFilingService {
   Future<Template> moveTemplate(Template template, {required String? folderId}) {
     return _api.moveTemplate(template, folderId: folderId);
   }
+
+  @override
+  Future<Template> getTemplate(String templateId) => _api.getTemplate(templateId);
 }

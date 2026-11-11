@@ -113,6 +113,9 @@ class RemotePrograms implements RemoteProgramService {
   Future<List<Program>> getPrograms() => _refusedAsBody(_api.getPrograms);
 
   @override
+  Future<Program> getProgram(String programId) => _refusedAsBody(() => _api.getProgram(programId));
+
+  @override
   Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions}) {
     return _refusedAsBody(() => _api.replayProgram(program, sessions: sessions));
   }

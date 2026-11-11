@@ -38,6 +38,26 @@ void main() {
       when(remoteFolders.getFolders(userId: anyNamed('userId'))).thenAnswer((_) async => []);
     });
 
+    group('pull, the sessions of a program a push named (#567)', () {
+      test('reads only those templates, keeps them, and one that fails keeps what was held', () async {
+        templates.userId = 'u1';
+        clearInteractions(filing);
+        when(filing.getTemplate('s1')).thenAnswer((_) async => tmpl(id: 's1', order: 0, name: 'Day 1'));
+        when(filing.getTemplate('s2')).thenThrow({'error': 'not found'});
+        when(local.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
+
+        await templates.pull(['s1', 's2']);
+
+        expect(templates.lookup('s1')?.name, 'Day 1');
+        expect(templates.lookup('s2'), isNull);
+        verify(filing.getTemplate('s1')).called(1);
+        verify(filing.getTemplate('s2')).called(1);
+        verifyNoMoreInteractions(filing);
+        final stored = verify(local.storeTemplates(captureAny, userId: 'u1')).captured.single as Iterable<Template>;
+        expect(stored.map((each) => each.id), ['s1']);
+      });
+    });
+
     group('init', () {
       test('populates samples from local when available, and repaints once they land', () async {
         final sampleLocal = [tmpl(id: 's1', order: 0, name: 'Sample')];
