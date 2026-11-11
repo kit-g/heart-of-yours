@@ -29,6 +29,14 @@ abstract final class Router {
   /// Where a coach says they have looked at a client, by the connection's id.
   static String coachClientReviewed(String connectionId) => '$coachClients/$connectionId/reviewed';
 
+  static String clientWorkouts(String studentId) => '$accounts/$studentId/workouts';
+
+  static String clientSkips(String studentId) => '$accounts/$studentId/skips';
+
+  static String clientWorkoutPlan(String studentId, String workoutId) {
+    return '$accounts/$studentId/workouts/$workoutId/plan';
+  }
+
   static String invitation(String invitationId) => '$invitations/$invitationId';
 
   static String invitationResend(String invitationId) => '${invitation(invitationId)}/resend';
