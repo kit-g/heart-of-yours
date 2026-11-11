@@ -86,9 +86,14 @@ class _ClientViewState extends State<_ClientView> {
   Future<void> _load() async {
     if (!mounted) return;
     final roster = Roster.of(context);
-    // opened from a link, before Clients ever read the roster
-    if (roster.client(widget.connectionId) == null) await roster.load();
-    if (roster.client(widget.connectionId) case final ClientSummary client) await roster.loadRecord(client.studentId);
+    // the row they were opened from may be stale, and opened from a link
+    // the roster may never have been read
+    if (roster.client(widget.connectionId) case final ClientSummary client) {
+      await (roster.load(), roster.loadRecord(client.studentId)).wait;
+    } else {
+      await roster.load();
+      if (roster.client(widget.connectionId) case final ClientSummary client) await roster.loadRecord(client.studentId);
+    }
   }
 
   @override
@@ -126,7 +131,8 @@ class _ClientViewState extends State<_ClientView> {
           padding: const .only(bottom: 24),
           children: [
             ?widget.leading,
-            _ClientHeader(client: client),
+            // a page names them in its title
+            _ClientHeader(client: client, named: widget.leading != null),
             Padding(
               padding: const .fromLTRB(16, 16, 16, 4),
               child: Text(l.coachingClientWorkouts, style: Theme.of(context).textTheme.titleMedium),
@@ -185,7 +191,10 @@ class _ClientViewState extends State<_ClientView> {
 class _ClientHeader extends StatelessWidget {
   final ClientSummary client;
 
-  const new({required this.client});
+  /// Whether to say who they are, where nothing above does.
+  final bool named;
+
+  const new({required this.client, this.named = false});
 
   @override
   Widget build(BuildContext context) {
@@ -204,6 +213,7 @@ class _ClientHeader extends StatelessWidget {
               crossAxisAlignment: .start,
               spacing: 6,
               children: [
+                if (named) Text(_clientName(l, client), style: textTheme.titleLarge),
                 Text(_programLine(l, client), style: textTheme.bodyLarge),
                 _WeekDots(client: client),
                 if (reasons.isNotEmpty)
