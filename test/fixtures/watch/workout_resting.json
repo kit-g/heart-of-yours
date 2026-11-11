@@ -14,7 +14,12 @@
   "reps": 5,
   "unit": "kg",
   "step": 2.5,
-  "previous": "Last time: 60 kg × 5",
+  "previous": "Thu: 60 kg × 5",
+  "lastWeight": 60.0,
+  "lastReps": 5,
+  "before": "Set 1: 60 kg × 6",
+  "beforeWeight": 60.0,
+  "beforeReps": 6,
   "position": "Set 2 of 2",
   "exercises": [
     {
@@ -43,7 +48,9 @@
           "reps": 5,
           "done": true,
           "position": "Set 1 of 2",
-          "previous": "Last time: 57.5 kg × 5",
+          "previous": "Thu: 57.5 kg × 5",
+          "lastWeight": 57.5,
+          "lastReps": 5,
           "next": "Next: 62.5 kg × 5"
         },
         {
@@ -53,7 +60,12 @@
           "reps": 5,
           "done": false,
           "position": "Set 2 of 2",
-          "previous": "Last time: 60 kg × 5",
+          "previous": "Thu: 60 kg × 5",
+          "lastWeight": 60.0,
+          "lastReps": 5,
+          "before": "Set 1: 60 kg × 6",
+          "beforeWeight": 60.0,
+          "beforeReps": 6,
           "next": "Next: Pull-up"
         }
       ]
@@ -71,7 +83,8 @@
           "reps": 8,
           "done": false,
           "position": "Set 1 of 1",
-          "previous": "Last time: 7 Reps",
+          "previous": "Nov 6: 7 Reps",
+          "lastReps": 7,
           "next": "All done"
         }
       ]

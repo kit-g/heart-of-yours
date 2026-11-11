@@ -181,7 +181,7 @@ private fun UpNextPage(workout: PhoneState.Workout, reachable: Boolean, waiting:
                             )
                         }
                     }
-                    set.previous?.let { previous -> item { Muted(previous, line(spec)) } }
+                    set.last?.let { last -> item { Muted(last.line, line(spec)) } }
                 }
             }
             // the phone away, or back and still being handed what it missed
@@ -404,7 +404,7 @@ private fun WorkoutPreview() {
                 next = "Next: 60 kg × 5",
                 rest = PhoneState.Workout.Rest(now - 30_000, now + 60_000, "Rest", "Rest's up"),
                 accent = 0xFFD4F547.toInt(),
-                set = PhoneState.Workout.UpNext("e", "s", 60.0, 5, "kg", 2.5, "Last time: 57.5 kg × 5", "Set 2 of 3"),
+                set = PhoneState.Workout.UpNext("e", "s", 60.0, 5, "kg", 2.5, PhoneState.Workout.Earlier("Thu: 57.5 kg × 5", 57.5, 5), "Set 2 of 3"),
                 exercises = emptyList(),
                 controls = null,
                 activity = null,

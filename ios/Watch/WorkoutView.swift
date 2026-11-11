@@ -54,6 +54,11 @@ struct UpNextPage: View {
     /// lowered wrist takes away mid-hold.
     @State private var hold: SetControls.Hold?
 
+    /// How tall the bottom toolbar's button is: watchOS floats it over the
+    /// scroll view without making room, and the foot — pause, the clock, the
+    /// vitals — sat under Done with no way to scroll it out.
+    @State private var bar: CGFloat = 0
+
     var body: some View {
         // for the bottom toolbar, where the page's one action sits (#492)
         NavigationStack {
@@ -88,7 +93,7 @@ struct UpNextPage: View {
                             SetControls(
                                 workoutId: workout.workoutId, set: set, controls: controls, accent: workout.accent,
                                 timed: workout.exercises.first { $0.id == set.exerciseId }?.timed ?? false,
-                                hold: $hold
+                                hold: $hold, bar: $bar
                             )
                         }
                         // the phone away, or back and still being handed what it missed
@@ -119,6 +124,7 @@ struct UpNextPage: View {
                 .scenePadding(.horizontal)
                 .opacity(dimmed ? 0.6 : 1)
             }
+            .contentMargins(.bottom, bar, for: .scrollContent)
             // which set, beside the clock: the line the page had spent on it
             // goes to the values and Done (#492)
             .navigationTitle(workout.set?.position ?? "")
@@ -128,6 +134,7 @@ struct UpNextPage: View {
                 if workout.set == nil, let controls = workout.controls, !dimmed {
                     ToolbarItem(placement: .bottomBar) {
                         FinishControl(workoutId: workout.workoutId, controls: controls, accent: workout.accent)
+                            .measuresBar($bar)
                     }
                 }
             }
@@ -397,9 +404,15 @@ struct SetEditor: View {
             .navigationDestination(item: $field) { field in
                 switch field {
                 case .weight:
-                    ValueEditor(value: $weight, step: exercise.step, unit: exercise.unit ?? "", accent: accent)
+                    ValueEditor(
+                        value: $weight, step: exercise.step, unit: exercise.unit ?? "", accent: accent,
+                        offers: [row.last, row.before].compactMap { $0?.offer(.weight) }
+                    )
                 case .reps:
-                    ValueEditor(value: $reps, step: 1, unit: controls.reps, accent: accent)
+                    ValueEditor(
+                        value: $reps, step: 1, unit: controls.reps, accent: accent,
+                        offers: [row.last, row.before].compactMap { $0?.offer(.reps) }
+                    )
                 }
             }
         }
@@ -539,6 +552,8 @@ struct SetControls: View {
     /// Whether this set offers the stopwatch (#484).
     var timed = false
     @Binding var hold: Hold?
+    /// The height of the button this puts in the bottom toolbar.
+    @Binding var bar: CGFloat
     @EnvironmentObject private var phone: PhoneSession
 
     /// A stopwatch running on a set.
@@ -570,8 +585,8 @@ struct SetControls: View {
                 }
             }
 
-            if let previous = set.previous {
-                Text(previous)
+            if let last = set.last {
+                Text(last.line)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -596,20 +611,23 @@ struct SetControls: View {
         // logging the set is what the page is for (#492)
         .toolbar {
             ToolbarItem(placement: .bottomBar) {
-                switch (holding, timed) {
-                case let (start?, _):
-                    primary(controls.done) {
-                        complete(seconds: max(1, Int(Date().timeIntervalSince(start))))
+                Group {
+                    switch (holding, timed) {
+                    case let (start?, _):
+                        primary(controls.done) {
+                            complete(seconds: max(1, Int(Date().timeIntervalSince(start))))
+                        }
+                    case (nil, true):
+                        primary(controls.start) {
+                            hold = Hold(setId: set.setId, start: Date())
+                        }
+                    case (nil, false):
+                        primary(controls.done) { complete(seconds: nil) }
+                            // a counted set needs a count; the phone would refuse it anyway
+                            .disabled(set.reps != nil && reps < 1)
                     }
-                case (nil, true):
-                    primary(controls.start) {
-                        hold = Hold(setId: set.setId, start: Date())
-                    }
-                case (nil, false):
-                    primary(controls.done) { complete(seconds: nil) }
-                        // a counted set needs a count; the phone would refuse it anyway
-                        .disabled(set.reps != nil && reps < 1)
                 }
+                .measuresBar($bar)
             }
         }
         // a new set — or the same set sent again with new values — starts over
@@ -620,9 +638,15 @@ struct SetControls: View {
         .sheet(item: $editing) { field in
             switch field {
             case .weight:
-                ValueEditor(value: $weight, step: set.step, unit: set.unit ?? "", accent: accent)
+                ValueEditor(
+                    value: $weight, step: set.step, unit: set.unit ?? "", accent: accent,
+                    offers: [set.last, set.before].compactMap { $0?.offer(.weight) }
+                )
             case .reps:
-                ValueEditor(value: $reps, step: 1, unit: controls.reps, accent: accent)
+                ValueEditor(
+                    value: $reps, step: 1, unit: controls.reps, accent: accent,
+                    offers: [set.last, set.before].compactMap { $0?.offer(.reps) }
+                )
             }
         }
     }
@@ -769,6 +793,10 @@ struct ValueEditor: View {
     let step: Double
     let unit: String
     let accent: Color
+    /// Values this one held earlier, which a tap sets (#586): last session's,
+    /// and the set before's — a range that starts the count at its floor is
+    /// often far from where it ends.
+    var offers: [Offer] = []
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -806,12 +834,82 @@ struct ValueEditor: View {
             }
             .buttonStyle(.bordered)
             .tint(accent)
+
+            // one tap to an earlier value; already there, it is only said
+            ForEach(offers, id: \.line) { offer in
+                switch offer.value {
+                case let earlier? where earlier != value:
+                    Button { value = earlier } label: {
+                        LastTimeLine(line: offer.line, accent: accent, offered: true)
+                    }
+                    .buttonStyle(.plain)
+                default:
+                    LastTimeLine(line: offer.line, accent: accent, offered: false)
+                }
+            }
         }
         .task { focused = true }
     }
 
     private func nudge(_ steps: Double) {
         value = max(0, value + steps * step)
+    }
+}
+
+extension ValueEditor {
+    /// An earlier value on offer: its line, and the value a tap sets — nil
+    /// where that set had none, and the line is only said.
+    struct Offer {
+        let line: String
+        let value: Double?
+    }
+}
+
+extension WatchState.Workout.Earlier {
+    /// This as the editor of one of its values offers it.
+    func offer(_ field: ValueField) -> ValueEditor.Offer {
+        switch field {
+        case .weight: .init(line: line, value: weight)
+        case .reps: .init(line: line, value: reps.map(Double.init))
+        }
+    }
+}
+
+/// An earlier value's line under a value (#586). Offered, a quiet outline says it
+/// can be tapped — the bare line read as a caption, a filled button pulled the
+/// eye off the number. Said, the same line in the same place without it, so
+/// nothing moves when the value gets there.
+private struct LastTimeLine: View {
+    let line: String
+    let accent: Color
+    let offered: Bool
+
+    var body: some View {
+        let (colour, outline): (Color, Double) = switch offered {
+        case true: (accent, 0.6)
+        case false: (.secondary, 0)
+        }
+        Text(line)
+            .font(.footnote)
+            .multilineTextAlignment(.center)
+            .foregroundStyle(colour)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .overlay {
+                Capsule()
+                    .strokeBorder(accent.opacity(outline), lineWidth: 1)
+            }
+            .frame(minHeight: 44)
+            .contentShape(.rect)
+    }
+}
+
+extension View {
+    /// Writes this view's height to [height], and zero once it is gone: for a
+    /// page to keep its foot clear of the bottom toolbar this sits in.
+    func measuresBar(_ height: Binding<CGFloat>) -> some View {
+        onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height.wrappedValue = $0 }
+            .onDisappear { height.wrappedValue = 0 }
     }
 }
 
@@ -845,7 +943,7 @@ extension WorkoutView {
         accent: .orange,
         set: .init(
             exerciseId: "e", setId: "s2", weight: 62.5, reps: 5, unit: "kg", step: 2.5,
-            previous: "Last time: 60 kg × 5", position: "Set 2 of 3"
+            last: .init(line: "Thu: 60 kg × 5", weight: 60, reps: 5), position: "Set 2 of 3"
         ),
         exercises: [
             .init(id: "e", name: "Bench Press (Barbell)", unit: "kg", step: 2.5, weighted: true, counted: true, sets: [

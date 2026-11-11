@@ -8,6 +8,7 @@ import 'package:heart/presentation/navigation/watch.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -467,7 +468,7 @@ void main() {
         when(service.getPreviousSets('u1')).thenAnswer(
           (_) async => {
             'id-bench': [
-              {'set_type': 'normal', 'weight': 70, 'reps': 8},
+              {'set_type': 'normal', 'weight': 70, 'reps': 8, 'workout_start': '2026-01-05T18:00:00Z'},
             ],
           },
         );
@@ -475,7 +476,7 @@ void main() {
           service: service,
           readInTemplate: (user, template, {before}) async => {
             'id-bench': [
-              {'set_type': 'normal', 'weight': 105, 'reps': 5},
+              {'set_type': 'normal', 'weight': 105, 'reps': 5, 'workout_start': '2026-01-07T18:00:00Z'},
             ],
           },
         )..userId = 'u1';
@@ -491,12 +492,12 @@ void main() {
         await tester.pumpAndSettle();
 
         final set = (link.sent.last as WatchWorkout).exercises.single.sets.single;
-        expect(set.previous, contains('105'), reason: "the Heavy template's last run, not last time anywhere");
+        expect(set.last?.line, contains('105'), reason: "the Heavy template's last run, not last time anywhere");
 
         preferences.setFeature(.previousInTemplate, on: false);
         await tester.pumpAndSettle();
         final anywhere = (link.sent.last as WatchWorkout).exercises.single.sets.single;
-        expect(anywhere.previous, contains('70'), reason: 'off, last time anywhere, as the sheet reads it');
+        expect(anywhere.last?.line, contains('70'), reason: 'off, last time anywhere, as the sheet reads it');
       },
     );
 
@@ -512,7 +513,7 @@ void main() {
       when(service.getPreviousSets('u1')).thenAnswer(
         (_) async => {
           'id-bridge': [
-            {'set_type': 'normal', 'weight': null, 'reps': 12},
+            {'set_type': 'normal', 'weight': null, 'reps': 12, 'workout_start': '2026-01-05T18:00:00Z'},
           ],
         },
       );
@@ -527,7 +528,76 @@ void main() {
       await tester.pumpAndSettle();
 
       final set = (link.sent.last as WatchWorkout).exercises.single.sets.single;
-      expect(set.previous, contains('12'));
+      expect(set.last?.line, contains('12'));
+    });
+
+    group('what the editor offers (#586)', () {
+      Future<List<WatchSetRow>> sets(
+        WidgetTester tester, {
+        required String start,
+        required List<ExerciseSet> done,
+      }) async {
+        final service = MockPreviousExerciseService();
+        when(service.getPreviousSets('u1')).thenAnswer(
+          (_) async => {
+            'id-bench': [
+              for (final reps in [14, 12, 11])
+                {'set_type': 'normal', 'weight': 60, 'reps': reps, 'workout_start': start},
+            ],
+          },
+        );
+        previous = PreviousExercises(service: service)..userId = 'u1';
+        await previous.init();
+
+        preferences.setFeature(.watchApp, on: true);
+        final block = WorkoutExercise(starter: done.first);
+        for (final set in done.skip(1)) {
+          block.add(set);
+        }
+        workout = Workout.fromExercises([block], name: 'Push');
+        when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+        await pump(tester);
+        await workouts.init();
+        await tester.pumpAndSettle();
+        return (link.sent.last as WatchWorkout).exercises.single.sets;
+      }
+
+      testWidgets('last session is labelled by its date before this week', (tester) async {
+        final [first, _] = await sets(
+          tester,
+          start: '2026-01-05T18:00:00Z',
+          done: [ExerciseSet(bench), ExerciseSet(bench)],
+        );
+        expect(first.last, (line: 'Jan 5: 60 kg × 14', weight: 60.0, reps: 14));
+      });
+
+      testWidgets('and by its weekday within it', (tester) async {
+        final now = DateTime.now();
+        final [first, _] = await sets(
+          tester,
+          start: now.toUtc().toIso8601String(),
+          done: [ExerciseSet(bench), ExerciseSet(bench)],
+        );
+        expect(first.last?.line, startsWith(DateFormat.E('en').format(now)));
+      });
+
+      testWidgets('the set before is offered when it differs from last session, and only then', (tester) async {
+        final [_, second, third] = await sets(
+          tester,
+          start: '2026-01-05T18:00:00Z',
+          done: [
+            ExerciseSet(bench, weight: 60, reps: 10)..isCompleted = true,
+            ExerciseSet(bench, weight: 60, reps: 11)..isCompleted = true,
+            ExerciseSet(bench),
+          ],
+        );
+        expect(second.before, (line: 'Set 1: 60 kg × 10', weight: 60.0, reps: 10));
+        expect(
+          third.before,
+          isNull,
+          reason: "set 2 held what last session's set 3 did, which the watch already offers",
+        );
+      });
     });
 
     group('a hold, timed on the wrist (#484)', () {
