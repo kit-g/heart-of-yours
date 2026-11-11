@@ -54,6 +54,11 @@ struct UpNextPage: View {
     /// lowered wrist takes away mid-hold.
     @State private var hold: SetControls.Hold?
 
+    /// How tall the bottom toolbar's button is: watchOS floats it over the
+    /// scroll view without making room, and the foot — pause, the clock, the
+    /// vitals — sat under Done with no way to scroll it out.
+    @State private var bar: CGFloat = 0
+
     var body: some View {
         // for the bottom toolbar, where the page's one action sits (#492)
         NavigationStack {
@@ -88,7 +93,7 @@ struct UpNextPage: View {
                             SetControls(
                                 workoutId: workout.workoutId, set: set, controls: controls, accent: workout.accent,
                                 timed: workout.exercises.first { $0.id == set.exerciseId }?.timed ?? false,
-                                hold: $hold
+                                hold: $hold, bar: $bar
                             )
                         }
                         // the phone away, or back and still being handed what it missed
@@ -119,6 +124,7 @@ struct UpNextPage: View {
                 .scenePadding(.horizontal)
                 .opacity(dimmed ? 0.6 : 1)
             }
+            .contentMargins(.bottom, bar, for: .scrollContent)
             // which set, beside the clock: the line the page had spent on it
             // goes to the values and Done (#492)
             .navigationTitle(workout.set?.position ?? "")
@@ -128,6 +134,7 @@ struct UpNextPage: View {
                 if workout.set == nil, let controls = workout.controls, !dimmed {
                     ToolbarItem(placement: .bottomBar) {
                         FinishControl(workoutId: workout.workoutId, controls: controls, accent: workout.accent)
+                            .measuresBar($bar)
                     }
                 }
             }
@@ -545,6 +552,8 @@ struct SetControls: View {
     /// Whether this set offers the stopwatch (#484).
     var timed = false
     @Binding var hold: Hold?
+    /// The height of the button this puts in the bottom toolbar.
+    @Binding var bar: CGFloat
     @EnvironmentObject private var phone: PhoneSession
 
     /// A stopwatch running on a set.
@@ -602,20 +611,23 @@ struct SetControls: View {
         // logging the set is what the page is for (#492)
         .toolbar {
             ToolbarItem(placement: .bottomBar) {
-                switch (holding, timed) {
-                case let (start?, _):
-                    primary(controls.done) {
-                        complete(seconds: max(1, Int(Date().timeIntervalSince(start))))
+                Group {
+                    switch (holding, timed) {
+                    case let (start?, _):
+                        primary(controls.done) {
+                            complete(seconds: max(1, Int(Date().timeIntervalSince(start))))
+                        }
+                    case (nil, true):
+                        primary(controls.start) {
+                            hold = Hold(setId: set.setId, start: Date())
+                        }
+                    case (nil, false):
+                        primary(controls.done) { complete(seconds: nil) }
+                            // a counted set needs a count; the phone would refuse it anyway
+                            .disabled(set.reps != nil && reps < 1)
                     }
-                case (nil, true):
-                    primary(controls.start) {
-                        hold = Hold(setId: set.setId, start: Date())
-                    }
-                case (nil, false):
-                    primary(controls.done) { complete(seconds: nil) }
-                        // a counted set needs a count; the phone would refuse it anyway
-                        .disabled(set.reps != nil && reps < 1)
                 }
+                .measuresBar($bar)
             }
         }
         // a new set — or the same set sent again with new values — starts over
@@ -853,6 +865,15 @@ struct ValueEditor: View {
 
     private func nudge(_ steps: Double) {
         value = max(0, value + steps * step)
+    }
+}
+
+extension View {
+    /// Writes this view's height to [height], and zero once it is gone: for a
+    /// page to keep its foot clear of the bottom toolbar this sits in.
+    func measuresBar(_ height: Binding<CGFloat>) -> some View {
+        onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height.wrappedValue = $0 }
+            .onDisappear { height.wrappedValue = 0 }
     }
 }
 
