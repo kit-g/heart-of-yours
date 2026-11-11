@@ -14,6 +14,16 @@ mixin _ProgramRoutes on Requests {
     };
   }
 
+  /// One of the account's programs: what a push names when a coach sent it,
+  /// or the other person changed it (#567).
+  Future<Program> getProgram(String programId) async {
+    final (json, code) = await get(Router.program(programId));
+    return switch ((code, json)) {
+      (200, Map json) => Program.fromJson(json),
+      _ => throw _programError(json),
+    };
+  }
+
   /// Creates [program] with [sessions] as its templates, in one call (heart-api
   /// #214). Safe to repeat on the program's id, like every replayed create:
   /// `created` says whether this call made it. Starting a library program is

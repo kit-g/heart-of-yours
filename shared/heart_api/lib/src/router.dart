@@ -19,6 +19,20 @@ abstract final class Router {
   static const coachClients = 'v1/coach/clients';
   static const coachFeed = 'v1/coach/feed';
   static const libraryPrograms = 'v1/library-programs';
+  static const devices = 'v1/devices';
+  static const pushSettings = 'v1/push/settings';
+
+  /// A push topic's setting. Topics are the server's words, dotted
+  /// (`coaching.message`), and one is held to that shape before it reaches a
+  /// path, as an invitation's token is.
+  static String pushSetting(String topic) {
+    if (!_pushTopic.hasMatch(topic)) {
+      throw ArgumentError.value(topic, 'topic', 'not a push topic');
+    }
+    return '$pushSettings/$topic';
+  }
+
+  static final _pushTopic = RegExp(r'^[a-z0-9_]+(\.[a-z0-9_]+)*$');
 
   static String libraryProgram(String programId) => '$libraryPrograms/$programId';
 

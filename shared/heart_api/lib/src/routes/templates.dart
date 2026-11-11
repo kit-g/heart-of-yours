@@ -17,6 +17,16 @@ mixin _TemplateRoutes on Requests implements ApiTemplateFolderService, RemoteTem
     };
   }
 
+  /// One of the account's templates: a session of a program a push named
+  /// (#567). Thrown whole when the server has none by that id.
+  Future<Template> getTemplate(String templateId) async {
+    final (json, code) = await get(Router.template(templateId));
+    return switch ((code, json)) {
+      (200, Map json) => Template.fromJson(json),
+      _ => throw json,
+    };
+  }
+
   @override
   Future<Template> saveTemplate(Template template) async {
     return (await replayTemplate(template)).row;
