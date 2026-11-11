@@ -17,6 +17,36 @@ void main() {
     api = Api(gateway: 'api.example.com', client: client);
   });
 
+  group("starting a coach's copy (#557)", () {
+    const id = '01a1b7d4-bd28-7e4b-9307-80fbe12ecd6c';
+
+    test('a 204 is started', () async {
+      respond(client: client, method: 'POST', path: Router.programStart(id), statusCode: 204, body: {});
+      await api.startProgram(id);
+      verify(
+        client.post(
+          Uri.https('api.example.com', Router.programStart(id)),
+          headers: anyNamed('headers'),
+          body: anyNamed('body'),
+        ),
+      ).called(1);
+    });
+
+    test("someone else's is a refusal, typed", () async {
+      respond(
+        client: client,
+        method: 'POST',
+        path: Router.programStart(id),
+        statusCode: 404,
+        body: {'error': 'not found', 'code': 'program_not_found'},
+      );
+      expect(
+        () => api.startProgram(id),
+        throwsA(isA<ProgramRefused>().having((e) => e.reason, 'reason', ProgramRefusal.programNotFound)),
+      );
+    });
+  });
+
   group('programs', () {
     const bench = '019a0000-0000-7000-8000-00000000000b';
     final program = Program(

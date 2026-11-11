@@ -72,6 +72,9 @@ abstract final class Router {
     return '$programs/$programId';
   }
 
+  /// Where a student starts a coach's copy that waits for them (#557).
+  static String programStart(String programId) => '${program(programId)}/start';
+
   static String programActions(String programId) {
     return '$programs/$programId/actions';
   }
