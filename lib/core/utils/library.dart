@@ -32,4 +32,9 @@ class RemoteCoachLibrary implements CoachLibraryService {
   Future<List<ProgramDelivery>> sendLibraryProgram(String programId, Iterable<String> connectionIds) {
     return _api.sendLibraryProgram(programId, connectionIds);
   }
+
+  @override
+  Future<List<ProgramDelivery>> updateLibraryCopies(String programId, Iterable<String> connectionIds) {
+    return _api.updateLibraryCopies(programId, connectionIds);
+  }
 }

@@ -6,6 +6,7 @@ import 'api_tokens.dart';
 import 'auth.dart';
 import 'backfill.dart';
 import 'charts.dart';
+import 'client_programs.dart';
 import 'coach_library.dart';
 import 'coaching.dart';
 import 'exercises.dart';
@@ -59,6 +60,7 @@ void clearUserState(BuildContext context) {
   Backfill.of(context).onSignOut();
   Charts.of(context).onSignOut();
   CoachLibrary.of(context).onSignOut();
+  ClientPrograms.of(context).onSignOut();
   Coaching.of(context).onSignOut();
   Exercises.of(context).onSignOut();
   Goals.of(context).onSignOut();

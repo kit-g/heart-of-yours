@@ -74,6 +74,14 @@ class _Server implements CoachLibraryService {
     sent.add((programId, connectionIds.toList()));
     return [for (final id in connectionIds) ProgramDelivery(connectionId: id, delivered: true, programId: 'copy-$id')];
   }
+
+  final updated = <(String, List<String>)>[];
+
+  @override
+  Future<List<ProgramDelivery>> updateLibraryCopies(String programId, Iterable<String> connectionIds) async {
+    updated.add((programId, connectionIds.toList()));
+    return [for (final id in connectionIds) ProgramDelivery(connectionId: id, delivered: true, programId: 'copy-$id')];
+  }
 }
 
 final _squat = Exercise(name: 'Squat', category: .barbell, target: .legs);
