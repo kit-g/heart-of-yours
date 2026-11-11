@@ -475,6 +475,152 @@ void main() {
     });
   });
 
+  group('a client (#559)', () {
+    final sam = ClientSummary(
+      connectionId: 'c-sam',
+      studentId: 'sam',
+      name: 'Sam',
+      status: 'active',
+      programName: 'Strength block',
+      programWeek: 2,
+      programWeeks: 6,
+      reasons: ['lighter'],
+    );
+    final dayA = Workout.fromJson({
+      'id': 'w1',
+      'name': 'Day A',
+      'start': '2026-11-07T19:05:00Z',
+      'end': '2026-11-07T20:05:00Z',
+      'note': 'Last set was a grind',
+      'exercises': [
+        {
+          'id': 'we1',
+          'exercise': {'id': 'squat', 'name': 'Squat', 'category': 'Barbell', 'target': 'Legs', 'own': 0},
+          'start': '2026-11-07T19:05:00Z',
+          'order': 0,
+          'sets': [
+            {'id': 's1', 'completed': true, 'started_at': '2026-11-07T19:10:00Z', 'weight': 100.0, 'reps': 5},
+            {'id': 's2', 'completed': true, 'started_at': '2026-11-07T19:15:00Z', 'weight': 90.0, 'reps': 5},
+          ],
+        },
+      ],
+    });
+    const plan = WorkoutPlan({
+      'exercises': [
+        {
+          'exerciseId': 'squat',
+          'sets': [
+            {'setId': 's1', 'weight': 100, 'reps': 5},
+            {'setId': 's2', 'weight': 100, 'reps': 5},
+            {'setId': 's3', 'weight': 100, 'reps': 5},
+          ],
+        },
+      ],
+    });
+
+    void withSam() {
+      account(coach: true);
+      when(api.getClients(former: false, cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: [sam], cursor: null));
+      when(api.getClientWorkouts('sam', cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: [dayA], cursor: null));
+      when(api.getClientSkips('sam')).thenAnswer((_) async => [TrainingSkip(at: DateTime.utc(2026, 11, 8, 9))]);
+      when(api.getClientWorkoutPlan('sam', 'w1')).thenAnswer((_) async => plan);
+    }
+
+    testWidgets('on a phone, a client opens over the roster: their week, their workouts and skips', (tester) async {
+      withSam();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byType(ClientPage), findsOneWidget);
+      expect(find.text('Strength block · week 2 of 6'), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientWorkout('w1')), findsOneWidget);
+      expect(find.text('Last set was a grind'), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientSkip), findsOneWidget);
+      expect(find.text('Skipped a session'), findsOneWidget);
+    });
+
+    testWidgets('a workout puts target beside done, saying what was lighter and skipped', (tester) async {
+      withSam();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClientWorkout('w1'));
+      await tester.pumpTimes();
+
+      final squat = find.byKey(AppKeys.coachingReviewExercise(0));
+      expect(find.text('Last set was a grind'), findsOneWidget);
+      expect(find.descendant(of: squat, matching: find.text('Squat')), findsOneWidget);
+      expect(find.descendant(of: squat, matching: find.text('Asked')), findsOneWidget);
+      expect(find.descendant(of: squat, matching: find.text('Lighter')), findsOneWidget);
+      expect(find.descendant(of: squat, matching: find.text('Skipped')), findsOneWidget);
+      // the coach's own unit: these tests run in pounds
+      expect(find.descendant(of: squat, matching: find.text('198.4 lbs x 5')), findsOneWidget);
+    });
+
+    testWidgets('a workout with no plan lists what was done and compares nothing', (tester) async {
+      withSam();
+      when(api.getClientWorkoutPlan('sam', 'w1')).thenAnswer((_) async => null);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClientWorkout('w1'));
+      await tester.pumpTimes();
+
+      expect(find.text('Not from a program: nothing to compare with'), findsOneWidget);
+      expect(find.text('Asked'), findsNothing);
+      expect(find.text('Lighter'), findsNothing);
+    });
+
+    testWidgets('on a wide page, a client opens beside the roster, and closes back to the table', (tester) async {
+      withSam();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
+      expect(find.text('Last 7 days'), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byType(ClientPage), findsNothing, reason: 'beside, not over');
+      expect(find.byKey(AppKeys.coachingClientPane), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientWorkout('w1')), findsOneWidget);
+      expect(find.text('Last 7 days'), findsNothing, reason: 'the roster narrows to a list');
+
+      await tester.tapByKey(AppKeys.coachingClientClose);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.coachingClientPane), findsNothing);
+      expect(find.text('Last 7 days'), findsOneWidget);
+    });
+
+    testWidgets('a workout in Activity opens target beside done', (tester) async {
+      withSam();
+      when(api.getCoachFeed(cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          items: [
+            CoachFeedItem(kind: 'workout', id: 'w1', studentId: 'sam', name: 'Sam', at: dayA.start, title: 'Day A'),
+          ],
+          cursor: null,
+        ),
+      );
+      when(
+        api.getTargetWorkout(requesterId: anyNamed('requesterId'), targetUserId: 'sam', workoutId: 'w1'),
+      ).thenAnswer((_) async => dayA);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      await tester.tapByKey(AppKeys.coachingActivityView);
+      await tester.pumpTimes();
+      await tester.tap(find.text('Sam finished Day A'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingReview), findsOneWidget);
+      expect(find.text('Lighter'), findsOneWidget);
+    });
+  });
+
   group("a coach's library (#557)", () {
     final squat = Exercise(name: 'Squat', category: .barbell, target: .legs, isMine: true);
     final sam = ClientSummary(connectionId: 'c-sam', studentId: 'sam', name: 'Sam', status: 'active');

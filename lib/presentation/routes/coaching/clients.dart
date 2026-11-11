@@ -15,7 +15,14 @@ const _rosterMaxWidth = 960.0;
 class ClientsPage extends StatefulWidget {
   final VoidCallback onYourTraining;
 
-  const new({super.key, required this.onYourTraining});
+  /// Opens a client's own page, where there's no room for it beside the
+  /// roster.
+  final ValueChanged<String> onOpenClient;
+
+  /// Opens a client's workout, target beside done.
+  final void Function(String connectionId, String workoutId) onOpenWorkout;
+
+  const new({super.key, required this.onYourTraining, required this.onOpenClient, required this.onOpenWorkout});
 
   @override
   State<ClientsPage> createState() => _ClientsPageState();
@@ -29,6 +36,13 @@ Future<void> _reloadClients(BuildContext context) {
   ]);
 }
 
+/// Where a client opens beside the roster rather than over it: room for a
+/// list of names and a client's workouts side by side.
+const _besideWidth = 720.0;
+
+/// How wide the roster stays with a client open beside it.
+const _paneRosterWidth = 340.0;
+
 class _ClientsPageState extends State<ClientsPage> {
   final _view = ValueNotifier(_ClientsView.roster);
 
@@ -40,6 +54,9 @@ class _ClientsPageState extends State<ClientsPage> {
   void _reload() {
     if (mounted) _reloadClients(context);
   }
+
+  /// The client open beside the roster, on a page wide enough for both.
+  final _open = ValueNotifier<String?>(null);
 
   @override
   void initState() {
@@ -53,6 +70,7 @@ class _ClientsPageState extends State<ClientsPage> {
   void dispose() {
     _lifecycle.dispose();
     _view.dispose();
+    _open.dispose();
     super.dispose();
   }
 
@@ -92,36 +110,110 @@ class _ClientsPageState extends State<ClientsPage> {
         ),
         // invitations out, nobody accepted yet: nothing to have done
         (_, [], _) => _RosterView(waiting: waiting),
-        _ => ValueListenableBuilder(
-          valueListenable: _view,
-          builder: (context, view, _) => Column(
-            crossAxisAlignment: .stretch,
-            children: [
-              Padding(
-                padding: const .fromLTRB(16, 8, 16, 8),
-                child: Center(
-                  child: SettingSwitcher<_ClientsView>(
-                    value: view,
-                    onValueChanged: (picked) => _view.value = picked ?? view,
-                    children: {
-                      .roster: Text(l.coachingClients, key: AppKeys.coachingRosterView),
-                      .activity: Text(l.coachingActivity, key: AppKeys.coachingActivityView),
-                    },
-                  ),
-                ),
-              ),
-              Expanded(
-                child: switch (view) {
-                  .roster => _RosterView(waiting: waiting),
-                  .activity => const _ActivityView(),
-                },
-              ),
-            ],
-          ),
+        _ => LayoutBuilder(
+          builder: (context, constraints) {
+            final beside = constraints.maxWidth >= _besideWidth;
+            return ValueListenableBuilder(
+              valueListenable: _open,
+              builder: (context, open, _) {
+                // a client who left the roster since closes with it
+                final shown = switch (open) {
+                  final String id when beside && roster.client(id) != null => id,
+                  _ => null,
+                };
+                final list = _ClientOpener(
+                  selected: shown,
+                  onOpenClient: (id) => switch (beside) {
+                    true => _open.value = id,
+                    false => widget.onOpenClient(id),
+                  },
+                  onOpenWorkout: widget.onOpenWorkout,
+                  child: _rosterOrActivity(l, waiting),
+                );
+                if (shown == null) return list;
+                return Row(
+                  crossAxisAlignment: .stretch,
+                  children: [
+                    SizedBox(width: _paneRosterWidth, child: list),
+                    const VerticalDivider(width: 1),
+                    Expanded(
+                      child: _ClientView(
+                        key: AppKeys.coachingClientPane,
+                        connectionId: shown,
+                        onOpenWorkout: (workoutId) => widget.onOpenWorkout(shown, workoutId),
+                        leading: Align(
+                          alignment: .centerRight,
+                          child: IconButton(
+                            key: AppKeys.coachingClientClose,
+                            tooltip: l.coachingClientClose,
+                            onPressed: () => _open.value = null,
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
         ),
       },
     );
   }
+}
+
+extension on _ClientsPageState {
+  Widget _rosterOrActivity(L l, List<Invitation> waiting) {
+    return ValueListenableBuilder(
+      valueListenable: _view,
+      builder: (context, view, _) => Column(
+        crossAxisAlignment: .stretch,
+        children: [
+          Padding(
+            padding: const .fromLTRB(16, 8, 16, 8),
+            child: Center(
+              child: SettingSwitcher<_ClientsView>(
+                value: view,
+                onValueChanged: (picked) => _view.value = picked ?? view,
+                children: {
+                  .roster: Text(l.coachingClients, key: AppKeys.coachingRosterView),
+                  .activity: Text(l.coachingActivity, key: AppKeys.coachingActivityView),
+                },
+              ),
+            ),
+          ),
+          Expanded(
+            child: switch (view) {
+              .roster => _RosterView(waiting: waiting),
+              .activity => const _ActivityView(),
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// How a row of the roster or the feed opens what it names: beside the
+/// roster where there's room, over it where there isn't.
+class _ClientOpener extends InheritedWidget {
+  /// The client open beside the roster, if any.
+  final String? selected;
+  final ValueChanged<String> onOpenClient;
+  final void Function(String connectionId, String workoutId) onOpenWorkout;
+
+  const new({
+    required this.selected,
+    required this.onOpenClient,
+    required this.onOpenWorkout,
+    required super.child,
+  });
+
+  static _ClientOpener? of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_ClientOpener>();
+
+  @override
+  bool updateShouldNotify(_ClientOpener old) => selected != old.selected;
 }
 
 /// Everyone, sorted by who may need a word, with a filter for each reason
@@ -240,8 +332,14 @@ class _ClientTile extends StatelessWidget {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final reasons = _reasonsInWords(l, client);
+    final opener = _ClientOpener.of(context);
     return ListTile(
       key: AppKeys.coachingClient(client.connectionId),
+      onTap: switch (opener) {
+        final opener? => () => opener.onOpenClient(client.connectionId),
+        null => null,
+      },
+      selected: opener?.selected == client.connectionId,
       leading: Avatar(remote: client.avatar, radius: 20),
       title: Text(_clientName(l, client), maxLines: 1, overflow: .ellipsis),
       subtitle: Column(
@@ -313,56 +411,63 @@ class _ClientRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme, :dividerColor) = Theme.of(context);
-    return DecoratedBox(
+    final opener = _ClientOpener.of(context);
+    return InkWell(
       key: AppKeys.coachingClient(client.connectionId),
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: dividerColor.withValues(alpha: .4))),
-      ),
-      child: Padding(
-        padding: const .fromLTRB(16, 8, 16, 8),
-        child: Row(
-          children: [
-            Expanded(
-              flex: _columns.client,
-              child: Row(
-                children: [
-                  Avatar(remote: client.avatar, radius: 16),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(_clientName(l, client), style: textTheme.bodyLarge, maxLines: 1, overflow: .ellipsis),
-                  ),
-                ],
+      onTap: switch (opener) {
+        final opener? => () => opener.onOpenClient(client.connectionId),
+        null => null,
+      },
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: dividerColor.withValues(alpha: .4))),
+        ),
+        child: Padding(
+          padding: const .fromLTRB(16, 8, 16, 8),
+          child: Row(
+            children: [
+              Expanded(
+                flex: _columns.client,
+                child: Row(
+                  children: [
+                    Avatar(remote: client.avatar, radius: 16),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(_clientName(l, client), style: textTheme.bodyLarge, maxLines: 1, overflow: .ellipsis),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              flex: _columns.program,
-              child: Padding(
-                padding: const .only(right: 8),
-                child: Text(_programLine(l, client), style: textTheme.bodyMedium, maxLines: 2, overflow: .ellipsis),
+              Expanded(
+                flex: _columns.program,
+                child: Padding(
+                  padding: const .only(right: 8),
+                  child: Text(_programLine(l, client), style: textTheme.bodyMedium, maxLines: 2, overflow: .ellipsis),
+                ),
               ),
-            ),
-            Expanded(
-              flex: _columns.days,
-              child: Align(
-                alignment: .centerLeft,
-                child: _WeekDots(client: client),
+              Expanded(
+                flex: _columns.days,
+                child: Align(
+                  alignment: .centerLeft,
+                  child: _WeekDots(client: client),
+                ),
               ),
-            ),
-            Expanded(
-              flex: _columns.reasons,
-              child: Text(
-                _reasonsInWords(l, client).join(' · '),
-                style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary),
+              Expanded(
+                flex: _columns.reasons,
+                child: Text(
+                  _reasonsInWords(l, client).join(' · '),
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary),
+                ),
               ),
-            ),
-            SizedBox(
-              width: kMinInteractiveDimension,
-              child: switch (_lookClears(client)) {
-                true => _MarkReviewed(client: client),
-                false => null,
-              },
-            ),
-          ],
+              SizedBox(
+                width: kMinInteractiveDimension,
+                child: switch (_lookClears(client)) {
+                  true => _MarkReviewed(client: client),
+                  false => null,
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -85,7 +85,14 @@ class _FeedTile extends StatelessWidget {
       _ => null,
     };
     final at = item.at.toLocal();
+    final opener = _ClientOpener.of(context);
+    final client = Roster.of(context).clients.where((each) => each.studentId == item.studentId).firstOrNull;
     return ListTile(
+      // a workout opens target beside done; a skip or an ending has nothing more to show
+      onTap: switch ((kind, opener, client)) {
+        (.workout, final opener?, final client?) => () => opener.onOpenWorkout(client.connectionId, item.id),
+        _ => null,
+      },
       leading: Avatar(remote: item.avatar, radius: 20),
       title: Text(switch ((kind, title)) {
         (.workout, final String title) => l.coachingFeedWorkout(name, title),
