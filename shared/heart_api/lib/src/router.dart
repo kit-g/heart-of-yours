@@ -34,6 +34,37 @@ abstract final class Router {
 
   static final _pushTopic = RegExp(r'^[a-z0-9_]+(\.[a-z0-9_]+)*$');
 
+  // device keys and key delivery (#555)
+  static const _keys = 'v1/keys';
+  static const cryptoDevices = '$_keys/devices';
+  static const keyQueue = '$_keys/queue';
+  static const keyQueueConfirmations = '$keyQueue/confirmations';
+
+  /// A device by the UUID it chose for itself. Held to that shape before it
+  /// reaches a path, as an invitation's token is: an id read off the server or
+  /// a queue item must not send the account's requests anywhere else.
+  static String cryptoDevice(String deviceId) {
+    if (!_uuid.hasMatch(deviceId)) {
+      throw ArgumentError.value(deviceId, 'deviceId', 'not a device id');
+    }
+    return '$cryptoDevices/$deviceId';
+  }
+
+  static String oneTimeKeys(String deviceId) => '${cryptoDevice(deviceId)}/one-time-keys';
+
+  static String fallbackKey(String deviceId) => '${cryptoDevice(deviceId)}/fallback';
+
+  /// Someone's keys to take, by their account id.
+  static String keyClaims(String userId) {
+    if (!_userId.hasMatch(userId)) {
+      throw ArgumentError.value(userId, 'userId', 'not an account id');
+    }
+    return '$_keys/claims/$userId';
+  }
+
+  static final _uuid = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+  static final _userId = RegExp(r'^[A-Za-z0-9_-]{1,128}$');
+
   static String libraryProgram(String programId) => '$libraryPrograms/$programId';
 
   static String libraryHolders(String programId) => '${libraryProgram(programId)}/holders';
