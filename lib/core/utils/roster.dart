@@ -21,4 +21,23 @@ class RemoteRoster implements RosterService {
   Future<({List<CoachFeedItem> items, String? cursor})> getCoachFeed({String? cursor}) {
     return _api.getCoachFeed(cursor: cursor);
   }
+
+  @override
+  Future<({List<Workout> items, String? cursor})> getClientWorkouts(String studentId, {String? cursor}) {
+    return _api.getClientWorkouts(studentId, cursor: cursor);
+  }
+
+  @override
+  Future<List<TrainingSkip>> getClientSkips(String studentId) => _api.getClientSkips(studentId);
+
+  @override
+  Future<Workout> getClientWorkout(String studentId, String workoutId) {
+    // the requester is the token's, which the route reads for itself
+    return _api.getTargetWorkout(requesterId: '', targetUserId: studentId, workoutId: workoutId);
+  }
+
+  @override
+  Future<WorkoutPlan?> getClientWorkoutPlan(String studentId, String workoutId) {
+    return _api.getClientWorkoutPlan(studentId, workoutId);
+  }
 }
