@@ -162,8 +162,12 @@ private fun SetEditor(
     val counts = !exercise.counted || reps >= 1
 
     when (field) {
-        Field.Weight -> return ValueEditor(weight, exercise.step, exercise.unit.orEmpty(), accent) { weight = it }
-        Field.Reps -> return ValueEditor(reps, 1.0, controls.reps, accent) { reps = it }
+        Field.Weight -> return ValueEditor(
+            weight, exercise.step, exercise.unit.orEmpty(), accent, last = row.lastWeight, line = row.previous,
+        ) { weight = it }
+        Field.Reps -> return ValueEditor(
+            reps, 1.0, controls.reps, accent, last = row.lastReps?.toDouble(), line = row.previous,
+        ) { reps = it }
         null -> Unit
     }
 

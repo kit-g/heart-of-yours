@@ -65,6 +65,10 @@ sealed interface PhoneState {
             val previous: String?,
             /// "Set 2 of 3".
             val position: String?,
+            /// Its values last time, in [unit], for the editor to offer in one
+            /// tap (#586); null where last time had none.
+            val lastWeight: Double? = null,
+            val lastReps: Int? = null,
         )
 
         data class Exercise(
@@ -92,6 +96,9 @@ sealed interface PhoneState {
                 val position: String,
                 val previous: String?,
                 val next: String,
+                /// As [UpNext.lastWeight] and [UpNext.lastReps] (#586).
+                val lastWeight: Double? = null,
+                val lastReps: Int? = null,
             )
         }
 
@@ -170,6 +177,8 @@ sealed interface PhoneState {
                     step = json.double("step") ?: 1.0,
                     previous = json.string("previous"),
                     position = json.string("position"),
+                    lastWeight = json.double("lastWeight"),
+                    lastReps = json.int("lastReps"),
                 )
             } else {
                 null
@@ -219,6 +228,8 @@ sealed interface PhoneState {
                         position = row.string("position") ?: "",
                         previous = row.string("previous"),
                         next = row.string("next") ?: "",
+                        lastWeight = row.double("lastWeight"),
+                        lastReps = row.int("lastReps"),
                     )
                 },
             )

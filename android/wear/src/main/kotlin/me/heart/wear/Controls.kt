@@ -1,5 +1,6 @@
 package me.heart.wear
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
@@ -46,6 +48,7 @@ import androidx.wear.compose.material3.FilledTonalIconButton
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.IconButtonDefaults
 import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.minimumInteractiveComponentSize
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
@@ -191,8 +194,12 @@ internal fun SetValueDialog(
 ) {
     Dialog(visible = draft.editing != null, onDismissRequest = { draft.editing = null }) {
         when (draft.editing) {
-            Field.Weight -> ValueEditor(draft.weight, set.step, set.unit.orEmpty(), accent) { draft.weight = it }
-            Field.Reps -> ValueEditor(draft.reps, 1.0, controls.reps, accent) { draft.reps = it }
+            Field.Weight -> ValueEditor(
+                draft.weight, set.step, set.unit.orEmpty(), accent, last = set.lastWeight, line = set.previous,
+            ) { draft.weight = it }
+            Field.Reps -> ValueEditor(
+                draft.reps, 1.0, controls.reps, accent, last = set.lastReps?.toDouble(), line = set.previous,
+            ) { draft.reps = it }
             null -> Unit
         }
     }
@@ -230,8 +237,20 @@ internal fun ValuePill(text: String, unit: String, modifier: Modifier = Modifier
 /// One value, full screen: − and + a step at a time, the crown or bezel for
 /// bigger moves — focused from the start, with nothing else on screen to
 /// scroll. Swiping it away puts it away; the set's own Done is what logs it.
+///
+/// [line] is last time, as the set page shows it; a tap on it sets [last],
+/// this value last time (#586) — a range that starts the count at its floor
+/// is often far from where it ends.
 @Composable
-internal fun ValueEditor(value: Double, step: Double, unit: String, accent: Color, onChange: (Double) -> Unit) {
+internal fun ValueEditor(
+    value: Double,
+    step: Double,
+    unit: String,
+    accent: Color,
+    last: Double? = null,
+    line: String? = null,
+    onChange: (Double) -> Unit,
+) {
     val focus = remember { FocusRequester() }
     val haptics = LocalHapticFeedback.current
     var turned by remember { mutableFloatStateOf(0f) }
@@ -282,6 +301,32 @@ internal fun ValueEditor(value: Double, step: Double, unit: String, accent: Colo
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Stepper(R.drawable.ic_minus, accent) { nudge(-1) }
             Stepper(R.drawable.ic_plus, accent) { nudge(1) }
+        }
+        line?.let { line ->
+            // one tap to last time's value; already there, it is only said
+            val offered = last?.takeIf { it != current }
+            Text(
+                line,
+                style = MaterialTheme.typography.bodySmall,
+                color = when (offered) {
+                    null -> MaterialTheme.colorScheme.onSurfaceVariant
+                    else -> accent
+                },
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                // the same height either way: the steppers do not jump when the
+                // value reaches last time's
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .then(
+                        offered?.let { target ->
+                            Modifier.clickable(role = Role.Button) {
+                                current = target
+                                onChange(target)
+                            }
+                        } ?: Modifier,
+                    ),
+            )
         }
     }
     LaunchedEffect(Unit) { focus.requestFocus() }
