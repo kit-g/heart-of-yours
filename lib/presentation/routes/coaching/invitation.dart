@@ -112,6 +112,9 @@ class _InvitationPageState extends State<InvitationPage> {
           final String name => l.invitationAccepted(name),
           null => l.invitationAcceptedSomeone,
         });
+        // after the yes, the OS's own ask (#567): what a coach sends, and
+        // what they write, reaches a student by push
+        if (mounted) await askForPushes(context);
         widget.onDone();
       } catch (error) {
         switch (error) {

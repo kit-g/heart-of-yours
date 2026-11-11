@@ -30,6 +30,9 @@ Future<void> inviteSomeone(BuildContext context) async {
   }
   // made either way: it waits on Clients, and "Share a new link" sends it again
   if (invitation.token case final String token) await _share(l, config, token, origin);
+  // the first thing that pushes a coach: hearing that the person accepted
+  // (#567). Asked once the link is on its way, never before
+  if (context.mounted) await askForPushes(context);
 }
 
 /// A fresh link for [invitation], shared again. The old one stops working.

@@ -128,6 +128,16 @@ ticket doesn't say:
   It is also the first answer the server writes: accepting an invitation turns
   `extra.features.yourCoach` on, so the key is the server's as much as the app's.
 
+- Pushes (#567) have **no switch of their own**: they are opt-in through the
+  features that push, today the two coaching ones. With both off there is no
+  FCM token on the device, nothing is registered with the server, and no
+  Android channel shows in the system's settings; turning one off drops the
+  token. The OS's notification permission is asked by the first thing that
+  would push (a coach's first invitation sent, a student's invitation
+  accepted), after that feature's own yes. Settings › Notification settings
+  opens the app's own page only while pushes run, and the system's otherwise,
+  as it always did.
+
 ### Default on
 
 Programs (`Feature.programs`, #340) was the first feature **on until the

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/analytics.dart';
 import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/push.dart';
 import 'package:heart/presentation/navigation/app.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart_api/heart_api.dart';
@@ -100,6 +101,8 @@ class TestAppHarness {
     String version = '0.0.0',
     // the device's calendars (#391): none unless a test brings its own
     DeviceCalendar? calendar,
+    // the push client's transport (#567): none unless a test brings its own
+    PushClient? pushClient,
   }) async {
     final cfg = appConfig ?? AppConfig.test(allowsFeedbackFeature: false);
 
@@ -124,6 +127,7 @@ class TestAppHarness {
         firebaseAuth: firebaseAuth ?? MockFirebaseAuth(),
         router: router ?? HeartRouter(),
         calendar: calendar,
+        pushClient: pushClient,
       ),
     );
 

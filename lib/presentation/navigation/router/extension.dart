@@ -151,6 +151,10 @@ extension on BuildContext {
     return goNamed(_restTimersName);
   }
 
+  void goToPushSettings() {
+    return goNamed(_pushSettingsName);
+  }
+
   void goToFeatures() {
     return goNamed(_featuresName);
   }
