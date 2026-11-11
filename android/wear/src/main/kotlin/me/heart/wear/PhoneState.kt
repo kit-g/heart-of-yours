@@ -61,15 +61,19 @@ sealed interface PhoneState {
             val unit: String?,
             /// One rotary detent of weight.
             val step: Double,
-            /// The same set last session, as a finished line ("Last time: …").
-            val previous: String?,
+            /// The same set last session ("Thu: 60 kg × 14").
+            val last: Earlier?,
             /// "Set 2 of 3".
             val position: String?,
-            /// Its values last time, in [unit], for the editor to offer in one
-            /// tap (#586); null where last time had none.
-            val lastWeight: Double? = null,
-            val lastReps: Int? = null,
+            /// The set before it in this workout, done ("Set 1: 60 kg × 12");
+            /// null when it holds what [last] does (#586).
+            val before: Earlier? = null,
         )
+
+        /// Values a set held earlier, which the editor offers in one tap
+        /// (#586): the line, and the values in the set's unit — null where
+        /// that set had none.
+        data class Earlier(val line: String, val weight: Double? = null, val reps: Int? = null)
 
         data class Exercise(
             val id: String,
@@ -94,11 +98,10 @@ sealed interface PhoneState {
                 /// The type spelled out, for TalkBack; null for a plain set.
                 val type: String?,
                 val position: String,
-                val previous: String?,
+                /// As [UpNext.last] and [UpNext.before].
+                val last: Earlier?,
                 val next: String,
-                /// As [UpNext.lastWeight] and [UpNext.lastReps] (#586).
-                val lastWeight: Double? = null,
-                val lastReps: Int? = null,
+                val before: Earlier? = null,
             )
         }
 
@@ -175,10 +178,9 @@ sealed interface PhoneState {
                     reps = json.int("reps"),
                     unit = json.string("unit"),
                     step = json.double("step") ?: 1.0,
-                    previous = json.string("previous"),
+                    last = json.earlier(line = "previous", values = "last"),
                     position = json.string("position"),
-                    lastWeight = json.double("lastWeight"),
-                    lastReps = json.int("lastReps"),
+                    before = json.earlier(line = "before", values = "before"),
                 )
             } else {
                 null
@@ -226,10 +228,9 @@ sealed interface PhoneState {
                         mark = row.string("mark") ?: "",
                         type = row.string("type"),
                         position = row.string("position") ?: "",
-                        previous = row.string("previous"),
+                        last = row.earlier(line = "previous", values = "last"),
                         next = row.string("next") ?: "",
-                        lastWeight = row.double("lastWeight"),
-                        lastReps = row.int("lastReps"),
+                        before = row.earlier(line = "before", values = "before"),
                     )
                 },
             )
@@ -278,6 +279,16 @@ private fun JSONObject.long(key: String): Long? = if (isNull(key)) null else (op
 private fun JSONObject.int(key: String): Int? = if (isNull(key)) null else (opt(key) as? Number)?.toInt()
 
 private fun JSONObject.double(key: String): Double? = if (isNull(key)) null else (opt(key) as? Number)?.toDouble()
+
+/// An earlier set's [line] under that key, its values under `<values>Weight`
+/// and `<values>Reps` (#586).
+private fun JSONObject.earlier(line: String, values: String): PhoneState.Workout.Earlier? {
+    return PhoneState.Workout.Earlier(
+        line = string(line) ?: return null,
+        weight = double("${values}Weight"),
+        reps = int("${values}Reps"),
+    )
+}
 
 private fun JSONObject.objects(key: String): List<JSONObject> {
     val array = optJSONArray(key) ?: JSONArray()

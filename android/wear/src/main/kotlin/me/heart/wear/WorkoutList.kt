@@ -163,10 +163,10 @@ private fun SetEditor(
 
     when (field) {
         Field.Weight -> return ValueEditor(
-            weight, exercise.step, exercise.unit.orEmpty(), accent, last = row.lastWeight, line = row.previous,
+            weight, exercise.step, exercise.unit.orEmpty(), accent, offers = listOfNotNull(row.last, row.before).map { it.offer(Field.Weight) },
         ) { weight = it }
         Field.Reps -> return ValueEditor(
-            reps, 1.0, controls.reps, accent, last = row.lastReps?.toDouble(), line = row.previous,
+            reps, 1.0, controls.reps, accent, offers = listOfNotNull(row.last, row.before).map { it.offer(Field.Reps) },
         ) { reps = it }
         null -> Unit
     }

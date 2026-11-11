@@ -95,10 +95,10 @@ internal fun TransformingLazyColumnScope.setControls(
             }
         }
     }
-    set.previous?.let { previous ->
+    set.last?.let { last ->
         item {
             Text(
-                previous,
+                last.line,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -195,10 +195,10 @@ internal fun SetValueDialog(
     Dialog(visible = draft.editing != null, onDismissRequest = { draft.editing = null }) {
         when (draft.editing) {
             Field.Weight -> ValueEditor(
-                draft.weight, set.step, set.unit.orEmpty(), accent, last = set.lastWeight, line = set.previous,
+                draft.weight, set.step, set.unit.orEmpty(), accent, offers = listOfNotNull(set.last, set.before).map { it.offer(Field.Weight) },
             ) { draft.weight = it }
             Field.Reps -> ValueEditor(
-                draft.reps, 1.0, controls.reps, accent, last = set.lastReps?.toDouble(), line = set.previous,
+                draft.reps, 1.0, controls.reps, accent, offers = listOfNotNull(set.last, set.before).map { it.offer(Field.Reps) },
             ) { draft.reps = it }
             null -> Unit
         }
@@ -238,17 +238,16 @@ internal fun ValuePill(text: String, unit: String, modifier: Modifier = Modifier
 /// bigger moves — focused from the start, with nothing else on screen to
 /// scroll. Swiping it away puts it away; the set's own Done is what logs it.
 ///
-/// [line] is last time, as the set page shows it; a tap on it sets [last],
-/// this value last time (#586) — a range that starts the count at its floor
-/// is often far from where it ends.
+/// [offers] are values this one held earlier, which a tap sets (#586): last
+/// session's, and the set before's — a range that starts the count at its
+/// floor is often far from where it ends.
 @Composable
 internal fun ValueEditor(
     value: Double,
     step: Double,
     unit: String,
     accent: Color,
-    last: Double? = null,
-    line: String? = null,
+    offers: List<Offer> = emptyList(),
     onChange: (Double) -> Unit,
 ) {
     val focus = remember { FocusRequester() }
@@ -302,10 +301,10 @@ internal fun ValueEditor(
             Stepper(R.drawable.ic_minus, accent) { nudge(-1) }
             Stepper(R.drawable.ic_plus, accent) { nudge(1) }
         }
-        line?.let { line ->
-            // one tap to last time's value; already there, it is only said —
+        offers.forEach { (line, earlier) ->
+            // one tap to an earlier value; already there, it is only said —
             // at the same height, so the steppers do not jump when it gets there
-            when (val offered = last?.takeIf { it != current }) {
+            when (val offered = earlier?.takeIf { it != current }) {
                 null -> Text(
                     line,
                     style = MaterialTheme.typography.bodySmall,
@@ -329,6 +328,16 @@ internal fun ValueEditor(
         }
     }
     LaunchedEffect(Unit) { focus.requestFocus() }
+}
+
+/// An earlier value on offer in the [ValueEditor]: its line, and the value a
+/// tap sets — null where that set had none, and the line is only said.
+internal data class Offer(val line: String, val value: Double?)
+
+/// This as the editor of its [field] offers it.
+internal fun PhoneState.Workout.Earlier.offer(field: Field): Offer = when (field) {
+    Field.Weight -> Offer(line, weight)
+    Field.Reps -> Offer(line, reps?.toDouble())
 }
 
 @Composable
