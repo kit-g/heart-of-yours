@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'coaching.dart' show CoachingStatus;
 import 'remote.dart';
+import 'workout_review.dart';
 
 /// What the server does with a coach's view of everyone they coach
 /// (heart-of-yours#559). Like [CoachingService], the app's view of a few
@@ -20,6 +21,27 @@ abstract interface class RosterService {
 
   /// Workouts, skips and endings of every client, newest first.
   Future<({List<CoachFeedItem> items, String? cursor})> getCoachFeed({String? cursor});
+
+  /// A client's workouts, newest first, as their coach may read them.
+  Future<({List<Workout> items, String? cursor})> getClientWorkouts(String studentId, {String? cursor});
+
+  /// When a client skipped a session, never why.
+  Future<List<TrainingSkip>> getClientSkips(String studentId);
+
+  /// One of a client's workouts.
+  Future<Workout> getClientWorkout(String studentId, String workoutId);
+
+  /// What a client's workout was asked to be; null when it had no plan.
+  Future<WorkoutPlan?> getClientWorkoutPlan(String studentId, String workoutId);
+}
+
+/// What a coach has read of one client: their workouts, a page at a time, and
+/// their skips.
+class _Record {
+  final workouts = <Workout>[];
+  final skips = <TrainingSkip>[];
+  CoachingStatus status = .idle;
+  String? cursor;
 }
 
 /// Why a client may need a word from their coach, by the name the server
@@ -83,6 +105,8 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
   final _clients = <ClientSummary>[];
   final _former = <ClientSummary>[];
   final _feed = <CoachFeedItem>[];
+  final _records = <String, _Record>{};
+  final _reviews = <String, WorkoutReview>{};
 
   CoachingStatus _status = .idle;
   CoachingStatus _feedStatus = .idle;
@@ -143,7 +167,87 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
     _feedStatus = .idle;
     _feedCursor = null;
     _formerStatus = .idle;
+    _records.clear();
+    _reviews.clear();
     notifyListeners();
+  }
+
+  /// The client behind [connectionId], live, paused or former; null when
+  /// neither list has read it.
+  ClientSummary? client(String connectionId) {
+    return [..._clients, ..._former].where((each) => each.connectionId == connectionId).firstOrNull;
+  }
+
+  CoachingStatus recordStatus(String studentId) => _records[studentId]?.status ?? .idle;
+
+  /// [studentId]'s workouts read so far, newest first.
+  List<Workout> workoutsOf(String studentId) => UnmodifiableListView(_records[studentId]?.workouts ?? const []);
+
+  /// [studentId]'s skips, newest first.
+  List<TrainingSkip> skipsOf(String studentId) => UnmodifiableListView(_records[studentId]?.skips ?? const []);
+
+  /// Whether [studentId] has older workouts to read.
+  bool hasMoreOf(String studentId) => _records[studentId]?.cursor != null;
+
+  /// Reads [studentId]'s newest workouts and their skips, replacing what was
+  /// read before.
+  Future<void> loadRecord(String studentId) async {
+    if (!_remote.allowed) return;
+    final record = _records.putIfAbsent(studentId, _Record.new);
+    record.status = .loading;
+    notifyListeners();
+    try {
+      final (page, skips) = await (
+        _service.getClientWorkouts(studentId),
+        _service.getClientSkips(studentId),
+      ).wait;
+      record.workouts
+        ..clear()
+        ..addAll(page.items);
+      record.cursor = page.cursor;
+      record.skips
+        ..clear()
+        ..addAll(skips.toList()..sort((a, b) => b.at.compareTo(a.at)));
+      record.status = .loaded;
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+      record.status = .failed;
+    }
+    notifyListeners();
+  }
+
+  /// The next older page of [studentId]'s workouts, if there is one.
+  Future<void> moreRecord(String studentId) async {
+    final record = _records[studentId];
+    if (!_remote.allowed || record == null || record.cursor == null || record.status == .loading) return;
+    record.status = .loading;
+    notifyListeners();
+    try {
+      final page = await _service.getClientWorkouts(studentId, cursor: record.cursor);
+      record.workouts.addAll(page.items);
+      record.cursor = page.cursor;
+      record.status = .loaded;
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+      record.status = .failed;
+    }
+    notifyListeners();
+  }
+
+  /// [studentId]'s workout [workoutId] beside what it was asked to be. Read
+  /// once: a workout's plan never changes, and the server keeps the first.
+  /// Throws what the service threw.
+  Future<WorkoutReview> review(String studentId, String workoutId) async {
+    if (_reviews[workoutId] case final WorkoutReview review) return review;
+    final known = _records[studentId]?.workouts.where((each) => each.id == workoutId).firstOrNull;
+    final (workout, plan) = await (
+      switch (known) {
+        final Workout workout => Future.value(workout),
+        null => _service.getClientWorkout(studentId, workoutId),
+      },
+      _service.getClientWorkoutPlan(studentId, workoutId),
+    ).wait;
+    return _reviews[workoutId] = WorkoutReview.of(workout, plan);
   }
 
   /// Reads the roster, every page of it: a coach has a few dozen people at
