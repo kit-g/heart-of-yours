@@ -837,27 +837,22 @@ struct ValueEditor: View {
             .tint(accent)
 
             if let line {
-                // the same height either way: the stepper does not jump when
-                // the value reaches last time's
-                Group {
-                    switch last {
-                    // one tap to last time's value; already there, it is only said
-                    case let last? where last != value:
-                        Button { value = last } label: {
+                // one tap to last time's value; already there, it is only said
+                switch last {
+                case let last? where last != value:
+                    LastTimeButton(line: line, accent: accent) { value = last }
+                default:
+                    // in the button's room, so the stepper does not jump when
+                    // the value reaches last time's
+                    LastTimeButton(line: line, accent: accent) {}
+                        .hidden()
+                        .overlay {
                             Text(line)
-                                .foregroundStyle(accent)
-                                .frame(minHeight: 44)
-                                .contentShape(.rect)
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
-                    default:
-                        Text(line)
-                            .foregroundStyle(.secondary)
-                            .frame(minHeight: 44)
-                    }
+                        .font(.footnote)
+                        .multilineTextAlignment(.center)
                 }
-                .font(.footnote)
-                .multilineTextAlignment(.center)
             }
         }
         .task { focused = true }
@@ -865,6 +860,27 @@ struct ValueEditor: View {
 
     private func nudge(_ steps: Double) {
         value = max(0, value + steps * step)
+    }
+}
+
+/// Last time's line under a value, as a button that looks like one: the line
+/// alone read as a caption, nothing to tap (#586).
+private struct LastTimeButton: View {
+    let line: String
+    let accent: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label(line, systemImage: "arrow.uturn.backward")
+                .foregroundStyle(accent)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .tint(accent)
+        .font(.footnote)
+        .multilineTextAlignment(.center)
     }
 }
 

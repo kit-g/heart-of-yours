@@ -1,6 +1,5 @@
 package me.heart.wear
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,7 +27,6 @@ import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
@@ -41,6 +39,7 @@ import androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnScope
 import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.CompactButton
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.Dialog
 import androidx.wear.compose.material3.FilledTonalButton
@@ -303,30 +302,29 @@ internal fun ValueEditor(
             Stepper(R.drawable.ic_plus, accent) { nudge(1) }
         }
         line?.let { line ->
-            // one tap to last time's value; already there, it is only said
-            val offered = last?.takeIf { it != current }
-            Text(
-                line,
-                style = MaterialTheme.typography.bodySmall,
-                color = when (offered) {
-                    null -> MaterialTheme.colorScheme.onSurfaceVariant
-                    else -> accent
-                },
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                // the same height either way: the steppers do not jump when the
-                // value reaches last time's
-                modifier = Modifier
-                    .minimumInteractiveComponentSize()
-                    .then(
-                        offered?.let { target ->
-                            Modifier.clickable(role = Role.Button) {
-                                current = target
-                                onChange(target)
-                            }
-                        } ?: Modifier,
-                    ),
-            )
+            // one tap to last time's value; already there, it is only said —
+            // at the same height, so the steppers do not jump when it gets there
+            when (val offered = last?.takeIf { it != current }) {
+                null -> Text(
+                    line,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    modifier = Modifier.minimumInteractiveComponentSize(),
+                )
+                // a button that looks like one: the line alone read as a
+                // caption, nothing to tap
+                else -> CompactButton(
+                    onClick = {
+                        current = offered
+                        onChange(offered)
+                    },
+                    icon = { Icon(painterResource(R.drawable.ic_undo), contentDescription = null) },
+                    label = { Text(line, maxLines = 2, textAlign = TextAlign.Center) },
+                    colors = ButtonDefaults.filledTonalButtonColors(contentColor = accent, iconColor = accent),
+                )
+            }
         }
     }
     LaunchedEffect(Unit) { focus.requestFocus() }
