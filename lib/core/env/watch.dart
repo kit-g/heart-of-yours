@@ -45,13 +45,12 @@ typedef WatchSet = ({
   String? unit,
   double step,
 
-  /// The same set last time, as finished copy; null when there was none.
-  String? previous,
+  /// The same set last session; null when there was none.
+  WatchEarlier? last,
 
-  /// Its values last time, in [unit], for the editor to offer in one tap
-  /// (#586); null where last time had none.
-  double? lastWeight,
-  int? lastReps,
+  /// The set before it in this workout, done (#586); null when there is none,
+  /// or when it holds what [last] does.
+  WatchEarlier? before,
 
   /// Where it sits in its exercise, as copy: "Set 2 of 3".
   String position,
@@ -85,7 +84,7 @@ typedef WatchExercise = ({
 ///
 /// With the copy the watch shows once it is the set up next — so a watch with
 /// the phone out of reach (#206) can move on to it without asking: where it
-/// sits ([WatchSet.position]), last time ([WatchSet.previous]), and the lock
+/// sits ([WatchSet.position]), last time ([WatchSet.last]), and the lock
 /// screen's "Next:" line for the complication.
 typedef WatchSetRow = ({
   String id,
@@ -99,13 +98,30 @@ typedef WatchSetRow = ({
   int? reps,
   bool done,
   String position,
-  String? previous,
 
-  /// As [WatchSet.lastWeight] and [WatchSet.lastReps] (#586).
-  double? lastWeight,
-  int? lastReps,
+  /// As [WatchSet.last] and [WatchSet.before].
+  WatchEarlier? last,
+  WatchEarlier? before,
   String next,
 });
+
+/// Values a set held earlier, which the watch's editor offers in one tap
+/// (#586): a finished line, "Thu: 60 kg × 14", and the values themselves in
+/// the unit the set is shown in — null where that set had none.
+typedef WatchEarlier = ({String line, double? weight, int? reps});
+
+/// [earlier] as the watch reads it: its [line] under that key, its values
+/// under [values]Weight and [values]Reps.
+Map<String, Object?> _earlier(WatchEarlier? earlier, {required String line, required String values}) {
+  return switch (earlier) {
+    null => const {},
+    (line: final text, :final weight, :final reps) => {
+      line: text,
+      '${values}Weight': ?weight,
+      '${values}Reps': ?reps,
+    },
+  };
+}
 
 /// The watch's controls, as copy — labels and what it says when it cannot act.
 typedef WatchControls = ({
@@ -217,9 +233,9 @@ final class WatchWorkout extends WatchState {
         'reps': ?set.reps,
         'unit': ?set.unit,
         'step': set.step,
-        'previous': ?set.previous,
-        'lastWeight': ?set.lastWeight,
-        'lastReps': ?set.lastReps,
+        // last time's line keeps its old name, which a watch from before #586 reads
+        ..._earlier(set.last, line: 'previous', values: 'last'),
+        ..._earlier(set.before, line: 'before', values: 'before'),
         'position': set.position,
       },
       'exercises': [
@@ -243,9 +259,8 @@ final class WatchWorkout extends WatchState {
                   'reps': ?row.reps,
                   'done': row.done,
                   'position': row.position,
-                  'previous': ?row.previous,
-                  'lastWeight': ?row.lastWeight,
-                  'lastReps': ?row.lastReps,
+                  ..._earlier(row.last, line: 'previous', values: 'last'),
+                  ..._earlier(row.before, line: 'before', values: 'before'),
                   'next': row.next,
                 },
             ],

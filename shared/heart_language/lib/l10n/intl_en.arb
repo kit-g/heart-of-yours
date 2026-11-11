@@ -3730,13 +3730,26 @@
       }
     }
   },
-  "watchLastTime": "Last time: {result}",
-  "@watchLastTime": {
-    "description": "Apple Watch line: what the user lifted in this same set last session, e.g. \"Last time: 60 kg × 8\". Not \"previous\", which on the watch would read as the set before this one",
+  "watchLabelled": "{label}: {result}",
+  "@watchLabelled": {
+    "description": "Watch line: a set's values with where they come from, which a tap uses. {label} arrives already formatted: when the same set was done last session (\"Thu\" this week, \"Nov 6\" before), or the set before this one in the workout (\"Set 1\", \"Warm-up\"). E.g. \"Thu: 60 kg × 8\", \"Set 1: 60 kg × 14\"",
     "type": "text",
     "placeholders": {
+      "label": {
+        "type": "String"
+      },
       "result": {
         "type": "String"
+      }
+    }
+  },
+  "watchSetNumber": "Set {number}",
+  "@watchSetNumber": {
+    "description": "Watch: one set of the exercise by its number, naming the set a value came from, e.g. \"Set 1\" in \"Set 1: 60 kg × 14\". Short: it is a watch screen",
+    "type": "text",
+    "placeholders": {
+      "number": {
+        "type": "int"
       }
     }
   },

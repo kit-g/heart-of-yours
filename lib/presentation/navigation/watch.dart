@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/core/utils/weeks.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/commands.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
@@ -277,15 +278,8 @@ class _WatchPresenterState extends State<WatchPresenter> {
                 mark: _mark(exercise, index, l),
                 type: _type(exercise, index, l),
                 position: _position(exercise, index, l),
-                previous: _lastTime(
-                  exercise,
-                  index,
-                  weighted: _measures(exercise).$1,
-                  unit: _unitLabel(exercise, l),
-                  l: l,
-                ),
-                lastWeight: _lastWeight(exercise, index),
-                lastReps: _lastReps(exercise, index),
+                last: _lastSession(exercise, index, l),
+                before: _setBefore(exercise, index, l),
                 next: nextSetLine(context, set, index + 1),
               ),
           ],
@@ -382,9 +376,8 @@ class _WatchPresenterState extends State<WatchPresenter> {
           false => null,
         },
         step: _step(exercise),
-        previous: _lastTime(exercise, number - 1, weighted: weighted, unit: unitLabel, l: l),
-        lastWeight: _lastWeight(exercise, number - 1),
-        lastReps: _lastReps(exercise, number - 1),
+        last: _lastSession(exercise, number - 1, l),
+        before: _setBefore(exercise, number - 1, l),
         position: _position(exercise, number - 1, l),
       );
     }
@@ -426,40 +419,81 @@ class _WatchPresenterState extends State<WatchPresenter> {
   }
 
   /// The same set in the last session, as the phone's "Previous" column holds
-  /// it — labelled "last time" on the watch, where "previous" would read as the
-  /// set before this one. Null for anything but weights and reps, or when there
-  /// was no last time.
-  String? _lastTime(WorkoutExercise exercise, int index, {required bool weighted, required String unit, required L l}) {
-    final prefs = Preferences.of(context);
+  /// it, labelled by when that was (#586): the weekday within the user's week,
+  /// the date before it — "Thu: 60 kg × 14", which "Last time: …" left open
+  /// to reading as the set just done. Null when there was no last time.
+  WatchEarlier? _lastSession(WorkoutExercise exercise, int index, L l) {
     final value = _previous().matching(exercise, index);
-    return switch ((weighted, value)) {
-      (true, {'reps': int reps, 'weight': num weight}) => l.watchLastTime(
+    if (value case {'workout_start': String start}) {
+      if (DateTime.tryParse(start) case DateTime done) {
+        return _earlier(exercise, value, label: _when(done, l), l: l);
+      }
+    }
+    return null;
+  }
+
+  /// "Thu" for a session this week, as the user's week runs; "Nov 6" for one
+  /// before it.
+  String _when(DateTime start, L l) {
+    final week = weekOf(DateTime.now(), firstWeekday: firstWeekdayOf(context));
+    return switch (start.toLocal().isBefore(week)) {
+      true => l.shortDate(start),
+      false => l.shortWeekday(start),
+    };
+  }
+
+  /// The last set done before the one at [index] in this workout, for doing
+  /// it again (#586) — "Set 1: 60 kg × 14". None for a warm-up, which ramps
+  /// rather than repeats, nor from one; none when it holds what last session
+  /// did, which the watch already offers.
+  WatchEarlier? _setBefore(WorkoutExercise exercise, int index, L l) {
+    if (exercise.elementAt(index).setType == .warmup) return null;
+    final done = exercise.indexed
+        .take(index)
+        .where((each) => each.$2.isCompleted && each.$2.setType != .warmup)
+        .lastOrNull;
+    if (done case (final at, final set)) {
+      final label = switch (set.setType) {
+        .normal => l.watchSetNumber(_plainBefore(exercise, at) + 1),
+        SetType type => type.copy(l),
+      };
+      final before = _earlier(exercise, {'weight': ?set.weight, 'reps': ?set.reps}, label: label, l: l);
+      final last = _lastSession(exercise, index, l);
+      return switch (last) {
+        (:final weight, :final reps, line: _) when (before?.weight, before?.reps) == (weight, reps) => null,
+        _ => before,
+      };
+    }
+    return null;
+  }
+
+  /// [value] — a set's values as the model keeps them, weight in kilograms —
+  /// as the watch offers it: a line headed by [label], and the values in the
+  /// unit [exercise] is shown in. Null for anything but weights and reps.
+  WatchEarlier? _earlier(WorkoutExercise exercise, Map<String, dynamic> value, {required String label, required L l}) {
+    final prefs = Preferences.of(context);
+    final (weighted, counted) = _measures(exercise);
+    final unit = _unitLabel(exercise, l);
+    final result = switch ((weighted, value)) {
+      (true, {'reps': int reps, 'weight': num weight}) =>
         '${prefs.weight(weight, unit: _unit(exercise))} $unit × $reps',
-      ),
       // bodyweight with nothing added keeps a null weight (#488)
-      (true, {'reps': int reps}) when exercise.exercise.category == .weightedBodyWeight => l.watchLastTime(
-        '$reps ${l.reps}',
-      ),
-      (false, {'reps': int reps}) => l.watchLastTime('$reps ${l.reps}'),
+      (true, {'reps': int reps}) when exercise.exercise.category == .weightedBodyWeight => '$reps ${l.reps}',
+      (false, {'reps': int reps}) => '$reps ${l.reps}',
       _ => null,
     };
-  }
-
-  /// The same set's weight last time, in the unit it is shown in, for the
-  /// watch's editor to offer (#586); null for a set without weight.
-  double? _lastWeight(WorkoutExercise exercise, int index) {
-    return switch ((_measures(exercise).$1, _previous().matching(exercise, index))) {
-      (true, {'weight': num weight}) => Preferences.of(context).weightValue(weight, unit: _unit(exercise)),
-      _ => null,
-    };
-  }
-
-  /// The same set's count last time (#586); null for a set without one.
-  int? _lastReps(WorkoutExercise exercise, int index) {
-    return switch ((_measures(exercise).$2, _previous().matching(exercise, index))) {
-      (true, {'reps': int reps}) => reps,
-      _ => null,
-    };
+    if (result == null) return null;
+    return (
+      line: l.watchLabelled(label, result),
+      weight: switch ((weighted, value)) {
+        (true, {'weight': num weight}) => prefs.weightValue(weight, unit: _unit(exercise)),
+        _ => null,
+      },
+      reps: switch ((counted, value)) {
+        (true, {'reps': int reps}) => reps,
+        _ => null,
+      },
+    );
   }
 
   /// What the phone's Previous column reads for the active workout: the last
