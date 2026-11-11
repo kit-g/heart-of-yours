@@ -126,6 +126,9 @@ abstract interface class RemoteProgramService {
   Future<Replayed<TrainingSkip>> replaySkip(TrainingSkip skip);
 
   Future<void> deleteSkip(String skipId);
+
+  /// Starts a coach's copy that has waited for the user (#557).
+  Future<void> startProgram(String programId);
 }
 
 /// The user's programs (#346, `docs/2026-10-11.programs.md`): templates on a
@@ -202,10 +205,14 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Every program, archived ones included, oldest first.
   List<Program> get all => UnmodifiableListView(_programs.values);
 
-  /// The programs the user is following: not archived. A finished one is
-  /// still among them until it is archived; whether it is finished is its
-  /// [position]'s to say.
-  Iterable<Program> get following => _programs.values.where((program) => !program.archived);
+  /// The programs the user is following: not archived, and not a coach's
+  /// copy still waiting to be started. A finished one is still among them
+  /// until it is archived; whether it is finished is its [position]'s to say.
+  Iterable<Program> get following => _programs.values.where((program) => program.live);
+
+  /// Copies a coach sent while the user was on something else, each waiting
+  /// for the user to start it (#557).
+  Iterable<Program> get waiting => _programs.values.where((program) => !program.archived && program.waits);
 
   Program? lookup(String programId) => _programs[programId];
 
@@ -386,7 +393,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       final String id => _programs[id],
       null => null,
     };
-    if (id == null || program == null || program.archived) return (workout: session.toWorkout(), plan: null);
+    if (id == null || program == null || !program.live) return (workout: session.toWorkout(), plan: null);
     return planSession(
       session,
       program: program,
@@ -759,6 +766,25 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       onError?.call(e, stacktrace: s);
       return program;
     }
+  }
+
+  /// Starts [program], a coach's copy that waits (#557), and stops following
+  /// each of [replacing]: a new program from a coach replaces what the user
+  /// is on. Starting needs the server, which holds the wait; it throws what
+  /// the service threw, and changes nothing here then.
+  Future<Program> start(Program program, {Iterable<Program> replacing = const []}) async {
+    final uid = userId;
+    final id = program.id;
+    if (uid == null || id == null || !program.waits) return program;
+    await _remoteService.startProgram(id);
+    final started = Program.fromJson({...program.toMap()}..remove('waitingSince'));
+    await _service.storeProgram(started, uid);
+    _programs[id] = started;
+    notifyListeners();
+    for (final other in replacing) {
+      if (other.id != id) await archive(other);
+    }
+    return started;
   }
 
   /// Stops following [program], or follows it again. Its history is kept.
@@ -1134,7 +1160,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       null => null,
     };
     final id = program?.id;
-    if (uid == null || program == null || id == null || program.archived) return const [];
+    if (uid == null || program == null || id == null || !program.live) return const [];
     bool causedBy(String? cause) => cause == workout.id;
     if (basesOf(id).any((base) => causedBy(base.workoutId))) return const [];
     if (actionsOf(id).any((action) => causedBy(action.workoutId))) return const [];
@@ -1703,4 +1729,13 @@ bool _takesWeight(Category category) {
     .barbell || .dumbbell || .machine || .weightedBodyWeight => true,
     .assistedBodyWeight || .repsOnly || .cardio || .duration || .weightedDistance || .weightedDuration => false,
   };
+}
+
+extension ProgramLife on Program {
+  /// A coach's copy sent while the user was on something else, not started
+  /// yet (#557).
+  bool get waits => waitingSince != null;
+
+  /// Followed: neither stopped nor waiting to be started.
+  bool get live => !archived && !waits;
 }
