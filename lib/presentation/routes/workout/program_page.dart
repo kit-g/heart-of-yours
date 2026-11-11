@@ -119,12 +119,21 @@ class ProgramPage extends StatelessWidget {
                         ),
                       ),
                     ],
-                    Text(_status(context, program, position), style: textTheme.titleLarge),
-                    if (_standing(context, program, position) case final String line) ...[
-                      const SizedBox(height: 4),
-                      Text(line, style: muted),
+                    if (program.waits && !program.archived)
+                      _WaitingCard(program: program)
+                    else ...[
+                      Text(_status(context, program, position), style: textTheme.titleLarge),
+                      if (_standing(context, program, position) case final String line) ...[
+                        const SizedBox(height: 4),
+                        Text(line, style: muted),
+                      ],
+                      // a coach's program (#557) says whose it is
+                      if (_sentBy(context, program) case final String from) ...[
+                        const SizedBox(height: 4),
+                        Text(from, key: AppKeys.programSentBy, style: muted),
+                      ],
                     ],
-                    if (!program.archived) ...[
+                    if (program.live) ...[
                       const SizedBox(height: 12),
                       _Steers(
                         program: program,
@@ -178,7 +187,7 @@ class ProgramPage extends StatelessWidget {
                         onTap: () => _pickSession(context, program),
                       ),
                     ProgramConstraintRow(program: program),
-                    if (!program.archived) _ProgramCalendarSlot(program: program),
+                    if (program.live) _ProgramCalendarSlot(program: program),
                     _ProgramGoals(program: program, position: position, sessions: sessions),
                     _Growth(program: program),
                     // a copy of one of Heart's programs keeps its way back to

@@ -194,6 +194,22 @@ final _program = Program(
   createdAt: DateTime.utc(2026, 10, 1),
 );
 
+/// A program a coach sent while [_program] runs (#557): it waits on the
+/// Workout tab to be started.
+final _sent = Program.fromJson({
+  ...Program(
+    id: 'c1',
+    name: 'Strength block',
+    perWeek: 2,
+    weeks: 4,
+    sessions: const ['t3'],
+    createdAt: DateTime.utc(2026, 11, 10),
+  ).toMap(),
+  'coachId': 'coach-muffin',
+  'coachName': 'Muffin',
+  'waitingSince': '2026-11-10T12:00:00.000Z',
+});
+
 /// The session the workout-done screen celebrates.
 final _done = Workout(name: 'Records')
   ..add(_bench)
@@ -431,7 +447,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     (
       _Screen.programs,
       guideline,
-      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:279) and its Start (programs.dart:288) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:279) and its Start (programs.dart:288) at the house 32pt, and a waiting coach program\'s Start (40pt FilledButton, lib/presentation/routes/workout/program_sent.dart) (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.programPage,
@@ -1629,7 +1645,12 @@ void main() {
           ...pastOnboarding(),
           'feature-programs': 'on',
           if (screen == _Screen.notTodaySheet) 'feature-notToday': 'on',
+          if (screen == _Screen.programs) 'feature-yourCoach': 'on',
         });
+        // Your coach on reads the account's connections (#566)
+        when(api.registerAccount(any)).thenAnswer((invocation) async => invocation.positionalArguments.single as User);
+        when(api.getConnections()).thenAnswer((_) async => []);
+        when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
         // the day before a skip (#312): what its page reads
         when(db.getLensSets(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => []);
         when(db.storeSkip(any, any)).thenAnswer((_) async {});
@@ -1641,6 +1662,7 @@ void main() {
             _Screen.programs || _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [
               _session('t1', 0, 'Push', programId: 'p1'),
               _session('t2', 1, 'Pull', programId: 'p1'),
+              if (screen == _Screen.programs) _session('t3', 2, 'Day A', programId: 'c1'),
             ],
             _ => [_session('t1', 0, 'Push'), _session('t2', 1, 'Pull')],
           },
@@ -1651,7 +1673,9 @@ void main() {
         when(db.storeTemplateFolders(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
         when(db.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
         final programs = switch (screen) {
-          _Screen.programs || _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [_program],
+          // the tab with a coach's program waiting beside it (#557)
+          _Screen.programs => [_program, _sent],
+          _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [_program],
           _ => <Program>[],
         };
         final skips = switch (screen) {
