@@ -1258,7 +1258,43 @@ RouteBase _coachingRoute() {
     },
     branches: [
       StatefulShellBranch(
-        routes: [page(_coachingClientsPath, _coachingClientsName, (back) => ClientsPage(onYourTraining: back))],
+        routes: [
+          GoRoute(
+            path: _coachingClientsPath,
+            name: _coachingClientsName,
+            redirect: off,
+            builder: (context, _) => ClientsPage(
+              onYourTraining: context.leaveCoaching,
+              onOpenClient: context.pushCoachingClient,
+              onOpenWorkout: context.pushCoachingClientWorkout,
+            ),
+            routes: [
+              GoRoute(
+                path: ':connectionId',
+                name: _coachingClientName,
+                builder: (context, state) {
+                  final connectionId = state.pathParameters['connectionId']!;
+                  return ClientPage(
+                    key: ValueKey(connectionId),
+                    connectionId: connectionId,
+                    onOpenWorkout: (workoutId) => context.pushCoachingClientWorkout(connectionId, workoutId),
+                  );
+                },
+                routes: [
+                  GoRoute(
+                    path: 'workouts/:workoutId',
+                    name: _coachingClientWorkoutName,
+                    builder: (context, state) => WorkoutReviewPage(
+                      key: ValueKey(state.pathParameters['workoutId']),
+                      connectionId: state.pathParameters['connectionId']!,
+                      workoutId: state.pathParameters['workoutId']!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
       StatefulShellBranch(
         routes: [page(_coachingMessagesPath, _coachingMessagesName, (back) => CoachMessagesPage(onYourTraining: back))],

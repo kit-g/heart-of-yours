@@ -350,6 +350,17 @@ abstract final class AppKeys {
 
   static Key coachingMarkReviewed(String connectionId) => Key('Coaching.reviewed.$connectionId');
 
+  /// One client (#559): their page, or the pane beside the roster, its way
+  /// shut, and a workout or skip of theirs.
+  static const coachingClientPane = Key('Coaching.clientPane');
+  static const coachingClientClose = Key('Coaching.clientClose');
+  static Key coachingClientWorkout(String workoutId) => Key('Coaching.clientWorkout.$workoutId');
+  static const coachingClientSkip = Key('Coaching.clientSkip');
+
+  /// A client's workout, target beside done (#559), and one exercise of it.
+  static const coachingReview = Key('Coaching.review');
+  static Key coachingReviewExercise(int index) => Key('Coaching.reviewExercise.$index');
+
   /// A coach's library (#557): a new program, each program and session, and
   /// what a program's page does.
   static const coachingNewProgram = Key('Coaching.newProgram');

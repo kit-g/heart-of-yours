@@ -9,6 +9,7 @@ import 'package:clock/clock.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/sentry.dart';
+import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/avatar.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
@@ -25,6 +26,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
 
 part 'activity.dart';
+part 'client.dart';
 part 'clients.dart';
 part 'frame.dart';
 part 'invitation.dart';
@@ -32,6 +34,7 @@ part 'invite.dart';
 part 'library.dart';
 part 'library_program.dart';
 part 'pages.dart';
+part 'review.dart';
 
 /// Whether the Coaching space is there at all: Coach people is on, for an
 /// account that may coach. Off for either reason, the app looks as if

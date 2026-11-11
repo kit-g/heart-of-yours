@@ -13,6 +13,16 @@ extension on BuildContext {
   /// screen (`CoachingFrame`), so the app opens there next.
   void goToCoaching() => goNamed(_coachingClientsName);
 
+  /// One client's page (#559), over the roster.
+  void pushCoachingClient(String connectionId) {
+    pushNamed(_coachingClientName, pathParameters: {'connectionId': connectionId});
+  }
+
+  /// A client's workout, target beside done (#559).
+  void pushCoachingClientWorkout(String connectionId, String workoutId) {
+    pushNamed(_coachingClientWorkoutName, pathParameters: {'connectionId': connectionId, 'workoutId': workoutId});
+  }
+
   /// A program of the coach's library (#557).
   void goToCoachingProgram(String programId) {
     return goNamed(_coachingProgramName, pathParameters: {'programId': programId});
