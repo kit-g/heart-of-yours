@@ -147,6 +147,9 @@ class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin
   /// Set while the burst waits for the app to come to the front.
   AppLifecycleListener? _waiting;
 
+  /// Whether the burst has been decided on: it plays once, or not at all.
+  var _decided = false;
+
   @override
   void initState() {
     super.initState();
@@ -155,6 +158,16 @@ class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin
       duration: Duration(seconds: widget.duration),
     );
     particles = List.generate(widget.particleCount, (_) => _Particle());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_decided) return;
+    _decided = true;
+
+    // with less motion asked for, there is no burst (#595)
+    if (lessMotion(context)) return;
 
     // A workout finished on the watch while the phone was away (#206) can land
     // here with the app in the background: the queue wakes it, and the finish
@@ -176,6 +189,7 @@ class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    if (lessMotion(context)) return const SizedBox.shrink();
     return ValueListenableBuilder<double>(
       valueListenable: _controller,
       builder: (_, value, _) {

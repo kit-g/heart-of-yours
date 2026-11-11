@@ -101,7 +101,7 @@ class _BroughtIntoViewState extends State<_BroughtIntoView> {
       Scrollable.ensureVisible(
         context,
         alignment: .05,
-        duration: switch (MediaQuery.disableAnimationsOf(context)) {
+        duration: switch (lessMotion(context)) {
           true => Duration.zero,
           false => const Duration(milliseconds: 300),
         },

@@ -285,3 +285,17 @@ RelativeRect menuUnderValue(BuildContext context, GlobalKey key, {required doubl
   final Size(width: w, height: h) = box.size;
   return RelativeRect.fromLTRB(dx + w - width, dy + h, overlay.size.width - (dx + w), dy + h);
 }
+
+/// Whether the user asked for less motion: Android's "Remove animations", or
+/// iOS's Reduce Motion.
+///
+/// Those are two flags, and `MediaQuery.disableAnimationsOf` alone reads only
+/// the first. On iOS Reduce Motion arrives as `reduceMotion`, which never sets
+/// `disableAnimations`. Every reveal, pulse and burst that checked only the
+/// first went on moving for the iPhone and iPad users who asked it not to (#595).
+/// Ask this, not either flag.
+///
+/// No `MediaQuery` above (a bare widget test) reads as no preference.
+bool lessMotion(BuildContext context) {
+  return (MediaQuery.maybeDisableAnimationsOf(context) ?? false) || (MediaQuery.maybeReduceMotionOf(context) ?? false);
+}
