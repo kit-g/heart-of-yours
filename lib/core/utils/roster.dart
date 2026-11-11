@@ -49,6 +49,9 @@ class RemoteClientPrograms implements ClientProgramService {
   const new(this._api);
 
   @override
+  Future<List<Program>> getClientPrograms(String studentId) => _api.getClientPrograms(studentId);
+
+  @override
   Future<CoachProgramView> getClientProgram(String studentId, String programId) {
     return _api.getClientProgram(studentId, programId);
   }

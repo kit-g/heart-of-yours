@@ -83,6 +83,8 @@ class _CopyView extends StatelessWidget {
       _ => 1,
     };
     final changes = programs.changes(program.id!);
+    // their own program they show, and only the coach's copy is the coach's to change
+    final mayChange = programs.mayChange(program.id!);
 
     void edit(Template? session) {
       programs.editSession(client.studentId, program.id!, session: session);
@@ -96,6 +98,11 @@ class _CopyView extends StatelessWidget {
           padding: const .fromLTRB(16, 8, 16, 0),
           child: Text(l.coachingClientWeek(program.name, week, program.weeks ?? week), style: muted),
         ),
+        if (!mayChange)
+          Padding(
+            padding: const .fromLTRB(16, 12, 16, 0),
+            child: Text(l.coachingCopyReadOnly, style: textTheme.bodyMedium),
+          ),
         if (programs.conflict(program.id!) case final ProgramConflict conflict)
           _ConflictCard(conflict: conflict, client: client, sessions: view.sessions),
         Padding(
@@ -111,22 +118,29 @@ class _CopyView extends StatelessWidget {
               maxLines: 1,
               overflow: .ellipsis,
             ),
-            onTap: () => edit(session),
-            trailing: Builder(
-              builder: (context) => IconButton(
-                key: AppKeys.coachingCopySessionMenu(session.id),
-                tooltip: l.coachingCopyMenu,
-                icon: const Icon(Icons.more_horiz_rounded),
-                onPressed: () => _sessionMenu(context, session),
+            onTap: switch (mayChange) {
+              true => () => edit(session),
+              false => null,
+            },
+            trailing: switch (mayChange) {
+              true => Builder(
+                builder: (context) => IconButton(
+                  key: AppKeys.coachingCopySessionMenu(session.id),
+                  tooltip: l.coachingCopyMenu,
+                  icon: const Icon(Icons.more_horiz_rounded),
+                  onPressed: () => _sessionMenu(context, session),
+                ),
               ),
-            ),
+              false => null,
+            },
           ),
-        ListTile(
-          key: AppKeys.coachingCopyAddSession,
-          leading: Icon(Icons.add_circle_outline_rounded, color: colorScheme.primary),
-          title: Text(l.programAddSession, style: TextStyle(color: colorScheme.primary)),
-          onTap: () => edit(null),
-        ),
+        if (mayChange)
+          ListTile(
+            key: AppKeys.coachingCopyAddSession,
+            leading: Icon(Icons.add_circle_outline_rounded, color: colorScheme.primary),
+            title: Text(l.programAddSession, style: TextStyle(color: colorScheme.primary)),
+            onTap: () => edit(null),
+          ),
         Padding(
           padding: const .fromLTRB(16, 24, 16, 4),
           child: Text(l.coachingCopyHistory, style: textTheme.titleMedium),
@@ -136,7 +150,7 @@ class _CopyView extends StatelessWidget {
             padding: const .symmetric(horizontal: 16),
             child: Text(l.coachingCopyNoHistory, style: muted),
           ),
-        for (final change in changes) _ChangeTile(change: change, client: client),
+        for (final change in changes) _ChangeTile(change: change, client: client, mayPutBack: mayChange),
       ],
     );
   }
@@ -205,6 +219,7 @@ class _ConflictCard extends StatelessWidget {
               children: [
                 TextButton(
                   key: AppKeys.coachingCopyKeepTheirs,
+                  style: TextButton.styleFrom(foregroundColor: colorScheme.onErrorContainer),
                   onPressed: () => programs.dropMine(conflict.programId),
                   child: Text(switch (conflict.unsent) {
                     true => l.coachingCopyDiscard,
@@ -213,6 +228,7 @@ class _ConflictCard extends StatelessWidget {
                 ),
                 TextButton(
                   key: AppKeys.coachingCopyKeepMine,
+                  style: TextButton.styleFrom(foregroundColor: colorScheme.onErrorContainer),
                   onPressed: () => programs.keepMine(client.studentId, conflict.programId),
                   child: Text(switch (conflict.unsent) {
                     true => l.retry,
@@ -232,8 +248,9 @@ class _ConflictCard extends StatelessWidget {
 class _ChangeTile extends StatelessWidget {
   final ProgramChange change;
   final ClientSummary client;
+  final bool mayPutBack;
 
-  const new({required this.change, required this.client});
+  const new({required this.change, required this.client, required this.mayPutBack});
 
   @override
   Widget build(BuildContext context) {
@@ -257,21 +274,24 @@ class _ChangeTile extends StatelessWidget {
       key: AppKeys.coachingCopyChange(change.id),
       title: Text(what),
       subtitle: Text([when, if (change.stale) l.coachingCopyOldApp].join(' · ')),
-      trailing: TextButton(
-        key: AppKeys.coachingCopyPutBack(change.id),
-        // the theme's compact text button is under the tap-target minimum
-        style: TextButton.styleFrom(minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension)),
-        onPressed: () async {
-          final messenger = ScaffoldMessenger.of(context);
-          try {
-            await ClientPrograms.of(context).revert(client.studentId, change.programId, change);
-          } catch (error, stacktrace) {
-            reportToSentry(error, stacktrace: stacktrace);
-            messenger.snack(l.coachingCopyPutBackFailed);
-          }
-        },
-        child: Text(l.coachingCopyPutBack),
-      ),
+      trailing: switch (mayPutBack) {
+        true => TextButton(
+          key: AppKeys.coachingCopyPutBack(change.id),
+          // the theme's compact text button is under the tap-target minimum
+          style: TextButton.styleFrom(minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension)),
+          onPressed: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            try {
+              await ClientPrograms.of(context).revert(client.studentId, change.programId, change);
+            } catch (error, stacktrace) {
+              reportToSentry(error, stacktrace: stacktrace);
+              messenger.snack(l.coachingCopyPutBackFailed);
+            }
+          },
+          child: Text(l.coachingCopyPutBack),
+        ),
+        false => null,
+      },
     );
   }
 }

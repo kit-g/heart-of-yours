@@ -9,6 +9,9 @@ import 'template_drafting.dart';
 /// What the server does with a coach's work on a client's copy of a program
 /// (heart-of-yours#558), the app's view of those routes.
 abstract interface class ClientProgramService {
+  /// The copies the coach may change: those sent through their connection.
+  Future<List<Program>> getClientPrograms(String studentId);
+
   Future<CoachProgramView> getClientProgram(String studentId, String programId);
 
   Future<Program> editClientProgram(
@@ -57,6 +60,10 @@ final class ProgramConflict {
 /// thing first.
 bool isProgramChanged(Object? error) => error is Map && error['code'] == 'program_changed';
 
+/// The server's refusal of a write the coach may no longer make: the copy
+/// wasn't sent through their connection, or it ended.
+bool _isForbidden(Object? error) => error is Map && error['code'] == 'forbidden';
+
 /// A coach's view of their clients' copies (#558): one open at a time, its
 /// sessions, its history, and the editor on one of its sessions.
 ///
@@ -78,6 +85,7 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
   final _changes = <String, List<ProgramChange>>{};
   final _status = <String, CoachingStatus>{};
   final _conflicts = <String, ProgramConflict>{};
+  final _editable = <String, bool>{};
 
   /// The client and copy [editable] belongs to.
   ({String studentId, String programId})? _drafting;
@@ -91,12 +99,17 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
 
   ProgramConflict? conflict(String programId) => _conflicts[programId];
 
+  /// Whether the coach may change [programId]: a copy they sent, while the
+  /// connection lasts. Their client's own program they only see.
+  bool mayChange(String programId) => _editable[programId] ?? false;
+
   @override
   void onSignOut() {
     _views.clear();
     _changes.clear();
     _status.clear();
     _conflicts.clear();
+    _editable.clear();
     _drafting = null;
     editable = null;
     notifyListeners();
@@ -108,12 +121,14 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
     _status[programId] = .loading;
     notifyListeners();
     try {
-      final (view, changes) = await (
+      final (view, changes, managed) = await (
         _service.getClientProgram(studentId, programId),
         _service.getClientProgramChanges(studentId, programId),
+        _service.getClientPrograms(studentId),
       ).wait;
       _views[programId] = view;
       _changes[programId] = changes;
+      _editable[programId] = managed.any((each) => each.id == programId);
       _status[programId] = .loaded;
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
@@ -168,9 +183,12 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
       await _service.editClientProgram(studentId, fields, baseRevision: base, changeId: uuidV7());
       _conflicts.remove(programId);
     } catch (error, stacktrace) {
-      final changed = isProgramChanged(error);
-      if (!changed) onError?.call(error, stacktrace: stacktrace);
-      _conflicts[programId] = ProgramConflict(programId: programId, fields: fields, unsent: !changed);
+      _settle(
+        programId,
+        error,
+        stacktrace,
+        (unsent) => ProgramConflict(programId: programId, fields: fields, unsent: unsent),
+      );
     }
     await open(studentId, programId);
   }
@@ -214,10 +232,27 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
       await _service.editClientSession(studentId, programId, session, baseRevision: base, changeId: uuidV7());
       _conflicts.remove(programId);
     } catch (error, stacktrace) {
-      final changed = isProgramChanged(error);
-      if (!changed) onError?.call(error, stacktrace: stacktrace);
-      _conflicts[programId] = ProgramConflict(programId: programId, session: session, unsent: !changed);
+      _settle(
+        programId,
+        error,
+        stacktrace,
+        (unsent) => ProgramConflict(programId: programId, session: session, unsent: unsent),
+      );
     }
     await open(studentId, programId);
+  }
+
+  /// A write that didn't land: kept to choose over when the client got there
+  /// first or it never arrived, and dropped when the coach may no longer
+  /// change the copy, which then reads as theirs to see only.
+  void _settle(String programId, Object error, StackTrace stacktrace, ProgramConflict Function(bool unsent) kept) {
+    if (_isForbidden(error)) {
+      _editable[programId] = false;
+      _conflicts.remove(programId);
+      return;
+    }
+    final changed = isProgramChanged(error);
+    if (!changed) onError?.call(error, stacktrace: stacktrace);
+    _conflicts[programId] = kept(!changed);
   }
 }

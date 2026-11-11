@@ -658,6 +658,7 @@ void main() {
           .thenAnswer((_) async => (items: <Workout>[], cursor: null));
       when(api.getClientSkips('sam')).thenAnswer((_) async => <TrainingSkip>[]);
       when(api.getClientProgram('sam', 'p1')).thenAnswer((_) async => copy());
+      when(api.getClientPrograms('sam')).thenAnswer((_) async => [copy().program]);
       when(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since'))).thenAnswer(
         (_) async => [
           ProgramChange(
@@ -702,6 +703,17 @@ void main() {
       expect(find.text('Sam changed Day A'), findsOneWidget);
       expect(find.text("You changed the program's details"), findsOneWidget);
       expect(find.textContaining('from an older version of the app'), findsOneWidget);
+    });
+
+    testWidgets("their own program they see, and can't change: no editing, nothing to put back", (tester) async {
+      withCopy();
+      when(api.getClientPrograms('sam')).thenAnswer((_) async => <Program>[]);
+      await openCopy(tester);
+
+      expect(find.text('Their own program: you can see it, not change it.'), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingCopyAddSession), findsNothing);
+      expect(find.byKey(AppKeys.coachingCopySessionMenu('s1')), findsNothing);
+      expect(find.byKey(AppKeys.coachingCopyPutBack('ch1')), findsNothing);
     });
 
     testWidgets('a change is put back, and one built on since says so', (tester) async {

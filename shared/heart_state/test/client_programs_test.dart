@@ -12,6 +12,13 @@ class _Server implements ClientProgramService {
   final reverted = <String>[];
   Object? refuse;
 
+  var managed = true;
+
+  @override
+  Future<List<Program>> getClientPrograms(String studentId) async {
+    return [if (managed) Program(id: 'p1', name: 'Strength block', perWeek: 2, weeks: 4)];
+  }
+
   @override
   Future<CoachProgramView> getClientProgram(String studentId, String programId) async {
     return CoachProgramView.fromJson({
@@ -160,6 +167,27 @@ void main() {
     await programs.revert('sam', 'p1', change);
 
     expect(server.reverted, ['c1']);
+  });
+
+  test('their own program is theirs: the coach sees it, and may not change it', () async {
+    server.managed = false;
+    await programs.open('sam', 'p1');
+    expect(programs.mayChange('p1'), isFalse);
+
+    server.managed = true;
+    await programs.open('sam', 'p1');
+    expect(programs.mayChange('p1'), isTrue);
+  });
+
+  test('a write refused as no longer theirs to change turns the copy read-only, not unsent', () async {
+    await programs.open('sam', 'p1');
+    programs.editSession('sam', 'p1', session: programs.view('p1')!.sessions.single);
+    server.refuse = {'code': 'forbidden'};
+    server.managed = false;
+    await programs.saveEditable();
+
+    expect(programs.conflict('p1'), isNull);
+    expect(programs.mayChange('p1'), isFalse);
   });
 
   test('sign-out forgets every copy', () async {

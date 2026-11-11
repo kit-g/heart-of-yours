@@ -1448,6 +1448,9 @@ void main() {
           'position': {'week': 2},
         }),
       );
+      when(api.getClientPrograms('sam')).thenAnswer(
+        (_) async => [Program(id: 'copy', name: 'Strength block', perWeek: 2, weeks: 6)],
+      );
       when(api.getClientProgramChanges('sam', 'copy', since: anyNamed('since'))).thenAnswer(
         (_) async => [
           ProgramChange(
