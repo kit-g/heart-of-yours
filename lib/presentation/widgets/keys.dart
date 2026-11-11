@@ -212,6 +212,12 @@ abstract final class AppKeys {
   /// "From a folder" on the Workout tab's Programs header (#348).
   static const programsFromFolder = Key('Programs.fromFolder');
   static const programFormName = Key('Programs.form.name');
+  static const programSentBy = Key('Programs.sentBy');
+  static const programStartSentConfirm = Key('Programs.startSent.confirm');
+
+  static Key programWaiting(String id) => Key('Programs.waiting.$id');
+
+  static Key programStartSent(String id) => Key('Programs.startSent.$id');
   static const programFormNote = Key('Programs.form.note');
   static const programFormSave = Key('Programs.form.save');
 

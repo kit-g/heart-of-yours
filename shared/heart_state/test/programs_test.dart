@@ -289,7 +289,7 @@ void main() {
       expect(programs.lookup('sent')!.coachName, 'Muffin');
     });
 
-    test("a start the server refuses changes nothing, and says so", () async {
+    test('a start the server refuses changes nothing, and says so', () async {
       remote.programs = [program(), sent()];
       await programs.init();
       remote.failing = true;

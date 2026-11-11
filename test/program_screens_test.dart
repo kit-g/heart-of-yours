@@ -205,6 +205,119 @@ void main() {
     });
   });
 
+  group('a program a coach sent (#557)', () {
+    final sent = Program.fromJson({
+      ...Program(
+        id: 'c1',
+        name: 'Strength block',
+        perWeek: 2,
+        weeks: 4,
+        sessions: const ['t3'],
+        createdAt: DateTime.utc(2026, 11, 10),
+      ).toMap(),
+      'coachId': 'coach-muffin',
+      'coachName': 'Muffin',
+      'waitingSince': '2026-11-10T12:00:00.000Z',
+    });
+
+    /// [program] followed, and [sent] waiting beside it.
+    void withSent({bool yourCoach = true}) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-programs': 'on',
+        if (yourCoach) 'feature-yourCoach': 'on',
+      });
+      when(db.getPrograms(userId)).thenAnswer((_) async => [program, sent]);
+      when(api.getPrograms()).thenAnswer((_) async => [program, sent]);
+      when(db.getTemplates(userId)).thenAnswer(
+        (_) async => [
+          template('t1', 0, 'Push', programId: 'p1'),
+          template('t2', 1, 'Pull', programId: 'p1'),
+          template('t3', 2, 'Day A', programId: 'c1'),
+        ],
+      );
+      when(api.startProgram('c1')).thenAnswer((_) async {});
+    }
+
+    testWidgets('waits beside what the user follows, saying whose it is, and plans nothing yet', (tester) async {
+      withSent();
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.programBand('p1')), findsOneWidget);
+      expect(find.byKey(AppKeys.programBand('c1')), findsNothing, reason: 'not followed until started');
+      final card = find.byKey(AppKeys.programWaiting('c1'));
+      expect(card, findsOneWidget);
+      expect(
+        find.descendant(of: card, matching: find.text('From Muffin · Waiting for you to start it')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('with Your coach off, it still waits, and names nobody', (tester) async {
+      withSent(yourCoach: false);
+      await openWorkoutTab(tester);
+
+      final card = find.byKey(AppKeys.programWaiting('c1'));
+      expect(find.descendant(of: card, matching: find.text('Waiting for you to start it')), findsOneWidget);
+      expect(find.textContaining('Muffin'), findsNothing);
+    });
+
+    testWidgets('starting it asks, then replaces what the user follows', (tester) async {
+      withSent();
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.programStartSent('c1'));
+      await tester.pumpTimes();
+      expect(find.text('Start Strength block?'), findsOneWidget);
+      expect(find.text("You'll stop following Split. Its history stays."), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.programStartSentConfirm);
+      await tester.pumpTimes();
+
+      verify(api.startProgram('c1')).called(1);
+      final edited = verify(api.editProgram(captureAny)).captured.cast<Program>();
+      expect(edited.single.id, 'p1');
+      expect(edited.single.archived, isTrue);
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsNothing);
+      expect(find.byKey(AppKeys.programBand('c1')), findsOneWidget);
+      expect(find.byKey(AppKeys.programBand('p1')), findsNothing);
+      expect(find.text('You started Strength block'), findsOneWidget);
+    });
+
+    testWidgets('a start the server refuses says so, and it keeps waiting', (tester) async {
+      withSent();
+      when(api.startProgram('c1')).thenThrow({'code': 'program_not_found'});
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.programStartSent('c1'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.programStartSentConfirm);
+      await tester.pumpTimes();
+
+      expect(find.text("Couldn't start it. Try again."), findsOneWidget);
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsOneWidget);
+      verifyNever(api.editProgram(any));
+    });
+
+    testWidgets('its page waits too, and once started says whose it is', (tester) async {
+      withSent();
+      await openWorkoutTab(tester);
+
+      await tester.tap(find.text('Strength block'));
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsOneWidget);
+      expect(find.byKey(AppKeys.programSentBy), findsNothing);
+
+      await tester.tapByKey(AppKeys.programStartSent('c1'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.programStartSentConfirm);
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsNothing);
+      expect(tester.widget<Text>(find.byKey(AppKeys.programSentBy)).data, 'From Muffin');
+    });
+  });
+
   group('not today (#312)', () {
     testWidgets('one tap sets the next session aside, the band moves on, and Undo takes it back', (tester) async {
       answer(.on);
