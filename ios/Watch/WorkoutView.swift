@@ -825,24 +825,27 @@ struct ValueEditor: View {
             .tint(accent)
 
             if let line {
-                switch last {
-                // one tap to last time's value; already there, it is only said
-                case let last? where last != value:
-                    Button { value = last } label: {
+                // the same height either way: the stepper does not jump when
+                // the value reaches last time's
+                Group {
+                    switch last {
+                    // one tap to last time's value; already there, it is only said
+                    case let last? where last != value:
+                        Button { value = last } label: {
+                            Text(line)
+                                .foregroundStyle(accent)
+                                .frame(minHeight: 44)
+                                .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                    default:
                         Text(line)
-                            .font(.footnote)
-                            .foregroundStyle(accent)
-                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.secondary)
                             .frame(minHeight: 44)
-                            .contentShape(.rect)
                     }
-                    .buttonStyle(.plain)
-                default:
-                    Text(line)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
                 }
+                .font(.footnote)
+                .multilineTextAlignment(.center)
             }
         }
         .task { focused = true }
