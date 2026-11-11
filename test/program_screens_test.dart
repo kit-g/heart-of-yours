@@ -284,6 +284,25 @@ void main() {
       expect(find.text('You started Strength block'), findsOneWidget);
     });
 
+    testWidgets('replacing several, it counts them rather than listing names that may hold commas', (tester) async {
+      withSent();
+      final second = Program(
+        id: 'p2',
+        name: 'Full body, three days',
+        perWeek: 3,
+        weeks: 8,
+        sessions: const [],
+        createdAt: DateTime.utc(2026, 11, 1),
+      );
+      when(db.getPrograms(userId)).thenAnswer((_) async => [program, second, sent]);
+      when(api.getPrograms()).thenAnswer((_) async => [program, second, sent]);
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.programStartSent('c1'));
+      await tester.pumpTimes();
+      expect(find.text("You'll stop following the 2 programs you're on. Their history stays."), findsOneWidget);
+    });
+
     testWidgets('a start the server refuses says so, and it keeps waiting', (tester) async {
       withSent();
       when(api.startProgram('c1')).thenThrow({'code': 'program_not_found'});

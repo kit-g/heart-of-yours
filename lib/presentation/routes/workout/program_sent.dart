@@ -31,7 +31,10 @@ Future<void> _startSent(BuildContext context, Program program) async {
       context,
       title: Text(copy.programStartSentTitle(program.name), textAlign: .center),
       content: Text(
-        copy.programStartSentBody(replacing.map((each) => each.name).join(', ')),
+        switch (replacing) {
+          [final only] => copy.programStartSentBody(only.name),
+          _ => copy.programStartSentBodyMany(replacing.length),
+        },
         textAlign: .center,
       ),
       actions: [
@@ -122,7 +125,7 @@ class _WaitingCard extends StatelessWidget {
                   ],
                 ),
               ),
-              FilledButton(
+              PrimaryButton.shrunk(
                 key: AppKeys.programStartSent(program.id!),
                 onPressed: () => _startSent(context, program),
                 child: Text(copy.programStartIt),
