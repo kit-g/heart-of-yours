@@ -360,6 +360,7 @@ abstract final class AppKeys {
   /// A client's copy of a program (#558): the way to it from their page, its
   /// sessions, a save that didn't land and its answers, and its history.
   static const coachingClientProgram = Key('Coaching.clientProgram');
+  static Key coachingClientCopy(String programId) => Key('Coaching.clientCopy.$programId');
   static Key coachingCopySession(String id) => Key('Coaching.copySession.$id');
   static Key coachingCopySessionMenu(String id) => Key('Coaching.copySessionMenu.$id');
   static const coachingCopyAddSession = Key('Coaching.copyAddSession');

@@ -98,11 +98,14 @@ class _ClientViewState extends State<_ClientView> {
     final roster = Roster.of(context);
     // the row they were opened from may be stale, and opened from a link
     // the roster may never have been read
+    final programs = ClientPrograms.of(context);
     if (roster.client(widget.connectionId) case final ClientSummary client) {
-      await (roster.load(), roster.loadRecord(client.studentId)).wait;
+      await (roster.load(), roster.loadRecord(client.studentId), programs.loadManaged(client.studentId)).wait;
     } else {
       await roster.load();
-      if (roster.client(widget.connectionId) case final ClientSummary client) await roster.loadRecord(client.studentId);
+      if (roster.client(widget.connectionId) case final ClientSummary client) {
+        await (roster.loadRecord(client.studentId), programs.loadManaged(client.studentId)).wait;
+      }
     }
   }
 
@@ -143,14 +146,22 @@ class _ClientViewState extends State<_ClientView> {
             ?widget.leading,
             // a page names them in its title
             _ClientHeader(client: client, named: widget.leading != null),
-            // their program, which both of them edit (#558)
-            if (client case ClientSummary(programId: final String programId, programName: final String name))
+            // what they follow, and every copy the coach sent them, waiting
+            // or not: the ones both of them edit (#558)
+            for (final (id, name, waiting) in _programsOf(client, ClientPrograms.watch(context).managed(id)))
               ListTile(
-                key: AppKeys.coachingClientProgram,
+                key: switch (id == client.programId) {
+                  true => AppKeys.coachingClientProgram,
+                  false => AppKeys.coachingClientCopy(id),
+                },
                 leading: const Icon(Icons.event_repeat_rounded),
                 title: Text(name, maxLines: 1, overflow: .ellipsis),
+                subtitle: switch (waiting) {
+                  true => Text(l.coachingCopyWaiting),
+                  false => null,
+                },
                 trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => widget.onOpenProgram(programId),
+                onTap: () => widget.onOpenProgram(id),
               ),
             Padding(
               padding: const .fromLTRB(16, 16, 16, 4),
@@ -290,4 +301,18 @@ String _workoutTitle(L l, Workout workout) {
     final String name when name.isNotEmpty => name,
     _ => l.coachingReviewUntitled,
   };
+}
+
+/// The program [client] follows, then the coach's other copies of theirs,
+/// each with whether it waits for them to start it.
+List<(String id, String name, bool waiting)> _programsOf(ClientSummary client, List<Program> managed) {
+  final following = switch (client) {
+    ClientSummary(programId: final String id, programName: final String name) => (id, name, false),
+    _ => null,
+  };
+  return [
+    ?following,
+    for (final copy in managed)
+      if (copy.id case final String id when id != following?.$1) (id, copy.name, copy.waitingSince != null),
+  ];
 }

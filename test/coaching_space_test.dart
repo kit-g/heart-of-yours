@@ -705,6 +705,31 @@ void main() {
       expect(find.textContaining('from an older version of the app'), findsOneWidget);
     });
 
+    testWidgets('a copy sent and not started yet is on their page too, waiting', (tester) async {
+      withCopy();
+      when(api.getClientPrograms('sam')).thenAnswer(
+        (_) async => [
+          copy().program,
+          Program.fromJson({
+            ...Program(id: 'p2', name: 'Peaking', perWeek: 3, weeks: 3).toMap(),
+            'waitingSince': '2026-11-11T10:00:00.000Z',
+          }),
+        ],
+      );
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingClientProgram), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(AppKeys.coachingClientCopy('p2')),
+          matching: find.text('Waiting for them to start it'),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets("their own program they see, and can't change: no editing, nothing to put back", (tester) async {
       withCopy();
       when(api.getClientPrograms('sam')).thenAnswer((_) async => <Program>[]);

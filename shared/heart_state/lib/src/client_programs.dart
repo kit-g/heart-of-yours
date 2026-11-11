@@ -86,6 +86,7 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
   final _status = <String, CoachingStatus>{};
   final _conflicts = <String, ProgramConflict>{};
   final _editable = <String, bool>{};
+  final _managed = <String, List<Program>>{};
 
   /// The client and copy [editable] belongs to.
   ({String studentId, String programId})? _drafting;
@@ -99,6 +100,21 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
 
   ProgramConflict? conflict(String programId) => _conflicts[programId];
 
+  /// The copies the coach sent [studentId], once [loadManaged] has read them.
+  List<Program> managed(String studentId) => List.unmodifiable(_managed[studentId] ?? const <Program>[]);
+
+  /// Reads which copies the coach sent [studentId]: they're the coach's to
+  /// change, waiting or followed.
+  Future<void> loadManaged(String studentId) async {
+    if (!_remote.allowed) return;
+    try {
+      _managed[studentId] = (await _service.getClientPrograms(studentId)).where((each) => !each.archived).toList();
+      notifyListeners();
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+    }
+  }
+
   /// Whether the coach may change [programId]: a copy they sent, while the
   /// connection lasts. Their client's own program they only see.
   bool mayChange(String programId) => _editable[programId] ?? false;
@@ -110,6 +126,7 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
     _status.clear();
     _conflicts.clear();
     _editable.clear();
+    _managed.clear();
     _drafting = null;
     editable = null;
     notifyListeners();

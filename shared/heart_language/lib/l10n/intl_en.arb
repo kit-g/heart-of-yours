@@ -5868,5 +5868,7 @@
   "coachingUpdateCopyFailed": "Couldn't bring {name} up to date",
   "@coachingUpdateCopyFailed": {"description": "A copy could not be brought up to date (#558)", "type": "text", "placeholders": {"name": {"type": "String"}}},
   "coachingCopyReadOnly": "Their own program: you can see it, not change it.",
-  "@coachingCopyReadOnly": {"description": "A client's program the coach can see but not change: their own, or one sent before the connection (#558)", "type": "text", "placeholders": {}}
+  "@coachingCopyReadOnly": {"description": "A client's program the coach can see but not change: their own, or one sent before the connection (#558)", "type": "text", "placeholders": {}},
+  "coachingCopyWaiting": "Waiting for them to start it",
+  "@coachingCopyWaiting": {"description": "Under a program the coach sent a client that they haven't started yet (#558)", "type": "text", "placeholders": {}}
 }
