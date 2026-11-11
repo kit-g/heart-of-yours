@@ -111,13 +111,14 @@ class _CoachProgramPageState extends State<CoachProgramPage> {
     final l = L.of(context);
     final library = CoachLibrary.watch(context);
     final unsaved = library.unsaved(program.id);
+    final settled = !unsaved && !library.saving(program.id);
     return Scaffold(
       appBar: AppBar(
         title: Text(program.program.name),
         actions: [
           // a program with nothing in it, or not yet on the server, has
           // nothing to send: what went would be an older version
-          if (program.sessions.isNotEmpty && !unsaved)
+          if (program.sessions.isNotEmpty && settled)
             IconButton(
               key: AppKeys.coachingSendProgram,
               tooltip: l.coachingProgramSend,
@@ -348,6 +349,7 @@ class _Header extends StatelessWidget {
                   ),
                   TextButton(
                     key: AppKeys.coachingUnsavedRetry,
+                    style: TextButton.styleFrom(foregroundColor: colorScheme.onErrorContainer),
                     onPressed: () => CoachLibrary.of(context).retry(program.id),
                     child: Text(l.retry),
                   ),

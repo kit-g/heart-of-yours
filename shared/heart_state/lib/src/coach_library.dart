@@ -205,6 +205,7 @@ class CoachLibrary with ChangeNotifier, TemplateDrafting implements SignOutState
   final _programs = <CoachProgram>[];
   final _open = <String, CoachLibraryProgram>{};
   final _unsaved = <String>{};
+  final _saving = <String>{};
   CoachingStatus _status = .idle;
 
   /// The program [editable] is a session of.
@@ -229,14 +230,19 @@ class CoachLibrary with ChangeNotifier, TemplateDrafting implements SignOutState
   /// A program read whole by [open], or made here.
   CoachLibraryProgram? lookup(String id) => _open[id];
 
-  /// Whether [id]'s last change is still only on this device.
+  /// Whether [id]'s last change failed to reach the server, and is only on
+  /// this device.
   bool unsaved(String id) => _unsaved.contains(id);
+
+  /// Whether a change to [id] is on its way to the server.
+  bool saving(String id) => _saving.contains(id);
 
   @override
   void onSignOut() {
     _programs.clear();
     _open.clear();
     _unsaved.clear();
+    _saving.clear();
     _status = .idle;
     _drafting = null;
     editable = null;
@@ -270,7 +276,7 @@ class CoachLibrary with ChangeNotifier, TemplateDrafting implements SignOutState
   /// Reads [id] whole. One with a change still unsaved stays as this device
   /// has it. Throws what the service threw.
   Future<CoachLibraryProgram> open(String id) async {
-    if (_unsaved.contains(id) && _open[id] != null) return _open[id]!;
+    if ((_unsaved.contains(id) || _saving.contains(id)) && _open[id] != null) return _open[id]!;
     final program = await _service.getLibraryProgram(id);
     final read = CoachLibraryProgram.fromCoachProgram(program, exerciseOf: _exerciseOf);
     _open[id] = read;
@@ -295,7 +301,7 @@ class CoachLibrary with ChangeNotifier, TemplateDrafting implements SignOutState
   /// whether the server took it.
   Future<bool> save(CoachLibraryProgram program) async {
     _open[program.id] = program;
-    _unsaved.add(program.id);
+    _saving.add(program.id);
     notifyListeners();
     try {
       final saved = await _service.saveLibraryProgram(program.id, program.toBody());
@@ -303,12 +309,17 @@ class CoachLibrary with ChangeNotifier, TemplateDrafting implements SignOutState
       if (identical(_open[program.id], program)) {
         _open[program.id] = CoachLibraryProgram.fromCoachProgram(saved, exerciseOf: _exerciseOf);
         _unsaved.remove(program.id);
+        _saving.remove(program.id);
       }
       _summarize(saved);
       notifyListeners();
       return true;
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
+      if (identical(_open[program.id], program)) {
+        _unsaved.add(program.id);
+        _saving.remove(program.id);
+      }
       notifyListeners();
       return false;
     }
@@ -342,6 +353,7 @@ class CoachLibrary with ChangeNotifier, TemplateDrafting implements SignOutState
     _programs.removeWhere((each) => each.id == id);
     _open.remove(id);
     _unsaved.remove(id);
+    _saving.remove(id);
     notifyListeners();
   }
 

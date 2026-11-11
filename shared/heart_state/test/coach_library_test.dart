@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -14,6 +16,9 @@ class _Server implements CoachLibraryService {
 
   Object? refuse;
   var reads = 0;
+
+  /// Holds a save until it completes.
+  Completer<void>? gate;
 
   CoachProgram _row(String id, {bool body = true}) {
     return CoachProgram(
@@ -46,6 +51,7 @@ class _Server implements CoachLibraryService {
 
   @override
   Future<CoachProgram> saveLibraryProgram(String programId, Map<String, dynamic> body) async {
+    await gate?.future;
     if (refuse case final refusal?) throw refusal;
     saves.add(body);
     bodies[programId] = body;
@@ -197,6 +203,19 @@ void main() {
     await library.removeSession(current, current.sessions[1]);
     expect([for (final each in library.lookup(program.id)!.sessions) each.name], ['Day C', 'Day B']);
     expect([for (final each in server.saves.last['sessions'] as List) (each as Map)['name']], ['Day C', 'Day B']);
+  });
+
+  test('a save on its way is saving, not unsaved: nothing has failed yet', () async {
+    final program = await written();
+    server.gate = Completer();
+
+    final saved = library.save(program.copyWith(program: program.program.copyWith(name: 'Strength block v2')));
+
+    expect(library.saving(program.id), isTrue);
+    expect(library.unsaved(program.id), isFalse);
+    server.gate!.complete();
+    expect(await saved, isTrue);
+    expect(library.saving(program.id), isFalse);
   });
 
   test("a save that doesn't arrive is kept here, unsaved, until a retry gets it there", () async {
