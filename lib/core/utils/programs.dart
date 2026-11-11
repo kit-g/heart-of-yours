@@ -167,6 +167,9 @@ class RemotePrograms implements RemoteProgramService {
   @override
   Future<void> deleteSkip(String skipId) => _refusedAsBody(() => _api.deleteSkip(skipId));
 
+  @override
+  Future<void> startProgram(String programId) => _refusedAsBody(() => _api.startProgram(programId));
+
   static Future<T> _refusedAsBody<T>(Future<T> Function() call) async {
     try {
       return await call();
