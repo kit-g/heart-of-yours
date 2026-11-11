@@ -165,6 +165,20 @@ class _NoRosterService implements RosterService {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
+class _Library extends CoachLibrary {
+  int calls = 0;
+
+  new() : super(service: _NoLibraryService(), exerciseOf: (_) => null);
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoLibraryService implements CoachLibraryService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
 class _Goals extends Goals {
   int calls = 0;
 
@@ -309,6 +323,7 @@ void main() {
     late _Templates templates;
     late _Programs programs;
     late _Roster roster;
+    late _Library library;
     late _Timers timers;
     late _Upsync upsync;
     late _Workouts workouts;
@@ -330,6 +345,7 @@ void main() {
       templates = _Templates();
       programs = _Programs();
       roster = _Roster();
+      library = _Library();
       timers = _Timers();
       upsync = _Upsync();
       workouts = _Workouts();
@@ -352,6 +368,7 @@ void main() {
             ChangeNotifierProvider<Templates>.value(value: templates),
             ChangeNotifierProvider<Programs>.value(value: programs),
             ChangeNotifierProvider<Roster>.value(value: roster),
+            ChangeNotifierProvider<CoachLibrary>.value(value: library),
             ChangeNotifierProvider<Timers>.value(value: timers),
             ChangeNotifierProvider<Upsync>.value(value: upsync),
             ChangeNotifierProvider<Workouts>.value(value: workouts),
@@ -382,6 +399,7 @@ void main() {
         templates.calls,
         programs.calls,
         roster.calls,
+        library.calls,
         timers.calls,
         upsync.calls,
         workouts.calls,
@@ -421,6 +439,7 @@ void main() {
     late _Templates templates;
     late _Programs programs;
     late _Roster roster;
+    late _Library library;
     late _Timers timers;
     late _Upsync upsync;
     late _Workouts workouts;
@@ -450,6 +469,7 @@ void main() {
       templates = _Templates();
       programs = _Programs();
       roster = _Roster();
+      library = _Library();
       timers = _Timers();
       upsync = _Upsync();
       workouts = _Workouts();
@@ -483,6 +503,7 @@ void main() {
             ChangeNotifierProvider<Templates>.value(value: templates),
             ChangeNotifierProvider<Programs>.value(value: programs),
             ChangeNotifierProvider<Roster>.value(value: roster),
+            ChangeNotifierProvider<CoachLibrary>.value(value: library),
             ChangeNotifierProvider<Timers>.value(value: timers),
             ChangeNotifierProvider<Upsync>.value(value: upsync),
             ChangeNotifierProvider<Workouts>.value(value: workouts),
@@ -514,6 +535,7 @@ void main() {
         templates.calls,
         programs.calls,
         roster.calls,
+        library.calls,
         timers.calls,
         upsync.calls,
         workouts.calls,
@@ -597,7 +619,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the eighteen known notifiers', () {
+    test('the fan-out list is the nineteen known notifiers', () {
       final clear = File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync();
       final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
       final fanned = {for (final match in fanOutCall.allMatches(clear)) match.group(1)!};
@@ -609,6 +631,7 @@ void main() {
         'Auth',
         'Backfill',
         'Charts',
+        'CoachLibrary',
         'Coaching',
         'Exercises',
         'Goals',

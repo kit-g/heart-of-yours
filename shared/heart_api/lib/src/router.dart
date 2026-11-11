@@ -18,6 +18,13 @@ abstract final class Router {
   static const blocks = 'v1/blocks';
   static const coachClients = 'v1/coach/clients';
   static const coachFeed = 'v1/coach/feed';
+  static const libraryPrograms = 'v1/library-programs';
+
+  static String libraryProgram(String programId) => '$libraryPrograms/$programId';
+
+  static String libraryHolders(String programId) => '${libraryProgram(programId)}/holders';
+
+  static String librarySend(String programId) => '${libraryProgram(programId)}/send';
 
   /// Where a coach says they have looked at a client, by the connection's id.
   static String coachClientReviewed(String connectionId) => '$coachClients/$connectionId/reviewed';

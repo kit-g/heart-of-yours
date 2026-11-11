@@ -159,9 +159,10 @@ RouteBase _workoutRoute() {
     routes: [
       GoRoute(
         path: 'templates',
-        builder: (_, state) {
+        builder: (context, state) {
           return TemplateEditor(
             isNewTemplate: state.uri.queryParameters['newTemplate'] == 'true',
+            drafts: Templates.of(context),
           );
         },
         name: _templateEditorName,
@@ -1262,11 +1263,121 @@ RouteBase _coachingRoute() {
       StatefulShellBranch(
         routes: [page(_coachingMessagesPath, _coachingMessagesName, (back) => CoachMessagesPage(onYourTraining: back))],
       ),
-      StatefulShellBranch(
-        routes: [page(_coachingProgramsPath, _coachingProgramsName, (back) => CoachProgramsPage(onYourTraining: back))],
-      ),
+      StatefulShellBranch(routes: [_coachingProgramsRoute(off)]),
       StatefulShellBranch(
         routes: [page(_coachingMePath, _coachingMeName, (back) => CoachMePage(onYourTraining: back))],
+      ),
+    ],
+  );
+}
+
+/// A coach's library (#557): the list, a new program, one program, and the
+/// program form and template editor on it, as the coach's own programs have.
+GoRoute _coachingProgramsRoute(GoRouterRedirect off) {
+  return GoRoute(
+    path: _coachingProgramsPath,
+    name: _coachingProgramsName,
+    redirect: off,
+    builder: (context, _) {
+      return CoachProgramsPage(
+        onYourTraining: context.leaveCoaching,
+        onOpen: context.goToCoachingProgram,
+        onNew: context.goToNewCoachingProgram,
+      );
+    },
+    routes: [
+      // before ':programId', which would otherwise take "new" for an id
+      GoRoute(
+        path: 'new',
+        name: _coachingNewProgramName,
+        builder: (context, _) {
+          final l = L.of(context);
+          String? made;
+          return ProgramFieldsForm(
+            initial: Program(name: '', perWeek: 3, weeks: 8),
+            title: l.newProgram,
+            saveLabel: l.coachingProgramCreate,
+            withNote: true,
+            onSave: (fields) async {
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                final program = await CoachLibrary.of(context).create(Program(name: '').withFields(fields));
+                made = program.id;
+                return true;
+              } catch (error, stacktrace) {
+                reportToSentry(error, stacktrace: stacktrace);
+                messenger.snack(l.coachingProgramCreateFailed);
+                return false;
+              }
+            },
+            onDone: () => switch (made) {
+              final String id => context.goToCoachingProgram(id),
+              null => context.goToCoachingPrograms(),
+            },
+          );
+        },
+      ),
+      GoRoute(
+        path: ':programId',
+        name: _coachingProgramName,
+        builder: (context, state) {
+          final programId = state.pathParameters['programId']!;
+          return CoachProgramPage(
+            key: ValueKey(programId),
+            programId: programId,
+            onEdit: () => context.pushCoachingProgramEdit(programId),
+            onEditSession: ({required isNew}) => context.pushCoachingProgramSession(programId, isNew: isNew),
+            onGone: context.goToCoachingPrograms,
+          );
+        },
+        routes: [
+          GoRoute(
+            path: 'edit',
+            name: _coachingProgramEditName,
+            builder: (context, state) {
+              final l = L.of(context);
+              final library = CoachLibrary.of(context);
+              final programId = state.pathParameters['programId']!;
+              return switch (library.lookup(programId)) {
+                final CoachLibraryProgram program => ProgramFieldsForm(
+                  key: ValueKey(programId),
+                  initial: program.program,
+                  title: l.editProgram,
+                  saveLabel: l.save,
+                  withNote: true,
+                  // one that doesn't reach the server is kept, and its page
+                  // says so: the form has done its part either way
+                  onSave: (fields) async {
+                    final now = library.lookup(programId) ?? program;
+                    await library.save(now.copyWith(program: now.program.withFields(fields)));
+                    return true;
+                  },
+                  onDone: context.pop,
+                ),
+                null => Scaffold(appBar: AppBar()),
+              };
+            },
+          ),
+          GoRoute(
+            path: 'session',
+            name: _coachingProgramSessionName,
+            builder: (context, state) {
+              final l = L.of(context);
+              final isNew = state.uri.queryParameters['new'] == 'true';
+              return TemplateEditor(
+                isNewTemplate: isNew,
+                drafts: CoachLibrary.of(context),
+                words: (
+                  title: switch (isNew) {
+                    true => l.coachingProgramNewSession,
+                    false => l.coachingProgramEditSession,
+                  },
+                  hint: l.coachingProgramSessionName,
+                ),
+              );
+            },
+          ),
+        ],
       ),
     ],
   );

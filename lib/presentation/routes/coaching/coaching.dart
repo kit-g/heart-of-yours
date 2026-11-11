@@ -3,11 +3,15 @@
 /// on Profile, while Coach people is on.
 library;
 
+import 'dart:math';
+
 import 'package:clock/clock.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/avatar.dart';
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
@@ -25,6 +29,8 @@ part 'clients.dart';
 part 'frame.dart';
 part 'invitation.dart';
 part 'invite.dart';
+part 'library.dart';
+part 'library_program.dart';
 part 'pages.dart';
 
 /// Whether the Coaching space is there at all: Coach people is on, for an

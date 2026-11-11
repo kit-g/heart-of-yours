@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'analytics.dart';
 import 'remote.dart';
-import 'supersets.dart';
+import 'template_drafting.dart';
 
 /// Local persistence of the user's template folders.
 ///
@@ -39,7 +39,7 @@ abstract interface class RemoteTemplateFilingService {
   Future<Template> moveTemplate(Template template, {required String? folderId});
 }
 
-class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateSentry {
+class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implements SignOutStateSentry {
   final _templates = SplayTreeSet<Template>();
   final _samples = SplayTreeSet<Template>();
   final _folders = SplayTreeSet<TemplateFolder>();
@@ -69,8 +69,6 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   /// Whether templates are a feature or a graveyard, and which of the two ways
   /// of making one people actually use. Absent in tests.
   final Analytics? analytics;
-
-  Template? editable;
 
   String? userId;
 
@@ -203,97 +201,9 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     }
   }
 
-  Future<void> add(Exercise exercise) async {
-    editable ??= await _service.startTemplate(
-      userId: userId,
-      order: (_templates.lastOrNull?.order ?? 0) + 1,
-    );
-    editable?.add(exercise);
-    notifyListeners();
-  }
-
-  void remove(WorkoutExercise exercise) {
-    editable?.remove(exercise);
-  }
-
-  void addSet(WorkoutExercise exercise) {
-    // a plain set, whatever the last one was: a warm-up is not what comes
-    // after a warm-up (Strong and Hevy agree)
-    final set = switch (exercise.lastOrNull) {
-      ExerciseSet last => last.copy()..setType = .normal,
-      null => ExerciseSet(exercise.exercise),
-    };
-    exercise.add(set);
-    notifyListeners();
-  }
-
-  void removeSet(WorkoutExercise exercise, ExerciseSet set) {
-    exercise.remove(set);
-    notifyListeners();
-  }
-
-  /// Retypes [set] in the template being edited; saved with the rest of it.
-  void setSetType(ExerciseSet set, SetType type) {
-    set.setType = type;
-    notifyListeners();
-  }
-
-  /// Aims [set] in the template being edited at [target], or at nothing when
-  /// it is null (#173); saved with the rest of it. A set added after it copies
-  /// it, as it copies the values.
-  ///
-  /// A measure the target now aims at gives up the fixed value it held: a cell
-  /// shows one or the other, and "5 reps" left under "6–10" would be the one
-  /// the sheet prefills. The set is rebuilt in its place, under its id.
-  void setSetTarget(ExerciseSet set, SetTarget? target) {
-    set.target = target ?? SetTarget.none;
-    final aimed = {...?set.target?.ranges.keys.map((measure) => measure.value)};
-    final map = set.toMap();
-    final exercise = editable?.where((each) => each.contains(set)).firstOrNull;
-    if (exercise != null && aimed.any((key) => map[key] != null)) {
-      final rebuilt = ExerciseSet.fromJson(exercise.exercise, {...map}..removeWhere((key, _) => aimed.contains(key)));
-      final sets = exercise.toList();
-      sets.forEach(exercise.remove);
-      for (final each in sets) {
-        exercise.add(identical(each, set) ? rebuilt : each);
-      }
-    }
-    notifyListeners();
-  }
-
-  void removeExercise(WorkoutExercise exercise) {
-    editable
-      ?..remove(exercise)
-      // a superset left with one member is no superset (#159)
-      ..settle();
-    notifyListeners();
-  }
-
-  void swap(WorkoutExercise toInsert, WorkoutExercise before) {
-    editable
-      ?..swap(toInsert, before)
-      ..settle(moved: toInsert);
-    notifyListeners();
-  }
-
-  void append(WorkoutExercise exercise) {
-    editable
-      ?..append(exercise)
-      ..settle(moved: exercise);
-    notifyListeners();
-  }
-
-  /// Joins [exercise] and [neighbour] of the template being edited in a
-  /// superset (#159), or [exercise] into the one [neighbour] is in.
-  void group(WorkoutExercise exercise, WorkoutExercise neighbour) {
-    editable?.group(exercise, neighbour);
-    notifyListeners();
-  }
-
-  /// Takes [exercise] of the template being edited out of its superset.
-  void leaveGroup(WorkoutExercise exercise) {
-    editable?.leave(exercise);
-    notifyListeners();
+  @override
+  Future<Template> startDraft() {
+    return _service.startTemplate(userId: userId, order: (_templates.lastOrNull?.order ?? 0) + 1);
   }
 
   /// Drops the template being edited, deleting it if it was never saved.
@@ -308,6 +218,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   /// being edited, and quitting that editor discards the edits, not the
   /// template. Local-only either way, so there is nothing to tell the server:
   /// a draft has never been sent to it.
+  @override
   Future<void> discardEditable() async {
     final draft = editable;
     editable = null;
@@ -318,6 +229,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     await _service.deleteTemplate(draft.id);
   }
 
+  @override
   Future<void> saveEditable() async {
     if (editable case Template template) {
       // `local` is the server-id-not-yet-assigned mark, which is exactly what

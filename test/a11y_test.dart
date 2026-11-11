@@ -102,6 +102,8 @@ enum _Screen {
   coachingActivity,
   coachingMessages,
   coachingPrograms,
+  coachingProgram,
+  coachingSendDialog,
   coachingMe,
   coachingInviteDialog,
   invitation,
@@ -928,6 +930,28 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingPrograms, _Guideline.androidTapTarget, null),
   (_Screen.coachingPrograms, _Guideline.iosTapTarget, null),
 
+  // A coach's library program (#557), and sending it with one client picked:
+  // a disabled PrimaryButton announces no disabled state, so its faded label
+  // would be held to contrast (lib/presentation/widgets/buttons.dart).
+  (_Screen.coachingProgram, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingProgram, _Guideline.textContrastLight, null),
+  (_Screen.coachingProgram, _Guideline.textContrastDark, null),
+  (_Screen.coachingProgram, _Guideline.androidTapTarget, null),
+  (_Screen.coachingProgram, _Guideline.iosTapTarget, null),
+  (_Screen.coachingSendDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingSendDialog, _Guideline.textContrastLight, null),
+  (_Screen.coachingSendDialog, _Guideline.textContrastDark, null),
+  (
+    _Screen.coachingSendDialog,
+    _Guideline.androidTapTarget,
+    'the Send PrimaryButton.wide is 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.coachingSendDialog,
+    _Guideline.iosTapTarget,
+    'the Send PrimaryButton.wide is 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+
   (_Screen.coachingMe, _Guideline.labeledTapTarget, null),
   (_Screen.coachingMe, _Guideline.textContrastLight, null),
   (_Screen.coachingMe, _Guideline.textContrastDark, null),
@@ -1260,6 +1284,8 @@ void main() {
       _Screen.coachingActivity: AppKeys.coachingClientsStack,
       _Screen.coachingMessages: AppKeys.coachingMessagesStack,
       _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
+      _Screen.coachingProgram: AppKeys.coachingProgramsStack,
+      _Screen.coachingSendDialog: AppKeys.coachingProgramsStack,
       _Screen.coachingMe: AppKeys.coachingMeStack,
       _Screen.coachingInviteDialog: AppKeys.coachingClientsStack,
     };
@@ -1288,6 +1314,10 @@ void main() {
       // a roster to read, but none for the invite dialog, which opens from
       // the empty tab's button
       final clients = switch (screen) {
+        _Screen.coachingSendDialog => [
+          ClientSummary(connectionId: 'c-sam', studentId: 'sam', name: 'Sam', status: 'active'),
+          ClientSummary(connectionId: 'c-pip', studentId: 'pip', name: 'Pip', status: 'active'),
+        ],
         _Screen.coachingClients || _Screen.coachingActivity => [
           ClientSummary(
             connectionId: 'c-sam',
@@ -1306,6 +1336,36 @@ void main() {
       };
       when(api.getClients(former: anyNamed('former'), cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: clients, cursor: null));
+      // a library of one program (#557), of one session, which Sam holds
+      final library = CoachProgram(
+        id: 'p1',
+        name: 'Strength block',
+        version: 2,
+        updatedAt: DateTime.utc(2026, 11, 10, 12),
+        body: {
+          'name': 'Strength block',
+          'note': 'Four weeks, two days a week',
+          'perWeek': 2,
+          'weeks': 4,
+          'sessions': [
+            {'id': 's1', 'name': 'Day A', 'exercises': <Object>[]},
+          ],
+        },
+      );
+      when(api.getLibraryPrograms(cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: [library], cursor: null));
+      when(api.getLibraryProgram('p1')).thenAnswer((_) async => library);
+      when(api.getLibraryHolders('p1')).thenAnswer(
+        (_) async => [
+          CoachProgramHolder(
+            connectionId: 'c-sam',
+            studentId: 'sam',
+            studentName: 'Sam',
+            programId: 'copy',
+            version: 1,
+          ),
+        ],
+      );
       when(api.getCoachFeed(cursor: anyNamed('cursor'))).thenAnswer(
         (_) async => (
           items: [
@@ -2170,6 +2230,8 @@ void main() {
           _Screen.coachingActivity ||
           _Screen.coachingMessages ||
           _Screen.coachingPrograms ||
+          _Screen.coachingProgram ||
+          _Screen.coachingSendDialog ||
           _Screen.coachingMe ||
           _Screen.coachingInviteDialog:
         await tester.tapByKey(AppKeys.coachingButton);
@@ -2178,6 +2240,16 @@ void main() {
         await tester.pumpTimes();
         if (screen == _Screen.coachingActivity) {
           await tester.tapByKey(AppKeys.coachingActivityView);
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingProgram || screen == _Screen.coachingSendDialog) {
+          await tester.tapByKey(AppKeys.coachingLibraryProgram('p1'));
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingSendDialog) {
+          await tester.tapByKey(AppKeys.coachingSendProgram);
+          await tester.pumpTimes();
+          await tester.tapByKey(AppKeys.coachingSendTo('c-pip'));
           await tester.pumpTimes();
         }
         if (screen == _Screen.coachingInviteDialog) {

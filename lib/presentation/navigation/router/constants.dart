@@ -93,6 +93,11 @@ const _coachingMessagesName = 'coachingMessages';
 const _coachingMessagesPath = '$_coachingPath/messages';
 const _coachingProgramsName = 'coachingPrograms';
 const _coachingProgramsPath = '$_coachingPath/programs';
+// a coach's library (#557), under the Programs tab
+const _coachingNewProgramName = 'coachingNewProgram';
+const _coachingProgramName = 'coachingProgram';
+const _coachingProgramEditName = 'coachingProgramEdit';
+const _coachingProgramSessionName = 'coachingProgramSession';
 const _coachingMeName = 'coachingMe';
 const _coachingMePath = '$_coachingPath/me';
 // what a coach's invitation link opens (#553): the site's own path, which iOS

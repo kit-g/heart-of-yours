@@ -19,6 +19,7 @@ part 'routes/templates.dart';
 part 'routes/connections.dart';
 part 'routes/invitations.dart';
 part 'routes/roster.dart';
+part 'routes/library.dart';
 part 'router.dart';
 
 class Api
@@ -33,7 +34,8 @@ class Api
         _TemplateRoutes,
         _ConnectionRoutes,
         _InvitationRoutes,
-        _RosterRoutes
+        _RosterRoutes,
+        _LibraryRoutes
     implements
         AccountService,
         AnomalyService,

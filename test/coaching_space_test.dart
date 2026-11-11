@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
+import 'package:heart/presentation/routes/workout/workout.dart' show TemplateEditor;
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -61,6 +62,8 @@ void main() {
         .thenAnswer((_) async => (items: <ClientSummary>[], cursor: null));
     when(api.getCoachFeed(cursor: anyNamed('cursor')))
         .thenAnswer((_) async => (items: <CoachFeedItem>[], cursor: null));
+    when(api.getLibraryPrograms(cursor: anyNamed('cursor')))
+        .thenAnswer((_) async => (items: <CoachProgram>[], cursor: null));
     share.shared.clear();
   });
 
@@ -455,6 +458,247 @@ void main() {
       expect(find.text('Sam skipped a session'), findsOneWidget);
       expect(find.text('Sam is near the end of Strength block'), findsOneWidget);
       expect(find.byType(ListTile), findsNWidgets(3));
+    });
+  });
+
+  group("a coach's library (#557)", () {
+    final squat = Exercise(name: 'Squat', category: .barbell, target: .legs, isMine: true);
+    final sam = ClientSummary(connectionId: 'c-sam', studentId: 'sam', name: 'Sam', status: 'active');
+    final pip = ClientSummary(connectionId: 'c-pip', studentId: 'pip', name: 'Pip', status: 'active');
+    final pepper = ClientSummary(connectionId: 'c-pepper', studentId: 'pepper', name: 'Pepper', status: 'active');
+    const programId = '01a1b7d4-bc29-70bb-866b-6549c07024bf';
+
+    /// The server's library, one program per id, a version per save.
+    late Map<String, Map<String, dynamic>> bodies;
+    late Map<String, int> versions;
+
+    CoachProgram row(String id, {bool body = true}) {
+      return CoachProgram(
+        id: id,
+        name: bodies[id]!['name'] as String,
+        version: versions[id]!,
+        body: body ? bodies[id] : null,
+        updatedAt: DateTime.utc(2026, 11, 10, 12),
+      );
+    }
+
+    setUp(() {
+      bodies = {};
+      versions = {};
+      when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [squat]));
+      when(api.getOwnExercises()).thenAnswer((_) async => [squat]);
+      when(api.getClients(former: false, cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: [sam, pip, pepper], cursor: null));
+      when(api.getLibraryPrograms(cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (items: [for (final id in bodies.keys) row(id, body: false)], cursor: null),
+      );
+      when(api.getLibraryProgram(any)).thenAnswer((invocation) async => row(invocation.positionalArguments.first));
+      when(api.saveLibraryProgram(any, any)).thenAnswer((invocation) async {
+        final [id as String, body as Map<String, dynamic>] = invocation.positionalArguments;
+        bodies[id] = body;
+        versions[id] = (versions[id] ?? 0) + 1;
+        return row(id);
+      });
+      when(api.getLibraryHolders(any)).thenAnswer((_) async => []);
+    });
+
+    /// Strength block, of one session: Day A, a squat for one set of five.
+    void written({int version = 1}) {
+      bodies[programId] = {
+        'name': 'Strength block',
+        'note': 'Four weeks, two days a week',
+        'perWeek': 2,
+        'weeks': 4,
+        'sessions': [
+          {
+            'id': '01a1b7d4-bc59-7ad7-9994-c01207b8fb92',
+            'name': 'Day A',
+            'exercises': [
+              {
+                'id': '01a1b7d4-bc59-7012-afde-89362ab6aca6',
+                'exercise': squat.id,
+                'sets': [
+                  {'id': '01a1b7d4-bc59-79c7-9550-874a8fd0647e', 'reps': 5},
+                ],
+              },
+            ],
+          },
+        ],
+      };
+      versions[programId] = version;
+    }
+
+    Future<void> openPrograms(WidgetTester tester, {bool wide = false}) async {
+      account(coach: true);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: wide);
+      // the coach's own exercises, which a body names by id: this harness
+      // never reads the catalog by itself
+      await Exercises.of(tester.element(find.byType(ClientsPage))).init();
+      await tester.tapByKey(AppKeys.coachingProgramsStack);
+      await tester.pumpTimes();
+    }
+
+    testWidgets('an empty library says so, and a new program is made there, with a note', (tester) async {
+      await openPrograms(tester);
+      expect(find.text('No programs yet'), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingNewProgram), findsNothing, reason: 'the empty page has its own button');
+
+      await tester.tapByKey(AppKeys.coachingNewProgramEmpty);
+      await tester.pumpTimes();
+      await tester.enterText(find.byKey(AppKeys.programFormName), 'Strength block');
+      await tester.enterText(find.byKey(AppKeys.programFormNote), 'Four weeks, two days a week');
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(AppKeys.programFormSave));
+      await tester.tapByKey(AppKeys.programFormSave);
+      await tester.pumpTimes();
+
+      final [id as String, body as Map] = verify(api.saveLibraryProgram(captureAny, captureAny)).captured;
+      expect(isUuidV7(id), isTrue);
+      expect(body, containsPair('name', 'Strength block'));
+      expect(body, containsPair('note', 'Four weeks, two days a week'));
+      expect(body['sessions'], isEmpty);
+      expect(find.byType(CoachProgramPage), findsOneWidget);
+      expect(find.text('No sessions yet.'), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingSendProgram), findsNothing, reason: 'nothing in it to send');
+    });
+
+    testWidgets("a program's page: its sessions by name, and who holds which version", (tester) async {
+      written(version: 2);
+      when(api.getLibraryHolders(programId)).thenAnswer(
+        (_) async => [
+          CoachProgramHolder(connectionId: 'c-pip', studentId: 'pip', programId: 'copy', version: 1),
+        ],
+      );
+      await openPrograms(tester);
+
+      expect(find.text('Version 2 · Nov 10, 2026'), findsOneWidget);
+      await tester.tapByKey(AppKeys.coachingLibraryProgram(programId));
+      await tester.pumpTimes();
+
+      expect(find.text('2 times a week · 4 weeks'), findsOneWidget);
+      expect(find.text('Four weeks, two days a week'), findsOneWidget);
+      expect(find.text('Day A'), findsOneWidget);
+      expect(find.text('Squat'), findsOneWidget);
+      await tester.scrollUntilVisible(find.byKey(AppKeys.coachingHolder('c-pip')), 200);
+      expect(
+        find.descendant(of: find.byKey(AppKeys.coachingHolder('c-pip')), matching: find.text('Pip')),
+        findsOneWidget,
+        reason: "the roster's name, when the holder comes without one",
+      );
+      expect(find.text('Version 1; the latest is 2'), findsOneWidget);
+    });
+
+    testWidgets('a session edited in the template editor is saved into the program', (tester) async {
+      written();
+      await openPrograms(tester);
+      await tester.tapByKey(AppKeys.coachingLibraryProgram(programId));
+      await tester.pumpTimes();
+
+      await tester.tap(find.text('Day A'));
+      await tester.pumpTimes();
+      expect(find.byType(TemplateEditor), findsOneWidget);
+      expect(find.text('Edit session'), findsOneWidget);
+
+      await tester.enterText(
+        find.descendant(of: find.byType(AppBar), matching: find.byType(TextField)),
+        'Day A, heavy',
+      );
+      await tester.pump();
+      await tester.tap(find.text('Save'));
+      await tester.pumpTimes();
+
+      final body = verify(api.saveLibraryProgram(programId, captureAny)).captured.last as Map;
+      final [session as Map] = body['sessions'] as List;
+      expect(session['name'], 'Day A, heavy');
+      expect(((session['exercises'] as List).single as Map)['exercise'], squat.id);
+      expect(find.byType(CoachProgramPage), findsOneWidget);
+      expect(find.text('Day A, heavy'), findsOneWidget);
+    });
+
+    testWidgets('sending: who holds it is greyed, and each client answers on its own', (tester) async {
+      written();
+      when(api.getLibraryHolders(programId)).thenAnswer(
+        (_) async => [
+          CoachProgramHolder(connectionId: 'c-pip', studentId: 'pip', programId: 'copy', version: 1),
+        ],
+      );
+      when(api.sendLibraryProgram(programId, any)).thenAnswer(
+        (_) async => [
+          const ProgramDelivery(connectionId: 'c-sam', delivered: true, programId: 'copy-sam'),
+          const ProgramDelivery(connectionId: 'c-pepper', delivered: false, reason: 'program_limit'),
+        ],
+      );
+      await openPrograms(tester);
+      await tester.tapByKey(AppKeys.coachingLibraryProgram(programId));
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.coachingSendProgram);
+      await tester.pumpTimes();
+      expect(find.text('Has it (version 1)'), findsOneWidget);
+      expect(tester.widget<CheckboxListTile>(find.byKey(AppKeys.coachingSendTo('c-pip'))).onChanged, isNull);
+
+      await tester.tapByKey(AppKeys.coachingSendTo('c-sam'));
+      await tester.tapByKey(AppKeys.coachingSendTo('c-pepper'));
+      await tester.pump();
+      expect(find.text('Send to 2 clients'), findsOneWidget);
+      await tester.tapByKey(AppKeys.coachingSendConfirm);
+      await tester.pumpTimes();
+
+      final [ids as Iterable] = verify(api.sendLibraryProgram(programId, captureAny)).captured;
+      expect(ids, unorderedEquals(['c-sam', 'c-pepper']));
+      expect(
+        find.text('Sent to 1 client\nNot sent to Pepper: they have as many programs as they can hold'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets("a save that doesn't arrive is kept, said, and sent again by Retry", (tester) async {
+      written();
+      await openPrograms(tester);
+      await tester.tapByKey(AppKeys.coachingLibraryProgram(programId));
+      await tester.pumpTimes();
+
+      when(api.saveLibraryProgram(any, any)).thenThrow({'code': 'offline'});
+      await tester.tapByKey(AppKeys.coachingRemoveSession('01a1b7d4-bc59-7ad7-9994-c01207b8fb92'));
+      await tester.pumpTimes();
+
+      expect(find.text('No sessions yet.'), findsOneWidget);
+      expect(find.text('Not saved yet: your last change is only on this device.'), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingSendProgram), findsNothing);
+
+      when(api.saveLibraryProgram(any, any)).thenAnswer((invocation) async {
+        final [id as String, body as Map<String, dynamic>] = invocation.positionalArguments;
+        bodies[id] = body;
+        versions[id] = versions[id]! + 1;
+        return row(id);
+      });
+      await tester.tapByKey(AppKeys.coachingUnsavedRetry);
+      await tester.pumpTimes();
+
+      expect(find.text('Not saved yet: your last change is only on this device.'), findsNothing);
+      expect(bodies[programId]!['sessions'], isEmpty);
+    });
+
+    testWidgets('a deleted program leaves the library', (tester) async {
+      written();
+      when(api.deleteLibraryProgram(programId)).thenAnswer((_) async {
+        bodies.remove(programId);
+      });
+      await openPrograms(tester);
+      await tester.tapByKey(AppKeys.coachingLibraryProgram(programId));
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.coachingProgramMenu);
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingDeleteProgram);
+      await tester.pumpTimes();
+      expect(find.text('Clients who have it keep their copies.'), findsOneWidget);
+      await tester.tapByKey(AppKeys.coachingDeleteConfirm);
+      await tester.pumpTimes();
+
+      verify(api.deleteLibraryProgram(programId)).called(1);
+      expect(find.byType(CoachProgramsPage), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingLibraryProgram(programId)), findsNothing);
     });
   });
 }
