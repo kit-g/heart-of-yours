@@ -1,5 +1,6 @@
 package me.heart.wear
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -313,16 +314,16 @@ internal fun ValueEditor(
                     maxLines = 2,
                     modifier = Modifier.minimumInteractiveComponentSize(),
                 )
-                // a button that looks like one: the line alone read as a
-                // caption, nothing to tap
+                // a quiet outline says it can be tapped: the bare line read as
+                // a caption, a filled button pulled the eye off the number
                 else -> CompactButton(
                     onClick = {
                         current = offered
                         onChange(offered)
                     },
-                    icon = { Icon(painterResource(R.drawable.ic_undo), contentDescription = null) },
                     label = { Text(line, maxLines = 2, textAlign = TextAlign.Center) },
-                    colors = ButtonDefaults.filledTonalButtonColors(contentColor = accent, iconColor = accent),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = accent),
+                    border = BorderStroke(1.dp, accent.copy(alpha = 0.6f)),
                 )
             }
         }

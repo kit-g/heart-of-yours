@@ -840,18 +840,12 @@ struct ValueEditor: View {
                 // one tap to last time's value; already there, it is only said
                 switch last {
                 case let last? where last != value:
-                    LastTimeButton(line: line, accent: accent) { value = last }
+                    Button { value = last } label: {
+                        LastTimeLine(line: line, accent: accent, offered: true)
+                    }
+                    .buttonStyle(.plain)
                 default:
-                    // in the button's room, so the stepper does not jump when
-                    // the value reaches last time's
-                    LastTimeButton(line: line, accent: accent) {}
-                        .hidden()
-                        .overlay {
-                            Text(line)
-                                .foregroundStyle(.secondary)
-                        }
-                        .font(.footnote)
-                        .multilineTextAlignment(.center)
+                    LastTimeLine(line: line, accent: accent, offered: false)
                 }
             }
         }
@@ -863,24 +857,32 @@ struct ValueEditor: View {
     }
 }
 
-/// Last time's line under a value, as a button that looks like one: the line
-/// alone read as a caption, nothing to tap (#586).
-private struct LastTimeButton: View {
+/// Last time's line under a value (#586). Offered, a quiet outline says it
+/// can be tapped — the bare line read as a caption, a filled button pulled the
+/// eye off the number. Said, the same line in the same place without it, so
+/// nothing moves when the value gets there.
+private struct LastTimeLine: View {
     let line: String
     let accent: Color
-    let action: () -> Void
+    let offered: Bool
 
     var body: some View {
-        Button(action: action) {
-            Label(line, systemImage: "arrow.uturn.backward")
-                .foregroundStyle(accent)
-                .frame(maxWidth: .infinity, minHeight: 44)
+        let (colour, outline): (Color, Double) = switch offered {
+        case true: (accent, 0.6)
+        case false: (.secondary, 0)
         }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
-        .tint(accent)
-        .font(.footnote)
-        .multilineTextAlignment(.center)
+        Text(line)
+            .font(.footnote)
+            .multilineTextAlignment(.center)
+            .foregroundStyle(colour)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .overlay {
+                Capsule()
+                    .strokeBorder(accent.opacity(outline), lineWidth: 1)
+            }
+            .frame(minHeight: 44)
+            .contentShape(.rect)
     }
 }
 
