@@ -34,4 +34,25 @@ void main() {
 
     expect(progress(tester), greaterThan(0));
   });
+
+  for (final (name, features) in [
+    ('Reduce Motion', const FakeAccessibilityFeatures(reduceMotion: true)),
+    ('Remove animations', const FakeAccessibilityFeatures(disableAnimations: true)),
+  ]) {
+    testWidgets('with $name, there is no burst (#595)', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = features;
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+
+      await tester.pumpWidget(
+        MediaQuery.fromView(
+          view: tester.view,
+          child: const Directionality(textDirection: .ltr, child: Confetti()),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byType(ValueListenableBuilder<double>), findsNothing);
+      expect(tester.binding.hasScheduledFrame, isFalse, reason: 'nothing left ticking');
+    });
+  }
 }

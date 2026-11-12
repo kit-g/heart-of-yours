@@ -21,6 +21,9 @@ class _CounterState extends State<_Counter> with TickerProviderStateMixin {
   late List<AnimationController> _controllers;
   late List<Animation<double>> _animations;
 
+  /// Whether the pulse has been decided on: it runs once, or not at all.
+  var _decided = false;
+
   @override
   void initState() {
     super.initState();
@@ -37,7 +40,15 @@ class _CounterState extends State<_Counter> with TickerProviderStateMixin {
     );
 
     _initAnimations();
-    _animate();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_decided) return;
+    _decided = true;
+    // with less motion asked for, the hearts are simply there (#595)
+    if (!lessMotion(context)) _animate();
   }
 
   @override

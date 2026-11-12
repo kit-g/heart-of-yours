@@ -308,25 +308,30 @@ void main() {
     expect(opacity('was 130 kg'), 1);
   });
 
-  testWidgets('with Reduce Motion, every badge is simply there', (tester) async {
-    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
-    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+  for (final (name, features) in [
+    ('Reduce Motion', const FakeAccessibilityFeatures(reduceMotion: true)),
+    ('Remove animations', const FakeAccessibilityFeatures(disableAnimations: true)),
+  ]) {
+    testWidgets('with $name, every badge is simply there', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = features;
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
 
-    await pumpRecords(tester, [
-      beat(bench, .maxWeight, {'weight': 100.0, 'reps': 5}, {'weight': 95.0, 'reps': 5}),
-      beat(squat, .maxWeight, {'weight': 140.0, 'reps': 3}, {'weight': 130.0, 'reps': 3}),
-    ]);
-    // the future resolves, and that frame is the finished one
-    await tester.pump();
-    await tester.pump();
+      await pumpRecords(tester, [
+        beat(bench, .maxWeight, {'weight': 100.0, 'reps': 5}, {'weight': 95.0, 'reps': 5}),
+        beat(squat, .maxWeight, {'weight': 140.0, 'reps': 3}, {'weight': 130.0, 'reps': 3}),
+      ]);
+      // the future resolves, and that frame is the finished one
+      await tester.pump();
+      await tester.pump();
 
-    for (final text in ['was 95 kg', 'was 130 kg']) {
-      final fades = tester.widgetList<FadeTransition>(
-        find.ancestor(of: find.text(text), matching: find.byType(FadeTransition)),
-      );
-      expect(fades.map((each) => each.opacity.value), everyElement(1.0), reason: text);
-    }
-  });
+      for (final text in ['was 95 kg', 'was 130 kg']) {
+        final fades = tester.widgetList<FadeTransition>(
+          find.ancestor(of: find.text(text), matching: find.byType(FadeTransition)),
+        );
+        expect(fades.map((each) => each.opacity.value), everyElement(1.0), reason: text);
+      }
+    });
+  }
 
   testWidgets('keeps to a readable width on a tablet window', (tester) async {
     tester.view.physicalSize = const Size(1194, 834);

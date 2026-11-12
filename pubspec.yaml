@@ -5,8 +5,8 @@ publish_to: none
 version: 1.17.0+1 # build number is managed by the GH action, version should be bumped manually
 
 environment:
-  sdk: ">=3.13.0"
-  flutter: ">=3.47.0"
+  sdk: ">=3.14.0"
+  flutter: ">=3.50.0"
 
 workspace:
   - "shared/heart_api"
