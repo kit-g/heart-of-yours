@@ -448,6 +448,76 @@ void main() {
       expect(payloads, ['one', 'two', 'three']);
     });
 
+    test('a send to someone who added a device spends a key on that device alone (heart-api#424)', () async {
+      final phone = device('dana');
+      final student = device('sam');
+      await phone.start('dana');
+      await student.start('sam');
+      await student.deliver(userId: 'dana', kind: 'thread_key', payload: 'one');
+      final tablet = device('dana');
+      await tablet.start('dana');
+      final phoneKeys = server.oneTimeKeys[phone.deviceId]!.length;
+
+      await student.deliver(userId: 'dana', kind: 'thread_key', payload: 'two');
+
+      expect(server.claims, [
+        [phone.deviceId],
+        [tablet.deviceId],
+      ]);
+      expect(server.oneTimeKeys[phone.deviceId], hasLength(phoneKeys));
+      expect(server.queue.map((each) => each.recipientDeviceId), [phone.deviceId, phone.deviceId, tablet.deviceId]);
+      expect(errors, isEmpty);
+    });
+
+    test('a device a send leaves out is not claimed from', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      final student = device('sam');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await student.start('sam');
+
+      await student.deliver(userId: 'dana', kind: 'thread_key', payload: 'k', to: (each) => each.id == phone.deviceId);
+
+      expect(server.claims, [
+        [phone.deviceId],
+      ]);
+      expect(server.oneTimeKeys[tablet.deviceId], hasLength(Sealbox.maxOneTimeKeys));
+    });
+
+    test('more than ten devices are claimed from ten at a time', () async {
+      final coach = List.generate(11, (_) => device('dana'));
+      for (final each in coach) {
+        await each.start('dana');
+      }
+      final student = device('sam');
+      await student.start('sam');
+
+      await student.deliver(userId: 'dana', kind: 'thread_key', payload: 'k');
+
+      expect(server.claims.map((each) => each?.length), [10, 1]);
+      expect(server.queue, hasLength(11));
+    });
+
+    test('a device gone between the list and the claim gets nothing now, and is reported', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      final student = device('sam');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await student.start('sam');
+      final hold = server.holds['claim'] = Completer<void>();
+
+      final sending = student.deliver(userId: 'dana', kind: 'thread_key', payload: 'k');
+      await server.called('claim');
+      server.remove(tablet.deviceId!);
+      hold.complete();
+      await sending;
+
+      expect(server.queue.map((each) => each.recipientDeviceId), [phone.deviceId]);
+      expect(errors.single, isA<KeysUnclaimed>().having((error) => error.count, 'count', 1));
+    });
+
     test("the account's own id reaches its other devices", () async {
       final phone = device('dana');
       final tablet = device('dana');
@@ -744,6 +814,9 @@ class _Server {
   final calls = <String>[];
   final _pairs = <(String, String)>{};
 
+  /// The devices each claim named, in order: null for one that named none.
+  final claims = <List<String>?>[];
+
   /// What the next call of a name throws, once: a refusal, or no network.
   final refuseNext = <String, Object>{};
 
@@ -902,12 +975,20 @@ class _As implements RemoteKeyService {
   }
 
   @override
-  Future<List<CryptoDevice>> claimKeys(String userId) async {
+  Future<List<CryptoDevice>> claimKeys(String userId, {List<String>? deviceIds}) async {
     server.calls.add('claim $me $userId');
+    server.claims.add(deviceIds);
     await _answer('claim');
     if (!server._shares(me, userId)) throw {'error': 'forbidden', 'code': 'forbidden'};
+    if (deviceIds case final ids? when ids.isEmpty || ids.length > 10) {
+      throw {'error': 'bad request', 'code': 'bad_request'};
+    }
+    // a named device that isn't theirs, or was removed, is left out
+    final named = server.devices.values.where(
+      (each) => each.userId == userId && (deviceIds?.contains(each.id) ?? true),
+    );
     return [
-      for (final device in server.devices.values.where((each) => each.userId == userId))
+      for (final device in named)
         switch (server.oneTimeKeys[device.id]) {
           final List<MapEntry<String, String>> held when held.isNotEmpty => () {
             final key = held.removeAt(0);

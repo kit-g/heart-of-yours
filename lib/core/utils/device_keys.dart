@@ -45,7 +45,9 @@ class RemoteDeviceKeys implements RemoteKeyService {
   Future<void> replaceFallbackKey(String deviceId, String key) => _api.replaceFallbackKey(deviceId, key);
 
   @override
-  Future<List<CryptoDevice>> claimKeys(String userId) => _api.claimKeys(userId);
+  Future<List<CryptoDevice>> claimKeys(String userId, {List<String>? deviceIds}) {
+    return _api.claimKeys(userId, deviceIds: deviceIds);
+  }
 
   @override
   Future<void> enqueueKeyItem({

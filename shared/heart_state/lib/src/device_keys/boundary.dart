@@ -23,7 +23,10 @@ abstract interface class RemoteKeyService {
 
   Future<void> replaceFallbackKey(String deviceId, String key);
 
-  Future<List<CryptoDevice>> claimKeys(String userId);
+  /// One key from each of [userId]'s devices, or from only those [deviceIds]
+  /// names, one to ten of them. A named device that isn't theirs, or was
+  /// removed, is left out of the answer.
+  Future<List<CryptoDevice>> claimKeys(String userId, {List<String>? deviceIds});
 
   Future<void> enqueueKeyItem({
     required String id,

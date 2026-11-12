@@ -26,6 +26,22 @@ class KeyMismatch implements Exception {
   String toString() => 'KeyMismatch($userId)';
 }
 
+/// Reported, not thrown, when a claim left out devices a send named: removed,
+/// or no longer the person's, between reading their devices and claiming.
+/// What reached the rest stands; those wait for the next send, which reads the
+/// devices again.
+class KeysUnclaimed implements Exception {
+  final String userId;
+
+  /// How many of the devices named came back without a key.
+  final int count;
+
+  const new(this.userId, this.count);
+
+  @override
+  String toString() => 'KeysUnclaimed($userId, $count)';
+}
+
 /// A failure inside the encryption library, by its code alone: what it says
 /// beyond that never leaves the device, since it may name a key.
 class KeyFailure implements Exception {
@@ -334,17 +350,25 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
 
       final sessions = {for (final each in targets) each.id: await run.session(each.id)};
       // a device with no session yet needs one of its single-use keys, and
-      // only then is anything claimed. The server takes one from every device
-      // of the person's, those with a session and those [to] left out as well:
-      // it has no way yet to claim for some devices only.
-      final claimed = switch (sessions.values.any((each) => each == null)) {
-        true => {for (final each in await run.service.claimKeys(userId)) each.id: each},
-        false => const <String, CryptoDevice>{},
+      // only those devices are named in a claim (heart-api#424), so neither one
+      // with a session nor one [to] left out spends a key
+      final unkeyed = [
+        for (final each in targets)
+          if (sessions[each.id] == null) each.id,
+      ];
+      final claimed = {
+        for (final named in _batches(unkeyed, _claimLimit))
+          for (final each in await run.service.claimKeys(userId, deviceIds: named)) each.id: each,
       };
+      // one the claim left out was removed, or stopped being theirs, since the
+      // list: nothing reaches it now, and the next send reads the list again
+      if (unkeyed.where((id) => !claimed.containsKey(id)).length case final missing when missing > 0) {
+        _report(KeysUnclaimed(userId, missing));
+      }
 
       for (final target in targets) {
         final session = sessions[target.id] ?? _startSession(run, device, target.device, claimed[target.id]);
-        // a device that came between the list and the claim waits for the next send
+        // left out of the claim, or its keys changed since the list
         if (session == null) continue;
         final sealed = _guard(() => run.sealbox.encrypt(session.session, payload));
         // saved before it travels: a session used twice is a broken one
@@ -404,6 +428,14 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
     };
     onError?.call(reported, stacktrace: stacktrace);
   }
+}
+
+/// The most devices one claim may name.
+const _claimLimit = 10;
+
+/// [ids] in order, in batches of at most [size].
+Iterable<List<String>> _batches(List<String> ids, int size) {
+  return Iterable.generate((ids.length / size).ceil(), (index) => ids.skip(index * size).take(size).toList());
 }
 
 /// Runs a call into the library, turning what it throws into its code alone.
