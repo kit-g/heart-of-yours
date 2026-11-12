@@ -1,9 +1,13 @@
 part of 'coaching.dart';
 
 /// Where an invitation link goes: the site, which opens the app where it is
-/// installed and invites on the web where it isn't (#553). The key fingerprint
-/// joins it after `#` once devices hold keys (#555).
-Uri invitationLink(AppConfig config, String token) => Uri.https(config.appDomain, '/invite.html', {'t': token});
+/// installed and invites on the web where it isn't (#553). [fingerprint], the
+/// coach's device's keys (#555), rides after `#`, the part of an address that
+/// never reaches a server, for the student's device to check the coach's keys
+/// against.
+Uri invitationLink(AppConfig config, String token, {String? fingerprint}) {
+  return Uri.https(config.appDomain, '/invite.html', {'t': token}).replace(fragment: fingerprint);
+}
 
 /// Asks what the coach calls the person, makes their link, and hands it to the
 /// share sheet: the coach sends it however they like.
@@ -18,6 +22,7 @@ Future<void> inviteSomeone(BuildContext context) async {
   final l = L.of(context);
   final config = AppConfig.of(context);
   final origin = _shareOrigin(context);
+  final keys = DeviceKeys.of(context);
   final Invitation invitation;
   try {
     invitation = await Coaching.of(context).invite(name);
@@ -29,7 +34,10 @@ Future<void> inviteSomeone(BuildContext context) async {
     return;
   }
   // made either way: it waits on Clients, and "Share a new link" sends it again
-  if (invitation.token case final String token) await _share(l, config, token, origin);
+  if (invitation.token case final String token) await _share(l, config, token, origin, await keys.fingerprint());
+  // the first thing that pushes a coach: hearing that the person accepted
+  // (#567). Asked once the link is on its way, never before
+  if (context.mounted) await askForPushes(context);
 }
 
 /// A fresh link for [invitation], shared again. The old one stops working.
@@ -38,6 +46,7 @@ Future<void> shareAgain(BuildContext context, Invitation invitation) async {
   final l = L.of(context);
   final config = AppConfig.of(context);
   final origin = _shareOrigin(context);
+  final keys = DeviceKeys.of(context);
   final Invitation renewed;
   try {
     renewed = await Coaching.of(context).resend(invitation);
@@ -45,11 +54,11 @@ Future<void> shareAgain(BuildContext context, Invitation invitation) async {
     messenger.snack(l.coachingInviteFailed);
     return;
   }
-  if (renewed.token case final String token) await _share(l, config, token, origin);
+  if (renewed.token case final String token) await _share(l, config, token, origin, await keys.fingerprint());
 }
 
-Future<void> _share(L l, AppConfig config, String token, Rect? origin) {
-  final link = invitationLink(config, token).toString();
+Future<void> _share(L l, AppConfig config, String token, Rect? origin, String? fingerprint) {
+  final link = invitationLink(config, token, fingerprint: fingerprint).toString();
   return SharePlus.instance.share(ShareParams(text: l.coachingInviteShareText(link), sharePositionOrigin: origin));
 }
 

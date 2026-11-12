@@ -114,6 +114,7 @@ enum _Screen {
   revokeApiTokenDialog,
   whatsNew,
   restTimers,
+  pushSettings,
   features,
   recaps,
   monthlyReport,
@@ -1065,6 +1066,14 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.monthlyReport, _Guideline.androidTapTarget, null),
   (_Screen.monthlyReport, _Guideline.iosTapTarget, null),
 
+  // Notifications (lib/presentation/routes/settings/push_settings.dart, #554):
+  // Your coach on, so the push client runs and the page is there
+  (_Screen.pushSettings, _Guideline.labeledTapTarget, null),
+  (_Screen.pushSettings, _Guideline.textContrastLight, null),
+  (_Screen.pushSettings, _Guideline.textContrastDark, null),
+  (_Screen.pushSettings, _Guideline.androidTapTarget, null),
+  (_Screen.pushSettings, _Guideline.iosTapTarget, null),
+
   // Features (lib/presentation/routes/settings/features.dart, #226): the
   // opt-in switches, the muscle map on so its options unfold under it.
   (_Screen.features, _Guideline.labeledTapTarget, null),
@@ -1300,6 +1309,10 @@ void main() {
     }
     if (screen == _Screen.rpePicker) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on'});
+    }
+    // a coaching switch on, so the push client runs (#567, #554)
+    if (screen == _Screen.pushSettings) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-yourCoach': 'on'});
     }
     // default rest (#174) on, so the page's kinds are held to it as well
     if (screen == _Screen.restTimers) {
@@ -1664,6 +1677,33 @@ void main() {
       case _Screen.pastWorkoutEditor:
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench]));
         when(db.storeMeasurements(any)).thenAnswer((_) async {});
+      case _Screen.pushSettings:
+        // an answered feature sends the account up through settings sync
+        when(api.registerAccount(any)).thenAnswer((invocation) async => invocation.positionalArguments.single);
+        when(api.getConnections()).thenAnswer((_) async => []);
+        when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
+        when(api.getPushSettings()).thenAnswer(
+          (_) async => PushSettings(
+            topics: [
+              PushSetting(
+                topic: 'coaching.message',
+                group: 'coaching',
+                name: 'Messages',
+                description: 'When someone you train with writes to you',
+                delivery: 'instant',
+                options: ['instant', 'off'],
+              ),
+              PushSetting(
+                topic: 'coaching.workout_digest',
+                group: 'coaching',
+                name: "Your clients' workouts",
+                description: 'Once a day, when your clients have trained',
+                delivery: 'daily',
+                options: ['daily', 'off'],
+              ),
+            ],
+          ),
+        );
       case _Screen.restTimers:
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench]));
         when(api.getExercises()).thenAnswer((_) async => [_bench]);
@@ -2232,6 +2272,11 @@ void main() {
         GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps/2026-09');
         await tester.pumpTimes();
         expect(find.byKey(AppKeys.monthlyReport), findsOneWidget);
+      case _Screen.pushSettings:
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/settings/notifications');
+        await tester.pumpTimes();
+        expect(find.byType(PushSettingsPage), findsOneWidget);
+        expect(find.text('Messages'), findsOneWidget);
       case _Screen.features:
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();

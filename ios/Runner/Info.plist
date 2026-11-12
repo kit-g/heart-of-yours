@@ -57,6 +57,10 @@
         </array>
         <key>CFBundleVersion</key>
         <string>$(FLUTTER_BUILD_NUMBER)</string>
+        <!-- no push token until a coaching switch is on (#567): the app turns
+             FCM's auto-init on itself when the push client starts -->
+        <key>FirebaseMessagingAutoInitEnabled</key>
+        <false/>
         <key>GIDClientID</key>
         <string>$(GOOGLE_CLIENT_ID)</string>
         <key>HeartAppGroup</key>
@@ -65,6 +69,11 @@
         <true/>
         <key>NSSupportsLiveActivities</key>
         <true/>
+        <!-- silent pushes (#567) wake the app to note what changed -->
+        <key>UIBackgroundModes</key>
+        <array>
+            <string>remote-notification</string>
+        </array>
         <key>NSCalendarsUsageDescription</key>
         <string>Heart puts your program's sessions in the calendar you pick and keeps them up to date as you train. It reads your calendars only to list them, and changes only the events it made.</string>
         <key>NSCalendarsFullAccessUsageDescription</key>

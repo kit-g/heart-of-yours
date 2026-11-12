@@ -11,6 +11,7 @@ import 'package:heart/core/env/home_widgets.dart';
 import 'package:heart/core/env/launch_screen.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
+import 'package:heart/core/env/push.dart';
 import 'package:heart/core/env/rest_store.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/env/shortcuts.dart';
@@ -29,6 +30,8 @@ import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/programs.dart';
+import 'package:heart/core/utils/pushes.dart';
+import 'package:heart/core/utils/device_keys.dart';
 import 'package:heart/core/utils/workout_plans.dart';
 import 'package:heart/core/utils/live_records.dart';
 import 'package:heart/core/utils/record_book.dart';
@@ -46,6 +49,8 @@ import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
 import 'package:heart/presentation/navigation/pause.dart';
 import 'package:heart/presentation/navigation/program_calendar.dart';
+import 'package:heart/presentation/navigation/pushes.dart';
+import 'package:heart/presentation/navigation/device_keys.dart';
 import 'package:heart/presentation/navigation/system_shortcuts.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/navigation/watch.dart';
@@ -73,6 +78,15 @@ class HeartApp extends StatelessWidget {
   /// one. A test passes its own.
   final DeviceCalendar? calendar;
 
+  /// The push client's transport (#567); by default FCM, where the app has
+  /// notifications at all. A test passes its own.
+  final PushClient? pushClient;
+
+  /// Where this device keeps its encryption keys (#555): the Keychain or the
+  /// Keystore on a phone, none on the web or in a test unless it brings one.
+  /// Without one, keys never run.
+  final KeyVault? keyVault;
+
   const new({
     super.key,
     required this.appConfig,
@@ -84,6 +98,8 @@ class HeartApp extends StatelessWidget {
     this.hasLocalNotifications = true,
     this.firebaseAuth,
     this.calendar,
+    this.pushClient,
+    this.keyVault,
   });
 
   @override
@@ -313,6 +329,25 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        // The push client's registration and settings (#567, #554):
+        // server-only, and used only while a coaching switch is on.
+        ChangeNotifierProvider<Pushes>(
+          create: (context) => Pushes(
+            service: RemotePushes(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // This device's encryption keys and what carries them (#555): made and
+        // published only while a coaching switch is on (DeviceKeysPresenter).
+        ChangeNotifierProvider<DeviceKeys>(
+          create: (context) => DeviceKeys(
+            service: RemoteDeviceKeys(api),
+            vault: keyVault,
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
         // A coach's roster and feed (#559): server-only, read when the
         // Clients tab opens, which is there only with Coach people on.
         ChangeNotifierProvider<Roster>(
@@ -529,6 +564,7 @@ class HeartApp extends StatelessWidget {
                   config: appConfig,
                   router: router,
                   hasLocalNotifications: hasLocalNotifications ?? true,
+                  pushClient: pushClient,
                 );
               },
             ),
@@ -549,12 +585,14 @@ class _App extends StatefulWidget {
   final AppConfig config;
   final HeartRouter router;
   final bool hasLocalNotifications;
+  final PushClient? pushClient;
 
   const new({
     required this.theme,
     required this.config,
     required this.router,
     required this.hasLocalNotifications,
+    this.pushClient,
   });
 
   @override
@@ -674,7 +712,22 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
                         false => null,
                       },
                       child: PausePresenter(
-                        child: ProgramCalendarPresenter(child: child ?? const SizedBox.shrink()),
+                        child: ProgramCalendarPresenter(
+                          // the push client (#567), running only with a
+                          // coaching switch on; the same gate again, since
+                          // it posts through the notifications plugin
+                          child: PushPresenter(
+                            client:
+                                widget.pushClient ??
+                                switch ((widget.hasLocalNotifications, kIsWeb)) {
+                                  (true, false) => FirebasePushClient(Theme.of(context).platform),
+                                  _ => null,
+                                },
+                            // this device's encryption keys (#555), by the
+                            // push client's rule
+                            child: DeviceKeysPresenter(child: child ?? const SizedBox.shrink()),
+                          ),
+                        ),
                       ),
                     ),
                   ),

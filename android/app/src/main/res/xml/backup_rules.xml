@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto Backup rules for API <= 30. heart.db is a server-synced cache, so
-     excluding it stops a stale / old-schema copy being restored on reinstall. -->
+     excluding it stops a stale / old-schema copy being restored on reinstall.
+     FlutterSecureStorage holds this device's encryption keys (#555), which
+     must never reach another phone: a restored phone is a new device. -->
 <full-backup-content>
     <exclude domain="database" path="heart.db" />
     <exclude domain="database" path="heart.db-wal" />
     <exclude domain="database" path="heart.db-shm" />
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
 </full-backup-content>

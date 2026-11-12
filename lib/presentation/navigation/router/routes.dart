@@ -68,6 +68,7 @@ RouteBase _profileRoute() {
             onExportData: context.goToExportData,
             onWhatsNew: context.goToWhatsNew,
             onRestTimers: context.goToRestTimers,
+            onPushSettings: context.goToPushSettings,
             onFeatures: context.goToFeatures,
             onDeveloperApi: context.goToApiTokens,
             onErased: context.goToProfile,
@@ -116,6 +117,16 @@ RouteBase _profileRoute() {
             path: _restTimersPath,
             builder: (_, _) => const RestTimersPage(),
             name: _restTimersName,
+          ),
+          GoRoute(
+            path: _pushSettingsPath,
+            // off, a link here is one the app has no screen for (`docs/opt-in.md`)
+            redirect: (context, _) => switch (pushesOn(context)) {
+              true => null,
+              false => '$_profilePath/$_settingsPath',
+            },
+            builder: (_, _) => const PushSettingsPage(),
+            name: _pushSettingsName,
           ),
           GoRoute(
             path: _featuresPath,
