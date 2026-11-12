@@ -24,7 +24,7 @@ class _RecordsState extends State<_Records> {
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final reduceMotion = lessMotion(context);
 
     return FutureBuilder<List<AchievedRecord>>(
       future: _achieved,
@@ -127,7 +127,7 @@ class _RecordBadgesState extends State<_RecordBadges> with SingleTickerProviderS
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Reduce Motion: every badge is simply there
-    switch (MediaQuery.disableAnimationsOf(context)) {
+    switch (lessMotion(context)) {
       case true:
         _stagger.value = 1;
       case false when _stagger.isDismissed:

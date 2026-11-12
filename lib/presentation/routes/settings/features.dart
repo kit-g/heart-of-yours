@@ -191,7 +191,7 @@ class _SpotlightState extends State<_Spotlight> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme(:tertiaryContainer) = Theme.of(context).colorScheme;
-    final still = MediaQuery.disableAnimationsOf(context);
+    final still = lessMotion(context);
     return ValueListenableBuilder<bool>(
       valueListenable: _lit,
       builder: (context, lit, child) {
