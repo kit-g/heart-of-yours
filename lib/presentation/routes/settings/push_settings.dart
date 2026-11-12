@@ -195,29 +195,40 @@ Future<void> _change(BuildContext context, Future<void> Function() change) async
   }
 }
 
+/// Someone the person trains with, as a per-person choice needs them: the
+/// connection, what to call them, and the person's own side of it.
+typedef _Person = ({String id, String name, ConnectionRole role});
+
 /// The person's own answers for the people they train with: a coach's clients
 /// and a student's coaches, each opening what reaches them from that one
-/// person. Absent while there is nobody, or no topic that could be narrowed.
+/// person. A topic is offered for someone only when the server lists the
+/// person's side of that connection in its `perPersonAs` (heart-api#416), so
+/// a coach is never offered the programs only a student receives. Someone with
+/// no such topic is left out, and the section with them when nobody is left.
 class const _People() extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final preferences = Preferences.watch(context);
-    final coaches = [
+    final coaches = <_Person>[
       for (final coach in Coaching.watch(context).coaches)
-        if (coach.connectionId case final String id) (id: id, name: preferences.coachName(id) ?? l.yourCoach),
+        if (coach.connectionId case final String id)
+          (id: id, name: preferences.coachName(id) ?? l.yourCoach, role: coach.role),
     ];
     final clients = switch (coachingSpaceOn(context, listen: true)) {
-      true => [
+      true => <_Person>[
         for (final client in Roster.watch(context).clients)
-          (id: client.connectionId, name: client.name ?? l.coachingClientUnnamed),
+          (id: client.connectionId, name: client.name ?? l.coachingClientUnnamed, role: .coach),
       ],
-      false => const <({String id, String name})>[],
+      false => const <_Person>[],
     };
-    final people = [...coaches, ...clients];
-    final topics = Pushes.watch(context).topics.where((topic) => topic.group == 'coaching').where(_offerable).toList();
-    if (people.isEmpty || topics.isEmpty) return const SizedBox.shrink();
+    final topics = Pushes.watch(context).topics.where(_offerable).toList();
+    final people = [
+      for (final person in [...coaches, ...clients])
+        if (_topicsFor(person, topics) case final offered when offered.isNotEmpty) (person: person, topics: offered),
+    ];
+    if (people.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const .only(top: 16),
@@ -228,7 +239,7 @@ class const _People() extends StatelessWidget {
             padding: const .symmetric(horizontal: 16),
             child: Text(l.pushPeopleBody, style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
           ),
-          for (final person in people)
+          for (final (:person, :topics) in people)
             ListTile(
               key: ValueKey('pushPerson-${person.id}'),
               title: Text(person.name),
@@ -240,7 +251,13 @@ class const _People() extends StatelessWidget {
     );
   }
 
-  void _open(BuildContext context, ({String id, String name}) person, List<PushSetting> topics) {
+  /// The topics that can be chosen for [person] alone, from their side of the
+  /// connection. The server's words are lower case; a role is matched in any.
+  static List<PushSetting> _topicsFor(_Person person, List<PushSetting> topics) {
+    return topics.where((topic) => topic.perPersonAs.any((each) => each.toLowerCase() == person.role.name)).toList();
+  }
+
+  void _open(BuildContext context, _Person person, List<PushSetting> topics) {
     showBrandedDialog<void>(
       context,
       title: Text(person.name),
@@ -256,8 +273,8 @@ class const _People() extends StatelessWidget {
   }
 }
 
-/// Each coaching topic for one person: the topic's own answer by default, or
-/// one of its deliveries for them alone.
+/// Each topic that can be chosen for one person: the topic's own answer by
+/// default, or one of its deliveries for them alone.
 class _PersonTopics extends StatelessWidget {
   final String connectionId;
   final List<PushSetting> topics;

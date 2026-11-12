@@ -13,6 +13,7 @@ import 'package:material_ui/material_ui.dart';
 /// a coaching switch on (Coach people for an account that may coach, or Your
 /// coach). Off, nothing reaches FCM or the server, and no channel shows in
 /// the system's settings. When a switch goes off, or the person signs out, the
+/// server is told to stop sending to this device (heart-api#415) and then the
 /// token is dropped, so nothing sent to it arrives any more.
 ///
 /// It never asks for the notification permission itself: silent pushes need
@@ -193,7 +194,9 @@ class _PushPresenterState extends State<PushPresenter> {
     _running = false;
     _cancel();
     _token = null;
-    Pushes.of(context).unregistered();
+    // the server lets go of the token while it is still the one it knows; a
+    // sign-out has already done so, while its session could
+    await Pushes.of(context).unregister();
     if (await client.stop() || started) await client.deleteChannels();
   }
 
