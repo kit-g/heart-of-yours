@@ -65,6 +65,11 @@ mixin _Programs on _LocalDatabase {
           'coachId': row['coach_id'],
           'coachName': row['coach_name'],
           'waitingSince': row['waiting_since'],
+          'revision': ?row['revision'],
+          'sessionRevisions': switch (row['session_revisions']) {
+            final String json => jsonDecode(json),
+            _ => null,
+          },
         });
       },
       what: 'program',
@@ -110,6 +115,8 @@ mixin _Programs on _LocalDatabase {
       :coachId,
       :coachName,
       :waitingSince,
+      :revision,
+      :sessionRevisions,
     ) = program;
     final map = program.toMap();
     String? encoded(String key) {
@@ -141,6 +148,11 @@ mixin _Programs on _LocalDatabase {
         'coach_id': coachId,
         'coach_name': coachName,
         'waiting_since': waitingSince?.toUtc().toIso8601String(),
+        'revision': revision,
+        'session_revisions': switch (sessionRevisions) {
+          final revisions when revisions.isEmpty => null,
+          final revisions => jsonEncode(revisions),
+        },
       },
       conflictAlgorithm: .replace,
     );

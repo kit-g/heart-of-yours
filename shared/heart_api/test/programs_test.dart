@@ -17,6 +17,72 @@ void main() {
     api = Api(gateway: 'api.example.com', client: client);
   });
 
+  group("a student's edits to a coach's copy (#558)", () {
+    const id = '01a1b7d4-bd28-7e4b-9307-80fbe12ecd6c';
+
+    test('a program edit carries where it started and its change id', () async {
+      final program = Program(id: id, name: 'Strength block', coachId: 'dana', revision: 2);
+      respond(client: client, method: 'PUT', path: Router.program(id), statusCode: 200, body: program.toMap());
+
+      await api.editProgram(program, baseRevision: 2, changeId: 'ch1');
+
+      final [sent] = verify(
+        client.put(
+          Uri.https('api.example.com', Router.program(id)),
+          headers: anyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured;
+      expect(jsonDecode(sent as String), allOf(containsPair('baseRevision', 2), containsPair('changeId', 'ch1')));
+    });
+
+    test('a session edit the coach beat is thrown whole, with the revision', () async {
+      respond(
+        client: client,
+        method: 'PUT',
+        path: Router.template('s1'),
+        statusCode: 409,
+        body: {'error': 'conflict', 'code': 'program_changed', 'revision': 4},
+      );
+
+      expect(
+        api.editTemplate(Template.empty(id: 's1', order: 0), baseRevision: 1, changeId: 'ch2'),
+        throwsA(allOf(containsPair('code', 'program_changed'), containsPair('revision', 4))),
+      );
+    });
+
+    test('the history reads a page, after a cursor', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.programChanges(id),
+        query: {'since': 'c0'},
+        statusCode: 200,
+        body: {
+          'changes': [
+            {
+              'id': 'ch1',
+              'programId': id,
+              'actorId': 'dana',
+              'kind': 'edit',
+              'revision': 1,
+              'sessionId': 's1',
+              'at': '2026-11-07T21:05:35.761972Z',
+              'cursor': 'c1',
+            },
+          ],
+          'cursor': 'c1',
+        },
+      );
+
+      final (:items, :cursor) = await api.getProgramChanges(id, since: 'c0');
+
+      expect(items.single.actorId, 'dana');
+      expect(items.single.cursor, 'c1');
+      expect(cursor, 'c1');
+    });
+  });
+
   group("starting a coach's copy (#557)", () {
     const id = '01a1b7d4-bd28-7e4b-9307-80fbe12ecd6c';
 
