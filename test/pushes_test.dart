@@ -66,7 +66,12 @@ void main() {
     when(api.setPushSetting(any, any, connectionId: anyNamed('connectionId'))).thenAnswer((_) async {});
   });
 
-  Future<void> pump(WidgetTester tester, Map<String, Object> prefs, {bool anonymous = false}) async {
+  Future<void> pump(
+    WidgetTester tester,
+    Map<String, Object> prefs, {
+    bool anonymous = false,
+    MockFirebaseAuth? firebaseAuth,
+  }) async {
     // swept wide, as the a11y harness does: under the test font Settings'
     // pickers overflow a phone's width
     tester.view.physicalSize = const Size(1200, 2400);
@@ -79,10 +84,12 @@ void main() {
       db: db,
       api: api,
       cdn: cdn,
-      firebaseAuth: MockFirebaseAuth(
-        mockUser: MockUser(uid: 'muffin', email: 'muffin@test', isAnonymous: anonymous),
-        signedIn: true,
-      ),
+      firebaseAuth:
+          firebaseAuth ??
+          MockFirebaseAuth(
+            mockUser: MockUser(uid: 'muffin', email: 'muffin@test', isAnonymous: anonymous),
+            signedIn: true,
+          ),
       pushClient: client,
       settle: false,
     );
@@ -159,6 +166,108 @@ void main() {
     await tester.pumpTimes();
 
     expect(client.calls, containsAllInOrder(['start', 'stop', 'delete channels']));
+  });
+
+  testWidgets('a quick on and off makes no token and leaves nothing listening', (tester) async {
+    client.channelsMade = Completer();
+    await pump(tester, {'feature-yourCoach': 'on'});
+
+    // off while the start still waits on the platform for its channels
+    final context = tester.element(find.byType(Navigator).first);
+    Preferences.of(context).answerOffer(.yourCoach, yes: false);
+    client.channelsMade!.complete();
+    await tester.pumpTimes();
+
+    expect(client.calls, isNot(contains('start')));
+    expect(client.calls, containsAllInOrder(['channels Comments Messages Coaching', 'stop', 'delete channels']));
+    expect(client.newTokens.hasListener, isFalse);
+    expect(client.arrivals.hasListener, isFalse);
+    verifyNever(
+      api.registerDevice(
+        platform: anyNamed('platform'),
+        token: anyNamed('token'),
+        utcOffsetMinutes: anyNamed('utcOffsetMinutes'),
+      ),
+    );
+  });
+
+  testWidgets('off while the token is being made: it is dropped right after', (tester) async {
+    client.tokenMade = Completer();
+    await pump(tester, {'feature-yourCoach': 'on'});
+
+    final context = tester.element(find.byType(Navigator).first);
+    Preferences.of(context).answerOffer(.yourCoach, yes: false);
+    client.tokenMade!.complete();
+    await tester.pumpTimes();
+
+    expect(client.calls, containsAllInOrder(['start', 'stop', 'delete channels']));
+    expect(client.newTokens.hasListener, isFalse);
+  });
+
+  group('a coach with only Coach people on', () {
+    setUp(() {
+      // the server's copy of the account, with the entitlement: it arrives
+      // through settings sync, which an answered feature sets off
+      when(api.registerAccount(any)).thenAnswer((invocation) async {
+        final user = invocation.positionalArguments.single as User;
+        return User(id: user.id, email: user.email, settings: user.settings, entitlements: ['coach']);
+      });
+      when(api.getClients(former: anyNamed('former'), cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: <ClientSummary>[], cursor: null));
+      when(api.getCoachFeed(cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: <CoachFeedItem>[], cursor: null));
+      when(
+        api.getInvitations(cursor: anyNamed('cursor')),
+      ).thenAnswer((_) async => (items: <Invitation>[], cursor: null));
+    });
+
+    testWidgets('a launch keeps the token: the account reads as no coach only until the server says', (
+      tester,
+    ) async {
+      await pump(tester, {'feature-coachPeople': 'on', 'feature-recaps': 'off'});
+
+      expect(client.calls, ['channels Comments Messages Coaching', 'start']);
+    });
+
+    testWidgets('a change Firebase reports to the account keeps the token too', (tester) async {
+      final firebase = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+        signedIn: true,
+      );
+      await pump(tester, {'feature-coachPeople': 'on', 'feature-recaps': 'off'}, firebaseAuth: firebase);
+
+      // a new name or photo: Firebase hands over the account again, with
+      // nothing of what the server granted
+      firebase.userChangedStreamController.add(firebase.currentUser);
+      await tester.pumpTimes();
+
+      expect(client.calls, ['channels Comments Messages Coaching', 'start']);
+    });
+  });
+
+  testWidgets('a visible push that came in the background is fetched on the way back in', (tester) async {
+    when(api.getProgram('p1')).thenAnswer(
+      (_) async =>
+          Program(id: 'p1', name: 'Strength block', perWeek: 2, sessions: const [], createdAt: DateTime.utc(2026)),
+    );
+    when(api.getProgramActions('p1')).thenAnswer((_) async => []);
+    when(api.getProgramBases('p1')).thenAnswer((_) async => []);
+    await pump(tester, {'feature-yourCoach': 'on'});
+    clearInteractions(api);
+
+    for (final AppLifecycleState state in [.inactive, .hidden, .paused]) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+    }
+    addTearDown(() => tester.binding.handleAppLifecycleStateChanged(.resumed));
+    // the system showed it; the person opens Heart from its icon instead
+    client.pending.add(Push.of({'topic': 'coaching.program_received', 'programId': 'p1'})!);
+    for (final AppLifecycleState state in [.hidden, .inactive, .resumed]) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+    }
+    await tester.pumpTimes();
+
+    verify(api.getProgram('p1')).called(1);
+    expect(client.pending, isEmpty);
   });
 
   testWidgets('a silent push fetches the one program it names, and nothing else', (tester) async {
@@ -275,6 +384,13 @@ class _FakeClient implements PushClient {
   final newTokens = StreamController<String>.broadcast();
   final arrivals = StreamController<({Push push, String? title})>.broadcast();
   final taps = StreamController<Push>.broadcast();
+  final pending = <Push>[];
+
+  /// Holds [createChannels] until completed, when set.
+  Completer<void>? channelsMade;
+
+  /// Holds [start] until completed, when set.
+  Completer<void>? tokenMade;
 
   @override
   Stream<String> get tokens => newTokens.stream;
@@ -288,6 +404,7 @@ class _FakeClient implements PushClient {
   @override
   Future<String?> start() async {
     calls.add('start');
+    await tokenMade?.future;
     return 'fcm-1';
   }
 
@@ -301,11 +418,16 @@ class _FakeClient implements PushClient {
   Future<Push?> launchedBy() async => null;
 
   @override
-  Future<List<Push>> takePending() async => const [];
+  Future<List<Push>> takePending() async {
+    final taken = [...pending];
+    pending.clear();
+    return taken;
+  }
 
   @override
   Future<void> createChannels({required String comments, required String messages, required String coaching}) async {
     calls.add('channels $comments $messages $coaching');
+    await channelsMade?.future;
   }
 
   @override

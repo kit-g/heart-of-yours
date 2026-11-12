@@ -49,6 +49,15 @@ bool _pushesOn(Preferences preferences, Auth auth) {
   return account && (space || preferences.isOn(.yourCoach));
 }
 
+/// Whether [_pushesOn]'s answer can be acted on. A coach with only Coach
+/// people on reads as one who may not coach from the sign-in until the
+/// server's copy of the account arrives, and that is no reason to drop the
+/// token: the answer waits for the entitlements.
+bool _pushesDecided(Preferences preferences, Auth auth) {
+  final account = auth.user != null && !auth.isAnonymous;
+  return !account || auth.entitlementsKnown || !preferences.isOn(.coachPeople) || preferences.isOn(.yourCoach);
+}
+
 /// Asks for the notification permission, in context: from the first thing
 /// that would push, after the person's own yes to the feature, never at
 /// launch (`docs/opt-in.md`). Does nothing where the push client cannot run,
@@ -63,8 +72,17 @@ class _PushPresenterState extends State<PushPresenter> {
   Auth? _auth;
   late final AppLifecycleListener _lifecycle;
 
-  /// Whether the client is running: null before the first look.
+  /// Whether the client should be running: null before the first look.
   bool? _live;
+
+  /// Whether the client was last started (true) or stopped (false): null
+  /// before either. Trails [_live] while a start or stop is on its way.
+  bool? _running;
+
+  /// The starts and stops, one at a time and in order: a stop that came while
+  /// a start was still awaiting the platform would otherwise cancel nothing
+  /// and leave a token made.
+  Future<void> _settling = Future.value();
 
   /// This device's token, once FCM gave one.
   String? _token;
@@ -110,13 +128,11 @@ class _PushPresenterState extends State<PushPresenter> {
     // before Firebase's first answer there is no user at all, which is not
     // the same as a session without an account: nothing is decided yet
     if (auth.user == null && _live == null) return;
+    if (!_pushesDecided(preferences, auth)) return;
     final live = _pushesOn(preferences, auth);
     if (live != _live) {
       _live = live;
-      unawaited(switch (live) {
-        true => _start(client),
-        false => _stop(client),
-      });
+      _settle(client);
     } else if (live) {
       // the token may have come before the account's: Auth tells again once
       // the server's copy of the account arrives, and Pushes registers once
@@ -124,13 +140,35 @@ class _PushPresenterState extends State<PushPresenter> {
     }
   }
 
+  /// Queues a step towards [_live]. Each step reads [_live] when its turn
+  /// comes, so a quick on and off ends where the switches are, whatever was
+  /// asked of the platform on the way.
+  void _settle(PushClient client) {
+    _settling = _settling
+        .then((_) {
+          if (!mounted) return null;
+          return switch ((_live, _running)) {
+            (true, false || null) => _start(client),
+            (false, true || null) => _stop(client),
+            _ => null,
+          };
+        })
+        .catchError((Object error, StackTrace stacktrace) {
+          FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stacktrace, library: 'push'));
+        });
+  }
+
+  /// Starts the client, giving up between each wait the moment the switches
+  /// are off again: the stop queued behind it takes down what was made.
   Future<void> _start(PushClient client) async {
+    _running = true;
     final L(:pushKindComments, :pushKindMessages, :pushKindCoaching) = L.of(context);
     await client.createChannels(
       comments: pushKindComments,
       messages: pushKindMessages,
       coaching: pushKindCoaching,
     );
+    if (!mounted || _live != true) return;
     _subscriptions.addAll([
       client.tokens.listen((token) {
         _token = token;
@@ -149,10 +187,14 @@ class _PushPresenterState extends State<PushPresenter> {
   }
 
   Future<void> _stop(PushClient client) async {
+    // a start given up after its channels were made has no token to drop,
+    // and its channels still go
+    final started = _running == true;
+    _running = false;
     _cancel();
     _token = null;
     Pushes.of(context).unregistered();
-    if (await client.stop()) await client.deleteChannels();
+    if (await client.stop() || started) await client.deleteChannels();
   }
 
   void _cancel() {
@@ -174,8 +216,9 @@ class _PushPresenterState extends State<PushPresenter> {
     );
   }
 
-  /// Back in front: what arrived silently meanwhile is fetched, and a phone
-  /// that crossed a time zone tells the server its new evening.
+  /// Back in front: what arrived in the background meanwhile is fetched,
+  /// shown or not, whichever way the app was opened, and a phone that crossed
+  /// a time zone tells the server its new evening.
   void _onResume() {
     if (_live != true) return;
     _register();
