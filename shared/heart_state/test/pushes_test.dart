@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -80,10 +82,81 @@ void main() {
       await pushes.register(platform: .ios, token: 't1');
       pushes.onSignOut();
       await pushes.register(platform: .ios, token: 't1');
-      pushes.unregistered();
+      await pushes.unregister();
       await pushes.register(platform: .ios, token: 't1');
 
-      expect(service.calls, hasLength(3));
+      expect(service.calls, ['register ios t1 null', 'register ios t1 null', 'unregister t1', 'register ios t1 null']);
+    });
+  });
+
+  group('unregister (heart-api#415)', () {
+    test('takes back the token last registered, once', () async {
+      await pushes.register(platform: .ios, token: 't1');
+      await pushes.register(platform: .ios, token: 't2');
+
+      await pushes.unregister();
+      await pushes.unregister();
+
+      expect(service.calls.skip(2), ['unregister t2']);
+    });
+
+    test('a token whose registration failed is taken back too: a launch before may have made it', () async {
+      service.failing = true;
+      await pushes.register(platform: .android, token: 't1');
+      service.failing = false;
+
+      await pushes.unregister();
+
+      expect(service.calls.last, 'unregister t1');
+    });
+
+    test('nothing when no token was given', () async {
+      await pushes.unregister();
+
+      expect(service.calls, isEmpty);
+    });
+
+    test('nothing after a sign-out forgot the token', () async {
+      await pushes.register(platform: .ios, token: 't1');
+      pushes.onSignOut();
+
+      await pushes.unregister();
+
+      expect(service.calls, ['register ios t1 null']);
+    });
+
+    test('nothing with the remote leg closed, and the token is forgotten all the same', () async {
+      await pushes.register(platform: .ios, token: 't1');
+      access.account = false;
+      await pushes.unregister();
+      access.account = true;
+      await pushes.unregister();
+
+      expect(service.calls, ['register ios t1 null']);
+    });
+
+    test('a failure is reported and goes no further', () async {
+      await pushes.register(platform: .ios, token: 't1');
+      service.failing = true;
+
+      await pushes.unregister();
+
+      expect(errors, hasLength(1));
+      expect(service.calls.last, 'unregister t1');
+    });
+
+    testWidgets('a server that does not answer is waited on only so long', (tester) async {
+      // the test's fake clock: the removal's wait passes without real seconds
+      service.hanging = true;
+      await pushes.register(platform: .ios, token: 't1');
+      var done = false;
+      unawaited(pushes.unregister().then((_) => done = true));
+
+      await tester.pump(const Duration(seconds: 4));
+      expect(done, isFalse);
+      await tester.pump(const Duration(seconds: 2));
+      expect(done, isTrue);
+      expect(errors.single, isA<TimeoutException>());
     });
   });
 
@@ -175,6 +248,9 @@ void main() {
 class _Service implements RemotePushService {
   final calls = <String>[];
   bool failing = false;
+
+  /// Leaves a removal unanswered.
+  bool hanging = false;
   PushSettings settings = const PushSettings(topics: []);
 
   void _call(String call) {
@@ -185,6 +261,12 @@ class _Service implements RemotePushService {
   @override
   Future<void> registerDevice({required DevicePlatform platform, required String token, int? utcOffsetMinutes}) async {
     _call('register ${platform.value} $token $utcOffsetMinutes');
+  }
+
+  @override
+  Future<void> unregisterDevice(String token) async {
+    _call('unregister $token');
+    if (hanging) await Completer<void>().future;
   }
 
   @override

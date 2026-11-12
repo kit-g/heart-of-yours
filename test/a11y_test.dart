@@ -100,6 +100,8 @@ enum _Screen {
   apiTokens,
   coachingClients,
   coachingActivity,
+  coachingClient,
+  coachingReview,
   coachingMessages,
   coachingPrograms,
   coachingProgram,
@@ -194,6 +196,22 @@ final _program = Program(
   sessions: const ['t1', 't2'],
   createdAt: DateTime.utc(2026, 10, 1),
 );
+
+/// A program a coach sent while [_program] runs (#557): it waits on the
+/// Workout tab to be started.
+final _sent = Program.fromJson({
+  ...Program(
+    id: 'c1',
+    name: 'Strength block',
+    perWeek: 2,
+    weeks: 4,
+    sessions: const ['t3'],
+    createdAt: DateTime.utc(2026, 11, 10),
+  ).toMap(),
+  'coachId': 'coach-muffin',
+  'coachName': 'Muffin',
+  'waitingSince': '2026-11-10T12:00:00.000Z',
+});
 
 /// The session the workout-done screen celebrates.
 final _done = Workout(name: 'Records')
@@ -432,7 +450,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     (
       _Screen.programs,
       guideline,
-      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:279) and its Start (programs.dart:288) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:279) and its Start (programs.dart:288) at the house 32pt, and a waiting coach program\'s Start (40pt FilledButton, lib/presentation/routes/workout/program_sent.dart) (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.programPage,
@@ -919,6 +937,18 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingActivity, _Guideline.androidTapTarget, null),
   (_Screen.coachingActivity, _Guideline.iosTapTarget, null),
 
+  // one client (#559): their week and workouts, and a workout target beside done
+  (_Screen.coachingClient, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingClient, _Guideline.textContrastLight, null),
+  (_Screen.coachingClient, _Guideline.textContrastDark, null),
+  (_Screen.coachingClient, _Guideline.androidTapTarget, null),
+  (_Screen.coachingClient, _Guideline.iosTapTarget, null),
+  (_Screen.coachingReview, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingReview, _Guideline.textContrastLight, null),
+  (_Screen.coachingReview, _Guideline.textContrastDark, null),
+  (_Screen.coachingReview, _Guideline.androidTapTarget, null),
+  (_Screen.coachingReview, _Guideline.iosTapTarget, null),
+
   (_Screen.coachingMessages, _Guideline.labeledTapTarget, null),
   (_Screen.coachingMessages, _Guideline.textContrastLight, null),
   (_Screen.coachingMessages, _Guideline.textContrastDark, null),
@@ -1295,6 +1325,8 @@ void main() {
     final coaching = {
       _Screen.coachingClients: AppKeys.coachingClientsStack,
       _Screen.coachingActivity: AppKeys.coachingClientsStack,
+      _Screen.coachingClient: AppKeys.coachingClientsStack,
+      _Screen.coachingReview: AppKeys.coachingClientsStack,
       _Screen.coachingMessages: AppKeys.coachingMessagesStack,
       _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
       _Screen.coachingProgram: AppKeys.coachingProgramsStack,
@@ -1331,7 +1363,7 @@ void main() {
           ClientSummary(connectionId: 'c-sam', studentId: 'sam', name: 'Sam', status: 'active'),
           ClientSummary(connectionId: 'c-pip', studentId: 'pip', name: 'Pip', status: 'active'),
         ],
-        _Screen.coachingClients || _Screen.coachingActivity => [
+        _Screen.coachingClients || _Screen.coachingActivity || _Screen.coachingClient || _Screen.coachingReview => [
           ClientSummary(
             connectionId: 'c-sam',
             studentId: 'sam',
@@ -1378,6 +1410,41 @@ void main() {
             version: 1,
           ),
         ],
+      );
+      // Sam's record (#559): one program workout, lighter than asked, and a skip
+      final dayB = Workout.fromJson({
+        'id': 'w1',
+        'name': 'Day B',
+        'start': '2026-11-07T18:00:00Z',
+        'end': '2026-11-07T19:00:00Z',
+        'note': 'Knees felt fine today',
+        'exercises': [
+          {
+            'id': 'we1',
+            'exercise': {'id': 'squat', 'name': 'Squat', 'category': 'Barbell', 'target': 'Legs', 'own': 0},
+            'start': '2026-11-07T18:00:00Z',
+            'order': 0,
+            'sets': [
+              {'id': 'x1', 'completed': true, 'started_at': '2026-11-07T18:05:00Z', 'weight': 90.0, 'reps': 5},
+            ],
+          },
+        ],
+      });
+      when(api.getClientWorkouts('sam', cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: [dayB], cursor: null));
+      when(api.getClientSkips('sam')).thenAnswer((_) async => [TrainingSkip(at: DateTime.utc(2026, 11, 6, 18))]);
+      when(api.getClientWorkoutPlan('sam', 'w1')).thenAnswer(
+        (_) async => const WorkoutPlan({
+          'exercises': [
+            {
+              'exerciseId': 'squat',
+              'sets': [
+                {'setId': 'x1', 'weight': 100, 'reps': 5},
+                {'setId': 'x2', 'weight': 100, 'reps': 5},
+              ],
+            },
+          ],
+        }),
       );
       when(api.getCoachFeed(cursor: anyNamed('cursor'))).thenAnswer(
         (_) async => (
@@ -1669,7 +1736,12 @@ void main() {
           ...pastOnboarding(),
           'feature-programs': 'on',
           if (screen == _Screen.notTodaySheet) 'feature-notToday': 'on',
+          if (screen == _Screen.programs) 'feature-yourCoach': 'on',
         });
+        // Your coach on reads the account's connections (#566)
+        when(api.registerAccount(any)).thenAnswer((invocation) async => invocation.positionalArguments.single as User);
+        when(api.getConnections()).thenAnswer((_) async => []);
+        when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
         // the day before a skip (#312): what its page reads
         when(db.getLensSets(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => []);
         when(db.storeSkip(any, any)).thenAnswer((_) async {});
@@ -1681,6 +1753,7 @@ void main() {
             _Screen.programs || _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [
               _session('t1', 0, 'Push', programId: 'p1'),
               _session('t2', 1, 'Pull', programId: 'p1'),
+              if (screen == _Screen.programs) _session('t3', 2, 'Day A', programId: 'c1'),
             ],
             _ => [_session('t1', 0, 'Push'), _session('t2', 1, 'Pull')],
           },
@@ -1691,7 +1764,9 @@ void main() {
         when(db.storeTemplateFolders(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
         when(db.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
         final programs = switch (screen) {
-          _Screen.programs || _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [_program],
+          // the tab with a coach's program waiting beside it (#557)
+          _Screen.programs => [_program, _sent],
+          _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [_program],
           _ => <Program>[],
         };
         final skips = switch (screen) {
@@ -2273,6 +2348,8 @@ void main() {
         }
       case _Screen.coachingClients ||
           _Screen.coachingActivity ||
+          _Screen.coachingClient ||
+          _Screen.coachingReview ||
           _Screen.coachingMessages ||
           _Screen.coachingPrograms ||
           _Screen.coachingProgram ||
@@ -2285,6 +2362,14 @@ void main() {
         await tester.pumpTimes();
         if (screen == _Screen.coachingActivity) {
           await tester.tapByKey(AppKeys.coachingActivityView);
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingClient || screen == _Screen.coachingReview) {
+          await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingReview) {
+          await tester.tapByKey(AppKeys.coachingClientWorkout('w1'));
           await tester.pumpTimes();
         }
         if (screen == _Screen.coachingProgram || screen == _Screen.coachingSendDialog) {

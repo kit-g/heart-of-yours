@@ -183,4 +183,9 @@ const _migrations = <int, List<String>>{
   29: [
     createWorkoutPlans,
   ],
+  30: [
+    addProgramCoachId,
+    addProgramCoachName,
+    addProgramWaitingSince,
+  ],
 };

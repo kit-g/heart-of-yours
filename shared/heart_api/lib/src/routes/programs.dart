@@ -162,6 +162,14 @@ mixin _ProgramRoutes on Requests {
     if (code >= 400) throw _programError(json);
   }
 
+  /// Starts a coach's copy that has waited while the student was on something
+  /// else (#557). Starting is all it does: the program it replaces is the
+  /// caller's to stop following.
+  Future<void> startProgram(String programId) async {
+    final (json, code) = await post(Router.programStart(programId));
+    if (code != 204) throw _programError(json);
+  }
+
   /// A refusal the program routes name, typed; anything else as it came, the
   /// way the rest of this class throws.
   static Object _programError(Object? body) {

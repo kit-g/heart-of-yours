@@ -39,6 +39,10 @@ void main() {
         utcOffsetMinutes: anyNamed('utcOffsetMinutes'),
       ),
     ).thenAnswer((_) async {});
+    // in the client's log, so the order against the token's deletion shows
+    when(api.unregisterDevice(any)).thenAnswer((invocation) async {
+      client.calls.add('unregister ${invocation.positionalArguments.single}');
+    });
     when(api.getPushSettings()).thenAnswer(
       (_) async => PushSettings(
         topics: [
@@ -49,6 +53,7 @@ void main() {
             description: 'When someone you train with writes to you',
             delivery: 'instant',
             options: ['instant', 'off'],
+            perPersonAs: ['coach', 'student', 'peer'],
           ),
           // one this build has never heard of: the server words it, so it
           // still shows and changes
@@ -167,7 +172,38 @@ void main() {
     Preferences.of(context).answerOffer(.yourCoach, yes: false);
     await tester.pumpTimes();
 
+    expect(client.calls, containsAllInOrder(['start', 'unregister fcm-1', 'stop', 'delete channels']));
+  });
+
+  testWidgets('a removal the server cannot take still drops the token', (tester) async {
+    when(api.unregisterDevice(any)).thenThrow({'error': 'unavailable'});
+    await pump(tester, {'feature-yourCoach': 'on'});
+
+    final context = tester.element(find.byType(Navigator).first);
+    Preferences.of(context).answerOffer(.yourCoach, yes: false);
+    await tester.pumpTimes();
+
+    verify(api.unregisterDevice('fcm-1')).called(1);
     expect(client.calls, containsAllInOrder(['start', 'stop', 'delete channels']));
+  });
+
+  testWidgets('a sign-out took the token back while it could: the stop after it sends nothing again', (
+    tester,
+  ) async {
+    final firebase = MockFirebaseAuth(
+      mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+      signedIn: true,
+    );
+    await pump(tester, {'feature-yourCoach': 'on'}, firebaseAuth: firebase);
+
+    // clearState's order: the removal, then the session ends
+    final context = tester.element(find.byType(Navigator).first);
+    await Pushes.of(context).unregister();
+    await firebase.signOut();
+    await tester.pumpTimes();
+
+    verify(api.unregisterDevice('fcm-1')).called(1);
+    expect(client.calls, containsAllInOrder(['start', 'unregister fcm-1', 'stop', 'delete channels']));
   });
 
   testWidgets('a quick on and off makes no token and leaves nothing listening', (tester) async {
@@ -424,6 +460,82 @@ void main() {
 
       final list = tester.getSize(find.descendant(of: find.byType(PushSettingsPage), matching: find.byType(ListView)));
       expect(list.width, lessThanOrEqualTo(480));
+    });
+
+    group('for one person (heart-api#416)', () {
+      setUp(() {
+        when(api.getConnections()).thenAnswer(
+          (_) async => [
+            Connection(
+              targetId: 'alex',
+              role: .student,
+              domain: .fitness,
+              status: .active,
+              createdAt: DateTime.utc(2026, 11, 8),
+              connectionId: 'c1',
+              acceptedAt: DateTime.utc(2026, 11, 8),
+            ),
+          ],
+        );
+      });
+
+      PushSetting setting(String topic, List<String> perPersonAs) {
+        return PushSetting(
+          topic: topic,
+          group: 'coaching',
+          name: topic,
+          description: 'About $topic',
+          delivery: 'instant',
+          options: ['instant', 'off'],
+          perPersonAs: perPersonAs,
+        );
+      }
+
+      testWidgets("a coach is offered only the topics a student's side can choose for them", (tester) async {
+        when(api.getPushSettings()).thenAnswer(
+          (_) async => PushSettings(
+            topics: [
+              setting('coaching.message', ['coach', 'student', 'peer']),
+              setting('coaching.program_received', ['student']),
+              // a coach's alone, and one chosen only for everyone
+              setting('coaching.workout_digest', ['coach']),
+              setting('coaching.invitation_accepted', []),
+              // a side this build has never heard of
+              setting('coaching.weekly_summary', ['mentor']),
+            ],
+          ),
+        );
+        await pump(tester, {'feature-yourCoach': 'on'});
+        go(tester, '/profile/settings/notifications');
+        await tester.pumpTimes();
+
+        await tester.tap(find.byKey(const ValueKey('pushPerson-c1')));
+        await tester.pumpTimes();
+
+        expect(find.byKey(const ValueKey('pushPersonTopic-coaching.message')), findsOneWidget);
+        expect(find.byKey(const ValueKey('pushPersonTopic-coaching.program_received')), findsOneWidget);
+        expect(find.byKey(const ValueKey('pushPersonTopic-coaching.workout_digest')), findsNothing);
+        expect(find.byKey(const ValueKey('pushPersonTopic-coaching.invitation_accepted')), findsNothing);
+        expect(find.byKey(const ValueKey('pushPersonTopic-coaching.weekly_summary')), findsNothing);
+      });
+
+      testWidgets('nobody is offered when no topic can be chosen from their side', (tester) async {
+        when(api.getPushSettings()).thenAnswer(
+          (_) async => PushSettings(
+            topics: [
+              setting('coaching.workout_digest', ['coach']),
+              setting('coaching.invitation_accepted', []),
+            ],
+          ),
+        );
+        await pump(tester, {'feature-yourCoach': 'on'});
+        go(tester, '/profile/settings/notifications');
+        await tester.pumpTimes();
+
+        expect(find.byKey(const ValueKey('pushTopic-coaching.workout_digest')), findsOneWidget);
+        expect(find.byKey(const ValueKey('pushPerson-c1')), findsNothing);
+        expect(find.text('People'), findsNothing);
+      });
     });
 
     testWidgets('a failed read says so and offers to try again', (tester) async {

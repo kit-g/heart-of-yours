@@ -43,4 +43,36 @@ mixin _RosterRoutes on Requests {
       _ => throw json,
     };
   }
+
+  /// A client's workouts, newest first, as their coach may read them: from
+  /// accepting on (or all, with history shared), never a hidden one, none
+  /// started during a pause, no photos. `403` once the connection ends, thrown
+  /// whole.
+  Future<({List<Workout> items, String? cursor})> getClientWorkouts(String studentId, {String? cursor}) async {
+    final (json, code) = await get(Router.clientWorkouts(studentId), query: _cursor(cursor));
+    return switch ((code, json)) {
+      (200, {'workouts': List l}) => (items: _readable(l, Workout.fromJson), cursor: json['cursor'] as String?),
+      _ => throw json,
+    };
+  }
+
+  /// When a client skipped a session, never why.
+  Future<List<TrainingSkip>> getClientSkips(String studentId) async {
+    final (json, code) = await get(Router.clientSkips(studentId));
+    return switch ((code, json)) {
+      (200, {'skips': List l}) => _readable(l, TrainingSkip.fromJson),
+      _ => throw json,
+    };
+  }
+
+  /// What a client's workout was asked to be, to put target beside done; null
+  /// for a workout with no plan (`404`), which has nothing to compare with.
+  Future<WorkoutPlan?> getClientWorkoutPlan(String studentId, String workoutId) async {
+    final (json, code) = await get(Router.clientWorkoutPlan(studentId, workoutId));
+    return switch ((code, json)) {
+      (200, Map json) => WorkoutPlan.fromJson(json),
+      (404, _) => null,
+      _ => throw json,
+    };
+  }
 }

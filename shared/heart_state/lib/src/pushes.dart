@@ -14,6 +14,9 @@ abstract interface class RemotePushService {
   /// Registers [token] for the signed-in account. Safe to repeat.
   Future<void> registerDevice({required DevicePlatform platform, required String token, int? utcOffsetMinutes});
 
+  /// Stops [token] getting the signed-in account's pushes. Safe to repeat.
+  Future<void> unregisterDevice(String token);
+
   Future<PushSettings> getPushSettings();
 
   /// [connectionId] narrows the answer to one person.
@@ -146,6 +149,14 @@ class Pushes with ChangeNotifier implements SignOutStateSentry {
   /// every notification of the account.
   ({String token, int? offset})? _registered;
 
+  /// The token last handed to [register], whether or not that registration
+  /// went through: a launch before it may have, and [unregister] takes it
+  /// back.
+  String? _token;
+
+  /// How long a sign-out or a stop waits on the server to take a token back.
+  static const _removalWait = Duration(seconds: 5);
+
   final _topics = <PushSetting>[];
   final _people = <PushPreference>[];
   PushSettingsStatus _status = .idle;
@@ -167,6 +178,7 @@ class Pushes with ChangeNotifier implements SignOutStateSentry {
   @override
   void onSignOut() {
     _registered = null;
+    _token = null;
     _topics.clear();
     _people.clear();
     _status = .idle;
@@ -179,6 +191,7 @@ class Pushes with ChangeNotifier implements SignOutStateSentry {
   /// next launch registers again.
   Future<void> register({required DevicePlatform platform, required String token, int? utcOffsetMinutes}) async {
     if (!_remote.allowed) return;
+    _token = token;
     final registering = (token: token, offset: utcOffsetMinutes);
     if (registering == _registered) return;
     _registered = registering;
@@ -190,9 +203,27 @@ class Pushes with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  /// The device stopped receiving pushes (the client turned off): the next
-  /// token is registered whatever it is.
-  void unregistered() => _registered = null;
+  /// Tells the server this device no longer gets the account's pushes
+  /// (heart-api#415), taking back the token [register] was last given, once.
+  ///
+  /// On a sign-out, while the session can still say whose pushes they are,
+  /// and when pushes turn off, before the token is deleted. Either way the next
+  /// token is registered whatever it is. Nothing is sent when no token was
+  /// given or the server is out of reach; a removal that fails, or keeps the
+  /// caller waiting past [_removalWait], is reported and left: the token is
+  /// deleted on the device all the same, and the server drops one it never
+  /// sees again.
+  Future<void> unregister() async {
+    final token = _token;
+    _token = null;
+    _registered = null;
+    if (token == null || !_remote.allowed) return;
+    try {
+      await _service.unregisterDevice(token).timeout(_removalWait);
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+    }
+  }
 
   /// Reads what reaches the account.
   Future<void> load() async {
@@ -266,6 +297,7 @@ class Pushes with ChangeNotifier implements SignOutStateSentry {
       description: setting.description,
       delivery: delivery,
       options: setting.options,
+      perPersonAs: setting.perPersonAs,
     );
   }
 }

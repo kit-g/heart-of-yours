@@ -27,6 +27,14 @@ mixin _PushRoutes on Requests {
     if (code != 204) throw json;
   }
 
+  /// Stops [token] getting the signed-in account's pushes (heart-api#415), on
+  /// sign-out or when pushes turn off. Safe to repeat: a token the server holds
+  /// for nobody, or for someone else, is already stopped and answers the same.
+  Future<void> unregisterDevice(String token) async {
+    final (json, code) = await post(Router.deviceRemovals, body: {'token': token});
+    if (code != 204) throw json;
+  }
+
   /// Every topic the account can change, in the device's language, with what
   /// each is set to, and the answers given for particular people.
   Future<PushSettings> getPushSettings() async {

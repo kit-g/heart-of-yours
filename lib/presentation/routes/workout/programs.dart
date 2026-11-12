@@ -62,9 +62,10 @@ class _ProgramsSection extends StatelessWidget {
     final templates = Templates.watch(context);
     final library = ProgramLibrary.watch(context);
     final following = programs.following.toList();
+    final waiting = programs.waiting.toList();
     final stopped = programs.all.where((program) => program.archived).toList();
     final folders = templates.programFolders;
-    if (following.isEmpty && stopped.isEmpty && folders.isEmpty && !library.available) {
+    if (following.isEmpty && waiting.isEmpty && stopped.isEmpty && folders.isEmpty && !library.available) {
       return const SizedBox.shrink();
     }
 
@@ -90,7 +91,9 @@ class _ProgramsSection extends StatelessWidget {
           ),
           // a folder is what it points at: with none, the library row below
           // says what there is to start from
-          if (following.isEmpty && stopped.isEmpty && folders.isNotEmpty)
+          // a coach's program waiting to replace what the user is on (#557)
+          for (final program in waiting) _WaitingCard(program: program, onOpen: () => onOpen(program)),
+          if (following.isEmpty && waiting.isEmpty && stopped.isEmpty && folders.isNotEmpty)
             Padding(
               padding: const .only(bottom: 8),
               child: Text(
