@@ -21,6 +21,7 @@ import 'package:heart/presentation/routes/done/done.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/login/login.dart';
+import 'package:heart/presentation/routes/messages/messages.dart';
 import 'package:heart/presentation/routes/onboarding/onboarding.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/recaps/recaps.dart';
@@ -87,6 +88,7 @@ final class HeartRouter {
           ),
           _coachingRoute(),
           _invitationRoute(),
+          _threadRoute(),
           _upgradeRequiredRoute(),
           _onboardingRoute(),
           _activeWorkoutRoute(),
@@ -366,6 +368,16 @@ final class HeartRouter {
 
   /// The Coaching space's messages, from a push saying one arrived (#567).
   void goToCoachingMessages() => config.goNamed(_coachingMessagesName);
+
+  /// One conversation of the coach's, in Coaching (#556).
+  void goToCoachingThread(String connectionId) {
+    config.goNamed(_coachingThreadName, pathParameters: {'connectionId': connectionId});
+  }
+
+  /// A student's conversation with their coach, over the app (#556).
+  void openThread(String connectionId) {
+    config.pushNamed(_threadName, pathParameters: {'connectionId': connectionId});
+  }
 
   /// A coach's invitation (#553), as its link would open it.
   void openInvitation(String token, {String? fingerprint}) {

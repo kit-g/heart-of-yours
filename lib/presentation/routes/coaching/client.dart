@@ -12,7 +12,16 @@ class ClientPage extends StatelessWidget {
   /// Opens the client's copy of their program.
   final ValueChanged<String> onOpenProgram;
 
-  const new({super.key, required this.connectionId, required this.onOpenWorkout, required this.onOpenProgram});
+  /// Opens the conversation with them.
+  final ValueChanged<String> onMessage;
+
+  const new({
+    super.key,
+    required this.connectionId,
+    required this.onOpenWorkout,
+    required this.onOpenProgram,
+    required this.onMessage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +38,12 @@ class ClientPage extends StatelessWidget {
         alignment: .topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: readableWidth),
-          child: _ClientView(connectionId: connectionId, onOpenWorkout: onOpenWorkout, onOpenProgram: onOpenProgram),
+          child: _ClientView(
+            connectionId: connectionId,
+            onOpenWorkout: onOpenWorkout,
+            onOpenProgram: onOpenProgram,
+            onMessage: onMessage,
+          ),
         ),
       ),
     );
@@ -63,6 +77,7 @@ class _ClientView extends StatefulWidget {
   final String connectionId;
   final ValueChanged<String> onOpenWorkout;
   final ValueChanged<String> onOpenProgram;
+  final ValueChanged<String> onMessage;
 
   /// The pane beside the roster names the client itself; a page has its
   /// title for that.
@@ -73,6 +88,7 @@ class _ClientView extends StatefulWidget {
     required this.connectionId,
     required this.onOpenWorkout,
     required this.onOpenProgram,
+    required this.onMessage,
     this.leading,
   });
 
@@ -152,6 +168,24 @@ class _ClientViewState extends State<_ClientView> {
             ?widget.leading,
             // a page names them in its title
             _ClientHeader(client: client, named: widget.leading != null),
+            // their one conversation with the coach (#556), in Messages
+            ListTile(
+              key: AppKeys.coachingClientMessages,
+              leading: const Icon(Icons.forum_outlined),
+              title: Text(
+                switch (client.name?.trim()) {
+                  final String name when name.isNotEmpty => l.messagesWith(name),
+                  _ => l.coachingMessages,
+                },
+                maxLines: 1,
+                overflow: .ellipsis,
+              ),
+              trailing: switch (Messages.watch(context).threadOf(client.connectionId)?.unread ?? 0) {
+                0 => const Icon(Icons.chevron_right_rounded),
+                final int count => Badge(label: Text('$count', semanticsLabel: l.messagesUnread(count))),
+              },
+              onTap: () => widget.onMessage(client.connectionId),
+            ),
             // what they follow, and every copy the coach sent them, waiting
             // or not: the ones both of them edit (#558)
             for (final (id, name, waiting) in _programsOf(client, ClientPrograms.watch(context).managed(id)))

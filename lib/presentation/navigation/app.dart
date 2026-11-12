@@ -30,6 +30,7 @@ import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/programs.dart';
+import 'package:heart/core/utils/messages.dart';
 import 'package:heart/core/utils/pushes.dart';
 import 'package:heart/core/utils/device_keys.dart';
 import 'package:heart/core/utils/workout_plans.dart';
@@ -357,6 +358,26 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        // Coaching messages (#556): sealed on this device with its keys,
+        // kept here as the server keeps them, ciphertext, and read only from
+        // a coaching screen, which exists only with a switch on.
+        ChangeNotifierProvider<Messages>(
+          create: (context) => Messages(
+            service: RemoteThreads(api),
+            local: LocalThreads(db),
+            cipher: DeviceKeys.of(context),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+            // the link's fingerprint names the coach's keys: it checks the
+            // other person only where this one is the student, since the
+            // same connection seen from the coach's side is someone else
+            fingerprintFor: (thread) => switch (thread.connectionId) {
+              final String id when Coaching.of(context).coaches.any((each) => each.connectionId == id) =>
+                Preferences.of(context).coachFingerprint(id),
+              _ => null,
+            },
+          ),
+        ),
         // A coach's roster and feed (#559): server-only, read when the
         // Clients tab opens, which is there only with Coach people on.
         ChangeNotifierProvider<Roster>(
@@ -523,6 +544,7 @@ class HeartApp extends StatelessWidget {
                 GoEasy.of(context).userId = user?.id;
                 Timers.of(context).userId = user?.id;
                 Workouts.of(context).userId = user?.id;
+                Messages.of(context).userId = user?.id;
                 if (user?.id case String id) unawaited(_prepareOpening(context, id));
               },
               onError: reportToSentry,
@@ -657,6 +679,8 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
       final templates = Templates.of(context);
       Programs.of(context).pullCoached().then(templates.pull);
     }
+    // messages whose push may never have come (#556)
+    if (coachingRuns(preferences, Auth.of(context))) Messages.of(context).resume();
   }
 
   /// Localized backend content (the exercise catalog) is served per request

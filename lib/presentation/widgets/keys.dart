@@ -422,4 +422,16 @@ abstract final class AppKeys {
 
   static Key yourCoachUnblock(String userId) => Key('YourCoach.unblock.$userId');
   static const invitationRetry = Key('Invitation.retry');
+
+  // messages (#556)
+  static const thread = Key('Messages.thread');
+  static const messageBox = Key('Messages.box');
+  static const messageSend = Key('Messages.send');
+  static const coachingClientMessages = Key('Coaching.clientMessages');
+
+  static Key message(String id) => Key('Messages.message.$id');
+
+  static Key inboxThread(String id) => Key('Messages.inbox.$id');
+
+  static Key yourCoachMessage(String id) => Key('YourCoach.message.$id');
 }

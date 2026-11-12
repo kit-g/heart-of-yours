@@ -1,22 +1,5 @@
 part of 'coaching.dart';
 
-/// One conversation per client (#556).
-class CoachMessagesPage extends StatelessWidget {
-  final VoidCallback onYourTraining;
-
-  const new({super.key, required this.onYourTraining});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = L.of(context);
-    return _CoachingPage(
-      title: l.coachingMessages,
-      onYourTraining: onYourTraining,
-      child: _Empty(icon: Icons.forum_outlined, title: l.coachingNoMessages, body: l.coachingNoMessagesBody),
-    );
-  }
-}
-
 /// The coach as their clients see them: the name and photo they use in Heart.
 class CoachMePage extends StatelessWidget {
   final VoidCallback onYourTraining;

@@ -23,6 +23,7 @@ import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/core/utils/whats_new.dart';
 import 'package:heart/presentation/navigation/pushes.dart' show pushesOn;
+import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
 import 'package:heart/presentation/routes/coaching/coaching.dart' show coachingSpaceOn;
 import 'package:heart/presentation/widgets/avatar.dart';
 import 'package:heart/presentation/widgets/buttons.dart';

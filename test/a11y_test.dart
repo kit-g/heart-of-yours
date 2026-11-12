@@ -104,6 +104,7 @@ enum _Screen {
   coachingReview,
   coachingClientCopy,
   coachingMessages,
+  coachingThread,
   coachingPrograms,
   coachingProgram,
   coachingSendDialog,
@@ -962,6 +963,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingMessages, _Guideline.androidTapTarget, null),
   (_Screen.coachingMessages, _Guideline.iosTapTarget, null),
 
+  (_Screen.coachingThread, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingThread, _Guideline.textContrastLight, null),
+  (_Screen.coachingThread, _Guideline.textContrastDark, null),
+  (_Screen.coachingThread, _Guideline.androidTapTarget, null),
+  (_Screen.coachingThread, _Guideline.iosTapTarget, null),
+
   (_Screen.coachingPrograms, _Guideline.labeledTapTarget, null),
   (_Screen.coachingPrograms, _Guideline.textContrastLight, null),
   (_Screen.coachingPrograms, _Guideline.textContrastDark, null),
@@ -1336,6 +1343,7 @@ void main() {
       _Screen.coachingReview: AppKeys.coachingClientsStack,
       _Screen.coachingClientCopy: AppKeys.coachingClientsStack,
       _Screen.coachingMessages: AppKeys.coachingMessagesStack,
+      _Screen.coachingThread: AppKeys.coachingMessagesStack,
       _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
       _Screen.coachingProgram: AppKeys.coachingProgramsStack,
       _Screen.coachingSendDialog: AppKeys.coachingProgramsStack,
@@ -1362,6 +1370,40 @@ void main() {
       });
       when(api.getConnections()).thenAnswer((_) async => []);
       when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
+      // an inbox of one conversation (#556), with something unread
+      when(api.getThreads()).thenAnswer(
+        (_) async => [
+          Thread(
+            id: 't-sam',
+            connectionId: 'c-sam',
+            otherId: 'sam',
+            otherName: 'Sam',
+            unread: 2,
+            lastAt: DateTime.utc(2026, 11, 7, 18),
+          ),
+        ],
+      );
+      // what the conversation holds: sealed under a key this device never got
+      when(api.getThreadItems('t-sam', limit: anyNamed('limit'))).thenAnswer(
+        (_) async => (
+          items: [
+            ThreadItem(
+              id: 'i1',
+              threadId: 't-sam',
+              senderId: 'sam',
+              kind: 'message',
+              content: 'm1.session.ciphertext',
+              commitment: 'c',
+              tag: 't',
+              tagKey: 'k',
+              at: DateTime.utc(2026, 11, 7, 18),
+              createdAt: DateTime.utc(2026, 11, 7, 18),
+              cursor: 'c1',
+            ),
+          ],
+          cursor: null,
+        ),
+      );
       when(api.getInvitations(cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: <Invitation>[], cursor: null));
       // a roster to read, but none for the invite dialog, which opens from
@@ -2399,6 +2441,7 @@ void main() {
           _Screen.coachingReview ||
           _Screen.coachingClientCopy ||
           _Screen.coachingMessages ||
+          _Screen.coachingThread ||
           _Screen.coachingPrograms ||
           _Screen.coachingProgram ||
           _Screen.coachingSendDialog ||
@@ -2416,6 +2459,10 @@ void main() {
             screen == _Screen.coachingReview ||
             screen == _Screen.coachingClientCopy) {
           await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingThread) {
+          await tester.tapByKey(AppKeys.inboxThread('t-sam'));
           await tester.pumpTimes();
         }
         if (screen == _Screen.coachingClientCopy) {
