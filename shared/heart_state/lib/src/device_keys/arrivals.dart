@@ -10,7 +10,8 @@ class KeyDelivery {
 
   final String payload;
 
-  /// Whose device sent it, as that person's own device list says.
+  /// Whose device sent it: the account the server knows sent it, whose own
+  /// device list names the sending device.
   final String fromUserId;
 
   final String fromDeviceId;
@@ -90,15 +91,21 @@ extension _Arrivals on DeviceKeys {
   Future<_Arrival> _open(_Run run, QueuedItem item, Map<String, List<CryptoDevice>?> senders) async {
     final device = run.device!;
     final envelope = _Envelope.decode(item.content);
-    final senderId = item.senderDeviceId;
-    if (envelope == null || senderId == null) {
+    if (envelope == null) {
       _report(const KeyFailure('unreadable_item'));
       return _Unreadable();
     }
-    // the sender says whose device it is; their own list has to agree
-    final listed = switch (senders.containsKey(envelope.from)) {
-      true => senders[envelope.from],
-      false => senders[envelope.from] = await _senderDevices(run, envelope.from),
+    // the server says whose account sent it, never the item; with that
+    // account deleted, there is no list left to check the device against
+    final (senderId, from) = (item.senderDeviceId, item.senderUserId);
+    if (senderId == null || from == null) {
+      _report(const KeyFailure('unknown_sender'));
+      return _Unreadable();
+    }
+    // that account's own list has to name the sending device
+    final listed = switch (senders.containsKey(from)) {
+      true => senders[from],
+      false => senders[from] = await _senderDevices(run, from),
     };
     if (listed == null) return _Later();
     final sender = listed.where((each) => each.id == senderId).firstOrNull;
@@ -132,7 +139,7 @@ extension _Arrivals on DeviceKeys {
           id: item.id,
           kind: item.kind,
           payload: opened.plaintext,
-          fromUserId: envelope.from,
+          fromUserId: from,
           fromDeviceId: senderId,
         ),
       );
@@ -243,26 +250,25 @@ final class _Later extends _Arrival;
 /// account when a new session spent one of its single-use keys.
 typedef _Opened = ({String? account, _Session session, String plaintext});
 
-/// What travels in a queue item: whose device sent it, and the pairwise
-/// message. `v1.<type>.<from>.<body>`, kept short because an item carries at
-/// most 1 KB, and the server sees it as text and nothing more.
+/// What travels in a queue item: the pairwise message, and nothing of who
+/// sent it, which the server says (`senderUserId`) and the item could only
+/// claim. `v1.<type>.<body>`, kept short because an item carries at most
+/// 1 KB, and the server sees it as text and nothing more.
 class _Envelope {
-  final String from;
   final PairwiseMessage message;
 
-  const new({required this.from, required this.message});
+  const new(this.message);
 
   static const _version = 'v1';
 
-  String encode() => [_version, message.type, from, message.body].join('.');
+  String encode() => [_version, message.type, message.body].join('.');
 
   static _Envelope? decode(String content) {
     return switch (content.split('.')) {
-      [_version, final String type, final String from, final String body] when from.isNotEmpty && body.isNotEmpty =>
-        switch (int.tryParse(type)) {
-          final int type when type == 0 || type == 1 => _Envelope(from: from, message: (type: type, body: body)),
-          _ => null,
-        },
+      [_version, final String type, final String body] when body.isNotEmpty => switch (int.tryParse(type)) {
+        final int type when type == 0 || type == 1 => _Envelope((type: type, body: body)),
+        _ => null,
+      },
       _ => null,
     };
   }

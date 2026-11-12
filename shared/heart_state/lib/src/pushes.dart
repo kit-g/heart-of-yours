@@ -51,9 +51,13 @@ enum PushTopic {
   /// The other person deleted the conversation `threadId`. Silent.
   threadCleared('coaching.thread_cleared', silent: true),
 
-  /// Someone the app shares keys with, `userId`, added or removed a device.
-  /// Silent.
-  devicesChanged('security.devices_changed', silent: true);
+  /// Someone the app shares keys with, `userId`, added, removed or vouched
+  /// for a device. Silent.
+  devicesChanged('security.devices_changed', silent: true),
+
+  /// Something arrived in the key queue of `deviceId`, one of the account's
+  /// devices. Silent, and at most one a minute per device.
+  queueWaiting('security.queue_waiting', silent: true);
 
   final String value;
 
@@ -100,6 +104,8 @@ class Push {
   String? get threadId => data['threadId'];
 
   String? get userId => data['userId'];
+
+  String? get deviceId => data['deviceId'];
 
   Map<String, String> toMap() => {'topic': topic, ...data};
 }

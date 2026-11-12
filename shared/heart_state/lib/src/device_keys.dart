@@ -155,16 +155,40 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  /// This device's signature over another device of the same person's, once
-  /// the two have compared a code: what lets the new one in.
-  Future<String> vouchFor(CryptoDevice device) async {
+  /// Vouches for another device of the same person's, once the two have
+  /// compared a code: this device signs its keys, and the server attaches the
+  /// signature to it. What lets the new one in.
+  ///
+  /// [device] has already published: comparing the code travels through the
+  /// queue, which needs both devices published first. Answers [device] as the
+  /// server now holds it. A device is vouched for once: vouching again as
+  /// before answers it unchanged, and a different vouch is refused whole
+  /// (`already_vouched`), as is one the server can't take.
+  Future<CryptoDevice> vouchFor(CryptoDevice device) async {
     final run = _run;
     if (run == null || device.userId != run.userId) {
       throw StateError('only a device of the same account is vouched for');
     }
     return _serial(run, () async {
       final own = await _local(run);
-      return _guard(() => run.sealbox.sign(own.account, vouchMessage(device)));
+      if (!own.published || !_remote.allowed) throw StateError('device keys are not published');
+      if (device.id == own.id) throw StateError('a device does not vouch for itself');
+      final signature = _guard(() => run.sealbox.sign(own.account, vouchMessage(device)));
+      final vouched = await run.service.vouchForCryptoDevice(device.id, vouchedBy: own.id, signature: signature);
+      run.check();
+      // the account's own devices, as last read, now with the vouch
+      if (run.peers[run.userId] case final Peer peer) {
+        final devices = [
+          for (final each in peer.devices)
+            switch (each.id == vouched.id) {
+              true => vouched,
+              false => each.device,
+            },
+        ];
+        run.peers[run.userId] = await _check(run, run.userId, devices);
+        _changed(run);
+      }
+      return vouched;
     });
   }
 
@@ -226,7 +250,22 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
     if (_run case final _Run run) await _dispatch(run);
   }
 
-  /// Someone this device shares keys with added or removed a device.
+  /// Something arrived in the queue of [deviceId], one of the account's
+  /// devices: read now when it is this one. Every app of the account's hears
+  /// it, so one naming another device is not this one's to read.
+  Future<void> queueWaiting(String deviceId) async {
+    final run = _run;
+    if (run == null || deviceId != run.device?.id) return;
+    try {
+      await receive();
+    } catch (error, stacktrace) {
+      // left on the server: read again on the next start or resume
+      _report(error, stacktrace);
+    }
+  }
+
+  /// Someone this device shares keys with added, removed or vouched for a
+  /// device.
   Future<void> devicesChanged(String userId) async {
     if (_run == null || !_remote.allowed) return;
     try {
@@ -314,7 +353,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
           sessionId: session.sessionId,
           identityKey: session.identityKey,
         ));
-        final content = _Envelope(from: run.userId, message: sealed.message).encode();
+        final content = _Envelope(sealed.message).encode();
         if (content.length > _maxItem) throw ArgumentError.value(kind, 'kind', 'sealed past what the queue carries');
         await run.service.enqueueKeyItem(
           id: _newId(),

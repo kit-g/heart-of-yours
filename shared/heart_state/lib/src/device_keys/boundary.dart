@@ -15,6 +15,8 @@ abstract interface class RemoteKeyService {
 
   Future<List<CryptoDevice>> getCryptoDevices({String? userId});
 
+  Future<CryptoDevice> vouchForCryptoDevice(String deviceId, {required String vouchedBy, required String signature});
+
   Future<int> addOneTimeKeys(String deviceId, Map<String, String> keys);
 
   Future<int> countOneTimeKeys(String deviceId);

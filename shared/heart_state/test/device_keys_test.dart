@@ -311,10 +311,9 @@ void main() {
       await tablet.start('dana');
       await stranger.start('dana');
       await student.start('sam');
-      final signature = await phone.vouchFor(server.devices[tablet.deviceId]!);
-      server.vouch(tablet.deviceId!, by: phone.deviceId!, signature: signature);
+      final vouched = await phone.vouchFor(server.devices[tablet.deviceId]!);
       // the phone's signature, over another device's keys
-      server.vouch(stranger.deviceId!, by: phone.deviceId!, signature: signature);
+      server.vouch(stranger.deviceId!, by: phone.deviceId!, signature: vouched.signature!);
 
       final peer = await student.devicesOf('dana', fingerprint: await phone.fingerprint());
       final trust = {for (final each in peer.devices) each.id: each.trust};
@@ -324,6 +323,40 @@ void main() {
         tablet.deviceId: DeviceTrust.vouched,
         stranger.deviceId: DeviceTrust.unverified,
       });
+    });
+
+    test('a vouch reaches the server once, and a different one after it is refused', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      final laptop = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await laptop.start('dana');
+      await phone.devicesOf('dana');
+      final fresh = server.devices[tablet.deviceId]!;
+
+      final vouched = await phone.vouchFor(fresh);
+
+      expect((vouched.vouchedBy, server.devices[tablet.deviceId]!.vouchedBy), (phone.deviceId, phone.deviceId));
+      expect(phone.peer('dana')!.devices.firstWhere((each) => each.id == tablet.deviceId).trust, DeviceTrust.vouched);
+      // the same again, as after a lost answer: the device as it is
+      expect((await phone.vouchFor(fresh)).signature, vouched.signature);
+      await expectLater(laptop.vouchFor(fresh), throwsA({'error': 'conflict', 'code': 'already_vouched'}));
+      expect(server.devices[tablet.deviceId]!.vouchedBy, phone.deviceId);
+    });
+
+    test('a device vouches only once it is published, and never for itself', () async {
+      server.refuseNext['publish'] = {'error': 'conflict', 'code': 'device_limit'};
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      server.calls.clear();
+
+      await expectLater(phone.vouchFor(server.devices[tablet.deviceId]!), throwsStateError);
+      await phone.refresh();
+      await expectLater(tablet.vouchFor(server.devices[tablet.deviceId]!), throwsStateError);
+      expect(server.calls.where((each) => each.startsWith('vouch')), isEmpty);
     });
 
     test('a device added after the first look is said to be new', () async {
@@ -497,8 +530,9 @@ void main() {
           id: uuidV7(),
           recipientDeviceId: coach.deviceId!,
           senderDeviceId: '01a1b7d4-bdd4-7877-bb95-22ef017880bf',
+          senderUserId: 'sam',
           kind: 'thread_key',
-          content: 'v1.0.sam.AAAA',
+          content: 'v1.0.AAAA',
           createdAt: DateTime.now(),
         ),
       );
@@ -507,6 +541,78 @@ void main() {
 
       expect(server.queue, isEmpty);
       expect(errors.single, isA<KeyFailure>().having((error) => error.code, 'code', 'unknown_sender'));
+    });
+
+    test("whose it is comes from the server, and that account's list has to name the device", () async {
+      final coach = device('dana');
+      final student = device('sam');
+      server.connect('dana', 'riley');
+      await coach.start('dana');
+      await student.start('sam');
+      final from = <String>[];
+      await coach.on('thread_key', (delivery) async => from.add(delivery.fromUserId));
+      await student.deliver(userId: 'dana', kind: 'thread_key', payload: 'one');
+      await coach.receive();
+      expect(from, ['sam']);
+
+      // the same device, said to be someone else's
+      await student.deliver(userId: 'dana', kind: 'thread_key', payload: 'two');
+      final [item] = server.queue;
+      server.queue[0] = _sentBy(item, 'riley');
+      await coach.receive();
+
+      expect(server.queue, isEmpty);
+      expect(from, ['sam']);
+      expect(errors.single, isA<KeyFailure>().having((error) => error.code, 'code', 'unknown_sender'));
+    });
+
+    test("an item whose sender's account is gone can't be checked, and is dropped", () async {
+      final coach = device('dana');
+      final student = device('sam');
+      await coach.start('dana');
+      await student.start('sam');
+      final payloads = <String>[];
+      await coach.on('thread_key', (delivery) async => payloads.add(delivery.payload));
+      await student.deliver(userId: 'dana', kind: 'thread_key', payload: 'k');
+      server.queue[0] = _sentBy(server.queue.single, null);
+      server.calls.clear();
+
+      await coach.receive();
+
+      expect(server.queue, isEmpty);
+      expect(payloads, isEmpty);
+      expect(server.calls.where((each) => each.startsWith('devices')), isEmpty);
+      expect(errors.single, isA<KeyFailure>().having((error) => error.code, 'code', 'unknown_sender'));
+    });
+
+    test("a wake naming this device reads its queue, and one naming another device doesn't", () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      final student = device('sam');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await student.start('sam');
+      final payloads = <String>[];
+      await phone.on('thread_key', (delivery) async => payloads.add(delivery.payload));
+      await student.deliver(userId: 'dana', kind: 'thread_key', payload: 'k', to: (each) => each.id == phone.deviceId);
+      server.calls.clear();
+
+      await phone.queueWaiting(tablet.deviceId!);
+      expect(server.calls, isEmpty);
+
+      await phone.queueWaiting(phone.deviceId!);
+      expect(payloads, ['k']);
+      expect(server.queue, isEmpty);
+    });
+
+    test('a wake that finds the server out leaves the item for the next read, and is reported', () async {
+      final coach = device('dana');
+      await coach.start('dana');
+      server.refuseNext['queue'] = TimeoutException('no answer');
+
+      await coach.queueWaiting(coach.deviceId!);
+
+      expect(errors.single, isA<TimeoutException>());
     });
 
     for (final (why, failure) in [
@@ -563,8 +669,9 @@ void main() {
           id: uuidV7(),
           recipientDeviceId: coach.deviceId!,
           senderDeviceId: student.deviceId,
+          senderUserId: 'sam',
           kind: 'thread_key',
-          content: 'v1.0.sam.not-a-message',
+          content: 'v1.0.not-a-message',
           createdAt: DateTime.now(),
         ),
       );
@@ -589,6 +696,20 @@ void main() {
       expect(coach.status, DeviceKeysStatus.off);
     });
   });
+}
+
+/// [item], as the server would read it with [senderUserId] for the sending
+/// account: null once that account is deleted.
+QueuedItem _sentBy(QueuedItem item, String? senderUserId) {
+  return QueuedItem(
+    id: item.id,
+    recipientDeviceId: item.recipientDeviceId,
+    senderDeviceId: item.senderDeviceId,
+    senderUserId: senderUserId,
+    kind: item.kind,
+    content: item.content,
+    createdAt: item.createdAt,
+  );
 }
 
 /// The vault, in memory.
@@ -646,9 +767,9 @@ class _Server {
     oneTimeKeys.remove(deviceId);
   }
 
-  void vouch(String deviceId, {required String by, required String signature}) {
+  CryptoDevice vouch(String deviceId, {required String by, required String signature}) {
     final device = devices[deviceId]!;
-    devices[deviceId] = CryptoDevice(
+    return devices[deviceId] = CryptoDevice(
       id: device.id,
       userId: device.userId,
       identityKey: device.identityKey,
@@ -723,6 +844,25 @@ class _As implements RemoteKeyService {
     await _answer('devices');
     if (!server._shares(me, owner)) throw {'error': 'forbidden', 'code': 'forbidden'};
     return [...server.devices.values.where((each) => each.userId == owner)];
+  }
+
+  @override
+  Future<CryptoDevice> vouchForCryptoDevice(
+    String deviceId, {
+    required String vouchedBy,
+    required String signature,
+  }) async {
+    server.calls.add('vouch $me');
+    await _answer('vouch');
+    final device = _mine(deviceId);
+    if (vouchedBy == deviceId || server.devices[vouchedBy]?.userId != me) {
+      throw {'error': 'bad request', 'code': 'bad_request'};
+    }
+    return switch ((device.vouchedBy, device.signature)) {
+      (null, _) => server.vouch(deviceId, by: vouchedBy, signature: signature),
+      (final by, final said) when by == vouchedBy && said == signature => device,
+      _ => throw {'error': 'conflict', 'code': 'already_vouched'},
+    };
   }
 
   @override
@@ -806,6 +946,8 @@ class _As implements RemoteKeyService {
         id: id,
         recipientDeviceId: recipientDeviceId,
         senderDeviceId: senderDeviceId,
+        // the account the server knows sent it, from the sending device's row
+        senderUserId: me,
         kind: kind,
         content: content,
         createdAt: DateTime.now(),

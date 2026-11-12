@@ -31,6 +31,11 @@ class RemoteDeviceKeys implements RemoteKeyService {
   Future<List<CryptoDevice>> getCryptoDevices({String? userId}) => _api.getCryptoDevices(userId: userId);
 
   @override
+  Future<CryptoDevice> vouchForCryptoDevice(String deviceId, {required String vouchedBy, required String signature}) {
+    return _api.vouchForCryptoDevice(deviceId, vouchedBy: vouchedBy, signature: signature);
+  }
+
+  @override
   Future<int> addOneTimeKeys(String deviceId, Map<String, String> keys) => _api.addOneTimeKeys(deviceId, keys);
 
   @override
