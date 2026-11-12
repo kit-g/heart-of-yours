@@ -5938,5 +5938,15 @@
   "messagesWith": "Message {name}",
   "@messagesWith": {"description": "Button that opens the conversation with someone (#556)", "type": "text", "placeholders": {"name": {"type": "String"}}},
   "messagesPick": "Pick a conversation",
-  "@messagesPick": {"description": "Beside the list of conversations on a wide screen, before one is picked (#556)", "type": "text", "placeholders": {}}
+  "@messagesPick": {"description": "Beside the list of conversations on a wide screen, before one is picked (#556)", "type": "text", "placeholders": {}},
+  "messagesSent": "Sent",
+  "@messagesSent": {"description": "What a screen reader says after the time of a message of the person's that reached the server (#556)", "type": "text", "placeholders": {}},
+  "messagesOpenLink": "Open {link}",
+  "@messagesOpenLink": {"description": "A screen reader's action on a message that holds a link or an email address: opens it (#556)", "type": "text", "placeholders": {"link": {"type": "String", "example": "https://heart-of.me"}}},
+  "messagesToday": "Today",
+  "@messagesToday": {"description": "Heading above the first of today's messages in a conversation (#556)", "type": "text", "placeholders": {}},
+  "messagesYesterday": "Yesterday",
+  "@messagesYesterday": {"description": "Heading above the first of yesterday's messages in a conversation (#556)", "type": "text", "placeholders": {}},
+  "messagesCopy": "Copy",
+  "@messagesCopy": {"description": "Menu item on a long-pressed message: puts its words on the clipboard (#556)", "type": "text", "placeholders": {}}
 }

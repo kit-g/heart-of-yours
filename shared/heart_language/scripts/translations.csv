@@ -1644,3 +1644,8 @@ messagesFailed,A conversation that couldn't be read (#556),Couldn't load the con
 messagesUnread,Accessibility label of the unread count on a conversation (#556),Unread: {count},Unread: {count},Непрочитанных: {count},Sin leer: {count},Non lus : {count}
 messagesWith,Button that opens the conversation with someone (#556),Message {name},Message {name},Написать: {name},Escribir a {name},Écrire à {name}
 messagesPick,"Beside the list of conversations on a wide screen, before one is picked (#556)",Pick a conversation,Pick a conversation,Выберите разговор,Elige una conversación,Choisissez une conversation
+messagesSent,What a screen reader says after the time of a message of the person's that reached the server (#556),Sent,Sent,Отправлено,Enviado,Envoyé
+messagesOpenLink,"A screen reader's action on a message that holds a link or an email address: opens it (#556)",Open {link},Open {link},Открыть {link},Abrir {link},Ouvrir {link}
+messagesToday,Heading above the first of today's messages in a conversation (#556),Today,Today,Сегодня,Hoy,Aujourd'hui
+messagesYesterday,Heading above the first of yesterday's messages in a conversation (#556),Yesterday,Yesterday,Вчера,Ayer,Hier
+messagesCopy,Menu item on a long-pressed message: puts its words on the clipboard (#556),Copy,Copy,Копировать,Copiar,Copier

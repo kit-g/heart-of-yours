@@ -87,6 +87,7 @@ dependencies:
   url_launcher: ^6.3.3
   # 1.8.1 requires dbus 0.8, incompatible with flutter_local_notifications 22.x.
   wakelock_plus: 1.8.2
+  linkify: ^5.0.0
 
 dev_dependencies:
   build_runner: ^2.16.1

@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/presentation/widgets/message_text.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/messages/messages.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -66,13 +68,52 @@ void main() {
     await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
 
     expect(find.text('Muffin'), findsOneWidget, reason: "the page is titled with who it's with");
-    final first = tester.getTopLeft(find.text('Squats?'));
-    final second = tester.getTopLeft(find.text('Heavy, but good'));
+    final first = tester.getTopLeft(_message('Squats?'));
+    final second = tester.getTopLeft(_message('Heavy, but good'));
     expect(first.dy, lessThan(second.dy));
     // under the test font each letter is as wide as it is tall: short words keep the bubbles apart
     expect(second.dx, lessThan(first.dx), reason: "theirs sit left, the coach's own right");
-    expect(find.text("Waiting for this message's key"), findsOneWidget);
+    expect(_message("Waiting for this message's key"), findsOneWidget);
     expect(server.calls, contains('read t1 c3'));
+  });
+
+  testWidgets('a long press copies what was said; one that never opened offers nothing', (tester) async {
+    server.items = [
+      _item('i1', 'Squats?', sender: 'whiskers', cursor: 'c1'),
+      _item('i2', 'locked', sender: 'muffin', cursor: 'c2'),
+    ];
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') copied.add((call.arguments as Map)['text'] as String);
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+    await tester.longPress(_message("Waiting for this message's key"));
+    await tester.pumpAndSettle();
+    expect(find.text('Copy'), findsNothing);
+
+    await tester.longPress(_message('Squats?'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy'));
+    await tester.pumpAndSettle();
+
+    expect(copied, ['Squats?']);
+    expect(find.text('Copied to clipboard'), findsOneWidget);
+  });
+
+  testWidgets('a day of messages opens under its heading', (tester) async {
+    final now = DateTime.now();
+    server.items = [
+      _item('i1', 'Squats?', sender: 'whiskers', cursor: 'c1', at: now.subtract(const Duration(days: 1))),
+      _item('i2', 'Heavy', sender: 'muffin', cursor: 'c2', at: now),
+    ];
+
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+    expect(find.text('Yesterday'), findsOneWidget);
+    expect(find.text('Today'), findsOneWidget);
   });
 
   testWidgets('a message written goes out, and the box empties', (tester) async {
@@ -85,7 +126,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(server.posted, ['sealed:Deload this week']);
-    expect(find.text('Deload this week'), findsOneWidget);
+    expect(_message('Deload this week'), findsOneWidget);
     expect(tester.widget<TextField>(find.byKey(AppKeys.messageBox)).controller!.text, isEmpty);
   });
 
@@ -143,7 +184,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(opened, isEmpty, reason: 'no page of its own');
-    expect(find.text('Morning!'), findsOneWidget);
+    expect(_message('Morning!'), findsOneWidget);
     expect(find.text('Pick a conversation'), findsNothing);
   });
 
@@ -158,8 +199,8 @@ void main() {
   });
 }
 
-ThreadItem _item(String id, String text, {required String sender, String? cursor}) {
-  final at = DateTime.utc(2026, 11, 12, 8);
+ThreadItem _item(String id, String text, {required String sender, String? cursor, DateTime? at}) {
+  at ??= DateTime.utc(2026, 11, 12, 8);
   return ThreadItem(
     id: id,
     threadId: 't1',
@@ -309,3 +350,6 @@ class _Cipher implements ThreadCipher {
     ];
   }
 }
+
+/// A message's words, which a [MessageText] lays out with its time.
+Finder _message(String text) => find.byWidgetPredicate((widget) => widget is MessageText && widget.text == text);

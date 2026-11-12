@@ -3,13 +3,19 @@
 /// coach reads theirs in Coaching, beside the inbox on a wide window.
 library;
 
+import 'dart:math' as math;
+
+import 'package:flutter/services.dart';
+import 'package:heart/core/utils/message_runs.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/message_text.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// The conversation of [connectionId] as a page of its own.
 class ThreadPage extends StatelessWidget {
@@ -173,6 +179,7 @@ class _Conversation extends StatelessWidget {
     final thread = messages.thread(threadId);
     // newest at the bottom, where the eye and the box are
     final shown = thread.messages.reversed.toList();
+    final places = const MessageRuns().of([for (final each in thread.messages) (at: each.at, mine: each.mine)]);
     return Column(
       children: [
         Expanded(
@@ -192,7 +199,13 @@ class _Conversation extends StatelessWidget {
                 padding: const .symmetric(horizontal: 12, vertical: 8),
                 itemCount: shown.length + 1,
                 itemBuilder: (context, index) => switch (index < shown.length) {
-                  true => _Bubble(message: shown[index]),
+                  true => Column(
+                    crossAxisAlignment: .stretch,
+                    children: [
+                      if (places[shown.length - 1 - index].newDay) _Day(at: shown[index].at),
+                      _Bubble(message: shown[index], place: places[shown.length - 1 - index]),
+                    ],
+                  ),
                   false => switch (thread.hasOlder) {
                     true => Center(
                       child: TextButton(
@@ -217,93 +230,167 @@ class _Conversation extends StatelessWidget {
   }
 }
 
+/// A day's heading, above its first message.
+class _Day extends StatelessWidget {
+  final DateTime at;
+
+  const new({required this.at});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final locale = Localizations.localeOf(context).toString();
+    final day = DateUtils.dateOnly(at.toLocal());
+    final today = DateUtils.dateOnly(DateTime.now());
+    final label = switch (today.difference(day).inDays) {
+      0 => l.messagesToday,
+      1 => l.messagesYesterday,
+      _ when day.year == today.year => DateFormat.MMMMEEEEd(locale).format(day),
+      _ => DateFormat.yMMMMEEEEd(locale).format(day),
+    };
+    return Padding(
+      padding: const .only(top: 16, bottom: 8),
+      child: Center(
+        child: Semantics(
+          header: true,
+          child: Text(label, style: textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+        ),
+      ),
+    );
+  }
+}
+
 class _Bubble extends StatelessWidget {
   final Message message;
+  final MessagePlace place;
 
-  const new({required this.message});
+  const new({required this.message, required this.place});
 
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final mine = message.mine;
-    final (background, foreground) = switch (mine) {
-      true => (colorScheme.primary, colorScheme.onPrimary),
-      false => (colorScheme.surfaceContainerHigh, colorScheme.onSurface),
-    };
-    final words = switch (message.opened) {
-      Opened(:final text) => Text(text, style: textTheme.bodyLarge?.copyWith(color: foreground)),
-      Locked() => _Unopened(icon: Icons.key_rounded, text: l.messagesLocked, color: foreground),
-      Refused() => _Unopened(icon: Icons.block_rounded, text: l.messagesRefused, color: foreground),
+    final (background, foreground, quiet, link) = switch (mine) {
+      true => (
+        colorScheme.primary,
+        colorScheme.onPrimary,
+        colorScheme.onPrimary.withValues(alpha: .72),
+        colorScheme.onPrimary,
+      ),
+      false => (
+        // the design system's fill: surfaceContainerHigh is the page itself
+        colorScheme.surfaceContainerHighest,
+        colorScheme.onSurface,
+        colorScheme.onSurfaceVariant,
+        colorScheme.primary,
+      ),
     };
     final time = DateFormat.jm(Localizations.localeOf(context).toString()).format(message.at.toLocal());
-    final delivery = switch ((mine, message.delivery)) {
-      (true, .waiting) => Tooltip(
-        message: l.messagesWaiting,
-        child: Icon(
-          Icons.schedule_rounded,
-          size: 14,
-          color: colorScheme.onSurfaceVariant,
-          semanticLabel: l.messagesWaiting,
-        ),
-      ),
-      (true, .closed) => Text(l.messagesNotSent, style: textTheme.labelSmall?.copyWith(color: colorScheme.error)),
-      _ => null,
+    final words = textTheme.bodyLarge?.copyWith(color: foreground) ?? TextStyle(color: foreground);
+    final (text, style, leading) = switch (message.opened) {
+      Opened(:final text) => (text, words, null),
+      Locked() => (l.messagesLocked, words.copyWith(fontStyle: .italic), Icons.key_rounded),
+      Refused() => (l.messagesRefused, words.copyWith(fontStyle: .italic), Icons.block_rounded),
+    };
+    final (status, said) = switch ((mine, message.delivery)) {
+      (false, _) => (null, null),
+      (true, .sent) => (Icons.done_rounded, l.messagesSent),
+      (true, .waiting) => (Icons.schedule_rounded, l.messagesWaiting),
+      (true, .closed) => (null, l.messagesNotSent),
+    };
+    // the corner under the writer's side is drawn tight on a run's last
+    // message: the run's tail
+    const round = Radius.circular(18);
+    const tail = Radius.circular(6);
+    final radius = switch ((mine, place.lastOfRun)) {
+      (_, false) => const BorderRadius.all(round),
+      (true, true) => const BorderRadius.only(topLeft: round, topRight: round, bottomLeft: round, bottomRight: tail),
+      (false, true) => const BorderRadius.only(topLeft: round, topRight: round, bottomLeft: tail, bottomRight: round),
     };
     return Padding(
       key: AppKeys.message(message.id),
-      padding: const .symmetric(vertical: 3),
+      padding: .only(
+        top: switch (place.firstOfRun) {
+          true => 8,
+          false => 2,
+        },
+      ),
       child: Column(
         crossAxisAlignment: switch (mine) {
           true => .end,
           false => .start,
         },
         children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: DecoratedBox(
-              decoration: BoxDecoration(color: background, borderRadius: .circular(16)),
-              child: Padding(padding: const .symmetric(horizontal: 14, vertical: 10), child: words),
+          LayoutBuilder(
+            builder: (context, constraints) => ConstrainedBox(
+              // a bubble a hand can follow: never across the whole pane
+              constraints: BoxConstraints(maxWidth: math.min(480, constraints.maxWidth * .8)),
+              child: GestureDetector(
+                onLongPressStart: switch (message.opened) {
+                  Opened(:final text) => (details) => _menu(context, details.globalPosition, text),
+                  _ => null,
+                },
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: background, borderRadius: radius),
+                  child: Padding(
+                    padding: const .fromLTRB(14, 8, 12, 7),
+                    child: MessageText(
+                      text: text,
+                      style: style,
+                      linkStyle: style.copyWith(color: link, decoration: .underline, decorationColor: link),
+                      time: time,
+                      timeStyle:
+                          textTheme.labelSmall?.copyWith(color: quiet, fontFeatures: const [.tabularFigures()]) ??
+                          TextStyle(color: quiet),
+                      status: status,
+                      leading: leading,
+                      onLink: switch (message.opened) {
+                        Opened() => _open,
+                        _ => null,
+                      },
+                      linkAction: l.messagesOpenLink,
+                      semanticsLabel: [text, time, ?said].join(', '),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
-          Padding(
-            padding: const .only(top: 2, left: 4, right: 4),
-            child: Row(
-              mainAxisSize: .min,
-              spacing: 4,
-              children: [
-                Text(time, style: textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant)),
-                ?delivery,
-              ],
+          if (message.delivery == .closed && mine)
+            Padding(
+              padding: const .only(top: 2, right: 4),
+              child: Text(l.messagesNotSent, style: textTheme.labelSmall?.copyWith(color: colorScheme.error)),
             ),
-          ),
         ],
       ),
     );
   }
-}
 
-/// A message that didn't open, and why.
-class _Unopened extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color color;
+  static Future<void> _open(Uri uri) => launchUrl(uri, mode: .externalApplication);
 
-  const new({required this.icon, required this.text, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.bodyMedium?.copyWith(color: color, fontStyle: .italic);
-    return Row(
-      mainAxisSize: .min,
-      spacing: 6,
-      children: [
-        Icon(icon, size: 16, color: color),
-        Flexible(child: Text(text, style: style)),
-      ],
+  Future<void> _menu(BuildContext context, Offset at, String text) async {
+    final l = L.of(context);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final picked = await showMenu<_MessageAction>(
+      context: context,
+      position: RelativeRect.fromRect(at & const Size(1, 1), Offset.zero & overlay.size),
+      items: [PopupMenuItem(value: .copy, child: Text(l.messagesCopy))],
     );
+    switch (picked) {
+      case .copy:
+        await Clipboard.setData(ClipboardData(text: text));
+        messenger?.showSnackBar(SnackBar(content: Text(l.copiedToClipboard)));
+      case null:
+        break;
+    }
   }
 }
+
+/// What a long press on a message offers.
+enum _MessageAction { copy }
 
 class _Composer extends StatelessWidget {
   final TextEditingController text;
