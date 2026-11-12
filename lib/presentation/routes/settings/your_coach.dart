@@ -41,9 +41,12 @@ class _CoachCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    final name = switch (coach.connectionId) {
-      final String id => Preferences.watch(context).coachName(id),
-      null => null,
+    // their name as their profile says it now (heart-api#409), else as their
+    // invitation showed it on this device
+    final name = switch ((coach.name?.trim(), coach.connectionId)) {
+      (final String name, _) when name.isNotEmpty => name,
+      (_, final String id) => Preferences.watch(context).coachName(id),
+      _ => null,
     };
     final paused = coach.status == .paused;
     final shares = {
