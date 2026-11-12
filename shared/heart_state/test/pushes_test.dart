@@ -12,7 +12,12 @@ void main() {
   late Pushes pushes;
   late List<Object> errors;
 
-  PushSetting topic(String name, {String delivery = 'instant', List<String> options = const ['instant', 'off']}) {
+  PushSetting topic(
+    String name, {
+    String delivery = 'instant',
+    List<String> options = const ['instant', 'off'],
+    List<String> perPersonAs = const [],
+  }) {
     return PushSetting(
       topic: name,
       group: 'coaching',
@@ -20,6 +25,7 @@ void main() {
       description: 'When someone you train with writes to you',
       delivery: delivery,
       options: options,
+      perPersonAs: perPersonAs,
     );
   }
 
@@ -169,7 +175,7 @@ void main() {
 
       await pushes.load();
 
-      expect(pushes.status, PushSettingsStatus.loaded);
+      expect(pushes.status, CoachingStatus.loaded);
       expect(pushes.topics.single.topic, 'coaching.message');
       expect(pushes.deliveryFor('coaching.message', 'c1'), 'off');
       expect(pushes.deliveryFor('coaching.message', 'c2'), isNull);
@@ -180,17 +186,22 @@ void main() {
 
       await pushes.load();
 
-      expect(pushes.status, PushSettingsStatus.failed);
+      expect(pushes.status, CoachingStatus.failed);
       expect(errors, hasLength(1));
     });
 
     test('set shows at once and reaches the server', () async {
-      service.settings = PushSettings(topics: [topic('coaching.message')]);
+      service.settings = PushSettings(
+        topics: [
+          topic('coaching.message', perPersonAs: ['coach']),
+        ],
+      );
       await pushes.load();
 
       await pushes.set('coaching.message', 'off');
 
       expect(pushes.topics.single.delivery, 'off');
+      expect(pushes.topics.single.perPersonAs, ['coach'], reason: 'the rest of the setting is carried');
       expect(service.calls.last, 'set coaching.message off null');
     });
 
