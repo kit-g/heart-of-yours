@@ -320,6 +320,19 @@ void main() {
       verifyNever(api.editProgram(any));
     });
 
+    testWidgets('its page offers starting it, and nothing that would change it or train from it', (tester) async {
+      withSent();
+      await openWorkoutTab(tester);
+      await tester.tap(find.text('Strength block'));
+      await tester.pumpTimes();
+
+      expect(find.byTooltip('Edit program'), findsNothing);
+      expect(find.byKey(AppKeys.programAddSession), findsNothing);
+      await tester.tap(find.text('Day A').last);
+      await tester.pumpTimes();
+      expect(find.byType(Dialog), findsNothing, reason: 'no start dialog for a session of a program not started');
+    });
+
     testWidgets('its page waits too, and once started says whose it is', (tester) async {
       withSent();
       await openWorkoutTab(tester);
