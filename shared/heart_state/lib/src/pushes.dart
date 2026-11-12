@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'coaching.dart';
 import 'remote.dart';
 
 /// What the server does with the push client (heart-of-yours#567, #554).
@@ -118,9 +119,6 @@ enum PushDelivery {
   static PushDelivery? of(String value) => values.where((each) => each.name == value).firstOrNull;
 }
 
-/// Where the account's push settings stand with the server.
-enum PushSettingsStatus { idle, loading, loaded, failed }
-
 /// The push client's state: whether this device is registered with the
 /// server, and what reaches the account, topic by topic and person by person.
 ///
@@ -153,9 +151,9 @@ class Pushes with ChangeNotifier implements SignOutStateSentry {
 
   final _topics = <PushSetting>[];
   final _people = <PushPreference>[];
-  PushSettingsStatus _status = .idle;
+  CoachingStatus _status = .idle;
 
-  PushSettingsStatus get status => _status;
+  CoachingStatus get status => _status;
 
   /// Every topic the account can change, in the server's order.
   List<PushSetting> get topics => UnmodifiableListView(_topics);
@@ -247,7 +245,8 @@ class Pushes with ChangeNotifier implements SignOutStateSentry {
     if (index == -1) return;
     final was = _topics[index];
     if (was.delivery == delivery) return;
-    _topics[index] = _withDelivery(was, delivery);
+    // through its own map, so a field a later heart_models adds is carried
+    _topics[index] = PushSetting.fromJson({...was.toMap(), 'delivery': delivery});
     notifyListeners();
     try {
       await _service.setPushSetting(topic, delivery);
@@ -281,17 +280,5 @@ class Pushes with ChangeNotifier implements SignOutStateSentry {
       notifyListeners();
       rethrow;
     }
-  }
-
-  static PushSetting _withDelivery(PushSetting setting, String delivery) {
-    return PushSetting(
-      topic: setting.topic,
-      group: setting.group,
-      name: setting.name,
-      description: setting.description,
-      delivery: delivery,
-      options: setting.options,
-      perPersonAs: setting.perPersonAs,
-    );
   }
 }
