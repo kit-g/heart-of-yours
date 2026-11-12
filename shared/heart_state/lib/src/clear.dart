@@ -23,9 +23,17 @@ import 'upsync.dart';
 import 'workouts.dart';
 
 /// Signs out and forgets everything the session held.
-void clearState(BuildContext context) {
+///
+/// This device stops getting the account's pushes first (heart-api#415): the
+/// removal sets off before anything is forgotten and is waited for before the
+/// session ends, the last moment the request can say whose pushes they are.
+/// One that cannot be made does not hold the sign-out up.
+Future<void> clearState(BuildContext context) async {
+  final session = Auth.of(context);
+  final unregistering = Pushes.of(context).unregister();
   clearUserState(context);
-  Auth.of(context).onSignOut();
+  await unregistering;
+  await session.onSignOut();
 }
 
 /// Erases everything an anonymous session holds on the device and signs it

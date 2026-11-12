@@ -17,6 +17,9 @@ class RemotePushes implements RemotePushService {
   }
 
   @override
+  Future<void> unregisterDevice(String token) => _api.unregisterDevice(token);
+
+  @override
   Future<PushSettings> getPushSettings() => _api.getPushSettings();
 
   @override
