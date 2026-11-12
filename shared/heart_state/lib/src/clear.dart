@@ -13,6 +13,7 @@ import 'device_keys.dart';
 import 'exercises.dart';
 import 'goals.dart';
 import 'health.dart';
+import 'messages.dart';
 import 'preferences.dart';
 import 'previous.dart';
 import 'programs.dart';
@@ -76,6 +77,7 @@ void clearUserState(BuildContext context) {
   Exercises.of(context).onSignOut();
   Goals.of(context).onSignOut();
   Health.of(context).onSignOut();
+  Messages.of(context).onSignOut();
   PreviousExercises.of(context).onSignOut();
   Programs.of(context).onSignOut();
   Pushes.of(context).onSignOut();
