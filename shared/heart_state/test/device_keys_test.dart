@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -91,7 +93,7 @@ void main() {
     });
 
     test('a refusal leaves the keys unpublished and is reported, not thrown', () async {
-      server.refuseNextPublish = {'error': 'conflict', 'code': 'device_limit'};
+      server.refuseNext['publish'] = {'error': 'conflict', 'code': 'device_limit'};
       final phone = device('dana');
 
       await phone.start('dana');
@@ -102,6 +104,109 @@ void main() {
       ]);
       await phone.refresh();
       expect(phone.status, DeviceKeysStatus.published);
+    });
+  });
+
+  group('stopping', () {
+    test('a stop while a refresh is on its way ends it there', () async {
+      final vault = _Vault();
+      final coach = device('dana', vault: vault);
+      await coach.start('dana');
+      // enough claimed that the refresh would restock
+      server.oneTimeKeys[coach.deviceId]!.removeRange(0, 30);
+      final hold = server.holds['queue'] = Completer();
+      server.calls.clear();
+      final refreshing = coach.refresh();
+      await server.called('queue');
+
+      coach.stop();
+      final stored = {...vault.entries};
+      hold.complete();
+      await refreshing;
+
+      expect(server.calls, ['queue dana']);
+      expect(server.oneTimeKeys[server.devices.keys.single], hasLength(20));
+      expect(vault.entries, stored);
+      expect(coach.deviceId, isNull);
+      expect(coach.status, DeviceKeysStatus.off);
+      expect(errors, isEmpty);
+    });
+
+    test('the next account to sign in gets its own device, never the last one', () async {
+      final vault = _Vault();
+      var who = 'dana';
+      final phone = DeviceKeys(
+        service: server.signedIn(() => who),
+        vault: vault,
+        remote: RemoteAccess(hasToken: () => true)..account = true,
+        onError: (error, {stacktrace}) => errors.add(error),
+      );
+      await phone.start('dana');
+      final dana = phone.deviceId!;
+      final hold = server.holds['queue'] = Completer();
+      final refreshing = phone.refresh();
+      await server.called('queue');
+
+      phone.onSignOut();
+      Map<String, String> danas() => {
+        for (final MapEntry(:key, :value) in vault.entries.entries)
+          if (key.startsWith('keys.dana.')) key: value,
+      };
+      final stored = danas();
+      who = 'sam';
+      final starting = phone.start('sam');
+      hold.complete();
+      await refreshing;
+      await starting;
+
+      expect(phone.deviceId, isNot(dana));
+      expect(server.devices[phone.deviceId]!.userId, 'sam');
+      expect(phone.status, DeviceKeysStatus.published);
+      // dana's queued restock never ran, as dana or on sam's keys
+      expect(danas(), stored);
+      expect(errors, isEmpty);
+    });
+  });
+
+  group('fingerprint', () {
+    test('is read while the network is busy, without waiting for it', () async {
+      final coach = device('dana');
+      await coach.start('dana');
+      final hold = server.holds['devices'] = Completer();
+      final reading = coach.devicesOf('sam');
+      await server.called('devices');
+
+      final fingerprint = await coach.fingerprint().timeout(const Duration(seconds: 1));
+
+      expect(fingerprint, hasLength(22));
+      hold.complete();
+      await reading;
+    });
+
+    test('asked while the keys are first made, names the one device made and published', () async {
+      final vault = _Vault();
+      final coach = device('dana', vault: vault);
+
+      final starting = coach.start('dana');
+      final fingerprints = await Future.wait([coach.fingerprint(), coach.fingerprint()]);
+      await starting;
+
+      final published = server.devices.values.single;
+      expect(published.id, coach.deviceId);
+      expect(
+        fingerprints,
+        everyElement(
+          Sealbox.fingerprint(
+            identityKey: published.identityKey,
+            signingKey: published.signingKey,
+            context: DeviceKeys.fingerprintContext,
+          ),
+        ),
+      );
+    });
+
+    test('is null while keys are off', () async {
+      expect(await device('dana').fingerprint(), isNull);
     });
   });
 
@@ -404,6 +509,50 @@ void main() {
       expect(errors.single, isA<KeyFailure>().having((error) => error.code, 'code', 'unknown_sender'));
     });
 
+    for (final (why, failure) in [
+      ('a rate limit', {'error': 'too many requests', 'code': 'rate_limited', 'retryAfter': 60}),
+      ('the server failing', {'error': 'internal server error', 'code': 'internal'}),
+      ('no network', TimeoutException('no answer')),
+    ]) {
+      test("$why reading the sender's devices leaves the item for the next receive", () async {
+        final coach = device('dana');
+        final student = device('sam');
+        await coach.start('dana');
+        await student.start('sam');
+        final payloads = <String>[];
+        await coach.on('thread_key', (delivery) async => payloads.add(delivery.payload));
+        await student.deliver(userId: 'dana', kind: 'thread_key', payload: 'one');
+        await student.deliver(userId: 'dana', kind: 'thread_key', payload: 'two');
+
+        server.refuseNext['devices'] = failure;
+        await coach.receive();
+
+        // both wait, in order, rather than the second opening without the first
+        expect(server.queue, hasLength(2));
+        expect(payloads, isEmpty);
+        expect(errors, [failure]);
+
+        await coach.receive();
+
+        expect(payloads, ['one', 'two']);
+        expect(server.queue, isEmpty);
+      });
+    }
+
+    test('an item from someone the account can no longer read keys of is dropped', () async {
+      final coach = device('dana');
+      final student = device('sam');
+      await coach.start('dana');
+      await student.start('sam');
+      await student.deliver(userId: 'dana', kind: 'thread_key', payload: 'k');
+      server.disconnect('dana', 'sam');
+
+      await coach.receive();
+
+      expect(server.queue, isEmpty);
+      expect(errors.single, isA<KeyFailure>().having((error) => error.code, 'code', 'unknown_sender'));
+    });
+
     test('words that are not a sealed message are dropped, and nothing of them is reported', () async {
       final coach = device('dana');
       final student = device('sam');
@@ -473,11 +622,21 @@ class _Server {
   final queue = <QueuedItem>[];
   final calls = <String>[];
   final _pairs = <(String, String)>{};
-  Map<String, String>? refuseNextPublish;
+
+  /// What the next call of a name throws, once: a refusal, or no network.
+  final refuseNext = <String, Object>{};
+
+  /// Calls of a name wait here until it completes.
+  final holds = <String, Completer<void>>{};
 
   void connect(String a, String b) => _pairs
     ..add((a, b))
     ..add((b, a));
+
+  /// As under a block: neither can read the other's keys any more.
+  void disconnect(String a, String b) => _pairs
+    ..remove((a, b))
+    ..remove((b, a));
 
   bool _shares(String reader, String owner) => reader == owner || _pairs.contains((reader, owner));
 
@@ -501,14 +660,31 @@ class _Server {
     );
   }
 
-  RemoteKeyService as(String userId) => _As(this, userId);
+  RemoteKeyService as(String userId) => _As(this, () => userId);
+
+  /// Whoever is signed in when a call is made, as the app's `Api` is.
+  RemoteKeyService signedIn(String Function() who) => _As(this, who);
+
+  /// Until [name] is called; what is held stays held.
+  Future<void> called(String name) async {
+    while (!calls.any((each) => each.startsWith('$name '))) {
+      await Future<void>.delayed(Duration.zero);
+    }
+  }
 }
 
 class _As implements RemoteKeyService {
   final _Server server;
-  final String me;
+  final String Function() _who;
 
-  const new(this.server, this.me);
+  const new(this.server, this._who);
+
+  String get me => _who();
+
+  Future<void> _answer(String name) async {
+    if (server.holds[name] case final Completer<void> hold) await hold.future;
+    if (server.refuseNext.remove(name) case final Object refusal) throw refusal;
+  }
 
   CryptoDevice _mine(String deviceId) {
     return switch (server.devices[deviceId]) {
@@ -526,10 +702,7 @@ class _As implements RemoteKeyService {
     ({String signature, String vouchedBy})? vouch,
   }) async {
     server.calls.add('publish $me');
-    if (server.refuseNextPublish case final Map<String, String> refusal) {
-      server.refuseNextPublish = null;
-      throw refusal;
-    }
+    await _answer('publish');
     if (server.removed.contains(id)) throw {'error': 'forbidden', 'code': 'device_removed'};
     return server.devices[id] ??= CryptoDevice(
       id: id,
@@ -547,6 +720,7 @@ class _As implements RemoteKeyService {
   Future<List<CryptoDevice>> getCryptoDevices({String? userId}) async {
     final owner = userId ?? me;
     server.calls.add('devices $me $owner');
+    await _answer('devices');
     if (!server._shares(me, owner)) throw {'error': 'forbidden', 'code': 'forbidden'};
     return [...server.devices.values.where((each) => each.userId == owner)];
   }
@@ -554,6 +728,7 @@ class _As implements RemoteKeyService {
   @override
   Future<int> addOneTimeKeys(String deviceId, Map<String, String> keys) async {
     server.calls.add('add $me');
+    await _answer('add');
     _mine(deviceId);
     final held = server.oneTimeKeys[deviceId] ??= [];
     held.addAll(keys.entries);
@@ -564,6 +739,7 @@ class _As implements RemoteKeyService {
   @override
   Future<int> countOneTimeKeys(String deviceId) async {
     server.calls.add('count $me');
+    await _answer('count');
     _mine(deviceId);
     return server.oneTimeKeys[deviceId]?.length ?? 0;
   }
@@ -571,6 +747,7 @@ class _As implements RemoteKeyService {
   @override
   Future<void> replaceFallbackKey(String deviceId, String key) async {
     server.calls.add('fallback $me');
+    await _answer('fallback');
     final device = _mine(deviceId);
     server.devices[deviceId] = CryptoDevice(
       id: device.id,
@@ -587,6 +764,7 @@ class _As implements RemoteKeyService {
   @override
   Future<List<CryptoDevice>> claimKeys(String userId) async {
     server.calls.add('claim $me $userId');
+    await _answer('claim');
     if (!server._shares(me, userId)) throw {'error': 'forbidden', 'code': 'forbidden'};
     return [
       for (final device in server.devices.values.where((each) => each.userId == userId))
@@ -618,6 +796,7 @@ class _As implements RemoteKeyService {
     required String content,
   }) async {
     server.calls.add('enqueue $me $kind');
+    await _answer('enqueue');
     _mine(senderDeviceId);
     final recipient = server.devices[recipientDeviceId];
     if (recipient == null || !server._shares(me, recipient.userId)) throw {'error': 'not found', 'code': 'not_found'};
@@ -637,6 +816,7 @@ class _As implements RemoteKeyService {
   @override
   Future<List<QueuedItem>> getKeyQueue(String deviceId) async {
     server.calls.add('queue $me');
+    await _answer('queue');
     _mine(deviceId);
     return [...server.queue.where((each) => each.recipientDeviceId == deviceId)];
   }
@@ -644,6 +824,7 @@ class _As implements RemoteKeyService {
   @override
   Future<void> confirmKeyItems(String deviceId, List<String> ids) async {
     server.calls.add('confirm $me');
+    await _answer('confirm');
     _mine(deviceId);
     server.queue.removeWhere((each) => each.recipientDeviceId == deviceId && ids.contains(each.id));
   }
