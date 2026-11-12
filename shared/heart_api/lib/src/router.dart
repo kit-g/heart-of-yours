@@ -29,6 +29,14 @@ abstract final class Router {
   /// Where a coach says they have looked at a client, by the connection's id.
   static String coachClientReviewed(String connectionId) => '$coachClients/$connectionId/reviewed';
 
+  static String clientWorkouts(String studentId) => '$accounts/$studentId/workouts';
+
+  static String clientSkips(String studentId) => '$accounts/$studentId/skips';
+
+  static String clientWorkoutPlan(String studentId, String workoutId) {
+    return '$accounts/$studentId/workouts/$workoutId/plan';
+  }
+
   static String invitation(String invitationId) => '$invitations/$invitationId';
 
   static String invitationResend(String invitationId) => '${invitation(invitationId)}/resend';
@@ -71,6 +79,9 @@ abstract final class Router {
   static String program(String programId) {
     return '$programs/$programId';
   }
+
+  /// Where a student starts a coach's copy that waits for them (#557).
+  static String programStart(String programId) => '${program(programId)}/start';
 
   static String programActions(String programId) {
     return '$programs/$programId/actions';

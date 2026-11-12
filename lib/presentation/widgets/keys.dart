@@ -212,6 +212,12 @@ abstract final class AppKeys {
   /// "From a folder" on the Workout tab's Programs header (#348).
   static const programsFromFolder = Key('Programs.fromFolder');
   static const programFormName = Key('Programs.form.name');
+  static const programSentBy = Key('Programs.sentBy');
+  static const programStartSentConfirm = Key('Programs.startSent.confirm');
+
+  static Key programWaiting(String id) => Key('Programs.waiting.$id');
+
+  static Key programStartSent(String id) => Key('Programs.startSent.$id');
   static const programFormNote = Key('Programs.form.note');
   static const programFormSave = Key('Programs.form.save');
 
@@ -343,6 +349,17 @@ abstract final class AppKeys {
   static Key coachingClient(String connectionId) => Key('Coaching.client.$connectionId');
 
   static Key coachingMarkReviewed(String connectionId) => Key('Coaching.reviewed.$connectionId');
+
+  /// One client (#559): their page, or the pane beside the roster, its way
+  /// shut, and a workout or skip of theirs.
+  static const coachingClientPane = Key('Coaching.clientPane');
+  static const coachingClientClose = Key('Coaching.clientClose');
+  static Key coachingClientWorkout(String workoutId) => Key('Coaching.clientWorkout.$workoutId');
+  static const coachingClientSkip = Key('Coaching.clientSkip');
+
+  /// A client's workout, target beside done (#559), and one exercise of it.
+  static const coachingReview = Key('Coaching.review');
+  static Key coachingReviewExercise(int index) => Key('Coaching.reviewExercise.$index');
 
   /// A coach's library (#557): a new program, each program and session, and
   /// what a program's page does.

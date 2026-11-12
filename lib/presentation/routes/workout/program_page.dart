@@ -55,7 +55,10 @@ class ProgramPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(program.name),
         actions: [
-          IconButton(tooltip: copy.editProgram, onPressed: onEdit, icon: const Icon(Icons.edit_rounded)),
+          // a coach's copy not started yet is theirs to start, not to change
+          // or train from (#557)
+          if (!program.waits)
+            IconButton(tooltip: copy.editProgram, onPressed: onEdit, icon: const Icon(Icons.edit_rounded)),
           PopupMenuButton<VoidCallback>(
             tooltip: copy.moreOptions,
             icon: const Icon(Icons.more_horiz),
@@ -70,13 +73,14 @@ class ProgramPage extends StatelessWidget {
                     value: () => showGoEasySheet(context),
                     child: _MenuRow(icon: Icons.spa_outlined, label: title.of(languageTag())),
                   ),
-                PopupMenuItem<VoidCallback>(
-                  value: () => programs.archive(program, archived: !program.archived),
-                  child: _MenuRow(
-                    icon: program.archived ? Icons.play_arrow_rounded : Icons.archive_outlined,
-                    label: program.archived ? copy.programFollowAgain : copy.programStopFollowing,
+                if (!program.waits)
+                  PopupMenuItem<VoidCallback>(
+                    value: () => programs.archive(program, archived: !program.archived),
+                    child: _MenuRow(
+                      icon: program.archived ? Icons.play_arrow_rounded : Icons.archive_outlined,
+                      label: program.archived ? copy.programFollowAgain : copy.programStopFollowing,
+                    ),
                   ),
-                ),
                 PopupMenuItem<VoidCallback>(
                   value: () => _delete(context, program),
                   child: _MenuRow(icon: Icons.delete, label: copy.programDelete, color: colorScheme.error),
@@ -119,12 +123,21 @@ class ProgramPage extends StatelessWidget {
                         ),
                       ),
                     ],
-                    Text(_status(context, program, position), style: textTheme.titleLarge),
-                    if (_standing(context, program, position) case final String line) ...[
-                      const SizedBox(height: 4),
-                      Text(line, style: muted),
+                    if (program.waits && !program.archived)
+                      _WaitingCard(program: program)
+                    else ...[
+                      Text(_status(context, program, position), style: textTheme.titleLarge),
+                      if (_standing(context, program, position) case final String line) ...[
+                        const SizedBox(height: 4),
+                        Text(line, style: muted),
+                      ],
+                      // a coach's program (#557) says whose it is
+                      if (_sentBy(context, program) case final String from) ...[
+                        const SizedBox(height: 4),
+                        Text(from, key: AppKeys.programSentBy, style: muted),
+                      ],
                     ],
-                    if (!program.archived) ...[
+                    if (program.live) ...[
                       const SizedBox(height: 12),
                       _Steers(
                         program: program,
@@ -147,25 +160,28 @@ class ProgramPage extends StatelessWidget {
                           final id when id == position.next => .next,
                           _ => .ahead,
                         },
-                        onTap: () => _showStartTemplateDialog(
-                          context,
-                          session,
-                          onEdit: () {
-                            Templates.of(context).editable = session;
-                            onEditSession();
-                          },
-                          onStart: () => _start(context, session),
-                          // the last one stays: a program with none has
-                          // nothing to run
-                          onRemove: switch (sessions.length > 1) {
-                            true => () => _leaveProgram(context, program, session),
-                            false => null,
-                          },
-                        ),
+                        onTap: switch (program.waits) {
+                          true => null,
+                          false => () => _showStartTemplateDialog(
+                            context,
+                            session,
+                            onEdit: () {
+                              Templates.of(context).editable = session;
+                              onEditSession();
+                            },
+                            onStart: () => _start(context, session),
+                            // the last one stays: a program with none has
+                            // nothing to run
+                            onRemove: switch (sessions.length > 1) {
+                              true => () => _leaveProgram(context, program, session),
+                              false => null,
+                            },
+                          ),
+                        },
                       ),
                     // a template made since the program started, by hand or
                     // by an assistant, joins it here (#489)
-                    if (!program.archived &&
+                    if (program.live &&
                         Templates.watch(context).candidatesFor(program).any((each) => each.programId == null))
                       ListTile(
                         key: AppKeys.programAddSession,
@@ -178,7 +194,7 @@ class ProgramPage extends StatelessWidget {
                         onTap: () => _pickSession(context, program),
                       ),
                     ProgramConstraintRow(program: program),
-                    if (!program.archived) _ProgramCalendarSlot(program: program),
+                    if (program.live) _ProgramCalendarSlot(program: program),
                     _ProgramGoals(program: program, position: position, sessions: sessions),
                     _Growth(program: program),
                     // a copy of one of Heart's programs keeps its way back to
@@ -457,7 +473,7 @@ class _SessionTile extends StatelessWidget {
   final Program program;
   final Template session;
   final _SessionState state;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   /// Whether the rail through the icons runs on above and below this one.
   final ({bool above, bool below}) rail;

@@ -36,6 +36,39 @@ class _Server implements RosterService {
     if (refuse case final refusal?) throw refusal;
     return _page(feed, cursor);
   }
+
+  final workouts = <Workout>[];
+  final skips = <TrainingSkip>[];
+  final plans = <String, WorkoutPlan>{};
+  var workoutReads = 0;
+
+  @override
+  Future<({List<Workout> items, String? cursor})> getClientWorkouts(String studentId, {String? cursor}) async {
+    if (refuse case final refusal?) throw refusal;
+    return _page(workouts, cursor);
+  }
+
+  @override
+  Future<List<TrainingSkip>> getClientSkips(String studentId) async => skips;
+
+  @override
+  Future<Workout> getClientWorkout(String studentId, String workoutId) async {
+    workoutReads++;
+    return workouts.firstWhere((each) => each.id == workoutId);
+  }
+
+  @override
+  Future<WorkoutPlan?> getClientWorkoutPlan(String studentId, String workoutId) async => plans[workoutId];
+}
+
+Workout _workout(String id, DateTime start) {
+  return Workout.fromJson({
+    'id': id,
+    'name': 'Day A',
+    'start': start.toIso8601String(),
+    'end': start.add(const Duration(hours: 1)).toIso8601String(),
+    'exercises': [],
+  });
 }
 
 ClientSummary _client(String name, {List<String> reasons = const [], List<DateTime> recent = const []}) {
@@ -195,6 +228,49 @@ void main() {
 
     test('nobody who never trained trained', () {
       expect(_client('muffin').lastSevenDays(DateTime(2026, 11, 9)), List.filled(7, false));
+    });
+  });
+
+  group("a client's own record", () {
+    test('their workouts page by page, and their skips newest first', () async {
+      server.workouts.addAll([
+        _workout('w3', DateTime.utc(2026, 11, 9)),
+        _workout('w2', DateTime.utc(2026, 11, 8)),
+        _workout('w1', DateTime.utc(2026, 11, 7)),
+      ]);
+      server.skips.addAll([
+        TrainingSkip(at: DateTime.utc(2026, 11, 1)),
+        TrainingSkip(at: DateTime.utc(2026, 11, 5)),
+      ]);
+
+      await roster.loadRecord('muffin');
+      expect(roster.workoutsOf('muffin').map((each) => each.id), ['w3', 'w2']);
+      expect(roster.hasMoreOf('muffin'), isTrue);
+      expect(roster.skipsOf('muffin').map((each) => each.at.day), [5, 1]);
+
+      await roster.moreRecord('muffin');
+      expect(roster.workoutsOf('muffin').map((each) => each.id), ['w3', 'w2', 'w1']);
+      expect(roster.hasMoreOf('muffin'), isFalse);
+      expect(roster.recordStatus('muffin'), CoachingStatus.loaded);
+    });
+
+    test('a refusal leaves it failed, and sign-out forgets it', () async {
+      server.refuse = {'code': 'forbidden'};
+      await roster.loadRecord('muffin');
+      expect(roster.recordStatus('muffin'), CoachingStatus.failed);
+
+      roster.onSignOut();
+      expect(roster.recordStatus('muffin'), CoachingStatus.idle);
+    });
+
+    test('a review reads the plan once, and a workout already read is not read again', () async {
+      server.workouts.add(_workout('w1', DateTime.utc(2026, 11, 7)));
+      await roster.loadRecord('muffin');
+
+      final review = await roster.review('muffin', 'w1');
+      expect(review.hasPlan, isFalse);
+      expect(identical(await roster.review('muffin', 'w1'), review), isTrue);
+      expect(server.workoutReads, 0);
     });
   });
 }
