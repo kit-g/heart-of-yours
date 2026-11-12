@@ -62,6 +62,9 @@ mixin _Programs on _LocalDatabase {
           'tests': row['tests'],
           // as its sessions are: off the templates that name it
           'joined': ?joined[id],
+          'coachId': row['coach_id'],
+          'coachName': row['coach_name'],
+          'waitingSince': row['waiting_since'],
         });
       },
       what: 'program',
@@ -93,8 +96,21 @@ mixin _Programs on _LocalDatabase {
   Future<void> _storeProgram(DatabaseExecutor db, Program program, String userId) async {
     final days = program.days.toList()..sort();
     // `toMap` writes back the rules this build could not read, beside its own
-    final Program(:id, :name, :note, :source, :perWeek, :weeks, :constraint, :archived, :sessions, :createdAt) =
-        program;
+    final Program(
+      :id,
+      :name,
+      :note,
+      :source,
+      :perWeek,
+      :weeks,
+      :constraint,
+      :archived,
+      :sessions,
+      :createdAt,
+      :coachId,
+      :coachName,
+      :waitingSince,
+    ) = program;
     final map = program.toMap();
     String? encoded(String key) {
       return switch (map[key]) {
@@ -122,6 +138,9 @@ mixin _Programs on _LocalDatabase {
         'deload': encoded('deload'),
         'phases': encoded('phases'),
         'tests': encoded('tests'),
+        'coach_id': coachId,
+        'coach_name': coachName,
+        'waiting_since': waitingSince?.toUtc().toIso8601String(),
       },
       conflictAlgorithm: .replace,
     );

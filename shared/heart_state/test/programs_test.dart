@@ -253,6 +253,70 @@ void main() {
     });
   });
 
+  group("a coach's copy that waits (#557)", () {
+    Program sent({String id = 'sent'}) {
+      return Program.fromJson({
+        ...program(id: id, sessions: const ['c1']).toMap(),
+        'name': 'Strength block',
+        'coachId': 'coach-muffin',
+        'coachName': 'Muffin',
+        'waitingSince': '2026-11-10T12:00:00.000Z',
+      });
+    }
+
+    test('is waiting, not followed: it plans nothing until started', () async {
+      remote.programs = [program(), sent()];
+      await programs.init();
+
+      expect(programs.following.map((each) => each.id), ['p1']);
+      expect(programs.waiting.map((each) => each.id), ['sent']);
+      final day = Template.fromJson({'id': 'c1', 'name': 'Day A', 'order': 0, 'programId': 'sent'});
+      final planned = programs.plan(day, now: DateTime.utc(2026, 11, 10), firstWeekday: 1, round: (_, kg) => kg);
+      expect(planned.plan, isNull);
+    });
+
+    test('starting it starts it there and here, and stops following what it replaces', () async {
+      remote.programs = [program(), sent()];
+      await programs.init();
+
+      await programs.start(programs.lookup('sent')!, replacing: programs.following.toList());
+
+      expect(remote.calls, containsAllInOrder(['startProgram sent']));
+      expect(programs.following.map((each) => each.id), ['sent']);
+      expect(programs.waiting, isEmpty);
+      expect(programs.lookup('p1')!.archived, isTrue);
+      expect(local.programs[uid]!.firstWhere((each) => each.id == 'sent').waitingSince, isNull);
+      expect(programs.lookup('sent')!.coachName, 'Muffin');
+    });
+
+    test('a rename or a stop keeps who sent it and that it waits, here and on the wire', () async {
+      remote.programs = [program(), sent()];
+      await programs.init();
+
+      final renamed = await programs.update(programs.lookup('sent')!.copyWith(name: 'Peaking'));
+      expect(renamed.coachName, 'Muffin');
+      expect(programs.lookup('sent')!.waits, isTrue, reason: 'still not started');
+      expect(local.programs[uid]!.firstWhere((each) => each.id == 'sent').coachId, 'coach-muffin');
+
+      await programs.archive(programs.lookup('sent')!);
+      expect(programs.lookup('sent')!.coachId, 'coach-muffin');
+    });
+
+    test('a start the server refuses changes nothing, and says so', () async {
+      remote.programs = [program(), sent()];
+      await programs.init();
+      remote.failing = true;
+
+      await expectLater(
+        programs.start(programs.lookup('sent')!, replacing: programs.following.toList()),
+        throwsA(isA<Map>()),
+      );
+
+      expect(programs.waiting.map((each) => each.id), ['sent']);
+      expect(programs.lookup('p1')!.archived, isFalse);
+    });
+  });
+
   group('init', () {
     test('reads the mirror, then the server replaces it, history and all', () async {
       local.programs[uid] = [program(id: 'gone')];
@@ -1880,6 +1944,9 @@ class _Remote implements RemoteProgramService {
     _call('deleteSkip $skipId');
     skips = [...skips.where((each) => each.id != skipId)];
   }
+
+  @override
+  Future<void> startProgram(String programId) async => _call('startProgram $programId');
 
   @override
   Future<Template> setTemplateProgram(Template template, {required String? programId}) async {

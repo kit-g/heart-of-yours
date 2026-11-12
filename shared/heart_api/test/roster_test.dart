@@ -167,4 +167,105 @@ void main() {
     expect(items.map((each) => (each.kind, each.title)), [('skip', null), ('workout', 'Day B, in the gym with Dana')]);
     expect(cursor, 'c2');
   });
+
+  group("a client's own record", () {
+    const studentId = 'StudentSamUid551191';
+    const workoutId = '01a1b7d4-c1db-7eba-8005-c926c367acf8';
+
+    test('their workouts page by cursor, with their notes', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.clientWorkouts(studentId),
+        query: {'cursor': 'w1'},
+        statusCode: 200,
+        body: {
+          'workouts': [
+            {
+              'id': workoutId,
+              'name': 'Day A',
+              'start': '2026-11-07T19:05:36.219752Z',
+              'end': '2026-11-07T20:05:36.219838Z',
+              'note': 'Last set was a grind',
+              'pauses': [],
+              'programId': '01a1b7d4-bd28-7e4b-9307-80fbe12ecd6c',
+              'exercises': [],
+              'images': [],
+            },
+          ],
+          'cursor': 'w2',
+        },
+      );
+
+      final (:items, :cursor) = await api.getClientWorkouts(studentId, cursor: 'w1');
+
+      expect(items.single.note, 'Last set was a grind');
+      expect(cursor, 'w2');
+    });
+
+    test('their skips say when, never why', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.clientSkips(studentId),
+        statusCode: 200,
+        body: {
+          'skips': [
+            {'id': 's1', 'at': '2026-11-07T21:05:36.237217Z', 'programId': 'p1'},
+          ],
+        },
+      );
+
+      final [skip] = await api.getClientSkips(studentId);
+
+      expect(skip.programId, 'p1');
+      expect(skip.reason, isNull);
+    });
+
+    test("a workout's plan, and none for a workout without one", () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.clientWorkoutPlan(studentId, workoutId),
+        statusCode: 200,
+        body: {
+          'plan': {
+            'exercises': [
+              {
+                'sets': [
+                  {'setId': 's1', 'weight': 110},
+                ],
+              },
+            ],
+          },
+        },
+      );
+      expect((await api.getClientWorkoutPlan(studentId, workoutId))?.plan['exercises'], hasLength(1));
+
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.clientWorkoutPlan(studentId, 'w-none'),
+        statusCode: 404,
+        body: {'error': 'not found', 'code': 'not_found', 'message': 'Plan #w-none not found'},
+      );
+      expect(await api.getClientWorkoutPlan(studentId, 'w-none'), isNull);
+    });
+
+    test('an ended connection is refused whole', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.clientWorkouts(studentId),
+        statusCode: 403,
+        body: {
+          'error': 'forbidden',
+          'code': 'forbidden',
+          'reason': 'You do not have permission to view these workouts.',
+        },
+      );
+
+      expect(api.getClientWorkouts(studentId), throwsA(containsPair('code', 'forbidden')));
+    });
+  });
 }
