@@ -22,7 +22,7 @@ void main() {
 
   const token = '9kAxjMgFcH8wAlbJUwiesRT-ZcvQ2_KOJe4mC645glM';
 
-  Connection coach({ConnectionStatus status = .active, List<String> shares = const []}) => Connection(
+  Connection coach({ConnectionStatus status = .active, List<String> shares = const [], String? name}) => Connection(
     targetId: 'alex',
     role: .student,
     domain: .fitness,
@@ -31,6 +31,7 @@ void main() {
     connectionId: 'c1',
     acceptedAt: DateTime.utc(2026, 11, 8),
     shares: shares,
+    name: name,
   );
 
   setUp(() {
@@ -244,6 +245,18 @@ void main() {
       await tester.tapByKey(AppKeys.features);
       await tester.pumpTimes();
     }
+
+    testWidgets("a coach's name is their profile's now, over the one their invitation showed", (tester) async {
+      when(api.getConnections()).thenAnswer((_) async => [coach(name: 'Alex Rivera')]);
+      await pump(tester, prefs: {'feature-yourCoach': 'on', 'coachName-c1': 'Alex'});
+      await openFeatures(tester);
+
+      await tester.scrollUntilVisible(find.byKey(AppKeys.yourCoach('c1')), 200);
+      expect(
+        find.descendant(of: find.byKey(AppKeys.yourCoach('c1')), matching: find.text('Alex Rivera')),
+        findsOneWidget,
+      );
+    });
 
     testWidgets('each coach by the name their invitation showed, and leaving one is asked once', (tester) async {
       when(api.getConnections()).thenAnswer((_) async => [coach()]);
