@@ -302,6 +302,51 @@ void main() {
     expect(client.calls, isNot(contains('show')), reason: 'a silent push shows nothing');
   });
 
+  testWidgets(
+    "a silent push that this device's key queue has something reads it, and another device's doesn't (#555)",
+    (
+      tester,
+    ) async {
+      when(
+        api.publishCryptoDevice(
+          id: anyNamed('id'),
+          identityKey: anyNamed('identityKey'),
+          signingKey: anyNamed('signingKey'),
+          fallbackKey: anyNamed('fallbackKey'),
+          vouch: anyNamed('vouch'),
+        ),
+      ).thenAnswer(
+        (invocation) async => CryptoDevice(
+          id: invocation.namedArguments[#id] as String,
+          userId: 'muffin',
+          identityKey: invocation.namedArguments[#identityKey] as String,
+          signingKey: invocation.namedArguments[#signingKey] as String,
+          fallbackKey: invocation.namedArguments[#fallbackKey] as String,
+          createdAt: DateTime.now(),
+        ),
+      );
+      when(api.addOneTimeKeys(any, any)).thenAnswer((_) async => 50);
+      when(api.countOneTimeKeys(any)).thenAnswer((_) async => 50);
+      when(api.getKeyQueue(any)).thenAnswer((_) async => []);
+      await pump(tester, {'feature-yourCoach': 'on'}, keyVault: MemoryKeyVault());
+      final deviceId = DeviceKeys.of(tester.element(find.byType(Navigator).first)).deviceId!;
+      clearInteractions(api);
+
+      client.arrivals.add((
+        push: Push.of({'topic': 'security.queue_waiting', 'deviceId': '01a1b7d4-bdd4-7e28-a0cd-b45015ff37b3'})!,
+        title: null,
+      ));
+      await tester.pumpTimes();
+      verifyNever(api.getKeyQueue(any));
+
+      client.arrivals.add((push: Push.of({'topic': 'security.queue_waiting', 'deviceId': deviceId})!, title: null));
+      await tester.pumpTimes();
+
+      verify(api.getKeyQueue(deviceId)).called(1);
+      expect(client.calls, isNot(contains('show')), reason: 'a silent push shows nothing');
+    },
+  );
+
   testWidgets('a visible push in front is shown by the app, with its title alone', (tester) async {
     await pump(tester, {'feature-yourCoach': 'on'});
 

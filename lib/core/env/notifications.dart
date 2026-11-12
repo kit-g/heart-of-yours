@@ -1150,7 +1150,7 @@ Future<void> showPush(Push push, {required String title}) {
     .invitationAccepted || .programReceived || .workoutDigest => _coachingChannel,
     // silent ones never reach here; one this build has never heard of goes
     // with coaching, the only kind the server sends to this client yet
-    .programChanged || .threadCleared || .devicesChanged || null => _coachingChannel,
+    .programChanged || .threadCleared || .devicesChanged || .queueWaiting || null => _coachingChannel,
   };
   return _guarded(
     () => _plugin.show(

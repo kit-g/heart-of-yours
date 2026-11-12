@@ -264,8 +264,12 @@ class _PushPresenterState extends State<PushPresenter> {
         // the new connection arrives on the next read of them
         await Coaching.of(context).load();
       case .devicesChanged:
-        // someone this device shares keys with added or removed one (#555)
+        // someone this device shares keys with added, removed or vouched for
+        // one (#555)
         if (push.userId case final String userId) await DeviceKeys.of(context).devicesChanged(userId);
+      case .queueWaiting:
+        // every app of the account's hears it: the one whose device it names reads
+        if (push.deviceId case final String deviceId) await DeviceKeys.of(context).queueWaiting(deviceId);
       // messages (#556) are not built yet: nothing on the device holds a
       // thread to refresh
       case .threadCleared:
@@ -297,7 +301,7 @@ class _PushPresenterState extends State<PushPresenter> {
       case .invitationAccepted || .workoutDigest || .coachingMessage || .programReceived || .programChanged:
       // nowhere to read these yet: comments have no screen in the app, and a
       // student's messages come with #556
-      case .commentCreated || .threadCleared || .devicesChanged || null:
+      case .commentCreated || .threadCleared || .devicesChanged || .queueWaiting || null:
         break;
     }
   }
