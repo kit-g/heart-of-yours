@@ -51,6 +51,25 @@ mixin _KeyRoutes on Requests {
     };
   }
 
+  /// Vouches for [deviceId], one of the account's devices that already
+  /// published: [vouchedBy], another of its devices in use, signed its keys.
+  /// Answers the device. A device is vouched for once: the same vouch again
+  /// answers it as it is, and a different one is refused (`already_vouched`).
+  Future<CryptoDevice> vouchForCryptoDevice(
+    String deviceId, {
+    required String vouchedBy,
+    required String signature,
+  }) async {
+    final (json, code) = await put(
+      Router.cryptoDeviceVouch(deviceId),
+      body: {'vouchedBy': vouchedBy, 'signature': signature},
+    );
+    return switch ((code, json)) {
+      (200, Map json) => CryptoDevice.fromJson(json),
+      _ => throw json,
+    };
+  }
+
   /// Removes one of the account's devices for good: it can't come back under
   /// its id.
   Future<void> removeCryptoDevice(String deviceId) async {
@@ -60,8 +79,19 @@ mixin _KeyRoutes on Requests {
 
   /// Adds single-use keys, by the name the device knows each by. Answers how
   /// many the server now holds for the device.
+  ///
+  /// They travel as a list of `{id, key}`, never as a map of id to key: an id
+  /// would be a field name, and the server refuses a body whose field names
+  /// read like health data, which a random id can (heart-api#420).
   Future<int> addOneTimeKeys(String deviceId, Map<String, String> keys) async {
-    final (json, code) = await post(Router.oneTimeKeys(deviceId), body: {'keys': keys});
+    final (json, code) = await post(
+      Router.oneTimeKeys(deviceId),
+      body: {
+        'keys': [
+          for (final MapEntry(:key, :value) in keys.entries) {'id': key, 'key': value},
+        ],
+      },
+    );
     return switch ((code, json)) {
       (200, Map json) => OneTimeKeyCount.fromJson(json).count,
       _ => throw json,

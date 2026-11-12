@@ -54,6 +54,8 @@ abstract final class Router {
 
   static String fallbackKey(String deviceId) => '${cryptoDevice(deviceId)}/fallback';
 
+  static String cryptoDeviceVouch(String deviceId) => '${cryptoDevice(deviceId)}/vouch';
+
   /// Someone's keys to take, by their account id.
   static String keyClaims(String userId) {
     if (!_userId.hasMatch(userId)) {

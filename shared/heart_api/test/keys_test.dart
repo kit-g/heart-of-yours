@@ -109,6 +109,42 @@ void main() {
       expect(await api.getCryptoDevices(userId: 'CoachDanaUid551191'), hasLength(2));
     });
 
+    test('vouchForCryptoDevice sends the vouch and reads the device back', () async {
+      const voucher = '01a1b7d4-bdd4-7b14-8b15-d5542d2c416f';
+      final vouched = {..._device, 'signature': 'sig', 'vouchedBy': voucher};
+      respond(client: client, method: 'PUT', path: Router.cryptoDeviceVouch(_deviceId), statusCode: 200, body: vouched);
+
+      final device = await api.vouchForCryptoDevice(_deviceId, vouchedBy: voucher, signature: 'sig');
+
+      final sent = verify(
+        client.put(
+          Uri.https('api.example.com', 'v1/keys/devices/$_deviceId/vouch'),
+          headers: anyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured.single;
+      expect(jsonDecode(sent as String), {'vouchedBy': voucher, 'signature': 'sig'});
+      expect((device.vouchedBy, device.signature), (voucher, 'sig'));
+    });
+
+    for (final (status, refusal) in [
+      (409, {'error': 'conflict', 'code': 'already_vouched', 'reason': 'this device is already vouched for'}),
+      (404, {'error': 'not found', 'code': 'not_found'}),
+      (400, {'error': 'bad request', 'code': 'bad_request', 'reason': 'vouchedBy must be another device of yours'}),
+    ]) {
+      test('vouchForCryptoDevice throws a $status whole', () async {
+        respond(
+          client: client,
+          method: 'PUT',
+          path: Router.cryptoDeviceVouch(_deviceId),
+          statusCode: status,
+          body: refusal,
+        );
+
+        expect(api.vouchForCryptoDevice(_deviceId, vouchedBy: _deviceId, signature: 's'), throwsA(refusal));
+      });
+    }
+
     test('removeCryptoDevice deletes the device', () async {
       respond(client: client, method: 'DELETE', path: Router.cryptoDevice(_deviceId), statusCode: 204, body: {});
 
@@ -124,14 +160,19 @@ void main() {
   });
 
   group('one-time keys', () {
-    test('addOneTimeKeys sends the keys by name and answers the count', () async {
+    test('addOneTimeKeys sends the keys as a list of id and key, and answers the count', () async {
       respond(client: client, method: 'POST', path: Router.oneTimeKeys(_deviceId), statusCode: 200, body: {'count': 3});
 
-      final count = await api.addOneTimeKeys(_deviceId, {'AAAAAQ': 'k1', 'AAAAAg': 'k2', 'AAAAAw': 'k3'});
+      // an id the server's health guard would refuse as a field name
+      final count = await api.addOneTimeKeys(_deviceId, {'AAAAAQ': 'k1', 'xHRVq': 'k2', 'sleepA': 'k3'});
 
       expect(count, 3);
       expect(sentTo(Router.oneTimeKeys(_deviceId)).single, {
-        'keys': {'AAAAAQ': 'k1', 'AAAAAg': 'k2', 'AAAAAw': 'k3'},
+        'keys': [
+          {'id': 'AAAAAQ', 'key': 'k1'},
+          {'id': 'xHRVq', 'key': 'k2'},
+          {'id': 'sleepA', 'key': 'k3'},
+        ],
       });
     });
 
@@ -232,6 +273,7 @@ void main() {
               'id': '01a1b7d4-be25-722b-ac65-6b8b662069e7',
               'recipientDeviceId': _deviceId,
               'senderDeviceId': '01a1b7d4-bdd4-7877-bb95-22ef017880bf',
+              'senderUserId': 'StudentSamUid551191',
               'kind': 'session_key',
               'content': 'c2VhbGVkLXNlc3Npb24ta2V5LWJ5dGVz',
               'createdAt': '2026-11-07T21:05:35.271999Z',
@@ -244,6 +286,7 @@ void main() {
 
       expect(item.kind, 'session_key');
       expect(item.senderDeviceId, '01a1b7d4-bdd4-7877-bb95-22ef017880bf');
+      expect(item.senderUserId, 'StudentSamUid551191');
     });
 
     test('confirmKeyItems sends the ids in runs the server takes', () async {
