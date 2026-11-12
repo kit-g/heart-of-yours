@@ -289,6 +289,19 @@ void main() {
       expect(programs.lookup('sent')!.coachName, 'Muffin');
     });
 
+    test('a rename or a stop keeps who sent it and that it waits, here and on the wire', () async {
+      remote.programs = [program(), sent()];
+      await programs.init();
+
+      final renamed = await programs.update(programs.lookup('sent')!.copyWith(name: 'Peaking'));
+      expect(renamed.coachName, 'Muffin');
+      expect(programs.lookup('sent')!.waits, isTrue, reason: 'still not started');
+      expect(local.programs[uid]!.firstWhere((each) => each.id == 'sent').coachId, 'coach-muffin');
+
+      await programs.archive(programs.lookup('sent')!);
+      expect(programs.lookup('sent')!.coachId, 'coach-muffin');
+    });
+
     test('a start the server refuses changes nothing, and says so', () async {
       remote.programs = [program(), sent()];
       await programs.init();
