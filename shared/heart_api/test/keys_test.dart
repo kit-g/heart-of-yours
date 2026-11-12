@@ -220,6 +220,32 @@ void main() {
       expect(oneTime.oneTimeKey, 'FRYX');
     });
 
+    test('claimKeys names the devices to claim from, and sends no names without them (heart-api#424)', () async {
+      final path = Router.keyClaims('CoachDanaUid551191');
+      respond(client: client, method: 'POST', path: path, statusCode: 200, body: {'devices': []});
+
+      await api.claimKeys('CoachDanaUid551191', deviceIds: ['d1', 'd2']);
+      await api.claimKeys('CoachDanaUid551191');
+
+      final sent = verify(
+        client.post(Uri.https('api.example.com', path), headers: anyNamed('headers'), body: captureAnyNamed('body')),
+      ).captured;
+      expect(sent.map((each) => jsonDecode(each as String)), [
+        {
+          'deviceIds': ['d1', 'd2'],
+        },
+        <String, dynamic>{},
+      ]);
+    });
+
+    test('claimKeys refuses a claim naming none, or more than ten', () async {
+      await expectLater(api.claimKeys('CoachDanaUid551191', deviceIds: []), throwsArgumentError);
+      await expectLater(
+        api.claimKeys('CoachDanaUid551191', deviceIds: List.generate(11, (index) => 'd$index')),
+        throwsArgumentError,
+      );
+    });
+
     test('claimKeys throws the rate limit whole, with when to try again', () async {
       const refusal = {
         'error': 'too many requests',

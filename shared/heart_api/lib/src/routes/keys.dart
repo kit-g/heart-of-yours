@@ -6,6 +6,9 @@ part of '../api.dart';
 /// carries a private key or words in the clear. A refusal is thrown whole, as
 /// everywhere, so a caller branches on its `code` (`device_removed`,
 /// `device_limit`, `rate_limited`, `queue_full`).
+/// The most devices one claim may name (heart-api#424).
+const _claimLimit = 10;
+
 mixin _KeyRoutes on Requests {
   /// Publishes this device's identity, once: a device's id is its own, and
   /// publishing it again answers what is there. [signature] and [vouchedBy]
@@ -113,9 +116,14 @@ mixin _KeyRoutes on Requests {
   }
 
   /// Takes one single-use key from each of [userId]'s devices, or the fallback
-  /// key of a device that has none left.
-  Future<List<CryptoDevice>> claimKeys(String userId) async {
-    final (json, code) = await post(Router.keyClaims(userId), body: const {});
+  /// key of a device that has none left. [deviceIds], one to ten of them,
+  /// claims from those devices alone (heart-api#424); one that isn't theirs, or
+  /// was removed, is left out of the answer.
+  Future<List<CryptoDevice>> claimKeys(String userId, {List<String>? deviceIds}) async {
+    if (deviceIds case final ids? when ids.isEmpty || ids.length > _claimLimit) {
+      throw ArgumentError.value(ids.length, 'deviceIds', 'one to $_claimLimit devices a claim');
+    }
+    final (json, code) = await post(Router.keyClaims(userId), body: {'deviceIds': ?deviceIds});
     return switch ((code, json)) {
       (200, Map json) => CryptoDevices.fromJson(json).devices,
       _ => throw json,
