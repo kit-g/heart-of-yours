@@ -218,6 +218,15 @@ void main() {
       expect((sent.text, sent.mine, sent.delivery), ('my knee', true, MessageDelivery.sent));
     });
 
+    test('what went out reads the inbox again, so the thread moves up it', () async {
+      await messages.load();
+      server.calls.clear();
+
+      await messages.send(threadId, 'top of the list');
+
+      expect(server.calls.where((each) => each == 'threads'), hasLength(1));
+    });
+
     test('written offline, it waits on the device, sealed, and goes later as the same message', () async {
       await messages.load();
       access.account = false;

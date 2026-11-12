@@ -451,7 +451,8 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     }
     if (userId != _userId) return;
     await _show(threadId);
-    if (waiting.isNotEmpty) await pull(threadId);
+    // what went out places itself, and moves its thread up the inbox
+    if (waiting.isNotEmpty) await Future.wait([pull(threadId), load()]);
   }
 
   /// Marks [threadId] read to the newest this device holds.
