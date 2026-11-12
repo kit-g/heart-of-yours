@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:heart_api/src/api.dart';
+import 'package:heart_models/heart_models.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 
@@ -266,6 +267,42 @@ void main() {
       );
 
       expect(api.getClientWorkouts(studentId), throwsA(containsPair('code', 'forbidden')));
+    });
+  });
+
+  group("a client's copy (#558)", () {
+    test('a session write carries where it started, and a conflict is thrown whole with the revision', () async {
+      respond(
+        client: client,
+        method: 'PUT',
+        path: Router.clientSession('sam', 'p1', 's1'),
+        statusCode: 409,
+        body: {'error': 'conflict', 'code': 'program_changed', 'revision': 2},
+      );
+
+      expect(
+        api.editClientSession('sam', 'p1', Template.empty(id: 's1', order: 0), baseRevision: 1, changeId: 'ch'),
+        throwsA(allOf(containsPair('code', 'program_changed'), containsPair('revision', 2))),
+      );
+    });
+
+    test('bringing copies up to date answers per connection', () async {
+      respond(
+        client: client,
+        method: 'POST',
+        path: Router.libraryUpdate('lib1'),
+        statusCode: 200,
+        body: {
+          'deliveries': [
+            {'connectionId': 'c1', 'delivered': true, 'programId': 'p1'},
+            {'connectionId': 'c2', 'delivered': false, 'reason': 'not_sent'},
+          ],
+        },
+      );
+
+      final deliveries = await api.updateLibraryCopies('lib1', ['c1', 'c2']);
+
+      expect(deliveries.map((each) => (each.delivered, each.reason)), [(true, null), (false, 'not_sent')]);
     });
   });
 }

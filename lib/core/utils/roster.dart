@@ -41,3 +41,54 @@ class RemoteRoster implements RosterService {
     return _api.getClientWorkoutPlan(studentId, workoutId);
   }
 }
+
+/// Presents [Api] as the [ClientProgramService] [ClientPrograms] wants (#558).
+class RemoteClientPrograms implements ClientProgramService {
+  final Api _api;
+
+  const new(this._api);
+
+  @override
+  Future<List<Program>> getClientPrograms(String studentId) => _api.getClientPrograms(studentId);
+
+  @override
+  Future<CoachProgramView> getClientProgram(String studentId, String programId) {
+    return _api.getClientProgram(studentId, programId);
+  }
+
+  @override
+  Future<Program> editClientProgram(
+    String studentId,
+    Program program, {
+    required int baseRevision,
+    required String changeId,
+  }) {
+    return _api.editClientProgram(studentId, program, baseRevision: baseRevision, changeId: changeId);
+  }
+
+  @override
+  Future<void> editClientSession(
+    String studentId,
+    String programId,
+    Template session, {
+    required int baseRevision,
+    required String changeId,
+  }) {
+    return _api.editClientSession(studentId, programId, session, baseRevision: baseRevision, changeId: changeId);
+  }
+
+  @override
+  Future<void> deleteClientSession(String studentId, String programId, String sessionId) {
+    return _api.deleteClientSession(studentId, programId, sessionId);
+  }
+
+  @override
+  Future<List<ProgramChange>> getClientProgramChanges(String studentId, String programId, {String? since}) {
+    return _api.getClientProgramChanges(studentId, programId, since: since);
+  }
+
+  @override
+  Future<void> revertClientChange(String studentId, String programId, String changeId) {
+    return _api.revertClientChange(studentId, programId, changeId);
+  }
+}

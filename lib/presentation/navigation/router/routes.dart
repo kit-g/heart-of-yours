@@ -1278,6 +1278,7 @@ RouteBase _coachingRoute() {
               onYourTraining: context.leaveCoaching,
               onOpenClient: context.pushCoachingClient,
               onOpenWorkout: context.pushCoachingClientWorkout,
+              onOpenProgram: context.pushCoachingClientProgram,
             ),
             routes: [
               GoRoute(
@@ -1289,9 +1290,47 @@ RouteBase _coachingRoute() {
                     key: ValueKey(connectionId),
                     connectionId: connectionId,
                     onOpenWorkout: (workoutId) => context.pushCoachingClientWorkout(connectionId, workoutId),
+                    onOpenProgram: (programId) => context.pushCoachingClientProgram(connectionId, programId),
                   );
                 },
                 routes: [
+                  GoRoute(
+                    path: 'programs/:programId',
+                    name: _coachingClientProgramName,
+                    builder: (context, state) {
+                      final connectionId = state.pathParameters['connectionId']!;
+                      final programId = state.pathParameters['programId']!;
+                      return ClientProgramPage(
+                        key: ValueKey(programId),
+                        connectionId: connectionId,
+                        programId: programId,
+                        onEditSession: ({required isNew}) {
+                          context.pushCoachingClientSession(connectionId, programId, isNew: isNew);
+                        },
+                      );
+                    },
+                    routes: [
+                      GoRoute(
+                        path: 'session',
+                        name: _coachingClientSessionName,
+                        builder: (context, state) {
+                          final l = L.of(context);
+                          final isNew = state.uri.queryParameters['new'] == 'true';
+                          return TemplateEditor(
+                            isNewTemplate: isNew,
+                            drafts: ClientPrograms.of(context),
+                            words: (
+                              title: switch (isNew) {
+                                true => l.coachingProgramNewSession,
+                                false => l.coachingProgramEditSession,
+                              },
+                              hint: l.coachingProgramSessionName,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                   GoRoute(
                     path: 'workouts/:workoutId',
                     name: _coachingClientWorkoutName,

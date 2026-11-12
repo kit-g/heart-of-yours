@@ -358,6 +358,23 @@ abstract final class AppKeys {
   static Key coachingClientWorkout(String workoutId) => Key('Coaching.clientWorkout.$workoutId');
   static const coachingClientSkip = Key('Coaching.clientSkip');
 
+  /// A client's copy of a program (#558): the way to it from their page, its
+  /// sessions, a save that didn't land and its answers, and its history.
+  static const coachingClientProgram = Key('Coaching.clientProgram');
+  static Key coachingClientCopy(String programId) => Key('Coaching.clientCopy.$programId');
+  static Key coachingCopySession(String id) => Key('Coaching.copySession.$id');
+  static Key coachingCopySessionMenu(String id) => Key('Coaching.copySessionMenu.$id');
+  static const coachingCopyAddSession = Key('Coaching.copyAddSession');
+  static const coachingCopyConflict = Key('Coaching.copyConflict');
+  static const coachingCopyKeepMine = Key('Coaching.copyKeepMine');
+  static const coachingCopyKeepTheirs = Key('Coaching.copyKeepTheirs');
+  static Key coachingCopyChange(String id) => Key('Coaching.copyChange.$id');
+  static Key coachingCopyPutBack(String id) => Key('Coaching.copyPutBack.$id');
+
+  /// Bringing a holder's copy of a library program up to date (#558).
+  static Key coachingUpdateCopy(String connectionId) => Key('Coaching.updateCopy.$connectionId');
+  static const coachingUpdateCopyConfirm = Key('Coaching.updateCopyConfirm');
+
   /// A client's workout, target beside done (#559), and one exercise of it.
   static const coachingReview = Key('Coaching.review');
   static Key coachingReviewExercise(int index) => Key('Coaching.reviewExercise.$index');

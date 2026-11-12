@@ -28,6 +28,9 @@ abstract interface class CoachLibraryService {
 
   /// Copies the program to each connection; each answers on its own.
   Future<List<ProgramDelivery>> sendLibraryProgram(String programId, Iterable<String> connectionIds);
+
+  /// Brings each of [connectionIds]' copies up to the current version.
+  Future<List<ProgramDelivery>> updateLibraryCopies(String programId, Iterable<String> connectionIds);
 }
 
 /// One of a coach's library programs, read whole: its own fields as a
@@ -364,6 +367,13 @@ class CoachLibrary with ChangeNotifier, TemplateDrafting implements SignOutState
   /// Sends [id] to each of [connectionIds]. Throws what the service threw.
   Future<List<ProgramDelivery>> send(String id, Iterable<String> connectionIds) {
     return _service.sendLibraryProgram(id, connectionIds);
+  }
+
+  /// Brings the copies of [id] that [connectionIds] hold up to its current
+  /// version (#558). It overwrites their own edits, as a change either of
+  /// them can put back. Throws what the service threw.
+  Future<List<ProgramDelivery>> update(String id, Iterable<String> connectionIds) {
+    return _service.updateLibraryCopies(id, connectionIds);
   }
 
   /// Opens [session] of [program] in the editor, or a new one with none.

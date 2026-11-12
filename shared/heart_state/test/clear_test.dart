@@ -171,6 +171,15 @@ class _NoRosterService implements RosterService {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
+class _ClientPrograms extends ClientPrograms {
+  int calls = 0;
+
+  new() : super(service: _NoClientProgramService());
+
+  @override
+  void onSignOut() => calls++;
+}
+
 class _Pushes extends Pushes {
   int calls = 0;
 
@@ -178,6 +187,11 @@ class _Pushes extends Pushes {
 
   @override
   void onSignOut() => calls++;
+}
+
+class _NoClientProgramService implements ClientProgramService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
 /// Records the removal a sign-out sends, and the registration before it.
@@ -390,6 +404,7 @@ void main() {
     late _Pushes pushes;
     late _DeviceKeys keys;
     late _Library library;
+    late _ClientPrograms clientPrograms;
     late _Timers timers;
     late _Upsync upsync;
     late _Workouts workouts;
@@ -419,6 +434,7 @@ void main() {
       );
       keys = _DeviceKeys();
       library = _Library();
+      clientPrograms = _ClientPrograms();
       timers = _Timers();
       upsync = _Upsync();
       workouts = _Workouts();
@@ -444,6 +460,7 @@ void main() {
             ChangeNotifierProvider<Pushes>.value(value: pushes),
             ChangeNotifierProvider<DeviceKeys>.value(value: keys),
             ChangeNotifierProvider<CoachLibrary>.value(value: library),
+            ChangeNotifierProvider<ClientPrograms>.value(value: clientPrograms),
             ChangeNotifierProvider<Timers>.value(value: timers),
             ChangeNotifierProvider<Upsync>.value(value: upsync),
             ChangeNotifierProvider<Workouts>.value(value: workouts),
@@ -477,6 +494,7 @@ void main() {
         pushes.calls,
         keys.calls,
         library.calls,
+        clientPrograms.calls,
         timers.calls,
         upsync.calls,
         workouts.calls,
@@ -531,6 +549,7 @@ void main() {
     late _Pushes pushes;
     late _DeviceKeys keys;
     late _Library library;
+    late _ClientPrograms clientPrograms;
     late _Timers timers;
     late _Upsync upsync;
     late _Workouts workouts;
@@ -563,6 +582,7 @@ void main() {
       pushes = _Pushes();
       keys = _DeviceKeys();
       library = _Library();
+      clientPrograms = _ClientPrograms();
       timers = _Timers();
       upsync = _Upsync();
       workouts = _Workouts();
@@ -599,6 +619,7 @@ void main() {
             ChangeNotifierProvider<Pushes>.value(value: pushes),
             ChangeNotifierProvider<DeviceKeys>.value(value: keys),
             ChangeNotifierProvider<CoachLibrary>.value(value: library),
+            ChangeNotifierProvider<ClientPrograms>.value(value: clientPrograms),
             ChangeNotifierProvider<Timers>.value(value: timers),
             ChangeNotifierProvider<Upsync>.value(value: upsync),
             ChangeNotifierProvider<Workouts>.value(value: workouts),
@@ -633,6 +654,7 @@ void main() {
         pushes.calls,
         keys.calls,
         library.calls,
+        clientPrograms.calls,
         timers.calls,
         upsync.calls,
         workouts.calls,
@@ -714,7 +736,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the twenty-one known notifiers', () {
+    test('the fan-out list is the twenty-two known notifiers', () {
       final fanned = _fannedOut(File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync()).toSet();
 
       expect(fanned, {
@@ -724,6 +746,7 @@ void main() {
         'Auth',
         'Backfill',
         'Charts',
+        'ClientPrograms',
         'CoachLibrary',
         'Coaching',
         'DeviceKeys',

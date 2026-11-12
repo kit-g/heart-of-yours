@@ -174,7 +174,12 @@ class _CoachProgramPageState extends State<CoachProgramPage> {
                     ValueListenableBuilder(
                       valueListenable: _holders,
                       builder: (context, holders, _) {
-                        return _Holders(holders: holders, latest: program.version, onRetry: _readHolders);
+                        return _Holders(
+                          programId: widget.programId,
+                          holders: holders,
+                          latest: program.version,
+                          onRetry: _readHolders,
+                        );
                       },
                     ),
                   ],
@@ -418,11 +423,62 @@ class _SessionTile extends StatelessWidget {
 
 /// Who holds a copy, and whether theirs is the latest version.
 class _Holders extends StatelessWidget {
+  final String programId;
   final (CoachingStatus, List<CoachProgramHolder>) holders;
   final int latest;
+
+  /// Reads who holds it again: after a failure, and after an update.
   final VoidCallback onRetry;
 
-  const new({required this.holders, required this.latest, required this.onRetry});
+  const new({required this.programId, required this.holders, required this.latest, required this.onRetry});
+
+  /// Brings [holder]'s copy to [latest] (#558), saying first that it replaces
+  /// their own edits, which either of them can put back.
+  Future<void> _update(BuildContext context, CoachProgramHolder holder, String name) async {
+    final l = L.of(context);
+    final ThemeData(:colorScheme) = Theme.of(context);
+    final library = CoachLibrary.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final sure = await showBrandedDialog<bool>(
+      context,
+      title: Text(l.coachingUpdateCopyTitle(name), textAlign: .center),
+      content: Text(l.coachingUpdateCopyBody(latest), textAlign: .center),
+      actions: [
+        Builder(
+          builder: (context) {
+            void answer({required bool sure}) => Navigator.of(context, rootNavigator: true).pop(sure);
+            return Column(
+              spacing: 8,
+              children: [
+                PrimaryButton.wide(
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  onPressed: () => answer(sure: false),
+                  child: Center(child: Text(l.cancel)),
+                ),
+                PrimaryButton.wide(
+                  key: AppKeys.coachingUpdateCopyConfirm,
+                  onPressed: () => answer(sure: true),
+                  child: Center(child: Text(l.coachingUpdateCopy)),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+    if (sure != true) return;
+    try {
+      final [delivery] = await library.update(programId, [holder.connectionId]);
+      messenger.snack(switch (delivery.delivered) {
+        true => l.coachingUpdatedCopy(name),
+        false => l.coachingUpdateCopyFailed(name),
+      });
+    } catch (error, stacktrace) {
+      reportToSentry(error, stacktrace: stacktrace);
+      messenger.snack(l.coachingUpdateCopyFailed(name));
+    }
+    onRetry();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -475,6 +531,21 @@ class _Holders extends StatelessWidget {
                   final version when version < latest => l.coachingProgramHolderBehind(version, latest),
                   final version => l.coachingProgramHolderVersion(version),
                 }),
+                // only a copy behind has anything to bring up
+                trailing: switch (holder.version < latest) {
+                  true => Builder(
+                    builder: (context) => TextButton(
+                      key: AppKeys.coachingUpdateCopy(holder.connectionId),
+                      // the theme's compact text button is under the tap-target minimum
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension),
+                      ),
+                      onPressed: () => _update(context, holder, name(holder)),
+                      child: Text(l.coachingUpdateCopy),
+                    ),
+                  ),
+                  false => null,
+                },
               ),
           ],
         },

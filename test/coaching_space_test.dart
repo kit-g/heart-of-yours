@@ -669,6 +669,177 @@ void main() {
     });
   });
 
+  group("a client's copy, edited by both (#558)", () {
+    final sam = ClientSummary(
+      connectionId: 'c-sam',
+      studentId: 'sam',
+      name: 'Sam',
+      status: 'active',
+      programId: 'p1',
+      programName: 'Strength block',
+      programWeek: 2,
+      programWeeks: 4,
+    );
+    CoachProgramView copy({int sessionRevision = 0}) {
+      return CoachProgramView.fromJson({
+        'program': {
+          'id': 'p1',
+          'name': 'Strength block',
+          'perWeek': 2,
+          'weeks': 4,
+          'sessions': ['s1'],
+          'revision': 0,
+          'sessionRevisions': {'s1': sessionRevision},
+        },
+        'sessions': [
+          {'id': 's1', 'name': 'Day A', 'order': 0, 'programId': 'p1', 'exercises': <Object>[]},
+        ],
+        'position': {'week': 2},
+      });
+    }
+
+    void withCopy() {
+      account(coach: true);
+      when(api.getClients(former: false, cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: [sam], cursor: null));
+      when(api.getClientWorkouts('sam', cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: <Workout>[], cursor: null));
+      when(api.getClientSkips('sam')).thenAnswer((_) async => <TrainingSkip>[]);
+      when(api.getClientProgram('sam', 'p1')).thenAnswer((_) async => copy());
+      when(api.getClientPrograms('sam')).thenAnswer((_) async => [copy().program]);
+      when(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since'))).thenAnswer(
+        (_) async => [
+          ProgramChange(
+            id: 'ch1',
+            programId: 'p1',
+            sessionId: 's1',
+            actorId: 'sam',
+            kind: 'edit',
+            revision: 1,
+            before: const {'name': 'Day A'},
+            after: const {'name': 'Day A'},
+            at: DateTime.utc(2026, 11, 9, 18),
+          ),
+          ProgramChange(
+            id: 'ch2',
+            programId: 'p1',
+            actorId: 'coach',
+            kind: 'edit',
+            revision: 1,
+            stale: true,
+            at: DateTime.utc(2026, 11, 10, 18),
+          ),
+        ],
+      );
+    }
+
+    Future<void> openCopy(WidgetTester tester) async {
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClientProgram);
+      await tester.pumpTimes();
+    }
+
+    testWidgets('from their page: the sessions, and what changed, newest first, by whom', (tester) async {
+      withCopy();
+      await openCopy(tester);
+
+      expect(find.byType(ClientProgramPage), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingCopySession('s1')), findsOneWidget);
+      expect(find.text('Strength block · week 2 of 4'), findsOneWidget);
+      expect(find.text('Sam changed Day A'), findsOneWidget);
+      expect(find.text("You changed the program's details"), findsOneWidget);
+      expect(find.textContaining('from an older version of the app'), findsOneWidget);
+    });
+
+    testWidgets('a copy sent and not started yet is on their page too, waiting', (tester) async {
+      withCopy();
+      when(api.getClientPrograms('sam')).thenAnswer(
+        (_) async => [
+          copy().program,
+          Program.fromJson({
+            ...Program(id: 'p2', name: 'Peaking', perWeek: 3, weeks: 3).toMap(),
+            'waitingSince': '2026-11-11T10:00:00.000Z',
+          }),
+        ],
+      );
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingClientProgram), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(AppKeys.coachingClientCopy('p2')),
+          matching: find.text('Waiting for them to start it'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets("their own program they see, and can't change: no editing, nothing to put back", (tester) async {
+      withCopy();
+      when(api.getClientPrograms('sam')).thenAnswer((_) async => <Program>[]);
+      await openCopy(tester);
+
+      expect(find.text('Their own program: you can see it, not change it.'), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingCopyAddSession), findsNothing);
+      expect(find.byKey(AppKeys.coachingCopySessionMenu('s1')), findsNothing);
+      expect(find.byKey(AppKeys.coachingCopyPutBack('ch1')), findsNothing);
+    });
+
+    testWidgets('a change is put back, and one built on since says so', (tester) async {
+      withCopy();
+      when(api.revertClientChange('sam', 'p1', 'ch1')).thenAnswer((_) async {});
+      when(api.revertClientChange('sam', 'p1', 'ch2')).thenThrow({'code': 'conflict'});
+      await openCopy(tester);
+
+      await tester.tapByKey(AppKeys.coachingCopyPutBack('ch1'));
+      await tester.pumpTimes();
+      verify(api.revertClientChange('sam', 'p1', 'ch1')).called(1);
+
+      await tester.tapByKey(AppKeys.coachingCopyPutBack('ch2'));
+      await tester.pumpTimes();
+      expect(find.text("Couldn't put that back. It has changed since."), findsOneWidget);
+    });
+
+    testWidgets("a session Sam changed first isn't lost: both stay, and Use mine sends it from theirs", (tester) async {
+      withCopy();
+      final bases = <int>[];
+      when(
+        api.editClientSession(
+          'sam',
+          'p1',
+          any,
+          baseRevision: anyNamed('baseRevision'),
+          changeId: anyNamed('changeId'),
+        ),
+      ).thenAnswer((invocation) async {
+        final base = invocation.namedArguments[#baseRevision] as int;
+        bases.add(base);
+        if (base == 0) throw {'code': 'program_changed', 'revision': 1};
+      });
+      await openCopy(tester);
+
+      final programs = ClientPrograms.of(tester.element(find.byType(ClientProgramPage)));
+      programs.editSession('sam', 'p1', session: programs.view('p1')!.sessions.single);
+      // Sam's edit lands meanwhile, so the read after the refusal has revision 1
+      when(api.getClientProgram('sam', 'p1')).thenAnswer((_) async => copy(sessionRevision: 1));
+      await programs.saveEditable();
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingCopyConflict), findsOneWidget);
+      expect(find.text("Sam changed Day A since you opened it. Yours isn't saved."), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.coachingCopyKeepMine);
+      await tester.pumpTimes();
+
+      expect(bases, [0, 1]);
+      expect(find.byKey(AppKeys.coachingCopyConflict), findsNothing);
+    });
+  });
+
   group("a coach's library (#557)", () {
     final squat = Exercise(name: 'Squat', category: .barbell, target: .legs, isMine: true);
     final sam = ClientSummary(connectionId: 'c-sam', studentId: 'sam', name: 'Sam', status: 'active');
@@ -794,6 +965,33 @@ void main() {
         reason: "the roster's name, when the holder comes without one",
       );
       expect(find.text('Version 1; the latest is 2'), findsOneWidget);
+    });
+
+    testWidgets('a copy behind is brought up to date, after saying it replaces their edits (#558)', (tester) async {
+      written(version: 2);
+      when(api.getLibraryHolders(programId)).thenAnswer(
+        (_) async => [
+          CoachProgramHolder(connectionId: 'c-pip', studentId: 'pip', programId: 'copy', version: 1),
+        ],
+      );
+      when(api.updateLibraryCopies(programId, any)).thenAnswer(
+        (_) async => [const ProgramDelivery(connectionId: 'c-pip', delivered: true, programId: 'copy')],
+      );
+      await openPrograms(tester);
+      await tester.tapByKey(AppKeys.coachingLibraryProgram(programId));
+      await tester.pumpTimes();
+      await tester.scrollUntilVisible(find.byKey(AppKeys.coachingUpdateCopy('c-pip')), 200);
+
+      await tester.tapByKey(AppKeys.coachingUpdateCopy('c-pip'));
+      await tester.pumpTimes();
+      expect(find.text('Bring Pip up to date?'), findsOneWidget);
+      expect(find.textContaining('Changes they made to it are replaced'), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.coachingUpdateCopyConfirm);
+      await tester.pumpTimes();
+
+      verify(api.updateLibraryCopies(programId, ['c-pip'])).called(1);
+      expect(find.text('Pip is up to date'), findsOneWidget);
     });
 
     testWidgets('a session edited in the template editor is saved into the program', (tester) async {

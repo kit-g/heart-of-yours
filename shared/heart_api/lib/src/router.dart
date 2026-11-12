@@ -81,6 +81,24 @@ abstract final class Router {
 
   static String clientSkips(String studentId) => '$accounts/$studentId/skips';
 
+  static String clientPrograms(String studentId) => '$accounts/$studentId/programs';
+
+  static String clientProgram(String studentId, String programId) => '${clientPrograms(studentId)}/$programId';
+
+  static String clientSession(String studentId, String programId, String sessionId) {
+    return '${clientProgram(studentId, programId)}/sessions/$sessionId';
+  }
+
+  static String clientProgramChanges(String studentId, String programId) {
+    return '${clientProgram(studentId, programId)}/changes';
+  }
+
+  static String clientChangeRevert(String studentId, String programId, String changeId) {
+    return '${clientProgramChanges(studentId, programId)}/$changeId/revert';
+  }
+
+  static String libraryUpdate(String programId) => '${libraryProgram(programId)}/update';
+
   static String clientWorkoutPlan(String studentId, String workoutId) {
     return '$accounts/$studentId/workouts/$workoutId/plan';
   }

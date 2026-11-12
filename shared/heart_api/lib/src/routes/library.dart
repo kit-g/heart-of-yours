@@ -60,4 +60,20 @@ mixin _LibraryRoutes on Requests {
       _ => throw json,
     };
   }
+
+  /// Brings each of [connectionIds]' copies up to the current version, keeping
+  /// the ids of what they trained. It overwrites their own edits to the copy,
+  /// as a change that can be put back. Each answers on its own: a copy already
+  /// current is left alone, and a connection never sent the program answers
+  /// `not_sent`.
+  Future<List<ProgramDelivery>> updateLibraryCopies(String programId, Iterable<String> connectionIds) async {
+    final (json, code) = await post(
+      Router.libraryUpdate(programId),
+      body: {'connectionIds': connectionIds.toList()},
+    );
+    return switch ((code, json)) {
+      (200, Map json) => ProgramDeliveries.fromJson(json).deliveries,
+      _ => throw json,
+    };
+  }
 }
