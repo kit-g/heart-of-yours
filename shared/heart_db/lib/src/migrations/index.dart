@@ -188,4 +188,8 @@ const _migrations = <int, List<String>>{
     addProgramCoachName,
     addProgramWaitingSince,
   ],
+  31: [
+    addProgramRevision,
+    addProgramSessionRevisions,
+  ],
 };

@@ -121,7 +121,14 @@ class RemotePrograms implements RemoteProgramService {
   }
 
   @override
-  Future<Program> editProgram(Program program) => _refusedAsBody(() => _api.editProgram(program));
+  Future<Program> editProgram(Program program, {int? baseRevision, String? changeId}) {
+    return _refusedAsBody(() => _api.editProgram(program, baseRevision: baseRevision, changeId: changeId));
+  }
+
+  @override
+  Future<({List<ProgramChange> items, String? cursor})> getProgramChanges(String programId, {String? since}) {
+    return _refusedAsBody(() => _api.getProgramChanges(programId, since: since));
+  }
 
   @override
   Future<void> deleteProgram(String programId, {required bool keepTemplates}) {

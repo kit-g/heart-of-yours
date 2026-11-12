@@ -43,10 +43,20 @@ mixin _TemplateRoutes on Requests implements ApiTemplateFolderService, RemoteTem
     return (row: Template.fromJson(json), created: created);
   }
 
+  /// A session of a coach's copy says which revision the edit started from
+  /// ([baseRevision]) and names the edit ([changeId]), as [editProgram] does
+  /// (#558): `409 program_changed` when the coach changed it since. Anything
+  /// but the template is thrown whole.
   @override
-  Future<Template> editTemplate(Template template) async {
-    final (json, code) = await put(Router.template(template.id), body: template.toMap());
-    return Template.fromJson(json);
+  Future<Template> editTemplate(Template template, {int? baseRevision, String? changeId}) async {
+    final (json, code) = await put(
+      Router.template(template.id),
+      body: {...template.toMap(), 'baseRevision': ?baseRevision, 'changeId': ?changeId},
+    );
+    return switch ((code, json)) {
+      (200, Map json) => Template.fromJson(json),
+      _ => throw json,
+    };
   }
 
   /// Files [template] into [folderId], or unfiles it when null.

@@ -6,11 +6,13 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'client_programs.dart' show ProgramConflict, isProgramChanged;
 import 'program_calendar.dart';
 import 'program_growth.dart';
 import 'program_plan.dart';
 import 'remote.dart';
 import 'skips.dart';
+import 'templates.dart' show SharedSessions;
 import 'upsync.dart' show Replayed;
 import 'weeks.dart';
 import 'workouts.dart';
@@ -103,7 +105,14 @@ abstract interface class RemoteProgramService {
 
   Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions});
 
-  Future<Program> editProgram(Program program);
+  /// A coach's copy's edit says the revision it started from and names
+  /// itself (#558); `{'code': 'program_changed'}` when the coach changed the
+  /// same fields since.
+  Future<Program> editProgram(Program program, {int? baseRevision, String? changeId});
+
+  /// What changed in a coach's copy (#558), oldest first, after the change
+  /// whose cursor is [since]: a page, and whether there is more.
+  Future<({List<ProgramChange> items, String? cursor})> getProgramChanges(String programId, {String? since});
 
   Future<void> deleteProgram(String programId, {required bool keepTemplates});
 
@@ -150,7 +159,7 @@ abstract interface class RemoteProgramService {
 /// stores and syncs programs for an account that has turned Programs off, so
 /// another device that has it on finds them whole. Only presentation asks the
 /// switch.
-class Programs with ChangeNotifier implements SignOutStateSentry {
+class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions {
   final LocalProgramService _service;
   final RemoteProgramService _remoteService;
 
@@ -167,6 +176,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Listened to for finished and deleted workouts, which move a position.
   final Workouts? _workouts;
 
+  /// Sends a session of a coach's copy again as the user has it: their
+  /// version, chosen over the coach's (#558). Sessions are the template
+  /// list's to send.
+  final Future<void> Function(Template session)? onKeepSession;
+
   /// Swaps [from] for [to] in the [sessions] that hold it: a ladder's advance
   /// (#350), or its "Keep". Templates are the template list's to edit.
   final Future<void> Function(Iterable<String> sessions, {required String from, required String to})? onAdvance;
@@ -178,6 +192,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     this.onError,
     this.onSessionsChanged,
     this.onAdvance,
+    this.onKeepSession,
     this._workouts,
     RemoteAccess? remote,
   }) : _remote = remote ?? RemoteAccess() {
@@ -199,6 +214,20 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   // program was deleted, as they outlive it on the server
   final _orphanSkips = <TrainingSkip>[];
   final _owed = <(ProgramRow, String), ProgramOwed>{};
+
+  /// Each coach's copy's history as read so far (#558), oldest first.
+  final _history = <String, List<ProgramChange>>{};
+
+  /// The user's saves to a coach's copy that the coach beat (#558).
+  final _conflicts = <String, ProgramConflict>{};
+
+  /// The name each owed edit of a coach's copy goes under, so a retry after
+  /// a failure the server may have seen writes once. Held while it is owed.
+  final _changeIds = <(ProgramRow, String), String>{};
+
+  /// When every coach's copy was last read again, so coming back to the app
+  /// asks at most once a minute.
+  DateTime? _coachedReadAt;
 
   bool _loaded = false;
 
@@ -420,6 +449,10 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     _owed.clear();
     _grown.clear();
     _heldRevision = null;
+    _history.clear();
+    _conflicts.clear();
+    _changeIds.clear();
+    _coachedReadAt = null;
   }
 
   @override
@@ -465,7 +498,97 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     await Future.wait([
       for (final MapEntry<String, Program>(key: programId, value: program) in [..._programs.entries])
         if (!program.archived || !_actions.containsKey(programId)) _step(() => _pull(id, programId)),
+      for (final program in _coached) _step(() => _readHistory(id, program.id!)),
     ]);
+  }
+
+  /// The coach's copies still in play: followed or waiting.
+  Iterable<Program> get _coached {
+    return _programs.values.where((program) => program.coachId != null && program.id != null && !program.archived);
+  }
+
+  /// What the coach changed in [programId] after [after], newest first: what
+  /// its band says until the user has looked (#558).
+  List<ProgramChange> coachChanges(String programId, {required DateTime after}) {
+    final uid = userId;
+    return [
+      for (final change in (_history[programId] ?? const <ProgramChange>[]).reversed)
+        if (change.actorId != null && change.actorId != uid && change.at.isAfter(after)) change,
+    ];
+  }
+
+  /// A save of the user's to [programId] the coach beat (#558).
+  ProgramConflict? conflict(String programId) => _conflicts[programId];
+
+  /// Reads every coach's copy again, with what changed in it, at most once a
+  /// minute: coming back to the app, when a push that said so may never have
+  /// arrived. Answers the sessions of the copies read, for the template list
+  /// to read too.
+  Future<Iterable<String>> pullCoached({DateTime? now}) async {
+    final at = now ?? DateTime.now();
+    if (_coachedReadAt case final DateTime last when at.difference(last) < const Duration(minutes: 1)) return const [];
+    _coachedReadAt = at;
+    final read = await Future.wait([
+      for (final program in [..._coached]) pull(program.id!),
+    ]);
+    return [for (final program in read.nonNulls) ...program.sessions];
+  }
+
+  @override
+  int? baseRevisionOf(Template session) {
+    return switch (_programs[session.programId]) {
+      Program(coachId: String()) && final program => program.sessionRevisions[session.id] ?? 0,
+      _ => null,
+    };
+  }
+
+  @override
+  Future<void> beaten(Template mine) async {
+    final programId = mine.programId;
+    if (programId == null) return;
+    _conflicts[programId] = ProgramConflict(programId: programId, session: mine);
+    notifyListeners();
+    // the revisions the user's version starts from next time
+    await pull(programId);
+  }
+
+  /// Saves the user's version over the coach's, from the revision just read.
+  Future<void> keepMine(String programId) async {
+    final conflict = _conflicts.remove(programId);
+    notifyListeners();
+    switch ((conflict, _programs[programId])) {
+      case (ProgramConflict(:final Template session), _):
+        await onKeepSession?.call(session);
+      case (ProgramConflict(:final Program fields), final Program current):
+        await update(
+          Program.fromJson({
+            ...fields.toMap(),
+            // what the coach's version holds besides its fields
+            for (final key in const ['revision', 'sessionRevisions', 'sessions', 'joined']) key: current.toMap()[key],
+          }),
+        );
+      default:
+        break;
+    }
+  }
+
+  /// Lets the user's version go, keeping the coach's.
+  void dropMine(String programId) {
+    if (_conflicts.remove(programId) != null) notifyListeners();
+  }
+
+  /// Reads what changed in [programId] since the last change held: oldest
+  /// first, a page at a time, a few pages at most.
+  Future<void> _readHistory(String uid, String programId) async {
+    final held = [...?_history[programId]];
+    for (var page = 0; page < 10; page++) {
+      final (:items, :cursor) = await _remoteService.getProgramChanges(programId, since: held.lastOrNull?.cursor);
+      if (userId != uid) return;
+      held.addAll(items);
+      if (items.isEmpty || cursor == null) break;
+    }
+    _history[programId] = held;
+    notifyListeners();
   }
 
   /// Reads [programId] from the server over the mirror's copy, with its
@@ -489,6 +612,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       });
     }
     await _step(() => _pull(id, programId));
+    if (_programs[programId]?.coachId != null) await _step(() => _readHistory(id, programId));
     return _programs[programId];
   }
 
@@ -713,7 +837,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       if (edited) {
         // after the filing: the server's copy names its sessions, the new one
         // among them only once it is filed
-        await _keep(await _remoteService.editProgram(local), uid);
+        await _sendEdit(local, uid);
         await _settle(.program, id);
       }
     } catch (e, s) {
@@ -786,7 +910,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     if (!_remote.allowed) return program;
 
     try {
-      final row = await _keep(await _remoteService.editProgram(program), uid);
+      final row = await _sendEdit(program, uid);
       await _settle(.program, id);
       return row;
     } catch (e, s) {
@@ -1497,6 +1621,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> _settle(ProgramRow row, String id) async {
+    _changeIds.remove((row, id));
     if (_owed.remove((row, id)) == null) return;
     await _service.settleProgram(row, id);
   }
@@ -1545,7 +1670,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
           await _push(program, uid, sessions: sessions);
         }
       case (.program, .edited):
-        if (_programs[id] case final Program program) await _keep(await _remoteService.editProgram(program), uid);
+        if (_programs[id] case final Program program) await _sendEdit(program, uid);
       case (.program, .deleted || .deletedKeepingTemplates):
         await _remoteService.deleteProgram(id, keepTemplates: change == .deletedKeepingTemplates);
       case (.action, .created || .edited):
@@ -1578,6 +1703,31 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
           await _file(session, programId, uid);
           await onSessionsChanged?.call();
         }
+    }
+  }
+
+  /// Sends an edit of [program]'s own fields, and keeps the server's copy.
+  Future<Program> _sendEdit(Program program, String uid) async {
+    return switch (program.coachId) {
+      String() => _editCoached(program, uid, changeId: _changeIds[(ProgramRow.program, program.id!)] ??= uuidV7()),
+      null => _keep(await _remoteService.editProgram(program), uid),
+    };
+  }
+
+  /// Sends the user's edit of a coach's copy's own fields from the revision
+  /// it was read at (#558). When the coach changed them first, theirs comes
+  /// back here and the user's waits in [conflict].
+  Future<Program> _editCoached(Program program, String uid, {required String changeId}) async {
+    final id = program.id!;
+    try {
+      return await _keep(
+        await _remoteService.editProgram(program, baseRevision: program.revision, changeId: changeId),
+        uid,
+      );
+    } catch (error) {
+      if (!isProgramChanged(error)) rethrow;
+      _conflicts[id] = ProgramConflict(programId: id, fields: program);
+      return _keep(await _remoteService.getProgram(id), uid);
     }
   }
 

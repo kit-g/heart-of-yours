@@ -26,6 +26,7 @@ const _healthAsked = 'healthAsked';
 const _watchReadings = 'watchReadings';
 const _coachingSpace = 'coachingSpace';
 const _coachName = 'coachName';
+const _programSeen = 'programSeen';
 const _coachFingerprint = 'coachFingerprint';
 const _pendingInvitation = 'pendingInvitation';
 const _coachPauseOwed = 'coachPauseOwed';
@@ -115,6 +116,22 @@ class Preferences with ChangeNotifier {
 
   Future<bool>? rememberCoachName(String connectionId, String name) {
     return _prefs?.setString('$_coachName-$connectionId', name);
+  }
+
+  /// When the user last looked at what the coach changed in [programId]
+  /// (#558): its band says only what came after. Per device, and null until
+  /// the first look.
+  DateTime? programSeen(String programId) {
+    return switch (_prefs?.getString('$_programSeen-$programId')) {
+      final String at => DateTime.tryParse(at),
+      null => null,
+    };
+  }
+
+  Future<bool>? setProgramSeen(String programId, DateTime at) {
+    final write = _prefs?.setString('$_programSeen-$programId', at.toUtc().toIso8601String());
+    notifyListeners();
+    return write;
   }
 
   /// The coach's key fingerprint from their invitation link's fragment

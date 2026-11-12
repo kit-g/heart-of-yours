@@ -162,6 +162,9 @@ const _schema = [
   addProgramCoachId,
   addProgramCoachName,
   addProgramWaitingSince,
+  // v31 (#558)
+  addProgramRevision,
+  addProgramSessionRevisions,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production

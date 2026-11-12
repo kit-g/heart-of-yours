@@ -214,6 +214,12 @@ abstract final class AppKeys {
   static const programsFromFolder = Key('Programs.fromFolder');
   static const programFormName = Key('Programs.form.name');
   static const programSentBy = Key('Programs.sentBy');
+
+  /// What the coach changed in a copy since the user looked (#558), and its
+  /// way to say it was seen.
+  static Key programCoachChanges(String programId) => Key('Programs.coachChanges.$programId');
+
+  static Key programCoachChangesSeen(String programId) => Key('Programs.coachChangesSeen.$programId');
   static const programStartSentConfirm = Key('Programs.startSent.confirm');
 
   static Key programWaiting(String id) => Key('Programs.waiting.$id');

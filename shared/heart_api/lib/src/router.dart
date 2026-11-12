@@ -146,6 +146,9 @@ abstract final class Router {
     return '$programs/$programId';
   }
 
+  /// A copy's history, as its student reads it (#558).
+  static String programChanges(String programId) => '${program(programId)}/changes';
+
   /// Where a student starts a coach's copy that waits for them (#557).
   static String programStart(String programId) => '${program(programId)}/start';
 

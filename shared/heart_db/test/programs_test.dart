@@ -98,6 +98,21 @@ void main() {
       expect(started.coachName, 'Muffin');
     });
 
+    test("a coach's copy keeps the revisions its next write starts from (#558)", () async {
+      final sent = Program.fromJson({
+        ...program().toMap(),
+        'coachId': 'coach-muffin',
+        'revision': 3,
+        'sessionRevisions': {'t1': 2},
+      });
+
+      await local.storeProgram(sent, userId);
+      final [stored] = await local.getPrograms(userId);
+
+      expect(stored.revision, 3);
+      expect(stored.sessionRevisions, {'t1': 2});
+    });
+
     test('sessions keep the stored order, lose a deleted template and gain one filed elsewhere', () async {
       await local.storeTemplates([
         session('t1', order: 0),

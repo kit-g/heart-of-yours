@@ -24,6 +24,16 @@ mixin _ProgramRoutes on Requests {
     };
   }
 
+  /// What changed in a coach's copy, oldest first, after the change whose
+  /// cursor is [since] (#558): a page of them, and the cursor of the next.
+  Future<({List<ProgramChange> items, String? cursor})> getProgramChanges(String programId, {String? since}) async {
+    final (json, code) = await get(Router.programChanges(programId), query: {'since': ?since});
+    return switch ((code, json)) {
+      (200, Map json) => (items: ProgramChanges.fromJson(json).changes, cursor: json['cursor'] as String?),
+      _ => throw _programError(json),
+    };
+  }
+
   /// Creates [program] with [sessions] as its templates, in one call (heart-api
   /// #214). Safe to repeat on the program's id, like every replayed create:
   /// `created` says whether this call made it. Starting a library program is
@@ -46,8 +56,16 @@ mixin _ProgramRoutes on Requests {
 
   /// A full replace of [program]'s own fields and rules. Sessions change
   /// through their templates; `source` never changes.
-  Future<Program> editProgram(Program program) async {
-    final (json, code) = await put(Router.program(program.id!), body: program.toMap());
+  ///
+  /// A coach's copy says which revision the edit started from
+  /// ([baseRevision]) and names the edit ([changeId]), so a retry writes once
+  /// (#558). `409 program_changed`, with the current `revision`, when the coach
+  /// changed the same fields since, thrown whole.
+  Future<Program> editProgram(Program program, {int? baseRevision, String? changeId}) async {
+    final (json, code) = await put(
+      Router.program(program.id!),
+      body: {...program.toMap(), 'baseRevision': ?baseRevision, 'changeId': ?changeId},
+    );
     return switch ((code, json)) {
       (200, Map json) => Program.fromJson(json),
       _ => throw _programError(json),

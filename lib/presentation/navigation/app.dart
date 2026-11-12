@@ -198,21 +198,30 @@ class HeartApp extends StatelessWidget {
         // position, and `Templates`, which re-reads the sessions a program
         // writes (#346). Data whatever the feature switch says: off only hides.
         ChangeNotifierProvider<Programs>(
-          create: (context) => Programs(
-            service: LocalPrograms(db),
-            remoteService: RemotePrograms(api),
-            templates: db,
-            workouts: Workouts.of(context),
-            onSessionsChanged: Templates.of(context).reread,
-            // a ladder's step (#350): the sessions are the template list's
-            onAdvance: (sessions, {required from, required to}) async {
-              if (Exercises.of(context).lookup(to) case final exercise?) {
-                await Templates.of(context).replaceExercise(sessions, from: from, to: exercise);
-              }
-            },
-            remote: RemoteAccess.of(context),
-            onError: reportToSentry,
-          ),
+          create: (context) {
+            final templates = Templates.of(context);
+            final programs = Programs(
+              service: LocalPrograms(db),
+              remoteService: RemotePrograms(api),
+              templates: db,
+              workouts: Workouts.of(context),
+              onSessionsChanged: templates.reread,
+              // a ladder's step (#350): the sessions are the template list's
+              onAdvance: (sessions, {required from, required to}) async {
+                if (Exercises.of(context).lookup(to) case final exercise?) {
+                  await templates.replaceExercise(sessions, from: from, to: exercise);
+                }
+              },
+              // a coach's copy (#558): the user's version of a session, chosen
+              // over the coach's
+              onKeepSession: templates.keep,
+              remote: RemoteAccess.of(context),
+              onError: reportToSentry,
+            );
+            // which sessions are a coach's copy's, written from a revision
+            templates.shared = programs;
+            return programs;
+          },
         ),
         // Things to go easy on (#396): the map is content, the list the
         // user's own and health-shaped — on this phone only, and its errors
@@ -642,6 +651,12 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     // the sweep that flags entries runs nightly: a phone left open overnight
     // learns of the morning's flags when it comes back
     Anomalies.of(context).pull();
+    // a coach's edits to their copies, whose push may never have come (#558)
+    final preferences = Preferences.of(context);
+    if (preferences.isOn(.programs) && preferences.isOn(.yourCoach)) {
+      final templates = Templates.of(context);
+      Programs.of(context).pullCoached().then(templates.pull);
+    }
   }
 
   /// Localized backend content (the exercise catalog) is served per request
