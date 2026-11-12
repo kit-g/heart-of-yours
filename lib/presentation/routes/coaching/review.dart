@@ -14,7 +14,14 @@ class WorkoutReviewPage extends StatefulWidget {
 }
 
 class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
-  late Future<WorkoutReview> _review = _read();
+  late Future<WorkoutReview> _review;
+
+  @override
+  void initState() {
+    super.initState();
+    // read after this build: reading the roster notifies what the page is built from
+    _review = Future(_read);
+  }
 
   Future<WorkoutReview> _read() async {
     final roster = Roster.of(context);
@@ -216,6 +223,7 @@ class _ReviewedExerciseCard extends StatelessWidget {
                           switch (set.outcome) {
                             .lighter => l.coachingReviewLighter,
                             .fewer => l.coachingReviewFewer,
+                            .shorter => l.coachingReviewShorter,
                             .skipped => l.coachingReviewSkipped,
                             .added => l.coachingReviewAdded,
                             .asked || null => '',

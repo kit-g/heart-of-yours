@@ -605,6 +605,26 @@ void main() {
       expect(find.text('Last 7 days'), findsOneWidget);
     });
 
+    testWidgets('beside the roster, another client opens in the same pane, read after the build', (tester) async {
+      withSam();
+      final pip = ClientSummary(connectionId: 'c-pip', studentId: 'pip', name: 'Pip', status: 'active');
+      when(api.getClients(former: false, cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: [sam, pip], cursor: null));
+      when(api.getClientWorkouts('pip', cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: <Workout>[], cursor: null));
+      when(api.getClientSkips('pip')).thenAnswer((_) async => <TrainingSkip>[]);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
+
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClient('c-pip'));
+      await tester.pumpTimes();
+
+      expect(tester.takeException(), isNull);
+      verify(api.getClientWorkouts('pip', cursor: anyNamed('cursor'))).called(1);
+      expect(find.text('Nothing logged yet'), findsOneWidget);
+    });
+
     testWidgets('a workout in Activity opens target beside done', (tester) async {
       withSam();
       when(api.getCoachFeed(cursor: anyNamed('cursor'))).thenAnswer(

@@ -5870,5 +5870,7 @@
   "coachingCopyReadOnly": "Their own program: you can see it, not change it.",
   "@coachingCopyReadOnly": {"description": "A client's program the coach can see but not change: their own, or one sent before the connection (#558)", "type": "text", "placeholders": {}},
   "coachingCopyWaiting": "Waiting for them to start it",
-  "@coachingCopyWaiting": {"description": "Under a program the coach sent a client that they haven't started yet (#558)", "type": "text", "placeholders": {}}
+  "@coachingCopyWaiting": {"description": "Under a program the coach sent a client that they haven't started yet (#558)", "type": "text", "placeholders": {}},
+  "coachingReviewShorter": "Shorter",
+  "@coachingReviewShorter": {"description": "A timed or distance set done shorter than planned (#559)", "type": "text", "placeholders": {}}
 }

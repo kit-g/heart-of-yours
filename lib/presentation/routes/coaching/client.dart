@@ -90,7 +90,8 @@ class _ClientViewState extends State<_ClientView> {
   @override
   void didUpdateWidget(covariant _ClientView old) {
     super.didUpdateWidget(old);
-    if (old.connectionId != widget.connectionId) _load();
+    // after this build: reading notifies the roster this view is built from
+    if (old.connectionId != widget.connectionId) WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
@@ -117,7 +118,12 @@ class _ClientViewState extends State<_ClientView> {
     if (client == null) {
       return switch (roster.status) {
         .idle || .loading => const Center(child: CircularProgressIndicator.adaptive()),
-        _ => _Empty(icon: Icons.person_off_outlined, title: l.coachingClientGone),
+        .failed => _Empty(
+          icon: Icons.cloud_off_rounded,
+          title: l.coachingRosterFailed,
+          action: OutlinedButton(onPressed: _load, child: Text(l.retry)),
+        ),
+        .loaded => _Empty(icon: Icons.person_off_outlined, title: l.coachingClientGone),
       };
     }
     final id = client.studentId;
