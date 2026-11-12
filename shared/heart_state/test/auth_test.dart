@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb;
@@ -315,6 +316,58 @@ void main() {
       sut.isInitialized = true; // triggers notify
       await tester.pump();
       expect(builds, 2);
+    });
+  });
+
+  group('entitlements', () {
+    test('are known once the server answers, and a later change Firebase reports keeps them', () async {
+      final firebase = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+      );
+      when(account.isAuthenticated).thenReturn(true);
+      when(account.registerAccount(any)).thenAnswer(
+        (inv) async => User(id: (inv.positionalArguments.first as User).id, entitlements: ['coach']),
+      );
+      final sut = Auth(service: account, firebase: firebase);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.entitlementsKnown, isTrue);
+      expect(sut.user?.mayCoach, isTrue);
+
+      // a new name or photo: Firebase hands the account over again, and the
+      // server's answer to it is slow
+      when(account.registerAccount(any)).thenAnswer((_) => Completer<User>().future);
+      firebase.userChangedStreamController.add(firebase.currentUser);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.entitlementsKnown, isTrue);
+      expect(sut.user?.mayCoach, isTrue, reason: 'a coach never reads as one who may not coach in between');
+      sut.dispose();
+    });
+
+    test('a sign-out forgets them, and the next sign-in waits for the server again', () async {
+      final firebase = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+      );
+      when(account.isAuthenticated).thenReturn(true);
+      when(account.registerAccount(any)).thenAnswer(
+        (inv) async => User(id: (inv.positionalArguments.first as User).id, entitlements: ['coach']),
+      );
+      final sut = Auth(service: account, firebase: firebase);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      when(account.registerAccount(any)).thenAnswer((_) => Completer<User>().future);
+      firebase.userChangedStreamController.add(null);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(sut.entitlementsKnown, isFalse);
+
+      firebase.userChangedStreamController.add(firebase.currentUser);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(sut.entitlementsKnown, isFalse);
+      expect(sut.user?.mayCoach, isFalse);
+      sut.dispose();
     });
   });
 
