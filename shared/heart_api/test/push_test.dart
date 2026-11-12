@@ -50,6 +50,21 @@ void main() {
 
       expect(api.registerDevice(platform: .web, token: 't'), throwsA(refusal));
     });
+
+    test('unregisterDevice sends the token as registered (heart-api#415)', () async {
+      respond(client: client, method: 'POST', path: Router.deviceRemovals, statusCode: 204, body: {});
+
+      await api.unregisterDevice('fcm-token');
+
+      expect(sentBy(Router.deviceRemovals), {'token': 'fcm-token'});
+    });
+
+    test('unregisterDevice throws a refusal whole', () async {
+      const refusal = {'error': 'bad request', 'code': 'bad_request', 'reason': 'token is required'};
+      respond(client: client, method: 'POST', path: Router.deviceRemovals, statusCode: 400, body: refusal);
+
+      expect(api.unregisterDevice(''), throwsA(refusal));
+    });
   });
 
   group('push settings (#554)', () {
@@ -69,6 +84,7 @@ void main() {
               'description': 'When someone you train with writes to you',
               'delivery': 'instant',
               'options': ['instant', 'off'],
+              'perPersonAs': ['coach', 'student', 'peer'],
             },
           ],
           'forPeople': [
@@ -81,6 +97,7 @@ void main() {
 
       expect(settings.topics.single.topic, 'coaching.message');
       expect(settings.topics.single.options, ['instant', 'off']);
+      expect(settings.topics.single.perPersonAs, ['coach', 'student', 'peer']);
       expect(settings.forPeople.single.connectionId, '01a1b7d4-bd0d-7eec-a569-2bc08ea3787f');
     });
 

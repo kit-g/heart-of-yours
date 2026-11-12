@@ -20,6 +20,7 @@ abstract final class Router {
   static const coachFeed = 'v1/coach/feed';
   static const libraryPrograms = 'v1/library-programs';
   static const devices = 'v1/devices';
+  static const deviceRemovals = 'v1/devices/removals';
   static const pushSettings = 'v1/push/settings';
 
   /// A push topic's setting. Topics are the server's words, dotted
