@@ -109,8 +109,8 @@ class Preferences with ChangeNotifier {
   Future<bool>? setInCoachingSpace({required bool inside}) => _prefs?.setBool(_coachingSpace, inside);
 
   /// A coach's name as their invitation showed it (#553), by the connection it
-  /// made: what this device can call them until connections carry names
-  /// (heart-api#409). Per device.
+  /// made: what this device calls them when their profile has no name, which
+  /// a connection otherwise carries (heart-api#409). Per device.
   String? coachName(String connectionId) => _prefs?.getString('$_coachName-$connectionId');
 
   Future<bool>? rememberCoachName(String connectionId, String name) {
