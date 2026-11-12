@@ -59,4 +59,58 @@ void main() {
     expect(find.text('24 kg / 45 sec'), findsOneWidget);
     expect(find.text('40 kg / 30 m'), findsOneWidget);
   });
+  // A saved workout keeps its planned sets that were never done: the card's
+  // ×N counted them out, and its best set and volume counted them in (#613).
+  testWidgets('a set never ticked is neither the best nor in the volume', (tester) async {
+    SharedPreferences.setMockInitialValues({'weightUnit': 'metric', 'distanceUnit': 'metric'});
+    final preferences = Preferences();
+    await preferences.init();
+    final exercises = Exercises(
+      remoteService: MockRemoteExerciseService(),
+      service: MockExerciseService(),
+      libraryService: MockExerciseLibraryService(),
+      catalogService: MockLocalCatalogService(),
+      preferenceService: MockRemoteExercisePreferenceService(),
+    );
+
+    final workout = Workout(name: 'Arms')
+      ..add(Exercise(name: 'Curl', category: .dumbbell, target: .arms))
+      ..add(Exercise(name: 'Pushdown', category: .machine, target: .arms));
+    final curl = workout.elementAt(0);
+    final pushdown = workout.elementAt(1);
+    // curl: a warm-up and a working set done, and a heavier one planned
+    curl.first
+      ..setMeasurements(weight: 30, reps: 10)
+      ..setType = .warmup
+      ..isCompleted = true;
+    curl
+      ..add(ExerciseSet(curl.exercise, weight: 12, reps: 10)..isCompleted = true)
+      ..add(ExerciseSet(curl.exercise, weight: 20, reps: 8));
+    // pushdown: planned, never done
+    pushdown.first.setMeasurements(weight: 45, reps: 15);
+    workout.finish(DateTime.now());
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<Preferences>.value(value: preferences),
+          ChangeNotifierProvider<Exercises>.value(value: exercises),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: localizationsDelegates,
+          supportedLocales: L.supportedLocales,
+          home: Scaffold(
+            body: WorkoutItem(workout: workout, showsMenuButton: false),
+          ),
+        ),
+      ),
+    );
+
+    // 12 × 10 alone: not the warm-up, not the planned 20 × 8, not the pushdown
+    expect(find.text('120 kg'), findsOneWidget);
+    expect(find.text('Curl ×2'), findsOneWidget);
+    expect(find.text('12 kg x 10'), findsOneWidget);
+    expect(find.text('Pushdown ×0'), findsOneWidget);
+    expect(find.text('45 kg x 15'), findsNothing);
+  });
 }
