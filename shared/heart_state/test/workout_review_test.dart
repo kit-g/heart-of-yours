@@ -131,4 +131,36 @@ void main() {
       isFalse,
     );
   });
+
+  test('a hold or a distance short of the plan is shorter, not as asked', () {
+    final workout = Workout.fromJson({
+      'id': 'w2',
+      'start': '2026-11-07T19:05:00Z',
+      'exercises': [
+        {
+          'id': 'we-plank',
+          'exercise': {..._exercise('plank'), 'category': 'Duration'},
+          'start': '2026-11-07T19:05:00Z',
+          'order': 0,
+          'sets': [
+            {'id': 'p1', 'completed': true, 'started_at': '2026-11-07T19:10:00Z', 'duration': 30, 'set_type': 'normal'},
+          ],
+        },
+      ],
+    });
+    const plan = WorkoutPlan({
+      'exercises': [
+        {
+          'exerciseId': 'plank',
+          'sets': [
+            {'setId': 'p1', 'duration': 60},
+          ],
+        },
+      ],
+    });
+
+    final [plank] = WorkoutReview.of(workout, plan).exercises;
+
+    expect(plank.sets.single.outcome, SetOutcome.shorter);
+  });
 }
