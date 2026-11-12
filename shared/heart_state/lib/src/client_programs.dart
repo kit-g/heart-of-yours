@@ -47,13 +47,17 @@ final class ProgramConflict {
   /// The save never reached the server, rather than losing to the client.
   final bool unsent;
 
+  /// The server refused it: the coach may no longer change this copy (the
+  /// connection paused or ended). Nothing to send again.
+  final bool refused;
+
   /// The session the coach edited; null when it was the program's own fields.
   final Template? session;
 
   /// The program's fields as the coach wanted them, when those were the edit.
   final Program? fields;
 
-  const new({required this.programId, this.session, this.fields, this.unsent = false});
+  const new({required this.programId, this.session, this.fields, this.unsent = false, this.refused = false});
 }
 
 /// The server's refusal of a write because the other person changed the same
@@ -86,6 +90,10 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
   final _status = <String, CoachingStatus>{};
   final _conflicts = <String, ProgramConflict>{};
   final _editable = <String, bool>{};
+
+  /// Copies whose writes the server refused: no longer the coach's to change,
+  /// whatever the list of copies they sent says.
+  final _refused = <String>{};
   final _managed = <String, List<Program>>{};
 
   /// The client and copy [editable] belongs to.
@@ -117,7 +125,7 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
 
   /// Whether the coach may change [programId]: a copy they sent, while the
   /// connection lasts. Their client's own program they only see.
-  bool mayChange(String programId) => _editable[programId] ?? false;
+  bool mayChange(String programId) => !_refused.contains(programId) && (_editable[programId] ?? false);
 
   @override
   void onSignOut() {
@@ -126,6 +134,7 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
     _status.clear();
     _conflicts.clear();
     _editable.clear();
+    _refused.clear();
     _managed.clear();
     _drafting = null;
     editable = null;
@@ -204,7 +213,8 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
         programId,
         error,
         stacktrace,
-        (unsent) => ProgramConflict(programId: programId, fields: fields, unsent: unsent),
+        ({required unsent, required refused}) =>
+            ProgramConflict(programId: programId, fields: fields, unsent: unsent, refused: refused),
       );
     }
     await open(studentId, programId);
@@ -253,23 +263,29 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
         programId,
         error,
         stacktrace,
-        (unsent) => ProgramConflict(programId: programId, session: session, unsent: unsent),
+        ({required unsent, required refused}) =>
+            ProgramConflict(programId: programId, session: session, unsent: unsent, refused: refused),
       );
     }
     await open(studentId, programId);
   }
 
-  /// A write that didn't land: kept to choose over when the client got there
-  /// first or it never arrived, and dropped when the coach may no longer
-  /// change the copy, which then reads as theirs to see only.
-  void _settle(String programId, Object error, StackTrace stacktrace, ProgramConflict Function(bool unsent) kept) {
+  /// A write that didn't land, kept to say so: the client got there first,
+  /// it never arrived, or the server refused it because the coach may no
+  /// longer change the copy, which then stays read-only.
+  void _settle(
+    String programId,
+    Object error,
+    StackTrace stacktrace,
+    ProgramConflict Function({required bool unsent, required bool refused}) kept,
+  ) {
     if (_isForbidden(error)) {
-      _editable[programId] = false;
-      _conflicts.remove(programId);
+      _refused.add(programId);
+      _conflicts[programId] = kept(unsent: false, refused: true);
       return;
     }
     final changed = isProgramChanged(error);
     if (!changed) onError?.call(error, stacktrace: stacktrace);
-    _conflicts[programId] = kept(!changed);
+    _conflicts[programId] = kept(unsent: !changed, refused: false);
   }
 }

@@ -179,14 +179,16 @@ void main() {
     expect(programs.mayChange('p1'), isTrue);
   });
 
-  test('a write refused as no longer theirs to change turns the copy read-only, not unsent', () async {
+  test('a write refused as no longer theirs is kept to say so, and the copy stays read-only after a read', () async {
     await programs.open('sam', 'p1');
     programs.editSession('sam', 'p1', session: programs.view('p1')!.sessions.single);
     server.refuse = {'code': 'forbidden'};
-    server.managed = false;
     await programs.saveEditable();
 
-    expect(programs.conflict('p1'), isNull);
+    expect(programs.conflict('p1')?.refused, isTrue);
+    expect(programs.mayChange('p1'), isFalse, reason: 'still listed as sent, but refused');
+
+    await programs.open('sam', 'p1');
     expect(programs.mayChange('p1'), isFalse);
   });
 

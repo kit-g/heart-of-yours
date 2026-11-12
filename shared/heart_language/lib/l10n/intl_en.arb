@@ -5872,5 +5872,7 @@
   "coachingCopyWaiting": "Waiting for them to start it",
   "@coachingCopyWaiting": {"description": "Under a program the coach sent a client that they haven't started yet (#558)", "type": "text", "placeholders": {}},
   "coachingReviewShorter": "Shorter",
-  "@coachingReviewShorter": {"description": "A timed or distance set done shorter than planned (#559)", "type": "text", "placeholders": {}}
+  "@coachingReviewShorter": {"description": "A timed or distance set done shorter than planned (#559)", "type": "text", "placeholders": {}},
+  "coachingCopyRefused": "You can't change this program now: coaching {name} is paused or over. Yours isn't saved.",
+  "@coachingCopyRefused": {"description": "The coach's edit was refused: the connection with {name} is paused or ended (#558)", "type": "text", "placeholders": {"name": {"type": "String"}}}
 }

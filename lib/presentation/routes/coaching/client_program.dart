@@ -96,9 +96,13 @@ class _CopyView extends StatelessWidget {
       children: [
         Padding(
           padding: const .fromLTRB(16, 8, 16, 0),
-          child: Text(l.coachingClientWeek(program.name, week, program.weeks ?? week), style: muted),
+          child: Text(switch (program.weeks) {
+            final int weeks => l.coachingClientWeek(program.name, week, weeks),
+            null => l.coachingClientWeekOpen(program.name, week),
+          }, style: muted),
         ),
-        if (!mayChange)
+        // a copy that stopped being the coach's says why in its card
+        if (!mayChange && programs.conflict(program.id!)?.refused != true)
           Padding(
             padding: const .fromLTRB(16, 12, 16, 0),
             child: Text(l.coachingCopyReadOnly, style: textTheme.bodyMedium),
@@ -200,6 +204,7 @@ class _ConflictCard extends StatelessWidget {
     final programs = ClientPrograms.of(context);
     final name = _clientName(l, client);
     final words = switch (conflict) {
+      ProgramConflict(refused: true) => l.coachingCopyRefused(name),
       ProgramConflict(unsent: true) => l.coachingCopyUnsent,
       ProgramConflict(:final Template session) => l.coachingCopyConflictSession(name, session.name ?? ''),
       _ => l.coachingCopyConflictFields(name),
@@ -221,20 +226,22 @@ class _ConflictCard extends StatelessWidget {
                   key: AppKeys.coachingCopyKeepTheirs,
                   style: TextButton.styleFrom(foregroundColor: colorScheme.onErrorContainer),
                   onPressed: () => programs.dropMine(conflict.programId),
-                  child: Text(switch (conflict.unsent) {
-                    true => l.coachingCopyDiscard,
-                    false => l.coachingCopyKeepTheirs,
+                  child: Text(switch (conflict) {
+                    ProgramConflict(unsent: true) || ProgramConflict(refused: true) => l.coachingCopyDiscard,
+                    _ => l.coachingCopyKeepTheirs,
                   }),
                 ),
-                TextButton(
-                  key: AppKeys.coachingCopyKeepMine,
-                  style: TextButton.styleFrom(foregroundColor: colorScheme.onErrorContainer),
-                  onPressed: () => programs.keepMine(client.studentId, conflict.programId),
-                  child: Text(switch (conflict.unsent) {
-                    true => l.retry,
-                    false => l.coachingCopyKeepMine,
-                  }),
-                ),
+                // a refusal has nothing to send again
+                if (!conflict.refused)
+                  TextButton(
+                    key: AppKeys.coachingCopyKeepMine,
+                    style: TextButton.styleFrom(foregroundColor: colorScheme.onErrorContainer),
+                    onPressed: () => programs.keepMine(client.studentId, conflict.programId),
+                    child: Text(switch (conflict.unsent) {
+                      true => l.retry,
+                      false => l.coachingCopyKeepMine,
+                    }),
+                  ),
               ],
             ),
           ],
