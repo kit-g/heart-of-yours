@@ -381,6 +381,40 @@ void main() {
     });
   });
 
+  group('pull, the one program a push named (#567)', () {
+    test('reads that program and its history, and no other', () async {
+      remote.programs = [program(id: 'other')];
+      await programs.init();
+      remote.calls.clear();
+      remote.programs = [program(id: 'other'), program(id: 'p2')];
+      remote.actions['p2'] = [ProgramAction(id: 'a1', programId: 'p2', kind: .pause, at: DateTime.utc(2026, 10, 2))];
+
+      final pulled = await programs.pull('p2');
+
+      expect(pulled?.id, 'p2');
+      expect(remote.calls, ['getProgram p2', 'getProgramActions p2', 'getProgramBases p2']);
+      expect(programs.all.map((each) => each.id), containsAll(['other', 'p2']));
+      expect(local.programs[uid]!.map((each) => each.id), contains('p2'));
+      expect(programs.actionsOf('p2').single.id, 'a1');
+    });
+
+    test('with the remote leg closed, nothing is read', () async {
+      access.account = false;
+
+      expect(await programs.pull('p2'), isNull);
+      expect(remote.calls, isEmpty);
+    });
+
+    test('a server that fails is reported, and what was held stays', () async {
+      remote.programs = [program()];
+      await programs.init();
+      remote.failing = true;
+
+      expect((await programs.pull('p1'))?.id, 'p1');
+      expect(errors, isNotEmpty);
+    });
+  });
+
   group('what the server did not confirm', () {
     test('a program it never got is kept, and sent at the next launch', () async {
       when(templates.getTemplates(uid)).thenAnswer((_) async => []);
@@ -1827,6 +1861,12 @@ class _Remote implements RemoteProgramService {
   Future<List<Program>> getPrograms() async {
     _call('getPrograms');
     return programs;
+  }
+
+  @override
+  Future<Program> getProgram(String programId) async {
+    _call('getProgram $programId');
+    return programs.firstWhere((each) => each.id == programId);
   }
 
   @override

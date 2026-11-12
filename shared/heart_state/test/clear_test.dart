@@ -34,10 +34,16 @@ class _Anomalies extends Anomalies {
 class _Auth extends Auth {
   int calls = 0;
 
-  new() : super(service: MockAccountService(), firebase: MockFirebaseAuth());
+  /// What happened before the session ended, in order.
+  final List<String>? log;
+
+  new({this.log}) : super(service: MockAccountService(), firebase: MockFirebaseAuth());
 
   @override
-  FutureOr<void> onSignOut() => calls++;
+  FutureOr<void> onSignOut() {
+    log?.add('sign out');
+    calls++;
+  }
 }
 
 class _Charts extends Charts {
@@ -174,7 +180,51 @@ class _ClientPrograms extends ClientPrograms {
   void onSignOut() => calls++;
 }
 
+class _Pushes extends Pushes {
+  int calls = 0;
+
+  new({RemotePushService? service}) : super(service: service ?? _NoPushService());
+
+  @override
+  void onSignOut() => calls++;
+}
+
 class _NoClientProgramService implements ClientProgramService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+/// Records the removal a sign-out sends, and the registration before it.
+class _LoggingPushService implements RemotePushService {
+  final List<String> log;
+
+  new(this.log);
+
+  @override
+  Future<void> registerDevice({required DevicePlatform platform, required String token, int? utcOffsetMinutes}) async {}
+
+  @override
+  Future<void> unregisterDevice(String token) async => log.add('unregister $token');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoPushService implements RemotePushService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _DeviceKeys extends DeviceKeys {
+  int calls = 0;
+
+  new() : super(service: _NoKeyService(), vault: null);
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoKeyService implements RemoteKeyService {
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
@@ -320,6 +370,20 @@ Directory _packageRoot() {
   fail('could not locate the heart_state package root from ${Directory.current.path}');
 }
 
+/// The notifiers clear.dart signs out, as its source names them: either
+/// `X.of(context).onSignOut()`, or `X.of(context)` held in a local first and
+/// signed out after a wait (`final session = Auth.of(context);` … `await
+/// session.onSignOut();`).
+List<String> _fannedOut(String clear) {
+  final direct = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
+  final held = RegExp(r'final (\w+) = (\w+)\.of\(context\);');
+  return [
+    for (final match in direct.allMatches(clear)) match.group(1)!,
+    for (final match in held.allMatches(clear))
+      if (RegExp('\\b${match.group(1)}\\.onSignOut\\(\\)').hasMatch(clear)) match.group(2)!,
+  ];
+}
+
 void main() {
   group('clearState fan-out', () {
     late _Alarms alarms;
@@ -337,6 +401,8 @@ void main() {
     late _Templates templates;
     late _Programs programs;
     late _Roster roster;
+    late _Pushes pushes;
+    late _DeviceKeys keys;
     late _Library library;
     late _ClientPrograms clientPrograms;
     late _Timers timers;
@@ -344,12 +410,12 @@ void main() {
     late _Workouts workouts;
     late BuildContext capturedContext;
 
-    Future<void> pumpProviders(WidgetTester tester) async {
+    Future<void> pumpProviders(WidgetTester tester, {List<String>? log}) async {
       alarms = _Alarms();
       anomalies = _Anomalies();
       apiTokens = _ApiTokens();
       coaching = _Coaching();
-      auth = _Auth();
+      auth = _Auth(log: log);
       backfill = _Backfill();
       charts = _Charts();
       exercises = _Exercises();
@@ -360,6 +426,13 @@ void main() {
       templates = _Templates();
       programs = _Programs();
       roster = _Roster();
+      pushes = _Pushes(
+        service: switch (log) {
+          final List<String> log => _LoggingPushService(log),
+          null => null,
+        },
+      );
+      keys = _DeviceKeys();
       library = _Library();
       clientPrograms = _ClientPrograms();
       timers = _Timers();
@@ -384,6 +457,8 @@ void main() {
             ChangeNotifierProvider<Templates>.value(value: templates),
             ChangeNotifierProvider<Programs>.value(value: programs),
             ChangeNotifierProvider<Roster>.value(value: roster),
+            ChangeNotifierProvider<Pushes>.value(value: pushes),
+            ChangeNotifierProvider<DeviceKeys>.value(value: keys),
             ChangeNotifierProvider<CoachLibrary>.value(value: library),
             ChangeNotifierProvider<ClientPrograms>.value(value: clientPrograms),
             ChangeNotifierProvider<Timers>.value(value: timers),
@@ -416,6 +491,8 @@ void main() {
         templates.calls,
         programs.calls,
         roster.calls,
+        pushes.calls,
+        keys.calls,
         library.calls,
         clientPrograms.calls,
         timers.calls,
@@ -427,16 +504,28 @@ void main() {
     testWidgets('invokes onSignOut on every registered notifier exactly once', (tester) async {
       await pumpProviders(tester);
 
-      clearState(capturedContext);
+      await clearState(capturedContext);
 
       expect(counts(), everyElement(1), reason: 'each notifier signs out exactly once per clearState call');
+    });
+
+    testWidgets('the device stops getting the account\'s pushes before the session ends (heart-api#415)', (
+      tester,
+    ) async {
+      final log = <String>[];
+      await pumpProviders(tester, log: log);
+      await pushes.register(platform: .ios, token: 'fcm-1');
+
+      await clearState(capturedContext);
+
+      expect(log, ['unregister fcm-1', 'sign out']);
     });
 
     testWidgets('is not memoized: a second sign-out dispatches again', (tester) async {
       await pumpProviders(tester);
 
-      clearState(capturedContext);
-      clearState(capturedContext);
+      await clearState(capturedContext);
+      await clearState(capturedContext);
 
       expect(counts(), everyElement(2));
     });
@@ -457,6 +546,8 @@ void main() {
     late _Templates templates;
     late _Programs programs;
     late _Roster roster;
+    late _Pushes pushes;
+    late _DeviceKeys keys;
     late _Library library;
     late _ClientPrograms clientPrograms;
     late _Timers timers;
@@ -488,6 +579,8 @@ void main() {
       templates = _Templates();
       programs = _Programs();
       roster = _Roster();
+      pushes = _Pushes();
+      keys = _DeviceKeys();
       library = _Library();
       clientPrograms = _ClientPrograms();
       timers = _Timers();
@@ -523,6 +616,8 @@ void main() {
             ChangeNotifierProvider<Templates>.value(value: templates),
             ChangeNotifierProvider<Programs>.value(value: programs),
             ChangeNotifierProvider<Roster>.value(value: roster),
+            ChangeNotifierProvider<Pushes>.value(value: pushes),
+            ChangeNotifierProvider<DeviceKeys>.value(value: keys),
             ChangeNotifierProvider<CoachLibrary>.value(value: library),
             ChangeNotifierProvider<ClientPrograms>.value(value: clientPrograms),
             ChangeNotifierProvider<Timers>.value(value: timers),
@@ -556,6 +651,8 @@ void main() {
         templates.calls,
         programs.calls,
         roster.calls,
+        pushes.calls,
+        keys.calls,
         library.calls,
         clientPrograms.calls,
         timers.calls,
@@ -622,9 +719,7 @@ void main() {
         }
       }
 
-      final clear = File('${src.path}/clear.dart').readAsStringSync();
-      final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
-      final fanned = [for (final match in fanOutCall.allMatches(clear)) match.group(1)!];
+      final fanned = _fannedOut(File('${src.path}/clear.dart').readAsStringSync());
 
       expect(implementers, isNotEmpty, reason: 'the scan itself must find the known implementers');
       expect(
@@ -641,10 +736,8 @@ void main() {
       );
     });
 
-    test('the fan-out list is the twenty known notifiers', () {
-      final clear = File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync();
-      final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
-      final fanned = {for (final match in fanOutCall.allMatches(clear)) match.group(1)!};
+    test('the fan-out list is the twenty-two known notifiers', () {
+      final fanned = _fannedOut(File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync()).toSet();
 
       expect(fanned, {
         'Alarms',
@@ -656,11 +749,13 @@ void main() {
         'ClientPrograms',
         'CoachLibrary',
         'Coaching',
+        'DeviceKeys',
         'Exercises',
         'Goals',
         'Health',
         'PreviousExercises',
         'Programs',
+        'Pushes',
         'Roster',
         'Stats',
         'Templates',

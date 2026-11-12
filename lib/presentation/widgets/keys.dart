@@ -130,6 +130,7 @@ abstract final class AppKeys {
   /// The settings row that opens the rest-timer list; present only while
   /// there is a timer on it.
   static const restTimers = Key('Settings.restTimers');
+  static const pushSettings = Key('Settings.pushSettings');
   static const features = Key('Settings.features');
 
   /// The export page's two actions, one per format.

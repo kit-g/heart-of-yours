@@ -98,6 +98,9 @@ abstract interface class RemoteProgramService {
   /// Whole or not at all: the caller replaces its programs with these.
   Future<List<Program>> getPrograms();
 
+  /// One program, by its id: the one a push named (#567).
+  Future<Program> getProgram(String programId);
+
   Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions});
 
   Future<Program> editProgram(Program program);
@@ -463,6 +466,30 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       for (final MapEntry<String, Program>(key: programId, value: program) in [..._programs.entries])
         if (!program.archived || !_actions.containsKey(programId)) _step(() => _pull(id, programId)),
     ]);
+  }
+
+  /// Reads [programId] from the server over the mirror's copy, with its
+  /// actions and bases, and nothing else: the program a push named (#567),
+  /// because a coach sent it or the other person changed it. A program this
+  /// device still owes the server keeps its own copy, as in [init]. Answers
+  /// the program as held afterwards, null for none or with the remote leg
+  /// closed.
+  Future<Program?> pull(String programId) async {
+    final id = userId;
+    if (id == null || !_remote.allowed) return null;
+    final owed = _owed.values.any((each) => each.row == .program && each.id == programId);
+    if (!owed) {
+      await _step(() async {
+        final program = await _remoteService.getProgram(programId);
+        if (userId != id) return;
+        await _service.storeProgram(program, id);
+        if (program.id case final String programId) _programs[programId] = program;
+        await _readMarks(id);
+        notifyListeners();
+      });
+    }
+    await _step(() => _pull(id, programId));
+    return _programs[programId];
   }
 
   /// Reads the mirror again, and nothing else: it was re-keyed under the

@@ -37,6 +37,11 @@ abstract interface class LocalTemplateFolderService {
 /// the filing alone".
 abstract interface class RemoteTemplateFilingService {
   Future<Template> moveTemplate(Template template, {required String? folderId});
+
+  /// One template by its id: a session of the program a push named (#567).
+  /// Here rather than on `RemoteTemplateService`, which is the server's
+  /// contract and has no such call.
+  Future<Template> getTemplate(String templateId);
 }
 
 class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implements SignOutStateSentry {
@@ -173,6 +178,31 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
       }
       await _folderService.storeFolders(remoteFolders, id);
     });
+  }
+
+  /// Reads the templates [ids] from the server over the ones held, and no
+  /// others: a program's sessions, when a push named the program (#567). One
+  /// that fails to read keeps what was held, and the rest still land.
+  Future<void> pull(Iterable<String> ids) async {
+    final id = userId;
+    if (id == null || !_remote.allowed) return;
+    final answers = await Future.wait(
+      ids.map((each) async {
+        try {
+          return await _filingService.getTemplate(each);
+        } catch (e, s) {
+          onError?.call(e, stacktrace: s);
+          return null;
+        }
+      }),
+    );
+    final read = answers.nonNulls.toList();
+    if (read.isEmpty || userId != id) return;
+    _templates
+      ..removeWhere(read.contains)
+      ..addAll(read);
+    notifyListeners();
+    await _step(() => _service.storeTemplates(read, userId: id));
   }
 
   /// Reads the user's own templates from the mirror again, replacing what is

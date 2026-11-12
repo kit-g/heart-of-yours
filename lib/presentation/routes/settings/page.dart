@@ -9,6 +9,9 @@ class SettingsPage extends StatelessWidget with HasHaptic {
   final VoidCallback onExportData;
   final VoidCallback onWhatsNew;
   final VoidCallback onRestTimers;
+
+  /// What reaches the person by push (#554), while the push client runs.
+  final VoidCallback onPushSettings;
   final VoidCallback onFeatures;
   final VoidCallback onDeveloperApi;
 
@@ -22,6 +25,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
     required this.onExportData,
     required this.onWhatsNew,
     required this.onRestTimers,
+    required this.onPushSettings,
     required this.onFeatures,
     required this.onDeveloperApi,
     required this.onErased,
@@ -291,7 +295,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                       title: Text(features),
                       onTap: onFeatures,
                     ),
-                    const _NotificationsRow(),
+                    _NotificationsRow(onPushSettings: onPushSettings),
                     // absent until there is a timer to list, or default rest
                     // (#174) to adjust: an entry that can only open onto an
                     // empty page is a dead end
@@ -600,10 +604,23 @@ class _LockScreenWorkoutSwitchState extends State<_LockScreenWorkoutSwitch> {
 /// a row that might never appear, and where the plugin is absent (a widget
 /// test) its failure had nobody listening — a crash of the test, surfaced the
 /// moment the Features section pushed this row below the first screen.
-class const _NotificationsRow() extends StatelessWidget {
+///
+/// While the push client runs (#554) it opens the app's own page instead, which
+/// lists what reaches the person and keeps the way to the system's settings at
+/// its top. Off, the row is what it was before pushes were built.
+class const _NotificationsRow({required final VoidCallback onPushSettings}) extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final L(:notificationSettings) = L.of(context);
+    if (pushesOn(context, listen: true)) {
+      return ListTile(
+        key: AppKeys.pushSettings,
+        leading: const Icon(Icons.notifications_rounded),
+        title: Text(notificationSettings),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onPushSettings,
+      );
+    }
     return FutureBuilder<bool>(
       future: hasNotificationsPermission(Theme.of(context).platform),
       builder: (context, snapshot) {
