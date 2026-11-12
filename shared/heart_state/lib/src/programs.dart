@@ -662,7 +662,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     final edited =
         rules.length != current.rules.length || current.phases.any((phase) => !phase.sessions.contains(session.id));
     final local = Program.fromJson({
-      ...current.copyWith(rules: rules, phases: phases).toMap(),
+      ...current.copyWith(rules: rules, phases: phases).carrying(current).toMap(),
       'sessions': [...current.sessions, session.id],
       'joined': {
         for (final MapEntry(:key, :value) in current.joined.entries) key: value.toUtc().toIso8601String(),
@@ -750,6 +750,9 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     final uid = userId;
     final id = program.id;
     if (uid == null || id == null) return program;
+    // a copy made with copyWith loses who sent it, its wait and its revisions
+    // (#557, #558): they come back from the program as it's kept
+    if (_programs[id] case final Program kept) program = program.carrying(kept);
 
     await _service.storeProgram(program, uid);
     await _owe(.program, id, .edited, programId: id);
@@ -1738,4 +1741,22 @@ extension ProgramLife on Program {
 
   /// Followed: neither stopped nor waiting to be started.
   bool get live => !archived && !waits;
+}
+
+/// What a coach's copy carries that [Program.copyWith] doesn't: who sent it,
+/// that it waits, and the revisions a shared edit starts from (#557, #558).
+const _coachKeys = ['coachId', 'coachName', 'waitingSince', 'revision', 'sessionRevisions'];
+
+extension CoachCarry on Program {
+  /// This program, with what [kept] says about its coach where this one has
+  /// lost it. A field this one still holds stays its own.
+  Program carrying(Program kept) {
+    if (coachId != null || kept.coachId == null) return this;
+    final from = kept.toMap();
+    return Program.fromJson({
+      ...toMap(),
+      for (final key in _coachKeys)
+        if (from[key] != null) key: from[key],
+    });
+  }
 }
