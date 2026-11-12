@@ -22,6 +22,16 @@ abstract final class Router {
   static const devices = 'v1/devices';
   static const deviceRemovals = 'v1/devices/removals';
   static const pushSettings = 'v1/push/settings';
+  static const threads = 'v1/threads';
+
+  /// The one thread of a connection, opened on the first ask (#556).
+  static String connectionThread(String connectionId) => '${connection(connectionId)}/thread';
+
+  static String thread(String threadId) => '$threads/$threadId';
+
+  static String threadItems(String threadId) => '${thread(threadId)}/items';
+
+  static String threadRead(String threadId) => '${thread(threadId)}/read';
 
   /// A push topic's setting. Topics are the server's words, dotted
   /// (`coaching.message`), and one is held to that shape before it reaches a

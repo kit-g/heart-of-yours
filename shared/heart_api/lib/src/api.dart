@@ -22,6 +22,7 @@ part 'routes/roster.dart';
 part 'routes/library.dart';
 part 'routes/push.dart';
 part 'routes/keys.dart';
+part 'routes/threads.dart';
 part 'router.dart';
 
 class Api
@@ -39,7 +40,8 @@ class Api
         _RosterRoutes,
         _LibraryRoutes,
         _PushRoutes,
-        _KeyRoutes
+        _KeyRoutes,
+        _ThreadRoutes
     implements
         AccountService,
         AnomalyService,

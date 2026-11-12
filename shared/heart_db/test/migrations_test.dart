@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 31);
+          expect(await userVersion(db), 32);
           expect(
             await tables(db),
             {
@@ -165,6 +165,8 @@ void main() {
               'go_easy',
               'anomalies',
               'workout_plans',
+              'threads',
+              'thread_items',
             },
           );
 
@@ -521,7 +523,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 31);
+          expect(await userVersion(db), 32);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -747,7 +749,7 @@ void main() {
 
       await LocalDatabase.init();
       db = await raw();
-      expect(await userVersion(db), 31);
+      expect(await userVersion(db), 32);
       expect(
         await columns(db, 'program_actions'),
         allOf(containsPair('exercise_id', 'TEXT'), containsPair('slot', 'TEXT'), containsPair('stage', 'INTEGER')),
@@ -766,13 +768,33 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 31);
+    expect(await userVersion(db), 32);
     expect(
       await columns(db, 'anomalies'),
       allOf(containsPair('set_id', 'TEXT'), containsPair('status', 'TEXT'), containsPair('synced', 'INTEGER')),
     );
     expect(await indexesOn(db, 'anomalies'), containsAll({'anomalies_set_idx', 'anomalies_workout_idx'}));
     expect(await db.query('anomalies'), isEmpty);
+    await db.close();
+  });
+
+  test('v32 keeps threads and their items, and a store from before holds none (#556)', () async {
+    await LocalDatabase.init(version: 31);
+    var db = await raw();
+    expect(await tables(db), isNot(contains('threads')));
+    expect(await tables(db), isNot(contains('thread_items')));
+    await db.close();
+
+    await LocalDatabase.init();
+    db = await raw();
+    expect(await userVersion(db), 32);
+    expect(
+      await columns(db, 'thread_items'),
+      allOf(containsPair('content', 'TEXT'), containsPair('position', 'INTEGER'), containsPair('pending', 'INTEGER')),
+    );
+    expect(await columns(db, 'threads'), allOf(containsPair('unread', 'INTEGER'), containsPair('cleared_at', 'TEXT')));
+    expect(await indexesOn(db, 'thread_items'), contains('thread_items_thread'));
+    expect(await db.query('thread_items'), isEmpty);
     await db.close();
   });
 
@@ -786,7 +808,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 31);
+    expect(await userVersion(db), 32);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
@@ -840,7 +862,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 31);
+          expect(await userVersion(db), 32);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');
