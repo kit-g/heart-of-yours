@@ -37,10 +37,11 @@ abstract interface class ClientProgramService {
   Future<void> revertClientChange(String studentId, String programId, String changeId);
 }
 
-/// A coach's save that didn't land: the client changed the same session (or
-/// the program's own fields) since the coach opened it, or the save never
-/// arrived ([unsent]). Nothing was saved; the coach's version waits here
-/// until they keep it or let it go.
+/// A save to a copy two people edit that didn't land: the other person
+/// changed the same session (or the program's own fields) first, or the save
+/// never arrived ([unsent]). Nothing was saved; the version made here waits
+/// until it is kept or let go. The coach's on a client's copy
+/// ([ClientPrograms]), the student's on their own (`Programs`).
 final class ProgramConflict {
   final String programId;
 

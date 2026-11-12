@@ -632,4 +632,19 @@ void main() {
       expect(stored.warmupScheme, [(percent: 45, reps: 5), (percent: 75, reps: 2)]);
     });
   });
+
+  group("when the user last looked at a coach's changes (#558)", () {
+    test('is nothing until set, then the time, per program, and notifies', () async {
+      await sut.init(locale: const Locale('en', 'US'));
+      var notified = 0;
+      sut.addListener(() => notified++);
+
+      expect(sut.programSeen('p1'), isNull);
+      await sut.setProgramSeen('p1', DateTime.utc(2026, 11, 12, 9));
+
+      expect(sut.programSeen('p1'), DateTime.utc(2026, 11, 12, 9));
+      expect(sut.programSeen('p2'), isNull);
+      expect(notified, 1);
+    });
+  });
 }

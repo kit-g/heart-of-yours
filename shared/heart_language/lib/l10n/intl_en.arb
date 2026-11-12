@@ -5904,5 +5904,9 @@
   "coachingReviewShorter": "Shorter",
   "@coachingReviewShorter": {"description": "A timed or distance set done shorter than planned (#559)", "type": "text", "placeholders": {}},
   "coachingCopyRefused": "You can't change this program now: coaching {name} is paused or over. Yours isn't saved.",
-  "@coachingCopyRefused": {"description": "The coach's edit was refused: the connection with {name} is paused or ended (#558)", "type": "text", "placeholders": {"name": {"type": "String"}}}
+  "@coachingCopyRefused": {"description": "The coach's edit was refused: the connection with {name} is paused or ended (#558)", "type": "text", "placeholders": {"name": {"type": "String"}}},
+  "programCoachChangesMore": "{change} · +{count}",
+  "@programCoachChangesMore": {"description": "The latest change a coach made to the student's copy of a program, and how many more there are since the student last looked (#558)", "type": "text", "placeholders": {"change": {"type": "String"}, "count": {"type": "int"}}},
+  "programCoachChangesSeen": "Mark as seen",
+  "@programCoachChangesSeen": {"description": "Tooltip: dismisses the line saying what the coach changed in a program (#558)", "type": "text", "placeholders": {}}
 }

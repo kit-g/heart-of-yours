@@ -50,4 +50,9 @@ class RemoteTemplateFiling implements RemoteTemplateFilingService {
 
   @override
   Future<Template> getTemplate(String templateId) => _api.getTemplate(templateId);
+
+  @override
+  Future<Template> editSharedTemplate(Template template, {required int baseRevision, required String changeId}) {
+    return _api.editTemplate(template, baseRevision: baseRevision, changeId: changeId);
+  }
 }

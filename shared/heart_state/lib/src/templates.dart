@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import 'analytics.dart';
+import 'client_programs.dart' show isProgramChanged;
 import 'remote.dart';
 import 'template_drafting.dart';
 
@@ -42,6 +43,23 @@ abstract interface class RemoteTemplateFilingService {
   /// Here rather than on `RemoteTemplateService`, which is the server's
   /// contract and has no such call.
   Future<Template> getTemplate(String templateId);
+
+  /// A session of a coach's copy (#558), from the revision it was read at
+  /// ([baseRevision]), under [changeId] so a retry writes once. Throws
+  /// `{'code': 'program_changed'}` when the coach changed it since.
+  Future<Template> editSharedTemplate(Template template, {required int baseRevision, required String changeId});
+}
+
+/// The sessions of copies two people edit (#558), which [Templates] sends from
+/// the revision they were read at. The programs know which those are.
+abstract interface class SharedSessions {
+  /// The revision [session] was last read at, when it is a session of a
+  /// coach's copy; null for any other template.
+  int? baseRevisionOf(Template session);
+
+  /// The coach changed [mine]'s session first: nothing was saved, and the
+  /// user's version waits to be chosen or let go.
+  Future<void> beaten(Template mine);
 }
 
 class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implements SignOutStateSentry {
@@ -76,6 +94,9 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
   final Analytics? analytics;
 
   String? userId;
+
+  /// Set once the programs exist, which come after the templates.
+  SharedSessions? shared;
 
   bool _ownLoaded = false;
   bool _samplesLoaded = false;
@@ -328,9 +349,11 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
     if (!_remote.allowed) return template;
 
     try {
-      final save = template.local ? _remoteService.saveTemplate : _remoteService.editTemplate;
-
-      final saved = await save(template);
+      final saved = await switch ((template.local, shared?.baseRevisionOf(template))) {
+        (true, _) => _remoteService.saveTemplate(template),
+        (false, final int base) => _filingService.editSharedTemplate(template, baseRevision: base, changeId: uuidV7()),
+        (false, null) => _remoteService.editTemplate(template),
+      };
       _swap(template, saved);
       if (userId case String id) {
         // A locally-created template is persisted under a client-generated
@@ -343,9 +366,24 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
       }
       return saved;
     } catch (error, stacktrace) {
+      if (isProgramChanged(error)) {
+        // the coach's version comes back here, and the user's waits to be chosen
+        await shared?.beaten(template);
+        await pull([template.id]);
+        return lookup(template.id) ?? template;
+      }
       onError?.call(error, stacktrace: stacktrace);
       return template;
     }
+  }
+
+  /// Sends [template] as it is, over the one held: the user's version of a
+  /// shared session, chosen over the coach's (#558).
+  Future<Template> keep(Template template) async {
+    _templates.removeWhere((each) => each.id == template.id);
+    final saved = await _save(template);
+    notifyListeners();
+    return saved;
   }
 
   Future<void> delete(Template template) {
