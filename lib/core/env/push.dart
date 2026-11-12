@@ -10,8 +10,9 @@ import 'package:logging/logging.dart';
 
 final _logger = Logger('Push');
 
-/// Where a silent push that arrived with the app in the background waits for
-/// the next time it is in front (a list of JSON objects, oldest first).
+/// Where a push that arrived with the app in the background waits for the
+/// next time it is in front (a list of JSON objects, oldest first): its topic
+/// and the ids it names, never its words.
 const _pendingPushes = 'push.pending';
 
 /// Whether this install ever let FCM make a token, so that turning off has one
@@ -46,8 +47,8 @@ abstract interface class PushClient {
   /// The push whose tap launched the app, once.
   Future<Push?> launchedBy();
 
-  /// The silent pushes that arrived while the app was in the background,
-  /// oldest first. Asking clears them.
+  /// The pushes that arrived while the app was in the background, silent and
+  /// visible alike, oldest first. Asking clears them.
   Future<List<Push>> takePending();
 
   /// Makes the channels the server's pushes name, in the person's language
@@ -67,15 +68,17 @@ abstract interface class PushClient {
 }
 
 /// The background isolate FCM starts for a push that arrives with the app not
-/// in front. Visible pushes the system shows by itself; a silent one is kept
-/// for the app, which fetches what it names the next time it is in front.
+/// in front. Every one is kept for the app, which fetches what it names the
+/// next time it is in front: a visible one the system shows by itself, but
+/// the person may open Heart from its icon rather than the notification, and
+/// the program it announced should be there all the same. Only the data is
+/// kept, never the title the system showed.
 ///
 /// Fetching here would mean the whole app (its database, its account, its
 /// token) in an isolate of its own for a push that asks only for freshness, so
 /// it waits.
 @pragma('vm:entry-point')
 Future<void> _onBackgroundPush(RemoteMessage message) async {
-  if (message.notification != null) return;
   final push = Push.of(message.data);
   if (push == null) return;
   final prefs = await SharedPreferences.getInstance();
