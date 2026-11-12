@@ -352,6 +352,109 @@ void main() {
     });
   });
 
+  group("a coach's copy both of them edit (#558)", () {
+    final shared = Program.fromJson({
+      ...Program(
+        id: 'c1',
+        name: 'Strength block',
+        perWeek: 2,
+        weeks: 4,
+        sessions: const ['t3'],
+        createdAt: DateTime.utc(2026, 11, 10),
+      ).toMap(),
+      'coachId': 'coach-muffin',
+      'coachName': 'Muffin',
+      'revision': 2,
+      'sessionRevisions': {'t3': 1},
+    });
+
+    ProgramChange change(String id, {String? sessionId, Map<String, dynamic>? after}) {
+      return ProgramChange(
+        id: id,
+        programId: 'c1',
+        actorId: 'coach-muffin',
+        kind: 'edit',
+        revision: 2,
+        sessionId: sessionId,
+        before: after,
+        after: after,
+        at: DateTime.now().subtract(const Duration(hours: 1)),
+        cursor: id,
+      );
+    }
+
+    /// [shared] followed, with what the coach changed in it.
+    void withShared({bool yourCoach = true, List<ProgramChange> changes = const []}) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-programs': 'on',
+        if (yourCoach) 'feature-yourCoach': 'on',
+      });
+      when(db.getPrograms(userId)).thenAnswer((_) async => [shared]);
+      when(api.getPrograms()).thenAnswer((_) async => [shared]);
+      when(api.getProgram('c1')).thenAnswer((_) async => shared);
+      when(db.getTemplates(userId)).thenAnswer((_) async => [template('t3', 0, 'Day A', programId: 'c1')]);
+      when(api.getProgramChanges('c1', since: anyNamed('since'))).thenAnswer(
+        (i) async => (items: i.namedArguments[#since] == null ? changes : <ProgramChange>[], cursor: null),
+      );
+    }
+
+    testWidgets('its band says what the coach changed since the user looked, until they say they saw it', (
+      tester,
+    ) async {
+      withShared(
+        changes: [
+          change('ch1'),
+          change('ch2', sessionId: 't3', after: {'name': 'Day A'}),
+        ],
+      );
+      await openWorkoutTab(tester);
+
+      final line = find.byKey(AppKeys.programCoachChanges('c1'));
+      expect(find.descendant(of: find.byKey(AppKeys.programBand('c1')), matching: line), findsOneWidget);
+      expect(find.descendant(of: line, matching: find.text('Muffin changed Day A · +1')), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.programCoachChangesSeen('c1'));
+      await tester.pumpTimes();
+      expect(line, findsNothing);
+    });
+
+    testWidgets('with Your coach off, the band says nothing of it', (tester) async {
+      withShared(yourCoach: false, changes: [change('ch1')]);
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.programBand('c1')), findsOneWidget);
+      expect(find.byKey(AppKeys.programCoachChanges('c1')), findsNothing);
+    });
+
+    testWidgets("a session the coach changed first shows both on its page, and Use mine sends the user's again", (
+      tester,
+    ) async {
+      withShared();
+      when(
+        api.editTemplate(any, baseRevision: anyNamed('baseRevision'), changeId: anyNamed('changeId')),
+      ).thenAnswer((i) async => i.positionalArguments.single as Template);
+      await openWorkoutTab(tester);
+      await tester.tap(find.text('Strength block'));
+      await tester.pumpTimes();
+
+      final context = tester.element(find.byType(ProgramPage));
+      await Programs.of(context).beaten(template('t3', 0, 'Day A (mine)', programId: 'c1'));
+      await tester.pumpTimes();
+      expect(find.text("Muffin changed Day A (mine) since you opened it. Yours isn't saved."), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.coachingCopyKeepMine);
+      await tester.pumpTimes();
+
+      final [sent, base] = verify(
+        api.editTemplate(captureAny, baseRevision: captureAnyNamed('baseRevision'), changeId: anyNamed('changeId')),
+      ).captured;
+      expect((sent as Template).name, 'Day A (mine)');
+      expect(base, 1);
+      expect(find.byKey(AppKeys.coachingCopyConflict), findsNothing);
+    });
+  });
+
   group('not today (#312)', () {
     testWidgets('one tap sets the next session aside, the band moves on, and Undo takes it back', (tester) async {
       answer(.on);

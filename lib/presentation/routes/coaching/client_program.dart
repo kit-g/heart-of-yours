@@ -108,7 +108,12 @@ class _CopyView extends StatelessWidget {
             child: Text(l.coachingCopyReadOnly, style: textTheme.bodyMedium),
           ),
         if (programs.conflict(program.id!) case final ProgramConflict conflict)
-          _ConflictCard(conflict: conflict, client: client, sessions: view.sessions),
+          ProgramConflictCard(
+            conflict: conflict,
+            name: _clientName(l, client),
+            onKeepTheirs: () => programs.dropMine(conflict.programId),
+            onKeepMine: () => programs.keepMine(client.studentId, conflict.programId),
+          ),
         Padding(
           padding: const .fromLTRB(16, 16, 16, 4),
           child: Text(l.programSessions, style: textTheme.titleMedium),
@@ -187,70 +192,6 @@ class _CopyView extends StatelessWidget {
   }
 }
 
-/// A save of the coach's that didn't land: the client changed the same thing
-/// first, with a choice between the two, or it never arrived, to send again
-/// or drop.
-class _ConflictCard extends StatelessWidget {
-  final ProgramConflict conflict;
-  final ClientSummary client;
-  final List<Template> sessions;
-
-  const new({required this.conflict, required this.client, required this.sessions});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = L.of(context);
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    final programs = ClientPrograms.of(context);
-    final name = _clientName(l, client);
-    final words = switch (conflict) {
-      ProgramConflict(refused: true) => l.coachingCopyRefused(name),
-      ProgramConflict(unsent: true) => l.coachingCopyUnsent,
-      ProgramConflict(:final Template session) => l.coachingCopyConflictSession(name, session.name ?? ''),
-      _ => l.coachingCopyConflictFields(name),
-    };
-    return Card(
-      key: AppKeys.coachingCopyConflict,
-      margin: const .fromLTRB(16, 12, 16, 0),
-      color: colorScheme.errorContainer,
-      child: Padding(
-        padding: const .fromLTRB(16, 12, 8, 4),
-        child: Column(
-          crossAxisAlignment: .stretch,
-          children: [
-            Text(words, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer)),
-            Row(
-              mainAxisAlignment: .end,
-              children: [
-                TextButton(
-                  key: AppKeys.coachingCopyKeepTheirs,
-                  style: TextButton.styleFrom(foregroundColor: colorScheme.onErrorContainer),
-                  onPressed: () => programs.dropMine(conflict.programId),
-                  child: Text(switch (conflict) {
-                    ProgramConflict(unsent: true) || ProgramConflict(refused: true) => l.coachingCopyDiscard,
-                    _ => l.coachingCopyKeepTheirs,
-                  }),
-                ),
-                // a refusal has nothing to send again
-                if (!conflict.refused)
-                  TextButton(
-                    key: AppKeys.coachingCopyKeepMine,
-                    style: TextButton.styleFrom(foregroundColor: colorScheme.onErrorContainer),
-                    onPressed: () => programs.keepMine(client.studentId, conflict.programId),
-                    child: Text(switch (conflict.unsent) {
-                      true => l.retry,
-                      false => l.coachingCopyKeepMine,
-                    }),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// One change to the copy: who, what, when, and the way to put it back.
 class _ChangeTile extends StatelessWidget {
   final ProgramChange change;
@@ -266,16 +207,7 @@ class _ChangeTile extends StatelessWidget {
       final String id when id == client.studentId => _clientName(l, client),
       _ => l.coachingCopyYou,
     };
-    final session = switch ((change.after ?? change.before)?['name']) {
-      final String name when name.trim().isNotEmpty => name.trim(),
-      _ => '',
-    };
-    final what = switch (change) {
-      ProgramChange(sessionId: null) => l.coachingCopyChangedProgram(who),
-      ProgramChange(before: null) => l.coachingCopyAddedSession(who, session),
-      ProgramChange(after: null) => l.coachingCopyRemovedSession(who, session),
-      _ => l.coachingCopyChangedSession(who, session),
-    };
+    final what = describeProgramChange(l, change, who: who);
     final when = DateFormat.MMMEd(l.localeName).add_jm().format(change.at.toLocal());
     return ListTile(
       key: AppKeys.coachingCopyChange(change.id),

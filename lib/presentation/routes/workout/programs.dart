@@ -344,6 +344,7 @@ class _ProgramBand extends StatelessWidget {
                     ),
                 ],
               ),
+              ?_coachChanges(context, program),
               if (!finished && sessions.isNotEmpty)
                 Wrap(
                   spacing: 6,
