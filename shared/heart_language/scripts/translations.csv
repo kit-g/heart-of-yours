@@ -1583,3 +1583,4 @@ coachingReviewAdded,A set done that the plan didn't ask for (#559),Added,Added,�
 coachingReviewNotPlanned,An exercise done that the plan didn't have (#559),Not in the plan,Not in the plan,Не по плану,Fuera del plan,Hors plan
 coachingReviewAsPlanned,An exercise done exactly as planned (#559),As planned,As planned,По плану,Según el plan,Comme prévu
 coachingReviewUntitled,Title of a client's workout with no name (#559),Workout,Workout,Тренировка,Entrenamiento,Séance
+coachingReviewShorter,A timed or distance set done shorter than planned (#559),Shorter,Shorter,Короче,Más corto,Plus court

@@ -5816,5 +5816,7 @@
   "coachingReviewAsPlanned": "As planned",
   "@coachingReviewAsPlanned": {"description": "An exercise done exactly as planned (#559)", "type": "text", "placeholders": {}},
   "coachingReviewUntitled": "Workout",
-  "@coachingReviewUntitled": {"description": "Title of a client's workout with no name (#559)", "type": "text", "placeholders": {}}
+  "@coachingReviewUntitled": {"description": "Title of a client's workout with no name (#559)", "type": "text", "placeholders": {}},
+  "coachingReviewShorter": "Shorter",
+  "@coachingReviewShorter": {"description": "A timed or distance set done shorter than planned (#559)", "type": "text", "placeholders": {}}
 }

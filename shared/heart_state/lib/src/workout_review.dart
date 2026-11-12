@@ -12,6 +12,9 @@ enum SetOutcome {
   /// Done, with fewer reps than planned.
   fewer,
 
+  /// Done, held or covered for less time or distance than planned.
+  shorter,
+
   /// Planned, and not done.
   skipped,
 
@@ -180,5 +183,9 @@ SetOutcome _compare(PlannedNumbers planned, ExerciseSet done) {
     return .lighter;
   }
   if ((planned.reps, done.reps) case (final num asked, final num did) when did < asked) return .fewer;
+  if ((planned.duration, done.duration) case (final num asked, final num did) when did < asked) return .shorter;
+  if ((planned.distance, done.distance) case (final num asked, final num did) when did < asked - _tolerance) {
+    return .shorter;
+  }
   return .asked;
 }
