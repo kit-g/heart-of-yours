@@ -120,10 +120,7 @@ class _Item extends StatelessWidget {
 /// The connection a conversation belongs to, as this device last read it.
 Connection? _connectionOf(BuildContext context, String? connectionId, {bool listen = false}) {
   if (connectionId == null) return null;
-  final coaching = switch (listen) {
-    true => Coaching.watch(context),
-    false => Coaching.of(context),
-  };
+  final coaching = listen ? Coaching.watch(context) : Coaching.of(context);
   return coaching.all.where((each) => each.connectionId == connectionId).firstOrNull;
 }
 
@@ -131,7 +128,7 @@ Connection? _connectionOf(BuildContext context, String? connectionId, {bool list
 bool _blockable(Connection? connection) {
   return switch (connection?.status) {
     ConnectionStatus.pending || ConnectionStatus.active || ConnectionStatus.paused => true,
-    _ => false,
+    ConnectionStatus.declined || ConnectionStatus.severed || ConnectionStatus.blocked || null => false,
   };
 }
 
@@ -140,7 +137,7 @@ bool _blockable(Connection? connection) {
 bool _ended(Connection? connection) {
   return switch (connection?.status) {
     ConnectionStatus.blocked || ConnectionStatus.severed || ConnectionStatus.declined => true,
-    _ => false,
+    ConnectionStatus.pending || ConnectionStatus.active || ConnectionStatus.paused || null => false,
   };
 }
 
@@ -210,10 +207,7 @@ Future<void> showReportSheet(BuildContext context, Thread thread, {required Stri
       name: name,
       theirs: theirs,
       one: message != null,
-      connection: switch (_blockable(connection)) {
-        true => connection,
-        false => null,
-      },
+      connection: _blockable(connection) ? connection : null,
       messages: messages,
       coaching: Coaching.of(context),
       messenger: ScaffoldMessenger.of(context),
@@ -244,7 +238,7 @@ class _ReportSheet extends StatefulWidget {
     required this.name,
     required this.theirs,
     required this.one,
-    required this.connection,
+    this.connection,
     required this.messages,
     required this.coaching,
     required this.messenger,
@@ -260,12 +254,17 @@ class _ReportSheetState extends State<_ReportSheet> {
   final _block = ValueNotifier(false);
   final _sending = ValueNotifier(false);
 
+  /// The last send failed: said here, since the sheet covers the page's
+  /// snackbars.
+  final _failed = ValueNotifier(false);
+
   @override
   void dispose() {
     _reason.dispose();
     _include.dispose();
     _block.dispose();
     _sending.dispose();
+    _failed.dispose();
     super.dispose();
   }
 
@@ -274,23 +273,23 @@ class _ReportSheetState extends State<_ReportSheet> {
     if (reason == null) return;
     final l = L.of(context);
     final navigator = Navigator.of(context);
+    final route = ModalRoute.of(context);
     final _ReportSheet(:thread, :theirs, :connection, :messenger, :name) = widget;
     _sending.value = true;
+    _failed.value = false;
     try {
-      await widget.messages.report(
-        thread,
-        reason,
-        messages: switch (_include.value) {
-          true => theirs,
-          false => const [],
-        },
-      );
+      await widget.messages.report(thread, reason, messages: _include.value ? theirs : const []);
     } catch (_) {
-      if (mounted) _sending.value = false;
-      messenger.snack(l.reportFailed);
+      if (!mounted) {
+        messenger.snack(l.reportFailed);
+        return;
+      }
+      _sending.value = false;
+      _failed.value = true;
       return;
     }
-    navigator.pop();
+    // closed meanwhile by the person: popping now would close what is under it
+    if (mounted && (route?.isCurrent ?? false)) navigator.pop();
     switch ((_block.value, connection)) {
       case (true, final Connection connection):
         try {
@@ -362,6 +361,12 @@ class _ReportSheetState extends State<_ReportSheet> {
                   onChanged: (on) => _block.value = on,
                 ),
               ),
+            ValueListenableBuilder(
+              valueListenable: _failed,
+              builder: (context, failed, _) => failed
+                  ? Text(l.reportFailed, style: textTheme.bodyMedium?.copyWith(color: colorScheme.error))
+                  : const SizedBox.shrink(),
+            ),
             // sent once a reason is picked: until then there is nothing to send
             ListenableBuilder(
               listenable: Listenable.merge([_reason, _sending]),

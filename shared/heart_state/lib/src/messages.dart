@@ -320,27 +320,76 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   /// What came before a deletion of the conversation, by either person, goes
   /// from this device too: ciphertext whose keys are here is words still.
   Future<void> _forgetCleared(String userId, List<Thread> threads) async {
-    for (final thread in threads) {
-      final cleared = thread.clearedAt;
-      if (cleared == null || _forgotten[thread.id] == cleared) continue;
-      await _writes(thread.id, () async {
-        final stored = await _local.getThreadItems(userId, thread.id);
-        final gone = [
-          for (final (:item, position: _, :pending) in stored)
-            if (!pending && !item.createdAt.isAfter(cleared)) item.id,
-        ];
-        if (gone.isNotEmpty) await _local.deleteThreadItems(userId, gone);
-      });
-      _forgotten[thread.id] = cleared;
-      if (_views.containsKey(thread.id)) await _show(thread.id);
-    }
+    await Future.wait([
+      for (final thread in threads)
+        if (thread.clearedAt case final DateTime cleared when _forgotten[thread.id] != cleared)
+          _forgetBefore(userId, thread.id, cleared),
+    ]);
   }
 
-  /// Deletes [threadId]'s messages for both people: here, and on the server,
-  /// which tells the other person. Throws what the server threw.
+  /// Drops what [threadId] held from before [cleared], or all the server
+  /// placed when [cleared] is null: what waits to be sent stays.
+  Future<void> _forgetBefore(String userId, String threadId, DateTime? cleared) async {
+    await _writes(threadId, () async {
+      final stored = await _local.getThreadItems(userId, threadId);
+      final gone = [
+        for (final (:item, position: _, :pending) in stored)
+          if (!pending && (cleared == null || !item.createdAt.isAfter(cleared))) item.id,
+      ];
+      if (gone.isNotEmpty) await _local.deleteThreadItems(userId, gone);
+    });
+    if (cleared != null) _forgotten[threadId] = cleared;
+    // what is left starts afresh: whether more wait is asked again
+    _older.remove(threadId);
+    if (_views.containsKey(threadId)) await _show(threadId);
+  }
+
+  /// Stores what a read brought, less what a deletion this device knows of
+  /// has taken: a read under way when the conversation was deleted would
+  /// bring it back.
+  Future<void> _storeRead(String userId, String threadId, List<StoredItem> items) {
+    return _writes(threadId, () async {
+      final cleared = lookup(threadId)?.clearedAt;
+      final kept = [
+        for (final each in items)
+          if (cleared == null || each.pending || each.item.createdAt.isAfter(cleared)) each,
+      ];
+      if (kept.isNotEmpty) await _local.storeThreadItems(userId, kept);
+    });
+  }
+
+  /// Deletes [threadId]'s messages for both people: on the server, which
+  /// tells the other person, and here at once, whatever the inbox read after
+  /// it says. Throws what the server threw.
   Future<void> clear(String threadId) async {
+    final userId = _userId;
+    if (userId == null) throw StateError('no account');
     await _service.clearThread(threadId);
+    if (userId != _userId) return;
+    if (lookup(threadId) case final Thread thread) {
+      final cleared = _copy(thread, unread: 0, clearedAt: _now().toUtc(), clearedBy: userId);
+      await _local.storeThread(userId, cleared);
+      _setThreads([for (final each in _threads) each.id == threadId ? cleared : each]);
+      notifyListeners();
+    }
+    // everything the server held went: by its clock, which this one may not
+    // match, so not by time
+    await _forgetBefore(userId, threadId, null);
     await load();
+  }
+
+  static Thread _copy(Thread thread, {int? unread, DateTime? clearedAt, String? clearedBy}) {
+    return Thread(
+      id: thread.id,
+      connectionId: thread.connectionId,
+      otherId: thread.otherId,
+      otherName: thread.otherName,
+      otherAvatar: thread.otherAvatar,
+      unread: unread ?? thread.unread,
+      lastAt: thread.lastAt,
+      clearedAt: clearedAt ?? thread.clearedAt,
+      clearedBy: clearedBy ?? thread.clearedBy,
+    );
   }
 
   /// Reports the other person of [thread], with [messages] of theirs this
@@ -469,7 +518,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
           _older[threadId] = page.cursor != null;
       }
       if (userId != _userId) return;
-      if (arrived.isNotEmpty) await _writes(threadId, () => _local.storeThreadItems(userId, arrived));
+      if (arrived.isNotEmpty) await _storeRead(userId, threadId, arrived);
       await _show(threadId, status: .loaded);
       // a key may wait in the queue with no push to say so: what it opens
       // shows once it is taken
@@ -509,13 +558,10 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       }
       final page = await _service.getThreadItems(threadId, before: cursor, limit: _page);
       if (userId != _userId) return;
-      await _writes(
-        threadId,
-        () => _local.storeThreadItems(userId, [
-          for (final (index, item) in page.items.indexed)
-            (item: item, position: oldest.position! - 1 - index, pending: false),
-        ]),
-      );
+      await _storeRead(userId, threadId, [
+        for (final (index, item) in page.items.indexed)
+          (item: item, position: oldest.position! - 1 - index, pending: false),
+      ]);
       _older[threadId] = page.cursor != null;
       await _show(threadId);
     } catch (error, stacktrace) {
@@ -626,24 +672,10 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       await _service.markThreadRead(threadId, cursor);
       _marked[threadId] = cursor;
       if (userId != _userId || thread.unread == 0) return;
-      final read = Thread(
-        id: thread.id,
-        connectionId: thread.connectionId,
-        otherId: thread.otherId,
-        otherName: thread.otherName,
-        otherAvatar: thread.otherAvatar,
-        unread: 0,
-        lastAt: thread.lastAt,
-        clearedAt: thread.clearedAt,
-        clearedBy: thread.clearedBy,
-      );
+      final read = _copy(thread, unread: 0);
       await _local.storeThread(userId, read);
       _setThreads([
-        for (final each in _threads)
-          switch (each.id == threadId) {
-            true => read,
-            false => each,
-          },
+        for (final each in _threads) each.id == threadId ? read : each,
       ]);
       notifyListeners();
     } catch (error, stacktrace) {

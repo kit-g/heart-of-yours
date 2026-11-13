@@ -1,11 +1,5 @@
 part of '../api.dart';
 
-/// Coaching messages (heart-of-yours#556): one thread per connection, whose
-/// items are ciphertext the server never reads.
-///
-/// A refusal is thrown whole, as everywhere, so a caller branches on its
-/// `code` (`thread_closed`, `rate_limited` with `retryAfter`, `stale_cursor`,
-/// `not_implemented`).
 /// A reported message: its words in the clear, the reporter's franking key
 /// for them, and what the server answered when it was sent.
 typedef ReportedWords = ({
@@ -19,6 +13,12 @@ typedef ReportedWords = ({
   DateTime createdAt,
 });
 
+/// Coaching messages (heart-of-yours#556): one thread per connection, whose
+/// items are ciphertext the server never reads.
+///
+/// A refusal is thrown whole, as everywhere, so a caller branches on its
+/// `code` (`thread_closed`, `rate_limited` with `retryAfter`, `stale_cursor`,
+/// `not_implemented`).
 mixin _ThreadRoutes on Requests {
   /// The one thread of [connectionId], opened the first time it is asked for.
   Future<Thread> openThread(String connectionId) async {

@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 /// Where one message sits among its neighbours: whether a new day starts at
-/// it, and whether it starts or ends a run of one person's messages, which
-/// are drawn close together as one turn of the conversation.
-typedef MessagePlace = ({bool newDay, bool firstOfRun, bool lastOfRun});
+/// it, and whether it starts a run of one person's messages, which are drawn
+/// close together as one turn of the conversation.
+typedef MessagePlace = ({bool newDay, bool firstOfRun});
 
 /// A run breaks where the writer changes, where a day ends, and where more
 /// than [pause] passes between two messages.
@@ -26,10 +26,6 @@ class MessageRuns {
           firstOfRun: switch (index) {
             0 => true,
             _ => _breaks(messages[index - 1], message),
-          },
-          lastOfRun: switch (index == messages.length - 1) {
-            true => true,
-            false => _breaks(message, messages[index + 1]),
           },
         ),
     ];

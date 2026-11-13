@@ -52,6 +52,27 @@ class ThreadPage extends StatelessWidget {
   }
 }
 
+/// [child] with how many messages wait unread, as the inbox shows them, the
+/// count said as unread to a screen reader. Nothing over it at none.
+class UnreadBadge extends StatelessWidget {
+  final int count;
+  final Widget child;
+
+  const new({super.key, required this.count, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (count == 0) return child;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Badge(
+      label: Text('$count', semanticsLabel: L.of(context).messagesUnread(count)),
+      backgroundColor: colorScheme.primary,
+      textColor: colorScheme.onPrimary,
+      child: child,
+    );
+  }
+}
+
 /// How wide a conversation grows: past this, bubbles drift too far apart to
 /// read as a back and forth.
 const threadWidth = 720.0;
@@ -194,10 +215,8 @@ class _Conversation extends StatelessWidget {
     final closed = thread.closed || _ended(_connectionOf(context, connectionId, listen: true));
     // a deletion leaves a line where the messages before it were
     final cleared = switch (messages.lookup(threadId)) {
-      Thread(clearedAt: DateTime(), :final clearedBy) && final inbox => switch (clearedBy == messages.userId) {
-        true => l.messagesClearedByYou,
-        false => l.messagesClearedBy(threadName(context, inbox)),
-      },
+      Thread(clearedAt: DateTime(), :final clearedBy) && final inbox =>
+        clearedBy == messages.userId ? l.messagesClearedByYou : l.messagesClearedBy(threadName(context, inbox)),
       _ => null,
     };
     // newest at the bottom, where the eye and the box are
@@ -344,10 +363,7 @@ class _Bubble extends StatelessWidget {
     // the run's tail
     const round = Radius.circular(18);
     const tight = Radius.circular(6);
-    final top = switch (place.firstOfRun) {
-      true => round,
-      false => tight,
-    };
+    final top = place.firstOfRun ? round : tight;
     final radius = switch (mine) {
       true => BorderRadius.only(topLeft: round, bottomLeft: round, topRight: top, bottomRight: tight),
       false => BorderRadius.only(topRight: round, bottomRight: round, topLeft: top, bottomLeft: tight),
@@ -433,12 +449,13 @@ class _Bubble extends StatelessWidget {
         if (!message.mine) PopupMenuItem(key: AppKeys.messageReport, value: .report, child: Text(l.messagesReport)),
       ],
     );
-    if (!context.mounted) return;
     switch (picked) {
       case .copy:
+        // needs nothing of the bubble, which may have gone meanwhile
         await Clipboard.setData(ClipboardData(text: text));
         messenger?.snack(l.copiedToClipboard);
       case .report:
+        if (!context.mounted) return;
         if (Messages.of(context).lookup(message.item.threadId) case final Thread thread) {
           await showReportSheet(context, thread, name: threadName(context, thread), message: message);
         }

@@ -268,6 +268,16 @@ extension SectionHeaderStyle on ThemeData {
   }
 }
 
+/// Where a menu opens under whatever [context] belongs to, as wide as it.
+/// Measured against the navigator's overlay, as [menuUnderValue] is.
+RelativeRect menuUnder(BuildContext context) {
+  final box = context.findRenderObject();
+  final overlay = Navigator.of(context).overlay?.context.findRenderObject();
+  if (box is! RenderBox || overlay is! RenderBox) return RelativeRect.fill;
+  final rect = box.localToGlobal(Offset.zero, ancestor: overlay) & box.size;
+  return RelativeRect.fromRect(rect.bottomLeft & Size(rect.width, 0), Offset.zero & overlay.size);
+}
+
 /// Where a menu opens off a trailing value: under it, its right edge on the
 /// value's. `Position.position()` hangs a menu off a widget's *left* edge,
 /// which is right for a leading button and wrong for a trailing value, where
@@ -277,15 +287,6 @@ extension SectionHeaderStyle on ThemeData {
 /// the menu out in that overlay, and inside the two-pane shell the overlay
 /// starts after the rail, so a window offset lands the menu a rail's width to
 /// the right of the value.
-/// Where a menu opens under whatever [context] belongs to, as wide as it.
-RelativeRect menuUnder(BuildContext context) {
-  final box = context.findRenderObject();
-  final overlay = Overlay.of(context).context.findRenderObject();
-  if (box is! RenderBox || overlay is! RenderBox) return RelativeRect.fill;
-  final rect = box.localToGlobal(Offset.zero, ancestor: overlay) & box.size;
-  return RelativeRect.fromRect(rect.bottomLeft & Size(rect.width, 0), Offset.zero & overlay.size);
-}
-
 RelativeRect menuUnderValue(BuildContext context, GlobalKey key, {required double width}) {
   final box = key.currentContext?.findRenderObject();
   final overlay = Navigator.of(context).overlay?.context.findRenderObject();

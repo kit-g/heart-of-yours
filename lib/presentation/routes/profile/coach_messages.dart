@@ -16,22 +16,18 @@ class _CoachMessages extends StatelessWidget {
           coach,
     ];
     if (coaches.isEmpty) return const SizedBox.shrink();
-    final unread = Messages.watch(context).unreadIn(coaches.map((each) => each.connectionId));
+    final unread = context.select<Messages, int>(
+      (messages) => messages.unreadIn(coaches.map((each) => each.connectionId)),
+    );
     final tooltip = switch (coaches) {
       [final coach] => l.messagesWith(_coachName(context, coach)),
       _ => l.coachingMessages,
     };
     return IconButton(
       key: AppKeys.profileMessages,
-      tooltip: switch (unread) {
-        0 => tooltip,
-        _ => '$tooltip, ${l.messagesUnread(unread)}',
-      },
+      tooltip: tooltip,
       onPressed: () => _open(context, coaches),
-      icon: switch (unread) {
-        0 => const Icon(Icons.forum_outlined),
-        _ => Badge.count(count: unread, child: const Icon(Icons.forum_outlined)),
-      },
+      icon: UnreadBadge(count: unread, child: const Icon(Icons.forum_outlined)),
     );
   }
 

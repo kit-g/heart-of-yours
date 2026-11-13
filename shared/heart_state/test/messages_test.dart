@@ -221,6 +221,38 @@ void main() {
       expect(store.items[me]!.map((each) => each.item.id), ['mine-0']);
     });
 
+    test('a deletion the server took clears the device even when the inbox can\'t be read after it', () async {
+      server.items = [_item('a', cursor: 'c1')];
+      await messages.load();
+      await messages.open(threadId);
+      server.failThreads = const _Unreachable();
+
+      await messages.clear(threadId);
+
+      expect(messages.thread(threadId).messages, isEmpty);
+      expect(store.items[me], isEmpty);
+      expect(messages.lookup(threadId)!.clearedBy, me);
+    });
+
+    test('a read under way when the conversation was deleted brings none of it back', () async {
+      server.items = [_item('a', cursor: 'c1')];
+      await messages.load();
+      await messages.open(threadId);
+      server.items = [_item('a', cursor: 'c1'), _item('b', cursor: 'c2')];
+      server.holdPage = Completer();
+
+      final reading = messages.pull(threadId);
+      await pumpEventQueue();
+      server.clearedAt = DateTime.utc(2026, 11, 12, 9);
+      final clearing = messages.clear(threadId);
+      await pumpEventQueue();
+      server.holdPage!.complete();
+      await Future.wait([reading, clearing]);
+
+      expect(store.items[me], isEmpty);
+      expect(messages.thread(threadId).messages, isEmpty);
+    });
+
     test('a report carries the reason, and the opened words of the other person alone, with their proof', () async {
       server.items = [
         _item('rude', cursor: 'c1'),
@@ -538,9 +570,12 @@ class _Server implements RemoteThreadService {
     return thread;
   }
 
+  Object? failThreads;
+
   @override
   Future<List<Thread>> getThreads() async {
     calls.add('threads');
+    if (failThreads case final Object failure) throw failure;
     return threads;
   }
 

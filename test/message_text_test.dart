@@ -168,9 +168,9 @@ void main() {
       ]);
 
       expect(places, [
-        (newDay: true, firstOfRun: true, lastOfRun: false),
-        (newDay: false, firstOfRun: false, lastOfRun: false),
-        (newDay: false, firstOfRun: false, lastOfRun: true),
+        (newDay: true, firstOfRun: true),
+        (newDay: false, firstOfRun: false),
+        (newDay: false, firstOfRun: false),
       ]);
     });
 

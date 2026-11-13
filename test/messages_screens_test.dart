@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -308,12 +309,60 @@ void main() {
 
       expect(find.byKey(AppKeys.messageBox), findsNothing);
     });
+
+    testWidgets('a sheet closed while the report goes leaves the conversation open', (tester) async {
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+      server.holdReport = Completer();
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.threadReport));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.reportReason('spam')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.reportSend));
+      await tester.pump();
+
+      await tester.tapAt(const Offset(200, 20));
+      await tester.pumpAndSettle();
+      server.holdReport!.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ThreadPage), findsOneWidget);
+      expect(find.byKey(AppKeys.reportSheet), findsNothing);
+    });
+
+    testWidgets('a report that failed says so on the sheet, which stays', (tester) async {
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+      server.reportFails = true;
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.threadReport));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.reportReason('spam')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.reportSend));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(AppKeys.reportSheet), findsOneWidget);
+      expect(
+        find.descendant(of: find.byKey(AppKeys.reportSheet), matching: find.text("Couldn't send the report.")),
+        findsOneWidget,
+      );
+    });
   });
 
-  testWidgets('unread counts split by whose conversations they are: clients here, coaches none', (tester) async {
-    await messages.load();
+  testWidgets('an unread count shows over its icon, said as unread, and nothing at none', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pump(tester, const UnreadBadge(count: 2, child: Icon(Icons.forum_outlined)));
 
-    await pump(tester, CoachMessagesPage(onYourTraining: () {}, onOpen: (_) {}));
+    expect(find.text('2'), findsOneWidget);
+    expect(find.bySemanticsLabel('Unread: 2'), findsOneWidget);
+
+    await pump(tester, const UnreadBadge(count: 0, child: Icon(Icons.forum_outlined)));
+    expect(find.byType(Badge), findsNothing);
+    handle.dispose();
+  });
+
+  test('unread counts split by whose conversations they are', () async {
+    await messages.load();
 
     expect(messages.unreadIn(coaching.clients.map((each) => each.connectionId)), 2);
     expect(messages.unreadIn(coaching.coaches.map((each) => each.connectionId)), 0);
@@ -446,12 +495,14 @@ class _Server implements RemoteThreadService {
 
   DateTime? clearedAt;
   final reports = <({String reason, List<String> words})>[];
+  Completer<void>? holdReport;
+  bool reportFails = false;
 
   @override
   Future<void> clearThread(String threadId) async {
     calls.add('clear $threadId');
     items = [];
-    clearedAt = DateTime.now().toUtc();
+    clearedAt = DateTime.utc(2026, 11, 12, 9);
   }
 
   @override
@@ -461,6 +512,8 @@ class _Server implements RemoteThreadService {
     required String reason,
     List<ReportedMessage> messages = const [],
   }) async {
+    await holdReport?.future;
+    if (reportFails) throw const SocketException('offline');
     reports.add((reason: reason, words: [for (final each in messages) each.words]));
   }
 }
