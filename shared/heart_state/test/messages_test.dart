@@ -206,6 +206,93 @@ void main() {
     });
   });
 
+  group('screens', () {
+    test('what arrives while a read is under way is read after it', () async {
+      server.items = [_item('a', cursor: 'c1')];
+      await messages.load();
+      await messages.open(threadId);
+      server.holdPage = Completer();
+
+      final reading = messages.pull(threadId);
+      await pumpEventQueue();
+      server.items = [_item('a', cursor: 'c1'), _item('b', cursor: 'c2')];
+      final pushed = messages.arrived(threadId);
+      await pumpEventQueue();
+      server.holdPage!.complete();
+      await Future.wait([reading, pushed]);
+
+      expect(messages.thread(threadId).messages.map((each) => each.text), ['a', 'b']);
+    });
+
+    test('a thread two screens show stays when one closes, and one nobody shows is not read on a push', () async {
+      server.items = [_item('a', cursor: 'c1')];
+      await messages.load();
+      await messages.open(threadId);
+      await messages.open(threadId);
+
+      messages.close(threadId);
+      expect(messages.thread(threadId).messages, hasLength(1));
+
+      messages.close(threadId);
+      server.items = [_item('a', cursor: 'c1'), _item('b', cursor: 'c2')];
+      server.calls.clear();
+      await messages.arrived(threadId);
+
+      expect(server.calls, ['threads'], reason: 'the inbox, and nothing of the thread');
+    });
+
+    test('opened again, older messages are still offered, and a short thread offers none', () async {
+      server.items = [
+        for (final each in ['a', 'b', 'c']) _item(each, cursor: 'c-$each'),
+      ];
+      server.pageSize = 1;
+      await messages.load();
+      await messages.open(threadId);
+      messages.close(threadId);
+
+      final again = build();
+      await again.load();
+      await again.open(threadId);
+      expect(again.thread(threadId).hasOlder, isTrue);
+
+      server.items = [_item('a', cursor: 'c-a')];
+      final short = build();
+      store.items.clear();
+      await short.load();
+      await short.open(threadId);
+      short.close(threadId);
+      final shortAgain = build();
+      await shortAgain.load();
+      await shortAgain.open(threadId);
+      expect(shortAgain.thread(threadId).hasOlder, isFalse);
+    });
+
+    test('offline, a conversation the device holds opens from it', () async {
+      await messages.load();
+      access.account = false;
+      server.calls.clear();
+
+      final thread = await build().threadFor('c1');
+
+      expect(thread.id, threadId);
+      expect(server.calls, isEmpty);
+    });
+
+    test('coming back to the front reads the thread on screen even before the inbox was read', () async {
+      server.items = [_item('a', cursor: 'c1')];
+      // a student's way in: the conversation of their coach, never the inbox
+      store.threads[me] = server.threads;
+      final thread = await messages.threadFor('c1');
+      expect(messages.status, CoachingStatus.idle);
+      await messages.open(thread.id);
+      server.items = [_item('a', cursor: 'c1'), _item('b', cursor: 'c2')];
+
+      await messages.resume();
+
+      expect(messages.thread(thread.id).messages.map((each) => each.text), ['a', 'b']);
+    });
+  });
+
   group('sending', () {
     test('shares the key first, then sends, under the id it was written with', () async {
       await messages.load();
@@ -287,6 +374,40 @@ void main() {
       expect(messages.thread(threadId).messages.single.delivery, MessageDelivery.sent);
     });
 
+    test('one written while another is on its way goes too', () async {
+      await messages.load();
+      server.holdPost = Completer();
+
+      final first = messages.send(threadId, 'A');
+      await pumpEventQueue();
+      final second = messages.send(threadId, 'B');
+      await pumpEventQueue();
+      server.holdPost!.complete();
+      await Future.wait([first, second]);
+
+      expect(server.posted.map((each) => each.content), ['sealed:A', 'sealed:B']);
+      expect(messages.thread(threadId).messages.map((each) => each.delivery), everyElement(MessageDelivery.sent));
+    });
+
+    test('one a read placed while it was on its way keeps that place', () async {
+      server.items = [_item('a', cursor: 'c1')];
+      await messages.load();
+      await messages.open(threadId);
+      server.holdPost = Completer();
+
+      final sending = messages.send(threadId, 'mine');
+      await pumpEventQueue();
+      final theirs = _item('b', cursor: 'c3');
+      server.items = [_item('a', cursor: 'c1'), _mine('mine-0', 'mine', cursor: 'c2'), theirs];
+      await messages.pull(threadId);
+      server.holdPost!.complete();
+      await sending;
+
+      final held = store.items[me]!.firstWhere((each) => each.item.id == 'mine-0');
+      expect((held.item.cursor, held.position, held.pending), ('c2', 1, false));
+      expect(messages.thread(threadId).messages.map((each) => each.text), ['a', 'mine', 'b']);
+    });
+
     test("one that can't be sealed throws, and nothing is kept", () async {
       await messages.load();
       cipher.sealFails = StateError('device keys are off');
@@ -328,6 +449,23 @@ ThreadItem _item(String text, {String sender = 'whiskers', String? cursor, DateT
   );
 }
 
+ThreadItem _mine(String id, String text, {String? cursor}) {
+  final at = DateTime.utc(2026, 11, 12, 9);
+  return ThreadItem(
+    id: id,
+    threadId: 't1',
+    senderId: 'muffin',
+    kind: 'message',
+    content: 'sealed:$text',
+    commitment: 'c',
+    tag: 'tag',
+    tagKey: 'k',
+    at: at,
+    createdAt: at,
+    cursor: cursor,
+  );
+}
+
 /// What a request that never reached the server throws.
 class _Unreachable implements Exception {
   const new();
@@ -343,6 +481,10 @@ class _Server implements RemoteThreadService {
   int pageSize = 50;
   Object? failNextPost;
   Map<String, Object>? refusePost;
+
+  /// Holds each post, and each page once read, until completed.
+  Completer<void>? holdPost;
+  Completer<void>? holdPage;
 
   @override
   Future<Thread> openThread(String connectionId) async {
@@ -369,6 +511,7 @@ class _Server implements RemoteThreadService {
     String? subjectId,
   }) async {
     calls.add('post $threadId $id');
+    await holdPost?.future;
     posted.add((id: id, content: content, subjectId: subjectId));
     if (failNextPost case final Object failure) {
       failNextPost = null;
@@ -413,6 +556,7 @@ class _Server implements RemoteThreadService {
       },
     };
     final page = more.take(size).toList();
+    await holdPage?.future;
     return (
       items: page,
       cursor: switch (more.length > size) {

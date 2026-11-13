@@ -183,9 +183,18 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   final _threads = <Thread>[];
   final _views = <String, MessageThread>{};
   final _drafts = <String, String>{};
-  final _pulls = <String, Future<void>>{};
-  final _flushes = <String, Future<void>>{};
+  final _pulls = _OneAtATime();
+  final _flushes = _OneAtATime();
+  final _writes = _InTurn();
   final _retries = <String, Timer>{};
+
+  /// How many screens show each thread: a thread nobody shows is neither read
+  /// on a push nor marked read.
+  final _following = <String, int>{};
+
+  /// Whether older messages wait on the server, by thread, once known: kept
+  /// when a screen closes, so a thread opened again offers them still.
+  final _older = <String, bool>{};
 
   /// The cursor each thread was last marked read at.
   final _marked = <String, String>{};
@@ -222,13 +231,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   Future<void> load() async {
     final userId = _userId;
     if (userId == null) return;
-    if (_threads.isEmpty) {
-      try {
-        _setThreads(await _local.getThreads(userId));
-      } catch (error, stacktrace) {
-        onError?.call(error, stacktrace: stacktrace);
-      }
-    }
+    await _loadHeld(userId);
     if (!_remote.allowed) return;
     _status = .loading;
     notifyListeners();
@@ -246,18 +249,40 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
-  /// The app came back to the front, where a push may never have reached it:
-  /// the inbox again, once something read it, and each thread on screen.
-  Future<void> resume() async {
-    if (_status == .idle) return;
-    await Future.wait([load(), for (final threadId in _views.keys.toList()) pull(threadId)]);
+  /// The inbox as this device holds it, when nothing was read yet.
+  Future<void> _loadHeld(String userId) async {
+    if (_threads.isNotEmpty) return;
+    try {
+      final held = await _local.getThreads(userId);
+      if (userId == _userId && _threads.isEmpty) _setThreads(held);
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+    }
   }
 
-  /// The thread of [connectionId], opened on the server the first time.
+  /// The app came back to the front, where a push may never have reached it:
+  /// the inbox again, once something read it, and each thread on screen, with
+  /// what waits there sent.
+  Future<void> resume() async {
+    await Future.wait([
+      if (_status != .idle) load(),
+      for (final threadId in _following.keys.toList()) _catchUp(threadId),
+    ]);
+  }
+
+  Future<void> _catchUp(String threadId) async {
+    await pull(threadId);
+    await flush(threadId);
+  }
+
+  /// The thread of [connectionId]: the one this device holds, else opened on
+  /// the server, the first time it is asked for.
   Future<Thread> threadFor(String connectionId) async {
     if (threadOf(connectionId) case final Thread thread) return thread;
     final userId = _userId;
     if (userId == null) throw StateError('no account');
+    await _loadHeld(userId);
+    if (threadOf(connectionId) case final Thread thread) return thread;
     final thread = await _service.openThread(connectionId);
     if (userId != _userId) throw StateError('signed out');
     await _local.storeThread(userId, thread);
@@ -266,9 +291,16 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     return thread;
   }
 
-  /// Opens [threadId] for reading: what this device holds at once, then what
-  /// arrived, then sends what waits and marks it read.
-  Future<void> open(String threadId) async {
+  /// A screen shows [threadId], until it calls [close]: what this device
+  /// holds at once, then what arrived, then sends what waits and marks it
+  /// read.
+  Future<void> open(String threadId) {
+    _following.update(threadId, (count) => count + 1, ifAbsent: () => 1);
+    return refresh(threadId);
+  }
+
+  /// Reads [threadId] again, as [open] does, for a screen already showing it.
+  Future<void> refresh(String threadId) async {
     await _show(threadId);
     await pull(threadId);
     await flush(threadId);
@@ -276,13 +308,9 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// Reads what arrived in [threadId] since the newest this device holds, or
-  /// the newest page when it holds none. One read at a time per thread.
-  Future<void> pull(String threadId) {
-    return _pulls[threadId] ??= _pull(threadId).whenComplete(() {
-      // a block: the removed future returned would be waited on by itself
-      _pulls.remove(threadId);
-    });
-  }
+  /// the newest page when it holds none. One read at a time per thread; a
+  /// call during one gets another after it.
+  Future<void> pull(String threadId) => _pulls(threadId, () => _pull(threadId));
 
   Future<void> _pull(String threadId) async {
     final userId = _userId;
@@ -294,7 +322,6 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       final newest = placed.lastOrNull;
       final known = {for (final each in stored) each.item.id: each};
       final arrived = <StoredItem>[];
-      var hasOlder = thread(threadId).hasOlder;
       switch (newest?.item.cursor) {
         case final String cursor:
           var since = cursor;
@@ -310,6 +337,17 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
               break;
             }
           }
+          // opened again since the app started: one item asks whether more wait
+          if (!_older.containsKey(threadId)) {
+            _older[threadId] = switch (placed.map((each) => each.item.cursor).nonNulls.firstOrNull) {
+              final String oldest => (await _service.getThreadItems(
+                threadId,
+                before: oldest,
+                limit: 1,
+              )).items.isNotEmpty,
+              null => false,
+            };
+          }
         case null:
           final page = await _service.getThreadItems(threadId, limit: _page);
           // newest first: the newest takes the highest place
@@ -317,11 +355,11 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
           arrived.addAll([
             for (final (index, item) in items.indexed) (item: item, position: items.length - 1 - index, pending: false),
           ]);
-          hasOlder = page.cursor != null;
+          _older[threadId] = page.cursor != null;
       }
       if (userId != _userId) return;
-      if (arrived.isNotEmpty) await _local.storeThreadItems(userId, arrived);
-      await _show(threadId, status: .loaded, hasOlder: hasOlder);
+      if (arrived.isNotEmpty) await _writes(threadId, () => _local.storeThreadItems(userId, arrived));
+      await _show(threadId, status: .loaded);
       // a key may wait in the queue with no push to say so: what it opens
       // shows once it is taken
       if (thread(threadId).messages.any((each) => each.opened is Locked)) await _cipher.receive();
@@ -354,14 +392,21 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       final stored = await _local.getThreadItems(userId, threadId);
       final oldest = stored.where((each) => each.position != null).firstOrNull;
       final cursor = oldest?.item.cursor;
-      if (oldest == null || cursor == null) return;
+      if (oldest == null || cursor == null) {
+        _older[threadId] = false;
+        return await _show(threadId);
+      }
       final page = await _service.getThreadItems(threadId, before: cursor, limit: _page);
       if (userId != _userId) return;
-      await _local.storeThreadItems(userId, [
-        for (final (index, item) in page.items.indexed)
-          (item: item, position: oldest.position! - 1 - index, pending: false),
-      ]);
-      await _show(threadId, hasOlder: page.cursor != null);
+      await _writes(
+        threadId,
+        () => _local.storeThreadItems(userId, [
+          for (final (index, item) in page.items.indexed)
+            (item: item, position: oldest.position! - 1 - index, pending: false),
+        ]),
+      );
+      _older[threadId] = page.cursor != null;
+      await _show(threadId);
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
     }
@@ -397,12 +442,9 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// Sends what waits in [threadId], oldest first, once its keys reached the
-  /// other person's devices. One run at a time per thread.
-  Future<void> flush(String threadId) {
-    return _flushes[threadId] ??= _flush(threadId).whenComplete(() {
-      _flushes.remove(threadId);
-    });
-  }
+  /// other person's devices. One run at a time per thread; a call during one
+  /// gets another after it, so a message written meanwhile goes too.
+  Future<void> flush(String threadId) => _flushes(threadId, () => _flush(threadId));
 
   Future<void> _flush(String threadId) async {
     final userId = _userId;
@@ -413,6 +455,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       for (final each in await _local.getThreadItems(userId, threadId))
         if (each.pending) each,
     ];
+    if (waiting.isEmpty) return;
     try {
       // the key first: a message nobody can open is no message
       if (thread.otherId case final String otherId) {
@@ -429,7 +472,12 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
           subjectId: item.subjectId,
         );
         if (userId != _userId) return;
-        await _local.storeThreadItems(userId, [(item: sent, position: null, pending: false)]);
+        await _writes(threadId, () async {
+          final held = (await _local.getThreadItems(userId, threadId)).where((each) => each.item.id == item.id);
+          // a read placed it while it travelled: that place and cursor stand
+          if (held.firstOrNull case (item: _, position: _, pending: false)) return;
+          await _local.storeThreadItems(userId, [(item: sent, position: held.firstOrNull?.position, pending: false)]);
+        });
       }
     } on Map catch (refusal, stacktrace) {
       switch (refusal) {
@@ -452,7 +500,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     if (userId != _userId) return;
     await _show(threadId);
     // what went out places itself, and moves its thread up the inbox
-    if (waiting.isNotEmpty) await Future.wait([pull(threadId), load()]);
+    await Future.wait([pull(threadId), load()]);
   }
 
   /// Marks [threadId] read to the newest this device holds.
@@ -496,7 +544,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   /// and the thread when it is open.
   Future<void> arrived(String threadId) async {
     await load();
-    if (_views.containsKey(threadId)) {
+    if (_following.containsKey(threadId)) {
       await pull(threadId);
       await markRead(threadId);
     }
@@ -506,11 +554,20 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   /// inbox again, which says when, and the thread read again.
   Future<void> cleared(String threadId) async {
     await load();
-    if (_views.containsKey(threadId)) await pull(threadId);
+    if (_following.containsKey(threadId)) await pull(threadId);
   }
 
-  /// A thread this screen no longer shows: read afresh on the next open.
-  void close(String threadId) => _views.remove(threadId);
+  /// A screen that called [open] no longer shows [threadId]: once none does,
+  /// it is read afresh on the next open.
+  void close(String threadId) {
+    switch (_following[threadId]) {
+      case final int count when count > 1:
+        _following[threadId] = count - 1;
+      case _:
+        _following.remove(threadId);
+        _views.remove(threadId);
+    }
+  }
 
   Future<void> _keyArrived(String threadId) async {
     final view = _views[threadId];
@@ -519,16 +576,14 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// Opens what this device holds of [threadId] and shows it.
-  Future<void> _show(String threadId, {CoachingStatus? status, bool? hasOlder}) async {
+  Future<void> _show(String threadId, {CoachingStatus? status}) async {
     final userId = _userId;
     if (userId == null) return;
     try {
       final cleared = lookup(threadId)?.clearedAt;
-      final stored = [
-        for (final each in await _local.getThreadItems(userId, threadId))
-          // what came before a deletion is gone for both
-          if (cleared == null || each.pending || each.item.createdAt.isAfter(cleared)) each,
-      ];
+      // all of it opened, what a deletion hid too: a message replayed at a
+      // position one of those took is refused
+      final stored = await _local.getThreadItems(userId, threadId);
       final opened = await _cipher.open(threadId, [
         for (final (:item, position: _, pending: _) in stored)
           (id: item.id, senderId: item.senderId, content: item.content, commitment: item.commitment),
@@ -537,30 +592,32 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       final closed = thread(threadId).closed;
       final messages = [
         for (final (index, (:item, position: _, :pending)) in stored.indexed)
-          Message(
-            item: item,
-            opened: opened[index],
-            mine: item.senderId == userId,
-            delivery: switch ((pending, closed)) {
-              (false, _) => .sent,
-              (true, true) => .closed,
-              (true, false) => .waiting,
-            },
-          ),
+          // what came before a deletion is gone for both
+          if (cleared == null || pending || item.createdAt.isAfter(cleared))
+            Message(
+              item: item,
+              opened: opened[index],
+              mine: item.senderId == userId,
+              delivery: switch ((pending, closed)) {
+                (false, _) => .sent,
+                (true, true) => .closed,
+                (true, false) => .waiting,
+              },
+            ),
       ];
-      _view(threadId, messages: messages, status: status, hasOlder: hasOlder);
+      _view(threadId, messages: messages, status: status);
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
     }
   }
 
-  void _view(String threadId, {List<Message>? messages, CoachingStatus? status, bool? hasOlder, bool? closed}) {
+  void _view(String threadId, {List<Message>? messages, CoachingStatus? status, bool? closed}) {
     final was = thread(threadId);
     _views[threadId] = MessageThread(
       threadId: threadId,
       messages: messages ?? was.messages,
       status: status ?? was.status,
-      hasOlder: hasOlder ?? was.hasOlder,
+      hasOlder: _older[threadId] ?? false,
       closed: closed ?? was.closed,
     );
     notifyListeners();
@@ -580,6 +637,8 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     _retries.clear();
     _threads.clear();
     _views.clear();
+    _following.clear();
+    _older.clear();
     _drafts.clear();
     _marked.clear();
     _status = .idle;
@@ -597,5 +656,44 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     _keys.cancel();
     _forget();
     super.dispose();
+  }
+}
+
+/// One run at a time per thread. A call during a run gets a run of its own
+/// after it, which every call made meanwhile shares: what changed after the
+/// running one started is never left out.
+class _OneAtATime {
+  final _running = <String, Future<void>>{};
+  final _queued = <String, Future<void>>{};
+
+  Future<void> call(String threadId, Future<void> Function() run) {
+    if (_queued[threadId] case final Future<void> queued) return queued;
+    return switch (_running[threadId]) {
+      final Future<void> running => _queued[threadId] = running.then((_) {}, onError: (_) {}).then((_) {
+        _queued.remove(threadId);
+        return _start(threadId, run);
+      }),
+      null => _start(threadId, run),
+    };
+  }
+
+  Future<void> _start(String threadId, Future<void> Function() run) {
+    late final Future<void> started;
+    started = run().whenComplete(() {
+      if (identical(_running[threadId], started)) _running.remove(threadId);
+    });
+    return _running[threadId] = started;
+  }
+}
+
+/// Calls on one thread's stored items, each after the one before: a read and
+/// the write it decides on see nobody else's write between them.
+class _InTurn {
+  final _last = <String, Future<void>>{};
+
+  Future<void> call(String threadId, Future<void> Function() run) {
+    final turn = (_last[threadId] ?? Future<void>.value()).then((_) => run());
+    _last[threadId] = turn.then((_) {}, onError: (_) {});
+    return turn;
   }
 }

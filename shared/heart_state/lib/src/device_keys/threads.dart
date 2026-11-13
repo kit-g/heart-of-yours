@@ -154,6 +154,8 @@ extension _Threads on DeviceKeys {
       final peer = await devicesOf(reader, fingerprint: checked);
       if (peer.check == .mismatch) throw KeyMismatch(reader);
       final listed = {for (final each in peer.devices) each.id};
+      // the other person with no device to read it on: nothing is sent yet
+      if (reader == userId && listed.isEmpty) throw const KeyFailure('no_devices');
       record = await _serial(run, () => _ThreadRecord.read(run, threadId));
       // a device that held the current key and is gone: the next message
       // seals under a new one
@@ -177,7 +179,12 @@ extension _Threads on DeviceKeys {
           fingerprint: checked,
           to: (device) => missing.contains(device.id),
         );
-        if (reached.isEmpty) continue;
+        if (reached.isEmpty) {
+          // a key none of the other person's devices holds: what it seals
+          // waits; one of the account's own can catch up later
+          if (reader == userId && !key.shared.containsValue(userId)) throw const KeyFailure('key_unreached');
+          continue;
+        }
         await _serial(run, () async {
           final latest = await _ThreadRecord.read(run, threadId);
           for (final each in latest.own.where((each) => each.sessionId == key.sessionId)) {
@@ -245,14 +252,23 @@ extension _Threads on DeviceKeys {
       _report(const KeyFailure('unreadable_thread_key'));
       return;
     }
-    await _serial(run, () async {
-      final joined = _guard(() => run.sealbox.joinThread(sessionKey));
+    final taken = await _serial(run, () async {
+      final ({String inbound, String sessionId, int firstKnownIndex}) joined;
+      try {
+        joined = _guard(() => run.sealbox.joinThread(sessionKey));
+      } on KeyFailure catch (failure) {
+        // a key the library refuses opens nothing, however often it is handed
+        // again: taken, and dropped
+        _report(failure);
+        return false;
+      }
       final inbound = await _InboundKeys.read(run, threadId);
       // the first one kept: a second share of the same key reaches no further back
       inbound.keys.putIfAbsent(joined.sessionId, () => (inbound: joined.inbound, from: delivery.fromUserId));
       await inbound.save(run);
+      return true;
     });
-    if (!_threadKeys.isClosed) _threadKeys.add(threadId);
+    if (taken && !_threadKeys.isClosed) _threadKeys.add(threadId);
   }
 }
 

@@ -16,11 +16,12 @@ mixin _ThreadRoutes on Requests {
     };
   }
 
-  /// The inbox: every thread, last arrival first.
+  /// The inbox: every thread, last arrival first. Read whole or not at all:
+  /// it replaces the device's inbox, where a thread skipped would be deleted.
   Future<List<Thread>> getThreads() async {
     final (json, code) = await get(Router.threads);
     return switch ((code, json)) {
-      (200, Map json) => ThreadList.fromJson(json).threads,
+      (200, {'threads': final List threads}) => [for (final each in threads) Thread.fromJson(each as Map)],
       _ => throw json,
     };
   }

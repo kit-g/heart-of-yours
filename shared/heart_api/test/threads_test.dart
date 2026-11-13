@@ -84,6 +84,23 @@ void main() {
     expect(threads.last.clearedBy, 'sam');
   });
 
+  test('getThreads reads the inbox whole or not at all: it replaces the one on the device', () async {
+    respond(
+      client: client,
+      method: 'GET',
+      path: Router.threads,
+      statusCode: 200,
+      body: {
+        'threads': [
+          {'id': _threadId, 'unread': 0},
+          {'id': 'unreadable', 'unread': 'many'},
+        ],
+      },
+    );
+
+    await expectLater(api.getThreads(), throwsA(anything));
+  });
+
   test('postThreadItem sends a message with its commitment, and reads back the server\'s tag', () async {
     respond(client: client, method: 'POST', path: Router.threadItems(_threadId), statusCode: 201, body: _item());
 

@@ -103,6 +103,17 @@ void main() {
       expect(opened, [Uri.parse('https://heart-of.me')]);
     });
 
+    testWidgets('one wrapped to a line of its own opens after a parent asked for intrinsic widths', (tester) async {
+      final opened = <Uri>[];
+      await tester.pumpWidget(host('aaaaaaaa https://h.me', width: 150, onLink: opened.add));
+      // what a table or IntrinsicWidth asks between frames
+      render(tester).getMinIntrinsicWidth(double.infinity);
+
+      // the link starts the second line
+      await tester.tapAt(tester.getTopLeft(find.byType(MessageText)) + const Offset(20, 15));
+      expect(opened, [Uri.parse('https://h.me')]);
+    });
+
     testWidgets('a tap beside one opens nothing', (tester) async {
       final opened = <Uri>[];
       await tester.pumpWidget(host('see https://heart-of.me now', width: 400, onLink: opened.add));

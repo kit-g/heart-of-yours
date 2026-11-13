@@ -338,6 +338,8 @@ class RenderMessageText extends RenderBox {
   double computeMinIntrinsicWidth(double height) {
     _words.layout();
     _meta.layout();
+    // the painters no longer hold what the placement was laid out for
+    _placement = null;
     return math.max(_words.minIntrinsicWidth, _meta.width);
   }
 

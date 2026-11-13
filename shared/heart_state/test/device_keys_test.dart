@@ -954,6 +954,36 @@ void main() {
       expect(opened.map((each) => (each as Opened).text), ['before', 'after']);
     });
 
+    test('someone with no device to read it on is shared nothing, so what waits for it stays back', () async {
+      final student = device('sam');
+      await student.start('sam');
+      await student.seal(thread, 'hello');
+
+      expect(student.share(thread, userId: 'dana'), throwsA(isA<KeyFailure>()));
+    });
+
+    test('a thread key the library refuses is dropped, not handed again on every read', () async {
+      final coach = device('dana');
+      final student = device('sam');
+      await coach.start('dana');
+      await student.start('sam');
+      final arrived = <String>[];
+      final listening = student.threadKeys.listen(arrived.add);
+      addTearDown(listening.cancel);
+
+      await coach.deliver(
+        userId: 'sam',
+        kind: DeviceKeys.threadKeyKind,
+        payload: jsonEncode({'t': thread, 'k': 'garbage'}),
+      );
+      await student.receive();
+      await student.receive();
+      await pumpEventQueue();
+
+      expect(errors.whereType<KeyFailure>(), hasLength(1));
+      expect(arrived, isEmpty);
+    });
+
     test('a mismatched fingerprint shares nothing', () async {
       final coach = device('dana');
       final student = device('sam');

@@ -5,6 +5,7 @@ library;
 
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/message_runs.dart';
 import 'package:heart/core/utils/visual.dart';
@@ -30,7 +31,9 @@ class ThreadPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final thread = Messages.watch(context).threadOf(connectionId);
     return Scaffold(
-      appBar: AppBar(title: Text(threadName(context, thread, fallback: name))),
+      appBar: AppBar(
+        title: Text(threadName(context, thread, connectionId: connectionId, fallback: name)),
+      ),
       body: SafeArea(
         top: false,
         child: Align(
@@ -50,16 +53,17 @@ class ThreadPage extends StatelessWidget {
 const threadWidth = 720.0;
 
 /// Who a conversation is with: the name the server holds for them, else the
-/// one [fallback] gives, else the role they play for this person.
-String threadName(BuildContext context, Thread? thread, {String? fallback}) {
+/// one [fallback] gives, else the role they play for this person. Before the
+/// thread is read, [connectionId] says which conversation it is.
+String threadName(BuildContext context, Thread? thread, {String? connectionId, String? fallback}) {
   final l = L.of(context);
   final coaching = Coaching.of(context);
-  final connectionId = thread?.connectionId;
-  final student = coaching.coaches.any((each) => each.connectionId == connectionId);
+  final connection = thread?.connectionId ?? connectionId;
+  final student = coaching.coaches.any((each) => each.connectionId == connection);
   return switch ((thread?.otherName?.trim(), fallback?.trim())) {
     (final String name, _) when name.isNotEmpty => name,
     (_, final String name) when name.isNotEmpty => name,
-    _ when student => switch (connectionId) {
+    _ when student => switch (connection) {
       final String id => Preferences.of(context).coachName(id) ?? l.yourCoach,
       null => l.yourCoach,
     },
@@ -188,7 +192,7 @@ class _Conversation extends StatelessWidget {
             ([], .failed) => _Note(
               icon: Icons.cloud_off_rounded,
               title: l.messagesFailed,
-              action: OutlinedButton(onPressed: () => messages.open(threadId), child: Text(l.retry)),
+              action: OutlinedButton(onPressed: () => messages.refresh(threadId), child: Text(l.retry)),
             ),
             ([], _) => _Note(icon: Icons.lock_outline_rounded, title: l.messagesEmpty, body: l.messagesEmptyBody),
             _ => RefreshIndicator.adaptive(
@@ -242,8 +246,10 @@ class _Day extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final locale = Localizations.localeOf(context).toString();
     final day = DateUtils.dateOnly(at.toLocal());
-    final today = DateUtils.dateOnly(DateTime.now());
-    final label = switch (today.difference(day).inDays) {
+    final today = DateUtils.dateOnly(clock.now());
+    // counted in calendar days: a day a clock change shortened is still a day
+    final ago = DateTime.utc(today.year, today.month, today.day).difference(.utc(day.year, day.month, day.day)).inDays;
+    final label = switch (ago) {
       0 => l.messagesToday,
       1 => l.messagesYesterday,
       _ when day.year == today.year => DateFormat.MMMMEEEEd(locale).format(day),
@@ -382,7 +388,7 @@ class _Bubble extends StatelessWidget {
     switch (picked) {
       case .copy:
         await Clipboard.setData(ClipboardData(text: text));
-        messenger?.showSnackBar(SnackBar(content: Text(l.copiedToClipboard)));
+        messenger?.snack(l.copiedToClipboard);
       case null:
         break;
     }
