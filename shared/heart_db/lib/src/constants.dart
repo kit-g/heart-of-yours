@@ -20,5 +20,7 @@ const _charts = 'charts';
 const _content = 'content';
 const _goals = 'goals';
 const _goEasy = 'go_easy';
+const _threads = 'threads';
+const _threadItems = 'thread_items';
 const _healthSamples = 'health_samples';
 const _upsync = 'upsync';

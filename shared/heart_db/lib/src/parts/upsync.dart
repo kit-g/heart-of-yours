@@ -56,6 +56,9 @@ mixin _Upsync on _LocalDatabase {
           _goals,
           _healthSamples,
           _goEasy,
+          // an anonymous session has none: coaching needs an account
+          _threads,
+          _threadItems,
           _upsync,
         ]) {
           batch.rawUpdate('UPDATE OR REPLACE $table SET user_id = ? WHERE user_id = ?', [to, from]);

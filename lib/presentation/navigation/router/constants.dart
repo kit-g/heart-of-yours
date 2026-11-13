@@ -97,6 +97,10 @@ const _coachingClientProgramName = 'coachingClientProgram';
 const _coachingClientSessionName = 'coachingClientSession';
 const _coachingMessagesName = 'coachingMessages';
 const _coachingMessagesPath = '$_coachingPath/messages';
+const _coachingThreadName = 'coachingThread';
+const _coachingClientThreadName = 'coachingClientThread';
+const _threadName = 'thread';
+const _threadPath = '/messages/:connectionId';
 const _coachingProgramsName = 'coachingPrograms';
 const _coachingProgramsPath = '$_coachingPath/programs';
 // a coach's library (#557), under the Programs tab

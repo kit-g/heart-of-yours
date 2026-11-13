@@ -108,6 +108,11 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
     if (!RemoteAccess.of(context).allowed) return;
     _read = read;
     Coaching.of(context).load();
+    // the inbox too, for the unread counts on the ways in (#556): after the
+    // frame, once the account's id has reached the messages
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Messages.of(context).load();
+    });
   }
 
   /// Your coach off pauses every coach: the coach stops seeing new workouts

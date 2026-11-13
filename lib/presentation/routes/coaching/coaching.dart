@@ -12,6 +12,7 @@ import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/navigation/pushes.dart';
+import 'package:heart/presentation/routes/messages/messages.dart';
 import 'package:heart/presentation/widgets/avatar.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -36,6 +37,7 @@ part 'invitation.dart';
 part 'invite.dart';
 part 'library.dart';
 part 'library_program.dart';
+part 'messages.dart';
 part 'pages.dart';
 part 'review.dart';
 

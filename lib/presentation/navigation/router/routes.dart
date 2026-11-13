@@ -1279,6 +1279,7 @@ RouteBase _coachingRoute() {
               onOpenClient: context.pushCoachingClient,
               onOpenWorkout: context.pushCoachingClientWorkout,
               onOpenProgram: context.pushCoachingClientProgram,
+              onMessage: context.pushCoachingClientThread,
             ),
             routes: [
               GoRoute(
@@ -1291,9 +1292,15 @@ RouteBase _coachingRoute() {
                     connectionId: connectionId,
                     onOpenWorkout: (workoutId) => context.pushCoachingClientWorkout(connectionId, workoutId),
                     onOpenProgram: (programId) => context.pushCoachingClientProgram(connectionId, programId),
+                    onMessage: context.pushCoachingClientThread,
                   );
                 },
                 routes: [
+                  GoRoute(
+                    path: 'messages',
+                    name: _coachingClientThreadName,
+                    builder: (context, state) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+                  ),
                   GoRoute(
                     path: 'programs/:programId',
                     name: _coachingClientProgramName,
@@ -1347,7 +1354,24 @@ RouteBase _coachingRoute() {
         ],
       ),
       StatefulShellBranch(
-        routes: [page(_coachingMessagesPath, _coachingMessagesName, (back) => CoachMessagesPage(onYourTraining: back))],
+        routes: [
+          GoRoute(
+            path: _coachingMessagesPath,
+            name: _coachingMessagesName,
+            redirect: off,
+            builder: (context, _) => CoachMessagesPage(
+              onYourTraining: context.leaveCoaching,
+              onOpen: context.pushCoachingThread,
+            ),
+            routes: [
+              GoRoute(
+                path: ':connectionId',
+                name: _coachingThreadName,
+                builder: (context, state) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+              ),
+            ],
+          ),
+        ],
       ),
       StatefulShellBranch(routes: [_coachingProgramsRoute(off)]),
       StatefulShellBranch(
@@ -1466,6 +1490,28 @@ GoRoute _coachingProgramsRoute(GoRouterRedirect off) {
         ],
       ),
     ],
+  );
+}
+
+/// A student's conversation with their coach (#556), over whatever is on
+/// screen. There only while coaching runs: off, a link to it is one the app
+/// has no screen for.
+RouteBase _threadRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _threadPath,
+    name: _threadName,
+    redirect: (context, _) => switch (pushesOn(context)) {
+      true => null,
+      false => _profilePath,
+    },
+    builder: (context, state) {
+      // outside the shell, so the layout is this route's to provide
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+      );
+    },
   );
 }
 

@@ -13,6 +13,7 @@ part 'device_keys/arrivals.dart';
 part 'device_keys/boundary.dart';
 part 'device_keys/own_keys.dart';
 part 'device_keys/peers.dart';
+part 'device_keys/threads.dart';
 part 'device_keys/vault.dart';
 
 /// Thrown when a person's devices don't match the fingerprint this device was
@@ -85,7 +86,7 @@ enum DeviceKeysStatus {
 ///
 /// What arrives is kept on the device until a handler for its kind takes it
 /// ([on]): messages (#556) bring the first one, thread keys.
-class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
+class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher {
   final RemoteKeyService _service;
   final KeyVault? _vault;
   final RemoteAccess _remote;
@@ -102,7 +103,9 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
     DateTime Function()? now,
   }) : _remote = remote ?? RemoteAccess(),
        _newId = newId ?? uuidV7,
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now {
+    _handlers[threadKeyKind] = _takeThreadKey;
+  }
 
   static DeviceKeys of(BuildContext context) => Provider.of<DeviceKeys>(context, listen: false);
 
@@ -125,6 +128,25 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
 
   /// The most a queue item may carry.
   static const _maxItem = 1024;
+
+  /// What a thread's key travels as between devices (#556).
+  static const threadKeyKind = 'thread_key';
+
+  final _threadKeys = StreamController<String>.broadcast();
+
+  @override
+  Stream<String> get threadKeys => _threadKeys.stream;
+
+  @override
+  Future<SealedMessage> seal(String threadId, String text) => _seal(threadId, text);
+
+  @override
+  Future<void> share(String threadId, {required String userId, String? fingerprint}) {
+    return _share(threadId, userId: userId, fingerprint: fingerprint);
+  }
+
+  @override
+  Future<List<OpenedMessage>> open(String threadId, List<ThreadCiphertext> items) => _openThread(threadId, items);
 
   /// The account running now, from its start until a stop or sign-out.
   _Run? _run;
@@ -234,6 +256,12 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
   @override
   void onSignOut() => stop();
 
+  @override
+  void dispose() {
+    _threadKeys.close();
+    super.dispose();
+  }
+
   /// Ends the run: whatever it still has queued finds it over and stops.
   void _end() {
     _starting = null;
@@ -284,6 +312,8 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
   /// device.
   Future<void> devicesChanged(String userId) async {
     if (_run == null || !_remote.allowed) return;
+    // every thread shares again before its next message
+    _run?.sharedAt.clear();
     try {
       await devicesOf(userId);
     } on _Stopped {
@@ -295,6 +325,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
 
   /// Reads what waits for this device, opens it, keeps it, confirms it, then
   /// hands each item to the handler for its kind.
+  @override
   Future<void> receive() async {
     final run = _run;
     if (run == null) return;
@@ -327,7 +358,9 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
   /// them one at a time. The account's own id sends to its other devices.
   ///
   /// Refuses with [KeyMismatch] when their devices don't match [fingerprint].
-  Future<void> deliver({
+  /// Answers the devices it reached: one left out of a claim, or whose keys
+  /// changed since the list, waits for the next send.
+  Future<Set<String>> deliver({
     required String userId,
     required String kind,
     required String payload,
@@ -346,7 +379,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
       run.peers[userId] = peer;
       if (peer.check == .mismatch) throw KeyMismatch(userId);
       final targets = peer.devices.where((each) => each.id != device.id && (to?.call(each) ?? true)).toList();
-      if (targets.isEmpty) return;
+      if (targets.isEmpty) return const <String>{};
 
       final sessions = {for (final each in targets) each.id: await run.session(each.id)};
       // a device with no session yet needs one of its single-use keys, and
@@ -366,6 +399,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
         _report(KeysUnclaimed(userId, missing));
       }
 
+      final reached = <String>{};
       for (final target in targets) {
         final session = sessions[target.id] ?? _startSession(run, device, target.device, claimed[target.id]);
         // left out of the claim, or its keys changed since the list
@@ -386,8 +420,10 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry {
           kind: kind,
           content: content,
         );
+        reached.add(target.id);
       }
       _changed(run);
+      return reached;
     });
   }
 

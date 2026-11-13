@@ -28,6 +28,9 @@ class _Run {
 
   final peers = <String, Peer>{};
 
+  /// When each thread last shared its keys with every device it knew of.
+  final sharedAt = <String, DateTime>{};
+
   void end() => _over = true;
 
   /// Throws [_Stopped] once the run is over.

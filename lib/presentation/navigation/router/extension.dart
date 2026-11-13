@@ -18,6 +18,17 @@ extension on BuildContext {
     pushNamed(_coachingClientName, pathParameters: {'connectionId': connectionId});
   }
 
+  /// The conversation with a client (#556), over their page.
+  void pushCoachingClientThread(String connectionId) {
+    pushNamed(_coachingClientThreadName, pathParameters: {'connectionId': connectionId});
+  }
+
+  /// A conversation of the Messages tab (#556), where there's no room for it
+  /// beside the list.
+  void pushCoachingThread(String connectionId) {
+    pushNamed(_coachingThreadName, pathParameters: {'connectionId': connectionId});
+  }
+
   /// A client's workout, target beside done (#559).
   void pushCoachingClientWorkout(String connectionId, String workoutId) {
     pushNamed(_coachingClientWorkoutName, pathParameters: {'connectionId': connectionId, 'workoutId': workoutId});
