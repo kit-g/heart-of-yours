@@ -337,6 +337,25 @@ RouteBase _activeWorkoutRoute() {
   );
 }
 
+/// A wide shell with nothing in its detail pane still builds its navigator.
+/// go_router reads the shell's navigator on Back, and one that was never
+/// built reads as null: Back on an Android tablet's Exercises or History root
+/// crashed (#628). Offstage, it is in the tree and shows nothing; the same
+/// global key moves it into the pane once something is selected.
+///
+/// Always the same Stack with [page] first, so selecting or clearing the pane
+/// never rebuilds the page from scratch — a remounted page re-runs its own
+/// start-up.
+Widget _withNavigator(Widget navigator, {required bool shown, required Widget page}) {
+  return Stack(
+    fit: .expand,
+    children: [
+      page,
+      if (!shown) Offstage(child: navigator),
+    ],
+  );
+}
+
 RouteBase _historyRoute() {
   final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -352,35 +371,39 @@ RouteBase _historyRoute() {
 
       return switch (LayoutProvider.of(context)) {
         LayoutSize.compact => child,
-        LayoutSize.wide => HistoryPage(
-          selectedId: workoutId,
-          onNewWorkout: context.goToActiveWorkout,
-          onSaveAsTemplate: (workout) {
-            Templates.of(context).workoutToTemplate(workout);
-            context.goToTemplateEditor(newTemplate: true);
-          },
-          onEditWorkout: (workout) {
-            context.goToWorkoutEditor(workout.id);
-          },
-          onTapWorkout: (workout) {
-            context.goToWorkoutEditor(workout.id);
-          },
-          onDeleteWorkout: (_) {
-            context.goToHistory();
-          },
-          onTapSkip: (skip) {
-            if (skip.id case final String id) context.goToSkip(id);
-          },
-          onEntryReview: context.goToEntryReview,
-          onLogPastWorkout: context.logPast,
-          onOpenActiveWorkout: () {
-            HapticFeedback.mediumImpact();
-            context.goToActiveWorkout();
-          },
-          detail: switch ((workoutId, reviewing || logging)) {
-            (String(), _) || (_, true) => child, // workout selected, or the list
-            (null, false) => null,
-          },
+        LayoutSize.wide => _withNavigator(
+          child,
+          shown: workoutId != null || reviewing || logging,
+          page: HistoryPage(
+            selectedId: workoutId,
+            onNewWorkout: context.goToActiveWorkout,
+            onSaveAsTemplate: (workout) {
+              Templates.of(context).workoutToTemplate(workout);
+              context.goToTemplateEditor(newTemplate: true);
+            },
+            onEditWorkout: (workout) {
+              context.goToWorkoutEditor(workout.id);
+            },
+            onTapWorkout: (workout) {
+              context.goToWorkoutEditor(workout.id);
+            },
+            onDeleteWorkout: (_) {
+              context.goToHistory();
+            },
+            onTapSkip: (skip) {
+              if (skip.id case final String id) context.goToSkip(id);
+            },
+            onEntryReview: context.goToEntryReview,
+            onLogPastWorkout: context.logPast,
+            onOpenActiveWorkout: () {
+              HapticFeedback.mediumImpact();
+              context.goToActiveWorkout();
+            },
+            detail: switch ((workoutId, reviewing || logging)) {
+              (String(), _) || (_, true) => child, // workout selected, or the list
+              (null, false) => null,
+            },
+          ),
         ),
       };
     },
@@ -523,18 +546,22 @@ RouteBase _exercisesRoute() {
 
       return switch (LayoutProvider.of(context)) {
         .compact => detail,
-        .wide => ExercisesPage(
-          selectedId: selectedExerciseId,
-          detail: switch (selectedExerciseId) {
-            null => null,
-            _ => detail,
-          },
-          onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
-          onOpenActiveWorkout: () {
-            HapticFeedback.mediumImpact();
-            context.goToActiveWorkout();
-          },
-          onShowArchived: context.goToExerciseArchive,
+        .wide => _withNavigator(
+          detail,
+          shown: selectedExerciseId != null,
+          page: ExercisesPage(
+            selectedId: selectedExerciseId,
+            detail: switch (selectedExerciseId) {
+              null => null,
+              _ => detail,
+            },
+            onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
+            onOpenActiveWorkout: () {
+              HapticFeedback.mediumImpact();
+              context.goToActiveWorkout();
+            },
+            onShowArchived: context.goToExerciseArchive,
+          ),
         ),
       };
     },

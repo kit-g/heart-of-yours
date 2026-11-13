@@ -1,37 +1,16 @@
-Your month in numbers, your training for an AI, and records as they happen.
-
-- Recaps: early each month, last month on your profile: workouts, time,
-  sets, volume, the muscles and patterns you trained, the records you set.
-- Copy for AI: a workout, a month or one exercise's history as text any
-  assistant reads well. Nothing from Apple Health goes with it.
-- Live records: a quiet note the moment a ticked set beats your best.
-- Second look: Heart points out entries that look like a slip, like a
-  workout left running for hours, and you keep each one or leave it out
-  of your records and charts.
-- Log a past workout: say when it was, then what you did, and it goes
-  straight to History.
-- Create an exercise from the picker while you build a template or a
-  workout, and tag the muscles it works on the body map.
-- Apple Watch: time a hold from the wrist.
-- Sets a week and the example templates now have switches in Settings.
-  Both stay on unless you turn them off.
+Bug fixes and performance improvements.
 
 What to test
-- Recaps: turn it on, check the profile card and the Recaps list, open
-  last month's report, share it. A month with no workouts.
-- Copy for AI: from a History workout's menu, then a month, then an
-  exercise's history. Copy, Share, switching tabs. Paste it somewhere.
-- Live records: the offer under the first set that would be a record,
-  then a record on a weight, on reps, on a warm-up (it should not count).
-- Second look (signed in): a workout left running, an odd weight. Keep
-  one, leave one out, and check the charts and records follow.
-- Past workouts: turn on in Settings > Features, log one from History,
-  move the start and watch the end follow, finish with an untouched set.
-- Create an exercise from the picker with a filter on, with a name
-  already in the library, in Cyrillic.
-- A template with only spaces as its name should not save.
-- Apple Watch: start a hold's stopwatch from the watch, stop it, see
-  the time on the phone. Rest screen: -10s, +10s and Skip on one row.
-- Finish a workout on iPad: the sheet holds still while the dialog is up.
-- Turn Sets a week and Example templates off and on: the profile and
-  Workout tab reflow, and Siri shortcuts follow.
+- Your own exercise, on a slow connection: tap Save, then try to close
+  the dialog (back, the close button, a tap outside) before it finishes.
+  It stays open until the save is done, closes itself, and the screen
+  behind it still works.
+- A workout with a very long exercise name (your own, or in Russian):
+  the name wraps or is cut short, and the timer and options buttons
+  stay on screen and work.
+- History: an exercise with sets you planned but never ticked shows no
+  best set, and total volume counts ticked sets only.
+- A weekly goal on a top set or estimated 1RM: its line now shows on
+  the exercise's charts and on its Profile chart.
+- iPad, both orientations: Exercises and History tabs, select
+  something, clear it, switch tabs.
