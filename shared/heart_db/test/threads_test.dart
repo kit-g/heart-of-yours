@@ -89,11 +89,15 @@ void main() {
     expect((stored.position, stored.pending, stored.item.cursor), (5, false, 'c1'));
   });
 
-  test('one item can be dropped', () async {
-    await local.storeThreadItems(user, [(item: item('m1'), position: null, pending: true)]);
+  test('items are dropped by id, and only those', () async {
+    await local.storeThreadItems(user, [
+      (item: item('m1', cursor: 'c1'), position: 0, pending: false),
+      (item: item('m2', cursor: 'c2'), position: 1, pending: false),
+      (item: item('m3'), position: null, pending: true),
+    ]);
 
-    await local.deleteThreadItem(user, 'm1');
+    await local.deleteThreadItems(user, ['m1', 'm2']);
 
-    expect(await local.getThreadItems(user, 't1'), isEmpty);
+    expect((await local.getThreadItems(user, 't1')).map((each) => each.item.id), ['m3']);
   });
 }

@@ -6,6 +6,19 @@ part of '../api.dart';
 /// A refusal is thrown whole, as everywhere, so a caller branches on its
 /// `code` (`thread_closed`, `rate_limited` with `retryAfter`, `stale_cursor`,
 /// `not_implemented`).
+/// A reported message: its words in the clear, the reporter's franking key
+/// for them, and what the server answered when it was sent.
+typedef ReportedWords = ({
+  String words,
+  String key,
+  String commitment,
+  String tag,
+  String tagKey,
+  String senderId,
+  String recipientId,
+  DateTime createdAt,
+});
+
 mixin _ThreadRoutes on Requests {
   /// The one thread of [connectionId], opened the first time it is asked for.
   Future<Thread> openThread(String connectionId) async {
@@ -83,6 +96,47 @@ mixin _ThreadRoutes on Requests {
       ),
       _ => throw json,
     };
+  }
+
+  /// Deletes every message of [threadId] for both people. The thread stays,
+  /// with when and by whom.
+  Future<void> clearThread(String threadId) async {
+    final (json, code) = await delete(Router.threadItems(threadId));
+    if (code != 204) throw json;
+  }
+
+  /// Reports [reportedId], with [messages] they sent: each the words in the
+  /// clear, the reporter's key for them, and what the server answered when it
+  /// was sent, so the server can check it was really said. The server answers
+  /// the same whether or not they check out, and a retry files it twice.
+  Future<void> fileReport({
+    required String reportedId,
+    String? connectionId,
+    required String reason,
+    List<ReportedWords> messages = const [],
+  }) async {
+    final (json, code) = await post(
+      Router.reports,
+      body: {
+        'reportedId': reportedId,
+        'connectionId': ?connectionId,
+        'reason': reason,
+        'messages': [
+          for (final each in messages)
+            {
+              'words': each.words,
+              'key': each.key,
+              'commitment': each.commitment,
+              'tag': each.tag,
+              'tagKey': each.tagKey,
+              'senderId': each.senderId,
+              'recipientId': each.recipientId,
+              'createdAt': each.createdAt.toUtc().toIso8601String(),
+            },
+        ],
+      },
+    );
+    if (code != 204) throw json;
   }
 
   /// Moves this person's read position in [threadId] to [cursor].

@@ -106,9 +106,15 @@ mixin _Threads on _LocalDatabase {
     });
   }
 
-  /// Drops one item, as one written here that the server will never take.
-  Future<void> deleteThreadItem(String userId, String itemId) {
-    return _db.delete(_threadItems, where: 'user_id = ? AND id = ?', whereArgs: [userId, itemId]);
+  /// Drops [itemIds]: what a deleted conversation held.
+  Future<void> deleteThreadItems(String userId, Iterable<String> itemIds) {
+    return _db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final id in itemIds) {
+        batch.delete(_threadItems, where: 'user_id = ? AND id = ?', whereArgs: [userId, id]);
+      }
+      await batch.commit(noResult: true);
+    });
   }
 
   Thread _thread(Map<String, Object?> row) {

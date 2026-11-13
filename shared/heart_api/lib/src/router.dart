@@ -33,6 +33,9 @@ abstract final class Router {
 
   static String threadRead(String threadId) => '${thread(threadId)}/read';
 
+  /// Reporting a person, with messages that prove what they said (#556).
+  static const reports = 'v1/reports';
+
   /// A push topic's setting. Topics are the server's words, dotted
   /// (`coaching.message`), and one is held to that shape before it reaches a
   /// path, as an invitation's token is.

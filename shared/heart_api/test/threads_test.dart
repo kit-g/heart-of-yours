@@ -200,6 +200,61 @@ void main() {
     expect(jsonDecode(sent as String), {'cursor': 'c1'});
   });
 
+  test('clearThread deletes the conversation for both', () async {
+    respond(client: client, method: 'DELETE', path: Router.threadItems(_threadId), statusCode: 204, body: {});
+
+    await api.clearThread(_threadId);
+
+    verify(client.delete(Uri.https('api.example.com', Router.threadItems(_threadId)), headers: anyNamed('headers')));
+  });
+
+  test('fileReport sends the person, the reason, and each message with its proof', () async {
+    respond(client: client, method: 'POST', path: Router.reports, statusCode: 204, body: {});
+
+    await api.fileReport(
+      reportedId: 'CoachDanaUid551191',
+      connectionId: _connectionId,
+      reason: 'harassment',
+      messages: [
+        (
+          words: 'words',
+          key: 'k',
+          commitment: 'c',
+          tag: 't',
+          tagKey: 'k2026a',
+          senderId: 'CoachDanaUid551191',
+          recipientId: 'StudentSamUid551191',
+          createdAt: DateTime.utc(2026, 11, 7, 21, 5, 35),
+        ),
+      ],
+    );
+
+    final sent = verify(
+      client.post(
+        Uri.https('api.example.com', Router.reports),
+        headers: anyNamed('headers'),
+        body: captureAnyNamed('body'),
+      ),
+    ).captured.single;
+    expect(jsonDecode(sent as String), {
+      'reportedId': 'CoachDanaUid551191',
+      'connectionId': _connectionId,
+      'reason': 'harassment',
+      'messages': [
+        {
+          'words': 'words',
+          'key': 'k',
+          'commitment': 'c',
+          'tag': 't',
+          'tagKey': 'k2026a',
+          'senderId': 'CoachDanaUid551191',
+          'recipientId': 'StudentSamUid551191',
+          'createdAt': '2026-11-07T21:05:35.000Z',
+        },
+      ],
+    });
+  });
+
   test('a stale cursor is thrown whole', () async {
     const stale = {'error': 'bad request', 'code': 'stale_cursor', 'reason': 'read again without it'};
     respond(client: client, method: 'PUT', path: Router.threadRead(_threadId), statusCode: 400, body: stale);
