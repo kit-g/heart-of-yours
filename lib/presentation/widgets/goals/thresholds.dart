@@ -4,9 +4,13 @@ part of 'goals.dart';
 /// [exerciseId] — the same server id both charts and goals address exercises
 /// by since schema v11.
 ///
-/// Recurring goals are left out. Their target is per-period while the chart
-/// plots one point per session, so a line drawn at it would sit on a scale the
-/// series is not on — the same reason [Goals.observeProgress] skips them.
+/// A recurring goal belongs when its period folds sessions into one session's
+/// kind of number: "a 100 kg top set this week" is the week's best session,
+/// on the very scale the chart plots, and so is a period average. One that
+/// sums ("2000 kg of volume a week") is left out — its target is a total no
+/// single session's point is measured against. Leaving every recurring goal
+/// out hid the weekly top-set and e1RM goals the app suggests from every chart
+/// but the goal's own sheet (#627).
 Iterable<Goal> goalsOnChart(
   Iterable<Goal> goals, {
   required String exerciseId,
@@ -14,8 +18,12 @@ Iterable<Goal> goalsOnChart(
 }) {
   return goals.where(
     (goal) {
-      if (goal.cadence != null || goal.metric.chart != metric) return false;
-      return goal.exerciseId == exerciseId;
+      if (goal.metric.chart != metric || goal.exerciseId != exerciseId) return false;
+      return switch ((goal.cadence, metric.periodAggregate)) {
+        (null, _) => true,
+        (_, .best || .mean) => true,
+        (_, .sum) => false,
+      };
     },
   );
 }
