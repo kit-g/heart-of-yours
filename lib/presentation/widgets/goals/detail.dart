@@ -157,9 +157,21 @@ class _GoalDetailState extends State<GoalDetail> {
     final (:unit, :category) = scale;
     final convert = metric.converter(settings, unit: unit, category: category);
 
+    final title = metric.title(context, settings, unit: unit, category: category);
     return SizedBox(
       height: 300,
       child: ExerciseChart(
+        // titled as About titles the same chart, with the same toggle: the
+        // goal's chart is one worth keeping on the profile (#626)
+        label: title,
+        customLabel: Row(
+          children: [
+            Expanded(
+              child: Text(title, style: Theme.of(context).textTheme.titleMedium, maxLines: 1, overflow: .ellipsis),
+            ),
+            DashboardToggle(exercise: exercise, type: metric),
+          ],
+        ),
         // the whole ladder: there is room for it here, unlike on a dashboard card
         thresholds: goalThresholds(
           context,

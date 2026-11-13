@@ -21,6 +21,7 @@ import 'package:heart/presentation/widgets/setting_picker.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/chart_dimension.dart';
+import 'package:heart/presentation/widgets/dashboard_toggle.dart';
 import 'package:heart/presentation/widgets/date_picker.dart';
 import 'package:heart/presentation/widgets/exercise_chart.dart';
 import 'package:heart/presentation/widgets/exercises/exercise_picker_dialog.dart';
