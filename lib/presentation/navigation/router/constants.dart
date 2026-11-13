@@ -42,6 +42,8 @@ const _whatsNewPath = 'whats-new';
 const _whatsNewName = 'whatsNew';
 const _restTimersPath = 'rest-timers';
 const _restTimersName = 'restTimers';
+const _pushSettingsPath = 'notifications';
+const _pushSettingsName = 'pushSettings';
 const _apiTokensPath = 'tokens';
 const _apiTokensName = 'apiTokens';
 const _newApiTokenPath = 'new';
@@ -85,3 +87,28 @@ const _filteredExercisesName = 'filteredExercises';
 const _filteredExercisesPath = '/filtered-exercises';
 const _onboardingName = 'welcome';
 const _onboardingPath = '/$_onboardingName';
+// the Coaching space (#566): a shell of its own, beside the app's
+const _coachingPath = '/coaching';
+const _coachingClientsName = 'coachingClients';
+const _coachingClientsPath = '$_coachingPath/clients';
+const _coachingClientName = 'coachingClient';
+const _coachingClientWorkoutName = 'coachingClientWorkout';
+const _coachingClientProgramName = 'coachingClientProgram';
+const _coachingClientSessionName = 'coachingClientSession';
+const _coachingMessagesName = 'coachingMessages';
+const _coachingMessagesPath = '$_coachingPath/messages';
+const _coachingProgramsName = 'coachingPrograms';
+const _coachingProgramsPath = '$_coachingPath/programs';
+// a coach's library (#557), under the Programs tab
+const _coachingNewProgramName = 'coachingNewProgram';
+const _coachingProgramName = 'coachingProgram';
+const _coachingProgramEditName = 'coachingProgramEdit';
+const _coachingProgramSessionName = 'coachingProgramSession';
+const _coachingMeName = 'coachingMe';
+const _coachingMePath = '$_coachingPath/me';
+// what a coach's invitation link opens (#553): the site's own path, which iOS
+// and Android both hand to the app
+const _invitationPath = '/invite.html';
+const _invitationToken = 't';
+// what an invitation token looks like when the server made it: base64url
+final _invitationTokenShape = RegExp(r'^[A-Za-z0-9_-]{1,128}$');

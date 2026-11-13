@@ -100,7 +100,47 @@ class _FeaturesPageState extends State<FeaturesPage> {
       // the ramp itself, which only the switch's own page can hold
       .warmups => const _FeatureSwitch(.warmups, extra: _WarmupScheme()),
       .entryReview => const _EntryReviewSwitch(),
+      .coachPeople => const _CoachPeopleSwitch(),
+      .yourCoach => const _YourCoachSwitch(),
       _ => _FeatureSwitch(feature),
+    };
+  }
+}
+
+/// Coach people's switch (#566), only for an account that may coach: in the
+/// beta the server grants that by hand, and the profile says whether it holds it.
+class _CoachPeopleSwitch extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (Auth.watch(context).user?.mayCoach ?? false) {
+      true => const _FeatureSwitch(.coachPeople),
+      false => const SizedBox.shrink(),
+    };
+  }
+}
+
+/// Your coach's switch (#566), only once it has been asked about: an
+/// invitation is the ask (#553), and before one there is nothing to switch.
+class _YourCoachSwitch extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (Preferences.watch(context).featureAnswer(.yourCoach)) {
+      // never invited: nothing here, and nothing asked of the server
+      .unasked => const SizedBox.shrink(),
+      .pending || .on || .off => const Column(
+        crossAxisAlignment: .stretch,
+        children: [
+          _FeatureSwitch(.yourCoach),
+          // each coach, whatever the switch says: leaving needs no switch on
+          Padding(padding: .symmetric(horizontal: 16), child: _YourCoaches()),
+          // a block made from an invitation outlives a no to it
+          _Blocked(),
+        ],
+      ),
     };
   }
 }
@@ -151,7 +191,7 @@ class _SpotlightState extends State<_Spotlight> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme(:tertiaryContainer) = Theme.of(context).colorScheme;
-    final still = MediaQuery.disableAnimationsOf(context);
+    final still = lessMotion(context);
     return ValueListenableBuilder<bool>(
       valueListenable: _lit,
       builder: (context, lit, child) {

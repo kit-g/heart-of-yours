@@ -1,11 +1,22 @@
 part of 'workout.dart';
 
+/// The template editor, on whatever keeps the template: the user's own
+/// [Templates], or a session of a coach's library program (#557).
 class TemplateEditor extends StatefulWidget {
   final bool isNewTemplate;
+
+  /// Who keeps the template being edited, and takes the save.
+  final TemplateDrafting drafts;
+
+  /// What the page is called and what its name field asks for, when the
+  /// template is something more particular than a template.
+  final ({String title, String hint})? words;
 
   const new({
     super.key,
     required this.isNewTemplate,
+    required this.drafts,
+    this.words,
   });
 
   @override
@@ -26,10 +37,23 @@ class _TemplateEditorState extends State<TemplateEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:scaffoldBackgroundColor, :colorScheme, :textTheme) = Theme.of(context);
-    final L(:newTemplate, :editTemplate, :save, :templateName) = L.of(context);
-    final templates = Templates.watch(context);
+    final L(:newTemplate, :editTemplate, :templateName) = L.of(context);
+    final templates = widget.drafts;
+    final title = switch (widget.words) {
+      (:final title, hint: _) => title,
+      null when widget.isNewTemplate => newTemplate,
+      null => editTemplate,
+    };
 
+    return ListenableBuilder(
+      listenable: templates,
+      builder: (context, _) => _page(context, templates, title: title, hint: widget.words?.hint ?? templateName),
+    );
+  }
+
+  Widget _page(BuildContext context, TemplateDrafting templates, {required String title, required String hint}) {
+    final ThemeData(:scaffoldBackgroundColor, :colorScheme, :textTheme) = Theme.of(context);
+    final L(:save) = L.of(context);
     if (_controller.text.isEmpty) {
       _controller.text = templates.editable?.name ?? '';
     }
@@ -45,7 +69,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
         appBar: AppBar(
           scrolledUnderElevation: 0,
           backgroundColor: scaffoldBackgroundColor,
-          title: Text(widget.isNewTemplate ? newTemplate : editTemplate),
+          title: Text(title),
           actions: [
             ValueListenableBuilder<TextEditingValue>(
               valueListenable: _controller,
@@ -78,7 +102,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: AppBarTextField(
-                hint: templateName,
+                hint: hint,
                 style: textTheme.titleMedium,
                 hintStyle: textTheme.bodyLarge,
                 onChanged: (value) {
@@ -172,7 +196,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
                 ),
               ),
               onPressed: () {
-                Templates.of(context).discardEditable();
+                widget.drafts.discardEditable();
                 Navigator.of(context, rootNavigator: true).pop();
                 Navigator.of(context).pop();
               },

@@ -69,9 +69,9 @@ class LocalPrograms implements LocalProgramService {
   Future<List<ProgramOwed>> getProgramsOwed(String userId) async {
     return [
       for (final (:row, :id, :programId, :change) in await _db.getProgramsOwed(userId))
-        if ((ProgramRow.values.asNameMap()[row], ProgramChange.values.asNameMap()[change]) case (
+        if ((ProgramRow.values.asNameMap()[row], ProgramOwedChange.values.asNameMap()[change]) case (
           final ProgramRow row,
-          final ProgramChange change,
+          final ProgramOwedChange change,
         ))
           (row: row, id: id, programId: programId, change: change),
     ];
@@ -113,12 +113,22 @@ class RemotePrograms implements RemoteProgramService {
   Future<List<Program>> getPrograms() => _refusedAsBody(_api.getPrograms);
 
   @override
+  Future<Program> getProgram(String programId) => _refusedAsBody(() => _api.getProgram(programId));
+
+  @override
   Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions}) {
     return _refusedAsBody(() => _api.replayProgram(program, sessions: sessions));
   }
 
   @override
-  Future<Program> editProgram(Program program) => _refusedAsBody(() => _api.editProgram(program));
+  Future<Program> editProgram(Program program, {int? baseRevision, String? changeId}) {
+    return _refusedAsBody(() => _api.editProgram(program, baseRevision: baseRevision, changeId: changeId));
+  }
+
+  @override
+  Future<({List<ProgramChange> items, String? cursor})> getProgramChanges(String programId, {String? since}) {
+    return _refusedAsBody(() => _api.getProgramChanges(programId, since: since));
+  }
 
   @override
   Future<void> deleteProgram(String programId, {required bool keepTemplates}) {
@@ -166,6 +176,9 @@ class RemotePrograms implements RemoteProgramService {
 
   @override
   Future<void> deleteSkip(String skipId) => _refusedAsBody(() => _api.deleteSkip(skipId));
+
+  @override
+  Future<void> startProgram(String programId) => _refusedAsBody(() => _api.startProgram(programId));
 
   static Future<T> _refusedAsBody<T>(Future<T> Function() call) async {
     try {

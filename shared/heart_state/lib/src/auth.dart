@@ -59,6 +59,17 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   @override
   User? get user => _user;
 
+  /// The account whose copy from the server [user] carries, if any.
+  String? _known;
+
+  /// Whether [user]'s entitlements are the server's word. False from a
+  /// sign-in until the server's copy of the account arrives, and with none
+  /// at all: until then the account reads as one granted nothing, which a
+  /// rule that turns something off on a missing entitlement must not take
+  /// for an answer. A later change Firebase reports for the same account
+  /// keeps what the server granted (see [_adopt]).
+  bool get entitlementsKnown => _known != null && _user?.id == _known;
+
   /// True for an anonymous session too: the rest of the app keys everything on
   /// a uid and an anonymous one is a uid like any other.
   bool get isLoggedIn => _user != null;
@@ -255,8 +266,22 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
 
   /// Takes [user] as the session: the model the app reads, whether it is an
   /// anonymous one, and — the consequence — whether the remote leg is open.
+  ///
+  /// Firebase knows nothing of what the server granted, and reports every
+  /// change to the account (a new name, a new photo, a token refresh): the
+  /// same account keeps its entitlements through those, or a coach would
+  /// read as one who may not coach until the server answered again.
   void _adopt(fb.User? user) {
-    _user = _cast(user);
+    final previous = _user;
+    // another account, or none: what the server said was about the last one
+    if (previous?.id != user?.uid) _known = null;
+    _user = _cast(
+      user,
+      entitlements: switch (previous) {
+        User(:final id, :final entitlements) when id == user?.uid => entitlements,
+        _ => const [],
+      },
+    );
     _isAnonymous = user?.isAnonymous ?? false;
     remote.account = user != null && !_isAnonymous;
     if (user != null) _sessionUnavailable = false;
@@ -829,7 +854,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     await _firebase.signOut();
   }
 
-  static User? _cast(fb.User? user) {
+  static User? _cast(fb.User? user, {List<String> entitlements = const []}) {
     if (user == null) return null;
     return User(
       email: user.email,
@@ -837,6 +862,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
       displayName: user.displayName,
       avatar: user.photoURL,
       createdAt: user.metadata.creationTime,
+      entitlements: entitlements,
     );
   }
 
@@ -860,6 +886,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     // the session may have changed hands while the write was out
     if (_user?.id != saved.id) return null;
     _user = saved;
+    _known = saved.id;
     notifyListeners();
     return saved.settings;
   }
@@ -868,7 +895,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     try {
       if (user == null || _isAnonymous) return user;
       if (!_service.isAuthenticated) return user;
-      return await _service.registerAccount(user);
+      final saved = await _service.registerAccount(user);
+      _known = user.id;
+      return saved;
     } on UpgradeRequired catch (e) {
       onError?.call(e);
       return null;
@@ -1022,6 +1051,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
         :final avatar,
         :final createdAt,
         :final settings,
+        :final entitlements,
       ):
         await _service.undoAccountDeletion();
         analytics?.accountDeletionCancelled();
@@ -1040,6 +1070,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
           avatar: avatar,
           createdAt: createdAt,
           settings: settings,
+          entitlements: entitlements,
         );
         notifyListeners();
     }

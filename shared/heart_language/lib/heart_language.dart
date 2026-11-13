@@ -50,6 +50,18 @@ extension MoreL on L {
     return intl.DateFormat.Md(localeName).format(when.toLocal());
   }
 
+  /// The weekday, short — "Thu" in en, "чт" in ru — local for the same reason
+  /// as [fullDate].
+  String shortWeekday(DateTime when) {
+    return intl.DateFormat.E(localeName).format(when.toLocal());
+  }
+
+  /// Month and day, short and in locale order — "Nov 6" in en, "6 нояб." in
+  /// ru — local for the same reason as [fullDate].
+  String shortDate(DateTime when) {
+    return intl.DateFormat.MMMd(localeName).format(when.toLocal());
+  }
+
   /// "Tue, Nov 3, Evening" and the like, for a workout that started [at]: now,
   /// unless it is one logged after the fact (#530), named for when it was.
   String defaultWorkoutName([DateTime? at]) {

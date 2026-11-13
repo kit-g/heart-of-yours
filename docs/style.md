@@ -207,3 +207,9 @@ Comments say *why* — the constraint, the bug this shape avoids, the thing
 that looks redundant and isn't. Not what the next line does. No
 `TODO(agent)`, no commented-out code, no `debugPrint` left behind; a genuine
 open end goes in the handoff, not the source.
+
+**A divider comment is a missing file.** `// ---- connections ----` inside a
+class or a test file means the file holds more than one thing: split it, one
+domain to a file, as `heart_api`'s routes are (`lib/src/routes/`, a mixin
+each, #584). When a growing file needs a heading to be readable, the heading
+is the new file's name.

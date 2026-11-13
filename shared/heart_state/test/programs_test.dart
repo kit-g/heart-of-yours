@@ -253,6 +253,239 @@ void main() {
     });
   });
 
+  group("a coach's copy that waits (#557)", () {
+    Program sent({String id = 'sent'}) {
+      return Program.fromJson({
+        ...program(id: id, sessions: const ['c1']).toMap(),
+        'name': 'Strength block',
+        'coachId': 'coach-muffin',
+        'coachName': 'Muffin',
+        'waitingSince': '2026-11-10T12:00:00.000Z',
+      });
+    }
+
+    test('is waiting, not followed: it plans nothing until started', () async {
+      remote.programs = [program(), sent()];
+      await programs.init();
+
+      expect(programs.following.map((each) => each.id), ['p1']);
+      expect(programs.waiting.map((each) => each.id), ['sent']);
+      final day = Template.fromJson({'id': 'c1', 'name': 'Day A', 'order': 0, 'programId': 'sent'});
+      final planned = programs.plan(day, now: DateTime.utc(2026, 11, 10), firstWeekday: 1, round: (_, kg) => kg);
+      expect(planned.plan, isNull);
+    });
+
+    test('starting it starts it there and here, and stops following what it replaces', () async {
+      remote.programs = [program(), sent()];
+      await programs.init();
+
+      await programs.start(programs.lookup('sent')!, replacing: programs.following.toList());
+
+      expect(remote.calls, containsAllInOrder(['startProgram sent']));
+      expect(programs.following.map((each) => each.id), ['sent']);
+      expect(programs.waiting, isEmpty);
+      expect(programs.lookup('p1')!.archived, isTrue);
+      expect(local.programs[uid]!.firstWhere((each) => each.id == 'sent').waitingSince, isNull);
+      expect(programs.lookup('sent')!.coachName, 'Muffin');
+    });
+
+    test('a rename or a stop keeps who sent it and that it waits, here and on the wire', () async {
+      remote.programs = [program(), sent()];
+      await programs.init();
+
+      final renamed = await programs.update(programs.lookup('sent')!.copyWith(name: 'Peaking'));
+      expect(renamed.coachName, 'Muffin');
+      expect(programs.lookup('sent')!.waits, isTrue, reason: 'still not started');
+      expect(local.programs[uid]!.firstWhere((each) => each.id == 'sent').coachId, 'coach-muffin');
+
+      await programs.archive(programs.lookup('sent')!);
+      expect(programs.lookup('sent')!.coachId, 'coach-muffin');
+    });
+
+    test('a start the server refuses changes nothing, and says so', () async {
+      remote.programs = [program(), sent()];
+      await programs.init();
+      remote.failing = true;
+
+      await expectLater(
+        programs.start(programs.lookup('sent')!, replacing: programs.following.toList()),
+        throwsA(isA<Map>()),
+      );
+
+      expect(programs.waiting.map((each) => each.id), ['sent']);
+      expect(programs.lookup('p1')!.archived, isFalse);
+    });
+  });
+
+  group("a coach's copy both of them edit (#558)", () {
+    Program coached({int revision = 2, Map<String, int> sessions = const {'c1': 4}}) {
+      return Program.fromJson({
+        ...program(id: 'mine', sessions: const ['c1']).toMap(),
+        'coachId': 'coach-muffin',
+        'coachName': 'Muffin',
+        'revision': revision,
+        'sessionRevisions': sessions,
+      });
+    }
+
+    ProgramChange change(String id, {required String by, required DateTime at, String? sessionId}) {
+      return ProgramChange(
+        id: id,
+        programId: 'mine',
+        actorId: by,
+        kind: 'edit',
+        revision: 1,
+        sessionId: sessionId,
+        at: at,
+        cursor: id,
+      );
+    }
+
+    test(
+      "an edit of its own fields starts from the revision read, and one of the user's own program doesn't say",
+      () async {
+        remote.programs = [program(), coached()];
+        remote.revisions['mine'] = 2;
+        await programs.init();
+
+        await programs.update(programs.lookup('mine')!.copyWith(name: 'Peaking'));
+        await programs.update(programs.lookup('p1')!.copyWith(name: 'Mine'));
+
+        final [(base, changeId), (ownBase, ownChangeId)] = remote.edits;
+        expect(base, 2);
+        expect(changeId, isNotNull);
+        expect((ownBase, ownChangeId), (null, null));
+        expect(
+          programs.lookup('mine')!.revision,
+          3,
+          reason: "the server's copy is kept, and the next edit starts there",
+        );
+      },
+    );
+
+    test('an edit that never arrived goes again under the same name', () async {
+      remote.programs = [coached()];
+      remote.revisions['mine'] = 2;
+      await programs.init();
+      remote.failing = true;
+      await programs.update(programs.lookup('mine')!.copyWith(name: 'Peaking'));
+      remote.failing = false;
+
+      await programs.init();
+
+      final [(_, first), (_, again)] = remote.edits;
+      expect(again, first, reason: 'a retry the server may have seen writes once');
+    });
+
+    test("the coach's change wins the copy until the user says otherwise; Use mine sends theirs again from the new revision", () async {
+      remote.programs = [coached()];
+      remote.revisions['mine'] = 5; // the coach changed the fields meanwhile
+      await programs.init();
+      remote.programs = [coached(revision: 5)];
+
+      await programs.update(programs.lookup('mine')!.copyWith(name: 'Peaking'));
+
+      expect(programs.conflict('mine')?.fields?.name, 'Peaking');
+      expect(programs.lookup('mine')!.name, 'Getting stronger', reason: "the coach's copy is the one held");
+      expect(local.owed, isEmpty, reason: 'nothing left to send on its own');
+
+      await programs.keepMine('mine');
+
+      expect(programs.conflict('mine'), isNull);
+      expect(remote.edits.last.$1, 5);
+      expect(programs.lookup('mine')!.name, 'Peaking');
+    });
+
+    test("Keep theirs lets the user's version go", () async {
+      remote.programs = [coached()];
+      remote.revisions['mine'] = 5;
+      await programs.init();
+      remote.programs = [coached(revision: 5)];
+      await programs.update(programs.lookup('mine')!.copyWith(name: 'Peaking'));
+
+      programs.dropMine('mine');
+
+      expect(programs.conflict('mine'), isNull);
+      expect(remote.edits, hasLength(1));
+    });
+
+    test("a session of it is written from its own revision; the user's own templates aren't", () async {
+      remote.programs = [program(), coached()];
+      await programs.init();
+
+      final day = Template.fromJson({'id': 'c1', 'name': 'Day A', 'order': 0, 'programId': 'mine'});
+      final own = Template.fromJson({'id': 's1', 'name': 'Day 1', 'order': 0, 'programId': 'p1'});
+      expect(programs.baseRevisionOf(day), 4);
+      expect(programs.baseRevisionOf(own), isNull);
+    });
+
+    test('a session the coach beat waits to be chosen, and Use mine hands it back to be sent', () async {
+      final kept = <String>[];
+      programs = Programs(
+        service: local,
+        remoteService: remote,
+        templates: templates,
+        remote: access,
+        onKeepSession: (session) async => kept.add(session.id),
+      )..userId = uid;
+      remote.programs = [coached()];
+      await programs.init();
+      final mine = Template.fromJson({'id': 'c1', 'name': 'Day A (mine)', 'order': 0, 'programId': 'mine'});
+
+      await programs.beaten(mine);
+      expect(programs.conflict('mine')?.session?.name, 'Day A (mine)');
+
+      await programs.keepMine('mine');
+      expect(kept, ['c1']);
+      expect(programs.conflict('mine'), isNull);
+    });
+
+    test('what the coach changed is read with it, and only theirs since a time counts, newest first', () async {
+      remote.programs = [program(), coached()];
+      remote.changes['mine'] = [
+        change('ch1', by: 'coach-muffin', at: DateTime.utc(2026, 11, 1), sessionId: 'c1'),
+        change('ch2', by: uid, at: DateTime.utc(2026, 11, 3)),
+        change('ch3', by: 'coach-muffin', at: DateTime.utc(2026, 11, 4)),
+      ];
+
+      await programs.init();
+
+      expect(programs.coachChanges('mine', after: DateTime.utc(2026, 10, 1)).map((each) => each.id), ['ch3', 'ch1']);
+      expect(programs.coachChanges('mine', after: DateTime.utc(2026, 11, 2)).map((each) => each.id), ['ch3']);
+      expect(remote.calls.where((each) => each.startsWith('getProgramChanges')), ['getProgramChanges mine -']);
+    });
+
+    test('a pull reads only what is new since the last change held', () async {
+      remote.programs = [coached()];
+      remote.changes['mine'] = [change('ch1', by: 'coach-muffin', at: DateTime.utc(2026, 11, 1))];
+      await programs.init();
+      remote.changes['mine'] = [
+        ...remote.changes['mine']!,
+        change('ch2', by: 'coach-muffin', at: DateTime.utc(2026, 11, 5)),
+      ];
+
+      await programs.pull('mine');
+
+      expect(remote.calls.last, 'getProgramChanges mine ch1');
+      expect(programs.coachChanges('mine', after: DateTime.utc(2026, 10, 1)).map((each) => each.id), ['ch2', 'ch1']);
+    });
+
+    test("coming back reads every coach's copy again, at most once a minute", () async {
+      remote.programs = [program(), coached()];
+      await programs.init();
+      remote.calls.clear();
+      final now = DateTime.utc(2026, 11, 12, 9);
+
+      expect(await programs.pullCoached(now: now), ['c1']);
+      expect(remote.calls, contains('getProgram mine'));
+      expect(remote.calls, isNot(contains('getProgram p1')));
+
+      remote.calls.clear();
+      expect(await programs.pullCoached(now: now.add(const Duration(seconds: 30))), isEmpty);
+      expect(remote.calls, isEmpty);
+    });
+  });
+
   group('init', () {
     test('reads the mirror, then the server replaces it, history and all', () async {
       local.programs[uid] = [program(id: 'gone')];
@@ -317,14 +550,48 @@ void main() {
     });
   });
 
+  group('pull, the one program a push named (#567)', () {
+    test('reads that program and its history, and no other', () async {
+      remote.programs = [program(id: 'other')];
+      await programs.init();
+      remote.calls.clear();
+      remote.programs = [program(id: 'other'), program(id: 'p2')];
+      remote.actions['p2'] = [ProgramAction(id: 'a1', programId: 'p2', kind: .pause, at: DateTime.utc(2026, 10, 2))];
+
+      final pulled = await programs.pull('p2');
+
+      expect(pulled?.id, 'p2');
+      expect(remote.calls, ['getProgram p2', 'getProgramActions p2', 'getProgramBases p2']);
+      expect(programs.all.map((each) => each.id), containsAll(['other', 'p2']));
+      expect(local.programs[uid]!.map((each) => each.id), contains('p2'));
+      expect(programs.actionsOf('p2').single.id, 'a1');
+    });
+
+    test('with the remote leg closed, nothing is read', () async {
+      access.account = false;
+
+      expect(await programs.pull('p2'), isNull);
+      expect(remote.calls, isEmpty);
+    });
+
+    test('a server that fails is reported, and what was held stays', () async {
+      remote.programs = [program()];
+      await programs.init();
+      remote.failing = true;
+
+      expect((await programs.pull('p1'))?.id, 'p1');
+      expect(errors, isNotEmpty);
+    });
+  });
+
   group('what the server did not confirm', () {
     test('a program it never got is kept, and sent at the next launch', () async {
       when(templates.getTemplates(uid)).thenAnswer((_) async => []);
       remote.failing = true;
       final created = await programs.create(Program(name: 'Upper / Lower'), sessions: [session('s1')]);
       expect(local.owed.map((each) => (each.row, each.change)), [
-        (ProgramRow.program, ProgramChange.created),
-        (ProgramRow.session, ProgramChange.edited),
+        (ProgramRow.program, ProgramOwedChange.created),
+        (ProgramRow.session, ProgramOwedChange.edited),
       ]);
 
       remote.failing = false;
@@ -583,7 +850,7 @@ void main() {
 
       await programs.join(followed, extra('s3'));
       expect(local.owed.map((each) => (each.row, each.id, each.change)), [
-        (ProgramRow.session, 's3', ProgramChange.edited),
+        (ProgramRow.session, 's3', ProgramOwedChange.edited),
       ]);
 
       final [stored, ..._] = verify(templates.storeTemplates(captureAny, userId: uid)).captured;
@@ -685,7 +952,7 @@ void main() {
 
       await programs.leave(followed, session('s2'));
       expect(local.owed.map((each) => (each.row, each.id, each.change)), [
-        (ProgramRow.session, 's2', ProgramChange.deleted),
+        (ProgramRow.session, 's2', ProgramOwedChange.deleted),
       ]);
 
       remote
@@ -1766,6 +2033,12 @@ class _Remote implements RemoteProgramService {
   }
 
   @override
+  Future<Program> getProgram(String programId) async {
+    _call('getProgram $programId');
+    return programs.firstWhere((each) => each.id == programId);
+  }
+
+  @override
   Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions}) async {
     _call('replayProgram ${program.id} ${sessions.map((each) => each.id).join(',')}');
     final row = programAnswer?.call(program) ?? program;
@@ -1773,10 +2046,37 @@ class _Remote implements RemoteProgramService {
     return (row: row, created: true);
   }
 
+  /// A coach's copy's fields as the server holds them: the revision an edit
+  /// has to start from, or the coach changed them first.
+  final revisions = <String, int>{};
+
+  /// Each coach's copy edit as sent: the revision it started from, its name.
+  final edits = <(int?, String?)>[];
+
   @override
-  Future<Program> editProgram(Program program) async {
+  Future<Program> editProgram(Program program, {int? baseRevision, String? changeId}) async {
+    edits.add((baseRevision, changeId));
     _call('editProgram ${program.id}');
+    if (revisions[program.id] case final int current when baseRevision != null) {
+      if (baseRevision != current) throw {'code': 'program_changed', 'revision': current};
+      revisions[program.id!] = current + 1;
+      return Program.fromJson({...program.toMap(), 'revision': current + 1});
+    }
     return program;
+  }
+
+  /// Each copy's history, oldest first, each change's cursor its id.
+  final changes = <String, List<ProgramChange>>{};
+
+  @override
+  Future<({List<ProgramChange> items, String? cursor})> getProgramChanges(String programId, {String? since}) async {
+    _call('getProgramChanges $programId ${since ?? '-'}');
+    final all = changes[programId] ?? const <ProgramChange>[];
+    final after = switch (since) {
+      final String since => all.skipWhile((each) => each.cursor != since).skip(1),
+      null => all,
+    };
+    return (items: after.toList(), cursor: null);
   }
 
   @override
@@ -1840,6 +2140,9 @@ class _Remote implements RemoteProgramService {
     _call('deleteSkip $skipId');
     skips = [...skips.where((each) => each.id != skipId)];
   }
+
+  @override
+  Future<void> startProgram(String programId) async => _call('startProgram $programId');
 
   @override
   Future<Template> setTemplateProgram(Template template, {required String? programId}) async {

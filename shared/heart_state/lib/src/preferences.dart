@@ -24,6 +24,12 @@ const _healthInviteDismissed = 'healthInviteDismissed';
 const _healthAsked = 'healthAsked';
 // read natively too, as `flutter.watchReadings` (android/app WatchReadings.kt)
 const _watchReadings = 'watchReadings';
+const _coachingSpace = 'coachingSpace';
+const _coachName = 'coachName';
+const _programSeen = 'programSeen';
+const _coachFingerprint = 'coachFingerprint';
+const _pendingInvitation = 'pendingInvitation';
+const _coachPauseOwed = 'coachPauseOwed';
 const _notificationsReminderDismissed = 'notificationsReminderDismissed';
 const _installed = 'installed';
 const _lockScreenWorkout = 'lockScreenWorkout';
@@ -94,6 +100,73 @@ class Preferences with ChangeNotifier {
     final write = _prefs?.setBool(_watchReadings, on);
     notifyListeners();
     return write;
+  }
+
+  /// Whether the app was last left in the Coaching space (#566), so it opens
+  /// there again. Per device, and only a place: whether the space is there at
+  /// all is Coach people's switch. Nothing draws from it, so nobody is told.
+  bool get inCoachingSpace => _prefs?.getBool(_coachingSpace) ?? false;
+
+  Future<bool>? setInCoachingSpace({required bool inside}) => _prefs?.setBool(_coachingSpace, inside);
+
+  /// A coach's name as their invitation showed it (#553), by the connection it
+  /// made: what this device calls them when their profile has no name, which
+  /// a connection otherwise carries (heart-api#409). Per device.
+  String? coachName(String connectionId) => _prefs?.getString('$_coachName-$connectionId');
+
+  Future<bool>? rememberCoachName(String connectionId, String name) {
+    return _prefs?.setString('$_coachName-$connectionId', name);
+  }
+
+  /// When the user last looked at what the coach changed in [programId]
+  /// (#558): its band says only what came after. Per device, and null until
+  /// the first look.
+  DateTime? programSeen(String programId) {
+    return switch (_prefs?.getString('$_programSeen-$programId')) {
+      final String at => DateTime.tryParse(at),
+      null => null,
+    };
+  }
+
+  Future<bool>? setProgramSeen(String programId, DateTime at) {
+    final write = _prefs?.setString('$_programSeen-$programId', at.toUtc().toIso8601String());
+    notifyListeners();
+    return write;
+  }
+
+  /// The coach's key fingerprint from their invitation link's fragment
+  /// (#553), by the connection it made: what their keys are checked against
+  /// once devices hold them (#555). The part of a link after `#` never
+  /// reaches a server, so this device is the only place it is.
+  String? coachFingerprint(String connectionId) => _prefs?.getString('$_coachFingerprint-$connectionId');
+
+  Future<bool>? rememberCoachFingerprint(String connectionId, String fingerprint) {
+    return _prefs?.setString('$_coachFingerprint-$connectionId', fingerprint);
+  }
+
+  /// An invitation link opened in a session without an account (#553): kept
+  /// while the person makes one, then opened again. `token` and the link's
+  /// fragment, if it had one.
+  ({String token, String? fingerprint})? get pendingInvitation {
+    return switch (_prefs?.getStringList(_pendingInvitation)) {
+      [final String token] => (token: token, fingerprint: null),
+      [final String token, final String fingerprint] => (token: token, fingerprint: fingerprint),
+      _ => null,
+    };
+  }
+
+  /// Your coach was turned off and some coach couldn't be paused yet (#553):
+  /// tried again until every one is, so the switch never reads off while a
+  /// coach still sees new workouts. Per device: it's this device's attempt.
+  bool get coachPauseOwed => _prefs?.getBool(_coachPauseOwed) ?? false;
+
+  Future<bool>? setCoachPauseOwed({required bool owed}) => _prefs?.setBool(_coachPauseOwed, owed);
+
+  Future<bool>? setPendingInvitation(({String token, String? fingerprint})? invitation) {
+    return switch (invitation) {
+      (:final token, :final fingerprint) => _prefs?.setStringList(_pendingInvitation, [token, ?fingerprint]),
+      null => _prefs?.remove(_pendingInvitation),
+    };
   }
 
   Future<bool>? setFirstWeekday(int weekday) {

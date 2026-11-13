@@ -11,6 +11,7 @@ import 'package:heart/core/env/home_widgets.dart';
 import 'package:heart/core/env/launch_screen.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
+import 'package:heart/core/env/push.dart';
 import 'package:heart/core/env/rest_store.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/env/shortcuts.dart';
@@ -21,11 +22,17 @@ import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/anomalies.dart';
 import 'package:heart/core/utils/api_tokens.dart';
+import 'package:heart/core/utils/coaching.dart';
+import 'package:heart/core/utils/library.dart';
+import 'package:heart/core/utils/roster.dart';
 import 'package:heart/core/utils/backfill.dart';
 import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/programs.dart';
+import 'package:heart/core/utils/pushes.dart';
+import 'package:heart/core/utils/device_keys.dart';
+import 'package:heart/core/utils/workout_plans.dart';
 import 'package:heart/core/utils/live_records.dart';
 import 'package:heart/core/utils/record_book.dart';
 import 'package:heart/core/utils/charts.dart';
@@ -34,6 +41,7 @@ import 'package:heart/core/utils/templates.dart';
 import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/navigation/coaching.dart';
 import 'package:heart/presentation/navigation/entry_review.dart';
 import 'package:heart/presentation/navigation/goals_widget.dart';
 import 'package:heart/presentation/navigation/home_widgets.dart';
@@ -41,6 +49,8 @@ import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
 import 'package:heart/presentation/navigation/pause.dart';
 import 'package:heart/presentation/navigation/program_calendar.dart';
+import 'package:heart/presentation/navigation/pushes.dart';
+import 'package:heart/presentation/navigation/device_keys.dart';
 import 'package:heart/presentation/navigation/system_shortcuts.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/navigation/watch.dart';
@@ -68,6 +78,15 @@ class HeartApp extends StatelessWidget {
   /// one. A test passes its own.
   final DeviceCalendar? calendar;
 
+  /// The push client's transport (#567); by default FCM, where the app has
+  /// notifications at all. A test passes its own.
+  final PushClient? pushClient;
+
+  /// Where this device keeps its encryption keys (#555): the Keychain or the
+  /// Keystore on a phone, none on the web or in a test unless it brings one.
+  /// Without one, keys never run.
+  final KeyVault? keyVault;
+
   const new({
     super.key,
     required this.appConfig,
@@ -79,6 +98,8 @@ class HeartApp extends StatelessWidget {
     this.hasLocalNotifications = true,
     this.firebaseAuth,
     this.calendar,
+    this.pushClient,
+    this.keyVault,
   });
 
   @override
@@ -149,6 +170,10 @@ class HeartApp extends StatelessWidget {
             persistPauses: db.setWorkoutPauses,
             pausedAtOf: db.getPausedAt,
             noteFor: Exercises.of(context).noteFor,
+            // a program workout's plan, kept from the start and sent once
+            // the workout is on the server (#566)
+            localPlans: LocalWorkoutPlans(db),
+            remotePlans: RemoteWorkoutPlans(api),
             remoteService: api,
             remote: RemoteAccess.of(context),
             analytics: analytics,
@@ -173,21 +198,30 @@ class HeartApp extends StatelessWidget {
         // position, and `Templates`, which re-reads the sessions a program
         // writes (#346). Data whatever the feature switch says: off only hides.
         ChangeNotifierProvider<Programs>(
-          create: (context) => Programs(
-            service: LocalPrograms(db),
-            remoteService: RemotePrograms(api),
-            templates: db,
-            workouts: Workouts.of(context),
-            onSessionsChanged: Templates.of(context).reread,
-            // a ladder's step (#350): the sessions are the template list's
-            onAdvance: (sessions, {required from, required to}) async {
-              if (Exercises.of(context).lookup(to) case final exercise?) {
-                await Templates.of(context).replaceExercise(sessions, from: from, to: exercise);
-              }
-            },
-            remote: RemoteAccess.of(context),
-            onError: reportToSentry,
-          ),
+          create: (context) {
+            final templates = Templates.of(context);
+            final programs = Programs(
+              service: LocalPrograms(db),
+              remoteService: RemotePrograms(api),
+              templates: db,
+              workouts: Workouts.of(context),
+              onSessionsChanged: templates.reread,
+              // a ladder's step (#350): the sessions are the template list's
+              onAdvance: (sessions, {required from, required to}) async {
+                if (Exercises.of(context).lookup(to) case final exercise?) {
+                  await templates.replaceExercise(sessions, from: from, to: exercise);
+                }
+              },
+              // a coach's copy (#558): the user's version of a session, chosen
+              // over the coach's
+              onKeepSession: templates.keep,
+              remote: RemoteAccess.of(context),
+              onError: reportToSentry,
+            );
+            // which sessions are a coach's copy's, written from a revision
+            templates.shared = programs;
+            return programs;
+          },
         ),
         // Things to go easy on (#396): the map is content, the list the
         // user's own and health-shaped — on this phone only, and its errors
@@ -290,6 +324,64 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<ApiTokens>(
           create: (context) => ApiTokens(
             service: RemoteApiTokens(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // Coaching's connections and hidden workouts (#552, #566): server-only,
+        // and read only once a coaching feature is on, so with both off nothing
+        // goes over the wire.
+        ChangeNotifierProvider<Coaching>(
+          create: (context) => Coaching(
+            service: RemoteCoaching(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // The push client's registration and settings (#567, #554):
+        // server-only, and used only while a coaching switch is on.
+        ChangeNotifierProvider<Pushes>(
+          create: (context) => Pushes(
+            service: RemotePushes(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // This device's encryption keys and what carries them (#555): made and
+        // published only while a coaching switch is on (DeviceKeysPresenter).
+        ChangeNotifierProvider<DeviceKeys>(
+          create: (context) => DeviceKeys(
+            service: RemoteDeviceKeys(api),
+            vault: keyVault,
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // A coach's roster and feed (#559): server-only, read when the
+        // Clients tab opens, which is there only with Coach people on.
+        ChangeNotifierProvider<Roster>(
+          create: (context) => Roster(
+            service: RemoteRoster(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // A coach's work on a client's copy (#558): server-only, read when
+        // the coach opens it.
+        ChangeNotifierProvider<ClientPrograms>(
+          create: (context) => ClientPrograms(
+            service: RemoteClientPrograms(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // A coach's library (#557): server-only, read when the Programs tab
+        // of the Coaching space opens. A body names exercises by id, which
+        // the coach's own catalog turns back into exercises.
+        ChangeNotifierProvider<CoachLibrary>(
+          create: (context) => CoachLibrary(
+            service: RemoteCoachLibrary(api),
+            exerciseOf: (id) => Exercises.of(context).lookup(id),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),
@@ -479,15 +571,21 @@ class HeartApp extends StatelessWidget {
       builder: (_, _) {
         return EntryReviewPresenter(
           leaveOutDiscarded: (on) => db.leavesOutDiscarded = on,
-          child: Consumer<AppTheme>(
-            builder: (_, theme, _) {
-              return _App(
-                theme: theme,
-                config: appConfig,
-                router: router,
-                hasLocalNotifications: hasLocalNotifications ?? true,
-              );
-            },
+          // coaching's connections, read only with a coaching switch on (#566)
+          child: CoachingPresenter(
+            onSpaceAvailable: router.refresh,
+            onPendingInvitation: (token, fingerprint) => router.openInvitation(token, fingerprint: fingerprint),
+            child: Consumer<AppTheme>(
+              builder: (_, theme, _) {
+                return _App(
+                  theme: theme,
+                  config: appConfig,
+                  router: router,
+                  hasLocalNotifications: hasLocalNotifications ?? true,
+                  pushClient: pushClient,
+                );
+              },
+            ),
           ),
         );
       },
@@ -505,12 +603,14 @@ class _App extends StatefulWidget {
   final AppConfig config;
   final HeartRouter router;
   final bool hasLocalNotifications;
+  final PushClient? pushClient;
 
   const new({
     required this.theme,
     required this.config,
     required this.router,
     required this.hasLocalNotifications,
+    this.pushClient,
   });
 
   @override
@@ -551,6 +651,12 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     // the sweep that flags entries runs nightly: a phone left open overnight
     // learns of the morning's flags when it comes back
     Anomalies.of(context).pull();
+    // a coach's edits to their copies, whose push may never have come (#558)
+    final preferences = Preferences.of(context);
+    if (preferences.isOn(.programs) && preferences.isOn(.yourCoach)) {
+      final templates = Templates.of(context);
+      Programs.of(context).pullCoached().then(templates.pull);
+    }
   }
 
   /// Localized backend content (the exercise catalog) is served per request
@@ -630,7 +736,22 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
                         false => null,
                       },
                       child: PausePresenter(
-                        child: ProgramCalendarPresenter(child: child ?? const SizedBox.shrink()),
+                        child: ProgramCalendarPresenter(
+                          // the push client (#567), running only with a
+                          // coaching switch on; the same gate again, since
+                          // it posts through the notifications plugin
+                          child: PushPresenter(
+                            client:
+                                widget.pushClient ??
+                                switch ((widget.hasLocalNotifications, kIsWeb)) {
+                                  (true, false) => FirebasePushClient(Theme.of(context).platform),
+                                  _ => null,
+                                },
+                            // this device's encryption keys (#555), by the
+                            // push client's rule
+                            child: DeviceKeysPresenter(child: child ?? const SizedBox.shrink()),
+                          ),
+                        ),
                       ),
                     ),
                   ),

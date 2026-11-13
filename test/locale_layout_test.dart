@@ -18,6 +18,7 @@ import 'dart:convert';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -30,7 +31,21 @@ import 'support/harness.dart';
 
 const _signInWithAppleChannel = MethodChannel('com.aboutyou.dart_packages.sign_in_with_apple');
 
-enum _Screen { onboarding, login, profile, workout, history, exercises, settings, importData }
+enum _Screen {
+  onboarding,
+  login,
+  profile,
+  workout,
+  history,
+  exercises,
+  settings,
+  importData,
+  coachingClients,
+  coachingMessages,
+  coachingPrograms,
+  coachingMe,
+  invitation,
+}
 
 void main() {
   late MockLocalDatabase db;
@@ -119,6 +134,29 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     }
 
+    // the Coaching space (#566): Coach people on, for an account that may coach
+    final coaching = {
+      _Screen.coachingClients: AppKeys.coachingClientsStack,
+      _Screen.coachingMessages: AppKeys.coachingMessagesStack,
+      _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
+      _Screen.coachingMe: AppKeys.coachingMeStack,
+    };
+    if (screen == _Screen.invitation) {
+      when(api.previewInvitation('t1')).thenAnswer(
+        (_) async => InvitationPreview.fromJson({'inviterName': 'Alexandra', 'good': true}),
+      );
+    }
+    if (coaching.containsKey(screen)) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-coachPeople': 'on'});
+      when(api.isAuthenticated).thenReturn(true);
+      when(api.registerAccount(any)).thenAnswer((invocation) async {
+        final user = invocation.positionalArguments.single as User;
+        return User(id: user.id, email: user.email, settings: user.settings, entitlements: const ['coach']);
+      });
+      when(api.getConnections()).thenAnswer((_) async => []);
+      when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
+    }
+
     // no user means an anonymous session; the login page is reached from its
     // profile's no-account dialog, never by redirect
     final firebase = switch (screen) {
@@ -164,6 +202,12 @@ void main() {
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
         await tester.tap(find.byIcon(Icons.upload_file_rounded));
+      case _Screen.invitation:
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/invite.html?t=t1');
+      case _Screen.coachingClients || _Screen.coachingMessages || _Screen.coachingPrograms || _Screen.coachingMe:
+        await tester.tapByKey(AppKeys.coachingButton);
+        await tester.pumpTimes();
+        await tester.tapByKey(coaching[screen]!);
     }
     await tester.pumpTimes();
   }

@@ -38,6 +38,81 @@ void main() {
       when(remoteFolders.getFolders(userId: anyNamed('userId'))).thenAnswer((_) async => []);
     });
 
+    group("a session of a coach's copy (#558)", () {
+      Template day(String name) => Template.fromJson({'id': 'c1', 'name': name, 'order': 0, 'programId': 'mine'});
+
+      setUp(() {
+        templates.userId = 'u1';
+        clearInteractions(filing);
+        clearInteractions(remote);
+        when(local.updateTemplate(any)).thenAnswer((_) async {});
+        when(local.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
+      });
+
+      // the mocks are the file's: later tests count calls from the start
+      tearDown(() {
+        clearInteractions(local);
+        clearInteractions(remote);
+        clearInteractions(filing);
+      });
+
+      test('goes from the revision it was read at, under a name of its own', () async {
+        templates.shared = _Shared(revision: 4);
+        when(
+          filing.editSharedTemplate(any, baseRevision: anyNamed('baseRevision'), changeId: anyNamed('changeId')),
+        ).thenAnswer((invocation) async => invocation.positionalArguments.first as Template);
+
+        templates.editable = day('Day A (mine)');
+        await templates.saveEditable();
+
+        final [base, changeId] = verify(
+          filing.editSharedTemplate(
+            any,
+            baseRevision: captureAnyNamed('baseRevision'),
+            changeId: captureAnyNamed('changeId'),
+          ),
+        ).captured;
+        expect(base, 4);
+        expect(changeId, isA<String>());
+        verifyNever(remote.editTemplate(any));
+      });
+
+      test("one the coach changed first brings theirs back, and the user's waits", () async {
+        final shared = _Shared(revision: 4);
+        templates.shared = shared;
+        when(
+          filing.editSharedTemplate(any, baseRevision: anyNamed('baseRevision'), changeId: anyNamed('changeId')),
+        ).thenThrow({'code': 'program_changed', 'revision': 5});
+        when(filing.getTemplate('c1')).thenAnswer((_) async => day('Day A (coach)'));
+
+        templates.editable = day('Day A (mine)');
+        await templates.saveEditable();
+
+        expect(shared.lost.single.name, 'Day A (mine)');
+        expect(templates.lookup('c1')?.name, 'Day A (coach)');
+      });
+    });
+
+    group('pull, the sessions of a program a push named (#567)', () {
+      test('reads only those templates, keeps them, and one that fails keeps what was held', () async {
+        templates.userId = 'u1';
+        clearInteractions(filing);
+        when(filing.getTemplate('s1')).thenAnswer((_) async => tmpl(id: 's1', order: 0, name: 'Day 1'));
+        when(filing.getTemplate('s2')).thenThrow({'error': 'not found'});
+        when(local.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
+
+        await templates.pull(['s1', 's2']);
+
+        expect(templates.lookup('s1')?.name, 'Day 1');
+        expect(templates.lookup('s2'), isNull);
+        verify(filing.getTemplate('s1')).called(1);
+        verify(filing.getTemplate('s2')).called(1);
+        verifyNoMoreInteractions(filing);
+        final stored = verify(local.storeTemplates(captureAny, userId: 'u1')).captured.single as Iterable<Template>;
+        expect(stored.map((each) => each.id), ['s1']);
+      });
+    });
+
     group('init', () {
       test('populates samples from local when available, and repaints once they land', () async {
         final sampleLocal = [tmpl(id: 's1', order: 0, name: 'Sample')];
@@ -912,4 +987,22 @@ void main() {
       expect(find.byType(Text), findsOneWidget);
     });
   });
+}
+
+class _Shared implements SharedSessions {
+  final int revision;
+  final lost = <Template>[];
+
+  new({required this.revision});
+
+  @override
+  int? baseRevisionOf(Template session) {
+    return switch (session.programId) {
+      String() => revision,
+      null => null,
+    };
+  }
+
+  @override
+  Future<void> beaten(Template mine) async => lost.add(mine);
 }

@@ -12,8 +12,18 @@ enum _AuthPages {
 RouteBase _profileRoute() {
   return GoRoute(
     path: _profilePath,
+    // the app opens in the space it was left in (#566): Profile itself, not
+    // anything under it, so Settings stays reachable from Coaching
+    redirect: (context, state) {
+      if (state.fullPath != _profilePath) return null;
+      return switch (Preferences.of(context).inCoachingSpace && coachingSpaceOn(context)) {
+        true => _coachingClientsPath,
+        false => null,
+      };
+    },
     builder: (context, _) {
       return ProfilePage(
+        onCoaching: context.goToCoaching,
         onSettings: context.goToSettings,
         onAccount: context.goToAccountManagement,
         onLogIn: context.goToLogin,
@@ -58,6 +68,7 @@ RouteBase _profileRoute() {
             onExportData: context.goToExportData,
             onWhatsNew: context.goToWhatsNew,
             onRestTimers: context.goToRestTimers,
+            onPushSettings: context.goToPushSettings,
             onFeatures: context.goToFeatures,
             onDeveloperApi: context.goToApiTokens,
             onErased: context.goToProfile,
@@ -108,6 +119,16 @@ RouteBase _profileRoute() {
             name: _restTimersName,
           ),
           GoRoute(
+            path: _pushSettingsPath,
+            // off, a link here is one the app has no screen for (`docs/opt-in.md`)
+            redirect: (context, _) => switch (pushesOn(context)) {
+              true => null,
+              false => '$_profilePath/$_settingsPath',
+            },
+            builder: (_, _) => const PushSettingsPage(),
+            name: _pushSettingsName,
+          ),
+          GoRoute(
             path: _featuresPath,
             builder: (_, state) {
               return FeaturesPage(
@@ -149,9 +170,10 @@ RouteBase _workoutRoute() {
     routes: [
       GoRoute(
         path: 'templates',
-        builder: (_, state) {
+        builder: (context, state) {
           return TemplateEditor(
             isNewTemplate: state.uri.queryParameters['newTemplate'] == 'true',
+            drafts: Templates.of(context),
           );
         },
         name: _templateEditorName,
@@ -1238,4 +1260,266 @@ DateTime? _monthOf(String? key) {
     },
     _ => null,
   };
+}
+
+/// The Coaching space (#566): its own shell and tabs, there only while
+/// [coachingSpaceOn]. Off, a link into it is one the app has no screen for.
+RouteBase _coachingRoute() {
+  String? off(BuildContext context, GoRouterState _) => coachingSpaceOn(context) ? null : _profilePath;
+
+  GoRoute page(String path, String name, Widget Function(VoidCallback onYourTraining) build) {
+    return GoRoute(
+      path: path,
+      name: name,
+      redirect: off,
+      builder: (context, _) => build(context.leaveCoaching),
+    );
+  }
+
+  return StatefulShellRoute.indexedStack(
+    pageBuilder: (context, state, shell) {
+      return NoTransitionPage<void>(
+        key: state.pageKey,
+        child: CoachingFrame(
+          shell: shell,
+          onYourTraining: context.leaveCoaching,
+          onBackToWorkout: () {
+            // the sheet goes over the Workout tab, as a Live Activity's tap
+            // does, once the router has left the space: pushed in the same
+            // frame, it would land over Coaching
+            final router = GoRouter.of(context);
+            context.leaveCoaching(to: _workoutName);
+            WidgetsBinding.instance.addPostFrameCallback((_) => _pushActiveWorkoutOnce(router));
+          },
+        ),
+      );
+    },
+    branches: [
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: _coachingClientsPath,
+            name: _coachingClientsName,
+            redirect: off,
+            builder: (context, _) => ClientsPage(
+              onYourTraining: context.leaveCoaching,
+              onOpenClient: context.pushCoachingClient,
+              onOpenWorkout: context.pushCoachingClientWorkout,
+              onOpenProgram: context.pushCoachingClientProgram,
+            ),
+            routes: [
+              GoRoute(
+                path: ':connectionId',
+                name: _coachingClientName,
+                builder: (context, state) {
+                  final connectionId = state.pathParameters['connectionId']!;
+                  return ClientPage(
+                    key: ValueKey(connectionId),
+                    connectionId: connectionId,
+                    onOpenWorkout: (workoutId) => context.pushCoachingClientWorkout(connectionId, workoutId),
+                    onOpenProgram: (programId) => context.pushCoachingClientProgram(connectionId, programId),
+                  );
+                },
+                routes: [
+                  GoRoute(
+                    path: 'programs/:programId',
+                    name: _coachingClientProgramName,
+                    builder: (context, state) {
+                      final connectionId = state.pathParameters['connectionId']!;
+                      final programId = state.pathParameters['programId']!;
+                      return ClientProgramPage(
+                        key: ValueKey(programId),
+                        connectionId: connectionId,
+                        programId: programId,
+                        onEditSession: ({required isNew}) {
+                          context.pushCoachingClientSession(connectionId, programId, isNew: isNew);
+                        },
+                      );
+                    },
+                    routes: [
+                      GoRoute(
+                        path: 'session',
+                        name: _coachingClientSessionName,
+                        builder: (context, state) {
+                          final l = L.of(context);
+                          final isNew = state.uri.queryParameters['new'] == 'true';
+                          return TemplateEditor(
+                            isNewTemplate: isNew,
+                            drafts: ClientPrograms.of(context),
+                            words: (
+                              title: switch (isNew) {
+                                true => l.coachingProgramNewSession,
+                                false => l.coachingProgramEditSession,
+                              },
+                              hint: l.coachingProgramSessionName,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'workouts/:workoutId',
+                    name: _coachingClientWorkoutName,
+                    builder: (context, state) => WorkoutReviewPage(
+                      key: ValueKey(state.pathParameters['workoutId']),
+                      connectionId: state.pathParameters['connectionId']!,
+                      workoutId: state.pathParameters['workoutId']!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [page(_coachingMessagesPath, _coachingMessagesName, (back) => CoachMessagesPage(onYourTraining: back))],
+      ),
+      StatefulShellBranch(routes: [_coachingProgramsRoute(off)]),
+      StatefulShellBranch(
+        routes: [page(_coachingMePath, _coachingMeName, (back) => CoachMePage(onYourTraining: back))],
+      ),
+    ],
+  );
+}
+
+/// A coach's library (#557): the list, a new program, one program, and the
+/// program form and template editor on it, as the coach's own programs have.
+GoRoute _coachingProgramsRoute(GoRouterRedirect off) {
+  return GoRoute(
+    path: _coachingProgramsPath,
+    name: _coachingProgramsName,
+    redirect: off,
+    builder: (context, _) {
+      return CoachProgramsPage(
+        onYourTraining: context.leaveCoaching,
+        onOpen: context.goToCoachingProgram,
+        onNew: context.goToNewCoachingProgram,
+      );
+    },
+    routes: [
+      // before ':programId', which would otherwise take "new" for an id
+      GoRoute(
+        path: 'new',
+        name: _coachingNewProgramName,
+        builder: (context, _) {
+          final l = L.of(context);
+          String? made;
+          return ProgramFieldsForm(
+            initial: Program(name: '', perWeek: 3, weeks: 8),
+            title: l.newProgram,
+            saveLabel: l.coachingProgramCreate,
+            withNote: true,
+            onSave: (fields) async {
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                final program = await CoachLibrary.of(context).create(Program(name: '').withFields(fields));
+                made = program.id;
+                return true;
+              } catch (error, stacktrace) {
+                reportToSentry(error, stacktrace: stacktrace);
+                messenger.snack(l.coachingProgramCreateFailed);
+                return false;
+              }
+            },
+            onDone: () => switch (made) {
+              final String id => context.goToCoachingProgram(id),
+              null => context.goToCoachingPrograms(),
+            },
+          );
+        },
+      ),
+      GoRoute(
+        path: ':programId',
+        name: _coachingProgramName,
+        builder: (context, state) {
+          final programId = state.pathParameters['programId']!;
+          return CoachProgramPage(
+            key: ValueKey(programId),
+            programId: programId,
+            onEdit: () => context.pushCoachingProgramEdit(programId),
+            onEditSession: ({required isNew}) => context.pushCoachingProgramSession(programId, isNew: isNew),
+            onGone: context.goToCoachingPrograms,
+          );
+        },
+        routes: [
+          GoRoute(
+            path: 'edit',
+            name: _coachingProgramEditName,
+            builder: (context, state) {
+              final l = L.of(context);
+              final library = CoachLibrary.of(context);
+              final programId = state.pathParameters['programId']!;
+              return switch (library.lookup(programId)) {
+                final CoachLibraryProgram program => ProgramFieldsForm(
+                  key: ValueKey(programId),
+                  initial: program.program,
+                  title: l.editProgram,
+                  saveLabel: l.save,
+                  withNote: true,
+                  // one that doesn't reach the server is kept, and its page
+                  // says so: the form has done its part either way
+                  onSave: (fields) async {
+                    final now = library.lookup(programId) ?? program;
+                    await library.save(now.copyWith(program: now.program.withFields(fields)));
+                    return true;
+                  },
+                  onDone: context.pop,
+                ),
+                null => Scaffold(appBar: AppBar()),
+              };
+            },
+          ),
+          GoRoute(
+            path: 'session',
+            name: _coachingProgramSessionName,
+            builder: (context, state) {
+              final l = L.of(context);
+              final isNew = state.uri.queryParameters['new'] == 'true';
+              return TemplateEditor(
+                isNewTemplate: isNew,
+                drafts: CoachLibrary.of(context),
+                words: (
+                  title: switch (isNew) {
+                    true => l.coachingProgramNewSession,
+                    false => l.coachingProgramEditSession,
+                  },
+                  hint: l.coachingProgramSessionName,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+/// A coach's invitation link (#553), whichever switch is on: the page is Your
+/// coach's ask. A link without a token is one the app has no screen for.
+RouteBase _invitationRoute() {
+  return GoRoute(
+    path: _invitationPath,
+    // a token the server could have made, or no screen: the API refuses any
+    // other before it reaches a path
+    redirect: (_, state) => switch (state.uri.queryParameters[_invitationToken]) {
+      final String token when _invitationTokenShape.hasMatch(token) => null,
+      _ => _profilePath,
+    },
+    builder: (context, state) {
+      final token = state.uri.queryParameters[_invitationToken]!;
+      return InvitationPage(
+        // a second link over the first is a new page, with its own preview
+        key: ValueKey(token),
+        token: token,
+        fingerprint: switch (state.uri.fragment) {
+          '' => null,
+          final String fragment => fragment,
+        },
+        onDone: context.goToProfile,
+        onMakeAccount: context.goToLogin,
+      );
+    },
+  );
 }

@@ -46,6 +46,28 @@ enum WatchState: Equatable {
         /// What the elapsed clock counts from.
         var clock: Date { clockStart ?? startedAt }
 
+        /// Values a set held earlier, which the editor offers in one tap
+        /// (#586): the line, and the values in the set's unit — nil where that
+        /// set had none.
+        struct Earlier: Equatable {
+            var line: String
+            var weight: Double?
+            var reps: Int?
+
+            /// Its [line] under that key; its values under `<values>Weight`
+            /// and `<values>Reps`.
+            init?(_ payload: [String: Any], line key: String, values: String) {
+                guard let line = payload[key] as? String else { return nil }
+                self.line = line
+                weight = (payload["\(values)Weight"] as? NSNumber)?.doubleValue
+                reps = (payload["\(values)Reps"] as? NSNumber)?.intValue
+            }
+
+            init(line: String, weight: Double? = nil, reps: Int? = nil) {
+                (self.line, self.weight, self.reps) = (line, weight, reps)
+            }
+        }
+
         struct UpNext: Equatable {
             var exerciseId: String
             var setId: String
@@ -56,8 +78,11 @@ enum WatchState: Equatable {
             var unit: String?
             /// One Digital Crown detent of weight.
             var step: Double
-            /// The same set last session, as a finished line ("Last time: …").
-            var previous: String?
+            /// The same set last session ("Thu: 60 kg × 14").
+            var last: Earlier?
+            /// The set before it in this workout, done ("Set 1: 60 kg × 12");
+            /// nil when it holds what `last` does (#586).
+            var before: Earlier? = nil
             /// "Set 2 of 3".
             var position: String?
         }
@@ -91,7 +116,9 @@ enum WatchState: Equatable {
                 /// The type spelled out, for VoiceOver; nil for a plain set.
                 var type: String?
                 var position: String = ""
-                var previous: String?
+                /// As `UpNext`'s.
+                var last: Earlier?
+                var before: Earlier? = nil
                 var next: String = ""
             }
 
@@ -118,7 +145,8 @@ enum WatchState: Equatable {
                         mark: row["mark"] as? String ?? "",
                         type: row["type"] as? String,
                         position: row["position"] as? String ?? "",
-                        previous: row["previous"] as? String,
+                        last: Earlier(row, line: "previous", values: "last"),
+                        before: Earlier(row, line: "before", values: "before"),
                         next: row["next"] as? String ?? ""
                     )
                 }
@@ -268,7 +296,8 @@ enum WatchState: Equatable {
                     reps: (payload["reps"] as? NSNumber)?.intValue,
                     unit: payload["unit"] as? String,
                     step: (payload["step"] as? NSNumber)?.doubleValue ?? 1,
-                    previous: payload["previous"] as? String,
+                    last: Workout.Earlier(payload, line: "previous", values: "last"),
+                    before: Workout.Earlier(payload, line: "before", values: "before"),
                     position: payload["position"] as? String
                 )
             default:
@@ -427,7 +456,8 @@ private extension WatchState.Workout {
             reps: row.reps,
             unit: target.unit,
             step: target.step,
-            previous: row.previous,
+            last: row.last,
+            before: row.before,
             position: row.position
         )
     }

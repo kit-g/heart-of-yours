@@ -98,11 +98,24 @@ enum _Screen {
   importRpeOffer,
   exportData,
   apiTokens,
+  coachingClients,
+  coachingActivity,
+  coachingClient,
+  coachingReview,
+  coachingClientCopy,
+  coachingMessages,
+  coachingPrograms,
+  coachingProgram,
+  coachingSendDialog,
+  coachingMe,
+  coachingInviteDialog,
+  invitation,
   newApiToken,
   apiTokenRevealed,
   revokeApiTokenDialog,
   whatsNew,
   restTimers,
+  pushSettings,
   features,
   recaps,
   monthlyReport,
@@ -184,6 +197,22 @@ final _program = Program(
   sessions: const ['t1', 't2'],
   createdAt: DateTime.utc(2026, 10, 1),
 );
+
+/// A program a coach sent while [_program] runs (#557): it waits on the
+/// Workout tab to be started.
+final _sent = Program.fromJson({
+  ...Program(
+    id: 'c1',
+    name: 'Strength block',
+    perWeek: 2,
+    weeks: 4,
+    sessions: const ['t3'],
+    createdAt: DateTime.utc(2026, 11, 10),
+  ).toMap(),
+  'coachId': 'coach-muffin',
+  'coachName': 'Muffin',
+  'waitingSince': '2026-11-10T12:00:00.000Z',
+});
 
 /// The session the workout-done screen celebrates.
 final _done = Workout(name: 'Records')
@@ -422,7 +451,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     (
       _Screen.programs,
       guideline,
-      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:279) and its Start (programs.dart:288) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:279) and its Start (programs.dart:288) at the house 32pt, and a waiting coach program\'s Start (40pt FilledButton, lib/presentation/routes/workout/program_sent.dart) (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.programPage,
@@ -894,6 +923,93 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.exportData, _Guideline.androidTapTarget, null),
   (_Screen.exportData, _Guideline.iosTapTarget, null),
 
+  // the Coaching space's empty tabs (#566): an app bar, a line of prose and the bar
+  (_Screen.coachingClients, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingClients, _Guideline.textContrastLight, null),
+  (_Screen.coachingClients, _Guideline.textContrastDark, null),
+  (_Screen.coachingClients, _Guideline.androidTapTarget, null),
+  (_Screen.coachingClients, _Guideline.iosTapTarget, null),
+
+  // the roster (#559): filter chips, rows with seven dots and "looked at",
+  // and the clients' activity
+  (_Screen.coachingActivity, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingActivity, _Guideline.textContrastLight, null),
+  (_Screen.coachingActivity, _Guideline.textContrastDark, null),
+  (_Screen.coachingActivity, _Guideline.androidTapTarget, null),
+  (_Screen.coachingActivity, _Guideline.iosTapTarget, null),
+
+  // one client (#559): their week and workouts, and a workout target beside done
+  (_Screen.coachingClient, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingClient, _Guideline.textContrastLight, null),
+  (_Screen.coachingClient, _Guideline.textContrastDark, null),
+  (_Screen.coachingClient, _Guideline.androidTapTarget, null),
+  (_Screen.coachingClient, _Guideline.iosTapTarget, null),
+  (_Screen.coachingReview, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingReview, _Guideline.textContrastLight, null),
+  (_Screen.coachingReview, _Guideline.textContrastDark, null),
+  (_Screen.coachingReview, _Guideline.androidTapTarget, null),
+  (_Screen.coachingReview, _Guideline.iosTapTarget, null),
+  // a client's copy, edited by both (#558): its sessions and history
+  (_Screen.coachingClientCopy, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingClientCopy, _Guideline.textContrastLight, null),
+  (_Screen.coachingClientCopy, _Guideline.textContrastDark, null),
+  (_Screen.coachingClientCopy, _Guideline.androidTapTarget, null),
+  (_Screen.coachingClientCopy, _Guideline.iosTapTarget, null),
+
+  (_Screen.coachingMessages, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingMessages, _Guideline.textContrastLight, null),
+  (_Screen.coachingMessages, _Guideline.textContrastDark, null),
+  (_Screen.coachingMessages, _Guideline.androidTapTarget, null),
+  (_Screen.coachingMessages, _Guideline.iosTapTarget, null),
+
+  (_Screen.coachingPrograms, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingPrograms, _Guideline.textContrastLight, null),
+  (_Screen.coachingPrograms, _Guideline.textContrastDark, null),
+  (_Screen.coachingPrograms, _Guideline.androidTapTarget, null),
+  (_Screen.coachingPrograms, _Guideline.iosTapTarget, null),
+
+  // A coach's library program (#557), and sending it with one client picked:
+  // a disabled PrimaryButton announces no disabled state, so its faded label
+  // would be held to contrast (lib/presentation/widgets/buttons.dart).
+  (_Screen.coachingProgram, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingProgram, _Guideline.textContrastLight, null),
+  (_Screen.coachingProgram, _Guideline.textContrastDark, null),
+  (_Screen.coachingProgram, _Guideline.androidTapTarget, null),
+  (_Screen.coachingProgram, _Guideline.iosTapTarget, null),
+  (_Screen.coachingSendDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingSendDialog, _Guideline.textContrastLight, null),
+  (_Screen.coachingSendDialog, _Guideline.textContrastDark, null),
+  (
+    _Screen.coachingSendDialog,
+    _Guideline.androidTapTarget,
+    'the Send PrimaryButton.wide is 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.coachingSendDialog,
+    _Guideline.iosTapTarget,
+    'the Send PrimaryButton.wide is 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+
+  (_Screen.coachingMe, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingMe, _Guideline.textContrastLight, null),
+  (_Screen.coachingMe, _Guideline.textContrastDark, null),
+  (_Screen.coachingMe, _Guideline.androidTapTarget, null),
+  (_Screen.coachingMe, _Guideline.iosTapTarget, null),
+
+  // the invite dialog (#553): a field, a line of prose and two buttons
+  (_Screen.coachingInviteDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingInviteDialog, _Guideline.textContrastLight, null),
+  (_Screen.coachingInviteDialog, _Guideline.textContrastDark, null),
+  (_Screen.coachingInviteDialog, _Guideline.androidTapTarget, null),
+  (_Screen.coachingInviteDialog, _Guideline.iosTapTarget, null),
+
+  // what a coach's invitation link opens (#553): prose, two switches, three answers
+  (_Screen.invitation, _Guideline.labeledTapTarget, null),
+  (_Screen.invitation, _Guideline.textContrastLight, null),
+  (_Screen.invitation, _Guideline.textContrastDark, null),
+  (_Screen.invitation, _Guideline.androidTapTarget, null),
+  (_Screen.invitation, _Guideline.iosTapTarget, null),
+
   (_Screen.apiTokens, _Guideline.labeledTapTarget, null),
   (_Screen.apiTokens, _Guideline.textContrastLight, null),
   (_Screen.apiTokens, _Guideline.textContrastDark, null),
@@ -956,6 +1072,14 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.monthlyReport, _Guideline.textContrastDark, null),
   (_Screen.monthlyReport, _Guideline.androidTapTarget, null),
   (_Screen.monthlyReport, _Guideline.iosTapTarget, null),
+
+  // Notifications (lib/presentation/routes/settings/push_settings.dart, #554):
+  // Your coach on, so the push client runs and the page is there
+  (_Screen.pushSettings, _Guideline.labeledTapTarget, null),
+  (_Screen.pushSettings, _Guideline.textContrastLight, null),
+  (_Screen.pushSettings, _Guideline.textContrastDark, null),
+  (_Screen.pushSettings, _Guideline.androidTapTarget, null),
+  (_Screen.pushSettings, _Guideline.iosTapTarget, null),
 
   // Features (lib/presentation/routes/settings/features.dart, #226): the
   // opt-in switches, the muscle map on so its options unfold under it.
@@ -1193,12 +1317,198 @@ void main() {
     if (screen == _Screen.rpePicker) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on'});
     }
+    // a coaching switch on, so the push client runs (#567, #554)
+    if (screen == _Screen.pushSettings) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-yourCoach': 'on'});
+    }
     // default rest (#174) on, so the page's kinds are held to it as well
     if (screen == _Screen.restTimers) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-defaultRest': 'on'});
     }
     if (screen == _Screen.pastWorkoutTimes || screen == _Screen.pastWorkoutEditor) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-pastWorkouts': 'on'});
+    }
+    // the Coaching space (#566): Coach people on, for an account that may coach
+    final coaching = {
+      _Screen.coachingClients: AppKeys.coachingClientsStack,
+      _Screen.coachingActivity: AppKeys.coachingClientsStack,
+      _Screen.coachingClient: AppKeys.coachingClientsStack,
+      _Screen.coachingReview: AppKeys.coachingClientsStack,
+      _Screen.coachingClientCopy: AppKeys.coachingClientsStack,
+      _Screen.coachingMessages: AppKeys.coachingMessagesStack,
+      _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
+      _Screen.coachingProgram: AppKeys.coachingProgramsStack,
+      _Screen.coachingSendDialog: AppKeys.coachingProgramsStack,
+      _Screen.coachingMe: AppKeys.coachingMeStack,
+      _Screen.coachingInviteDialog: AppKeys.coachingClientsStack,
+    };
+    // the page a coach's invitation link opens (#553)
+    if (screen == _Screen.invitation) {
+      when(api.previewInvitation('t1')).thenAnswer(
+        (_) async => InvitationPreview.fromJson({'inviterName': 'Alex', 'good': true}),
+      );
+    }
+    if (coaching.containsKey(screen)) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-coachPeople': 'on'});
+      when(api.registerAccount(any)).thenAnswer((invocation) async {
+        final user = invocation.positionalArguments.single as User;
+        return User(
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          settings: user.settings,
+          entitlements: const ['coach'],
+        );
+      });
+      when(api.getConnections()).thenAnswer((_) async => []);
+      when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
+      when(api.getInvitations(cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: <Invitation>[], cursor: null));
+      // a roster to read, but none for the invite dialog, which opens from
+      // the empty tab's button
+      final clients = switch (screen) {
+        _Screen.coachingSendDialog => [
+          ClientSummary(connectionId: 'c-sam', studentId: 'sam', name: 'Sam', status: 'active'),
+          ClientSummary(connectionId: 'c-pip', studentId: 'pip', name: 'Pip', status: 'active'),
+        ],
+        _Screen.coachingClients ||
+        _Screen.coachingActivity ||
+        _Screen.coachingClient ||
+        _Screen.coachingReview ||
+        _Screen.coachingClientCopy => [
+          ClientSummary(
+            connectionId: 'c-sam',
+            studentId: 'sam',
+            name: 'Sam',
+            status: 'active',
+            programId: 'copy',
+            programName: 'Strength block',
+            programWeek: 2,
+            programWeeks: 6,
+            recent: [DateTime.utc(2026, 11, 7, 18)],
+            reasons: const ['note', 'lighter'],
+          ),
+          ClientSummary(connectionId: 'c-riley', studentId: 'riley', name: 'Riley', status: 'paused'),
+        ],
+        _ => <ClientSummary>[],
+      };
+      when(api.getClients(former: anyNamed('former'), cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: clients, cursor: null));
+      // a library of one program (#557), of one session, which Sam holds
+      final library = CoachProgram(
+        id: 'p1',
+        name: 'Strength block',
+        version: 2,
+        updatedAt: DateTime.utc(2026, 11, 10, 12),
+        body: {
+          'name': 'Strength block',
+          'note': 'Four weeks, two days a week',
+          'perWeek': 2,
+          'weeks': 4,
+          'sessions': [
+            {'id': 's1', 'name': 'Day A', 'exercises': <Object>[]},
+          ],
+        },
+      );
+      when(api.getLibraryPrograms(cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: [library], cursor: null));
+      when(api.getLibraryProgram('p1')).thenAnswer((_) async => library);
+      when(api.getLibraryHolders('p1')).thenAnswer(
+        (_) async => [
+          CoachProgramHolder(
+            connectionId: 'c-sam',
+            studentId: 'sam',
+            studentName: 'Sam',
+            programId: 'copy',
+            version: 1,
+          ),
+        ],
+      );
+      // Sam's record (#559): one program workout, lighter than asked, and a skip
+      final dayB = Workout.fromJson({
+        'id': 'w1',
+        'name': 'Day B',
+        'start': '2026-11-07T18:00:00Z',
+        'end': '2026-11-07T19:00:00Z',
+        'note': 'Knees felt fine today',
+        'exercises': [
+          {
+            'id': 'we1',
+            'exercise': {'id': 'squat', 'name': 'Squat', 'category': 'Barbell', 'target': 'Legs', 'own': 0},
+            'start': '2026-11-07T18:00:00Z',
+            'order': 0,
+            'sets': [
+              {'id': 'x1', 'completed': true, 'started_at': '2026-11-07T18:05:00Z', 'weight': 90.0, 'reps': 5},
+            ],
+          },
+        ],
+      });
+      when(api.getClientWorkouts('sam', cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: [dayB], cursor: null));
+      when(api.getClientProgram('sam', 'copy')).thenAnswer(
+        (_) async => CoachProgramView.fromJson({
+          'program': {
+            'id': 'copy',
+            'name': 'Strength block',
+            'perWeek': 2,
+            'weeks': 6,
+            'sessions': ['s1'],
+            'sessionRevisions': {'s1': 0},
+          },
+          'sessions': [
+            {'id': 's1', 'name': 'Day A', 'order': 0, 'programId': 'copy', 'exercises': <Object>[]},
+          ],
+          'position': {'week': 2},
+        }),
+      );
+      when(api.getClientPrograms('sam')).thenAnswer(
+        (_) async => [Program(id: 'copy', name: 'Strength block', perWeek: 2, weeks: 6)],
+      );
+      when(api.getClientProgramChanges('sam', 'copy', since: anyNamed('since'))).thenAnswer(
+        (_) async => [
+          ProgramChange(
+            id: 'ch1',
+            programId: 'copy',
+            sessionId: 's1',
+            actorId: 'sam',
+            kind: 'edit',
+            revision: 1,
+            after: const {'name': 'Day A'},
+            before: const {'name': 'Day A'},
+            at: DateTime.utc(2026, 11, 9, 18),
+          ),
+        ],
+      );
+      when(api.getClientSkips('sam')).thenAnswer((_) async => [TrainingSkip(at: DateTime.utc(2026, 11, 6, 18))]);
+      when(api.getClientWorkoutPlan('sam', 'w1')).thenAnswer(
+        (_) async => const WorkoutPlan({
+          'exercises': [
+            {
+              'exerciseId': 'squat',
+              'sets': [
+                {'setId': 'x1', 'weight': 100, 'reps': 5},
+                {'setId': 'x2', 'weight': 100, 'reps': 5},
+              ],
+            },
+          ],
+        }),
+      );
+      when(api.getCoachFeed(cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          items: [
+            CoachFeedItem(
+              kind: 'workout',
+              id: 'w1',
+              studentId: 'sam',
+              name: 'Sam',
+              at: DateTime.utc(2026, 11, 7, 18),
+              title: 'Day B',
+            ),
+            CoachFeedItem(kind: 'skip', id: 's1', studentId: 'sam', name: 'Sam', at: DateTime.utc(2026, 11, 6, 18)),
+          ],
+          cursor: null,
+        ),
+      );
     }
     if (screen == _Screen.pausedWorkout || screen == _Screen.finishAtLastSet) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-pauseWorkout': 'on'});
@@ -1414,6 +1724,33 @@ void main() {
       case _Screen.pastWorkoutEditor:
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench]));
         when(db.storeMeasurements(any)).thenAnswer((_) async {});
+      case _Screen.pushSettings:
+        // an answered feature sends the account up through settings sync
+        when(api.registerAccount(any)).thenAnswer((invocation) async => invocation.positionalArguments.single);
+        when(api.getConnections()).thenAnswer((_) async => []);
+        when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
+        when(api.getPushSettings()).thenAnswer(
+          (_) async => PushSettings(
+            topics: [
+              PushSetting(
+                topic: 'coaching.message',
+                group: 'coaching',
+                name: 'Messages',
+                description: 'When someone you train with writes to you',
+                delivery: 'instant',
+                options: ['instant', 'off'],
+              ),
+              PushSetting(
+                topic: 'coaching.workout_digest',
+                group: 'coaching',
+                name: "Your clients' workouts",
+                description: 'Once a day, when your clients have trained',
+                delivery: 'daily',
+                options: ['daily', 'off'],
+              ),
+            ],
+          ),
+        );
       case _Screen.restTimers:
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench]));
         when(api.getExercises()).thenAnswer((_) async => [_bench]);
@@ -1446,7 +1783,12 @@ void main() {
           ...pastOnboarding(),
           'feature-programs': 'on',
           if (screen == _Screen.notTodaySheet) 'feature-notToday': 'on',
+          if (screen == _Screen.programs) 'feature-yourCoach': 'on',
         });
+        // Your coach on reads the account's connections (#566)
+        when(api.registerAccount(any)).thenAnswer((invocation) async => invocation.positionalArguments.single as User);
+        when(api.getConnections()).thenAnswer((_) async => []);
+        when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
         // the day before a skip (#312): what its page reads
         when(db.getLensSets(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => []);
         when(db.storeSkip(any, any)).thenAnswer((_) async {});
@@ -1458,6 +1800,7 @@ void main() {
             _Screen.programs || _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [
               _session('t1', 0, 'Push', programId: 'p1'),
               _session('t2', 1, 'Pull', programId: 'p1'),
+              if (screen == _Screen.programs) _session('t3', 2, 'Day A', programId: 'c1'),
             ],
             _ => [_session('t1', 0, 'Push'), _session('t2', 1, 'Pull')],
           },
@@ -1468,7 +1811,9 @@ void main() {
         when(db.storeTemplateFolders(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
         when(db.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
         final programs = switch (screen) {
-          _Screen.programs || _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [_program],
+          // the tab with a coach's program waiting beside it (#557)
+          _Screen.programs => [_program, _sent],
+          _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [_program],
           _ => <Program>[],
         };
         final skips = switch (screen) {
@@ -1974,6 +2319,11 @@ void main() {
         GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps/2026-09');
         await tester.pumpTimes();
         expect(find.byKey(AppKeys.monthlyReport), findsOneWidget);
+      case _Screen.pushSettings:
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/settings/notifications');
+        await tester.pumpTimes();
+        expect(find.byType(PushSettingsPage), findsOneWidget);
+        expect(find.text('Messages'), findsOneWidget);
       case _Screen.features:
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
@@ -2043,6 +2393,58 @@ void main() {
           default:
             break;
         }
+      case _Screen.coachingClients ||
+          _Screen.coachingActivity ||
+          _Screen.coachingClient ||
+          _Screen.coachingReview ||
+          _Screen.coachingClientCopy ||
+          _Screen.coachingMessages ||
+          _Screen.coachingPrograms ||
+          _Screen.coachingProgram ||
+          _Screen.coachingSendDialog ||
+          _Screen.coachingMe ||
+          _Screen.coachingInviteDialog:
+        await tester.tapByKey(AppKeys.coachingButton);
+        await tester.pumpTimes();
+        await tester.tapByKey(coaching[screen]!);
+        await tester.pumpTimes();
+        if (screen == _Screen.coachingActivity) {
+          await tester.tapByKey(AppKeys.coachingActivityView);
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingClient ||
+            screen == _Screen.coachingReview ||
+            screen == _Screen.coachingClientCopy) {
+          await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingClientCopy) {
+          await tester.tapByKey(AppKeys.coachingClientProgram);
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingReview) {
+          await tester.tapByKey(AppKeys.coachingClientWorkout('w1'));
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingProgram || screen == _Screen.coachingSendDialog) {
+          await tester.tapByKey(AppKeys.coachingLibraryProgram('p1'));
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingSendDialog) {
+          await tester.tapByKey(AppKeys.coachingSendProgram);
+          await tester.pumpTimes();
+          await tester.tapByKey(AppKeys.coachingSendTo('c-pip'));
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingInviteDialog) {
+          await tester.tapByKey(AppKeys.coachingInvite);
+          await tester.pumpTimes();
+          await tester.enterText(find.byKey(AppKeys.coachingInviteName), 'Biscuit');
+          await tester.pumpTimes();
+        }
+      case _Screen.invitation:
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/invite.html?t=t1');
+        await tester.pumpTimes();
       case _Screen.whatsNew:
         // rootBundle caches each load's future, and one cached under an
         // earlier test's fake clock never delivers to a later test

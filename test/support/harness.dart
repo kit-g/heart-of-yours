@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/analytics.dart';
 import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/push.dart';
 import 'package:heart/presentation/navigation/app.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart_api/heart_api.dart';
@@ -100,6 +101,11 @@ class TestAppHarness {
     String version = '0.0.0',
     // the device's calendars (#391): none unless a test brings its own
     DeviceCalendar? calendar,
+    // the push client's transport (#567): none unless a test brings its own
+    PushClient? pushClient,
+    // where encryption keys live (#555): none, so keys never run, unless a
+    // test brings its own
+    KeyVault? keyVault,
   }) async {
     final cfg = appConfig ?? AppConfig.test(allowsFeedbackFeature: false);
 
@@ -124,6 +130,8 @@ class TestAppHarness {
         firebaseAuth: firebaseAuth ?? MockFirebaseAuth(),
         router: router ?? HeartRouter(),
         calendar: calendar,
+        pushClient: pushClient,
+        keyVault: keyVault,
       ),
     );
 
@@ -173,4 +181,18 @@ extension ExtWidgetTester on WidgetTester {
     await enterText(finder, text);
     await pump();
   }
+}
+
+/// Encryption keys' vault (#555), in memory: what a test brings for keys to run.
+class MemoryKeyVault implements KeyVault {
+  final entries = <String, String>{};
+
+  @override
+  Future<String?> read(String key) async => entries[key];
+
+  @override
+  Future<void> write(String key, String value) async => entries[key] = value;
+
+  @override
+  Future<void> delete(String key) async => entries.remove(key);
 }

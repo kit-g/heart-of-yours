@@ -14,7 +14,9 @@ import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/navigation/program_link.dart';
+import 'package:heart/presentation/navigation/pushes.dart' show pushesOn;
 import 'package:heart/presentation/navigation/shortcuts.dart';
+import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/done/done.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
@@ -83,6 +85,8 @@ final class HeartRouter {
               ),
             ],
           ),
+          _coachingRoute(),
+          _invitationRoute(),
           _upgradeRequiredRoute(),
           _onboardingRoute(),
           _activeWorkoutRoute(),
@@ -278,9 +282,20 @@ final class HeartRouter {
         if (_shortcut(context, uri) case String path) return path;
         if (_programSessionLink(context, uri) case String path) return path;
       }
+      // the fragment too: an invitation's carries the coach's key fingerprint,
+      // and a fresh install is exactly who arrives through one (#553)
       return switch (carried) {
-        Uri(hasQuery: true, :final path, :final query) => '$path?$query',
-        Uri(:final path) => path,
+        Uri(:final path, :final query, :final fragment) => Uri(
+          path: path,
+          query: switch (query) {
+            '' => null,
+            final query => query,
+          },
+          fragment: switch (fragment) {
+            '' => null,
+            final fragment => fragment,
+          },
+        ).toString(),
         null => null,
       };
     }
@@ -344,6 +359,19 @@ final class HeartRouter {
 
   void refresh() {
     return config.refresh();
+  }
+
+  /// The Coaching space's clients, from a push about one (#567).
+  void goToCoachingClients() => config.goNamed(_coachingClientsName);
+
+  /// The Coaching space's messages, from a push saying one arrived (#567).
+  void goToCoachingMessages() => config.goNamed(_coachingMessagesName);
+
+  /// A coach's invitation (#553), as its link would open it.
+  void openInvitation(String token, {String? fingerprint}) {
+    return config.go(
+      Uri(path: _invitationPath, queryParameters: {_invitationToken: token}, fragment: fingerprint).toString(),
+    );
   }
 
   void goToExercise(String exerciseId) {

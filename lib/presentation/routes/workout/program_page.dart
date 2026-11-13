@@ -55,7 +55,10 @@ class ProgramPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(program.name),
         actions: [
-          IconButton(tooltip: copy.editProgram, onPressed: onEdit, icon: const Icon(Icons.edit_rounded)),
+          // a coach's copy not started yet is theirs to start, not to change
+          // or train from (#557)
+          if (!program.waits)
+            IconButton(tooltip: copy.editProgram, onPressed: onEdit, icon: const Icon(Icons.edit_rounded)),
           PopupMenuButton<VoidCallback>(
             tooltip: copy.moreOptions,
             icon: const Icon(Icons.more_horiz),
@@ -70,13 +73,14 @@ class ProgramPage extends StatelessWidget {
                     value: () => showGoEasySheet(context),
                     child: _MenuRow(icon: Icons.spa_outlined, label: title.of(languageTag())),
                   ),
-                PopupMenuItem<VoidCallback>(
-                  value: () => programs.archive(program, archived: !program.archived),
-                  child: _MenuRow(
-                    icon: program.archived ? Icons.play_arrow_rounded : Icons.archive_outlined,
-                    label: program.archived ? copy.programFollowAgain : copy.programStopFollowing,
+                if (!program.waits)
+                  PopupMenuItem<VoidCallback>(
+                    value: () => programs.archive(program, archived: !program.archived),
+                    child: _MenuRow(
+                      icon: program.archived ? Icons.play_arrow_rounded : Icons.archive_outlined,
+                      label: program.archived ? copy.programFollowAgain : copy.programStopFollowing,
+                    ),
                   ),
-                ),
                 PopupMenuItem<VoidCallback>(
                   value: () => _delete(context, program),
                   child: _MenuRow(icon: Icons.delete, label: copy.programDelete, color: colorScheme.error),
@@ -93,118 +97,145 @@ class ProgramPage extends StatelessWidget {
               alignment: .topCenter,
               child: SizedBox(
                 width: min(constraints.maxWidth, readableWidth),
-                child: ListView(
-                  padding: const .all(16),
-                  children: [
-                    // a session of this program under way: the way back to it
-                    if (Workouts.watch(context).activeWorkout
-                        case Workout(
-                          :final programId,
-                          :final name,
-                        )
-                        when programId == program.id) ...[
-                      Card(
-                        key: AppKeys.programInProgress,
-                        margin: const .only(bottom: 12),
-                        color: colorScheme.secondaryContainer,
-                        child: ListTile(
-                          leading: Icon(Icons.play_circle_outline_rounded, color: colorScheme.onSecondaryContainer),
-                          title: Text(
-                            copy.programInProgress(name ?? copy.defaultWorkoutName()),
-                            style: textTheme.titleSmall?.copyWith(color: colorScheme.onSecondaryContainer),
+                child: _Pullable(
+                  // a coach's copy is read again on a pull: what the coach
+                  // changed may not have come with a push (#558)
+                  onRefresh: switch (program.coachId) {
+                    String() => () => _pullShared(context, program),
+                    null => null,
+                  },
+                  child: ListView(
+                    padding: const .all(16),
+                    children: [
+                      // a save of the user's the coach beat (#558)
+                      _CoachConflict(program: program),
+                      // a session of this program under way: the way back to it
+                      if (Workouts.watch(context).activeWorkout
+                          case Workout(
+                            :final programId,
+                            :final name,
+                          )
+                          when programId == program.id) ...[
+                        Card(
+                          key: AppKeys.programInProgress,
+                          margin: const .only(bottom: 12),
+                          color: colorScheme.secondaryContainer,
+                          child: ListTile(
+                            leading: Icon(Icons.play_circle_outline_rounded, color: colorScheme.onSecondaryContainer),
+                            title: Text(
+                              copy.programInProgress(name ?? copy.defaultWorkoutName()),
+                              style: textTheme.titleSmall?.copyWith(color: colorScheme.onSecondaryContainer),
+                            ),
+                            trailing: Icon(Icons.chevron_right_rounded, color: colorScheme.onSecondaryContainer),
+                            shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+                            onTap: onOpenActiveWorkout,
                           ),
-                          trailing: Icon(Icons.chevron_right_rounded, color: colorScheme.onSecondaryContainer),
-                          shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
-                          onTap: onOpenActiveWorkout,
                         ),
-                      ),
-                    ],
-                    Text(_status(context, program, position), style: textTheme.titleLarge),
-                    if (_standing(context, program, position) case final String line) ...[
+                      ],
+                      if (program.waits && !program.archived)
+                        _WaitingCard(program: program)
+                      else ...[
+                        Text(_status(context, program, position), style: textTheme.titleLarge),
+                        if (_standing(context, program, position) case final String line) ...[
+                          const SizedBox(height: 4),
+                          Text(line, style: muted),
+                        ],
+                        // a coach's program (#557) says whose it is
+                        if (_sentBy(context, program) case final String from) ...[
+                          const SizedBox(height: 4),
+                          Text(from, key: AppKeys.programSentBy, style: muted),
+                        ],
+                        // and what they changed since the user looked (#558)
+                        if (_coachChanges(context, program) case final Widget changes) ...[
+                          const SizedBox(height: 4),
+                          changes,
+                        ],
+                      ],
+                      if (program.live) ...[
+                        const SizedBox(height: 12),
+                        _Steers(
+                          program: program,
+                          position: position,
+                          upNext: sessions.where((session) => session.id == position.next).firstOrNull,
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      Text(copy.programSessions, style: textTheme.titleSmall),
                       const SizedBox(height: 4),
-                      Text(line, style: muted),
-                    ],
-                    if (!program.archived) ...[
-                      const SizedBox(height: 12),
-                      _Steers(
-                        program: program,
-                        position: position,
-                        upNext: sessions.where((session) => session.id == position.next).firstOrNull,
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    Text(copy.programSessions, style: textTheme.titleSmall),
-                    const SizedBox(height: 4),
-                    for (final (index, session) in sessions.indexed)
-                      _SessionTile(
-                        program: program,
-                        session: session,
-                        // the sessions as one sequence, joined like a log
-                        rail: (above: index > 0, below: index < sessions.length - 1),
-                        state: switch (session.id) {
-                          final id when skipped.contains(id) => .skipped,
-                          final id when position.done.contains(id) => .done,
-                          final id when id == position.next => .next,
-                          _ => .ahead,
-                        },
-                        onTap: () => _showStartTemplateDialog(
-                          context,
-                          session,
-                          onEdit: () {
-                            Templates.of(context).editable = session;
-                            onEditSession();
+                      for (final (index, session) in sessions.indexed)
+                        _SessionTile(
+                          program: program,
+                          session: session,
+                          // the sessions as one sequence, joined like a log
+                          rail: (above: index > 0, below: index < sessions.length - 1),
+                          state: switch (session.id) {
+                            final id when skipped.contains(id) => .skipped,
+                            final id when position.done.contains(id) => .done,
+                            final id when id == position.next => .next,
+                            _ => .ahead,
                           },
-                          onStart: () => _start(context, session),
-                          // the last one stays: a program with none has
-                          // nothing to run
-                          onRemove: switch (sessions.length > 1) {
-                            true => () => _leaveProgram(context, program, session),
-                            false => null,
+                          onTap: switch (program.waits) {
+                            true => null,
+                            false => () => _showStartTemplateDialog(
+                              context,
+                              session,
+                              onEdit: () {
+                                Templates.of(context).editable = session;
+                                onEditSession();
+                              },
+                              onStart: () => _start(context, session),
+                              // the last one stays: a program with none has
+                              // nothing to run
+                              onRemove: switch (sessions.length > 1) {
+                                true => () => _leaveProgram(context, program, session),
+                                false => null,
+                              },
+                            ),
                           },
                         ),
-                      ),
-                    // a template made since the program started, by hand or
-                    // by an assistant, joins it here (#489)
-                    if (!program.archived &&
-                        Templates.watch(context).candidatesFor(program).any((each) => each.programId == null))
-                      ListTile(
-                        key: AppKeys.programAddSession,
-                        contentPadding: .zero,
-                        leading: Icon(Icons.add_circle_outline_rounded, color: colorScheme.primary),
-                        title: Text(
-                          copy.programAddSession,
-                          style: textTheme.titleSmall?.copyWith(color: colorScheme.primary),
+                      // a template made since the program started, by hand or
+                      // by an assistant, joins it here (#489)
+                      if (program.live &&
+                          Templates.watch(context).candidatesFor(program).any((each) => each.programId == null))
+                        ListTile(
+                          key: AppKeys.programAddSession,
+                          contentPadding: .zero,
+                          leading: Icon(Icons.add_circle_outline_rounded, color: colorScheme.primary),
+                          title: Text(
+                            copy.programAddSession,
+                            style: textTheme.titleSmall?.copyWith(color: colorScheme.primary),
+                          ),
+                          onTap: () => _pickSession(context, program),
                         ),
-                        onTap: () => _pickSession(context, program),
-                      ),
-                    ProgramConstraintRow(program: program),
-                    if (!program.archived) _ProgramCalendarSlot(program: program),
-                    _ProgramGoals(program: program, position: position, sessions: sessions),
-                    _Growth(program: program),
-                    // a copy of one of Heart's programs keeps its way back to
-                    // the research, which stays in the library, never the copy
-                    if (program.source case final String key)
-                      _LibraryReader(
-                        child: Builder(
-                          builder: (context) {
-                            return switch (ProgramLibrary.watch(context).lookup(key)) {
-                              null => const SizedBox.shrink(),
-                              LibraryProgram() => Padding(
-                                padding: const .only(top: 16),
-                                child: ListTile(
-                                  key: AppKeys.programAbout,
-                                  contentPadding: .zero,
-                                  leading: const Icon(Icons.auto_stories_outlined),
-                                  title: Text(copy.programAboutLibrary),
-                                  trailing: const Icon(Icons.chevron_right_rounded),
-                                  onTap: () => onAbout(key),
+                      ProgramConstraintRow(program: program),
+                      if (program.live) _ProgramCalendarSlot(program: program),
+                      _ProgramGoals(program: program, position: position, sessions: sessions),
+                      _Growth(program: program),
+                      // a copy of one of Heart's programs keeps its way back to
+                      // the research, which stays in the library, never the copy
+                      if (program.source case final String key)
+                        _LibraryReader(
+                          child: Builder(
+                            builder: (context) {
+                              return switch (ProgramLibrary.watch(context).lookup(key)) {
+                                null => const SizedBox.shrink(),
+                                LibraryProgram() => Padding(
+                                  padding: const .only(top: 16),
+                                  child: ListTile(
+                                    key: AppKeys.programAbout,
+                                    contentPadding: .zero,
+                                    leading: const Icon(Icons.auto_stories_outlined),
+                                    title: Text(copy.programAboutLibrary),
+                                    trailing: const Icon(Icons.chevron_right_rounded),
+                                    onTap: () => onAbout(key),
+                                  ),
                                 ),
-                              ),
-                            };
-                          },
+                              };
+                            },
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -236,9 +267,7 @@ class ProgramPage extends StatelessWidget {
   Future<void> _start(BuildContext context, Template session) async {
     final started = await startWorkoutOverActive(
       context,
-      () =>
-          Workouts.of(context)
-              .startWorkout(source: .program, template: startingWorkout(context, session), applyPinnedNotes: true),
+      () => startPlanned(context, Workouts.of(context), session, source: .program),
     );
     if (started) onOpenActiveWorkout();
   }
@@ -459,7 +488,7 @@ class _SessionTile extends StatelessWidget {
   final Program program;
   final Template session;
   final _SessionState state;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   /// Whether the rail through the icons runs on above and below this one.
   final ({bool above, bool below}) rail;
@@ -911,4 +940,20 @@ Iterable<Exercise> _kinderCandidates(BuildContext context, Program program) {
     final GoEasyEntry constraint => exercises.where((each) => !constraint.isHarderOn(each)),
     null => exercises,
   };
+}
+
+/// [child], pulled to [onRefresh] when there is one, and as it is otherwise.
+class _Pullable extends StatelessWidget {
+  final Future<void> Function()? onRefresh;
+  final Widget child;
+
+  const new({required this.onRefresh, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (onRefresh) {
+      final refresh? => RefreshIndicator.adaptive(onRefresh: refresh, child: child),
+      null => child,
+    };
+  }
 }

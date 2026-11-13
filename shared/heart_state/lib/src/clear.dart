@@ -6,12 +6,18 @@ import 'api_tokens.dart';
 import 'auth.dart';
 import 'backfill.dart';
 import 'charts.dart';
+import 'client_programs.dart';
+import 'coach_library.dart';
+import 'coaching.dart';
+import 'device_keys.dart';
 import 'exercises.dart';
 import 'goals.dart';
 import 'health.dart';
 import 'preferences.dart';
 import 'previous.dart';
 import 'programs.dart';
+import 'pushes.dart';
+import 'roster.dart';
 import 'stats.dart';
 import 'templates.dart';
 import 'timers.dart';
@@ -19,9 +25,17 @@ import 'upsync.dart';
 import 'workouts.dart';
 
 /// Signs out and forgets everything the session held.
-void clearState(BuildContext context) {
+///
+/// This device stops getting the account's pushes first (heart-api#415): the
+/// removal sets off before anything is forgotten and is waited for before the
+/// session ends, the last moment the request can say whose pushes they are.
+/// One that cannot be made does not hold the sign-out up.
+Future<void> clearState(BuildContext context) async {
+  final session = Auth.of(context);
+  final unregistering = Pushes.of(context).unregister();
   clearUserState(context);
-  Auth.of(context).onSignOut();
+  await unregistering;
+  await session.onSignOut();
 }
 
 /// Erases everything an anonymous session holds on the device and signs it
@@ -55,11 +69,17 @@ void clearUserState(BuildContext context) {
   ApiTokens.of(context).onSignOut();
   Backfill.of(context).onSignOut();
   Charts.of(context).onSignOut();
+  CoachLibrary.of(context).onSignOut();
+  ClientPrograms.of(context).onSignOut();
+  Coaching.of(context).onSignOut();
+  DeviceKeys.of(context).onSignOut();
   Exercises.of(context).onSignOut();
   Goals.of(context).onSignOut();
   Health.of(context).onSignOut();
   PreviousExercises.of(context).onSignOut();
   Programs.of(context).onSignOut();
+  Pushes.of(context).onSignOut();
+  Roster.of(context).onSignOut();
   Stats.of(context).onSignOut();
   Templates.of(context).onSignOut();
   Timers.of(context).onSignOut();
