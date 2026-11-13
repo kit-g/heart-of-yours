@@ -9,6 +9,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/message_runs.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/message_text.dart';
 import 'package:heart_language/heart_language.dart';
@@ -17,6 +18,8 @@ import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+part 'actions.dart';
 
 /// The conversation of [connectionId] as a page of its own.
 class ThreadPage extends StatelessWidget {
@@ -33,6 +36,7 @@ class ThreadPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(threadName(context, thread, connectionId: connectionId, fallback: name)),
+        actions: [ThreadMenu(connectionId: connectionId)],
       ),
       body: SafeArea(
         top: false,
@@ -53,16 +57,19 @@ class ThreadPage extends StatelessWidget {
 const threadWidth = 720.0;
 
 /// Who a conversation is with: the name the server holds for them, else the
-/// one [fallback] gives, else the role they play for this person. Before the
-/// thread is read, [connectionId] says which conversation it is.
+/// one [fallback] gives, else the one their connection carries, else the role
+/// they play for this person. Before the thread is read, [connectionId] says
+/// which conversation it is.
 String threadName(BuildContext context, Thread? thread, {String? connectionId, String? fallback}) {
   final l = L.of(context);
   final coaching = Coaching.of(context);
   final connection = thread?.connectionId ?? connectionId;
   final student = coaching.coaches.any((each) => each.connectionId == connection);
-  return switch ((thread?.otherName?.trim(), fallback?.trim())) {
-    (final String name, _) when name.isNotEmpty => name,
-    (_, final String name) when name.isNotEmpty => name,
+  final named = _connectionOf(context, connection)?.name;
+  return switch ((thread?.otherName?.trim(), fallback?.trim(), named?.trim())) {
+    (final String name, _, _) when name.isNotEmpty => name,
+    (_, final String name, _) when name.isNotEmpty => name,
+    (_, _, final String name) when name.isNotEmpty => name,
     _ when student => switch (connection) {
       final String id => Preferences.of(context).coachName(id) ?? l.yourCoach,
       null => l.yourCoach,
@@ -154,6 +161,7 @@ class _ThreadViewState extends State<ThreadView> {
         return switch ((opening, _threadId)) {
           (.open, final String threadId) => _Conversation(
             threadId: threadId,
+            connectionId: widget.connectionId,
             text: _text,
             onSend: _send,
           ),
@@ -171,16 +179,27 @@ class _ThreadViewState extends State<ThreadView> {
 
 class _Conversation extends StatelessWidget {
   final String threadId;
+  final String connectionId;
   final TextEditingController text;
   final VoidCallback onSend;
 
-  const new({required this.threadId, required this.text, required this.onSend});
+  const new({required this.threadId, required this.connectionId, required this.text, required this.onSend});
 
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final messages = Messages.watch(context);
     final thread = messages.thread(threadId);
+    final closed = thread.closed || _ended(_connectionOf(context, connectionId, listen: true));
+    // a deletion leaves a line where the messages before it were
+    final cleared = switch (messages.lookup(threadId)) {
+      Thread(clearedAt: DateTime(), :final clearedBy) && final inbox => switch (clearedBy == messages.userId) {
+        true => l.messagesClearedByYou,
+        false => l.messagesClearedBy(threadName(context, inbox)),
+      },
+      _ => null,
+    };
     // newest at the bottom, where the eye and the box are
     final shown = thread.messages.reversed.toList();
     final places = const MessageRuns().of([for (final each in thread.messages) (at: each.at, mine: each.mine)]);
@@ -194,7 +213,10 @@ class _Conversation extends StatelessWidget {
               title: l.messagesFailed,
               action: OutlinedButton(onPressed: () => messages.refresh(threadId), child: Text(l.retry)),
             ),
-            ([], _) => _Note(icon: Icons.lock_outline_rounded, title: l.messagesEmpty, body: l.messagesEmptyBody),
+            ([], _) => switch (cleared) {
+              final String cleared => _Note(icon: Icons.delete_sweep_outlined, title: cleared),
+              null => _Note(icon: Icons.lock_outline_rounded, title: l.messagesEmpty, body: l.messagesEmptyBody),
+            },
             _ => RefreshIndicator.adaptive(
               onRefresh: () => messages.pull(threadId),
               child: ListView.builder(
@@ -218,14 +240,25 @@ class _Conversation extends StatelessWidget {
                         child: Text(l.messagesOlder),
                       ),
                     ),
-                    false => const SizedBox(height: 8),
+                    false => switch (cleared) {
+                      final String cleared => Padding(
+                        padding: const .symmetric(vertical: 12),
+                        child: Text(
+                          cleared,
+                          key: AppKeys.threadCleared,
+                          textAlign: .center,
+                          style: textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ),
+                      null => const SizedBox(height: 8),
+                    },
                   },
                 },
               ),
             ),
           },
         ),
-        switch (thread.closed) {
+        switch (closed) {
           true => _Closed(),
           false => _Composer(text: text, onSend: onSend),
         },
@@ -306,14 +339,18 @@ class _Bubble extends StatelessWidget {
       (true, .waiting) => (Icons.schedule_rounded, l.messagesWaiting),
       (true, .closed) => (null, l.messagesNotSent),
     };
-    // the corner under the writer's side is drawn tight on a run's last
-    // message: the run's tail
+    // on the writer's side a run reads as one: the corners that meet a
+    // neighbour of the same run are tight, and so is the last one's bottom,
+    // the run's tail
     const round = Radius.circular(18);
-    const tail = Radius.circular(6);
-    final radius = switch ((mine, place.lastOfRun)) {
-      (_, false) => const BorderRadius.all(round),
-      (true, true) => const BorderRadius.only(topLeft: round, topRight: round, bottomLeft: round, bottomRight: tail),
-      (false, true) => const BorderRadius.only(topLeft: round, topRight: round, bottomLeft: tail, bottomRight: round),
+    const tight = Radius.circular(6);
+    final top = switch (place.firstOfRun) {
+      true => round,
+      false => tight,
+    };
+    final radius = switch (mine) {
+      true => BorderRadius.only(topLeft: round, bottomLeft: round, topRight: top, bottomRight: tight),
+      false => BorderRadius.only(topRight: round, bottomRight: round, topLeft: top, bottomLeft: tight),
     };
     return Padding(
       key: AppKeys.message(message.id),
@@ -347,9 +384,16 @@ class _Bubble extends StatelessWidget {
                       style: style,
                       linkStyle: style.copyWith(color: link, decoration: .underline, decorationColor: link),
                       time: time,
+                      // tight: the time is a quiet stamp, never a second line of words
                       timeStyle:
-                          textTheme.labelSmall?.copyWith(color: quiet, fontFeatures: const [.tabularFigures()]) ??
-                          TextStyle(color: quiet),
+                          textTheme.labelSmall?.copyWith(
+                            color: quiet,
+                            fontSize: 11,
+                            letterSpacing: 0,
+                            height: 1,
+                            fontFeatures: const [.tabularFigures()],
+                          ) ??
+                          TextStyle(color: quiet, fontSize: 11),
                       status: status,
                       leading: leading,
                       onLink: switch (message.opened) {
@@ -383,12 +427,21 @@ class _Bubble extends StatelessWidget {
     final picked = await showMenu<_MessageAction>(
       context: context,
       position: RelativeRect.fromRect(at & const Size(1, 1), Offset.zero & overlay.size),
-      items: [PopupMenuItem(value: .copy, child: Text(l.messagesCopy))],
+      items: [
+        PopupMenuItem(value: .copy, child: Text(l.messagesCopy)),
+        // only what the other person wrote is theirs to answer for
+        if (!message.mine) PopupMenuItem(key: AppKeys.messageReport, value: .report, child: Text(l.messagesReport)),
+      ],
     );
+    if (!context.mounted) return;
     switch (picked) {
       case .copy:
         await Clipboard.setData(ClipboardData(text: text));
         messenger?.snack(l.copiedToClipboard);
+      case .report:
+        if (Messages.of(context).lookup(message.item.threadId) case final Thread thread) {
+          await showReportSheet(context, thread, name: threadName(context, thread), message: message);
+        }
       case null:
         break;
     }
@@ -396,7 +449,7 @@ class _Bubble extends StatelessWidget {
 }
 
 /// What a long press on a message offers.
-enum _MessageAction { copy }
+enum _MessageAction { copy, report }
 
 class _Composer extends StatelessWidget {
   final TextEditingController text;

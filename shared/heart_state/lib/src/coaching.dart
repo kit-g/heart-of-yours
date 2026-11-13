@@ -236,6 +236,12 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
+  /// Blocks the other person of [connection]: it ends, neither may message
+  /// the other, and they can't connect again until this person lifts it.
+  Future<void> block(Connection connection) async {
+    _replace(await _service.setConnectionStatus(_idOf(connection), .blocked));
+  }
+
   /// Keeps [workoutId] out of every connection's view, peers' too.
   Future<void> hide(String workoutId) async {
     final at = DateTime.timestamp();

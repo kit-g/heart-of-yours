@@ -197,12 +197,56 @@ void main() {
       await messages.load();
       await messages.open(threadId);
       server.threads = [Thread(id: threadId, otherId: coach, clearedAt: DateTime.utc(2026, 11, 11), clearedBy: coach)];
-      // the server's cursor still places what came after
-      server.items = [server.items.single, _item('after', cursor: 'c2', createdAt: DateTime.utc(2026, 11, 12))];
+      server.items = [_item('after', cursor: 'c2', createdAt: DateTime.utc(2026, 11, 12))];
 
       await messages.cleared(threadId);
 
       expect(messages.thread(threadId).messages.map((each) => each.text), ['after']);
+      expect(store.items[me]!.map((each) => each.item.id), ['item-after'], reason: 'gone from the device too');
+    });
+
+    test('deleting it here asks the server, and forgets it on the device, what waits to be sent aside', () async {
+      server.items = [_item('a', cursor: 'c1', createdAt: DateTime.utc(2026, 11, 10))];
+      await messages.load();
+      await messages.open(threadId);
+      access.account = false;
+      await messages.send(threadId, 'unsent');
+      access.account = true;
+      server.clearedAt = DateTime.utc(2026, 11, 11);
+
+      await messages.clear(threadId);
+
+      expect(server.calls, contains('clear t1'));
+      expect(messages.thread(threadId).messages.map((each) => each.text), ['unsent']);
+      expect(store.items[me]!.map((each) => each.item.id), ['mine-0']);
+    });
+
+    test('a report carries the reason, and the opened words of the other person alone, with their proof', () async {
+      server.items = [
+        _item('rude', cursor: 'c1'),
+        _item('mine', sender: me, cursor: 'c2'),
+      ];
+      await messages.load();
+      await messages.open(threadId);
+
+      await messages.report(
+        messages.lookup(threadId)!,
+        ReportReason.unsafeAdvice,
+        messages: messages.thread(threadId).messages,
+      );
+
+      final (:reportedId, :reason, :reported) = server.reports.single;
+      expect((reportedId, reason), (coach, 'unsafe_advice'));
+      expect(reported.single, (
+        words: 'rude',
+        key: 'f',
+        commitment: 'c',
+        tag: 'tag',
+        tagKey: 'k',
+        senderId: coach,
+        recipientId: me,
+        createdAt: DateTime.utc(2026, 11, 12, 8),
+      ));
     });
   });
 
@@ -568,6 +612,40 @@ class _Server implements RemoteThreadService {
 
   @override
   Future<void> markThreadRead(String threadId, String cursor) async => calls.add('read $threadId $cursor');
+
+  /// What a clear stamps on the thread.
+  DateTime? clearedAt;
+  final reports = <({String reportedId, String reason, List<ReportedMessage> reported})>[];
+
+  @override
+  Future<void> clearThread(String threadId) async {
+    calls.add('clear $threadId');
+    items = [];
+    threads = [
+      for (final each in threads)
+        switch (each.id == threadId) {
+          true => Thread(
+            id: each.id,
+            connectionId: each.connectionId,
+            otherId: each.otherId,
+            otherName: each.otherName,
+            clearedAt: clearedAt,
+            clearedBy: 'muffin',
+          ),
+          false => each,
+        },
+    ];
+  }
+
+  @override
+  Future<void> fileReport({
+    required String reportedId,
+    String? connectionId,
+    required String reason,
+    List<ReportedMessage> messages = const [],
+  }) async {
+    reports.add((reportedId: reportedId, reason: reason, reported: messages));
+  }
 }
 
 class _Store implements LocalThreadService {
@@ -591,6 +669,11 @@ class _Store implements LocalThreadService {
     final placed = held.where((each) => each.position != null).toList()
       ..sort((a, b) => a.position!.compareTo(b.position!));
     return [...placed, ...held.where((each) => each.position == null)];
+  }
+
+  @override
+  Future<void> deleteThreadItems(String userId, Iterable<String> itemIds) async {
+    items[userId]?.removeWhere((each) => itemIds.contains(each.item.id));
   }
 
   @override

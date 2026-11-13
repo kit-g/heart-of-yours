@@ -77,7 +77,15 @@ class _CoachMessagesPageState extends State<CoachMessagesPage> {
                         alignment: .topCenter,
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: threadWidth),
-                          child: ThreadView(key: ValueKey(id), connectionId: id),
+                          child: Column(
+                            crossAxisAlignment: .stretch,
+                            children: [
+                              _ThreadHeader(connectionId: id),
+                              Expanded(
+                                child: ThreadView(key: ValueKey(id), connectionId: id),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       null => _Empty(icon: Icons.forum_outlined, title: l.messagesPick),
@@ -88,6 +96,35 @@ class _CoachMessagesPageState extends State<CoachMessagesPage> {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// Who the conversation beside the inbox is with, and what can be done to
+/// it: what a page of its own says in its app bar.
+class _ThreadHeader extends StatelessWidget {
+  final String connectionId;
+
+  const new({required this.connectionId});
+
+  @override
+  Widget build(BuildContext context) {
+    final thread = Messages.watch(context).threadOf(connectionId);
+    return Padding(
+      padding: const .fromLTRB(16, 4, 4, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              threadName(context, thread, connectionId: connectionId),
+              maxLines: 1,
+              overflow: .ellipsis,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          ThreadMenu(connectionId: connectionId),
+        ],
       ),
     );
   }

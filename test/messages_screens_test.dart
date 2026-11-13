@@ -20,6 +20,8 @@ void main() {
   late _Cipher cipher;
   late Messages messages;
   late Preferences preferences;
+  late _Connections connections;
+  late Coaching coaching;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -34,6 +36,12 @@ void main() {
       cipher: cipher,
       remote: RemoteAccess(hasToken: () => true)..account = true,
     )..userId = 'whiskers';
+    connections = _Connections();
+    coaching = Coaching(
+      service: connections,
+      remote: RemoteAccess(hasToken: () => true)..account = true,
+    );
+    await coaching.load();
   });
 
   Future<void> pump(WidgetTester tester, Widget child, {Size size = const Size(400, 800)}) async {
@@ -46,7 +54,7 @@ void main() {
         providers: [
           ChangeNotifierProvider<Messages>.value(value: messages),
           ChangeNotifierProvider<Preferences>.value(value: preferences),
-          ChangeNotifierProvider<Coaching>(create: (_) => Coaching(service: _NoCoaching())),
+          ChangeNotifierProvider<Coaching>.value(value: coaching),
         ],
         child: MaterialApp(
           localizationsDelegates: localizationsDelegates,
@@ -197,6 +205,119 @@ void main() {
 
     expect(opened, ['c-muffin']);
   });
+
+  group('the conversation menu', () {
+    Future<void> openMenu(WidgetTester tester) async {
+      await tester.tap(find.byKey(AppKeys.threadMenu));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('deleting asks first, then empties it for both, and says who did', (tester) async {
+      server.items = [_item('i1', 'Squats?', sender: 'whiskers', cursor: 'c1')];
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.threadDelete));
+      await tester.pumpAndSettle();
+      expect(find.text('Every message goes, for you and for Muffin. This can\'t be undone.'), findsOneWidget);
+      await tester.tap(find.byKey(AppKeys.threadDeleteConfirm));
+      await tester.pumpAndSettle();
+
+      expect(server.calls, contains('clear t1'));
+      expect(_message('Squats?'), findsNothing);
+      expect(store.items, isEmpty, reason: 'gone from the device too');
+      expect(find.text('You deleted the messages before this.'), findsOneWidget);
+    });
+
+    testWidgets('blocking asks first, ends the connection, and closes the box', (tester) async {
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.threadBlock));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.threadBlockConfirm));
+      await tester.pumpAndSettle();
+
+      expect(connections.statuses, [ConnectionStatus.blocked]);
+      expect(find.byKey(AppKeys.messageBox), findsNothing);
+      expect(find.text('This conversation takes no new messages.'), findsOneWidget);
+
+      await openMenu(tester);
+      expect(find.byKey(AppKeys.threadBlock), findsNothing, reason: 'nothing left to block');
+    });
+
+    testWidgets('a report sends why, with their messages alone, and blocks when asked', (tester) async {
+      server.items = [
+        _item('i1', 'Skip the warm-up', sender: 'muffin', cursor: 'c1'),
+        _item('i2', 'No', sender: 'whiskers', cursor: 'c2'),
+      ];
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.threadReport));
+      await tester.pumpAndSettle();
+      expect(find.byKey(AppKeys.reportSend), findsNothing, reason: 'nothing to send before a reason');
+      expect(find.text('Include their last messages (1)'), findsOneWidget);
+
+      await tester.tap(find.byKey(AppKeys.reportReason('unsafe_advice')));
+      await tester.tap(find.byKey(AppKeys.reportBlock));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.reportSend));
+      await tester.pumpAndSettle();
+
+      final (:reason, :words) = server.reports.single;
+      expect(reason, 'unsafe_advice');
+      expect(words, ['Skip the warm-up']);
+      expect(connections.statuses, [ConnectionStatus.blocked]);
+      expect(find.text('Report sent. You blocked Muffin.'), findsOneWidget);
+    });
+
+    testWidgets('a long press reports one message of theirs, and none of the person\'s own', (tester) async {
+      server.items = [
+        _item('i1', 'Skip the warm-up', sender: 'muffin', cursor: 'c1'),
+        _item('i2', 'Mine', sender: 'whiskers', cursor: 'c2'),
+      ];
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+      await tester.longPress(_message('Mine'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(AppKeys.messageReport), findsNothing);
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
+
+      await tester.longPress(_message('Skip the warm-up'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.messageReport));
+      await tester.pumpAndSettle();
+      expect(find.text('Include this message'), findsOneWidget);
+      await tester.tap(find.byKey(AppKeys.reportReason('harassment')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.reportSend));
+      await tester.pumpAndSettle();
+
+      expect(server.reports.single.words, ['Skip the warm-up']);
+      expect(connections.statuses, isEmpty);
+      expect(find.text('Report sent. Thank you.'), findsOneWidget);
+    });
+
+    testWidgets('an ended connection has no box', (tester) async {
+      connections.status = .severed;
+      await coaching.load();
+
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+      expect(find.byKey(AppKeys.messageBox), findsNothing);
+    });
+  });
+
+  testWidgets('unread counts split by whose conversations they are: clients here, coaches none', (tester) async {
+    await messages.load();
+
+    await pump(tester, CoachMessagesPage(onYourTraining: () {}, onOpen: (_) {}));
+
+    expect(messages.unreadIn(coaching.clients.map((each) => each.connectionId)), 2);
+    expect(messages.unreadIn(coaching.coaches.map((each) => each.connectionId)), 0);
+  });
 }
 
 ThreadItem _item(String id, String text, {required String sender, String? cursor, DateTime? at}) {
@@ -216,7 +337,36 @@ ThreadItem _item(String id, String text, {required String sender, String? cursor
   );
 }
 
-class _NoCoaching implements CoachingService {
+/// The coach's one client, Muffin, and what became of the connection.
+class _Connections implements CoachingService {
+  ConnectionStatus status = .active;
+  final statuses = <ConnectionStatus>[];
+
+  Connection _muffin() {
+    return Connection(
+      targetId: 'muffin',
+      role: .coach,
+      domain: .fitness,
+      status: status,
+      createdAt: DateTime.utc(2026, 11, 7),
+      connectionId: 'c-muffin',
+      acceptedAt: DateTime.utc(2026, 11, 7),
+    );
+  }
+
+  @override
+  Future<List<Connection>> getConnections() async => [_muffin()];
+
+  @override
+  Future<List<HiddenWorkout>> getHiddenWorkouts() async => [];
+
+  @override
+  Future<Connection> setConnectionStatus(String connectionId, ConnectionStatus status) async {
+    statuses.add(status);
+    this.status = status;
+    return _muffin();
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
@@ -240,7 +390,19 @@ class _Server implements RemoteThreadService {
   Future<Thread> openThread(String connectionId) async => _thread;
 
   @override
-  Future<List<Thread>> getThreads() async => [_thread];
+  Future<List<Thread>> getThreads() async => [
+    switch (clearedAt) {
+      final DateTime at => Thread(
+        id: _thread.id,
+        connectionId: _thread.connectionId,
+        otherId: _thread.otherId,
+        otherName: _thread.otherName,
+        clearedAt: at,
+        clearedBy: 'whiskers',
+      ),
+      null => _thread,
+    },
+  ];
 
   @override
   Future<ThreadItem> postThreadItem(
@@ -281,6 +443,26 @@ class _Server implements RemoteThreadService {
 
   @override
   Future<void> markThreadRead(String threadId, String cursor) async => calls.add('read $threadId $cursor');
+
+  DateTime? clearedAt;
+  final reports = <({String reason, List<String> words})>[];
+
+  @override
+  Future<void> clearThread(String threadId) async {
+    calls.add('clear $threadId');
+    items = [];
+    clearedAt = DateTime.now().toUtc();
+  }
+
+  @override
+  Future<void> fileReport({
+    required String reportedId,
+    String? connectionId,
+    required String reason,
+    List<ReportedMessage> messages = const [],
+  }) async {
+    reports.add((reason: reason, words: [for (final each in messages) each.words]));
+  }
 }
 
 class _Store implements LocalThreadService {
@@ -309,6 +491,11 @@ class _Store implements LocalThreadService {
     final placed = items.where((each) => each.position != null).toList()
       ..sort((a, b) => a.position!.compareTo(b.position!));
     return [...placed, ...items.where((each) => each.position == null)];
+  }
+
+  @override
+  Future<void> deleteThreadItems(String userId, Iterable<String> itemIds) async {
+    items.removeWhere((each) => itemIds.contains(each.item.id));
   }
 
   @override

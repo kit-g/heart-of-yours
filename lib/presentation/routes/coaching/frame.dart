@@ -61,7 +61,10 @@ class _CoachingFrameState extends State<CoachingFrame> {
         ),
         (
           label: l.coachingMessages,
-          icon: (_) => const Icon(Icons.forum_outlined, key: AppKeys.coachingMessagesStack),
+          icon: (context) => _Unread(
+            unread: Messages.watch(context).unreadIn(Coaching.watch(context).clients.map((each) => each.connectionId)),
+            child: const Icon(Icons.forum_outlined, key: AppKeys.coachingMessagesStack),
+          ),
         ),
         (
           label: l.coachingPrograms,
@@ -86,6 +89,25 @@ class _CoachingFrameState extends State<CoachingFrame> {
         },
       ),
     );
+  }
+}
+
+/// An icon with how many messages wait unread, said to a screen reader too.
+class _Unread extends StatelessWidget {
+  final int unread;
+  final Widget child;
+
+  const new({required this.unread, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (unread) {
+      0 => child,
+      _ => Semantics(
+        label: L.of(context).messagesUnread(unread),
+        child: Badge.count(count: unread, child: child),
+      ),
+    };
   }
 }
 

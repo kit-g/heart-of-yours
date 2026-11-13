@@ -51,6 +51,19 @@ class RemoteThreads implements RemoteThreadService {
 
   @override
   Future<void> markThreadRead(String threadId, String cursor) => _api.markThreadRead(threadId, cursor);
+
+  @override
+  Future<void> clearThread(String threadId) => _api.clearThread(threadId);
+
+  @override
+  Future<void> fileReport({
+    required String reportedId,
+    String? connectionId,
+    required String reason,
+    List<ReportedMessage> messages = const [],
+  }) {
+    return _api.fileReport(reportedId: reportedId, connectionId: connectionId, reason: reason, messages: messages);
+  }
 }
 
 /// Presents [LocalDatabase] as the [LocalThreadService] [Messages] wants
@@ -74,4 +87,7 @@ class LocalThreads implements LocalThreadService {
 
   @override
   Future<void> storeThreadItems(String userId, Iterable<StoredItem> items) => _db.storeThreadItems(userId, items);
+
+  @override
+  Future<void> deleteThreadItems(String userId, Iterable<String> itemIds) => _db.deleteThreadItems(userId, itemIds);
 }

@@ -34,6 +34,50 @@ abstract interface class RemoteThreadService {
   });
 
   Future<void> markThreadRead(String threadId, String cursor);
+
+  /// Deletes every message of [threadId], for both people.
+  Future<void> clearThread(String threadId);
+
+  Future<void> fileReport({
+    required String reportedId,
+    String? connectionId,
+    required String reason,
+    List<ReportedMessage> messages,
+  });
+}
+
+/// A message put in a report: its words in the clear, this person's franking
+/// key for them, and what the server answered when it was sent, which lets
+/// the server check it was really said.
+typedef ReportedMessage = ({
+  String words,
+  String key,
+  String commitment,
+  String tag,
+  String tagKey,
+  String senderId,
+  String recipientId,
+  DateTime createdAt,
+});
+
+/// Why someone is reported.
+enum ReportReason {
+  harassment,
+  spam,
+  inappropriate,
+
+  /// Training advice that could hurt: a coaching app's own reason.
+  unsafeAdvice,
+  other;
+
+  /// What the server stores: one snake_case word.
+  String get wire => switch (this) {
+    harassment => 'harassment',
+    spam => 'spam',
+    inappropriate => 'inappropriate',
+    unsafeAdvice => 'unsafe_advice',
+    other => 'other',
+  };
 }
 
 /// One stored item and where it sits: [position] is the server's order as this
@@ -56,6 +100,8 @@ abstract interface class LocalThreadService {
 
   /// Adds, or replaces by id.
   Future<void> storeThreadItems(String userId, Iterable<StoredItem> items);
+
+  Future<void> deleteThreadItems(String userId, Iterable<String> itemIds);
 }
 
 /// Where a message of this device's stands with the server.
@@ -196,6 +242,9 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   /// when a screen closes, so a thread opened again offers them still.
   final _older = <String, bool>{};
 
+  /// The deletion each thread was last cleaned up to on this device.
+  final _forgotten = <String, DateTime>{};
+
   /// The cursor each thread was last marked read at.
   final _marked = <String, String>{};
   CoachingStatus _status = .idle;
@@ -207,6 +256,13 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
 
   /// Unread across the inbox.
   int get unread => _threads.fold(0, (sum, thread) => sum + thread.unread);
+
+  /// Unread in the conversations of [connectionIds]: a coach's clients, or a
+  /// student's coaches.
+  int unreadIn(Iterable<String?> connectionIds) {
+    final ids = connectionIds.nonNulls.toSet();
+    return _threads.where((each) => ids.contains(each.connectionId)).fold(0, (sum, each) => sum + each.unread);
+  }
 
   Thread? lookup(String threadId) => _threads.where((each) => each.id == threadId).firstOrNull;
 
@@ -240,6 +296,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       if (userId != _userId) return;
       await _local.storeThreads(userId, threads);
       _setThreads(threads);
+      await _forgetCleared(userId, threads);
       _status = .loaded;
     } catch (error, stacktrace) {
       if (userId != _userId) return;
@@ -258,6 +315,60 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
     }
+  }
+
+  /// What came before a deletion of the conversation, by either person, goes
+  /// from this device too: ciphertext whose keys are here is words still.
+  Future<void> _forgetCleared(String userId, List<Thread> threads) async {
+    for (final thread in threads) {
+      final cleared = thread.clearedAt;
+      if (cleared == null || _forgotten[thread.id] == cleared) continue;
+      await _writes(thread.id, () async {
+        final stored = await _local.getThreadItems(userId, thread.id);
+        final gone = [
+          for (final (:item, position: _, :pending) in stored)
+            if (!pending && !item.createdAt.isAfter(cleared)) item.id,
+        ];
+        if (gone.isNotEmpty) await _local.deleteThreadItems(userId, gone);
+      });
+      _forgotten[thread.id] = cleared;
+      if (_views.containsKey(thread.id)) await _show(thread.id);
+    }
+  }
+
+  /// Deletes [threadId]'s messages for both people: here, and on the server,
+  /// which tells the other person. Throws what the server threw.
+  Future<void> clear(String threadId) async {
+    await _service.clearThread(threadId);
+    await load();
+  }
+
+  /// Reports the other person of [thread], with [messages] of theirs this
+  /// device opened, which the server can check they really sent. Throws what
+  /// the server threw.
+  Future<void> report(Thread thread, ReportReason reason, {Iterable<Message> messages = const []}) async {
+    final (userId, otherId) = (_userId, thread.otherId);
+    if (userId == null || otherId == null) throw StateError('nobody to report');
+    await _service.fileReport(
+      reportedId: otherId,
+      connectionId: thread.connectionId,
+      reason: reason.wire,
+      messages: [
+        for (final each in messages)
+          if ((each.opened, each.item.senderId) case (Opened(:final text, :final frankingKey), final String sender)
+              when sender == otherId)
+            (
+              words: text,
+              key: frankingKey,
+              commitment: each.item.commitment,
+              tag: each.item.tag,
+              tagKey: each.item.tagKey,
+              senderId: sender,
+              recipientId: userId,
+              createdAt: each.item.createdAt,
+            ),
+      ],
+    );
   }
 
   /// The app came back to the front, where a push may never have reached it:
@@ -639,6 +750,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     _views.clear();
     _following.clear();
     _older.clear();
+    _forgotten.clear();
     _drafts.clear();
     _marked.clear();
     _status = .idle;

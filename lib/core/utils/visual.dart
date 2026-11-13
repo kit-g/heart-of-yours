@@ -277,6 +277,15 @@ extension SectionHeaderStyle on ThemeData {
 /// the menu out in that overlay, and inside the two-pane shell the overlay
 /// starts after the rail, so a window offset lands the menu a rail's width to
 /// the right of the value.
+/// Where a menu opens under whatever [context] belongs to, as wide as it.
+RelativeRect menuUnder(BuildContext context) {
+  final box = context.findRenderObject();
+  final overlay = Overlay.of(context).context.findRenderObject();
+  if (box is! RenderBox || overlay is! RenderBox) return RelativeRect.fill;
+  final rect = box.localToGlobal(Offset.zero, ancestor: overlay) & box.size;
+  return RelativeRect.fromRect(rect.bottomLeft & Size(rect.width, 0), Offset.zero & overlay.size);
+}
+
 RelativeRect menuUnderValue(BuildContext context, GlobalKey key, {required double width}) {
   final box = key.currentContext?.findRenderObject();
   final overlay = Navigator.of(context).overlay?.context.findRenderObject();

@@ -44,6 +44,7 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:reorderable_grid/reorderable_grid.dart';
 
+part 'coach_messages.dart';
 part 'charts.dart';
 part 'dashboard.dart';
 part 'empty_dashboard_widget.dart';
