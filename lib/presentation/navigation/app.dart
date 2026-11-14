@@ -657,6 +657,9 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
       final templates = Templates.of(context);
       Programs.of(context).pullCoached().then(templates.pull);
     }
+    // a language change whose library fetch failed is retried here; the same
+    // tag as the catalog's is a no-op (heart-of-yours#612)
+    Exercises.of(context).onLocaleChanged(languageTag());
   }
 
   /// Localized backend content (the exercise catalog) is served per request

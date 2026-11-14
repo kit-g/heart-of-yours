@@ -505,6 +505,41 @@ void main() {
       verify(library.getLibrary(cached: null)).called(1);
     });
 
+    // #612: a stamp passes every comparison the manifest makes, so rows that
+    // disagree with it would never be replaced
+    test('a Russian stamp over English rows is not trusted, and is reported', () async {
+      const inRussian = (version: 'run-1', locale: 'ru', etag: '"abc"');
+      final errors = <Object?>[];
+      sut = build(onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (DateTime(2024), [ex('Squat')]));
+      when(catalog.getCatalogStamp()).thenAnswer((_) async => inRussian);
+
+      await sut.init(locale: 'ru-RU');
+
+      verify(library.getLibrary(cached: null)).called(1);
+      expect(errors, [
+        isA<CatalogLanguageMismatch>()
+            .having((e) => e.stamped, 'stamped', 'ru')
+            .having((e) => e.device, 'device', 'ru-RU'),
+      ]);
+    });
+
+    test('a Russian stamp over Russian rows is trusted', () async {
+      const inRussian = (version: 'run-1', locale: 'ru', etag: '"abc"');
+      final errors = <Object?>[];
+      sut = build(onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer(
+        (_) async => (DateTime(2024), [ex('Squat'), ex('Приседания (штанга)')]),
+      );
+      when(catalog.getCatalogStamp()).thenAnswer((_) async => inRussian);
+      when(library.getLibrary(cached: inRussian)).thenAnswer((_) async => (null, inRussian));
+
+      await sut.init(locale: 'ru-RU');
+
+      verify(library.getLibrary(cached: inRussian)).called(1);
+      expect(errors, isEmpty);
+    });
+
     test('routes errors to onError and does not throw', () async {
       Object? err;
       sut = build(onError: (e, {stacktrace}) => err = e);
@@ -576,6 +611,20 @@ void main() {
       await sut.onLocaleChanged('en');
 
       expect(sut.lookup(en.id)?.name, 'Bench Press');
+    });
+
+    test('a fetch that fails keeps the old tag, so the same change tries again', () async {
+      await sut.init(locale: 'en');
+      when(library.getLibrary(cached: anyNamed('cached'))).thenThrow(Exception('offline'));
+
+      await sut.onLocaleChanged('ru');
+
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[], glossary: SearchGlossary.empty()), stamp));
+      clearInteractions(library);
+      await sut.onLocaleChanged('ru');
+
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
     });
 
     test('a change before init is only recorded — init fetches under the new header anyway', () async {
