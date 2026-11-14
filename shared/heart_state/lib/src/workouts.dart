@@ -16,6 +16,17 @@ import 'workout_plans.dart';
 
 typedef WorkoutId = String;
 
+/// A workout logged after the fact (#530), the user's own or a coach's for a
+/// client (#560): it goes into a history as what was done, and nothing else.
+extension LoggedAfter on Workout {
+  /// Drops what wasn't done: a set ticked with nothing in it is no set, so it
+  /// goes with the unticked ones, and an exercise left with no set goes too.
+  void keepDone() {
+    expand((exercise) => exercise).where((set) => !set.canBeCompleted).forEach((set) => set.isCompleted = false);
+    removeEmptySets();
+  }
+}
+
 class Workouts with ChangeNotifier implements SignOutStateSentry {
   final _workouts = <WorkoutId, Workout>{};
   final void Function(dynamic error, {dynamic stacktrace})? onError;
@@ -104,6 +115,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _latestMarkedSet = null;
     _progress.clear();
     _healChecked.clear();
+    _refreshedAt = null;
     // a pass still running is the old user's; it checks for that at every
     // step, and the next sign-in must not wait on it
     _healing = null;
@@ -664,15 +676,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// for an account (an anonymous session keeps it for [syncPendingWorkouts]),
   /// and every reader of [historyRevision]. Returns it as it ended up.
   ///
-  /// A set ticked with nothing in it is no set: it goes with the unticked ones
-  /// [Workout.removeEmptySets] drops, so the history holds what was done.
+  /// Only what was done goes in: see [LoggedAfter.keepDone].
   Future<Workout> logWorkout(Workout workout) async {
     assert(workout.end != null, 'A workout logged after the fact has ended');
     assert(workout.id != _activeWorkoutId, 'The active workout finishes, it is not logged');
-    workout
-        .expand((exercise) => exercise)
-        .where((set) => !set.canBeCompleted)
-        .forEach((set) => set.isCompleted = false);
+    workout.keepDone();
     final saved = await saveWorkout(workout);
     // counted after the save, as a finish is: what history holds
     analytics?.workoutLogged(
@@ -1280,6 +1288,38 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void>? _healing;
+
+  /// Reads the newest page of history from the server over what is held, as
+  /// [initHistory]'s remote step does, and nothing else: coming back to the
+  /// app, where a workout logged elsewhere, by their coach (#560), may be
+  /// waiting. At most once every ten minutes, counted from the last read
+  /// that landed, and one at a time. Paging carries on from where it was.
+  Future<void> refreshHistory({DateTime? now}) async {
+    final at = now ?? DateTime.now();
+    final last = _refreshedAt;
+    if (last != null && at.difference(last) < const Duration(minutes: 10)) return;
+    final id = userId;
+    if (id == null || !_remote.allowed) return;
+    // taken now, so a second resume meanwhile doesn't read it again
+    _refreshedAt = at;
+    final workouts = await _getRemoteHistory(id);
+    if (userId != id) return;
+    if (workouts == null) {
+      // not read: the next time back tries again
+      _refreshedAt = last;
+      return;
+    }
+    await _step(() async {
+      await _localService.storeWorkoutHistory(workouts, id);
+      _absorb(workouts);
+      await _dropDeletedElsewhere(workouts);
+      _historyWritten();
+    });
+    // a page may list a workout without its detail
+    await (_healing ??= _healStrippedHistory(id).whenComplete(() => _healing = null));
+  }
+
+  DateTime? _refreshedAt;
 
   /// Runs one step of [initHistory], reporting what it throws instead of
   /// letting it cost the steps after it.

@@ -153,8 +153,10 @@ class WorkoutItem extends StatelessWidget {
                 L.of(context).fullDate(workout.start),
                 style: textTheme.bodySmall,
               ),
-              // a session their coach logged for them (#560)
-              if (workout.loggedByName?.trim() case final String coach when coach.isNotEmpty)
+              // a session their coach logged for them (#560), while Your coach
+              // is on: off, it is a workout like any other
+              if (workout.loggedByName?.trim() case final String coach
+                  when coach.isNotEmpty && Preferences.watch(context).isOn(.yourCoach))
                 Padding(
                   key: AppKeys.loggedBy(workout.id),
                   padding: const .only(top: 4),

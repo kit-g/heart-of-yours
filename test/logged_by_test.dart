@@ -8,11 +8,11 @@ import 'package:material_ui/material_ui.dart';
 
 import 'mocks.mocks.dart';
 
-/// A session a coach logged for someone says so on its History card (#560);
-/// one of their own says nothing.
+/// A session a coach logged for someone says so on its History card (#560),
+/// while Your coach is on; one of their own says nothing.
 void main() {
-  Future<void> pump(WidgetTester tester, Workout workout) async {
-    SharedPreferences.setMockInitialValues({});
+  Future<void> pump(WidgetTester tester, Workout workout, {bool yourCoach = true}) async {
+    SharedPreferences.setMockInitialValues({'feature-yourCoach': yourCoach ? 'on' : 'off'});
     final preferences = Preferences();
     await preferences.init();
     final exercises = Exercises(
@@ -61,6 +61,12 @@ void main() {
 
   testWidgets('one of their own says nothing of it', (tester) async {
     await pump(tester, session());
+
+    expect(find.byKey(AppKeys.loggedBy('w1')), findsNothing);
+  });
+
+  testWidgets('with Your coach off, it is a workout like any other', (tester) async {
+    await pump(tester, session(loggedByName: 'Whiskers'), yourCoach: false);
 
     expect(find.byKey(AppKeys.loggedBy('w1')), findsNothing);
   });

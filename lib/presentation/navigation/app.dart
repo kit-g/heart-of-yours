@@ -697,9 +697,10 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
       final templates = Templates.of(context);
       final programs = Programs.of(context);
       final workouts = Workouts.of(context);
-      programs.pullCoached().then(templates.pull);
-      // a session the coach logged for them while they were away (#560)
-      workouts.initHistory().then((_) => _growLogged(workouts, templates, programs, read: Future.value()));
+      final coached = programs.pullCoached().then(templates.pull);
+      // a session the coach logged for them while they were away (#560): once
+      // the copies and the sessions it names are read, over moves read afresh
+      _growLogged(workouts, templates, programs, read: (coached, workouts.refreshHistory()).wait, reread: true);
     }
     // messages whose push may never have come (#556)
     final auth = Auth.of(context);
@@ -1285,19 +1286,21 @@ Future<void> _initTrainingData({
 }
 
 /// Moves this person's programs by what their coach logged for them (#560),
-/// once the programs and the sessions they were logged from are read.
+/// once the programs and the sessions they were logged from are read; with
+/// [reread], over their moves read from the server again.
 Future<void> _growLogged(
   Workouts workouts,
   Templates templates,
   Programs programs, {
   required Future<void> read,
+  bool reread = false,
 }) async {
   try {
     await read;
   } catch (_) {
     // each reports its own failure; what was read still counts
   }
-  await programs.growLogged(workouts.history, sessionOf: templates.lookup);
+  await programs.growLogged(workouts.history, sessionOf: templates.lookup, reread: reread);
 }
 
 /// The replay is done and the remote leg is open: pull what the account holds

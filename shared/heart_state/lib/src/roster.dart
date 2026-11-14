@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'coaching.dart' show CoachingStatus;
 import 'remote.dart';
 import 'workout_review.dart';
+import 'workouts.dart' show LoggedAfter;
 
 /// What the server does with a coach's view of everyone they coach
 /// (heart-of-yours#559). Like [CoachingService], the app's view of a few
@@ -222,16 +223,19 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
 
   /// Logs [workout] as [studentId]'s (#560): a session the coach was there
   /// for, theirs from now on, in their history and marked as the coach's
-  /// doing. Shown first among their workouts once the server has it. Throws
-  /// what the service threw, so the caller can say so and try again under
-  /// the same id.
+  /// doing. Only what was done goes, as with a workout the user logs for
+  /// themselves. Throws what the service threw, so the caller can say so and
+  /// try again under the same id.
+  ///
+  /// Their record keeps the server's order, newest id first, and a workout
+  /// logged now has the newest id there is: it goes first, whenever it was.
   Future<Workout> logFor(String studentId, Workout workout) async {
+    workout.keepDone();
     final logged = await _service.logClientWorkout(studentId, workout);
     if (_records[studentId] case final _Record record) {
       record.workouts
         ..removeWhere((each) => each.id == logged.id)
-        ..add(logged)
-        ..sort((a, b) => b.start.compareTo(a.start));
+        ..insert(0, logged);
       notifyListeners();
     }
     return logged;
