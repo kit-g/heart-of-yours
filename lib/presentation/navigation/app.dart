@@ -709,6 +709,9 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     if (preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false) && DeviceKeys.of(context).supported) {
       CoachNotes.of(context).resume();
     }
+    // a language change whose library fetch failed is retried here; the same
+    // tag as the catalog's is a no-op (heart-of-yours#612)
+    Exercises.of(context).onLocaleChanged(languageTag());
   }
 
   /// Localized backend content (the exercise catalog) is served per request
