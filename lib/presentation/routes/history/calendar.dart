@@ -1,27 +1,32 @@
 part of 'history.dart';
 
-/// A persistent calendar route: opening an editor never replaces its scroll state.
+/// History as a calendar (#609): months scrolling up into the past from the
+/// current one, a marked day for each day trained.
+///
+/// It is the page itself, not a dialog over it, so a marked day opens its
+/// workout the way a card in the list does — [onTapWorkout], pushed on a
+/// phone and in the detail pane on a tablet — and [selectedId] marks the day
+/// the pane is showing.
 class HistoryCalendar extends StatefulWidget {
-  final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
+  final void Function(Workout)? onTapWorkout;
 
-  const new({super.key, this.onTapImage});
+  /// Id of the workout open in the detail pane; null in compact.
+  final String? selectedId;
+
+  /// The month list's controller: History's, so a navbar re-tap brings the
+  /// current month back. Without one the calendar keeps its own.
+  final ScrollController? controller;
+
+  const new({super.key, this.onTapWorkout, this.selectedId, this.controller});
 
   @override
   State<HistoryCalendar> createState() => _HistoryCalendarState();
 }
 
 class _HistoryCalendarState extends State<HistoryCalendar> {
-  final _scroll = ScrollController();
-  final _opening = ValueNotifier<String?>(null);
+  // a plain flag: it only debounces a request and must never cause a frame
   bool _pageScheduled = false;
   late final _latest = DateTime(DateTime.now().year, DateTime.now().month);
-
-  @override
-  void dispose() {
-    _scroll.dispose();
-    _opening.dispose();
-    super.dispose();
-  }
 
   void _loadOlder(Workouts workouts) {
     if (_pageScheduled || workouts.loadingMoreHistory || workouts.historyPageError || !workouts.hasMoreHistory) return;
@@ -36,45 +41,6 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
     });
   }
 
-  Future<void> _open(Workout workout) async {
-    if (_opening.value != null) return;
-    _opening.value = workout.id;
-    try {
-      final workouts = Workouts.of(context);
-      final found = await workouts.fetchWorkout(workout.id);
-      if (!mounted) return;
-      final copy = workouts.lookup(workout.id);
-      if (!found || copy == null) {
-        snack(context, L.of(context).historyLoadMoreError);
-        return;
-      }
-      // Preserve session and set IDs while keeping unsaved edits off the cache.
-      final editable = Workout.fromJson(copy.toMap());
-      _opening.value = null;
-      await showDialog<void>(
-        context: context,
-        // PopScope guards back and the editor's close action; barrier dismissal
-        // bypasses that guard on some platforms, so it is deliberately disabled.
-        barrierDismissible: false,
-        builder: (editorContext) => Dialog(
-          shape: const RoundedRectangleBorder(borderRadius: .all(.circular(8))),
-          clipBehavior: .antiAlias,
-          insetPadding: const .all(16),
-          constraints: const BoxConstraints(maxWidth: dialogWidth, maxHeight: 800),
-          child: WorkoutEditor(
-            copy: editable,
-            onTapImage: widget.onTapImage,
-            onClose: () => Navigator.of(editorContext).pop(),
-          ),
-        ),
-      );
-    } catch (error) {
-      if (mounted) snack(context, L.of(context).historyLoadMoreError);
-    } finally {
-      if (mounted) _opening.value = null;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final workouts = Workouts.watch(context);
@@ -87,84 +53,67 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
     // the user's first day (#339), counted the way Material's calendars do:
     // 0 is Sunday, so a DateTime weekday maps over by its remainder
     final firstWeekday = Preferences.watch(context).firstWeekday % 7;
-    final theme = Theme.of(context);
 
-    return Dialog(
-      shape: const RoundedRectangleBorder(borderRadius: .all(.circular(8))),
-      clipBehavior: .antiAlias,
-      insetPadding: const .symmetric(horizontal: 8, vertical: 24),
-      constraints: const BoxConstraints(maxWidth: calendarDialogWidth, maxHeight: 800),
-      child: Column(
-        children: [
-          SizedBox(
-            height: 64,
-            child: Stack(
-              alignment: .center,
-              children: [
-                Center(child: Text(L.of(context).calendar, style: theme.textTheme.titleLarge)),
-                Positioned(
-                  left: 4,
-                  child: IconButton(
-                    constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-                    tooltip: L.of(context).close,
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const .symmetric(horizontal: 4, vertical: 12),
-            child: Row(
-              children: List.generate(7, (index) {
-                final day = DateTime(2024, 1, 7 + (firstWeekday + index) % 7);
-                return Expanded(
-                  child: Semantics(
-                    container: true,
-                    label: DateFormat.EEEE(locale).format(day),
-                    excludeSemantics: true,
-                    child: Text(DateFormat.EEEEE(locale).format(day), textAlign: .center),
-                  ),
-                );
-              }),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              controller: _scroll,
-              reverse: true,
-              itemCount: count + 1,
-              itemBuilder: (context, index) {
-                if (index >= count - 1) _loadOlder(workouts);
-                if (index == count) {
-                  return _HistoryTail(
-                    loading: workouts.loadingMoreHistory,
-                    error: workouts.historyPageError,
-                    hasMore: workouts.hasMoreHistory,
-                    onRetry: () => workouts.loadMoreHistory(),
+    // Measured and capped: a seven-column grid stretched across a tablet's
+    // pane is all gaps, so it keeps phone proportions and centres itself.
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: calendarWidth),
+        child: Column(
+          children: [
+            Padding(
+              padding: const .symmetric(horizontal: 4, vertical: 12),
+              child: Row(
+                children: List.generate(7, (index) {
+                  final day = DateTime(2024, 1, 7 + (firstWeekday + index) % 7);
+                  return Expanded(
+                    child: Semantics(
+                      container: true,
+                      label: DateFormat.EEEE(locale).format(day),
+                      excludeSemantics: true,
+                      child: Text(DateFormat.EEEEE(locale).format(day), textAlign: .center),
+                    ),
                   );
-                }
-                final month = DateTime(newest.year, newest.month - index);
-                final key = DateFormat('yyyy-MM').format(month);
-                final days = <int, Workout>{};
-                // byMonth is newest-first: multiple sessions get one badge and
-                // open the most recent session on that day.
-                for (final workout in byMonth[key] ?? <Workout>[]) {
-                  days.putIfAbsent(workout.start.day, () => workout);
-                }
-                return _CalendarMonth(
-                  key: ValueKey(key),
-                  month: month,
-                  days: days,
-                  firstWeekday: firstWeekday,
-                  opening: _opening,
-                  onOpen: _open,
-                );
-              },
+                }),
+              ),
             ),
-          ),
-        ],
+            Expanded(
+              child: ListView.builder(
+                controller: widget.controller,
+                reverse: true,
+                // clear of the active workout's button, over the current month
+                padding: const .only(bottom: 72),
+                itemCount: count + 1,
+                itemBuilder: (context, index) {
+                  if (index >= count - 1) _loadOlder(workouts);
+                  if (index == count) {
+                    return _HistoryTail(
+                      loading: workouts.loadingMoreHistory,
+                      error: workouts.historyPageError,
+                      hasMore: workouts.hasMoreHistory,
+                      onRetry: () => workouts.loadMoreHistory(),
+                    );
+                  }
+                  final month = DateTime(newest.year, newest.month - index);
+                  final key = DateFormat('yyyy-MM').format(month);
+                  // byMonth is newest-first: several sessions on a day share
+                  // one mark and open the most recent
+                  final days = <int, Workout>{
+                    for (final workout in (byMonth[key] ?? const <Workout>[]).reversed) workout.start.day: workout,
+                  };
+                  return _CalendarMonth(
+                    key: ValueKey(key),
+                    month: month,
+                    days: days,
+                    firstWeekday: firstWeekday,
+                    selectedId: widget.selectedId,
+                    onOpen: widget.onTapWorkout,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -174,23 +123,22 @@ class _CalendarMonth extends StatelessWidget {
   final DateTime month;
   final Map<int, Workout> days;
   final int firstWeekday;
-  final ValueNotifier<String?> opening;
-  final void Function(Workout) onOpen;
+  final String? selectedId;
+  final void Function(Workout)? onOpen;
 
   const new({
     super.key,
     required this.month,
     required this.days,
     required this.firstWeekday,
-    required this.opening,
-    required this.onOpen,
+    this.selectedId,
+    this.onOpen,
   });
 
   @override
   Widget build(BuildContext context) {
     final locale = L.of(context).localeName;
     final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     final offset = (month.weekday % 7 - firstWeekday + 7) % 7;
     final length = DateTime(month.year, month.month + 1, 0).day;
     final rows = ((offset + length) / 7).ceil();
@@ -210,61 +158,23 @@ class _CalendarMonth extends StatelessWidget {
                 final day = row * 7 + column - offset + 1;
                 if (day < 1 || day > length) return const Expanded(child: SizedBox(height: 48));
                 final date = DateTime(month.year, month.month, day);
-                final workout = days[day];
                 final label = DateFormat.yMMMMEEEEd(locale).format(date);
                 final number = Text('$day', style: theme.textTheme.bodyLarge);
                 return Expanded(
                   child: SizedBox(
                     height: 52,
-                    child: switch (workout) {
-                      null => Semantics(
+                    child: switch ((days[day], onOpen)) {
+                      (Workout workout, void Function(Workout) open) => _MarkedDay(
+                        label: '$label, ${L.of(context).editWorkout}',
+                        selected: workout.id == selectedId,
+                        onTap: () => open(workout),
+                        child: number,
+                      ),
+                      _ => Semantics(
                         container: true,
                         label: label,
                         excludeSemantics: true,
                         child: Center(child: number),
-                      ),
-                      Workout workout => Semantics(
-                        button: true,
-                        label: '$label, ${L.of(context).editWorkout}',
-                        onTap: () => onOpen(workout),
-                        excludeSemantics: true,
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: () => onOpen(workout),
-                          child: Center(
-                            child: Stack(
-                              clipBehavior: .none,
-                              children: [
-                                Container(
-                                  width: 42,
-                                  height: 42,
-                                  alignment: .center,
-                                  decoration: BoxDecoration(color: colors.surfaceContainerHighest, shape: .circle),
-                                  child: number,
-                                ),
-                                Positioned(
-                                  right: -2,
-                                  top: -2,
-                                  child: ValueListenableBuilder<String?>(
-                                    valueListenable: opening,
-                                    builder: (_, id, _) => Container(
-                                      width: 18,
-                                      height: 18,
-                                      decoration: BoxDecoration(color: colors.primary, shape: .circle),
-                                      child: switch (id == workout.id) {
-                                        true => Padding(
-                                          padding: const .all(3),
-                                          child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimary),
-                                        ),
-                                        false => Icon(Icons.check, size: 14, color: colors.onPrimary),
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ),
                     },
                   ),
@@ -273,6 +183,61 @@ class _CalendarMonth extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A day trained: filled, with a check, and outlined while the detail pane
+/// shows its workout.
+class _MarkedDay extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget child;
+
+  const new({required this.label, required this.selected, required this.onTap, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme(:primary, :onPrimary, :surfaceContainerHighest) = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      onTap: onTap,
+      excludeSemantics: true,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Center(
+          child: Stack(
+            clipBehavior: .none,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: .center,
+                decoration: BoxDecoration(
+                  color: surfaceContainerHighest,
+                  shape: .circle,
+                  border: selected ? .all(color: primary, width: 2) : null,
+                ),
+                child: child,
+              ),
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(color: primary, shape: .circle),
+                  child: Icon(Icons.check, size: 14, color: onPrimary),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

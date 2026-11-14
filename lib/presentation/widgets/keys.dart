@@ -18,6 +18,12 @@ abstract final class AppKeys {
   /// Asserting on it distinguishes "nothing selected" from "no detail pane".
   static const noSelection = Key('AppFrame.noSelection');
 
+  /// History's switch between the list and the calendar, and the calendar
+  /// itself (#609).
+  static const historyViewSwitch = Key('History.view.switch');
+  static const historyCalendar = Key('History.calendar');
+  static const historyViewSetting = Key('Settings.historyView');
+
   /// Dismisses a two-pane detail. Distinct from a back button: it clears the
   /// selection rather than popping a route.
   static const closeDetail = Key('AppFrame.closeDetail');

@@ -31,7 +31,6 @@ import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
 import 'support/file_picker.dart';
-import 'support/finders.dart';
 import 'support/harness.dart';
 
 /// LoginPage's Apple button probes availability via this channel, unawaited,
@@ -2268,7 +2267,7 @@ void main() {
             .thenAnswer((_) async => [completed]);
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
-        await tester.tap(find.tooltip('Calendar'));
+        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
       case _Screen.history:
         await tester.tapByKey(AppKeys.historyStack);
       case _Screen.pastWorkoutTimes || _Screen.pastWorkoutEditor:

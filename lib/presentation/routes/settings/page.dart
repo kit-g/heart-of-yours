@@ -58,6 +58,10 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :account,
       :app,
       :developerApi,
+      :screens,
+      :historyView,
+      :historyAsList,
+      :calendar,
     ) = L.of(
       context,
     );
@@ -136,6 +140,41 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                     // no page padding: the swatch strip scrolls to the screen
                     // edge and carries the inset itself
                     _PresetPicker(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // how the screens show themselves (#609); History's view is
+                // also switched, and remembered, from History itself
+                _Section(
+                  title: screens,
+                  children: [
+                    Padding(
+                      padding: const .symmetric(horizontal: 16.0),
+                      child: Selector<Preferences, HistoryView?>(
+                        selector: (_, provider) => switch (provider.isInitialized) {
+                          true => provider.historyView,
+                          false => null,
+                        },
+                        builder: (context, view, _) {
+                          return switch (view) {
+                            null => const SizedBox.shrink(),
+                            HistoryView value => FixedLengthSettingPicker<HistoryView>(
+                              key: AppKeys.historyViewSetting,
+                              title: historyView,
+                              value: value,
+                              onValueChanged: (view) {
+                                buzz();
+                                if (view != null) Preferences.of(context).setHistoryView(view);
+                              },
+                              children: {
+                                .list: Text(historyAsList),
+                                .calendar: Text(calendar),
+                              },
+                            ),
+                          };
+                        },
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),

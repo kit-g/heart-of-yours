@@ -47,7 +47,7 @@ class HistoryPage extends StatefulWidget {
 
 const _imageSize = 120.0;
 
-class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage> {
+class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage>, HasHaptic {
   @override
   Widget build(BuildContext context) {
     final ThemeData(scaffoldBackgroundColor: backgroundColor, :textTheme, :colorScheme, :sectionHeader) = Theme.of(
@@ -69,47 +69,61 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final items = _historyRows(byMonth, skips, partial: workouts.hasMoreHistory);
     final images = workouts.images;
     final layout = LayoutProvider.of(context);
+    final view = preferences.historyView;
+    final appBar = SliverAppBar(
+      actions: [
+        // Copy for AI (#259): a stretch of training, while it is on
+        if (preferences.isOn(.copyForAi) && workouts.history.isNotEmpty)
+          IconButton(
+            key: AppKeys.copyForAiHistory,
+            tooltip: L.of(context).copyForAi,
+            icon: const Icon(Icons.auto_awesome_outlined),
+            onPressed: () => copyPeriodForAi(context),
+          ),
+        if (widget.onEntryReview case final VoidCallback open) _EntryReviewButton(onPressed: open),
+        // a workout that already happened (#530), while it is on
+        if ((widget.onLogPastWorkout, preferences.isOn(.pastWorkouts)) case (final VoidCallback log, true))
+          IconButton(
+            key: AppKeys.logPastWorkout,
+            tooltip: L.of(context).logPastWorkout,
+            icon: const Icon(Icons.more_time_rounded),
+            onPressed: log,
+          ),
+        // the switch between the two views (#609), remembered as the
+        // view History opens on
+        IconButton(
+          key: AppKeys.historyViewSwitch,
+          tooltip: switch (view) {
+            .list => L.of(context).showAsCalendar,
+            .calendar => L.of(context).showAsList,
+          },
+          icon: Icon(switch (view) {
+            .list => Icons.calendar_month_rounded,
+            .calendar => Icons.view_agenda_outlined,
+          }),
+          onPressed: () {
+            buzz();
+            Preferences.of(context).setHistoryView(switch (view) {
+              .list => .calendar,
+              .calendar => .list,
+            });
+          },
+        ),
+      ],
+      scrolledUnderElevation: 0,
+      backgroundColor: backgroundColor,
+      pinned: true,
+      expandedHeight: 80.0,
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(L.of(context).history),
+        centerTitle: true,
+      ),
+    );
     final listview = CustomScrollView(
       physics: const ClampingScrollPhysics(),
       controller: Scrolls.of(context).historyScrollController,
       slivers: [
-        SliverAppBar(
-          actions: [
-            // Copy for AI (#259): a stretch of training, while it is on
-            if (preferences.isOn(.copyForAi) && workouts.history.isNotEmpty)
-              IconButton(
-                key: AppKeys.copyForAiHistory,
-                tooltip: L.of(context).copyForAi,
-                icon: const Icon(Icons.auto_awesome_outlined),
-                onPressed: () => copyPeriodForAi(context),
-              ),
-            if (widget.onEntryReview case final VoidCallback open) _EntryReviewButton(onPressed: open),
-            // a workout that already happened (#530), while it is on
-            if ((widget.onLogPastWorkout, preferences.isOn(.pastWorkouts)) case (final VoidCallback log, true))
-              IconButton(
-                key: AppKeys.logPastWorkout,
-                tooltip: L.of(context).logPastWorkout,
-                icon: const Icon(Icons.more_time_rounded),
-                onPressed: log,
-              ),
-            IconButton(
-              tooltip: L.of(context).calendar,
-              icon: const Icon(Icons.calendar_month_rounded),
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (_) => HistoryCalendar(onTapImage: widget.onTapImage),
-              ),
-            ),
-          ],
-          scrolledUnderElevation: 0,
-          backgroundColor: backgroundColor,
-          pinned: true,
-          expandedHeight: 80.0,
-          flexibleSpace: FlexibleSpaceBar(
-            title: Text(L.of(context).history),
-            centerTitle: true,
-          ),
-        ),
+        appBar,
         // the one ask for suspicious entries, once there is one (#428)
         const SliverToBoxAdapter(child: _EntryReviewOffer()),
         if (images.isNotEmpty)
@@ -212,6 +226,29 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
       ],
     );
 
+    // the same header over the calendar (#609), which scrolls by itself:
+    // History's controller goes to its months, so a navbar re-tap brings the
+    // current one back
+    final calendar = CustomScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      slivers: [
+        appBar,
+        const SliverToBoxAdapter(child: _EntryReviewOffer()),
+        SliverFillRemaining(
+          child: HistoryCalendar(
+            key: AppKeys.historyCalendar,
+            onTapWorkout: widget.onTapWorkout,
+            selectedId: widget.selectedId,
+            controller: Scrolls.of(context).historyScrollController,
+          ),
+        ),
+      ],
+    );
+    final page = switch (view) {
+      .list => listview,
+      .calendar => calendar,
+    };
+
     return SafeArea(
       child: Scaffold(
         body: switch (workouts.historyInitialized) {
@@ -219,12 +256,12 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           true => switch (layout) {
-            .compact => listview,
+            .compact => page,
             .wide => Row(
               children: [
                 Expanded(
                   flex: 2,
-                  child: listview,
+                  child: page,
                 ),
                 const VerticalDivider(width: 1),
                 // held open whether or not anything is selected, so picking a
