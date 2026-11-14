@@ -169,6 +169,8 @@ const _schema = [
   createThreads,
   createThreadItems,
   threadItemsIndex,
+  // v33 (#556)
+  createCoachNotes,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production

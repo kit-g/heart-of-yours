@@ -98,6 +98,7 @@ class LocalDatabase extends _LocalDatabase
         _TemplateFolders,
         _Templates,
         _Threads,
+        _CoachNotes,
         _Timers,
         _Upsync,
         _WorkoutPlans,
@@ -120,7 +121,7 @@ class LocalDatabase extends _LocalDatabase
 
   new _(this._db);
 
-  static Future<LocalDatabase> init({int version = 32, Database? other, bool isWeb = false}) async {
+  static Future<LocalDatabase> init({int version = 33, Database? other, bool isWeb = false}) async {
     if (other != null) return LocalDatabase._(other);
 
     const name = 'heart.db';

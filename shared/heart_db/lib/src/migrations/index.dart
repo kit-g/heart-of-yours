@@ -197,4 +197,7 @@ const _migrations = <int, List<String>>{
     createThreadItems,
     threadItemsIndex,
   ],
+  33: [
+    createCoachNotes,
+  ],
 };

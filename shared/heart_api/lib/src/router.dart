@@ -36,6 +36,11 @@ abstract final class Router {
   /// Reporting a person, with messages that prove what they said (#556).
   static const reports = 'v1/reports';
 
+  /// A coach's notes on their clients, sealed for the coach alone (#556).
+  static const notes = 'v1/notes';
+
+  static String note(String noteId) => '$notes/$noteId';
+
   /// A push topic's setting. Topics are the server's words, dotted
   /// (`coaching.message`), and one is held to that shape before it reaches a
   /// path, as an invitation's token is.
