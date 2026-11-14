@@ -229,6 +229,19 @@ void main() {
       expectInWorkout(tester);
     });
 
+    testWidgets('the next Add exercises opens on an empty search', (tester) async {
+      await openWorkoutPicker(tester);
+      await createFromSearch(tester);
+      await addPicked(tester);
+      await tester.pump(const Duration(milliseconds: 200));
+
+      await tester.tapByKey(WorkoutDetailKeys.addExercises);
+      await tester.pumpTimes();
+
+      final search = find.descendant(of: find.byType(SearchField), matching: find.byType(TextField));
+      expect(tester.widget<TextField>(search).controller?.text, isEmpty);
+    });
+
     testWidgets('closing the dialog leaves nothing made and nothing ticked', (tester) async {
       await openWorkoutPicker(tester);
       await tester.tap(find.byTooltip('New exercise'));
