@@ -30,6 +30,8 @@ import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/programs.dart';
+import 'package:heart/core/utils/coach_notes.dart';
+import 'package:heart/core/utils/messages.dart';
 import 'package:heart/core/utils/pushes.dart';
 import 'package:heart/core/utils/device_keys.dart';
 import 'package:heart/core/utils/workout_plans.dart';
@@ -355,6 +357,42 @@ class HeartApp extends StatelessWidget {
             vault: keyVault,
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            // a coach's notes are Coach people's: off, a new device of the
+            // account's hears nothing of them (keys only one who wrote notes
+            // holds, so the entitlement adds nothing here)
+            sharesNoteKeys: () => Preferences.of(context).isOn(.coachPeople),
+          ),
+        ),
+        // Coaching messages (#556): sealed on this device with its keys,
+        // kept here as the server keeps them, ciphertext, and read only from
+        // a coaching screen, which exists only with a switch on.
+        ChangeNotifierProvider<Messages>(
+          create: (context) => Messages(
+            service: RemoteThreads(api),
+            local: LocalThreads(db),
+            cipher: DeviceKeys.of(context),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+            // the link's fingerprint names the coach's keys: it checks the
+            // other person only where this one is the student, since the
+            // same connection seen from the coach's side is someone else
+            fingerprintFor: (thread) => switch (thread.connectionId) {
+              final String id when Coaching.of(context).coaches.any((each) => each.connectionId == id) =>
+                Preferences.of(context).coachFingerprint(id),
+              _ => null,
+            },
+          ),
+        ),
+        // A coach's notes on their clients (#556): sealed for the coach's
+        // own devices, kept here as ciphertext, and read only from a coach's
+        // screen, which exists only with Coach people on.
+        ChangeNotifierProvider<CoachNotes>(
+          create: (context) => CoachNotes(
+            service: RemoteNotes(api),
+            local: LocalNotes(db),
+            cipher: DeviceKeys.of(context),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
           ),
         ),
         // A coach's roster and feed (#559): server-only, read when the
@@ -523,6 +561,8 @@ class HeartApp extends StatelessWidget {
                 GoEasy.of(context).userId = user?.id;
                 Timers.of(context).userId = user?.id;
                 Workouts.of(context).userId = user?.id;
+                Messages.of(context).userId = user?.id;
+                CoachNotes.of(context).userId = user?.id;
                 if (user?.id case String id) unawaited(_prepareOpening(context, id));
               },
               onError: reportToSentry,
@@ -656,6 +696,13 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     if (preferences.isOn(.programs) && preferences.isOn(.yourCoach)) {
       final templates = Templates.of(context);
       Programs.of(context).pullCoached().then(templates.pull);
+    }
+    // messages whose push may never have come (#556)
+    final auth = Auth.of(context);
+    if (coachingRuns(preferences, auth)) Messages.of(context).resume();
+    // a coach's notes, only where the Coaching space is there and keys run
+    if (preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false) && DeviceKeys.of(context).supported) {
+      CoachNotes.of(context).resume();
     }
   }
 

@@ -192,4 +192,12 @@ const _migrations = <int, List<String>>{
     addProgramRevision,
     addProgramSessionRevisions,
   ],
+  32: [
+    createThreads,
+    createThreadItems,
+    threadItemsIndex,
+  ],
+  33: [
+    createCoachNotes,
+  ],
 };
