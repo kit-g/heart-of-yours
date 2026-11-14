@@ -109,13 +109,27 @@ void main() {
       expect(matching, isEmpty);
     });
 
-    test('skips recurring goals, whose target is not on the series scale', () {
-      // a per-week target against a chart of per-session values would draw a
-      // line the points are not measured against
+    test("keeps a recurring goal whose period is one session's kind of number (#627)", () {
+      // "100 kg top set this week" is the week's best session, which is what
+      // the chart plots — so its line belongs on the chart
+      for (final metric in [GoalMetric.topSetWeight, GoalMetric.estimatedOneRepMax, GoalMetric.averageWorkingWeight]) {
+        final matching = goalsOnChart(
+          [goal(metric: metric, cadence: .week)],
+          exerciseId: bench.id,
+          metric: metric.chart!,
+        );
+
+        expect(matching, hasLength(1), reason: '$metric');
+      }
+    });
+
+    test('skips a recurring goal that sums the period, whose target is not on the series scale', () {
+      // 2000 kg of volume a week against a chart of per-session volume would
+      // draw a line the points are not measured against
       final matching = goalsOnChart(
-        [goal(cadence: .week)],
+        [goal(metric: .totalVolume, cadence: .week)],
         exerciseId: bench.id,
-        metric: .topSetWeight,
+        metric: .totalVolume,
       );
 
       expect(matching, isEmpty);
