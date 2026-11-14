@@ -52,7 +52,7 @@ class WorkoutItem extends StatelessWidget {
         var exercise => (
           _formatSet(
             context,
-            exercise.best,
+            _best(exercise),
             Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.weightUnit,
             Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.distanceUnit,
           ),
@@ -208,7 +208,7 @@ class WorkoutItem extends StatelessWidget {
                             Text(
                               _formatSet(
                                 context,
-                                exercise.best,
+                                _best(exercise),
                                 Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.weightUnit,
                                 Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.distanceUnit,
                               ),
@@ -247,7 +247,29 @@ class WorkoutItem extends StatelessWidget {
             .repsOnly || .cardio || .duration || .weightedDistance || .weightedDuration => false,
           },
         )
-        .fold(0.0, (sum, each) => sum + (each.total ?? 0));
+        .fold(0.0, (sum, each) => sum + _done(each).fold(0.0, (sum, set) => sum + (set.total ?? 0)));
+  }
+
+  /// What the card counts: the working sets that were ticked, the same sets as
+  /// its ×N. heart_models' own `best`/`total` read every set but warm-ups, so a
+  /// workout holding an unticked set showed an exercise done ×0 with a "best"
+  /// beside it, and counted that set in the volume (#613).
+  static Iterable<ExerciseSet> _done(WorkoutExercise exercise) {
+    return exercise.where((set) => set.isCompleted && set.setType != .warmup);
+  }
+
+  /// The best ticked working set, or none when nothing was done.
+  static ExerciseSet? _best(WorkoutExercise exercise) {
+    final done = _done(exercise);
+    return switch (done.isEmpty) {
+      true => null,
+      false => done.reduce(
+        (one, two) => switch (one >= two) {
+          true => one,
+          false => two,
+        },
+      ),
+    };
   }
 
   static String _formatSet(

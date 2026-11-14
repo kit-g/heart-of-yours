@@ -2,6 +2,8 @@
 // creating a custom exercise (name, target, category) through its real entry
 // point — the Exercises tab's options menu — and the save button's own
 // enablement (name/target/category all required).
+import 'dart:async';
+
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
@@ -124,5 +126,41 @@ void main() {
       'Тягаблока',
       reason: 'a control character stays out',
     );
+  });
+  testWidgets('a save in flight holds the dialog open, and its end closes only the dialog (#607)', (tester) async {
+    await pumpToNewExerciseDialog(tester);
+
+    // the save hangs on the store until the test lets it through
+    final store = Completer<void>();
+    when(db.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) => store.future);
+
+    await tester.enterTextAndWait(nameField(), 'Slow Save');
+    await tester.tap(find.text('Legs'));
+    await tester.pumpTimes();
+    await tester.ensureVisible(find.text('Barbell'));
+    await tester.pumpTimes();
+    await tester.tap(find.text('Barbell'));
+    await tester.pumpTimes();
+    await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
+    await tester.pumpTimes();
+
+    // Back, the close button and a tap outside all ask, and mid-save the answer is no
+    await tester.binding.handlePopRoute();
+    await tester.pumpTimes();
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpTimes();
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pumpTimes();
+    expect(find.text('Create new exercise'), findsOneWidget);
+
+    store.complete();
+    await tester.pumpTimes();
+
+    expect(find.text('Create new exercise'), findsNothing);
+    // the page beneath is untouched, and still answers
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byTooltip('Exercise options'));
+    await tester.pumpTimes();
+    expect(find.text('New exercise'), findsOneWidget);
   });
 }

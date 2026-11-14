@@ -33,6 +33,13 @@ void main() {
 
   final bridge = Exercise(name: 'Single Leg Bridge', category: .weightedBodyWeight, target: .legs);
   final pushdown = Exercise(name: 'Triceps Pushdown (Cable - Straight Bar)', category: .machine, target: .arms);
+  // a tester's own exercise, named as Russian names run (#615)
+  final pullover = Exercise(
+    name: 'Пулловер узким хватом в кроссовере на верх груди',
+    category: .machine,
+    target: .chest,
+    isMine: true,
+  );
 
   late MockLocalDatabase db;
   late MockApi api;
@@ -77,7 +84,8 @@ void main() {
     final context = tester.element(find.byType(MaterialApp));
     final template = Workout(name: 'Home — Strength')
       ..add(bridge)
-      ..add(pushdown);
+      ..add(pushdown)
+      ..add(pullover);
     await Workouts.of(context).startWorkout(source: .template, template: template);
     await tester.tapByKey(AppKeys.workoutStack);
     await tester.pumpTimes();
@@ -143,7 +151,24 @@ void main() {
     await tester.tapByKey(WorkoutDetailKeys.removeExerciseFor(bridge.id));
     await tester.pumpTimes();
 
-    expect(workout.map((each) => each.exercise.id), [pushdown.id]);
+    expect(workout.map((each) => each.exercise.id), [pushdown.id, pullover.id]);
     verify(db.removeExercise(any)).called(1);
+  });
+  testWidgets('a long name gives way to the header buttons, which stay on screen (#615)', (tester) async {
+    await start(tester, width: 390, locale: const Locale('ru'));
+
+    final options = find.byKey(WorkoutDetailKeys.exerciseOptionsFor(pullover.id));
+    await tester.ensureVisible(options);
+    await tester.pumpTimes();
+    final button = tester.getRect(options);
+    expect(button.right, lessThanOrEqualTo(390), reason: 'the ⋯ is on screen, not pushed past the edge');
+    expect(button.left, greaterThan(0));
+    final name = tester.getRect(find.text(pullover.name));
+    expect(name.right, lessThanOrEqualTo(button.left), reason: 'the name ends before the buttons begin');
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(options);
+    await tester.pumpTimes();
+    expect(find.byKey(WorkoutDetailKeys.removeExerciseFor(pullover.id)), findsOneWidget);
   });
 }
