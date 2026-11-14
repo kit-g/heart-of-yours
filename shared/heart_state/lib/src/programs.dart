@@ -1296,32 +1296,66 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// The coach's device can't do it: the bases, stages and marks the rules
   /// read are here. One logged before something else moved its program, an
   /// own finish or an edit by hand, is left as it is: the rules would read a
-  /// history it wasn't part of.
+  /// history it wasn't part of. [reread] reads those programs' moves from the
+  /// server first, when another device may have made one since they were
+  /// read: coming back to the app.
+  ///
+  /// One logged from a session this device hasn't read yet waits, with every
+  /// later one of its program: grown without it, the rules would read the
+  /// wrong lifts, and the answer would stay. They are tried again next time.
   Future<void> growLogged(
     Iterable<Workout> workouts, {
     required Template? Function(String templateId) sessionOf,
+    bool reread = false,
   }) async {
     final uid = userId;
     if (uid == null) return;
-    final logged = [
+    // a move a finish wrote counts from when that workout was, not from when
+    // a device got round to writing it: a session logged later still follows
+    final starts = {for (final workout in workouts) workout.id: workout.start};
+    List<(Workout, String)> waiting() => [
       for (final workout in workouts)
         if ((workout.loggedBy, workout.programId) case (final String by, final String programId)
-            when by != uid && (_programs[programId]?.live ?? false) && !_movedSince(programId, workout.start))
-          workout,
-    ]..sort((a, b) => a.start.compareTo(b.start));
-    for (final workout in logged) {
+            when by != uid && _waits(workout, programId, starts))
+          (workout, programId),
+    ];
+    if (reread && _remote.allowed) {
+      final read = {for (final (_, programId) in waiting()) programId};
+      await Future.wait([for (final programId in read) _step(() => _pull(uid, programId))]);
+      if (userId != uid) return;
+    }
+    final blocked = <String>{};
+    for (final (workout, programId) in waiting()..sort((a, b) => a.$1.start.compareTo(b.$1.start))) {
+      if (blocked.contains(programId)) continue;
       final session = switch (workout.templateId) {
         final String id => sessionOf(id),
         null => null,
       };
+      if (workout.templateId != null && session == null) {
+        blocked.add(programId);
+        continue;
+      }
       await grow(workout, session: session);
     }
   }
 
-  /// Whether a base or an action of [programId]'s came after [start].
-  bool _movedSince(String programId, DateTime start) {
-    return basesOf(programId).any((base) => base.at.isAfter(start)) ||
-        actionsOf(programId).any((action) => action.at.isAfter(start));
+  /// Whether [workout], logged in [programId], still has its program to move:
+  /// one followed, that it hasn't moved yet, and that nothing moved since.
+  bool _waits(Workout workout, String programId, Map<String, DateTime> starts) {
+    if (!(_programs[programId]?.live ?? false) || _grown.containsKey(workout.id)) return false;
+    bool causedBy(String? cause) => cause == workout.id;
+    if (basesOf(programId).any((base) => causedBy(base.workoutId))) return false;
+    if (actionsOf(programId).any((action) => causedBy(action.workoutId))) return false;
+    return !_movedSince(programId, workout.start, starts);
+  }
+
+  /// Whether a base or an action of [programId]'s came after [start]: one a
+  /// workout caused by that workout's start, in [starts], and one by hand by
+  /// when it was made.
+  bool _movedSince(String programId, DateTime start, Map<String, DateTime> starts) {
+    bool after(String? workoutId, DateTime at) => (starts[workoutId] ?? at).isAfter(start);
+    return basesOf(programId).any((base) => after(base.workoutId, base.at)) ||
+        actionsOf(programId).any((action) => after(action.workoutId, action.at));
   }
 
   /// What [grow] answered for [workoutId], while it is remembered; null when

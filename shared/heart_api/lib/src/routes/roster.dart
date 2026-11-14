@@ -82,11 +82,8 @@ mixin _RosterRoutes on Requests {
   /// else used is refused (`id_taken`), and so is a client this coach no
   /// longer coaches (`forbidden`), both thrown whole.
   Future<Workout> logClientWorkout(String studentId, Workout workout) async {
-    final (json, code) = await post(Router.clientWorkouts(studentId), body: workout.toMap());
-    return switch ((code, json)) {
-      (200 || 201, Map json) => Workout.fromJson(json),
-      _ => throw json,
-    };
+    final (json, _) = _created(await post(Router.clientWorkouts(studentId), body: workout.toMap()));
+    return Workout.fromJson(json);
   }
 
   /// The copies the coach manages for a client.

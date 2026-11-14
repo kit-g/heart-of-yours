@@ -2,13 +2,28 @@ part of 'coaching.dart';
 
 /// The way to log a session a coach trained with a client (#560): it becomes
 /// the client's workout, in their history, marked as logged by the coach.
-class _LogForTile extends StatelessWidget {
+class _LogForTile extends StatefulWidget {
   final ClientSummary client;
 
   /// Opens the workout to fill in.
   final ValueChanged<PastWorkout> onLog;
 
   const new({required this.client, required this.onLog});
+
+  @override
+  State<_LogForTile> createState() => _LogForTileState();
+}
+
+class _LogForTileState extends State<_LogForTile> {
+  /// Reading their program, and asking which session and when: a second tap
+  /// meanwhile would start a second log.
+  final _busy = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _busy.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,14 +33,35 @@ class _LogForTile extends StatelessWidget {
       leading: const Icon(Icons.edit_calendar_outlined),
       title: Text(l.coachingLogWorkout),
       subtitle: Text(l.coachingLogWorkoutBody),
-      trailing: const Icon(Icons.chevron_right_rounded),
-      onTap: () => _start(context),
+      trailing: ValueListenableBuilder<bool>(
+        valueListenable: _busy,
+        builder: (_, busy, _) => switch (busy) {
+          true => const SizedBox.square(
+            dimension: 18,
+            child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+          ),
+          false => const Icon(Icons.chevron_right_rounded),
+        },
+      ),
+      onTap: _start,
     );
+  }
+
+  /// Runs one log at a time: a tap while one is under way does nothing.
+  Future<void> _start() async {
+    if (_busy.value) return;
+    _busy.value = true;
+    try {
+      await _log(context);
+    } finally {
+      if (mounted) _busy.value = false;
+    }
   }
 
   /// Which of their program's sessions it was, when they follow one, then
   /// when it was, then the workout to fill in.
-  Future<void> _start(BuildContext context) async {
+  Future<void> _log(BuildContext context) async {
+    final client = widget.client;
     final l = L.of(context);
     final name = _clientName(l, client);
     final logTo = _logFor(client.studentId, name);
@@ -33,7 +69,7 @@ class _LogForTile extends StatelessWidget {
     if (!context.mounted) return;
     final Workout workout;
     switch (sessions) {
-      case (:final sessions, :final next, :final programId) when sessions.isNotEmpty:
+      case (:final sessions, :final next) when sessions.isNotEmpty:
         final picked = await showMenu<_LogStart>(
           context: context,
           position: menuUnder(context),
@@ -53,12 +89,7 @@ class _LogForTile extends StatelessWidget {
         );
         if (picked == null || !context.mounted) return;
         workout = switch (picked) {
-          _FromSession(:final session) => Workout.fromExercises(
-            session.toWorkout(),
-            name: session.name,
-            templateId: session.id,
-            programId: programId,
-          ),
+          _FromSession(:final session) => session.toWorkout(),
           _Blank() => Workout(),
         };
       case _:
@@ -69,23 +100,19 @@ class _LogForTile extends StatelessWidget {
       workout: workout,
       logTo: logTo,
       loggingFor: name,
-      open: onLog,
+      open: widget.onLog,
     );
   }
 
-  /// The sessions of the program they follow, the next one marked: read when
-  /// this device hasn't yet. None when they follow none, or it can't be read.
-  Future<({List<Template> sessions, String? next, String? programId})> _sessionsOf(BuildContext context) async {
+  /// The sessions of the program they follow, the next one marked: read
+  /// afresh, since where they are moves with every session they train. None
+  /// when they follow none, or it can't be read; a blank workout still logs.
+  Future<({List<Template> sessions, String? next})> _sessionsOf(BuildContext context) async {
+    final client = widget.client;
     final programId = client.programId;
-    if (programId == null) return (sessions: const <Template>[], next: null, programId: null);
+    if (programId == null) return (sessions: const <Template>[], next: null);
     final programs = ClientPrograms.of(context);
-    if (programs.view(programId) == null) {
-      try {
-        await programs.open(client.studentId, programId);
-      } catch (_) {
-        // a blank workout still logs
-      }
-    }
+    await programs.open(client.studentId, programId);
     final view = programs.view(programId);
     return (
       sessions: view?.sessions ?? const <Template>[],
@@ -93,7 +120,6 @@ class _LogForTile extends StatelessWidget {
         final String id => id,
         _ => null,
       },
-      programId: programId,
     );
   }
 }
@@ -142,8 +168,10 @@ class _SessionItem extends StatelessWidget {
 }
 
 /// Sends a workout the coach filled in as [studentId]'s. The editor has gone
-/// by then, so what happens is said in a snackbar, and a failure offers to
-/// send it again under the same id, which the server takes once.
+/// by then, so what happens is said in a snackbar. A failure that may pass,
+/// the network or the server's, offers to send it again under the same id,
+/// which the server takes once; a refusal says why, and nothing more: sending
+/// it again would be refused the same way.
 LogTo _logFor(String studentId, String name) {
   return (context, workout) async {
     final l = L.of(context);
@@ -154,14 +182,29 @@ LogTo _logFor(String studentId, String name) {
         await roster.logFor(studentId, workout);
         messenger.snack(l.coachingLogged(name));
       } catch (error, stacktrace) {
-        reportToSentry(error, stacktrace: stacktrace);
-        messenger.snack(
-          l.coachingLogFailed(name),
-          action: SnackBarAction(label: l.retry, onPressed: () => unawaited(send())),
-        );
+        switch (_refusal(l, name, error)) {
+          case final String why:
+            messenger.snack(why);
+          case null:
+            reportToSentry(error, stacktrace: stacktrace);
+            messenger.snack(
+              l.coachingLogFailed(name),
+              action: SnackBarAction(label: l.retry, onPressed: () => unawaited(send())),
+            );
+        }
       }
     }
 
     await send();
+  };
+}
+
+/// What the server's refusal of a log says, for one that sending again can't
+/// change; null for a failure that may pass, a rate limit's among them.
+String? _refusal(L l, String name, Object error) {
+  return switch (error) {
+    {'code': 'forbidden' || 'not_found'} => l.coachingLogNotClient(name),
+    {'code': 'id_taken' || 'bad_request'} => l.coachingLogRefused,
+    _ => null,
   };
 }

@@ -8,7 +8,10 @@ class _ExerciseNote extends StatefulWidget {
   final Future<void> Function(WorkoutExercise, String?)? onChanged;
   final VoidCallback onEdit;
 
-  const new({required this.exercise, this.onChanged, required this.onEdit});
+  /// Whether the note can be pinned to the exercise, or a pinned one taken off.
+  final bool pins;
+
+  const new({required this.exercise, this.onChanged, required this.onEdit, this.pins = true});
 
   @override
   State<_ExerciseNote> createState() => _ExerciseNoteState();
@@ -116,7 +119,7 @@ class _ExerciseNoteState extends State<_ExerciseNote> {
                 ),
               ),
               if (widget.onChanged != null) ...[
-                if (exercises.canPinNote)
+                if (widget.pins && exercises.canPinNote)
                   ValueListenableBuilder<bool>(
                     valueListenable: _busy,
                     builder: (_, busy, _) => IconButton(

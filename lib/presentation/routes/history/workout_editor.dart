@@ -276,7 +276,13 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                         }
                       },
                       allowsCompletingSet: true,
-                      onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
+                      // the exercise's page and its pins are this account's
+                      // own: none of it is someone else's workout's
+                      onTapExercise: switch (widget.loggingFor) {
+                        null => (exercise) => showExerciseDetailDialog(context, exercise),
+                        String _ => null,
+                      },
+                      pinsNotes: widget.loggingFor == null,
                       onDeleteImage: (image) {
                         return showDeleteImageDialog(
                           context,
