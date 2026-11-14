@@ -691,7 +691,11 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     final preferences = Preferences.of(context);
     if (preferences.isOn(.programs) && preferences.isOn(.yourCoach)) {
       final templates = Templates.of(context);
-      Programs.of(context).pullCoached().then(templates.pull);
+      final programs = Programs.of(context);
+      final workouts = Workouts.of(context);
+      programs.pullCoached().then(templates.pull);
+      // a session the coach logged for them while they were away (#560)
+      workouts.initHistory().then((_) => _growLogged(workouts, templates, programs, read: Future.value()));
     }
     // messages whose push may never have come (#556)
     if (coachingRuns(preferences, Auth.of(context))) {
@@ -1139,6 +1143,7 @@ Future<void> _initApp(
                 programs: programs,
                 backfill: backfill,
                 upsync: upsync,
+                growsLogged: _growsLogged(prefs),
               );
             },
           );
@@ -1232,9 +1237,10 @@ Future<void> _initTrainingData({
   required Programs programs,
   required Backfill backfill,
   required Upsync upsync,
+  required bool growsLogged,
 }) {
-  templates.init();
-  programs.init();
+  final templatesRead = templates.init();
+  final programsRead = programs.init();
   // Pulls what other devices logged into the local mirror, and heals anything
   // stranded here by a failed save. Until this ran at startup the only thing
   // that ran it was opening the History screen — so a workout from the phone
@@ -1265,8 +1271,27 @@ Future<void> _initTrainingData({
         // back — `adopt` stands down while a replay is still owed.
         await upsync.adopt(uid);
       }
+
+      // what a coach logged for this person moves their program here (#560)
+      if (growsLogged) await _growLogged(workouts, templates, programs, read: (templatesRead, programsRead).wait);
     },
   );
+}
+
+/// Moves this person's programs by what their coach logged for them (#560),
+/// once the programs and the sessions they were logged from are read.
+Future<void> _growLogged(
+  Workouts workouts,
+  Templates templates,
+  Programs programs, {
+  required Future<void> read,
+}) async {
+  try {
+    await read;
+  } catch (_) {
+    // each reports its own failure; what was read still counts
+  }
+  await programs.growLogged(workouts.history, sessionOf: templates.lookup);
 }
 
 /// The replay is done and the remote leg is open: pull what the account holds
@@ -1275,6 +1300,7 @@ Future<void> _initTrainingData({
 void _resync(BuildContext context, Upsync upsync) {
   if (!context.mounted) return;
   final exercises = Exercises.of(context);
+  final preferences = Preferences.of(context);
   final workouts = Workouts.of(context);
   final previous = PreviousExercises.of(context);
   final stats = Stats.of(context);
@@ -1294,6 +1320,7 @@ void _resync(BuildContext context, Upsync upsync) {
         programs: programs,
         backfill: backfill,
         upsync: upsync,
+        growsLogged: _growsLogged(preferences),
       );
     },
   );
@@ -1326,3 +1353,7 @@ Future<void> _initApi({required AppConfig config, String? sessionToken, String? 
     ),
   );
 }
+
+/// Whether a workout a coach logged moves this person's program here (#560):
+/// with programs on, and a coach to have logged it.
+bool _growsLogged(Preferences preferences) => preferences.isOn(.programs) && preferences.isOn(.yourCoach);

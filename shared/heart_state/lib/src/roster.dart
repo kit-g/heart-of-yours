@@ -33,6 +33,10 @@ abstract interface class RosterService {
 
   /// What a client's workout was asked to be; null when it had no plan.
   Future<WorkoutPlan?> getClientWorkoutPlan(String studentId, String workoutId);
+
+  /// Logs a workout as the client's (#560), by its own id: a retry answers
+  /// the stored one.
+  Future<Workout> logClientWorkout(String studentId, Workout workout);
 }
 
 /// What a coach has read of one client: their workouts, a page at a time, and
@@ -214,6 +218,23 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
       record.status = .failed;
     }
     notifyListeners();
+  }
+
+  /// Logs [workout] as [studentId]'s (#560): a session the coach was there
+  /// for, theirs from now on, in their history and marked as the coach's
+  /// doing. Shown first among their workouts once the server has it. Throws
+  /// what the service threw, so the caller can say so and try again under
+  /// the same id.
+  Future<Workout> logFor(String studentId, Workout workout) async {
+    final logged = await _service.logClientWorkout(studentId, workout);
+    if (_records[studentId] case final _Record record) {
+      record.workouts
+        ..removeWhere((each) => each.id == logged.id)
+        ..add(logged)
+        ..sort((a, b) => b.start.compareTo(a.start));
+      notifyListeners();
+    }
+    return logged;
   }
 
   /// The next older page of [studentId]'s workouts, if there is one.

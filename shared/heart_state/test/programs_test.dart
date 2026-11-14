@@ -1280,6 +1280,51 @@ void main() {
       expect(programs.currentBasesOf('p1')['squat']?.value, 100);
     });
 
+    group('a workout a coach logged (#560)', () {
+      Workout loggedBy(String coach, String id, {required DateTime start}) {
+        return Workout.fromJson({
+          ...done(
+            id,
+            start: start,
+            exercises: [
+              squats([5, 5, 5], weight: 105),
+            ],
+          ).toMap(),
+          'loggedBy': coach,
+          'loggedByName': 'Whiskers',
+        });
+      }
+
+      test('moves the program as a finish of their own would, once', () async {
+        await follow(growing({'squat': const AddWeight(step: 5)}), bases: [base(100)]);
+        final workout = loggedBy('whiskers', 'w1', start: DateTime.utc(2026, 10, 5));
+
+        await programs.growLogged([workout], sessionOf: (_) => null);
+        await programs.growLogged([workout], sessionOf: (_) => null);
+
+        final moved = programs.basesOf('p1').where((each) => each.workoutId == 'w1');
+        expect(moved, hasLength(1), reason: 'once, however often it is asked');
+        expect(programs.currentBasesOf('p1')['squat'], moved.single);
+      });
+
+      test("one of their own, or one older than the program's last move, moves nothing", () async {
+        await follow(
+          growing({'squat': const AddWeight(step: 5)}),
+          bases: [base(100, at: DateTime.utc(2026, 10, 6))],
+        );
+
+        await programs.growLogged(
+          [
+            loggedBy(uid, 'mine', start: DateTime.utc(2026, 10, 7)),
+            loggedBy('whiskers', 'old', start: DateTime.utc(2026, 10, 5)),
+          ],
+          sessionOf: (_) => null,
+        );
+
+        expect(programs.currentBasesOf('p1')['squat']?.value, 100);
+      });
+    });
+
     test("a lift's first session sets its first base, when nothing set one before", () async {
       // Full body, three days: no test week, so nothing ever set one, and the
       // rule held every session after (#F34)

@@ -1289,6 +1289,41 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     return _grown[workout.id] ??= _grow(workout, session: session, slots: slots, after: after);
   }
 
+  /// Moves this person's programs by the workouts their coach logged for
+  /// them (#560), as a finish of their own would: once each, oldest first,
+  /// with the session it was logged from ([sessionOf] its template id).
+  ///
+  /// The coach's device can't do it: the bases, stages and marks the rules
+  /// read are here. One logged before something else moved its program, an
+  /// own finish or an edit by hand, is left as it is: the rules would read a
+  /// history it wasn't part of.
+  Future<void> growLogged(
+    Iterable<Workout> workouts, {
+    required Template? Function(String templateId) sessionOf,
+  }) async {
+    final uid = userId;
+    if (uid == null) return;
+    final logged = [
+      for (final workout in workouts)
+        if ((workout.loggedBy, workout.programId) case (final String by, final String programId)
+            when by != uid && (_programs[programId]?.live ?? false) && !_movedSince(programId, workout.start))
+          workout,
+    ]..sort((a, b) => a.start.compareTo(b.start));
+    for (final workout in logged) {
+      final session = switch (workout.templateId) {
+        final String id => sessionOf(id),
+        null => null,
+      };
+      await grow(workout, session: session);
+    }
+  }
+
+  /// Whether a base or an action of [programId]'s came after [start].
+  bool _movedSince(String programId, DateTime start) {
+    return basesOf(programId).any((base) => base.at.isAfter(start)) ||
+        actionsOf(programId).any((action) => action.at.isAfter(start));
+  }
+
   /// What [grow] answered for [workoutId], while it is remembered; null when
   /// it never ran on this launch.
   Future<List<GrowthMove>>? grownBy(String workoutId) => _grown[workoutId];

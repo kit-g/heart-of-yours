@@ -59,6 +59,16 @@ class _Server implements RosterService {
 
   @override
   Future<WorkoutPlan?> getClientWorkoutPlan(String studentId, String workoutId) async => plans[workoutId];
+
+  final logged = <String, List<Workout>>{};
+  Object? refuseLog;
+
+  @override
+  Future<Workout> logClientWorkout(String studentId, Workout workout) async {
+    if (refuseLog case final Object refusal) throw refusal;
+    (logged[studentId] ??= []).add(workout);
+    return Workout.fromJson({...workout.toMap(), 'loggedBy': 'whiskers', 'loggedByName': 'Whiskers'});
+  }
 }
 
 Workout _workout(String id, DateTime start) {
@@ -252,6 +262,26 @@ void main() {
       expect(roster.workoutsOf('muffin').map((each) => each.id), ['w3', 'w2', 'w1']);
       expect(roster.hasMoreOf('muffin'), isFalse);
       expect(roster.recordStatus('muffin'), CoachingStatus.loaded);
+    });
+
+    test('a workout logged for them (#560) is theirs on the server, and first in their record', () async {
+      server.workouts.add(_workout('w1', DateTime.utc(2026, 11, 7)));
+      await roster.loadRecord('muffin');
+      final workout = Workout(name: 'Day B, together')..start = DateTime.utc(2026, 11, 9);
+
+      final logged = await roster.logFor('muffin', workout);
+
+      expect(server.logged['muffin'], [workout]);
+      expect(logged.loggedBy, 'whiskers');
+      expect(roster.workoutsOf('muffin').map((each) => each.id), [workout.id, 'w1']);
+    });
+
+    test('a log refused is thrown, and changes nothing here', () async {
+      server.refuseLog = {'code': 'forbidden'};
+
+      expect(roster.logFor('muffin', Workout()), throwsA(containsPair('code', 'forbidden')));
+      await pumpEventQueue();
+      expect(roster.workoutsOf('muffin'), isEmpty);
     });
 
     test('a refusal leaves it failed, and sign-out forgets it', () async {
