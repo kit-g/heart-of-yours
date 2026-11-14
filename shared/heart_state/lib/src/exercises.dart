@@ -73,6 +73,18 @@ abstract interface class ExerciseNoteService {
 /// Moving an exercise's history onto another (#338): the account's move, and
 /// the mirror's copy of it. One interface for both halves, like
 /// [ExerciseNoteService], because the second only ever follows the first.
+/// Renaming an own exercise on the account (#616). Apart from the edit
+/// because the server checks a name against the account's other exercises
+/// whenever one is sent: an edit that only archives, or changes the target,
+/// must not carry it, or an account holding names that differ only in case
+/// could no longer archive either. `RemoteExerciseService` is the server's
+/// contract and cannot take the distinction; the app adapts `Api` onto this.
+abstract interface class RemoteExerciseRenameService {
+  /// The edit, with [Exercise.name] as the new name. Throws when another of
+  /// the account's own exercises already has it.
+  Future<Exercise> renameExercise(Exercise exercise);
+}
+
 abstract interface class ExerciseMoveService {
   /// The account's move, or with [dryRun] what it would do, written nowhere.
   Future<ExerciseMoveReport> move(String sourceId, String targetId, {bool dryRun = false});
@@ -118,6 +130,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   final ExerciseNoteService? _noteService;
   final ExerciseMoveService? _moveService;
+  final RemoteExerciseRenameService? _renameService;
   final _notes = <String, String>{};
 
   bool isInitialized = false;
@@ -142,6 +155,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     this.onRestTimer,
     this._noteService,
     this._moveService,
+    this._renameService,
     required this._remoteService,
     required this._service,
     required this._libraryService,
@@ -666,10 +680,13 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   }
 
   /// [exercise] as the server has it, with the movement pattern (#343) and
-  /// the muscles (#176) the user gave it on this device. The server keeps
-  /// neither on a custom exercise, so an empty one from there is silence,
-  /// never a clearing: the mirror's copy stands until the server has one of
-  /// its own.
+  /// the muscles (#176) the user gave it on this device. The server keeps no
+  /// muscles on a custom exercise, and a pattern only from builds that send
+  /// it (#616) — every one set before them is on its device alone — so an
+  /// empty one from there is silence, never a clearing: the mirror's copy
+  /// stands until the server has one of its own. The cost: a pattern cleared
+  /// on one device survives on another, and that one's next edit sends it
+  /// back.
   Exercise _withLocalTags(Exercise exercise) {
     final local = _exercises[exercise.id];
     final movement = switch ((exercise.movement.isEmpty, local?.movement)) {
@@ -697,8 +714,16 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     notifyListeners();
   }
 
+  /// Saves an edit of an own exercise. A new name goes through the rename,
+  /// and nothing else does — see [RemoteExerciseRenameService].
   Future<void> editExercise(Exercise exercise) async {
-    if (_remote.allowed) await _remoteService.editExercise(exercise);
+    final renamed = _exercises[exercise.id]?.name != exercise.name;
+    if (_remote.allowed) {
+      await switch ((renamed, _renameService)) {
+        (true, RemoteExerciseRenameService service) => service.renameExercise(exercise),
+        _ => _remoteService.editExercise(exercise),
+      };
+    }
     _exercises[exercise.id] = exercise;
     await _storeLocalExercise(exercise);
     notifyListeners();
@@ -713,9 +738,11 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   }
 
   /// The server's copy wins where there is one; otherwise the edit is the copy.
+  ///
+  /// The current copy, not [exercise]: a page holding the one it was opened
+  /// with would otherwise archive a name or a pattern edited since.
   Future<void> _setArchived(Exercise exercise, bool archived) async {
-    final edited = exercise.copyWith(isArchived: archived);
-    _exercises[exercise.id] = edited;
+    final edited = (_exercises[exercise.id] ?? exercise).copyWith(isArchived: archived);
     final saved = switch (_remote.allowed) {
       true => _withLocalTags(await _remoteService.editExercise(edited)),
       false => edited,

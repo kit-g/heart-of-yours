@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/exercises/new_exercise_dialog.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart_api/heart_api.dart' show ExerciseNameTaken;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -223,6 +224,49 @@ void main() {
       await tester.pumpTimes();
 
       expect(Exercises.of(context).lookup(own.id)?.target, Target.chest);
+    });
+
+    testWidgets('a name another own exercise has is said in the field, and not saved', (tester) async {
+      final context = await pumpToEdit(tester, own);
+      await Exercises.of(context).makeExercise(
+        Exercise(name: 'Push Press', category: .barbell, target: .chest, isMine: true),
+      );
+
+      await tester.enterTextAndWait(nameField(), 'push press');
+
+      expect(find.text('You already have an exercise with this name'), findsOneWidget);
+      expect((save(tester) as PrimaryButton).onPressed, isNull);
+    });
+
+    testWidgets('a name the server refuses keeps the dialog open, saying why', (tester) async {
+      await harness.pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: MockFirebaseAuth(
+          mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+          signedIn: true,
+        ),
+        settle: false,
+      );
+      await tester.pumpTimes();
+      when(api.renameExercise(any)).thenThrow(const ExerciseNameTaken());
+      final context = tester.element(find.byType(Scaffold).first);
+      unawaited(showNewExerciseDialog(context, editable: own));
+      await tester.pumpTimes();
+
+      await tester.enterTextAndWait(nameField(), 'Taken Elsewhere');
+      await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
+      await tester.pumpTimes();
+
+      expect(find.text('Create new exercise'), findsOneWidget);
+      expect(find.text('You already have an exercise with this name'), findsOneWidget);
+      verify(api.renameExercise(any)).called(1);
+      verifyNever(api.editExercise(any));
+
+      await tester.enterTextAndWait(nameField(), 'Taken Elsewhere 2');
+      expect(find.text('You already have an exercise with this name'), findsNothing);
     });
 
     testWidgets("a library exercise's name is not a field", (tester) async {

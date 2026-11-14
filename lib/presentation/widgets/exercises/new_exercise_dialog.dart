@@ -16,6 +16,9 @@ import 'package:material_ui/material_ui.dart';
 // as a pasted tab or line break, stay out (#527).
 final _formatter = FilteringTextInputFormatter.deny(RegExp(r'\p{Cc}', unicode: true));
 
+// the server's limit on a name, created or renamed (heart-api#429)
+final _length = LengthLimitingTextInputFormatter(200);
+
 /// A name as a library search would hear it: letters and digits only, any
 /// case — "Farmer's walk" and "Farmer's Walk" are one name.
 String _nameKey(String name) => name.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '');
@@ -27,6 +30,26 @@ const _patternMenuWidth = 280.0;
 /// null when the dialog was closed or the save failed. [name] fills in a new
 /// exercise's name, such as a search that found nothing (#529).
 Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editable, String? name}) {
+  // the current copy, not the one the caller holds: a page opened before an
+  // edit still has the old name, and saving from it would put that back
+  final current = switch (editable) {
+    Exercise given => Exercises.of(context).lookup(given.id) ?? given,
+    null => null,
+  };
+  return _showDialog(context, editable: current, name: name);
+}
+
+/// Whether another of the account's own exercises, archived ones included,
+/// already goes by [typed], as the server matches names: case aside. It
+/// refuses such a rename, so the dialog says so before Save does (#616).
+bool _ownNameTaken(Exercises exercises, Exercise editable, String typed) {
+  final wanted = typed.toLowerCase();
+  return [...exercises, ...exercises.archived].any(
+    (each) => each.isMine && each.id != editable.id && each.name.trim().toLowerCase() == wanted,
+  );
+}
+
+Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String? name}) {
   final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
   final L(:createNewExercise, :save, name: nameCopy, category: categoryCopy, target: targetCopy) = L.of(context);
   final category = ValueNotifier<Category?>(editable?.category);
@@ -43,6 +66,10 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
   // (#616); the library's names are the library's
   final renamable = editable?.isMine ?? true;
   final nameController = TextEditingController(text: editable?.name ?? name);
+  // the server's 409, for a name taken since the dialog checked; cleared by
+  // the next keystroke
+  final refused = ValueNotifier(false);
+  nameController.addListener(() => refused.value = false);
   return showDialog<Exercise>(
     barrierDismissible: true,
     context: context,
@@ -100,7 +127,8 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                                   t != null &&
                                       c != null &&
                                       typed.isNotEmpty &&
-                                      (typed != e.name ||
+                                      !_ownNameTaken(Exercises.of(context), e, typed) &&
+                                      (typed != e.name.trim() ||
                                           e.target != t ||
                                           e.category != c ||
                                           e.movement.groups.firstOrNull != p ||
@@ -117,10 +145,10 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                                       final messenger = ScaffoldMessenger.of(context);
                                       final root = Navigator.of(context, rootNavigator: true);
                                       final route = ModalRoute.of<Exercise>(context);
-                                      final taken = L.of(context).exerciseNameTaken;
                                       Exercise? saved;
                                       // a name already taken is the one refusal worth staying
-                                      // open for: the fix is a keystroke away
+                                      // open for: the fix is a keystroke away, and the field
+                                      // says why, where a snack would sit under the barrier
                                       var close = true;
                                       try {
                                         loading.value = true;
@@ -137,24 +165,24 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                                           await Exercises.of(context).makeExercise(exercise);
                                           saved = exercise;
                                         } else {
-                                          final edited =
-                                              switch (typed == editable.name) {
-                                                true => editable,
-                                                false => editable.renamed(typed),
-                                              }.copyWith(
-                                                category: c,
-                                                target: t,
-                                                movement: movement,
-                                                // untouched, the tagging stays exactly as it was
-                                                tags: retagged ? taggingOf(r) : null,
-                                              );
+                                          // a stored name padded with whitespace is not a rename
+                                          final named = typed == editable.name.trim()
+                                              ? editable
+                                              : editable.renamed(typed);
+                                          final edited = named.copyWith(
+                                            category: c,
+                                            target: t,
+                                            movement: movement,
+                                            // untouched, the tagging stays exactly as it was
+                                            tags: retagged ? taggingOf(r) : null,
+                                          );
                                           await Exercises.of(context).editExercise(edited);
                                           saved = edited;
                                         }
                                         loading.value = false;
                                       } on ExerciseNameTaken {
                                         close = false;
-                                        messenger.snack(taken);
+                                        refused.value = true;
                                       } on ArgumentError catch (e) {
                                         messenger.snack('${e.message}');
                                       } catch (e) {
@@ -196,10 +224,22 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                               style: textTheme.titleMedium,
                             ),
                             if (renamable)
-                              TextField(
-                                controller: nameController,
-                                inputFormatters: [_formatter],
-                                selectionControls: context.platformSpecificSelectionControls(),
+                              ListenableBuilder(
+                                listenable: Listenable.merge([nameController, refused]),
+                                builder: (context, _) {
+                                  final taken = switch (editable) {
+                                    Exercise e => _ownNameTaken(Exercises.of(context), e, nameController.text.trim()),
+                                    null => false,
+                                  };
+                                  return TextField(
+                                    controller: nameController,
+                                    inputFormatters: [_formatter, _length],
+                                    selectionControls: context.platformSpecificSelectionControls(),
+                                    decoration: InputDecoration(
+                                      errorText: taken || refused.value ? L.of(context).exerciseNameTaken : null,
+                                    ),
+                                  );
+                                },
                               ),
                             // the same name in the library, told apart only by case
                             // or punctuation: said, not refused, since a machine at

@@ -958,6 +958,58 @@ void main() {
     });
   });
 
+  group('editExercise (#616)', () {
+    late _Renames renames;
+    final own = Exercise.fromJson({
+      'id': 'own-1',
+      'name': 'Landmine Press',
+      'category': 'Barbell',
+      'target': 'Shoulders',
+      'own': 1,
+    });
+
+    setUp(() async {
+      renames = _Renames();
+      sut = Exercises(
+        remoteService: remote,
+        remote: access,
+        service: local,
+        libraryService: library,
+        catalogService: catalog,
+        preferenceService: preferences,
+        renameService: renames,
+      )..userId = 'u1';
+      when(remote.editExercise(any)).thenAnswer((i) async => i.positionalArguments.first as Exercise);
+      await sut.makeExercise(own);
+      clearInteractions(remote);
+    });
+
+    test('a new name goes through the rename', () async {
+      await sut.editExercise(own.renamed('Half-kneeling Press'));
+
+      expect(renames.sent.single.name, 'Half-kneeling Press');
+      verifyNever(remote.editExercise(any));
+      expect(sut.lookup(own.id)?.name, 'Half-kneeling Press');
+    });
+
+    test('an edit that keeps the name never sends one', () async {
+      await sut.editExercise(own.copyWith(target: .chest));
+
+      expect(renames.sent, isEmpty);
+      verify(remote.editExercise(any)).called(1);
+    });
+
+    test('archiving acts on the current copy, not the one it was handed', () async {
+      await sut.editExercise(own.renamed('Half-kneeling Press'));
+
+      await sut.archive(own);
+
+      final archived = verify(remote.editExercise(captureAny)).captured.single as Exercise;
+      expect(archived.name, 'Half-kneeling Press');
+      expect(archived.isArchived, isTrue);
+    });
+  });
+
   group('showingMine', () {
     test('getter/setter works and notifies', () {
       final probe = ListenerProbe()..attach(sut);
@@ -1319,5 +1371,15 @@ class _MoveFake implements ExerciseMoveService {
   Future<void> mirror(ExerciseMoveReport report, {required String userId}) async {
     if (mirrorFails) throw StateError('locked');
     mirrored.add((report, userId));
+  }
+}
+
+class _Renames implements RemoteExerciseRenameService {
+  final sent = <Exercise>[];
+
+  @override
+  Future<Exercise> renameExercise(Exercise exercise) async {
+    sent.add(exercise);
+    return exercise;
   }
 }

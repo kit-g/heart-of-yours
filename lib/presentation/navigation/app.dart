@@ -135,6 +135,7 @@ class HeartApp extends StatelessWidget {
               libraryService: CdnExerciseLibrary(cdn),
               catalogService: LocalCatalog(db),
               preferenceService: RemoteExercisePreferences(api),
+              renameService: RemoteExerciseRenames(api),
               noteService: ExerciseNotes(db, api),
               moveService: ExerciseMoves(db, api),
               remote: RemoteAccess.of(context),

@@ -106,12 +106,20 @@ void main() {
         return jsonDecode(captured.single as String) as Map<String, dynamic>;
       }
 
-      test('sends the name and the pattern', () async {
+      test('an edit sends the pattern and leaves the name out', () async {
         respond(client: client, method: 'PUT', path: path, statusCode: 200, body: custom.toMap());
 
         await api.editExercise(custom);
 
-        expect(sent(), allOf(containsPair('name', 'Landmine Press'), containsPair('pattern', 'vertical_press')));
+        expect(sent(), allOf(containsPair('pattern', 'vertical_press'), isNot(contains('name'))));
+      });
+
+      test('a rename sends the name', () async {
+        respond(client: client, method: 'PUT', path: path, statusCode: 200, body: custom.toMap());
+
+        await api.renameExercise(custom);
+
+        expect(sent(), containsPair('name', 'Landmine Press'));
       });
 
       test('no pattern is sent as null, so the server clears its own', () async {
@@ -132,7 +140,7 @@ void main() {
           body: {'code': 'name_taken', 'reason': 'taken'},
         );
 
-        expect(() => api.editExercise(custom), throwsA(isA<ExerciseNameTaken>()));
+        expect(() => api.renameExercise(custom), throwsA(isA<ExerciseNameTaken>()));
       });
     });
 
