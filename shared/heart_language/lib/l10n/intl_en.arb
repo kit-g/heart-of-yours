@@ -5918,5 +5918,7 @@
   "showAsCalendar": "Show as calendar",
   "@showAsCalendar": {"description": "Tooltip on History's app-bar button that switches from the list of workouts to the calendar (#609)", "type": "text", "placeholders": {}},
   "screens": "Screens",
-  "@screens": {"description": "Settings section header: how the app's screens show themselves, e.g. what History opens on (#609)", "type": "text", "placeholders": {}}
+  "@screens": {"description": "Settings section header: how the app's screens show themselves, e.g. what History opens on (#609)", "type": "text", "placeholders": {}},
+  "calendarWorkouts": "{count, plural, =1{1 workout} other{{count} workouts}}",
+  "@calendarWorkouts": {"description": "History calendar: how many workouts a day holds, read out after the date on a day with more than one (#619)", "type": "text", "placeholders": {"count": {"type": "int"}}}
 }
