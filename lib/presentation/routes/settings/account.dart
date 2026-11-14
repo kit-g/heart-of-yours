@@ -270,14 +270,24 @@ class _AccountManagementPageState extends State<AccountManagementPage>
       context,
     );
 
+    // conversations stay with the other person (#568): said, with a way to
+    // delete them first, to someone who has any
+    final messages = Messages.of(context);
     return showBrandedDialog(
       context,
       title: Text(deleteAccountTitle, textAlign: TextAlign.center),
       content: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Text(
-          deleteAccountBody(AppConfig.of(context).accountDeletionDeadline),
-          textAlign: TextAlign.center,
+        child: Column(
+          mainAxisSize: .min,
+          spacing: 12,
+          children: [
+            Text(
+              deleteAccountBody(AppConfig.of(context).accountDeletionDeadline),
+              textAlign: TextAlign.center,
+            ),
+            if (_holding(messages).isNotEmpty) _ConversationsStay(messages: messages),
+          ],
         ),
       ),
       icon: Icon(Icons.auto_delete_rounded, color: colorScheme.error),
@@ -737,4 +747,93 @@ class _SignInRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// What deleting an account leaves behind (#568): conversations stay with the
+/// other person, so the way to take one's words with them is to delete the
+/// conversations first, here, for both people.
+class _ConversationsStay extends StatelessWidget {
+  final Messages messages;
+
+  const new({required this.messages});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return ListenableBuilder(
+      listenable: messages,
+      builder: (context, _) {
+        final count = _holding(messages).length;
+        return Column(
+          mainAxisSize: .min,
+          spacing: 4,
+          children: [
+            Text(
+              switch (count) {
+                0 => l.deleteAccountConversationsGone,
+                _ => l.deleteAccountConversations(count),
+              },
+              textAlign: .center,
+              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+            if (count > 0)
+              TextButton(
+                key: AppKeys.deleteAccountConversations,
+                style: TextButton.styleFrom(foregroundColor: colorScheme.error, minimumSize: const Size(64, 48)),
+                onPressed: () => _deleteAll(context),
+                child: Text(l.deleteAccountConversationsDelete),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Deletes every conversation, each for both people, after asking.
+  Future<void> _deleteAll(BuildContext context) async {
+    final l = L.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final messenger = ScaffoldMessenger.of(context);
+    final sure = await showBrandedDialog<bool>(
+      context,
+      title: Text(l.deleteAccountConversationsTitle),
+      content: Text(l.deleteAccountConversationsBody),
+      actions: [
+        TextButton(
+          style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
+          child: Text(l.cancel),
+        ),
+        TextButton(
+          key: AppKeys.deleteAccountConversationsConfirm,
+          style: TextButton.styleFrom(minimumSize: const Size(64, 48), foregroundColor: colorScheme.error),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
+          child: Text(l.delete),
+        ),
+      ],
+    );
+    if (!(sure ?? false)) return;
+    final failed = <String>[];
+    for (final thread in _holding(messages).toList()) {
+      try {
+        await messages.clear(thread.id);
+      } catch (_) {
+        failed.add(thread.id);
+      }
+    }
+    if (failed.isNotEmpty) messenger.snack(l.messagesDeleteFailed);
+  }
+}
+
+/// The conversations that still hold something: one deleted since its last
+/// message holds nothing.
+Iterable<Thread> _holding(Messages messages) {
+  return messages.threads.where(
+    (thread) => switch ((thread.clearedAt, thread.lastAt)) {
+      (null, _) => true,
+      (final DateTime cleared, final DateTime last) => last.isAfter(cleared),
+      (DateTime _, null) => false,
+    },
+  );
 }

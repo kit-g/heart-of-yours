@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart' show InternalUserInfo;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart_models/heart_models.dart' show Thread;
 import 'package:heart_state/heart_state.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
@@ -247,6 +248,59 @@ void main() {
 
       expect(find.byType(AccountManagementPage), findsOneWidget);
       verifyNever(api.deleteAccount(accountId: anyNamed('accountId'), appleGrant: anyNamed('appleGrant')));
+    });
+
+    testWidgets('conversations are said to stay, and can be deleted first, for both (#568)', (tester) async {
+      final thread = Thread(id: 't1', connectionId: 'c1', otherName: 'Whiskers', lastAt: DateTime.utc(2026, 11, 14));
+      var cleared = false;
+      when(db.getThreads(any)).thenAnswer((_) async => [thread]);
+      when(api.getThreads()).thenAnswer(
+        (_) async => [
+          switch (cleared) {
+            true => Thread(
+              id: 't1',
+              connectionId: 'c1',
+              otherName: 'Whiskers',
+              lastAt: DateTime.utc(2026, 11, 14),
+              clearedAt: DateTime.utc(2026, 11, 15),
+            ),
+            false => thread,
+          },
+        ],
+      );
+      when(api.clearThread('t1')).thenAnswer((_) async => cleared = true);
+      when(db.storeThread(any, any)).thenAnswer((_) async {});
+      when(db.storeThreads(any, any)).thenAnswer((_) async {});
+      when(db.getThreadItems(any, any)).thenAnswer((_) async => []);
+      when(db.deleteThreadItems(any, any)).thenAnswer((_) async {});
+      final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
+      await pumpToAccountManagement(tester, firebase: firebase);
+      await Messages.of(tester.element(find.byType(AccountManagementPage))).load();
+      await tester.pumpTimes();
+
+      await tester.tap(find.text('Delete account'));
+      await tester.pumpTimes();
+      expect(find.textContaining('Your conversation stays with the other person'), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.deleteAccountConversations);
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.deleteAccountConversationsConfirm);
+      await tester.pumpTimes();
+
+      verify(api.clearThread('t1')).called(1);
+      expect(find.text('Your conversations are deleted for both sides.'), findsOneWidget);
+      expect(find.byKey(AppKeys.deleteAccountConversations), findsNothing);
+      verifyNever(api.deleteAccount(accountId: anyNamed('accountId'), appleGrant: anyNamed('appleGrant')));
+    });
+
+    testWidgets('with no conversations, nothing is said of them', (tester) async {
+      final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
+      await pumpToAccountManagement(tester, firebase: firebase);
+
+      await tester.tap(find.text('Delete account'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.deleteAccountConversations), findsNothing);
     });
 
     testWidgets('a provider account (no password) skips straight past the password prompt', (tester) async {

@@ -6060,5 +6060,15 @@
   "coachingLogFailed": "Couldn't log it for {name}",
   "@coachingLogFailed": {"description": "Snackbar when a coach's workout for a client couldn't be sent; Retry beside it (#560)", "type": "text", "placeholders": {"name": {"type": "String"}}},
   "loggedBy": "Logged by {name}",
-  "@loggedBy": {"description": "On a workout in History that the person's coach logged for them (#560)", "type": "text", "placeholders": {"name": {"type": "String"}}}
+  "@loggedBy": {"description": "On a workout in History that the person's coach logged for them (#560)", "type": "text", "placeholders": {"name": {"type": "String"}}},
+  "deleteAccountConversations": "{count, plural, =1{Your conversation stays with the other person. To take your messages with you, delete it first.} other{Your {count} conversations stay with the other people. To take your messages with you, delete them first.}}",
+  "@deleteAccountConversations": {"description": "In the account deletion dialog, for someone with coaching conversations (#568)", "type": "text", "placeholders": {"count": {"type": "int"}}},
+  "deleteAccountConversationsGone": "Your conversations are deleted for both sides.",
+  "@deleteAccountConversationsGone": {"description": "In the account deletion dialog once its conversations were deleted (#568)", "type": "text", "placeholders": {}},
+  "deleteAccountConversationsDelete": "Delete conversations",
+  "@deleteAccountConversationsDelete": {"description": "Button in the account deletion dialog that deletes every coaching conversation first (#568)", "type": "text", "placeholders": {}},
+  "deleteAccountConversationsTitle": "Delete every conversation?",
+  "@deleteAccountConversationsTitle": {"description": "Title of the dialog that asks before every conversation is deleted (#568)", "type": "text", "placeholders": {}},
+  "deleteAccountConversationsBody": "Each one is deleted for both of you, and can't be brought back.",
+  "@deleteAccountConversationsBody": {"description": "Body of the dialog that asks before every conversation is deleted (#568)", "type": "text", "placeholders": {}}
 }
