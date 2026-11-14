@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:heart/core/env/analytics.dart';
 import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/utils/form_factor.dart';
 import 'package:heart/core/env/key_vault.dart';
 import 'package:heart/core/env/launch_screen.dart';
 import 'package:heart/core/env/questions.dart';
@@ -134,32 +135,6 @@ Future<String?> _appVersion() async {
   }
 }
 
-/// The conventional phone/tablet split: 600 logical pixels on the short edge.
-///
-/// Read off the view rather than a `MediaQuery`, because the orientation
-/// preference is set before there is a widget tree to read one from. Anything
-/// without a view — the browser, tests — counts as not a phone and stays free.
-///
-/// Off the **display**, not `view.physicalSize`, which is the window: it has
-/// the system bars taken out of it and it swaps its sides with the device.
-/// A 7" tablet measures 1200x1920 either way, but its window is 1200x1800
-/// upright and 1920x1080 on its side — so a launch in landscape scored 540,
-/// called itself a phone, and pinned the tablet to portrait for the life of
-/// the process. The display is the device, whichever way up it is, which is
-/// also what `sw600dp` means on the Android side of this decision.
-///
-/// `null` is a display with no size yet — unproven, but the whole failure
-/// above was a number believed too early, so it defers rather than guesses.
-/// See [_runner].
-bool? get _isPhone {
-  final view = WidgetsBinding.instance.platformDispatcher.implicitView;
-  return switch (view?.display) {
-    null => false,
-    final display when display.size.isEmpty => null,
-    final display => display.size.shortestSide / display.devicePixelRatio < 600,
-  };
-}
-
 Future<void> _runner({
   required Api api,
   required AppConfig appConfig,
@@ -167,39 +142,17 @@ Future<void> _runner({
   required LocalDatabase db,
   required Analytics analytics,
   bool? hasLocalNotifications,
-  Future<void> Function(List<DeviceOrientation> orientations) setOrientations = SystemChrome.setPreferredOrientations,
   FirebaseAuth? firebase,
 }) {
-  // Phones stay portrait — the layouts are not built for a 390pt-tall viewport.
-  // Tablets are left to follow the device, which is what large-screen guidance
-  // on both platforms asks for.
-  //
-  // The split has to be made here rather than with one blanket lock, because
-  // the two platforms disagree: iPadOS ignores this preference entirely once an
-  // app allows multitasking, but Android honours it. A blanket [.portraitUp]
-  // reads as "phones only" on iOS while quietly pinning Android tablets too.
-  // An unmeasured display answers neither: ask again after the first frame,
-  // the first moment the size is certainly real. Nothing is on screen until
-  // then, so the wait costs nothing.
-  //
-  // The form factor is reported from here for the same reason: this is where
-  // the answer is settled, deferral included, so the property can never
-  // disagree with the split the app actually acted on.
-  Future<void> applyOrientations() {
-    return switch (_isPhone) {
-      true => Future.sync(() {
-        analytics.setFormFactor(.phone);
-        return setOrientations(const [DeviceOrientation.portraitUp]);
-      }),
-      false => Future.sync(() {
-        analytics.setFormFactor(.tablet);
-        return setOrientations(const <DeviceOrientation>[]);
-      }),
-      null => Future.sync(
-        () => WidgetsBinding.instance.addPostFrameCallback((_) => applyOrientations()),
-      ),
-    };
-  }
+  // Phones stay portrait, tablets follow the device, and a folding phone is
+  // each in turn (#327): see [FormFactorWatch]. The form factor is reported
+  // from there for the same reason, so the property never disagrees with the
+  // split the app acted on.
+  final formFactor = FormFactorWatch(
+    setOrientations: SystemChrome.setPreferredOrientations,
+    report: analytics.setFormFactor,
+    onError: reportToSentry,
+  );
 
   // The launch screen stays up until the app has its theme and its opening
   // page's data (see LaunchScreen); released from `_initApp`. The web has no
@@ -207,7 +160,7 @@ Future<void> _runner({
   if (!kIsWeb) LaunchScreen.hold();
 
   return Future.wait([
-    applyOrientations(),
+    formFactor.start(),
     // Before `runApp`, so no session restored from the keychain is ever
     // momentarily live. See the function for why the keychain needs this.
     signOutIfFirstRunAfterInstall(firebase),
