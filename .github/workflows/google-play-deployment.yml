@@ -188,7 +188,15 @@ jobs:
           version=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
           echo "name=$version (${{ github.run_number }})" >> "$GITHUB_OUTPUT"
 
+      # Whether Play takes a prod edit as is depends on the Console, not on us:
+      # while it holds changes of its own it refuses an edit it would have to
+      # send for review itself (v1.17.0, twice), and with none it refuses one
+      # flagged not to be sent (v1.17.1). So prod tries the plain upload, and
+      # only a refusal retries it flagged; a refused edit is never committed,
+      # so the retry starts clean.
       - name: "Upload to Play Store"
+        id: upload
+        continue-on-error: ${{ inputs.flavor == 'prod' }}
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
         with:
           serviceAccountJson: "playstore-sa-key.json"
@@ -201,10 +209,20 @@ jobs:
           # and capped at 500 characters each. A draft keeps them editable in the
           # Play Console; a completed release ships them as written.
           whatsNewDirectory: release_notes/whatsnew
-          # Play refuses to commit a prod edit it would have to send for review
-          # itself while the Console holds changes of its own (v1.17.0, twice).
-          # Prod uploads as an edit not yet sent: review starts from the Console.
-          changesNotSentForReview: ${{ inputs.flavor == 'prod' }}
+
+      - name: "Upload to Play Store, not sent for review"
+        if: steps.upload.outcome == 'failure'
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
+        with:
+          serviceAccountJson: "playstore-sa-key.json"
+          packageName: ${{ inputs.app_id }}
+          releaseFiles: "build/app/outputs/bundle/${{ inputs.flavor }}Release/app-${{ inputs.flavor }}-release.aab"
+          releaseName: ${{ steps.release.outputs.name }}
+          track: ${{ inputs.track }}
+          status: ${{ inputs.status }}
+          whatsNewDirectory: release_notes/whatsnew
+          # review then starts from the Console, with the changes it holds
+          changesNotSentForReview: true
 
       # the signed watch bundle, kept for a week: Play asks for some
       # declarations (a foreground service's purpose) only from a bundle
@@ -235,4 +253,5 @@ jobs:
           # goes to internal, and both are promoted to production together
           track: "wear:${{ inputs.track == 'alpha' && 'internal' || inputs.track }}"
           status: ${{ inputs.status }}
-          changesNotSentForReview: ${{ inputs.flavor == 'prod' }}
+          # the same answer the phone's upload got from the Console
+          changesNotSentForReview: ${{ steps.upload.outcome == 'failure' }}

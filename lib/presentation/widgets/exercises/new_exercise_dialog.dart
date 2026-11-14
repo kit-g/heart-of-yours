@@ -43,249 +43,265 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
     barrierDismissible: true,
     context: context,
     builder: (context) {
-      return Center(
-        // clear of the keyboard, so the body below scrolls rather than hides
-        child: Padding(
-          padding: MediaQuery.viewInsetsOf(context) + const EdgeInsets.symmetric(vertical: 24),
-          child: ConstrainedBox(
-            // the width needs bounding or the card takes the whole screen
-            constraints: const BoxConstraints(maxWidth: dialogWidth),
-            child: Card(
-              // shrink-wraps while it fits; past that the header with Save
-              // stays put and the ten targets and ten categories scroll
-              child: Column(
-                mainAxisSize: .min,
-                crossAxisAlignment: .start,
-                children: [
-                  Row(
-                    mainAxisAlignment: .spaceBetween,
-                    children: [
-                      IconButton(
-                        tooltip: L.of(context).close,
-                        onPressed: () {
-                          Navigator.of(context, rootNavigator: true).pop();
-                        },
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                      Text(
-                        createNewExercise,
-                        style: textTheme.titleMedium,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: ListenableBuilder(
-                          listenable: Listenable.merge([loading, target, category, pattern, roles, nameController]),
-                          builder: (_, _) {
-                            final (l, t, c, p, r, n) = (
-                              loading.value,
-                              target.value,
-                              category.value,
-                              pattern.value,
-                              roles.value,
-                              nameController.value,
-                            );
-                            final retagged = !sameRoles(r, initialRoles);
-                            final enough = switch (editable) {
-                              Exercise e =>
-                                t != null &&
-                                    c != null &&
-                                    (e.category != c || e.movement.groups.firstOrNull != p || retagged),
-                              null => t != null && c != null && n.text.isNotEmpty,
-                            };
-                            final movement = _withPattern(editable?.movement ?? Movement.empty(), p);
-                            return PrimaryButton.shrunk(
-                              onPressed: switch ((enough, l)) {
-                                (_, true) => null,
-                                (false, false) => null,
-                                (true, false) => () async {
-                                  if (c != null && t != null) {
-                                    final messenger = ScaffoldMessenger.of(context);
-                                    final root = Navigator.of(context, rootNavigator: true);
-                                    Exercise? saved;
-                                    try {
-                                      loading.value = true;
-                                      if (editable == null) {
-                                        final n = nameController.text.trim();
-                                        final exercise = Exercise(
-                                          name: n,
-                                          category: c,
-                                          target: t,
-                                          isMine: true,
-                                          movement: movement,
-                                          tags: taggingOf(r),
-                                        );
-                                        await Exercises.of(context).makeExercise(exercise);
-                                        saved = exercise;
-                                      } else {
-                                        final edited = editable.copyWith(
-                                          category: c,
-                                          movement: movement,
-                                          // untouched, the tagging stays exactly as it was
-                                          tags: retagged ? taggingOf(r) : null,
-                                        );
-                                        await Exercises.of(context).editExercise(edited);
-                                        saved = edited;
-                                      }
-                                      loading.value = false;
-                                    } on ArgumentError catch (e) {
-                                      messenger.snack('${e.message}');
-                                    } catch (e) {
-                                      messenger.snack('$e');
-                                    } finally {
-                                      root.pop(saved);
-                                      loading.value = false;
-                                    }
-                                  }
-                                },
-                              },
-                              child: Text(save),
-                            );
-                          },
+      // A save in flight holds the dialog open: closing it under the save left
+      // the save's own pop to take whatever sat beneath — on Android, the
+      // shell's page — and the next Back crashed the router (#607).
+      return ValueListenableBuilder<bool>(
+        valueListenable: loading,
+        builder: (context, saving, child) => PopScope(canPop: !saving, child: child!),
+        child: Center(
+          // clear of the keyboard, so the body below scrolls rather than hides
+          child: Padding(
+            padding: MediaQuery.viewInsetsOf(context) + const EdgeInsets.symmetric(vertical: 24),
+            child: ConstrainedBox(
+              // the width needs bounding or the card takes the whole screen
+              constraints: const BoxConstraints(maxWidth: dialogWidth),
+              child: Card(
+                // shrink-wraps while it fits; past that the header with Save
+                // stays put and the ten targets and ten categories scroll
+                child: Column(
+                  mainAxisSize: .min,
+                  crossAxisAlignment: .start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: .spaceBetween,
+                      children: [
+                        IconButton(
+                          tooltip: L.of(context).close,
+                          // maybe: it asks the dialog's PopScope, which says no mid-save
+                          onPressed: () => Navigator.of(context, rootNavigator: true).maybePop(),
+                          icon: const Icon(Icons.close_rounded),
                         ),
-                      ),
-                    ],
-                  ),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        spacing: 12,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            nameCopy,
-                            style: textTheme.titleMedium,
-                          ),
-                          if (editable == null)
-                            TextField(
-                              controller: nameController,
-                              inputFormatters: [_formatter],
-                              selectionControls: context.platformSpecificSelectionControls(),
-                            ),
-                          // the same name in the library, told apart only by case
-                          // or punctuation: said, not refused, since a machine at
-                          // one gym can share a name with the library's (#529)
-                          if (editable == null)
-                            ValueListenableBuilder<TextEditingValue>(
-                              valueListenable: nameController,
-                              builder: (context, value, _) {
-                                final key = _nameKey(value.text);
-                                final twin = switch (key.isEmpty) {
-                                  true => null,
-                                  false => Exercises.of(
-                                    context,
-                                  ).where((each) => _nameKey(each.name) == key).firstOrNull,
-                                };
-                                return switch (twin) {
-                                  Exercise twin => Text(
-                                    L.of(context).exerciseAlreadyInLibrary(twin.name),
-                                    style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                                  ),
-                                  null => const SizedBox.shrink(),
-                                };
-                              },
-                            )
-                          else
-                            Center(
-                              child: Text(
-                                editable.name,
-                                style: textTheme.titleLarge,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          Text(
-                            targetCopy,
-                            style: textTheme.titleMedium,
-                          ),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ValueListenableBuilder<Target?>(
-                              valueListenable: target,
-                              builder: (context, selected, child) {
-                                return Wrap(
-                                  spacing: 8,
-                                  alignment: WrapAlignment.center,
-                                  children: [
-                                    ...Target.values.map(
-                                      (each) {
-                                        return InputChip(
-                                          isEnabled: editable == null, // new exercise
-                                          selected: each == selected,
-                                          onSelected: (selected) {
-                                            HapticFeedback.mediumImpact();
-                                            target.value = selected ? each : null;
-                                          },
-                                          label: Text(each.label(L.of(context))),
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                          Text(
-                            categoryCopy,
-                            style: textTheme.titleMedium,
-                          ),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ValueListenableBuilder<Category?>(
-                              valueListenable: category,
-                              builder: (context, selected, child) {
-                                return Wrap(
-                                  spacing: 8,
-                                  alignment: WrapAlignment.center,
-                                  children: [
-                                    ...Category.values.map(
-                                      (each) {
-                                        return InputChip(
-                                          isEnabled: switch (editable) {
-                                            null => true,
-                                            Exercise() => selected?.canSwitchTo(each) ?? true,
-                                          },
-                                          selected: each == selected,
-                                          onSelected: (selected) {
-                                            HapticFeedback.mediumImpact();
-                                            category.value = selected ? each : null;
-                                          },
-                                          label: Text(each.label(L.of(context))),
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                          ValueListenableBuilder<String?>(
-                            valueListenable: pattern,
-                            builder: (context, selected, _) {
-                              final l = L.of(context);
-                              return ListTile(
-                                key: AppKeys.newExercisePattern,
-                                contentPadding: .zero,
-                                title: Text(l.exercisePattern, style: textTheme.titleMedium),
-                                // the menu hangs off the value, not the row's far-left edge
-                                trailing: Row(
-                                  key: patternKey,
-                                  mainAxisSize: .min,
-                                  spacing: 4,
-                                  children: [
-                                    Text(_patternLabel(selected, l), style: textTheme.bodyMedium),
-                                    const Icon(Icons.unfold_more_rounded, size: 20),
-                                  ],
-                                ),
-                                onTap: () => _pickPattern(context, patternKey, pattern),
+                        Text(
+                          createNewExercise,
+                          style: textTheme.titleMedium,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: ListenableBuilder(
+                            listenable: Listenable.merge([loading, target, category, pattern, roles, nameController]),
+                            builder: (_, _) {
+                              final (l, t, c, p, r, n) = (
+                                loading.value,
+                                target.value,
+                                category.value,
+                                pattern.value,
+                                roles.value,
+                                nameController.value,
+                              );
+                              final retagged = !sameRoles(r, initialRoles);
+                              final enough = switch (editable) {
+                                Exercise e =>
+                                  t != null &&
+                                      c != null &&
+                                      (e.category != c || e.movement.groups.firstOrNull != p || retagged),
+                                null => t != null && c != null && n.text.isNotEmpty,
+                              };
+                              final movement = _withPattern(editable?.movement ?? Movement.empty(), p);
+                              return PrimaryButton.shrunk(
+                                onPressed: switch ((enough, l)) {
+                                  (_, true) => null,
+                                  (false, false) => null,
+                                  (true, false) => () async {
+                                    if (c != null && t != null) {
+                                      final messenger = ScaffoldMessenger.of(context);
+                                      final root = Navigator.of(context, rootNavigator: true);
+                                      final route = ModalRoute.of<Exercise>(context);
+                                      Exercise? saved;
+                                      try {
+                                        loading.value = true;
+                                        if (editable == null) {
+                                          final n = nameController.text.trim();
+                                          final exercise = Exercise(
+                                            name: n,
+                                            category: c,
+                                            target: t,
+                                            isMine: true,
+                                            movement: movement,
+                                            tags: taggingOf(r),
+                                          );
+                                          await Exercises.of(context).makeExercise(exercise);
+                                          saved = exercise;
+                                        } else {
+                                          final edited = editable.copyWith(
+                                            category: c,
+                                            movement: movement,
+                                            // untouched, the tagging stays exactly as it was
+                                            tags: retagged ? taggingOf(r) : null,
+                                          );
+                                          await Exercises.of(context).editExercise(edited);
+                                          saved = edited;
+                                        }
+                                        loading.value = false;
+                                      } on ArgumentError catch (e) {
+                                        messenger.snack('${e.message}');
+                                      } catch (e) {
+                                        messenger.snack('$e');
+                                      } finally {
+                                        loading.value = false;
+                                        // this dialog's route and nothing else: a bare pop
+                                        // takes whatever is on top by then
+                                        switch (route) {
+                                          case ModalRoute<Exercise>(isCurrent: true):
+                                            root.pop(saved);
+                                          case final ModalRoute<Exercise> route when route.isActive:
+                                            root.removeRoute(route, saved);
+                                          default:
+                                            break;
+                                        }
+                                      }
+                                    }
+                                  },
+                                },
+                                child: Text(save),
                               );
                             },
                           ),
-                          MusclePicker(roles: roles),
-                        ],
+                        ),
+                      ],
+                    ),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          spacing: 12,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              nameCopy,
+                              style: textTheme.titleMedium,
+                            ),
+                            if (editable == null)
+                              TextField(
+                                controller: nameController,
+                                inputFormatters: [_formatter],
+                                selectionControls: context.platformSpecificSelectionControls(),
+                              ),
+                            // the same name in the library, told apart only by case
+                            // or punctuation: said, not refused, since a machine at
+                            // one gym can share a name with the library's (#529)
+                            if (editable == null)
+                              ValueListenableBuilder<TextEditingValue>(
+                                valueListenable: nameController,
+                                builder: (context, value, _) {
+                                  final key = _nameKey(value.text);
+                                  final twin = switch (key.isEmpty) {
+                                    true => null,
+                                    false => Exercises.of(
+                                      context,
+                                    ).where((each) => _nameKey(each.name) == key).firstOrNull,
+                                  };
+                                  return switch (twin) {
+                                    Exercise twin => Text(
+                                      L.of(context).exerciseAlreadyInLibrary(twin.name),
+                                      style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                    ),
+                                    null => const SizedBox.shrink(),
+                                  };
+                                },
+                              )
+                            else
+                              Center(
+                                child: Text(
+                                  editable.name,
+                                  style: textTheme.titleLarge,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            Text(
+                              targetCopy,
+                              style: textTheme.titleMedium,
+                            ),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ValueListenableBuilder<Target?>(
+                                valueListenable: target,
+                                builder: (context, selected, child) {
+                                  return Wrap(
+                                    spacing: 8,
+                                    alignment: WrapAlignment.center,
+                                    children: [
+                                      ...Target.values.map(
+                                        (each) {
+                                          return InputChip(
+                                            isEnabled: editable == null, // new exercise
+                                            selected: each == selected,
+                                            onSelected: (selected) {
+                                              HapticFeedback.mediumImpact();
+                                              target.value = selected ? each : null;
+                                            },
+                                            label: Text(each.label(L.of(context))),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                            Text(
+                              categoryCopy,
+                              style: textTheme.titleMedium,
+                            ),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ValueListenableBuilder<Category?>(
+                                valueListenable: category,
+                                builder: (context, selected, child) {
+                                  return Wrap(
+                                    spacing: 8,
+                                    alignment: WrapAlignment.center,
+                                    children: [
+                                      ...Category.values.map(
+                                        (each) {
+                                          return InputChip(
+                                            isEnabled: switch (editable) {
+                                              null => true,
+                                              Exercise() => selected?.canSwitchTo(each) ?? true,
+                                            },
+                                            selected: each == selected,
+                                            onSelected: (selected) {
+                                              HapticFeedback.mediumImpact();
+                                              category.value = selected ? each : null;
+                                            },
+                                            label: Text(each.label(L.of(context))),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                            ValueListenableBuilder<String?>(
+                              valueListenable: pattern,
+                              builder: (context, selected, _) {
+                                final l = L.of(context);
+                                return ListTile(
+                                  key: AppKeys.newExercisePattern,
+                                  contentPadding: .zero,
+                                  title: Text(l.exercisePattern, style: textTheme.titleMedium),
+                                  // the menu hangs off the value, not the row's far-left edge
+                                  trailing: Row(
+                                    key: patternKey,
+                                    mainAxisSize: .min,
+                                    spacing: 4,
+                                    children: [
+                                      Text(_patternLabel(selected, l), style: textTheme.bodyMedium),
+                                      const Icon(Icons.unfold_more_rounded, size: 20),
+                                    ],
+                                  ),
+                                  onTap: () => _pickPattern(context, patternKey, pattern),
+                                );
+                              },
+                            ),
+                            MusclePicker(roles: roles),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
