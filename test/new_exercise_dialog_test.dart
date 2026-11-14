@@ -7,7 +7,9 @@ import 'dart:async';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/exercises/new_exercise_dialog.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
@@ -162,5 +164,72 @@ void main() {
     await tester.tap(find.byTooltip('Exercise options'));
     await tester.pumpTimes();
     expect(find.text('New exercise'), findsOneWidget);
+  });
+
+  group('editing an own exercise (#616)', () {
+    final own = Exercise.fromJson({
+      'id': '019e8b5d-c52d-729e-be9c-a5403b04fd1b',
+      'name': 'Landmine Press',
+      'category': 'Barbell',
+      'target': 'Shoulders',
+      'own': 1,
+    });
+
+    Future<BuildContext> pumpToEdit(WidgetTester tester, Exercise editable) async {
+      await harness.pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: MockFirebaseAuth(signedIn: false),
+        settle: false,
+      );
+      await tester.pumpTimes();
+      // below the app's localizations and navigator, as a page's would be
+      final context = tester.element(find.byType(Scaffold).first);
+      unawaited(showNewExerciseDialog(context, editable: editable));
+      await tester.pumpTimes();
+      return context;
+    }
+
+    Widget save(WidgetTester tester) => tester.widget(find.widgetWithText(PrimaryButton, 'Save'));
+
+    testWidgets('offers the name prefilled, and a new one saves under the same id', (tester) async {
+      final context = await pumpToEdit(tester, own);
+
+      expect(tester.widget<TextField>(nameField()).controller?.text, 'Landmine Press');
+      expect((save(tester) as PrimaryButton).onPressed, isNull, reason: 'nothing changed yet');
+
+      await tester.enterTextAndWait(nameField(), '   ');
+      expect((save(tester) as PrimaryButton).onPressed, isNull, reason: 'a blank name is no name');
+
+      await tester.enterTextAndWait(nameField(), '  Landmine Press, half-kneeling ');
+      expect((save(tester) as PrimaryButton).onPressed, isNotNull);
+      await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
+      await tester.pumpTimes();
+
+      expect(find.text('Create new exercise'), findsNothing);
+      final renamed = Exercises.of(context).lookup(own.id);
+      expect(renamed?.name, 'Landmine Press, half-kneeling');
+      expect(renamed?.isMine, isTrue);
+    });
+
+    testWidgets('the target can change too', (tester) async {
+      final context = await pumpToEdit(tester, own);
+
+      await tester.tap(find.text('Chest'));
+      await tester.pumpTimes();
+      await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
+      await tester.pumpTimes();
+
+      expect(Exercises.of(context).lookup(own.id)?.target, Target.chest);
+    });
+
+    testWidgets("a library exercise's name is not a field", (tester) async {
+      await pumpToEdit(tester, Exercise.fromJson({...own.toMap(), 'own': 0}));
+
+      expect(nameField(), findsNothing);
+      expect(find.text('Landmine Press'), findsOneWidget);
+    });
   });
 }

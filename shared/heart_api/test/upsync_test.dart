@@ -60,6 +60,20 @@ void main() {
       expect(row.id, theirs);
     });
 
+    test('the create carries the pattern, so a fresh install sees it (#616)', () async {
+      final exercise = Exercise.fromJson({
+        ...custom().toMap(),
+        'movement': {
+          'groups': ['horizontal_press'],
+        },
+      });
+      _post(client, Router.exercises, 201, exercise.toMap());
+
+      await api.replayExercise(exercise);
+
+      expect(sentBody(), containsPair('pattern', 'horizontal_press'));
+    });
+
     test('makeExercise is the same call, and takes a 201 in its stride', () async {
       final exercise = custom();
       _post(client, Router.exercises, 201, exercise.toMap());

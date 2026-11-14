@@ -8,6 +8,7 @@ import 'package:network_utils/network_utils.dart';
 import 'imports.dart';
 import 'moves.dart';
 import 'programs.dart';
+import 'renames.dart';
 
 part 'routes/accounts.dart';
 part 'routes/workouts.dart';

@@ -38,6 +38,9 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
           'name': exercise.name,
           'category': exercise.category.value,
           'target': exercise.target.value,
+          // the server keeps it, so a reinstall or a second device sees it
+          // too (#616); the device's own copy no longer has to carry it alone
+          'pattern': ?exercise.movement.groups.firstOrNull,
         },
       ),
     );
@@ -60,14 +63,18 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
     final (json, code) = await put(
       '${Router.exercises}/${exercise.id}',
       body: {
+        'name': exercise.name,
         'category': exercise.category.value,
         'target': exercise.target.value,
         'instructions': ?exercise.instructions,
         'archived': exercise.isArchived,
+        // always sent: null is "none", and clears one the server holds (#616)
+        'pattern': exercise.movement.groups.firstOrNull,
       },
     );
-    return switch (code) {
-      200 => Exercise.fromJson(json),
+    return switch ((code, json)) {
+      (200, _) => Exercise.fromJson(json),
+      (409, {'code': 'name_taken'}) => throw const ExerciseNameTaken(),
       _ => throw ArgumentError(json),
     };
   }

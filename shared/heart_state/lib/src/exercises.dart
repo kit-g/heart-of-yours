@@ -81,6 +81,16 @@ abstract interface class ExerciseMoveService {
   Future<void> mirror(ExerciseMoveReport report, {required String userId});
 }
 
+/// Renaming an own exercise (#616). The id is the exercise's identity, so a
+/// new name is display copy only, and every screen that resolves the id picks
+/// it up.
+extension RenamedExercise on Exercise {
+  /// This exercise under [name]. Through the model's own map rather than
+  /// `copyWith`, which has no name: the name was the identity when it was
+  /// written. The round trip is the one every stored row already makes.
+  Exercise renamed(String name) => Exercise.fromJson({...toMap(), 'name': name});
+}
+
 class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateSentry {
   final _selectedExercises = <Exercise>{};
   final ExerciseService _service;
