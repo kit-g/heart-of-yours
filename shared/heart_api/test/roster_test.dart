@@ -270,6 +270,50 @@ void main() {
     });
   });
 
+  group('logging for a client (#560)', () {
+    test("a workout goes up in the client's name, in the workout shape, and comes back marked", () async {
+      final workout = Workout(name: 'Day B, in the gym')
+        ..start = DateTime.utc(2026, 11, 7, 20)
+        ..end = DateTime.utc(2026, 11, 7, 21);
+      respond(
+        client: client,
+        method: 'POST',
+        path: Router.clientWorkouts('sam'),
+        statusCode: 201,
+        body: {
+          ...workout.toMap(),
+          'loggedBy': 'dana',
+          'loggedByName': 'Dana',
+        },
+      );
+
+      final logged = await api.logClientWorkout('sam', workout);
+
+      expect(logged.id, workout.id);
+      expect(logged.loggedBy, 'dana');
+      final sent = verify(
+        client.post(
+          Uri.https('api.example.com', Router.clientWorkouts('sam')),
+          headers: anyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured.single;
+      expect(jsonDecode(sent as String), containsPair('id', workout.id));
+    });
+
+    test('a client no longer coached is refused whole', () async {
+      respond(
+        client: client,
+        method: 'POST',
+        path: Router.clientWorkouts('sam'),
+        statusCode: 403,
+        body: {'error': 'forbidden', 'code': 'forbidden', 'reason': 'You can only log for a client you are coaching.'},
+      );
+
+      expect(api.logClientWorkout('sam', Workout()), throwsA(containsPair('code', 'forbidden')));
+    });
+  });
+
   group("a client's copy (#558)", () {
     test('a session write carries where it started, and a conflict is thrown whole with the revision', () async {
       respond(
