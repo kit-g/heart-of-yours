@@ -197,7 +197,10 @@ class Preferences with ChangeNotifier {
   }
 
   void setHistoryView(HistoryView view) {
-    if (view == historyView) return;
+    // what is stored, not what it reads as: a newer app's view reads as the
+    // list here, and choosing the list over it is still a choice
+    final stored = _prefs?.getString('$_screen-${ScreenChoice.historyView.value}');
+    if (stored == view.value || (stored == null && view == .list)) return;
     _storeScreenChoice(.historyView, ScreenChoiceRecord(value: view.value, at: DateTime.timestamp()));
     notifyListeners();
   }

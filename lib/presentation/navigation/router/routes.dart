@@ -499,7 +499,9 @@ RouteBase _historyRoute() {
                 final workoutId = state.pathParameters['workoutId']!;
                 final workout = Workouts.of(context).lookup(workoutId);
                 return WorkoutEditor(
-                  copy: workout!,
+                  // a copy, so edits the user then discards never reach the
+                  // workout History shows; Save hands the copy back
+                  copy: Workout.fromJson(workout!.toMap()),
                   onTapImage: context.goToGallery,
                   onClose: switch (LayoutProvider.of(context)) {
                     .compact => null,
@@ -521,7 +523,9 @@ RouteBase _historyRoute() {
             redirect: (context, state) async {
               final workouts = Workouts.of(context);
               return switch (state.pathParameters['workoutId']) {
-                String id when workouts.lookup(id) != null => null,
+                // a stripped mirror row (#85) is not a workout to edit: the
+                // server's copy is the real one
+                String id when workouts.lookupWhole(id) != null => null,
                 String id => switch (await workouts.fetchWorkout(id)) {
                   true => null,
                   false => _historyPath,

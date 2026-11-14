@@ -1,5 +1,5 @@
 id,description,en,en_CA,ru,es,fr
-calendar,History calendar action and dialog title,Calendar,Calendar,Календарь,Calendario,Calendrier
+calendar,Name of History's calendar view and the Settings choice of it beside List (#609),Calendar,Calendar,Календарь,Calendario,Calendrier
 appearance,Label,Appearance,Appearance,Внешний вид,Apariencia,Apparence
 units,Label,Units,Units,Единицы измерения,Unidades,Unités
 motto,"App's motto. A tagline, not copy — it stays in English in every locale, the way 'Just do it' does. Do not translate.",Every beat counts.,Every beat counts.,Every beat counts.,Every beat counts.,Every beat counts.

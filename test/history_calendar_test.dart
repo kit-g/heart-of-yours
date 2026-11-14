@@ -12,6 +12,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/core/utils/visual.dart' show calendarWidth;
+import 'package:heart/presentation/widgets/appbar_textfield.dart';
 
 import 'mocks.mocks.dart';
 import 'support/harness.dart';
@@ -56,6 +57,7 @@ void main() {
     Locale locale = const Locale('en'),
     int? firstWeekday,
     void Function(Workout)? onTapWorkout,
+    bool opens = true,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -73,7 +75,17 @@ void main() {
           locale: locale,
           localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
-          home: Scaffold(body: HistoryCalendar(onTapWorkout: onTapWorkout ?? (_) {})),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => HistoryCalendar(
+                byMonth: Workouts.watch(context).byMonth,
+                onTapWorkout: switch (opens) {
+                  true => onTapWorkout ?? (_) {},
+                  false => null,
+                },
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -94,6 +106,27 @@ void main() {
       find.bySemanticsLabel(DateFormat.yMMMMEEEEd('en').format(DateTime(now.year, now.month, 6))),
     );
     expect(empty.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
+    semantics.dispose();
+  });
+
+  testWidgets('a day of several sessions opens the newest', (tester) async {
+    final earlier = Workout(name: 'Morning')..start = DateTime(current.year, current.month, 5, 7);
+    final later = Workout(name: 'Evening')..start = DateTime(current.year, current.month, 5, 19);
+    final opened = <Workout>[];
+    // newest first, as byMonth has them
+    await pump(tester, _Workouts()..rows[key(current)] = [later, earlier], onTapWorkout: opened.add);
+    await tester.tap(find.byIcon(Icons.check));
+    expect(opened.single.name, 'Evening');
+  });
+
+  testWidgets('a trained day is marked even where it opens nothing', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pump(tester, _Workouts()..rows[key(current)] = [workout(current, 5)], opens: false);
+    expect(find.byIcon(Icons.check), findsOneWidget);
+    final day = tester.getSemantics(
+      find.bySemanticsLabel(DateFormat.yMMMMEEEEd('en').format(DateTime(now.year, now.month, 5))),
+    );
+    expect(day.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
     semantics.dispose();
   });
 
@@ -200,6 +233,45 @@ void main() {
     expect(find.byKey(AppKeys.historyCalendar), findsNothing);
     expect(find.byType(WorkoutItem), findsOneWidget);
     expect(preferences.historyView, HistoryView.list);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets("the calendar does not inherit the list's scroll (#609)", (tester) async {
+    final history = [for (final day in List.generate(12, (i) => 2 + i * 2)) finished(current, day)];
+    await pumpApp(tester, size: const Size(390, 844), history: history);
+    final list = tester.state<ScrollableState>(find.byType(Scrollable).first);
+    list.position.jumpTo(300);
+    await tester.pumpTimes();
+
+    await tester.tap(find.byTooltip('Show as calendar'));
+    await tester.pumpTimes();
+    final frame = tester.state<ScrollableState>(
+      find.ancestor(of: find.byKey(AppKeys.historyCalendar), matching: find.byType(Scrollable)).first,
+    );
+    expect(frame.position.pixels, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('edits discarded in a workout opened from the calendar never reach History (#609)', (tester) async {
+    final session = finished(current, 5);
+    await pumpApp(tester, size: const Size(1194, 834), history: [session]);
+    final context = tester.element(find.byType(HistoryPage));
+    Preferences.of(context).setHistoryView(.calendar);
+    await tester.pumpTimes();
+    await tester.tap(day('${DateFormat.yMMMMEEEEd('en').format(session.start)}, Edit Workout'));
+    await tester.pumpTimes();
+
+    await tester.enterText(
+      find.descendant(of: find.byType(AppBarTextField), matching: find.byType(TextField)),
+      'Changed name',
+    );
+    await tester.pumpTimes();
+    final l = L.of(tester.element(find.byType(WorkoutEditor)));
+    await tester.tap(find.byKey(AppKeys.closeDetail));
+    await tester.pumpTimes();
+    await tester.tap(find.text(l.quitPage));
+    await tester.pumpTimes();
+    expect(Workouts.of(context).lookup(session.id)?.name, 'Session');
     expect(tester.takeException(), isNull);
   });
 

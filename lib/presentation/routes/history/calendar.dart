@@ -8,16 +8,20 @@ part of 'history.dart';
 /// phone and in the detail pane on a tablet — and [selectedId] marks the day
 /// the pane is showing.
 class HistoryCalendar extends StatefulWidget {
+  /// History's workouts by month, newest first ([Workouts.byMonth]), as the
+  /// page already has them.
+  final Map<String, List<Workout>> byMonth;
+
   final void Function(Workout)? onTapWorkout;
 
   /// Id of the workout open in the detail pane; null in compact.
   final String? selectedId;
 
-  /// The month list's controller: History's, so a navbar re-tap brings the
-  /// current month back. Without one the calendar keeps its own.
+  /// The month list's controller: History's own, so a navbar re-tap brings
+  /// the current month back. Without one the calendar keeps its own.
   final ScrollController? controller;
 
-  const new({super.key, this.onTapWorkout, this.selectedId, this.controller});
+  const new({super.key, required this.byMonth, this.onTapWorkout, this.selectedId, this.controller});
 
   @override
   State<HistoryCalendar> createState() => _HistoryCalendarState();
@@ -26,7 +30,13 @@ class HistoryCalendar extends StatefulWidget {
 class _HistoryCalendarState extends State<HistoryCalendar> {
   // a plain flag: it only debounces a request and must never cause a frame
   bool _pageScheduled = false;
-  late final _latest = DateTime(DateTime.now().year, DateTime.now().month);
+  final _ownController = ScrollController();
+
+  @override
+  void dispose() {
+    _ownController.dispose();
+    super.dispose();
+  }
 
   void _loadOlder(Workouts workouts) {
     if (_pageScheduled || workouts.loadingMoreHistory || workouts.historyPageError || !workouts.hasMoreHistory) return;
@@ -44,9 +54,12 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
   @override
   Widget build(BuildContext context) {
     final workouts = Workouts.watch(context);
-    final byMonth = workouts.byMonth;
+    final byMonth = widget.byMonth;
     final dates = byMonth.keys.map((key) => DateTime.parse('$key-01')).toList()..sort();
-    final newest = dates.isNotEmpty && dates.last.isAfter(_latest) ? dates.last : _latest;
+    // read at every build: the page can stay open across a month's end
+    final now = DateTime.now();
+    final latest = DateTime(now.year, now.month);
+    final newest = dates.isNotEmpty && dates.last.isAfter(latest) ? dates.last : latest;
     final oldest = dates.firstOrNull ?? newest;
     final count = (newest.year - oldest.year) * 12 + newest.month - oldest.month + 1;
     final locale = L.of(context).localeName;
@@ -79,7 +92,7 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
             ),
             Expanded(
               child: ListView.builder(
-                controller: widget.controller,
+                controller: widget.controller ?? _ownController,
                 reverse: true,
                 // clear of the active workout's button, over the current month
                 padding: const .only(bottom: 72),
@@ -96,10 +109,12 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
                   }
                   final month = DateTime(newest.year, newest.month - index);
                   final key = DateFormat('yyyy-MM').format(month);
-                  // byMonth is newest-first: several sessions on a day share
-                  // one mark and open the most recent
-                  final days = <int, Workout>{
-                    for (final workout in (byMonth[key] ?? const <Workout>[]).reversed) workout.start.day: workout,
+                  // newest first, as byMonth has them: several sessions on a
+                  // day share one mark and open the most recent
+                  final sessions = byMonth[key] ?? const <Workout>[];
+                  final days = {
+                    for (final day in sessions.map((workout) => workout.start.day).toSet())
+                      day: sessions.where((workout) => workout.start.day == day).toList(),
                   };
                   return _CalendarMonth(
                     key: ValueKey(key),
@@ -121,7 +136,7 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
 
 class _CalendarMonth extends StatelessWidget {
   final DateTime month;
-  final Map<int, Workout> days;
+  final Map<int, List<Workout>> days;
   final int firstWeekday;
   final String? selectedId;
   final void Function(Workout)? onOpen;
@@ -163,11 +178,17 @@ class _CalendarMonth extends StatelessWidget {
                 return Expanded(
                   child: SizedBox(
                     height: 52,
-                    child: switch ((days[day], onOpen)) {
-                      (Workout workout, void Function(Workout) open) => _MarkedDay(
-                        label: '$label, ${L.of(context).editWorkout}',
-                        selected: workout.id == selectedId,
-                        onTap: () => open(workout),
+                    child: switch (days[day]) {
+                      [Workout newest, ...] && final sessions => _MarkedDay(
+                        label: switch (onOpen) {
+                          null => label,
+                          _ => '$label, ${L.of(context).editWorkout}',
+                        },
+                        selected: sessions.any((workout) => workout.id == selectedId),
+                        onTap: switch (onOpen) {
+                          void Function(Workout) open => () => open(newest),
+                          null => null,
+                        },
                         child: number,
                       ),
                       _ => Semantics(
@@ -189,20 +210,21 @@ class _CalendarMonth extends StatelessWidget {
 }
 
 /// A day trained: filled, with a check, and outlined while the detail pane
-/// shows its workout.
+/// shows one of its workouts. Marked whether or not it opens anything.
 class _MarkedDay extends StatelessWidget {
   final String label;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Widget child;
 
-  const new({required this.label, required this.selected, required this.onTap, required this.child});
+  const new({required this.label, required this.selected, required this.child, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme(:primary, :onPrimary, :surfaceContainerHighest) = Theme.of(context).colorScheme;
     return Semantics(
-      button: true,
+      container: true,
+      button: onTap != null,
       selected: selected,
       label: label,
       onTap: onTap,

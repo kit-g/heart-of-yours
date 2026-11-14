@@ -397,6 +397,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return false;
   }
 
+  /// [workoutId]'s workout, when what is held is the whole of it: null for a
+  /// mirror row that lost its detail (#85), which only a fetch can fill.
+  Workout? lookupWhole(String workoutId) {
+    return switch (lookup(workoutId)) {
+      Workout workout when !_isStripped(workout) => workout,
+      _ => null,
+    };
+  }
+
   /// Whether [workout] is a mirror row that lost its detail.
   ///
   /// A finished workout the server confirmed cannot legitimately be empty:

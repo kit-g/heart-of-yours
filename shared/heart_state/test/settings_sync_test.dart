@@ -545,6 +545,9 @@ void _screenChoices() {
 
       await boot(stored: {'screen-historyView': 'agenda', 'screen-historyView-at': later.toIso8601String()});
       expect(preferences.historyView, HistoryView.list);
+      // and choosing the list over a newer app's view is still a choice
+      preferences.setHistoryView(.list);
+      expect(preferences.screenChoices[ScreenChoice.historyView]?.value, 'list');
     });
 
     test('a choice made here goes up, and a newer one from elsewhere comes down', () async {

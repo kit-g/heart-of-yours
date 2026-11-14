@@ -47,6 +47,10 @@ class HistoryPage extends StatefulWidget {
 
 const _imageSize = 120.0;
 
+/// The weekday row and one six-week month: less than this, and the calendar
+/// is not worth showing beside its header.
+const _calendarMinHeight = 420.0;
+
 class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage>, HasHaptic {
   @override
   Widget build(BuildContext context) {
@@ -66,7 +70,6 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
         false => preferences.isOn(.programs),
       },
     );
-    final items = _historyRows(byMonth, skips, partial: workouts.hasMoreHistory);
     final images = workouts.images;
     final layout = LayoutProvider.of(context);
     final view = preferences.historyView;
@@ -119,139 +122,165 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
         centerTitle: true,
       ),
     );
-    final listview = CustomScrollView(
-      physics: const ClampingScrollPhysics(),
-      controller: Scrolls.of(context).historyScrollController,
-      slivers: [
-        appBar,
-        // the one ask for suspicious entries, once there is one (#428)
-        const SliverToBoxAdapter(child: _EntryReviewOffer()),
-        if (images.isNotEmpty)
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: .start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text(
-                    myProgression.toUpperCase(),
-                    style: sectionHeader,
+    // built only for the view on screen: the rows are a pass over all of
+    // history, and Workouts notifies every second of an active workout
+    Widget listview() {
+      final items = _historyRows(byMonth, skips, partial: workouts.hasMoreHistory);
+      return CustomScrollView(
+        // keyed by view, so switching replaces the scrollable rather than
+        // handing one view's offset and physics to the other
+        key: const ValueKey(HistoryView.list),
+        physics: const ClampingScrollPhysics(),
+        controller: Scrolls.of(context).historyScrollController,
+        slivers: [
+          appBar,
+          // the one ask for suspicious entries, once there is one (#428)
+          const SliverToBoxAdapter(child: _EntryReviewOffer()),
+          if (images.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: .start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      myProgression.toUpperCase(),
+                      style: sectionHeader,
+                    ),
                   ),
-                ),
-                SizedBox(
-                  height: _imageSize,
-                  child: ListView.builder(
-                    scrollDirection: .horizontal,
-                    itemBuilder: (context, index) {
-                      final image = images[index];
-                      final last = index == images.length - 1;
-                      final first = index == 0;
-                      return GestureDetector(
-                        onTap: () {
-                          widget.onTapImage?.call(
-                            images,
-                            startingIndex: index,
-                            workoutId: image.workoutId,
-                          );
-                        },
-                        child: Padding(
-                          padding: EdgeInsets.only(left: first ? 16 : 2, right: last ? 16 : 2),
-                          child: SizedBox(
-                            width: _imageSize,
-                            child: ClipRRect(
-                              borderRadius: BorderRadiusGeometry.circular(4),
-                              child: AppImage(
-                                url: image.link,
-                                bytes: image.bytes,
-                                fit: .cover,
+                  SizedBox(
+                    height: _imageSize,
+                    child: ListView.builder(
+                      scrollDirection: .horizontal,
+                      itemBuilder: (context, index) {
+                        final image = images[index];
+                        final last = index == images.length - 1;
+                        final first = index == 0;
+                        return GestureDetector(
+                          onTap: () {
+                            widget.onTapImage?.call(
+                              images,
+                              startingIndex: index,
+                              workoutId: image.workoutId,
+                            );
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.only(left: first ? 16 : 2, right: last ? 16 : 2),
+                            child: SizedBox(
+                              width: _imageSize,
+                              child: ClipRRect(
+                                borderRadius: BorderRadiusGeometry.circular(4),
+                                child: AppImage(
+                                  url: image.link,
+                                  bytes: image.bytes,
+                                  fit: .cover,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
+                        );
+                      },
+                      itemCount: images.length,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (items.isEmpty)
+            const SliverFillRemaining(
+              child: _EmptyState(),
+            )
+          else
+            SliverList.builder(
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                // Build-position trigger: as the tail of the list comes into view,
+                // pull the next page. Deferred a frame so it never notifies during
+                // build; loadMoreHistory is a no-op when already loading or done.
+                // Pauses on error so a failed page doesn't auto-retry in a loop —
+                // the tail shows a manual retry instead.
+                if (workouts.hasMoreHistory && !workouts.historyPageError && index >= items.length - 3) {
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) {
+                      if (context.mounted) Workouts.of(context).loadMoreHistory();
                     },
-                    itemCount: images.length,
+                  );
+                }
+                final item = items[index];
+                return switch (item) {
+                  String key => _MonthHeader(monthKey: key),
+                  Workout workout => WorkoutItem(
+                    workout: workout,
+                    onStartNewWorkout: widget.onNewWorkout,
+                    onSaveAsTemplate: widget.onSaveAsTemplate,
+                    onEditWorkout: widget.onEditWorkout,
+                    onTap: widget.onTapWorkout,
+                    onDeleteWorkout: widget.onDeleteWorkout,
+                    onTapImageIcon: widget.onTapImage,
+                    highlighted: workout.id == widget.selectedId,
+                  ),
+                  TrainingSkip skip => _SkipItem(skip: skip, onTap: widget.onTapSkip),
+                  _ => const SizedBox.shrink(),
+                };
+              },
+            ),
+          if (items.isNotEmpty)
+            SliverToBoxAdapter(
+              child: _HistoryTail(
+                loading: workouts.loadingMoreHistory,
+                error: workouts.historyPageError,
+                hasMore: workouts.hasMoreHistory,
+                onRetry: () => Workouts.of(context).loadMoreHistory(),
+              ),
+            ),
+        ],
+      );
+    }
+
+    // The same header over the calendar (#609), whose months scroll by
+    // themselves. The calendar takes what is left under the header and any
+    // offer; when that is too little for a month (a small phone, large text,
+    // an offer showing), it takes the screen under the collapsed bar instead,
+    // and the header and offer scroll away to make room.
+    Widget calendar() {
+      return CustomScrollView(
+        key: const ValueKey(HistoryView.calendar),
+        physics: const ClampingScrollPhysics(),
+        slivers: [
+          appBar,
+          const SliverToBoxAdapter(child: _EntryReviewOffer()),
+          SliverLayoutBuilder(
+            builder: (context, constraints) {
+              final remaining = constraints.viewportMainAxisExtent - constraints.precedingScrollExtent;
+              return SliverToBoxAdapter(
+                child: SizedBox(
+                  height: remaining >= _calendarMinHeight
+                      ? remaining
+                      : constraints.viewportMainAxisExtent - kToolbarHeight,
+                  child: HistoryCalendar(
+                    key: AppKeys.historyCalendar,
+                    byMonth: byMonth,
+                    onTapWorkout: widget.onTapWorkout,
+                    selectedId: widget.selectedId,
+                    controller: Scrolls.of(context).historyCalendarScrollController,
                   ),
                 ),
-              ],
-            ),
-          ),
-        if (items.isEmpty)
-          const SliverFillRemaining(
-            child: _EmptyState(),
-          )
-        else
-          SliverList.builder(
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              // Build-position trigger: as the tail of the list comes into view,
-              // pull the next page. Deferred a frame so it never notifies during
-              // build; loadMoreHistory is a no-op when already loading or done.
-              // Pauses on error so a failed page doesn't auto-retry in a loop —
-              // the tail shows a manual retry instead.
-              if (workouts.hasMoreHistory && !workouts.historyPageError && index >= items.length - 3) {
-                WidgetsBinding.instance.addPostFrameCallback(
-                  (_) {
-                    if (context.mounted) Workouts.of(context).loadMoreHistory();
-                  },
-                );
-              }
-              final item = items[index];
-              return switch (item) {
-                String key => _MonthHeader(monthKey: key),
-                Workout workout => WorkoutItem(
-                  workout: workout,
-                  onStartNewWorkout: widget.onNewWorkout,
-                  onSaveAsTemplate: widget.onSaveAsTemplate,
-                  onEditWorkout: widget.onEditWorkout,
-                  onTap: widget.onTapWorkout,
-                  onDeleteWorkout: widget.onDeleteWorkout,
-                  onTapImageIcon: widget.onTapImage,
-                  highlighted: workout.id == widget.selectedId,
-                ),
-                TrainingSkip skip => _SkipItem(skip: skip, onTap: widget.onTapSkip),
-                _ => const SizedBox.shrink(),
-              };
+              );
             },
           ),
-        if (items.isNotEmpty)
-          SliverToBoxAdapter(
-            child: _HistoryTail(
-              loading: workouts.loadingMoreHistory,
-              error: workouts.historyPageError,
-              hasMore: workouts.hasMoreHistory,
-              onRetry: () => Workouts.of(context).loadMoreHistory(),
-            ),
-          ),
-      ],
-    );
+        ],
+      );
+    }
 
-    // the same header over the calendar (#609), which scrolls by itself:
-    // History's controller goes to its months, so a navbar re-tap brings the
-    // current one back
-    final calendar = CustomScrollView(
-      physics: const NeverScrollableScrollPhysics(),
-      slivers: [
-        appBar,
-        const SliverToBoxAdapter(child: _EntryReviewOffer()),
-        SliverFillRemaining(
-          child: HistoryCalendar(
-            key: AppKeys.historyCalendar,
-            onTapWorkout: widget.onTapWorkout,
-            selectedId: widget.selectedId,
-            controller: Scrolls.of(context).historyScrollController,
-          ),
-        ),
-      ],
-    );
     final page = switch (view) {
-      .list => listview,
-      .calendar => calendar,
+      .list => listview(),
+      .calendar => calendar(),
     };
 
     return SafeArea(
       child: Scaffold(
-        body: switch (workouts.historyInitialized) {
+        // the view is a stored choice: until it is read, neither one
+        body: switch (workouts.historyInitialized && preferences.isInitialized) {
           false => const Center(
             child: CircularProgressIndicator(strokeWidth: 2),
           ),

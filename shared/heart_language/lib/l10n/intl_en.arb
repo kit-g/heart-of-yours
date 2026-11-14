@@ -1,7 +1,7 @@
 {
   "calendar": "Calendar",
   "@calendar": {
-    "description": "History calendar action and dialog title",
+    "description": "Name of History's calendar view, and the Settings choice of it beside List (#609)",
     "type": "text",
     "placeholders": {}
   },
