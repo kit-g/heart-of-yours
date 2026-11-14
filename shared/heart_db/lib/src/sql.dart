@@ -94,6 +94,8 @@ SELECT
     _workout.pauses,
     _workout.template_id AS templateId,
     _workout.program_id AS programId,
+    _workout.logged_by AS loggedBy,
+    _workout.logged_by_name AS loggedByName,
     _workout.unread,
     (
         SELECT json_group_array(
@@ -185,6 +187,8 @@ SELECT
     _workout.pauses,
     _workout.template_id AS templateId,
     _workout.program_id AS programId,
+    _workout.logged_by AS loggedBy,
+    _workout.logged_by_name AS loggedByName,
     _workout.unread,
     (
         SELECT json_group_array(
@@ -274,6 +278,8 @@ SELECT
     _workouts.pauses,
     _workouts.template_id AS templateId,
     _workouts.program_id AS programId,
+    _workouts.logged_by AS loggedBy,
+    _workouts.logged_by_name AS loggedByName,
     _workouts.unread,
     (
         SELECT json_group_array(
@@ -344,8 +350,8 @@ WHERE we.workout_id = ?
 /// foreign keys on, REPLACE is a delete + insert, and the delete cascades
 /// through `workout_exercises` into `sets` (heart-of-yours#85).
 const upsertWorkout = '''
-INSERT INTO workouts (id, start, user_id, name, "end", images, synced, note, pauses, template_id, program_id, unread)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO workouts (id, start, user_id, name, "end", images, synced, note, pauses, template_id, program_id, unread, logged_by, logged_by_name)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
     start   = EXCLUDED.start,
     user_id = EXCLUDED.user_id,
@@ -360,6 +366,10 @@ ON CONFLICT(id) DO UPDATE SET
     -- workout (the arguments before the last) may also let them go
     template_id = CASE WHEN ? THEN EXCLUDED.template_id ELSE coalesce(EXCLUDED.template_id, workouts.template_id) END,
     program_id  = CASE WHEN ? THEN EXCLUDED.program_id ELSE coalesce(EXCLUDED.program_id, workouts.program_id) END,
+    -- who logged it never changes once known (#560): an edit made here, which
+    -- doesn't carry it, leaves it
+    logged_by      = coalesce(EXCLUDED.logged_by, workouts.logged_by),
+    logged_by_name = coalesce(EXCLUDED.logged_by_name, workouts.logged_by_name),
     -- the exercises this build could not read belong with the children: only
     -- a payload authoritative for them (the last argument) replaces them
     unread  = CASE WHEN ? THEN EXCLUDED.unread ELSE workouts.unread END;
