@@ -23,6 +23,11 @@ extension on BuildContext {
     pushNamed(_coachingClientThreadName, pathParameters: {'connectionId': connectionId});
   }
 
+  /// The coach's notes on a client (#556).
+  void pushCoachingClientNotes(String connectionId) {
+    pushNamed(_coachingClientNotesName, pathParameters: {'connectionId': connectionId});
+  }
+
   /// A conversation of the Messages tab (#556), where there's no room for it
   /// beside the list.
   void pushCoachingThread(String connectionId) {

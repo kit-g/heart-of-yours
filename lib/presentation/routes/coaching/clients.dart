@@ -28,6 +28,9 @@ class ClientsPage extends StatefulWidget {
   /// Opens the conversation with a client.
   final ValueChanged<String> onMessage;
 
+  /// Opens the coach's notes on a client.
+  final ValueChanged<String> onNotes;
+
   const new({
     super.key,
     required this.onYourTraining,
@@ -35,6 +38,7 @@ class ClientsPage extends StatefulWidget {
     required this.onOpenWorkout,
     required this.onOpenProgram,
     required this.onMessage,
+    required this.onNotes,
   });
 
   @override
@@ -178,6 +182,7 @@ class _ClientsPageState extends State<ClientsPage> {
                         onOpenWorkout: (workoutId) => widget.onOpenWorkout(shown, workoutId),
                         onOpenProgram: (programId) => widget.onOpenProgram(shown, programId),
                         onMessage: widget.onMessage,
+                        onNotes: widget.onNotes,
                         leading: Align(
                           alignment: .centerRight,
                           child: IconButton(

@@ -428,6 +428,16 @@ abstract final class AppKeys {
   static const messageBox = Key('Messages.box');
   static const messageSend = Key('Messages.send');
   static const coachingClientMessages = Key('Coaching.clientMessages');
+  // a coach's notes on a client (#556)
+  static const coachingClientNotes = Key('Coaching.clientNotes');
+  static const coachingNoteNew = Key('Coaching.noteNew');
+  static const coachingNoteFirst = Key('Coaching.noteFirst');
+  static Key coachingNote(String id) => Key('Coaching.note.$id');
+  static const coachingNoteEditor = Key('Coaching.noteEditor');
+  static const coachingNoteText = Key('Coaching.noteText');
+  static const coachingNoteSave = Key('Coaching.noteSave');
+  static const coachingNoteDelete = Key('Coaching.noteDelete');
+  static const coachingNoteDeleteConfirm = Key('Coaching.noteDeleteConfirm');
 
   static Key message(String id) => Key('Messages.message.$id');
 

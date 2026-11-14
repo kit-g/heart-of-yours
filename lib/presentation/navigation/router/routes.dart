@@ -1280,6 +1280,7 @@ RouteBase _coachingRoute() {
               onOpenWorkout: context.pushCoachingClientWorkout,
               onOpenProgram: context.pushCoachingClientProgram,
               onMessage: context.pushCoachingClientThread,
+              onNotes: context.pushCoachingClientNotes,
             ),
             routes: [
               GoRoute(
@@ -1293,6 +1294,7 @@ RouteBase _coachingRoute() {
                     onOpenWorkout: (workoutId) => context.pushCoachingClientWorkout(connectionId, workoutId),
                     onOpenProgram: (programId) => context.pushCoachingClientProgram(connectionId, programId),
                     onMessage: context.pushCoachingClientThread,
+                    onNotes: context.pushCoachingClientNotes,
                   );
                 },
                 routes: [
@@ -1300,6 +1302,11 @@ RouteBase _coachingRoute() {
                     path: 'messages',
                     name: _coachingClientThreadName,
                     builder: (context, state) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+                  ),
+                  GoRoute(
+                    path: 'notes',
+                    name: _coachingClientNotesName,
+                    builder: (context, state) => ClientNotesPage(connectionId: state.pathParameters['connectionId']!),
                   ),
                   GoRoute(
                     path: 'programs/:programId',

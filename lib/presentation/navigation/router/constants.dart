@@ -99,6 +99,8 @@ const _coachingMessagesName = 'coachingMessages';
 const _coachingMessagesPath = '$_coachingPath/messages';
 const _coachingThreadName = 'coachingThread';
 const _coachingClientThreadName = 'coachingClientThread';
+// a coach's notes on a client (#556)
+const _coachingClientNotesName = 'coachingClientNotes';
 const _threadName = 'thread';
 const _threadPath = '/messages/:connectionId';
 const _coachingProgramsName = 'coachingPrograms';
