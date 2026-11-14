@@ -39,7 +39,9 @@ class LocalNotes implements LocalNoteService {
   Future<void> storeCoachNotes(String userId, Iterable<StoredNote> notes) => _db.storeCoachNotes(userId, notes);
 
   @override
-  Future<void> replaceCoachNotes(String userId, Iterable<CoachNote> notes) => _db.replaceCoachNotes(userId, notes);
+  Future<void> replaceCoachNotes(String userId, Iterable<CoachNote> notes, {Set<String> keep = const {}}) {
+    return _db.replaceCoachNotes(userId, notes, keep: keep);
+  }
 
   @override
   Future<void> deleteCoachNote(String userId, String id) => _db.deleteCoachNote(userId, id);

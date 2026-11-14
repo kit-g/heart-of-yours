@@ -16,7 +16,8 @@ class _ClientNotesPageState extends State<ClientNotesPage> {
   @override
   void initState() {
     super.initState();
-    // read each time it opens: another device of the coach's may have written
+    // read each time it opens: another device of the coach's may have
+    // written. One on its way, from the client's page, is the same read.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) CoachNotes.of(context).load();
     });
@@ -39,7 +40,7 @@ class _ClientNotesPageState extends State<ClientNotesPage> {
           IconButton(
             key: AppKeys.coachingNoteNew,
             tooltip: l.coachingNoteNew,
-            onPressed: () => showNoteEditor(context, connectionId: widget.connectionId),
+            onPressed: () => _showNoteEditor(context, connectionId: widget.connectionId),
             icon: const Icon(Icons.add_rounded),
           ),
           const SizedBox(width: 8),
@@ -64,7 +65,7 @@ class _ClientNotesPageState extends State<ClientNotesPage> {
                 body: l.coachingNotesEmptyBody,
                 action: FilledButton.icon(
                   key: AppKeys.coachingNoteFirst,
-                  onPressed: () => showNoteEditor(context, connectionId: widget.connectionId),
+                  onPressed: () => _showNoteEditor(context, connectionId: widget.connectionId),
                   icon: const Icon(Icons.edit_note_rounded),
                   label: Text(l.coachingNoteNew),
                 ),
@@ -119,7 +120,7 @@ class _NoteCard extends StatelessWidget {
       child: InkWell(
         // a note that won't open here can't be edited here either
         onTap: switch (note.opened) {
-          ReadNote(:final text) => () => showNoteEditor(context, connectionId: connectionId, id: note.id, text: text),
+          ReadNote(:final text) => () => _showNoteEditor(context, connectionId: connectionId, id: note.id, text: text),
           LockedNote() || RefusedNote() => null,
         },
         child: Padding(
@@ -179,19 +180,13 @@ class _Unopened extends StatelessWidget {
 
 /// Writes a note on [connectionId]'s client: a new one, or the note [id]
 /// with its [text], which can be deleted from here too.
-Future<void> showNoteEditor(BuildContext context, {required String connectionId, String? id, String text = ''}) {
+Future<void> _showNoteEditor(BuildContext context, {required String connectionId, String? id, String text = ''}) {
   return showModalBottomSheet<void>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,
     constraints: const BoxConstraints(maxWidth: dialogWidth),
-    builder: (_) => _NoteEditor(
-      connectionId: connectionId,
-      id: id,
-      text: text,
-      notes: CoachNotes.of(context),
-      messenger: ScaffoldMessenger.of(context),
-    ),
+    builder: (_) => _NoteEditor(connectionId: connectionId, id: id, text: text, notes: CoachNotes.of(context)),
   );
 }
 
@@ -206,15 +201,8 @@ class _NoteEditor extends StatefulWidget {
 
   /// Passed in: the sheet is a route of its own.
   final CoachNotes notes;
-  final ScaffoldMessengerState messenger;
 
-  const new({
-    required this.connectionId,
-    required this.text,
-    required this.notes,
-    required this.messenger,
-    this.id,
-  });
+  const new({required this.connectionId, required this.text, required this.notes, this.id});
 
   @override
   State<_NoteEditor> createState() => _NoteEditorState();
@@ -223,34 +211,43 @@ class _NoteEditor extends StatefulWidget {
 class _NoteEditorState extends State<_NoteEditor> {
   late final _controller = TextEditingController(text: widget.text);
 
-  /// Why the last save failed, said here: the sheet covers the page's snackbars.
+  /// Why the last save or deletion failed, said here: the sheet covers the
+  /// page's snackbars.
   final _failed = ValueNotifier<String?>(null);
+
+  /// A save on its way: a second tap would write a second note.
+  final _saving = ValueNotifier(false);
 
   @override
   void dispose() {
     _controller.dispose();
     _failed.dispose();
+    _saving.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _saving.value) return;
     final l = L.of(context);
     final navigator = Navigator.of(context);
     final route = ModalRoute.of(context);
     _failed.value = null;
+    _saving.value = true;
     try {
       await widget.notes.save(widget.connectionId, text, id: widget.id);
     } on KeyFailure catch (failure) {
       if (!mounted) return;
+      _saving.value = false;
       _failed.value = switch (failure.code) {
         'note_too_long' => l.coachingNoteTooLong,
         _ => l.coachingNoteFailed,
       };
       return;
     } catch (_) {
-      if (mounted) _failed.value = l.coachingNoteFailed;
+      if (!mounted) return;
+      _saving.value = false;
+      _failed.value = l.coachingNoteFailed;
       return;
     }
     // closed meanwhile by the person: popping now would close what is under it
@@ -281,8 +278,14 @@ class _NoteEditorState extends State<_NoteEditor> {
         ),
       ],
     );
-    if (!(sure ?? false)) return;
-    await widget.notes.delete(id);
+    if (!(sure ?? false) || !mounted) return;
+    _failed.value = null;
+    try {
+      await widget.notes.delete(id);
+    } catch (_) {
+      if (mounted) _failed.value = l.coachingNoteDeleteFailed;
+      return;
+    }
     if (mounted) navigator.pop();
   }
 
@@ -344,13 +347,17 @@ class _NoteEditorState extends State<_NoteEditor> {
                       label: Text(l.coachingNoteDelete),
                     ),
                   const Spacer(),
-                  // saved once there is something new to keep
+                  // saved once there is something new to keep, and once
                   ListenableBuilder(
-                    listenable: _controller,
-                    builder: (context, _) => switch (_controller.text.trim()) {
-                      '' => const SizedBox(height: 48),
-                      final String text when text == widget.text.trim() => const SizedBox(height: 48),
-                      _ => PrimaryButton.shrunk(
+                    listenable: Listenable.merge([_controller, _saving]),
+                    builder: (context, _) => switch ((_controller.text.trim(), _saving.value)) {
+                      (_, true) => const SizedBox.square(
+                        dimension: 48,
+                        child: Center(child: CircularProgressIndicator.adaptive()),
+                      ),
+                      ('', false) => const SizedBox(height: 48),
+                      (final String text, false) when text == widget.text.trim() => const SizedBox(height: 48),
+                      (_, false) => PrimaryButton.shrunk(
                         key: AppKeys.coachingNoteSave,
                         onPressed: _save,
                         child: Text(l.save),

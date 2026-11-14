@@ -52,11 +52,13 @@ abstract interface class NoteCipher {
 /// coach's devices hold, so the server stores what it can't read and the
 /// client never learns of.
 ///
-/// One key serves every note. A device that has none makes one; the first
-/// device to write a note does. Each device hands every key it holds to the
-/// account's other devices, inside pairwise sessions, and seals under the
-/// newest key it holds, so two devices that each made one before hearing of
-/// the other end up sealing under the same one.
+/// A device makes a key the first time it writes a note, and hands every key
+/// it holds to the account's other devices, inside pairwise sessions. It
+/// seals under the newest key it made itself, and under the newest it
+/// received only when it made none: a key from another device opens that
+/// device's notes, but a device the account merely lists never chooses what
+/// this one seals under. A key is replaced when a device that held it is
+/// removed; the notes sealed before keep opening with the old one.
 ///
 /// A note is bound to the account, its own id and the key it was sealed
 /// under, so the server can't pass one note off as another; the client it is
@@ -75,12 +77,27 @@ extension _Notes on DeviceKeys {
   /// read again, unless one of them changed meanwhile.
   static const _shareLife = Duration(minutes: 10);
 
+  /// What a key id looks like: a UUID, as [_newNoteKey] makes them. Never a
+  /// `.`, which would split a note's envelope.
+  static final _keyId = RegExp(r'^[0-9a-f-]{36}$');
+
   static String _contextOf(String userId, String noteId, String keyId) => [_context, userId, noteId, keyId].join('\n');
+
+  /// Runs [step] on the note keys' record, one at a time, in a turn of its
+  /// own: sealing and opening a note never wait behind the network.
+  Future<T> _notesSerial<T>(_Run run, Future<T> Function() step) {
+    final done = run.notesTail.then((_) {
+      run.check();
+      return step();
+    });
+    run.notesTail = done.then<void>((_) {}, onError: (_) {});
+    return done;
+  }
 
   Future<String> _sealNote(String noteId, String connectionId, String text) async {
     final run = _run;
     if (run == null) throw StateError('device keys are off');
-    return _serial(run, () async {
+    return _notesSerial(run, () async {
       final record = await _NoteKeys.read(run);
       final (keyId, key) = record.current ?? await _newNoteKey(run, record);
       final sealed = _guard(
@@ -99,6 +116,7 @@ extension _Notes on DeviceKeys {
   Future<(String, String)> _newNoteKey(_Run run, _NoteKeys record) async {
     final made = (_newId(), _guard(Sealbox.newNoteKey));
     record.keys[made.$1] = made.$2;
+    record.mine.add(made.$1);
     await record.save(run);
     return made;
   }
@@ -106,7 +124,7 @@ extension _Notes on DeviceKeys {
   Future<List<OpenedNote>> _openNotes(List<CoachNote> notes) async {
     final run = _run;
     if (run == null) return [for (final _ in notes) const LockedNote()];
-    final record = await _serial(run, () => _NoteKeys.read(run));
+    final record = await _notesSerial(run, () => _NoteKeys.read(run));
     return [for (final note in notes) _openNote(run, record, note)];
   }
 
@@ -136,7 +154,7 @@ extension _Notes on DeviceKeys {
   Future<void> _shareNoteKeys() async {
     final run = _run;
     if (run == null) throw StateError('device keys are off');
-    var record = await _serial(run, () => _NoteKeys.read(run));
+    var record = await _notesSerial(run, () => _NoteKeys.read(run));
     if (record.keys.isEmpty) return;
     final fresh = switch (run.sharedAt[_sharedAt]) {
       final DateTime at => _now().difference(at) < _shareLife,
@@ -151,10 +169,21 @@ extension _Notes on DeviceKeys {
     if (fresh && record.keys.keys.every(covered)) return;
 
     final listed = {for (final each in (await devicesOf(run.userId)).devices) each.id};
+    // a device that held the current key and is gone: what is written from
+    // here on seals under a new one it never gets
+    record = await _notesSerial(run, () async {
+      final latest = await _NoteKeys.read(run);
+      final held = latest.shared[latest.current?.$1] ?? const <String>{};
+      if (held.any((id) => id != run.device?.id && !listed.contains(id))) await _newNoteKey(run, latest);
+      return latest;
+    });
     for (final MapEntry(key: keyId, value: key) in record.keys.entries) {
       final missing = listed.where((id) => id != run.device?.id && !(record.shared[keyId]?.contains(id) ?? false));
       if (missing.isEmpty) continue;
       final targets = missing.toSet();
+      // every device the account lists, vouched for or not: holding a note
+      // back from one would need the two screens to compare a code first,
+      // which nothing asks of the coach yet
       final reached = await deliver(
         userId: run.userId,
         kind: DeviceKeys.noteKeyKind,
@@ -162,7 +191,7 @@ extension _Notes on DeviceKeys {
         to: (device) => targets.contains(device.id),
       );
       if (reached.isEmpty) continue;
-      record = await _serial(run, () async {
+      record = await _notesSerial(run, () async {
         final latest = await _NoteKeys.read(run);
         (latest.shared[keyId] ??= {}).addAll(reached);
         await latest.save(run);
@@ -182,7 +211,7 @@ extension _Notes on DeviceKeys {
       return;
     }
     final (keyId, key) = switch (_decodeMap(delivery.payload)) {
-      {'i': final String keyId, 'k': final String key} when keyId.isNotEmpty && _isNoteKey(key) => (keyId, key),
+      {'i': final String keyId, 'k': final String key} when _keyId.hasMatch(keyId) && _isNoteKey(key) => (keyId, key),
       // nothing will ever open with it: taken, and dropped
       _ => (null, null),
     };
@@ -190,7 +219,7 @@ extension _Notes on DeviceKeys {
       _report(const KeyFailure('unreadable_note_key'));
       return;
     }
-    final taken = await _serial(run, () async {
+    final taken = await _notesSerial(run, () async {
       final record = await _NoteKeys.read(run);
       // the first one kept: a key id names one key
       if (record.keys.containsKey(keyId)) return false;
@@ -237,26 +266,34 @@ class _NoteEnvelope {
   }
 }
 
-/// The account's note keys, by id, and the devices each reached.
+/// The account's note keys, by id, the devices each reached, and which of
+/// them this device made.
 class _NoteKeys {
   final Map<String, String> keys;
   final Map<String, Set<String>> shared;
 
-  const new(this.keys, this.shared);
+  /// The keys made here, oldest first. A record kept before this was names
+  /// none: each of its keys counts as received.
+  final List<String> mine;
+
+  const new(this.keys, this.shared, this.mine);
 
   /// None yet: filled as keys are made or arrive.
-  new empty() : keys = {}, shared = {};
+  new empty() : keys = {}, shared = {}, mine = [];
 
-  /// The newest: what a note is sealed under.
+  /// What a note is sealed under: the newest made here, or, while this device
+  /// made none, the newest received.
   (String, String)? get current {
-    if (keys.isEmpty) return null;
-    final id = (keys.keys.toList()..sort()).last;
-    return (id, keys[id]!);
+    final id = mine.where(keys.containsKey).lastOrNull ?? (keys.keys.toList()..sort()).lastOrNull;
+    return switch (id) {
+      final String id => (id, keys[id]!),
+      null => null,
+    };
   }
 
   static Future<_NoteKeys> read(_Run run) async {
     return switch (_Run._decode(await run.read('notes'))) {
-      {'keys': final Map keys, 'shared': final Map shared} => _NoteKeys(
+      {'keys': final Map keys, 'shared': final Map shared} && final map => _NoteKeys(
         {
           for (final MapEntry(:key, :value) in keys.entries)
             if (value case final String each) '$key': each,
@@ -264,6 +301,10 @@ class _NoteKeys {
         {
           for (final MapEntry(:key, :value) in shared.entries)
             if (value case final List devices) '$key': {for (final each in devices) '$each'},
+        },
+        switch (map['mine']) {
+          final List mine => [for (final each in mine) '$each'],
+          _ => [],
         },
       ),
       _ => _NoteKeys.empty(),
@@ -276,6 +317,7 @@ class _NoteKeys {
       jsonEncode({
         'keys': keys,
         'shared': {for (final MapEntry(:key, :value) in shared.entries) key: value.toList()},
+        'mine': mine,
       }),
     );
   }

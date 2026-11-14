@@ -1379,7 +1379,7 @@ void main() {
       when(api.getConnections()).thenAnswer((_) async => []);
       when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
       // a coach's notes (#556): one, sealed under a key this device never got
-      when(db.replaceCoachNotes(any, any)).thenAnswer((_) async {});
+      when(db.replaceCoachNotes(any, any, keep: anyNamed('keep'))).thenAnswer((_) async {});
       when(db.getCoachNotes(any)).thenAnswer(
         (_) async => [
           (
@@ -1999,6 +1999,8 @@ void main() {
       cdn: cdn,
       firebaseAuth: firebase,
       hasLocalNotifications: false,
+      // notes are there only where keys can be kept
+      keyVault: screen == _Screen.coachingNotes ? MemoryKeyVault() : null,
       // the dashboard animates indefinitely — settle would hang on it
       settle: false,
     );

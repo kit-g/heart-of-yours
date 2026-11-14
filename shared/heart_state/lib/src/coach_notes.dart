@@ -30,8 +30,9 @@ abstract interface class LocalNoteService {
   /// Adds, or replaces by id.
   Future<void> storeCoachNotes(String userId, Iterable<StoredNote> notes);
 
-  /// Makes [notes] the whole store, except what waits to be sent.
-  Future<void> replaceCoachNotes(String userId, Iterable<CoachNote> notes);
+  /// Makes [notes] the whole store, except what waits to be sent and the
+  /// notes [keep] names, which stay as they are here, or absent.
+  Future<void> replaceCoachNotes(String userId, Iterable<CoachNote> notes, {Set<String> keep});
 
   Future<void> deleteCoachNote(String userId, String id);
 }
@@ -89,7 +90,7 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
   }) : _remote = remote ?? RemoteAccess(),
        _newId = newId ?? uuidV7,
        _now = now ?? DateTime.now {
-    _keys = _cipher.noteKeys.listen((_) => _keyArrived());
+    _keys = _cipher.noteKeys.listen((_) => unawaited(_show()));
   }
 
   static CoachNotes of(BuildContext context) => Provider.of<CoachNotes>(context, listen: false);
@@ -128,23 +129,50 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
   Future<void>? _flushing;
   var _again = false;
 
+  /// The read on its way, which a second call joins.
+  Future<void>? _loading;
+
+  /// The notes written or deleted here since the read on its way began: the
+  /// server's copy of them, read meanwhile, is older than this device's.
+  Set<String>? _touched;
+
+  /// The notes the server refused for good since the app started: each waits
+  /// here, unsent, until it is written again, rather than be sent and
+  /// refused on every run.
+  final _refused = <String>{};
+
   /// Whether this read already asked for keys a note waits on.
   var _asked = false;
 
   /// The notes on [connectionId]'s client, last written first.
   List<ClientNote> on(String connectionId) => _shown[connectionId] ?? const [];
 
-  ClientNote? note(String connectionId, String id) => on(connectionId).where((each) => each.id == id).firstOrNull;
-
   /// Reads the notes: what this device holds first, then, after sending what
-  /// waits here, the server's.
-  Future<void> load() async {
+  /// waits here, the server's. A read already on its way is the one asked
+  /// for again.
+  Future<void> load() {
+    if (_loading case final Future<void> running) return running;
+    late final Future<void> loading;
+    loading = _load().whenComplete(() {
+      if (identical(_loading, loading)) _loading = null;
+    });
+    return _loading = loading;
+  }
+
+  Future<void> _load() async {
     final userId = _userId;
     if (userId == null) return;
     await _loadHeld(userId);
-    if (!_remote.allowed) return;
+    if (userId != _userId) return;
+    if (!_remote.allowed) {
+      // what is held is all there is until the server can be reached
+      _status = .loaded;
+      notifyListeners();
+      return;
+    }
     _status = .loading;
     _asked = false;
+    final touched = _touched = {};
     notifyListeners();
     try {
       await flush();
@@ -155,16 +183,19 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
         notes.addAll(page.notes);
         cursor = page.cursor;
       } while (cursor != null);
-      if (userId != _userId) return;
-      await _inTurn(() async {
-        await _local.replaceCoachNotes(userId, notes);
-        _replace(await _local.getCoachNotes(userId));
+      await _inTurn(userId, () async {
+        await _local.replaceCoachNotes(userId, notes, keep: touched);
+        final stored = await _local.getCoachNotes(userId);
+        if (userId == _userId) _replace(stored);
       });
+      if (userId != _userId) return;
       _status = .loaded;
     } catch (error, stacktrace) {
       if (userId != _userId) return;
       _status = .failed;
       onError?.call(error, stacktrace: stacktrace);
+    } finally {
+      if (identical(_touched, touched)) _touched = null;
     }
     await _show();
     // another device of the coach's may have come since: it gets the keys
@@ -207,10 +238,14 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
     final content = await _cipher.sealNote(noteId, connectionId: connectionId, text: text);
     if (userId != _userId) return noteId;
     final note = CoachNote(id: noteId, connectionId: connectionId, content: content, updatedAt: _now().toUtc());
-    await _inTurn(() async {
+    await _inTurn(userId, () async {
       final stored = (note: note, pending: true, deleted: false);
       await _local.storeCoachNotes(userId, [stored]);
+      if (userId != _userId) return;
       _stored[noteId] = stored;
+      _touched?.add(noteId);
+      // written again: worth another try
+      _refused.remove(noteId);
       // opened already: these are the words
       _opened[noteId] = (content, ReadNote(text: text, connectionId: connectionId));
     });
@@ -224,12 +259,15 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
   Future<void> delete(String id) async {
     final userId = _userId;
     if (userId == null) return;
-    await _inTurn(() async {
+    await _inTurn(userId, () async {
       final stored = _stored[id];
       if (stored == null) return;
       final deleting = (note: stored.note, pending: true, deleted: true);
       await _local.storeCoachNotes(userId, [deleting]);
+      if (userId != _userId) return;
       _stored[id] = deleting;
+      _touched?.add(id);
+      _refused.remove(id);
     });
     await _show();
     unawaited(flush());
@@ -255,7 +293,7 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
   Future<void> _flushOnce() async {
     final userId = _userId;
     if (userId == null || !_remote.allowed) return;
-    final waiting = _stored.values.where((each) => each.pending).toList();
+    final waiting = _stored.values.where((each) => each.pending && !_refused.contains(each.note.id)).toList();
     if (waiting.isEmpty) return;
     // the coach's other devices read what goes up only with the key
     if (waiting.any((each) => !each.deleted)) await _shareKeys();
@@ -268,10 +306,11 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
             await _send(userId, note);
         }
       } on Map catch (refusal) {
-        // refused for this note alone: the others still go, and this one
-        // goes again with the next run
         onError?.call(refusal);
+        // everything goes again with the next run
         if (refusal['code'] == 'rate_limited') break;
+        // refused for this note alone, and for good: the others still go
+        _refused.add(note.id);
       } catch (error, stacktrace) {
         // no network, or no answer: everything waits for the next run
         onError?.call(error, stacktrace: stacktrace);
@@ -287,13 +326,15 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
     // a note is written on a client: one without was never written here
     if (connectionId == null) return;
     final saved = await _service.saveNote(note.id, connectionId: connectionId, content: note.content);
-    await _inTurn(() async {
+    await _inTurn(userId, () async {
       final current = _stored[note.id];
       // written again, or deleted, while this one travelled: that goes next
       if (current == null || current.deleted || current.note.content != note.content) return;
       final sent = (note: saved, pending: false, deleted: false);
       await _local.storeCoachNotes(userId, [sent]);
+      if (userId != _userId) return;
       _stored[note.id] = sent;
+      _touched?.add(note.id);
     });
   }
 
@@ -304,11 +345,13 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
       // never reached the server, or deleted from another device: gone either way
       if (refusal['code'] != 'not_found') rethrow;
     }
-    await _inTurn(() async {
+    await _inTurn(userId, () async {
       if (_stored[note.id] case (pending: _, deleted: true, note: _)) {
         await _local.deleteCoachNote(userId, note.id);
+        if (userId != _userId) return;
         _stored.remove(note.id);
         _opened.remove(note.id);
+        _touched?.add(note.id);
       }
     });
   }
@@ -320,11 +363,6 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
       // shared again with the next note or the next read
       onError?.call(error, stacktrace: stacktrace);
     }
-  }
-
-  void _keyArrived() {
-    _opened.removeWhere((_, opened) => opened.$2 is LockedNote);
-    unawaited(_show());
   }
 
   /// Opens what changed since it was last opened, and shows every note but
@@ -340,7 +378,9 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
       try {
         final opened = await _cipher.openNotes(unopened);
         if (userId != _userId) return;
-        for (final (index, note) in unopened.indexed) {
+        // a locked one is tried again each time: its key may come with no
+        // word of it, as when keys start after the notes were read
+        for (final (index, note) in unopened.indexed.where((each) => opened[each.$1] is! LockedNote)) {
           _opened[note.id] = (note.content, opened[index]);
         }
       } catch (error, stacktrace) {
@@ -386,8 +426,13 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  Future<void> _inTurn(Future<void> Function() step) {
-    final turn = (_turn ?? Future<void>.value()).then((_) => step());
+  /// Runs [step] after the changes before it, while [userId] is still the
+  /// account: nothing more is changed for one gone meanwhile. A step that
+  /// waits on the store checks again after it.
+  Future<void> _inTurn(String userId, Future<void> Function() step) {
+    final turn = (_turn ?? Future<void>.value()).then((_) async {
+      if (userId == _userId) await step();
+    });
     _turn = turn.then((_) {}, onError: (_) {});
     return turn;
   }
@@ -395,6 +440,9 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
   void _forget() {
     _stored.clear();
     _opened.clear();
+    _refused.clear();
+    _loading = null;
+    _touched = null;
     _shown = {};
     _status = .idle;
   }

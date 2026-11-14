@@ -147,6 +147,44 @@ void main() {
     expect(find.byKey(AppKeys.coachingNoteEditor), findsOneWidget);
     expect(find.text('Too long to save. Try splitting it into two notes.'), findsOneWidget);
   });
+
+  testWidgets('a save on its way takes Save away, so a second tap writes no second note', (tester) async {
+    await pump(tester);
+    await tester.tap(find.byKey(AppKeys.coachingNoteNew));
+    await tester.pumpAndSettle();
+    cipher.hold = Completer();
+
+    await tester.enterText(find.byKey(AppKeys.coachingNoteText), 'Hips');
+    await tester.pump();
+    await tester.tap(find.byKey(AppKeys.coachingNoteSave));
+    await tester.pump();
+
+    expect(find.byKey(AppKeys.coachingNoteSave), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    cipher.hold!.complete();
+    await tester.pumpAndSettle();
+    expect(server.notes, hasLength(1));
+    expect(find.byKey(AppKeys.coachingNoteEditor), findsNothing);
+  });
+
+  testWidgets('a deletion that fails is said on the sheet, which stays open', (tester) async {
+    await pump(tester);
+    await tester.tap(find.byKey(AppKeys.coachingNoteNew));
+    await tester.pumpAndSettle();
+    await write(tester, 'Shoulder');
+    await tester.tap(find.text('Shoulder'));
+    await tester.pumpAndSettle();
+    store.fails = true;
+
+    await tester.tap(find.byKey(AppKeys.coachingNoteDelete));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(AppKeys.coachingNoteDeleteConfirm));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(AppKeys.coachingNoteEditor), findsOneWidget);
+    expect(find.text("Couldn't delete the note. Try again."), findsOneWidget);
+  });
 }
 
 class _Server implements RemoteNoteService {
@@ -176,20 +214,24 @@ class _Server implements RemoteNoteService {
 class _Store implements LocalNoteService {
   final notes = <String, StoredNote>{};
 
+  /// Every write fails, as a full disk would.
+  var fails = false;
+
   @override
   Future<List<StoredNote>> getCoachNotes(String userId) async => [...notes.values];
 
   @override
   Future<void> storeCoachNotes(String userId, Iterable<StoredNote> stored) async {
+    if (fails) throw StateError('disk full');
     for (final each in stored) {
       notes[each.note.id] = each;
     }
   }
 
   @override
-  Future<void> replaceCoachNotes(String userId, Iterable<CoachNote> server) async {
-    notes.removeWhere((_, each) => !each.pending);
-    for (final note in server) {
+  Future<void> replaceCoachNotes(String userId, Iterable<CoachNote> server, {Set<String> keep = const {}}) async {
+    notes.removeWhere((id, each) => !each.pending && !keep.contains(id));
+    for (final note in server.where((each) => !keep.contains(each.id))) {
       notes.putIfAbsent(note.id, () => (note: note, pending: false, deleted: false));
     }
   }
@@ -203,6 +245,9 @@ class _Cipher implements NoteCipher {
   final _arrivals = StreamController<void>.broadcast();
   var tooLong = false;
 
+  /// Sealing waits here.
+  Completer<void>? hold;
+
   void dispose() => _arrivals.close();
 
   @override
@@ -210,6 +255,7 @@ class _Cipher implements NoteCipher {
 
   @override
   Future<String> sealNote(String noteId, {required String connectionId, required String text}) async {
+    await hold?.future;
     if (tooLong) throw const KeyFailure('note_too_long');
     return 'sealed:$connectionId:${text.split('').reversed.join()}';
   }

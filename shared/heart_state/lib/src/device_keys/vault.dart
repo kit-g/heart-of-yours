@@ -31,6 +31,10 @@ class _Run {
   /// When each thread last shared its keys with every device it knew of.
   final sharedAt = <String, DateTime>{};
 
+  /// The note keys' turn: their record is read and written one step at a
+  /// time, apart from the steps that wait on the network.
+  Future<void> notesTail = Future.value();
+
   void end() => _over = true;
 
   /// Throws [_Stopped] once the run is over.

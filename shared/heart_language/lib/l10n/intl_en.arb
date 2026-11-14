@@ -6037,6 +6037,8 @@
   "@coachingNoteTooLong": {"description": "On the note sheet when a note is past what can be saved (#556)", "type": "text", "placeholders": {}},
   "coachingNoteFailed": "Couldn't save the note. Try again.",
   "@coachingNoteFailed": {"description": "On the note sheet when saving failed (#556)", "type": "text", "placeholders": {}},
+  "coachingNoteDeleteFailed": "Couldn't delete the note. Try again.",
+  "@coachingNoteDeleteFailed": {"description": "On the note sheet when deleting the note failed (#556)", "type": "text", "placeholders": {}},
   "coachingNoteDelete": "Delete note",
   "@coachingNoteDelete": {"description": "Button on the note sheet that deletes the note (#556)", "type": "text", "placeholders": {}},
   "coachingNoteDeleteTitle": "Delete this note?",

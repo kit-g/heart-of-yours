@@ -577,8 +577,8 @@ void main() {
       when(db.getCoachNotes(any)).thenAnswer((_) async => []);
       when(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (notes: <CoachNote>[], cursor: null));
-      when(db.replaceCoachNotes(any, any)).thenAnswer((_) async {});
-      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      when(db.replaceCoachNotes(any, any, keep: anyNamed('keep'))).thenAnswer((_) async {});
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault());
 
       await tester.tapByKey(AppKeys.coachingClient('c-sam'));
       await tester.pumpTimes();
@@ -590,6 +590,18 @@ void main() {
       expect(find.byType(ClientNotesPage), findsOneWidget);
       expect(find.text('No notes yet'), findsOneWidget);
       verify(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor'))).called(greaterThan(0));
+    });
+
+    testWidgets('where keys have nowhere to be kept, as on the web, there are no notes to lead to', (tester) async {
+      withSam();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byType(ClientPage), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientNotes), findsNothing);
+      verifyNever(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor')));
     });
 
     testWidgets('a workout puts target beside done, saying what was lighter and skipped', (tester) async {

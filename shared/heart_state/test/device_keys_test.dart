@@ -12,13 +12,20 @@ void main() {
   late _Server server;
   late List<Object> errors;
 
-  DeviceKeys device(String userId, {_Vault? vault, RemoteAccess? remote, DateTime Function()? now}) {
+  DeviceKeys device(
+    String userId, {
+    _Vault? vault,
+    RemoteAccess? remote,
+    DateTime Function()? now,
+    bool Function()? sharesNoteKeys,
+  }) {
     return DeviceKeys(
       service: server.as(userId),
       vault: vault ?? _Vault(),
       remote: remote ?? (RemoteAccess(hasToken: () => true)..account = true),
       onError: (error, {stacktrace}) => errors.add(error),
       now: now,
+      sharesNoteKeys: sharesNoteKeys,
     );
   }
 
@@ -1059,7 +1066,7 @@ void main() {
       expect((await tablet.openNotes([stored('n1', content)])).single, isA<ReadNote>());
     });
 
-    test('two devices that each made a key before hearing of the other end up sealing under one', () async {
+    test('each device seals under the key it made, and one that made none under the newest it received', () async {
       final phone = device('dana');
       final tablet = device('dana');
       await phone.start('dana');
@@ -1077,12 +1084,94 @@ void main() {
         expect(opened.map((each) => (each as ReadNote).text), ['one', 'two']);
       }
       String keyOf(String content) => content.split('.')[1];
-      final next = [
-        await phone.sealNote('n3', connectionId: client, text: 'three'),
-        await tablet.sealNote('n4', connectionId: client, text: 'four'),
-      ];
-      expect(next.map(keyOf).toSet(), hasLength(1), reason: 'the newest key, the same on both');
-      expect({keyOf(first), keyOf(second)}, contains(keyOf(next.first)));
+      // a key another device of the account's handed over never takes the
+      // place of this one's own
+      expect(keyOf(await phone.sealNote('n3', connectionId: client, text: 'three')), keyOf(first));
+      expect(keyOf(await tablet.sealNote('n4', connectionId: client, text: 'four')), keyOf(second));
+
+      final laptop = device('dana');
+      await laptop.start('dana');
+      await phone.shareNoteKeys();
+      await tablet.devicesChanged('dana');
+      await laptop.receive();
+      final received = keyOf(await laptop.sealNote('n5', connectionId: client, text: 'five'));
+      expect({keyOf(first), keyOf(second)}, contains(received));
+    });
+
+    test('sealing and opening never wait on the network', () async {
+      final coach = device('dana');
+      await coach.start('dana');
+      final content = await coach.sealNote('n1', connectionId: client, text: 'one');
+      final hold = server.holds['devices'] = Completer();
+      final reading = coach.devicesOf('dana');
+      await server.called('devices');
+
+      final sealed = await coach.sealNote('n2', connectionId: client, text: 'two').timeout(const Duration(seconds: 1));
+      final opened = await coach.openNotes([stored('n1', content)]).timeout(const Duration(seconds: 1));
+
+      expect(sealed, isNotEmpty);
+      expect(opened.single, isA<ReadNote>());
+      hold.complete();
+      await reading;
+    });
+
+    test('a device removed after holding the key: the next note seals under a new one it never gets', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      final first = await phone.sealNote('n1', connectionId: client, text: 'before');
+      await phone.shareNoteKeys();
+      await tablet.receive();
+
+      server.remove(tablet.deviceId!);
+      await phone.devicesChanged('dana');
+      final second = await phone.sealNote('n2', connectionId: client, text: 'after');
+
+      String keyOf(String content) => content.split('.')[1];
+      expect(keyOf(second), isNot(keyOf(first)));
+      final opened = await phone.openNotes([stored('n1', first), stored('n2', second)]);
+      expect(opened.map((each) => (each as ReadNote).text), ['before', 'after']);
+    });
+
+    test('with notes off, a device the account adds hears nothing of them until they are used', () async {
+      var on = false;
+      final phone = device('dana', sharesNoteKeys: () => on);
+      await phone.start('dana');
+      await phone.sealNote('n1', connectionId: client, text: 'one');
+      final tablet = device('dana');
+      await tablet.start('dana');
+      server.calls.clear();
+
+      await phone.devicesChanged('dana');
+      expect(server.calls.where((each) => each.startsWith('enqueue')), isEmpty);
+
+      on = true;
+      await phone.devicesChanged('dana');
+      expect(server.calls.where((each) => each.startsWith('enqueue')), hasLength(1));
+    });
+
+    test('a note key whose id is not one this code makes is dropped, and said by its code', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+
+      await phone.deliver(
+        userId: 'dana',
+        kind: DeviceKeys.noteKeyKind,
+        payload: jsonEncode({'i': 'n1.forged', 'k': Sealbox.newNoteKey()}),
+      );
+      await tablet.receive();
+
+      expect(errors, [isA<KeyFailure>().having((each) => each.code, 'code', 'unreadable_note_key')]);
+      final content = await tablet.sealNote('n1', connectionId: client, text: 'mine');
+      expect(content.split('.'), hasLength(3));
+    });
+
+    test('a device with no vault cannot run keys at all', () async {
+      expect(DeviceKeys(service: server.as('dana'), vault: null).supported, isFalse);
+      expect(device('dana').supported, isTrue);
     });
 
     test('a key reaches a device once, and a device added later gets it without a note written', () async {

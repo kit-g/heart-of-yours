@@ -357,6 +357,10 @@ class HeartApp extends StatelessWidget {
             vault: keyVault,
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            // a coach's notes are Coach people's: off, a new device of the
+            // account's hears nothing of them (keys only one who wrote notes
+            // holds, so the entitlement adds nothing here)
+            sharesNoteKeys: () => Preferences.of(context).isOn(.coachPeople),
           ),
         ),
         // Coaching messages (#556): sealed on this device with its keys,
@@ -698,8 +702,10 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
       workouts.initHistory().then((_) => _growLogged(workouts, templates, programs, read: Future.value()));
     }
     // messages whose push may never have come (#556)
-    if (coachingRuns(preferences, Auth.of(context))) {
-      Messages.of(context).resume();
+    final auth = Auth.of(context);
+    if (coachingRuns(preferences, auth)) Messages.of(context).resume();
+    // a coach's notes, only where the Coaching space is there and keys run
+    if (preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false) && DeviceKeys.of(context).supported) {
       CoachNotes.of(context).resume();
     }
   }

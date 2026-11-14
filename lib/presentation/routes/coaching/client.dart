@@ -130,9 +130,10 @@ class _ClientViewState extends State<_ClientView> {
     // the row they were opened from may be stale, and opened from a link
     // the roster may never have been read
     final programs = ClientPrograms.of(context);
-    // every client's at once, read the first time any is opened
+    // every client's at once, read the first time any is opened, where
+    // notes can be sealed at all
     final notes = CoachNotes.of(context);
-    if (notes.status == .idle) unawaited(notes.load());
+    if (DeviceKeys.of(context).supported && notes.status == .idle) unawaited(notes.load());
     if (roster.client(widget.connectionId) case final ClientSummary client) {
       await (roster.load(), roster.loadRecord(client.studentId), programs.loadManaged(client.studentId)).wait;
     } else {
@@ -203,8 +204,10 @@ class _ClientViewState extends State<_ClientView> {
               },
               onTap: () => widget.onMessage(client.connectionId),
             ),
-            // the coach's own notes on them, which they never see (#556)
-            _NotesTile(connectionId: client.connectionId, onTap: () => widget.onNotes(client.connectionId)),
+            // the coach's own notes on them, which they never see (#556):
+            // not where this device has nowhere to keep the keys
+            if (DeviceKeys.of(context).supported)
+              _NotesTile(connectionId: client.connectionId, onTap: () => widget.onNotes(client.connectionId)),
             // a session they trained together, logged as theirs (#560)
             _LogForTile(client: client, onLog: (past) => widget.onLog(client.connectionId, past)),
             // what they follow, and every copy the coach sent them, waiting

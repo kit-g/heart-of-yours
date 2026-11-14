@@ -43,19 +43,21 @@ mixin _CoachNotes on _LocalDatabase {
 
   /// Makes [notes], as the server holds them, every note of [userId]'s,
   /// except where a change made here waits to be sent: that one stays as it
-  /// is, and goes next.
-  Future<void> replaceCoachNotes(String userId, Iterable<CoachNote> notes) {
+  /// is, and goes next. So do the notes [keep] names, changed here while
+  /// [notes] were read: as they are here, or absent when deleted here.
+  Future<void> replaceCoachNotes(String userId, Iterable<CoachNote> notes, {Set<String> keep = const {}}) {
     return _db.transaction((txn) async {
+      final rows = await txn.query(_coachNotes, columns: ['id', 'pending'], where: 'user_id = ?', whereArgs: [userId]);
       final waiting = {
-        for (final row in await txn.query(
-          _coachNotes,
-          columns: ['id'],
-          where: 'user_id = ? AND pending = 1',
-          whereArgs: [userId],
-        ))
-          row['id'] as String,
+        ...keep,
+        for (final row in rows)
+          if (row['pending'] == 1) row['id'] as String,
       };
-      final batch = txn.batch()..delete(_coachNotes, where: 'user_id = ? AND pending = 0', whereArgs: [userId]);
+      final batch = txn.batch();
+      for (final row in rows) {
+        final id = row['id'] as String;
+        if (!waiting.contains(id)) batch.delete(_coachNotes, where: 'user_id = ? AND id = ?', whereArgs: [userId, id]);
+      }
       for (final note in notes) {
         if (waiting.contains(note.id)) continue;
         batch.insert(
@@ -81,14 +83,8 @@ mixin _CoachNotes on _LocalDatabase {
       'connection_id': note.connectionId,
       'content': note.content,
       'updated_at': note.updatedAt.toUtc().toIso8601String(),
-      'pending': switch (pending) {
-        true => 1,
-        false => 0,
-      },
-      'deleted': switch (deleted) {
-        true => 1,
-        false => 0,
-      },
+      'pending': pending ? 1 : 0,
+      'deleted': deleted ? 1 : 0,
     };
   }
 }
