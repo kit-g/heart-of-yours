@@ -67,11 +67,12 @@ class ThreadMenu extends StatelessWidget {
     final l = L.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final messages = Messages.of(context);
-    final sure = await _confirm(
+    final sure = await confirmDestructive(
       context,
       title: l.messagesDeleteTitle,
       body: l.messagesDeleteBody(name),
       confirm: l.delete,
+      cancel: l.cancel,
       key: AppKeys.threadDeleteConfirm,
     );
     if (!sure) return;
@@ -84,11 +85,12 @@ class ThreadMenu extends StatelessWidget {
 
   static Future<void> _block(BuildContext context, Connection connection, String name) async {
     final l = L.of(context);
-    final sure = await _confirm(
+    final sure = await confirmDestructive(
       context,
       title: l.messagesBlockTitle(name),
       body: l.messagesBlockBody,
       confirm: l.messagesBlock,
+      cancel: l.cancel,
       key: AppKeys.threadBlockConfirm,
     );
     if (!sure || !context.mounted) return;
@@ -139,36 +141,6 @@ bool _ended(Connection? connection) {
     ConnectionStatus.blocked || ConnectionStatus.severed || ConnectionStatus.declined => true,
     ConnectionStatus.pending || ConnectionStatus.active || ConnectionStatus.paused || null => false,
   };
-}
-
-Future<bool> _confirm(
-  BuildContext context, {
-  required String title,
-  required String body,
-  required String confirm,
-  required Key key,
-}) async {
-  final l = L.of(context);
-  final colorScheme = Theme.of(context).colorScheme;
-  final sure = await showBrandedDialog<bool>(
-    context,
-    title: Text(title),
-    content: Text(body),
-    actions: [
-      TextButton(
-        style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
-        onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
-        child: Text(l.cancel),
-      ),
-      TextButton(
-        key: key,
-        style: TextButton.styleFrom(minimumSize: const Size(64, 48), foregroundColor: colorScheme.error),
-        onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
-        child: Text(confirm),
-      ),
-    ],
-  );
-  return sure ?? false;
 }
 
 Future<void> _blockNow(BuildContext context, Connection connection, String name) async {

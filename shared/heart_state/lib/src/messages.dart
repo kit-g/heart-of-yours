@@ -254,6 +254,11 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   /// The inbox, last arrival first.
   List<Thread> get threads => List.unmodifiable(_threads);
 
+  /// The conversations that still hold something the other person keeps:
+  /// one with a message since it was last deleted, and a connection to keep
+  /// it under. A deletion takes the time of the last message with it.
+  Iterable<Thread> get holding => _threads.where((each) => each.lastAt != null && each.connectionId != null);
+
   /// Unread across the inbox.
   int get unread => _threads.fold(0, (sum, thread) => sum + thread.unread);
 
@@ -362,12 +367,38 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   /// tells the other person, and here at once, whatever the inbox read after
   /// it says. Throws what the server threw.
   Future<void> clear(String threadId) async {
+    await _clear(threadId);
+    await load();
+  }
+
+  /// Deletes every conversation in [holding], all at once, then reads the
+  /// inbox once. Each failure goes to [onError]; answers how many failed.
+  Future<int> clearAll() async {
+    final failures = await Future.wait([for (final each in holding) _clearOrFail(each.id)]);
+    await load();
+    return failures.where((failed) => failed).length;
+  }
+
+  /// [_clear], answering whether it failed.
+  Future<bool> _clearOrFail(String threadId) async {
+    try {
+      await _clear(threadId);
+      return false;
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+      return true;
+    }
+  }
+
+  Future<void> _clear(String threadId) async {
     final userId = _userId;
     if (userId == null) throw StateError('no account');
     await _service.clearThread(threadId);
     if (userId != _userId) return;
     if (lookup(threadId) case final Thread thread) {
-      final cleared = _copy(thread, unread: 0, clearedAt: _now().toUtc(), clearedBy: userId);
+      // the server drops the time of the last message with them: so does this
+      // device, rather than weighing its clock against the server's
+      final cleared = _copy(thread, unread: 0, clearedAt: _now().toUtc(), clearedBy: userId, emptied: true);
       await _local.storeThread(userId, cleared);
       _setThreads([for (final each in _threads) each.id == threadId ? cleared : each]);
       notifyListeners();
@@ -375,10 +406,18 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     // everything the server held went: by its clock, which this one may not
     // match, so not by time
     await _forgetBefore(userId, threadId, null);
-    await load();
   }
 
-  static Thread _copy(Thread thread, {int? unread, DateTime? clearedAt, String? clearedBy}) {
+  /// A copy of [thread] with what is given; [emptied] for one that no longer
+  /// holds a message.
+  static Thread _copy(
+    Thread thread, {
+    int? unread,
+    DateTime? lastAt,
+    DateTime? clearedAt,
+    String? clearedBy,
+    bool emptied = false,
+  }) {
     return Thread(
       id: thread.id,
       connectionId: thread.connectionId,
@@ -386,7 +425,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       otherName: thread.otherName,
       otherAvatar: thread.otherAvatar,
       unread: unread ?? thread.unread,
-      lastAt: thread.lastAt,
+      lastAt: emptied ? null : lastAt ?? thread.lastAt,
       clearedAt: clearedAt ?? thread.clearedAt,
       clearedBy: clearedBy ?? thread.clearedBy,
     );
@@ -593,6 +632,13 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     );
     await _local.storeThreadItems(userId, [(item: item, position: null, pending: true)]);
     if (userId != _userId) return;
+    // the thread holds a message again, before the server says so
+    if (lookup(threadId) case final Thread thread) {
+      final written = _copy(thread, lastAt: at);
+      await _local.storeThread(userId, written);
+      _setThreads([for (final each in _threads) each.id == threadId ? written : each]);
+      notifyListeners();
+    }
     _drafts.remove(threadId);
     await _show(threadId);
     await flush(threadId);

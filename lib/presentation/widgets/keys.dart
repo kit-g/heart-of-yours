@@ -434,6 +434,9 @@ abstract final class AppKeys {
   static const coachingLogFor = Key('Coaching.logFor');
   static Key coachingLogSession(String id) => Key('Coaching.logSession.$id');
   static const coachingLogBlank = Key('Coaching.logBlank');
+  // what deleting an account leaves with the other person (#568)
+  static const deleteAccountConversations = Key('Account.deleteConversations');
+  static const deleteAccountConversationsConfirm = Key('Account.deleteConversationsConfirm');
   static Key loggedBy(String workoutId) => Key('History.loggedBy.$workoutId');
   static const coachingNoteNew = Key('Coaching.noteNew');
   static const coachingNoteFirst = Key('Coaching.noteFirst');
