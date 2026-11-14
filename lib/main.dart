@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:heart/core/env/analytics.dart';
 import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/utils/form_factor.dart';
 import 'package:heart/core/env/key_vault.dart';
 import 'package:heart/core/env/launch_screen.dart';
 import 'package:heart/core/env/questions.dart';
@@ -150,7 +151,7 @@ Future<String?> _appVersion() async {
 ///
 /// `null` is a display with no size yet — unproven, but the whole failure
 /// above was a number believed too early, so it defers rather than guesses.
-/// See [_runner].
+/// See [FormFactorWatch], which asks it again as the display changes.
 bool? get _isPhone {
   final view = WidgetsBinding.instance.platformDispatcher.implicitView;
   return switch (view?.display) {
@@ -170,36 +171,15 @@ Future<void> _runner({
   Future<void> Function(List<DeviceOrientation> orientations) setOrientations = SystemChrome.setPreferredOrientations,
   FirebaseAuth? firebase,
 }) {
-  // Phones stay portrait — the layouts are not built for a 390pt-tall viewport.
-  // Tablets are left to follow the device, which is what large-screen guidance
-  // on both platforms asks for.
-  //
-  // The split has to be made here rather than with one blanket lock, because
-  // the two platforms disagree: iPadOS ignores this preference entirely once an
-  // app allows multitasking, but Android honours it. A blanket [.portraitUp]
-  // reads as "phones only" on iOS while quietly pinning Android tablets too.
-  // An unmeasured display answers neither: ask again after the first frame,
-  // the first moment the size is certainly real. Nothing is on screen until
-  // then, so the wait costs nothing.
-  //
-  // The form factor is reported from here for the same reason: this is where
-  // the answer is settled, deferral included, so the property can never
-  // disagree with the split the app actually acted on.
-  Future<void> applyOrientations() {
-    return switch (_isPhone) {
-      true => Future.sync(() {
-        analytics.setFormFactor(.phone);
-        return setOrientations(const [DeviceOrientation.portraitUp]);
-      }),
-      false => Future.sync(() {
-        analytics.setFormFactor(.tablet);
-        return setOrientations(const <DeviceOrientation>[]);
-      }),
-      null => Future.sync(
-        () => WidgetsBinding.instance.addPostFrameCallback((_) => applyOrientations()),
-      ),
-    };
-  }
+  // Phones stay portrait, tablets follow the device, and a folding phone is
+  // each in turn (#327): see [FormFactorWatch]. The form factor is reported
+  // from there for the same reason, so the property never disagrees with the
+  // split the app acted on.
+  final formFactor = FormFactorWatch(
+    isPhone: () => _isPhone,
+    setOrientations: setOrientations,
+    report: analytics.setFormFactor,
+  );
 
   // The launch screen stays up until the app has its theme and its opening
   // page's data (see LaunchScreen); released from `_initApp`. The web has no
@@ -207,7 +187,7 @@ Future<void> _runner({
   if (!kIsWeb) LaunchScreen.hold();
 
   return Future.wait([
-    applyOrientations(),
+    formFactor.start(),
     // Before `runApp`, so no session restored from the keychain is ever
     // momentarily live. See the function for why the keychain needs this.
     signOutIfFirstRunAfterInstall(firebase),
