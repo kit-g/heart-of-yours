@@ -20,7 +20,11 @@ class PastWorkout {
   final Workout workout;
   final LogTo logTo;
 
-  const new({required this.workout, this.logTo = logToHistory});
+  /// Who it is being logged for, by name, when that is not the user: a
+  /// coach's client (#560).
+  final String? loggingFor;
+
+  const new({required this.workout, this.logTo = logToHistory, this.loggingFor});
 }
 
 /// Asks when a past workout was, then hands [open] the workout to fill in
@@ -37,6 +41,7 @@ Future<void> logPastWorkout(
   required void Function(PastWorkout) open,
   Workout? workout,
   LogTo logTo = logToHistory,
+  String? loggingFor,
 }) async {
   final L(:whenWasIt, :next) = L.of(context);
   // to the minute, as the wheels pick it
@@ -54,7 +59,7 @@ Future<void> logPastWorkout(
       final filled = (workout ?? Workout())
         ..start = start.toUtc()
         ..end = end?.toUtc();
-      picked = PastWorkout(workout: filled, logTo: logTo);
+      picked = PastWorkout(workout: filled, logTo: logTo, loggingFor: loggingFor);
     },
   );
   if (picked case final PastWorkout past when context.mounted) open(past);

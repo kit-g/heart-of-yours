@@ -430,6 +430,11 @@ abstract final class AppKeys {
   static const coachingClientMessages = Key('Coaching.clientMessages');
   // a coach's notes on a client (#556)
   static const coachingClientNotes = Key('Coaching.clientNotes');
+  // a workout a coach logs for a client (#560)
+  static const coachingLogFor = Key('Coaching.logFor');
+  static Key coachingLogSession(String id) => Key('Coaching.logSession.$id');
+  static const coachingLogBlank = Key('Coaching.logBlank');
+  static Key loggedBy(String workoutId) => Key('History.loggedBy.$workoutId');
   static const coachingNoteNew = Key('Coaching.noteNew');
   static const coachingNoteFirst = Key('Coaching.noteFirst');
   static Key coachingNote(String id) => Key('Coaching.note.$id');

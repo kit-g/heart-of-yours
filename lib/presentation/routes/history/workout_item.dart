@@ -153,6 +153,16 @@ class WorkoutItem extends StatelessWidget {
                 L.of(context).fullDate(workout.start),
                 style: textTheme.bodySmall,
               ),
+              // a session their coach logged for them (#560)
+              if (workout.loggedByName?.trim() case final String coach when coach.isNotEmpty)
+                Padding(
+                  key: AppKeys.loggedBy(workout.id),
+                  padding: const .only(top: 4),
+                  child: Text(
+                    L.of(context).loggedBy(coach),
+                    style: textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                  ),
+                ),
               if (workout.note case String note)
                 Padding(
                   padding: const .only(top: 6),

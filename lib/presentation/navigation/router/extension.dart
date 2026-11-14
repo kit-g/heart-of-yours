@@ -23,6 +23,11 @@ extension on BuildContext {
     pushNamed(_coachingClientThreadName, pathParameters: {'connectionId': connectionId});
   }
 
+  /// A workout a coach logs for a client (#560), filled in from [past].
+  void pushCoachingClientLog(String connectionId, PastWorkout past) {
+    pushNamed(_coachingClientLogName, pathParameters: {'connectionId': connectionId}, extra: past);
+  }
+
   /// The coach's notes on a client (#556).
   void pushCoachingClientNotes(String connectionId) {
     pushNamed(_coachingClientNotesName, pathParameters: {'connectionId': connectionId});

@@ -1696,3 +1696,11 @@ coachingNoteFailed,On the note sheet when saving failed (#556),Couldn't save the
 coachingNoteDelete,Button on the note sheet that deletes the note (#556),Delete note,Delete note,Удалить заметку,Eliminar nota,Supprimer la note
 coachingNoteDeleteTitle,Title of the dialog that asks before a note is deleted (#556),Delete this note?,Delete this note?,Удалить эту заметку?,¿Eliminar esta nota?,Supprimer cette note ?
 coachingNoteDeleteBody,Body of the dialog that asks before a note is deleted (#556),It's deleted from all your devices.,It's deleted from all your devices.,Она удалится со всех ваших устройств.,Se eliminará de todos tus dispositivos.,Elle sera supprimée de tous vos appareils.
+coachingLogWorkout,On a client's page: logs a session the coach trained with them (#560),Log a workout,Log a workout,Записать тренировку,Registrar un entrenamiento,Enregistrer une séance
+coachingLogWorkoutBody,Under Log a workout on a client's page (#560),One you trained together. It goes in their history.,One you trained together. It goes in their history.,"Та, что вы провели вместе. Она попадёт в их историю.",Uno que hicisteis juntos. Irá a su historial.,Une séance faite ensemble. Elle ira dans son historique.
+coachingLoggingFor,Title of the workout a coach fills in for a client (#560),Logging for {name},Logging for {name},Тренировка для: {name},Registrando para {name},Séance pour {name}
+coachingLogNext,Beside the client's next session in the list a coach logs from (#560),Next,Next,Следующая,Siguiente,Suivante
+coachingLogOther,Last in the list a coach logs from: a workout not from the program (#560),Something else,Something else,Другая тренировка,Otro entrenamiento,Autre chose
+coachingLogged,Snackbar after a coach's workout reached the client's history (#560),Logged for {name},Logged for {name},Записано: {name},Registrado para {name},Enregistrée pour {name}
+coachingLogFailed,Snackbar when a coach's workout for a client couldn't be sent; Retry beside it (#560),Couldn't log it for {name},Couldn't log it for {name},Не удалось записать: {name},No se pudo registrar para {name},Impossible d'enregistrer pour {name}
+loggedBy,On a workout in History that the person's coach logged for them (#560),Logged by {name},Logged by {name},Записал(а): {name},Registrado por {name},Enregistrée par {name}

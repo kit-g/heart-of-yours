@@ -101,6 +101,8 @@ const _coachingThreadName = 'coachingThread';
 const _coachingClientThreadName = 'coachingClientThread';
 // a coach's notes on a client (#556)
 const _coachingClientNotesName = 'coachingClientNotes';
+// a workout a coach logs for a client (#560)
+const _coachingClientLogName = 'coachingClientLog';
 const _threadName = 'thread';
 const _threadPath = '/messages/:connectionId';
 const _coachingProgramsName = 'coachingPrograms';

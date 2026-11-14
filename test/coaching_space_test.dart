@@ -2,6 +2,7 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
+import 'package:heart/presentation/routes/history/history.dart' show WorkoutEditor;
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show TemplateEditor;
 import 'package:heart/presentation/widgets/keys.dart';
@@ -752,6 +753,41 @@ void main() {
         ],
       );
     }
+
+    testWidgets('a session they trained together is logged as theirs, from their program (#560)', (tester) async {
+      withCopy();
+      when(api.logClientWorkout('sam', any)).thenAnswer(
+        (invocation) async => Workout.fromJson({
+          ...(invocation.positionalArguments.last as Workout).toMap(),
+          'loggedBy': 'muffin',
+          'loggedByName': 'Muffin',
+        }),
+      );
+      // wide: the times dialog's wheels overflow a phone under the test font
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      await tester.ensureVisible(find.byKey(AppKeys.coachingLogFor));
+      await tester.tapByKey(AppKeys.coachingLogFor);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.coachingLogBlank), findsOneWidget, reason: 'or something not in the program');
+      await tester.tapByKey(AppKeys.coachingLogSession('s1'));
+      await tester.pumpTimes();
+      expect(find.text('When was it?'), findsOneWidget);
+      await tester.tap(find.text('Next'));
+      await tester.pumpTimes();
+
+      expect(find.text('Logging for Sam'), findsOneWidget);
+      final editor = tester.widget<WorkoutEditor>(find.byType(WorkoutEditor));
+      expect((editor.copy.name, editor.copy.templateId, editor.copy.programId), ('Day A', 's1', 'p1'));
+
+      await editor.logTo!(tester.element(find.byType(WorkoutEditor)), editor.copy);
+      await tester.pumpTimes();
+
+      verify(api.logClientWorkout('sam', editor.copy)).called(1);
+      expect(find.text('Logged for Sam'), findsOneWidget);
+    });
 
     Future<void> openCopy(WidgetTester tester) async {
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
