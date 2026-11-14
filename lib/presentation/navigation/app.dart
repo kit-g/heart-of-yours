@@ -30,6 +30,7 @@ import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/programs.dart';
+import 'package:heart/core/utils/coach_notes.dart';
 import 'package:heart/core/utils/messages.dart';
 import 'package:heart/core/utils/pushes.dart';
 import 'package:heart/core/utils/device_keys.dart';
@@ -378,6 +379,18 @@ class HeartApp extends StatelessWidget {
             },
           ),
         ),
+        // A coach's notes on their clients (#556): sealed for the coach's
+        // own devices, kept here as ciphertext, and read only from a coach's
+        // screen, which exists only with Coach people on.
+        ChangeNotifierProvider<CoachNotes>(
+          create: (context) => CoachNotes(
+            service: RemoteNotes(api),
+            local: LocalNotes(db),
+            cipher: DeviceKeys.of(context),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
         // A coach's roster and feed (#559): server-only, read when the
         // Clients tab opens, which is there only with Coach people on.
         ChangeNotifierProvider<Roster>(
@@ -545,6 +558,7 @@ class HeartApp extends StatelessWidget {
                 Timers.of(context).userId = user?.id;
                 Workouts.of(context).userId = user?.id;
                 Messages.of(context).userId = user?.id;
+                CoachNotes.of(context).userId = user?.id;
                 if (user?.id case String id) unawaited(_prepareOpening(context, id));
               },
               onError: reportToSentry,
@@ -680,7 +694,10 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
       Programs.of(context).pullCoached().then(templates.pull);
     }
     // messages whose push may never have come (#556)
-    if (coachingRuns(preferences, Auth.of(context))) Messages.of(context).resume();
+    if (coachingRuns(preferences, Auth.of(context))) {
+      Messages.of(context).resume();
+      CoachNotes.of(context).resume();
+    }
   }
 
   /// Localized backend content (the exercise catalog) is served per request

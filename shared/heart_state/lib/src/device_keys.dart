@@ -10,6 +10,7 @@ import 'package:sealbox/sealbox.dart';
 import 'remote.dart';
 
 part 'device_keys/arrivals.dart';
+part 'device_keys/notes.dart';
 part 'device_keys/boundary.dart';
 part 'device_keys/own_keys.dart';
 part 'device_keys/peers.dart';
@@ -86,7 +87,7 @@ enum DeviceKeysStatus {
 ///
 /// What arrives is kept on the device until a handler for its kind takes it
 /// ([on]): messages (#556) bring the first one, thread keys.
-class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher {
+class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher, NoteCipher {
   final RemoteKeyService _service;
   final KeyVault? _vault;
   final RemoteAccess _remote;
@@ -105,6 +106,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
        _newId = newId ?? uuidV7,
        _now = now ?? DateTime.now {
     _handlers[threadKeyKind] = _takeThreadKey;
+    _handlers[noteKeyKind] = _takeNoteKey;
   }
 
   static DeviceKeys of(BuildContext context) => Provider.of<DeviceKeys>(context, listen: false);
@@ -147,6 +149,31 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
 
   @override
   Future<List<OpenedMessage>> open(String threadId, List<ThreadCiphertext> items) => _openThread(threadId, items);
+
+  /// What a coach's note key travels as between their devices (#556).
+  static const noteKeyKind = 'note_key';
+
+  final _noteKeys = StreamController<void>.broadcast();
+
+  @override
+  Stream<void> get noteKeys => _noteKeys.stream;
+
+  @override
+  Future<String> sealNote(String noteId, {required String connectionId, required String text}) {
+    return _sealNote(noteId, connectionId, text);
+  }
+
+  @override
+  Future<List<OpenedNote>> openNotes(List<CoachNote> notes) => _openNotes(notes);
+
+  @override
+  Future<void> shareNoteKeys() async {
+    try {
+      await _shareNoteKeys();
+    } on _Stopped {
+      // stopped on the way: shared at the next start
+    }
+  }
 
   /// The account running now, from its start until a stop or sign-out.
   _Run? _run;
@@ -259,6 +286,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
   @override
   void dispose() {
     _threadKeys.close();
+    _noteKeys.close();
     super.dispose();
   }
 
@@ -316,6 +344,9 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     _run?.sharedAt.clear();
     try {
       await devicesOf(userId);
+      // a device of the account's own may be new: it gets the note keys
+      // without waiting for the notes to be opened somewhere
+      if (userId == _run?.userId && (_run?.device?.published ?? false)) await _shareNoteKeys();
     } on _Stopped {
       // stopped on the way: read again at the next start
     } catch (error, stacktrace) {

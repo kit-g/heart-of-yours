@@ -994,6 +994,145 @@ void main() {
       expect(student.share(thread, userId: 'dana', fingerprint: 'AAAAAAAAAAAAAAAAAAAAAA'), throwsA(isA<KeyMismatch>()));
     });
   });
+
+  group('notes (#556)', () {
+    const client = 'connection-sam';
+
+    CoachNote stored(String id, String content, {String? connectionId = client}) {
+      return CoachNote(id: id, connectionId: connectionId, content: content, updatedAt: DateTime.utc(2026, 11, 14));
+    }
+
+    test("a note opens on every device of the coach's, and nowhere else sees its words", () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+
+      final content = await phone.sealNote('n1', connectionId: client, text: 'left knee, no deep squats');
+      await phone.shareNoteKeys();
+      await tablet.receive();
+
+      expect(content, isNot(contains('knee')));
+      expect(server.queue.map((each) => each.content), everyElement(isNot(contains('knee'))));
+      for (final keys in [phone, tablet]) {
+        final opened = (await keys.openNotes([stored('n1', content)])).single as ReadNote;
+        expect(opened.text, 'left knee, no deep squats');
+        expect(opened.connectionId, client);
+      }
+      expect(errors, isEmpty);
+    });
+
+    test('a note filed under another client, or passed off as another note, is refused', () async {
+      final coach = device('dana');
+      await coach.start('dana');
+
+      final content = await coach.sealNote('n1', connectionId: client, text: 'shoulder');
+      final opened = await coach.openNotes([
+        stored('n1', content, connectionId: 'connection-riley'),
+        stored('n2', content),
+        stored('n3', 'not a sealed note'),
+        // the server no longer says whose: what was sealed does
+        stored('n1', content, connectionId: null),
+      ]);
+
+      expect(opened.take(3), everyElement(isA<RefusedNote>()));
+      expect((opened.last as ReadNote).connectionId, client);
+    });
+
+    test("one sealed under a key that hasn't arrived is locked, and opens once it does", () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      var arrived = 0;
+      final listening = tablet.noteKeys.listen((_) => arrived++);
+      addTearDown(listening.cancel);
+
+      final content = await phone.sealNote('n1', connectionId: client, text: 'hips');
+      expect((await tablet.openNotes([stored('n1', content)])).single, isA<LockedNote>());
+
+      await phone.shareNoteKeys();
+      await tablet.receive();
+      await pumpEventQueue();
+
+      expect(arrived, 1);
+      expect((await tablet.openNotes([stored('n1', content)])).single, isA<ReadNote>());
+    });
+
+    test('two devices that each made a key before hearing of the other end up sealing under one', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      final first = await phone.sealNote('n1', connectionId: client, text: 'one');
+      final second = await tablet.sealNote('n2', connectionId: client, text: 'two');
+
+      await phone.shareNoteKeys();
+      await tablet.shareNoteKeys();
+      await phone.receive();
+      await tablet.receive();
+
+      for (final keys in [phone, tablet]) {
+        final opened = await keys.openNotes([stored('n1', first), stored('n2', second)]);
+        expect(opened.map((each) => (each as ReadNote).text), ['one', 'two']);
+      }
+      String keyOf(String content) => content.split('.')[1];
+      final next = [
+        await phone.sealNote('n3', connectionId: client, text: 'three'),
+        await tablet.sealNote('n4', connectionId: client, text: 'four'),
+      ];
+      expect(next.map(keyOf).toSet(), hasLength(1), reason: 'the newest key, the same on both');
+      expect({keyOf(first), keyOf(second)}, contains(keyOf(next.first)));
+    });
+
+    test('a key reaches a device once, and a device added later gets it without a note written', () async {
+      final phone = device('dana');
+      await phone.start('dana');
+      await phone.sealNote('n1', connectionId: client, text: 'one');
+      final tablet = device('dana');
+      await tablet.start('dana');
+      await phone.shareNoteKeys();
+      server.calls.clear();
+
+      await phone.shareNoteKeys();
+      expect(server.calls.where((each) => each.startsWith('enqueue')), isEmpty, reason: 'shared a moment ago');
+
+      final laptop = device('dana');
+      await laptop.start('dana');
+      await phone.devicesChanged('dana');
+
+      expect(server.calls.where((each) => each.startsWith('enqueue')), hasLength(1));
+    });
+
+    test("a note key from someone else's account is dropped, and said by its code", () async {
+      final coach = device('dana');
+      final student = device('sam');
+      await coach.start('dana');
+      await student.start('sam');
+      final content = await coach.sealNote('n1', connectionId: client, text: 'mine');
+
+      await student.deliver(
+        userId: 'dana',
+        kind: DeviceKeys.noteKeyKind,
+        payload: jsonEncode({'i': 'zzzz', 'k': Sealbox.newNoteKey()}),
+      );
+      await coach.receive();
+
+      expect(errors, [isA<KeyFailure>().having((each) => each.code, 'code', 'foreign_note_key')]);
+      final next = await coach.sealNote('n2', connectionId: client, text: 'still mine');
+      expect(next.split('.')[1], content.split('.')[1], reason: "a stranger's key never seals a note");
+    });
+
+    test('more than a note holds is refused before it goes anywhere', () async {
+      final coach = device('dana');
+      await coach.start('dana');
+
+      expect(
+        coach.sealNote('n1', connectionId: client, text: 'x' * 20000),
+        throwsA(isA<KeyFailure>().having((each) => each.code, 'code', 'note_too_long')),
+      );
+    });
+  });
 }
 
 /// [item], as the server would read it with [senderUserId] for the sending

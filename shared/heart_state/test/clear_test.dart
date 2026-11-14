@@ -248,6 +248,33 @@ class _NoThreadStore implements LocalThreadService {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
+class _CoachNotes extends CoachNotes {
+  int calls = 0;
+
+  new() : super(service: _NoNoteService(), local: _NoNoteStore(), cipher: _NoNoteCipher());
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoNoteService implements RemoteNoteService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoNoteStore implements LocalNoteService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoNoteCipher implements NoteCipher {
+  @override
+  Stream<void> get noteKeys => const Stream.empty();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
 class _NoCipher implements ThreadCipher {
   @override
   Future<void> receive() async {}
@@ -434,6 +461,7 @@ void main() {
     late _Pushes pushes;
     late _DeviceKeys keys;
     late _Messages messages;
+    late _CoachNotes notes;
     late _Library library;
     late _ClientPrograms clientPrograms;
     late _Timers timers;
@@ -465,6 +493,7 @@ void main() {
       );
       keys = _DeviceKeys();
       messages = _Messages();
+      notes = _CoachNotes();
       library = _Library();
       clientPrograms = _ClientPrograms();
       timers = _Timers();
@@ -492,6 +521,7 @@ void main() {
             ChangeNotifierProvider<Pushes>.value(value: pushes),
             ChangeNotifierProvider<DeviceKeys>.value(value: keys),
             ChangeNotifierProvider<Messages>.value(value: messages),
+            ChangeNotifierProvider<CoachNotes>.value(value: notes),
             ChangeNotifierProvider<CoachLibrary>.value(value: library),
             ChangeNotifierProvider<ClientPrograms>.value(value: clientPrograms),
             ChangeNotifierProvider<Timers>.value(value: timers),
@@ -527,6 +557,7 @@ void main() {
         pushes.calls,
         keys.calls,
         messages.calls,
+        notes.calls,
         library.calls,
         clientPrograms.calls,
         timers.calls,
@@ -583,6 +614,7 @@ void main() {
     late _Pushes pushes;
     late _DeviceKeys keys;
     late _Messages messages;
+    late _CoachNotes notes;
     late _Library library;
     late _ClientPrograms clientPrograms;
     late _Timers timers;
@@ -617,6 +649,7 @@ void main() {
       pushes = _Pushes();
       keys = _DeviceKeys();
       messages = _Messages();
+      notes = _CoachNotes();
       library = _Library();
       clientPrograms = _ClientPrograms();
       timers = _Timers();
@@ -655,6 +688,7 @@ void main() {
             ChangeNotifierProvider<Pushes>.value(value: pushes),
             ChangeNotifierProvider<DeviceKeys>.value(value: keys),
             ChangeNotifierProvider<Messages>.value(value: messages),
+            ChangeNotifierProvider<CoachNotes>.value(value: notes),
             ChangeNotifierProvider<CoachLibrary>.value(value: library),
             ChangeNotifierProvider<ClientPrograms>.value(value: clientPrograms),
             ChangeNotifierProvider<Timers>.value(value: timers),
@@ -691,6 +725,7 @@ void main() {
         pushes.calls,
         keys.calls,
         messages.calls,
+        notes.calls,
         library.calls,
         clientPrograms.calls,
         timers.calls,
@@ -774,7 +809,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the twenty-three known notifiers', () {
+    test('the fan-out list is the twenty-four known notifiers', () {
       final fanned = _fannedOut(File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync()).toSet();
 
       expect(fanned, {
@@ -792,6 +827,7 @@ void main() {
         'Goals',
         'Health',
         'Messages',
+        'CoachNotes',
         'PreviousExercises',
         'Programs',
         'Pushes',
