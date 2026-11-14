@@ -55,15 +55,16 @@ void main() {
     await tester.pumpTimes();
     final id = workouts.activeWorkout?.id;
     expect(id, isNotNull);
+    final page = tester.element(find.byType(ProfilePage));
 
     await resize(tester, closed);
     expect(find.byKey(AppKeys.navigationRail), findsNothing);
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.byType(ProfilePage), findsOneWidget, reason: 'the same page, folded');
+    expect(tester.element(find.byType(ProfilePage)), same(page), reason: 'the same page, kept through the fold');
 
     await resize(tester, open);
     expect(find.byKey(AppKeys.navigationRail), findsOneWidget);
-    expect(find.byType(ProfilePage), findsOneWidget);
+    expect(tester.element(find.byType(ProfilePage)), same(page));
     expect(workouts.activeWorkout?.id, id, reason: 'the same workout, still going');
   });
 }

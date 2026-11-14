@@ -135,32 +135,6 @@ Future<String?> _appVersion() async {
   }
 }
 
-/// The conventional phone/tablet split: 600 logical pixels on the short edge.
-///
-/// Read off the view rather than a `MediaQuery`, because the orientation
-/// preference is set before there is a widget tree to read one from. Anything
-/// without a view — the browser, tests — counts as not a phone and stays free.
-///
-/// Off the **display**, not `view.physicalSize`, which is the window: it has
-/// the system bars taken out of it and it swaps its sides with the device.
-/// A 7" tablet measures 1200x1920 either way, but its window is 1200x1800
-/// upright and 1920x1080 on its side — so a launch in landscape scored 540,
-/// called itself a phone, and pinned the tablet to portrait for the life of
-/// the process. The display is the device, whichever way up it is, which is
-/// also what `sw600dp` means on the Android side of this decision.
-///
-/// `null` is a display with no size yet — unproven, but the whole failure
-/// above was a number believed too early, so it defers rather than guesses.
-/// See [FormFactorWatch], which asks it again as the display changes.
-bool? get _isPhone {
-  final view = WidgetsBinding.instance.platformDispatcher.implicitView;
-  return switch (view?.display) {
-    null => false,
-    final display when display.size.isEmpty => null,
-    final display => display.size.shortestSide / display.devicePixelRatio < 600,
-  };
-}
-
 Future<void> _runner({
   required Api api,
   required AppConfig appConfig,
@@ -168,7 +142,6 @@ Future<void> _runner({
   required LocalDatabase db,
   required Analytics analytics,
   bool? hasLocalNotifications,
-  Future<void> Function(List<DeviceOrientation> orientations) setOrientations = SystemChrome.setPreferredOrientations,
   FirebaseAuth? firebase,
 }) {
   // Phones stay portrait, tablets follow the device, and a folding phone is
@@ -176,9 +149,9 @@ Future<void> _runner({
   // from there for the same reason, so the property never disagrees with the
   // split the app acted on.
   final formFactor = FormFactorWatch(
-    isPhone: () => _isPhone,
-    setOrientations: setOrientations,
+    setOrientations: SystemChrome.setPreferredOrientations,
     report: analytics.setFormFactor,
+    onError: reportToSentry,
   );
 
   // The launch screen stays up until the app has its theme and its opening
