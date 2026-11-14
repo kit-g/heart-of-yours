@@ -92,6 +92,11 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
   final KeyVault? _vault;
   final RemoteAccess _remote;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
+
+  /// Whether a device the account adds gets the note keys as soon as it is
+  /// heard of, rather than when notes are next read or written here: not
+  /// while notes are off. Always, when not given.
+  final bool Function()? sharesNoteKeys;
   final String Function() _newId;
   final DateTime Function() _now;
 
@@ -100,6 +105,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     required this._vault,
     RemoteAccess? remote,
     this.onError,
+    this.sharesNoteKeys,
     String Function()? newId,
     DateTime Function()? now,
   }) : _remote = remote ?? RemoteAccess(),
@@ -188,6 +194,10 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
   Future<void> _dispatching = Future.value();
 
   DeviceKeysStatus get status => _run?.status ?? .off;
+
+  /// Whether keys can run on this device at all: not without a vault to keep
+  /// them in, as on the web.
+  bool get supported => _vault != null;
 
   /// This device's id, once it has keys.
   String? get deviceId => _run?.device?.id;
@@ -346,7 +356,9 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
       await devicesOf(userId);
       // a device of the account's own may be new: it gets the note keys
       // without waiting for the notes to be opened somewhere
-      if (userId == _run?.userId && (_run?.device?.published ?? false)) await _shareNoteKeys();
+      if (userId == _run?.userId && (_run?.device?.published ?? false) && (sharesNoteKeys?.call() ?? true)) {
+        await _shareNoteKeys();
+      }
     } on _Stopped {
       // stopped on the way: read again at the next start
     } catch (error, stacktrace) {

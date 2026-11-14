@@ -174,6 +174,23 @@ void main() {
     expect(texts(), ['the key came']);
   });
 
+  test('one locked before its key came opens on the next showing, with no word of the key', () async {
+    server.notes['s1'] = CoachNote(
+      id: 's1',
+      connectionId: client,
+      content: 'locked:s1',
+      updatedAt: DateTime.utc(2026, 11, 13),
+    );
+    await notes.load();
+    expect(notes.on(client).single.opened, isA<LockedNote>());
+
+    // as when keys start after the notes were first shown
+    cipher.unlocked = true;
+    await notes.save(client, 'another');
+
+    expect(texts(), contains('the key came'));
+  });
+
   test('what the device holds shows before the server answers', () async {
     store.notes[me] = {
       'h1': (
@@ -209,6 +226,87 @@ void main() {
     expect(errors, everyElement(containsPair('code', 'not_found')));
   });
 
+  test('a note refused for good is not sent again, nor reported again, until it is written again', () async {
+    server.refuse['n0'] = {'code': 'forbidden'};
+    final refused = await notes.save(client, 'refused');
+    await notes.flush();
+
+    await notes.load();
+    await notes.flush();
+
+    expect(server.calls.where((each) => each == 'save $refused'), hasLength(1));
+    expect(errors, hasLength(1));
+    expect(notes.on(client).single.pending, isTrue, reason: 'still not synced');
+
+    server.refuse.remove(refused);
+    await notes.save(client, 'refused, rewritten', id: refused);
+    await notes.flush();
+    expect(server.notes.keys, [refused]);
+  });
+
+  test('a refusal for being too quick sends everything again with the next run', () async {
+    server.refuse['n0'] = {'code': 'rate_limited'};
+    final limited = await notes.save(client, 'limited');
+    await notes.flush();
+    server.refuse.remove(limited);
+
+    await notes.flush();
+
+    expect(server.notes.keys, [limited]);
+  });
+
+  test("what is written or deleted here while the server's copy travels is not undone by it", () async {
+    await notes.save(client, 'kept');
+    final edited = await notes.save(client, 'before');
+    final deleted = await notes.save(client, 'deleted');
+    await notes.flush();
+    server.holdGet = Completer();
+    final loading = notes.load();
+    await pumpEventQueue();
+
+    await notes.save(client, 'after', id: edited);
+    await notes.delete(deleted);
+    await notes.save(client, 'new');
+    await notes.flush();
+    server.holdGet!.complete();
+    await loading;
+
+    expect(texts(), unorderedEquals(['kept', 'after', 'new']));
+    expect(store.notes[me]!.keys, isNot(contains(deleted)));
+    expect(store.notes[me]!.values.where((each) => each.pending), isEmpty);
+  });
+
+  test('a read asked for while one is on its way joins it', () async {
+    await Future.wait([notes.load(), notes.load()]);
+
+    expect(server.calls.where((each) => each.startsWith('get')), hasLength(1));
+  });
+
+  test('a read with the server out of reach shows what is held, not a wait', () async {
+    access.account = false;
+
+    await notes.load();
+
+    expect(notes.status, CoachingStatus.loaded);
+    expect(server.calls, isEmpty);
+  });
+
+  test('a change on its way for one account touches nothing once another signs in', () async {
+    store.hold = Completer();
+    final first = notes.save(client, 'one');
+    await pumpEventQueue();
+    final second = notes.save(client, 'two');
+    await pumpEventQueue();
+
+    notes.userId = 'biscuit';
+    store.hold!.complete();
+    await Future.wait([first, second]);
+    await pumpEventQueue();
+
+    expect(store.notes[me], hasLength(1), reason: 'the one already on its way to the store');
+    expect(notes.on(client), isEmpty);
+  });
+
   test('too long is said at once, and nothing is kept', () async {
     expect(
       notes.save(client, 'x' * 20000),
@@ -235,6 +333,9 @@ class _Server implements RemoteNoteService {
   var pageSize = 50;
   Completer<void>? hold;
 
+  /// A read waits here, with the notes as they were when it was asked.
+  Completer<void>? holdGet;
+
   @override
   Future<CoachNote> saveNote(String id, {required String connectionId, required String content}) async {
     calls.add('save $id');
@@ -252,6 +353,7 @@ class _Server implements RemoteNoteService {
   Future<({List<CoachNote> notes, String? cursor})> getNotes({String? connectionId, String? cursor}) async {
     calls.add('get ${cursor ?? ''}');
     final all = notes.values.toList();
+    await holdGet?.future;
     final start = int.tryParse(cursor ?? '') ?? 0;
     final end = (start + pageSize).clamp(0, all.length);
     return (notes: all.sublist(start, end), cursor: end < all.length ? '$end' : null);
@@ -267,11 +369,15 @@ class _Server implements RemoteNoteService {
 class _Store implements LocalNoteService {
   final notes = <String, Map<String, StoredNote>>{};
 
+  /// A write waits here.
+  Completer<void>? hold;
+
   @override
   Future<List<StoredNote>> getCoachNotes(String userId) async => [...?notes[userId]?.values];
 
   @override
   Future<void> storeCoachNotes(String userId, Iterable<StoredNote> stored) async {
+    await hold?.future;
     final mine = notes[userId] ??= {};
     for (final each in stored) {
       mine[each.note.id] = each;
@@ -279,10 +385,10 @@ class _Store implements LocalNoteService {
   }
 
   @override
-  Future<void> replaceCoachNotes(String userId, Iterable<CoachNote> server) async {
+  Future<void> replaceCoachNotes(String userId, Iterable<CoachNote> server, {Set<String> keep = const {}}) async {
     final mine = notes[userId] ??= {};
-    mine.removeWhere((_, each) => !each.pending);
-    for (final note in server) {
+    mine.removeWhere((id, each) => !each.pending && !keep.contains(id));
+    for (final note in server.where((each) => !keep.contains(each.id))) {
       mine.putIfAbsent(note.id, () => (note: note, pending: false, deleted: false));
     }
   }

@@ -70,6 +70,24 @@ void main() {
     expect(stored['new']!.pending, isFalse);
   });
 
+  test('the notes it is told to keep stay as they are here, or absent', () async {
+    await local.storeCoachNotes(user, [
+      (note: note('sent meanwhile', content: 'mine'), pending: false, deleted: false),
+      (note: note('stale'), pending: false, deleted: false),
+    ]);
+
+    await local.replaceCoachNotes(
+      user,
+      [note('sent meanwhile', content: 'theirs'), note('deleted meanwhile'), note('stale', content: 'theirs')],
+      keep: {'sent meanwhile', 'deleted meanwhile'},
+    );
+
+    final stored = {for (final each in await local.getCoachNotes(user)) each.note.id: each};
+    expect(stored.keys, unorderedEquals(['sent meanwhile', 'stale']));
+    expect(stored['sent meanwhile']!.note.content, 'mine');
+    expect(stored['stale']!.note.content, 'theirs');
+  });
+
   test('a note deleted for good is forgotten', () async {
     await local.storeCoachNotes(user, [(note: note('a'), pending: true, deleted: true)]);
 

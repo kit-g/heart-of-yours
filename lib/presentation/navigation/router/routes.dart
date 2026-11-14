@@ -1306,6 +1306,14 @@ RouteBase _coachingRoute() {
                   GoRoute(
                     path: 'notes',
                     name: _coachingClientNotesName,
+                    // nowhere to keep the keys that open them, as on the web
+                    redirect: (context, state) => switch (DeviceKeys.of(context).supported) {
+                      true => null,
+                      false => state.namedLocation(
+                        _coachingClientName,
+                        pathParameters: {'connectionId': state.pathParameters['connectionId']!},
+                      ),
+                    },
                     builder: (context, state) => ClientNotesPage(connectionId: state.pathParameters['connectionId']!),
                   ),
                   GoRoute(
