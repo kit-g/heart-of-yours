@@ -551,6 +551,9 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     // the sweep that flags entries runs nightly: a phone left open overnight
     // learns of the morning's flags when it comes back
     Anomalies.of(context).pull();
+    // a language change whose library fetch failed is retried here; the same
+    // tag as the catalog's is a no-op (heart-of-yours#612)
+    Exercises.of(context).onLocaleChanged(languageTag());
   }
 
   /// Localized backend content (the exercise catalog) is served per request
