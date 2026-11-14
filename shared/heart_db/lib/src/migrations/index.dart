@@ -200,4 +200,8 @@ const _migrations = <int, List<String>>{
   33: [
     createCoachNotes,
   ],
+  34: [
+    addWorkoutLoggedBy,
+    addWorkoutLoggedByName,
+  ],
 };

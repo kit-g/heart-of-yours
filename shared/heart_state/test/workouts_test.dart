@@ -1109,6 +1109,44 @@ void main() {
       expect(sut.lookup(w1.id), w1);
     });
 
+    test('coming back reads the newest page, at most once in ten minutes, and paging carries on (#560)', () async {
+      final w1 = Workout(name: 'w1');
+      final w2 = Workout(name: 'w2');
+      whenFirstPage([w1], more: true);
+      whenPageAfter(w1.id, [w2], more: false);
+      await sut.initHistory();
+      clearInteractions(remote);
+      // one their coach logged while they were away
+      final logged = Workout(name: 'logged');
+      whenFirstPage([logged, w1], more: true);
+      final at = DateTime.utc(2026, 11, 14, 9);
+
+      await sut.refreshHistory(now: at);
+      await sut.refreshHistory(now: at.add(const Duration(minutes: 9)));
+
+      expect(sut.lookup(logged.id), logged);
+      verify(local.storeWorkoutHistory([logged, w1], 'u1')).called(1);
+      verify(
+        remote.getWorkouts(
+          'u1',
+          pageSize: anyNamed('pageSize'),
+          since: argThat(isNull, named: 'since'),
+        ),
+      ).called(1);
+
+      await sut.loadMoreHistory();
+      expect(sut.lookup(w2.id), w2, reason: 'the next page is the one after the first, as before');
+
+      await sut.refreshHistory(now: at.add(const Duration(minutes: 10)));
+      verify(
+        remote.getWorkouts(
+          'u1',
+          pageSize: anyNamed('pageSize'),
+          since: argThat(isNull, named: 'since'),
+        ),
+      ).called(1);
+    });
+
     test('initHistory stops when the backend reports no more (end of list)', () async {
       final w1 = Workout(name: 'w1');
       whenFirstPage([w1], more: false);

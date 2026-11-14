@@ -50,6 +50,7 @@ part 'src/migrations/0030.dart';
 part 'src/migrations/0031.dart';
 part 'src/migrations/0032.dart';
 part 'src/migrations/0033.dart';
+part 'src/migrations/0034.dart';
 part 'src/migrations/index.dart';
 part 'src/parts/anomalies.dart';
 part 'src/parts/charts.dart';

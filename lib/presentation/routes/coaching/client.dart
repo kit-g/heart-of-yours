@@ -18,6 +18,9 @@ class ClientPage extends StatelessWidget {
   /// Opens the coach's notes on them.
   final ValueChanged<String> onNotes;
 
+  /// Opens a workout to log for them (#560).
+  final void Function(String connectionId, PastWorkout past) onLog;
+
   const new({
     super.key,
     required this.connectionId,
@@ -25,6 +28,7 @@ class ClientPage extends StatelessWidget {
     required this.onOpenProgram,
     required this.onMessage,
     required this.onNotes,
+    required this.onLog,
   });
 
   @override
@@ -48,6 +52,7 @@ class ClientPage extends StatelessWidget {
             onOpenProgram: onOpenProgram,
             onMessage: onMessage,
             onNotes: onNotes,
+            onLog: onLog,
           ),
         ),
       ),
@@ -84,6 +89,7 @@ class _ClientView extends StatefulWidget {
   final ValueChanged<String> onOpenProgram;
   final ValueChanged<String> onMessage;
   final ValueChanged<String> onNotes;
+  final void Function(String connectionId, PastWorkout past) onLog;
 
   /// The pane beside the roster names the client itself; a page has its
   /// title for that.
@@ -96,6 +102,7 @@ class _ClientView extends StatefulWidget {
     required this.onOpenProgram,
     required this.onMessage,
     required this.onNotes,
+    required this.onLog,
     this.leading,
   });
 
@@ -201,6 +208,10 @@ class _ClientViewState extends State<_ClientView> {
             // not where this device has nowhere to keep the keys
             if (DeviceKeys.of(context).supported)
               _NotesTile(connectionId: client.connectionId, onTap: () => widget.onNotes(client.connectionId)),
+            // a session they trained together, logged as theirs (#560): while
+            // they are a client, which a former one is not
+            if (client.status case 'active' || 'paused')
+              _LogForTile(client: client, onLog: (past) => widget.onLog(client.connectionId, past)),
             // what they follow, and every copy the coach sent them, waiting
             // or not: the ones both of them edit (#558)
             for (final (id, name, waiting) in _programsOf(client, ClientPrograms.watch(context).managed(id)))

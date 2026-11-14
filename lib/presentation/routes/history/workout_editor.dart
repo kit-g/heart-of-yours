@@ -13,12 +13,18 @@ class WorkoutEditor extends StatefulWidget {
   /// start out done. Null for one already in History, which Save edits.
   final LogTo? logTo;
 
+  /// Who [copy] is being logged for, by name, when it is someone else's: a
+  /// coach's client (#560). Then nothing of this account's own shows in it:
+  /// not its last time, its records or its notes on an exercise.
+  final String? loggingFor;
+
   const new({
     super.key,
     required this.copy,
     this.onTapImage,
     this.onClose,
     this.logTo,
+    this.loggingFor,
   });
 
   @override
@@ -85,7 +91,11 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
             appBar: AppBar(
               scrolledUnderElevation: 0,
               backgroundColor: scaffoldBackgroundColor,
-              title: Text(_logging ? logWorkout : editWorkout),
+              title: Text(switch ((widget.loggingFor, _logging)) {
+                (final String name, _) => l.coachingLoggingFor(name),
+                (null, true) => logWorkout,
+                (null, false) => editWorkout,
+              }),
               // in a persistent pane there is nothing behind to go back to, so
               // the control says "put this away" instead
               leading: switch (widget.onClose) {
@@ -200,12 +210,15 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               // the records this workout set, as of it, beside their sets
               child: _RecordsOf(
                 workout: workout,
+                // someone else's records aren't this account's to mark
+                mine: widget.loggingFor == null,
                 // and what looks off in it, while that is on (#428)
                 child: EntryReviewScope(
                   workoutId: workout.id,
                   child: PreviousScope(
                     before: workout.start,
                     templateId: workout.templateId,
+                    someoneElse: widget.loggingFor != null,
                     child: WorkoutDetail(
                       exercises: workout,
                       needsCancelWorkoutButton: false,
@@ -251,12 +264,25 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                           await Future.delayed(
                             // for different IDs
                             const Duration(milliseconds: 2),
-                            () => _notifier.add(each, note: preferences.noteFor(each.id)),
+                            () => _notifier.add(
+                              each,
+                              // this account's own note says nothing of someone else's set
+                              note: switch (widget.loggingFor) {
+                                null => preferences.noteFor(each.id),
+                                String _ => null,
+                              },
+                            ),
                           );
                         }
                       },
                       allowsCompletingSet: true,
-                      onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
+                      // the exercise's page and its pins are this account's
+                      // own: none of it is someone else's workout's
+                      onTapExercise: switch (widget.loggingFor) {
+                        null => (exercise) => showExerciseDetailDialog(context, exercise),
+                        String _ => null,
+                      },
+                      pinsNotes: widget.loggingFor == null,
                       onDeleteImage: (image) {
                         return showDeleteImageDialog(
                           context,
@@ -692,13 +718,17 @@ class _RecordsOf extends StatelessWidget {
   final Workout workout;
   final Widget child;
 
-  const new({required this.workout, required this.child});
+  /// Whether [workout] is this account's own: no records are marked on
+  /// anyone else's.
+  final bool mine;
+
+  const new({required this.workout, required this.child, this.mine = true});
 
   @override
   Widget build(BuildContext context) {
     final userId = Exercises.of(context).userId;
     final book = RecordBook.maybeOf(context);
-    if (book == null || userId == null) return child;
+    if (book == null || userId == null || !mine) return child;
     return FutureBuilder<RecordMarks>(
       future: book.marksOf(workout, userId: userId),
       builder: (context, snapshot) {

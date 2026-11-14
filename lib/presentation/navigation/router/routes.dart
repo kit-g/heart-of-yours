@@ -470,6 +470,7 @@ RouteBase _historyRoute() {
               return WorkoutEditor(
                 copy: past.workout,
                 logTo: past.logTo,
+                loggingFor: past.loggingFor,
                 onClose: switch (LayoutProvider.of(context)) {
                   .compact => null,
                   .wide => context.goToHistory,
@@ -1308,6 +1309,7 @@ RouteBase _coachingRoute() {
               onOpenProgram: context.pushCoachingClientProgram,
               onMessage: context.pushCoachingClientThread,
               onNotes: context.pushCoachingClientNotes,
+              onLog: context.pushCoachingClientLog,
             ),
             routes: [
               GoRoute(
@@ -1322,6 +1324,7 @@ RouteBase _coachingRoute() {
                     onOpenProgram: (programId) => context.pushCoachingClientProgram(connectionId, programId),
                     onMessage: context.pushCoachingClientThread,
                     onNotes: context.pushCoachingClientNotes,
+                    onLog: context.pushCoachingClientLog,
                   );
                 },
                 routes: [
@@ -1329,6 +1332,20 @@ RouteBase _coachingRoute() {
                     path: 'messages',
                     name: _coachingClientThreadName,
                     builder: (context, state) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+                  ),
+                  // a workout the coach logs for them (#560): it lives in what
+                  // it was opened with, so a location without it goes back
+                  GoRoute(
+                    path: 'log',
+                    name: _coachingClientLogName,
+                    redirect: (_, state) => switch (state.extra) {
+                      PastWorkout _ => null,
+                      _ => '$_coachingClientsPath/${state.pathParameters['connectionId']}',
+                    },
+                    builder: (context, state) {
+                      final past = state.extra as PastWorkout;
+                      return WorkoutEditor(copy: past.workout, logTo: past.logTo, loggingFor: past.loggingFor);
+                    },
                   ),
                   GoRoute(
                     path: 'notes',

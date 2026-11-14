@@ -49,6 +49,10 @@ class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
     return ._scoped(_service, _readBefore, _readInTemplate, start, _templateId, userId);
   }
 
+  /// A copy that knows no last time: for a workout logged for someone else
+  /// (#560), whose last time this account never saw.
+  PreviousExercises none() => ._scoped(_service, null, null, null, null, null);
+
   /// A copy whose "last time" is the last run of [templateId] (#172) — a
   /// workout started from a template, or a program's session. An exercise
   /// that template never had falls back to last time anywhere, so the column

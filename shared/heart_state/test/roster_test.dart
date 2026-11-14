@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
+import 'test_utils.dart';
+
 /// The server's side, in memory, paging by two.
 class _Server implements RosterService {
   final clients = <ClientSummary>[];
@@ -59,6 +61,16 @@ class _Server implements RosterService {
 
   @override
   Future<WorkoutPlan?> getClientWorkoutPlan(String studentId, String workoutId) async => plans[workoutId];
+
+  final logged = <String, List<Workout>>{};
+  Object? refuseLog;
+
+  @override
+  Future<Workout> logClientWorkout(String studentId, Workout workout) async {
+    if (refuseLog case final Object refusal) throw refusal;
+    (logged[studentId] ??= []).add(workout);
+    return Workout.fromJson({...workout.toMap(), 'loggedBy': 'whiskers', 'loggedByName': 'Whiskers'});
+  }
 }
 
 Workout _workout(String id, DateTime start) {
@@ -252,6 +264,55 @@ void main() {
       expect(roster.workoutsOf('muffin').map((each) => each.id), ['w3', 'w2', 'w1']);
       expect(roster.hasMoreOf('muffin'), isFalse);
       expect(roster.recordStatus('muffin'), CoachingStatus.loaded);
+    });
+
+    test('a workout logged for them (#560) is theirs on the server, and first in their record', () async {
+      server.workouts.add(_workout('w1', DateTime.utc(2026, 11, 7)));
+      await roster.loadRecord('muffin');
+      final workout = Workout(name: 'Day B, together')..start = DateTime.utc(2026, 11, 9);
+
+      final logged = await roster.logFor('muffin', workout);
+
+      expect(server.logged['muffin'], [workout]);
+      expect(logged.loggedBy, 'whiskers');
+      expect(roster.workoutsOf('muffin').map((each) => each.id), [workout.id, 'w1']);
+    });
+
+    test('a workout logged for them takes only what was done, as one logged for oneself does', () async {
+      final bench = ex('Bench Press');
+      final squat = ex('Squat');
+      final workout = Workout(name: 'Push')..start = DateTime.utc(2026, 11, 9);
+      workout.add(bench).first
+        ..setMeasurements(reps: 8)
+        ..isCompleted = true;
+      // ticked with nothing in it, and typed but never ticked
+      workout.first.add(ExerciseSet(bench)..isCompleted = true);
+      workout.first.add(ExerciseSet(bench)..setMeasurements(reps: 5));
+      workout.add(squat).first.isCompleted = true;
+
+      await roster.logFor('muffin', workout);
+
+      final sent = server.logged['muffin']!.single;
+      expect(sent.map((exercise) => exercise.exercise.id), [bench.id], reason: 'an exercise of empty sets goes');
+      expect(sent.single.map((set) => set.reps), [8]);
+    });
+
+    test("one logged for an earlier day still goes first: the record is the server's, newest id first", () async {
+      server.workouts.add(_workout('w1', DateTime.utc(2026, 11, 7)));
+      await roster.loadRecord('muffin');
+      final workout = Workout(name: 'Day A, last week')..start = DateTime.utc(2026, 11, 2);
+
+      await roster.logFor('muffin', workout);
+
+      expect(roster.workoutsOf('muffin').map((each) => each.id), [workout.id, 'w1']);
+    });
+
+    test('a log refused is thrown, and changes nothing here', () async {
+      server.refuseLog = {'code': 'forbidden'};
+
+      expect(roster.logFor('muffin', Workout()), throwsA(containsPair('code', 'forbidden')));
+      await pumpEventQueue();
+      expect(roster.workoutsOf('muffin'), isEmpty);
     });
 
     test('a refusal leaves it failed, and sign-out forgets it', () async {
