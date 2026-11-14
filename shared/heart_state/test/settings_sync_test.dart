@@ -381,6 +381,7 @@ void main() {
   });
 
   _weekSync();
+  _screenChoices();
 }
 
 void _weekSync() {
@@ -480,6 +481,113 @@ void _weekSync() {
       account.arrive(const Settings());
       await settle();
       expect(account.saved.single.firstWeekday, DateTime.sunday);
+    });
+  });
+}
+
+void _screenChoices() {
+  final earlier = DateTime.utc(2026, 9, 1, 10);
+  final later = DateTime.utc(2026, 9, 20, 10);
+
+  group('screen choices (#609)', () {
+    late Preferences preferences;
+    late _Account account;
+
+    Future<void> boot({Map<String, Object> stored = const {}}) async {
+      SharedPreferences.setMockInitialValues(stored);
+      preferences = Preferences();
+      await preferences.init();
+      account = _Account();
+      final sync = SettingsSync(preferences: preferences, auth: account);
+      addTearDown(sync.dispose);
+    }
+
+    Future<void> settle() => Future<void>.delayed(Duration.zero);
+
+    test('the codec reads what it wrote, and passes through what it cannot read', () {
+      final records = {ScreenChoice.historyView: ScreenChoiceRecord(value: 'calendar', at: later)};
+      const settings = Settings(
+        extra: {
+          'kept': 1,
+          'screens': {
+            'historyDensity': {'value': 'compact', 'at': '2026-09-01T10:00:00.000Z'},
+            'historyView': {'value': 'list', 'at': '2026-09-01T10:00:00.000Z', 'theirs': true},
+          },
+        },
+      );
+      final written = withScreenChoices(settings, records);
+      expect(screenChoicesOf(written), records);
+      expect(written.extra['kept'], 1);
+      expect(written.extra['screens'], containsPair('historyDensity', isA<Map>()));
+      expect((written.extra['screens'] as Map)['historyView'], containsPair('theirs', true));
+      for (final odd in [
+        null,
+        'calendar',
+        {'historyView': 'calendar'},
+        {
+          'historyView': {'value': 'calendar'},
+        },
+        {
+          'historyView': {'value': 1, 'at': '2026-09-01T10:00:00.000Z'},
+        },
+        {
+          'historyView': {'value': 'calendar', 'at': 'yesterday'},
+        },
+      ]) {
+        expect(screenChoicesOf(Settings(extra: {'screens': odd})), isEmpty, reason: '$odd');
+      }
+    });
+
+    test('History opens on the list until a choice is made, and an unknown value reads as the list', () async {
+      await boot();
+      expect(preferences.historyView, HistoryView.list);
+      expect(preferences.screenChoices, isEmpty);
+
+      await boot(stored: {'screen-historyView': 'agenda', 'screen-historyView-at': later.toIso8601String()});
+      expect(preferences.historyView, HistoryView.list);
+    });
+
+    test('a choice made here goes up, and a newer one from elsewhere comes down', () async {
+      await boot();
+      account.arrive(const Settings());
+      await settle();
+      expect(account.saved, isEmpty);
+
+      preferences.setHistoryView(.calendar);
+      await settle();
+      expect(screenChoicesOf(account.saved.single)[ScreenChoice.historyView]?.value, 'calendar');
+
+      final elsewhere = DateTime.timestamp().add(const Duration(minutes: 1));
+      account.arrive(
+        withScreenChoices(const Settings(), {
+          ScreenChoice.historyView: ScreenChoiceRecord(value: 'list', at: elsewhere),
+        }),
+      );
+      await settle();
+      expect(preferences.historyView, HistoryView.list);
+      expect(account.saved, hasLength(1));
+    });
+
+    test('an older choice from elsewhere does not overwrite a newer one here', () async {
+      await boot(stored: {'screen-historyView': 'calendar', 'screen-historyView-at': later.toIso8601String()});
+      account.arrive(
+        withScreenChoices(const Settings(), {
+          ScreenChoice.historyView: ScreenChoiceRecord(value: 'list', at: earlier),
+        }),
+      );
+      await settle();
+      expect(preferences.historyView, HistoryView.calendar);
+      expect(screenChoicesOf(account.saved.single)[ScreenChoice.historyView]?.value, 'calendar');
+    });
+
+    test('choosing the view already shown is not a choice', () async {
+      await boot();
+      account.arrive(const Settings());
+      await settle();
+      preferences.setHistoryView(.list);
+      await settle();
+      expect(preferences.screenChoices, isEmpty);
+      expect(account.saved, isEmpty);
     });
   });
 }
