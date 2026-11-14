@@ -109,8 +109,8 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
                   }
                   final month = DateTime(newest.year, newest.month - index);
                   final key = DateFormat('yyyy-MM').format(month);
-                  // newest first, as byMonth has them: several sessions on a
-                  // day share one mark and open the most recent
+                  // newest first, as byMonth has them; a workout counts on the
+                  // day it started, even one that ran past midnight
                   final sessions = byMonth[key] ?? const <Workout>[];
                   final days = {
                     for (final day in sessions.map((workout) => workout.start.day).toSet())
@@ -179,16 +179,11 @@ class _CalendarMonth extends StatelessWidget {
                   child: SizedBox(
                     height: 52,
                     child: switch (days[day]) {
-                      [Workout newest, ...] && final sessions => _MarkedDay(
-                        label: switch (onOpen) {
-                          null => label,
-                          _ => '$label, ${L.of(context).editWorkout}',
-                        },
+                      [_, ...] && final sessions => _MarkedDay(
+                        date: label,
+                        sessions: sessions,
                         selected: sessions.any((workout) => workout.id == selectedId),
-                        onTap: switch (onOpen) {
-                          void Function(Workout) open => () => open(newest),
-                          null => null,
-                        },
+                        onOpen: onOpen,
                         child: number,
                       ),
                       _ => Semantics(
@@ -209,19 +204,77 @@ class _CalendarMonth extends StatelessWidget {
   }
 }
 
-/// A day trained: filled, with a check, and outlined while the detail pane
-/// shows one of its workouts. Marked whether or not it opens anything.
+/// A day trained: filled, and outlined while the detail pane shows one of its
+/// workouts. Marked whether or not it opens anything.
+///
+/// One workout carries a check and opens straight away. Several carry their
+/// count (#619) and open a short list of them, earliest first, rather than
+/// silently opening one.
 class _MarkedDay extends StatelessWidget {
-  final String label;
+  /// The day, as read out.
+  final String date;
+
+  /// The day's workouts, newest first, as History holds them.
+  final List<Workout> sessions;
   final bool selected;
-  final VoidCallback? onTap;
+  final void Function(Workout)? onOpen;
   final Widget child;
 
-  const new({required this.label, required this.selected, required this.child, this.onTap});
+  const new({
+    required this.date,
+    required this.sessions,
+    required this.selected,
+    required this.child,
+    this.onOpen,
+  });
+
+  Future<void> _choose(BuildContext context, void Function(Workout) open) async {
+    final locale = L.of(context).localeName;
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final box = context.findRenderObject()! as RenderBox;
+    final corner = box.localToGlobal(Offset(0, box.size.height));
+    final picked = await showMenu<Workout>(
+      context: context,
+      position: RelativeRect.fromLTRB(corner.dx, corner.dy, corner.dx + box.size.width, corner.dy),
+      constraints: const BoxConstraints(minWidth: 200, maxWidth: 280),
+      items: [
+        for (final workout in sessions.reversed)
+          PopupMenuItem<Workout>(
+            value: workout,
+            child: Column(
+              crossAxisAlignment: .start,
+              mainAxisSize: .min,
+              children: [
+                Text(workout.name ?? '?', maxLines: 1, overflow: .ellipsis, style: textTheme.bodyLarge),
+                Text(
+                  DateFormat.jm(locale).format(workout.start),
+                  style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+    if (picked != null) open(picked);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme(:primary, :onPrimary, :surfaceContainerHighest) = Theme.of(context).colorScheme;
+    final ThemeData(:textTheme, colorScheme: ColorScheme(:primary, :onPrimary, :surfaceContainerHighest)) = Theme.of(
+      context,
+    );
+    final l = L.of(context);
+    final several = sessions.length > 1;
+    final label = switch ((several, onOpen)) {
+      (true, _) => '$date, ${l.calendarWorkouts(sessions.length)}',
+      (false, null) => date,
+      (false, _) => '$date, ${l.editWorkout}',
+    };
+    final VoidCallback? onTap = switch ((sessions, onOpen)) {
+      (_, null) => null,
+      ([final Workout only], final void Function(Workout) open) => () => open(only),
+      (_, final void Function(Workout) open) => () => _choose(context, open),
+    };
     return Semantics(
       container: true,
       button: onTap != null,
@@ -251,10 +304,18 @@ class _MarkedDay extends StatelessWidget {
                 right: -2,
                 top: -2,
                 child: Container(
-                  width: 18,
+                  constraints: const BoxConstraints(minWidth: 18),
                   height: 18,
-                  decoration: BoxDecoration(color: primary, shape: .circle),
-                  child: Icon(Icons.check, size: 14, color: onPrimary),
+                  padding: several ? const .symmetric(horizontal: 4) : .zero,
+                  alignment: .center,
+                  decoration: BoxDecoration(color: primary, borderRadius: const .all(.circular(9))),
+                  child: switch (several) {
+                    true => Text(
+                      '${sessions.length}',
+                      style: textTheme.labelSmall?.copyWith(color: onPrimary, fontWeight: .w700, height: 1),
+                    ),
+                    false => Icon(Icons.check, size: 14, color: onPrimary),
+                  },
                 ),
               ),
             ],

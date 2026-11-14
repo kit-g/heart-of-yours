@@ -92,14 +92,21 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('one badge per completed day; empty days have no action', (tester) async {
+  // a day's count, told from the day numbers by its weight
+  Finder badge(int count) => find.byWidgetPredicate(
+    (widget) => widget is Text && widget.data == '$count' && widget.style?.fontWeight == FontWeight.w700,
+  );
+
+  testWidgets('one mark per completed day; empty days have no action', (tester) async {
     final semantics = tester.ensureSemantics();
 
     final workouts = _Workouts()..rows[key(current)] = [workout(current, 5), workout(current, 5), workout(current, 8)];
     await pump(tester, workouts);
-    expect(find.byIcon(Icons.check), findsNWidgets(2));
+    // the 5th holds two: a count, not a second check (#619)
+    expect(find.byIcon(Icons.check), findsOneWidget);
+    expect(badge(2), findsOneWidget);
     final marked = tester.getSemantics(
-      find.bySemanticsLabel('${DateFormat.yMMMMEEEEd('en').format(DateTime(now.year, now.month, 5))}, Edit Workout'),
+      find.bySemanticsLabel('${DateFormat.yMMMMEEEEd('en').format(DateTime(now.year, now.month, 8))}, Edit Workout'),
     );
     expect(marked.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
     final empty = tester.getSemantics(
@@ -109,14 +116,56 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('a day of several sessions opens the newest', (tester) async {
-    final earlier = Workout(name: 'Morning')..start = DateTime(current.year, current.month, 5, 7);
-    final later = Workout(name: 'Evening')..start = DateTime(current.year, current.month, 5, 19);
+  testWidgets('one workout opens straight away, its day announced as one to edit (#619)', (tester) async {
     final opened = <Workout>[];
-    // newest first, as byMonth has them
-    await pump(tester, _Workouts()..rows[key(current)] = [later, earlier], onTapWorkout: opened.add);
+    await pump(tester, _Workouts()..rows[key(current)] = [workout(current, 5)], onTapWorkout: opened.add);
     await tester.tap(find.byIcon(Icons.check));
-    expect(opened.single.name, 'Evening');
+    await tester.pumpAndSettle();
+    expect(opened.single.name, 'Session');
+    expect(find.byType(PopupMenuItem<Workout>), findsNothing);
+  });
+
+  for (final count in [2, 3, 4]) {
+    testWidgets('a day of $count workouts shows and announces its count, and asks which (#619)', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final sessions = [
+        for (final hour in List.generate(count, (i) => 7 + i * 4))
+          Workout(name: 'At $hour')..start = DateTime(current.year, current.month, 5, hour),
+      ].reversed.toList();
+      final opened = <Workout>[];
+      await pump(tester, _Workouts()..rows[key(current)] = sessions, onTapWorkout: opened.add);
+      expect(badge(count), findsOneWidget);
+      expect(find.byIcon(Icons.check), findsNothing);
+      final label = '${DateFormat.yMMMMEEEEd('en').format(DateTime(current.year, current.month, 5))}, $count workouts';
+      final day = tester.getSemantics(find.bySemanticsLabel(label));
+      expect(day.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+
+      await tester.tap(find.bySemanticsLabel(label));
+      await tester.pumpAndSettle();
+      expect(opened, isEmpty);
+      final items = find.byType(PopupMenuItem<Workout>);
+      expect(items, findsNWidgets(count));
+      // earliest first
+      expect(tester.getTopLeft(find.text('At 7')).dy, lessThan(tester.getTopLeft(find.text('At 11')).dy));
+      await tester.tap(find.text('At 11'));
+      await tester.pumpAndSettle();
+      expect(opened.single.name, 'At 11');
+      semantics.dispose();
+    });
+  }
+
+  testWidgets('a workout past midnight counts on the day it started (#619)', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final late = Workout(name: 'Late')..start = DateTime(current.year, current.month, 5, 23, 30);
+    late.finish(late.start.add(const Duration(hours: 1)));
+    await pump(tester, _Workouts()..rows[key(current)] = [late]);
+    final date = DateFormat.yMMMMEEEEd('en');
+    expect(
+      find.bySemanticsLabel('${date.format(DateTime(current.year, current.month, 5))}, Edit Workout'),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel(date.format(DateTime(current.year, current.month, 6))), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('a trained day is marked even where it opens nothing', (tester) async {

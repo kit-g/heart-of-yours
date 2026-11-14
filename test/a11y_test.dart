@@ -86,6 +86,7 @@ enum _Screen {
   skipPage,
   notTodaySheet,
   calendar,
+  calendarDay,
   exercises,
   settings,
   anonymousSettings,
@@ -666,6 +667,13 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.calendar, _Guideline.textContrastDark, null),
   (_Screen.calendar, _Guideline.androidTapTarget, null),
   (_Screen.calendar, _Guideline.iosTapTarget, null),
+
+  // a day of two workouts (#619): its count, and the list of them it opens
+  (_Screen.calendarDay, _Guideline.labeledTapTarget, null),
+  (_Screen.calendarDay, _Guideline.textContrastLight, null),
+  (_Screen.calendarDay, _Guideline.textContrastDark, null),
+  (_Screen.calendarDay, _Guideline.androidTapTarget, null),
+  (_Screen.calendarDay, _Guideline.iosTapTarget, null),
 
   (_Screen.history, _Guideline.labeledTapTarget, null),
   (_Screen.history, _Guideline.textContrastLight, null),
@@ -2260,6 +2268,22 @@ void main() {
         // the row is only honest if it is the move it checked
         expect(find.textContaining('next time'), findsOneWidget);
         expect(find.textContaining('Keep'), findsOneWidget);
+      case _Screen.calendarDay:
+        // both early today, so the two can never fall either side of midnight
+        final today = DateTime.now();
+        final first = _unsynced()..start = DateTime(today.year, today.month, today.day, 0, 1);
+        final second = _unsynced()..start = DateTime(today.year, today.month, today.day, 0, 2);
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [second, first]);
+        when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
+            .thenAnswer((_) async => [second, first]);
+        await tester.tapByKey(AppKeys.historyStack);
+        await tester.pumpTimes();
+        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
+        await tester.pumpTimes();
+        await tester.tap(find.bySemanticsLabel(RegExp(r', 2 workouts$')));
+        await tester.pumpTimes();
+        // the screen is only honest if the list is open on it
+        expect(find.byType(PopupMenuItem<Workout>), findsNWidgets(2));
       case _Screen.calendar:
         final completed = Workout.fromJson(_unsynced().toMap());
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
