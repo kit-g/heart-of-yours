@@ -112,10 +112,7 @@ void main() {
   }
 
   Finder dialogName() {
-    return find.descendant(
-      of: find.ancestor(of: find.text('Create new exercise'), matching: find.byType(Card)),
-      matching: find.byType(TextField),
-    );
+    return find.byKey(AppKeys.newExerciseName);
   }
 
   /// Fills in what the dialog needs past a name and saves.

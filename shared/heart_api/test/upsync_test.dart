@@ -74,6 +74,15 @@ void main() {
       expect(sentBody(), containsPair('pattern', 'horizontal_press'));
     });
 
+    test('the create carries the instructions (#621)', () async {
+      final exercise = custom().withInstructionsForTest('Low pulley, step out.');
+      _post(client, Router.exercises, 201, exercise.toMap());
+
+      await api.replayExercise(exercise);
+
+      expect(sentBody(), containsPair('instructions', 'Low pulley, step out.'));
+    });
+
     test('makeExercise is the same call, and takes a 201 in its stride', () async {
       final exercise = custom();
       _post(client, Router.exercises, 201, exercise.toMap());
@@ -330,3 +339,7 @@ class _Response(
   super.statusCode, {
   required super.request,
 }) extends http.Response;
+
+extension on Exercise {
+  Exercise withInstructionsForTest(String text) => Exercise.fromJson({...toMap(), 'instructions': text});
+}

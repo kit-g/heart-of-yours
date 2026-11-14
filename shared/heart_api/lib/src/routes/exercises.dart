@@ -38,6 +38,8 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
           'name': exercise.name,
           'category': exercise.category.value,
           'target': exercise.target.value,
+          // the user's own words, shown on the About tab (#621)
+          'instructions': ?exercise.instructions,
           // the server keeps it, so a reinstall or a second device sees it
           // too (#616); the device's own copy no longer has to carry it alone
           'pattern': ?exercise.movement.groups.firstOrNull,

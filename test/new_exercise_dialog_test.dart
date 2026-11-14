@@ -56,7 +56,7 @@ void main() {
     expect(find.text('Create new exercise'), findsOneWidget);
   }
 
-  Finder nameField() => find.descendant(of: find.byType(Card), matching: find.byType(TextField));
+  Finder nameField() => find.byKey(AppKeys.newExerciseName);
 
   testWidgets('save is disabled until a name, a target and a category are all set', (tester) async {
     await pumpToNewExerciseDialog(tester);
@@ -269,10 +269,32 @@ void main() {
       expect(find.text('You already have an exercise with this name'), findsNothing);
     });
 
+    testWidgets('instructions alone are an edit, saved trimmed, and cleared to none (#621)', (tester) async {
+      final context = await pumpToEdit(tester, own);
+      Finder field() => find.byKey(AppKeys.newExerciseInstructions);
+
+      await tester.ensureVisible(field());
+      await tester.enterTextAndWait(field(), '  Knee on a pad, press up and across.  ');
+      expect((save(tester) as PrimaryButton).onPressed, isNotNull);
+      await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
+      await tester.pumpTimes();
+      expect(Exercises.of(context).lookup(own.id)?.instructions, 'Knee on a pad, press up and across.');
+
+      unawaited(showNewExerciseDialog(context, editable: own));
+      await tester.pumpTimes();
+      expect(tester.widget<TextField>(field()).controller?.text, 'Knee on a pad, press up and across.');
+      await tester.ensureVisible(field());
+      await tester.enterTextAndWait(field(), '   ');
+      await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
+      await tester.pumpTimes();
+      expect(Exercises.of(context).lookup(own.id)?.instructions, isNull);
+      expect(Exercises.of(context).lookup(own.id)?.hasInfo, isFalse, reason: 'no About tab for nothing');
+    });
+
     testWidgets("a library exercise's name is not a field", (tester) async {
       await pumpToEdit(tester, Exercise.fromJson({...own.toMap(), 'own': 0}));
 
-      expect(nameField(), findsNothing);
+      expect(find.descendant(of: find.byType(Card), matching: find.byType(TextField)), findsNothing);
       expect(find.text('Landmine Press'), findsOneWidget);
     });
   });

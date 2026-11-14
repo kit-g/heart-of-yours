@@ -319,6 +319,13 @@ abstract final class AppKeys {
   /// choices.
   static const newExercisePattern = Key('NewExercise.pattern');
   static Key newExercisePatternOption(String? pattern) => Key('NewExercise.pattern.${pattern ?? 'none'}');
+
+  /// The new-exercise dialog's name field.
+  static const newExerciseName = Key('NewExercise.name');
+
+  /// The new-exercise dialog's instructions field (#621).
+  static const newExerciseInstructions = Key('NewExercise.instructions');
+
   static const musclePickerRole = Key('MusclePicker.role');
   static const musclePickerFigures = Key('MusclePicker.figures');
 

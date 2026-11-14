@@ -19,6 +19,15 @@ final _formatter = FilteringTextInputFormatter.deny(RegExp(r'\p{Cc}', unicode: t
 // the server's limit on a name, created or renamed (heart-api#429)
 final _length = LengthLimitingTextInputFormatter(200);
 
+// and on instructions
+final _instructionsLength = LengthLimitingTextInputFormatter(10000);
+
+/// Instructions as stored: trimmed, and blank is none (#621).
+String? _written(String? text) {
+  final trimmed = text?.trim() ?? '';
+  return trimmed.isEmpty ? null : trimmed;
+}
+
 /// A name as a library search would hear it: letters and digits only, any
 /// case — "Farmer's walk" and "Farmer's Walk" are one name.
 String _nameKey(String name) => name.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '');
@@ -70,6 +79,9 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
   // the next keystroke
   final refused = ValueNotifier(false);
   nameController.addListener(() => refused.value = false);
+  // the user's own words on how it's done, shown on the About tab as written,
+  // in every language (#621)
+  final instructionsController = TextEditingController(text: editable?.instructions);
   return showDialog<Exercise>(
     barrierDismissible: true,
     context: context,
@@ -110,7 +122,15 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
                           child: ListenableBuilder(
-                            listenable: Listenable.merge([loading, target, category, pattern, roles, nameController]),
+                            listenable: Listenable.merge([
+                              loading,
+                              target,
+                              category,
+                              pattern,
+                              roles,
+                              nameController,
+                              instructionsController,
+                            ]),
                             builder: (_, _) {
                               final (l, t, c, p, r, n) = (
                                 loading.value,
@@ -122,6 +142,7 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                               );
                               final retagged = !sameRoles(r, initialRoles);
                               final typed = n.text.trim();
+                              final written = _written(instructionsController.text);
                               final enough = switch (editable) {
                                 Exercise e =>
                                   t != null &&
@@ -132,6 +153,7 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                                           e.target != t ||
                                           e.category != c ||
                                           e.movement.groups.firstOrNull != p ||
+                                          written != _written(e.instructions) ||
                                           retagged),
                                 null => t != null && c != null && typed.isNotEmpty,
                               };
@@ -161,6 +183,7 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                                             isMine: true,
                                             movement: movement,
                                             tags: taggingOf(r),
+                                            instructions: written,
                                           );
                                           await Exercises.of(context).makeExercise(exercise);
                                           saved = exercise;
@@ -169,7 +192,10 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                                           final named = typed == editable.name.trim()
                                               ? editable
                                               : editable.renamed(typed);
-                                          final edited = named.copyWith(
+                                          final described = written == _written(editable.instructions)
+                                              ? named
+                                              : named.withInstructions(written);
+                                          final edited = described.copyWith(
                                             category: c,
                                             target: t,
                                             movement: movement,
@@ -232,6 +258,7 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                                     null => false,
                                   };
                                   return TextField(
+                                    key: AppKeys.newExerciseName,
                                     controller: nameController,
                                     inputFormatters: [_formatter, _length],
                                     selectionControls: context.platformSpecificSelectionControls(),
@@ -366,6 +393,24 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                               },
                             ),
                             MusclePicker(roles: roles),
+                            // the user's words, so only on what is the user's
+                            if (renamable)
+                              TextField(
+                                key: AppKeys.newExerciseInstructions,
+                                controller: instructionsController,
+                                minLines: 3,
+                                maxLines: 8,
+                                keyboardType: .multiline,
+                                textCapitalization: .sentences,
+                                inputFormatters: [_instructionsLength],
+                                selectionControls: context.platformSpecificSelectionControls(),
+                                decoration: InputDecoration(
+                                  labelText: L.of(context).exerciseInstructions,
+                                  hintText: L.of(context).exerciseInstructionsHint,
+                                  alignLabelWithHint: true,
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
                           ],
                         ),
                       ),
