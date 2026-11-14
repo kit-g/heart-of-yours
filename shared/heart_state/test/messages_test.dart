@@ -234,6 +234,62 @@ void main() {
       expect(messages.lookup(threadId)!.clearedBy, me);
     });
 
+    test('what still holds something: a message since the last deletion, under a connection', () async {
+      server.threads = [
+        ...server.threads,
+        Thread(id: 'empty', connectionId: 'c2', otherId: coach),
+        Thread(id: 'orphan', otherId: coach, lastAt: DateTime.utc(2026, 11, 11)),
+      ];
+
+      await messages.load();
+
+      expect(messages.holding.map((each) => each.id), [threadId]);
+    });
+
+    test('deleted here, a conversation holds nothing, even when the inbox can\'t be read after it', () async {
+      await messages.load();
+      server.failThreads = const _Unreachable();
+
+      await messages.clear(threadId);
+
+      expect(messages.lookup(threadId)!.lastAt, isNull);
+      expect(messages.holding, isEmpty);
+      expect(store.threads[me]!.single.lastAt, isNull, reason: 'kept that way on the device');
+    });
+
+    test('written in after a deletion, it holds something again, before the server says so', () async {
+      await messages.load();
+      await messages.clear(threadId);
+      access.account = false;
+
+      await messages.send(threadId, 'one more thing');
+
+      expect(messages.holding.map((each) => each.id), [threadId]);
+      expect(messages.lookup(threadId)!.lastAt, DateTime.utc(2026, 11, 12, 9));
+    });
+
+    test('deleting them all goes at once, reads the inbox once, and counts what failed', () async {
+      server.threads = [
+        ...server.threads,
+        Thread(id: 't2', connectionId: 'c2', otherId: 'biscuit', lastAt: DateTime.utc(2026, 11, 11)),
+        Thread(id: 't3', connectionId: 'c3', otherId: 'pickle', lastAt: DateTime.utc(2026, 11, 10)),
+      ];
+      server.failClear = {'t2'};
+      await messages.load();
+      server.calls.clear();
+
+      final failed = await messages.clearAll();
+
+      expect(failed, 1);
+      expect(errors, hasLength(1));
+      expect(
+        server.calls.where((each) => each.startsWith('clear')),
+        unorderedEquals(['clear t1', 'clear t2', 'clear t3']),
+      );
+      expect(server.calls.where((each) => each == 'threads'), hasLength(1));
+      expect(messages.holding.map((each) => each.id), ['t2']);
+    });
+
     test('a read under way when the conversation was deleted brings none of it back', () async {
       server.items = [_item('a', cursor: 'c1')];
       await messages.load();
@@ -650,11 +706,15 @@ class _Server implements RemoteThreadService {
 
   /// What a clear stamps on the thread.
   DateTime? clearedAt;
+
+  /// Threads whose clear never reaches the server.
+  Set<String> failClear = {};
   final reports = <({String reportedId, String reason, List<ReportedMessage> reported})>[];
 
   @override
   Future<void> clearThread(String threadId) async {
     calls.add('clear $threadId');
+    if (failClear.contains(threadId)) throw const _Unreachable();
     items = [];
     threads = [
       for (final each in threads)

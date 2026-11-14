@@ -3,6 +3,8 @@
 // password, change name, and account deletion (with the password
 // confirmation an account made with one gets, and the destructive call only
 // landing after it).
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart' show InternalUserInfo;
@@ -101,7 +103,12 @@ void main() {
     stubStartup(db, api);
   });
 
-  Future<void> pumpToAccountManagement(WidgetTester tester, {required MockFirebaseAuth firebase}) async {
+  Future<void> pumpToAccountManagement(
+    WidgetTester tester, {
+    required MockFirebaseAuth firebase,
+    Map<String, Object> prefs = const {},
+  }) async {
+    if (prefs.isNotEmpty) SharedPreferences.setMockInitialValues({...pastOnboarding(), ...prefs});
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -250,57 +257,129 @@ void main() {
       verifyNever(api.deleteAccount(accountId: anyNamed('accountId'), appleGrant: anyNamed('appleGrant')));
     });
 
-    testWidgets('conversations are said to stay, and can be deleted first, for both (#568)', (tester) async {
-      final thread = Thread(id: 't1', connectionId: 'c1', otherName: 'Whiskers', lastAt: DateTime.utc(2026, 11, 14));
-      var cleared = false;
-      when(db.getThreads(any)).thenAnswer((_) async => [thread]);
-      when(api.getThreads()).thenAnswer(
-        (_) async => [
-          switch (cleared) {
-            true => Thread(
-              id: 't1',
-              connectionId: 'c1',
-              otherName: 'Whiskers',
-              lastAt: DateTime.utc(2026, 11, 14),
-              clearedAt: DateTime.utc(2026, 11, 15),
-            ),
-            false => thread,
-          },
-        ],
-      );
-      when(api.clearThread('t1')).thenAnswer((_) async => cleared = true);
-      when(db.storeThread(any, any)).thenAnswer((_) async {});
-      when(db.storeThreads(any, any)).thenAnswer((_) async {});
-      when(db.getThreadItems(any, any)).thenAnswer((_) async => []);
-      when(db.deleteThreadItems(any, any)).thenAnswer((_) async {});
-      final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
-      await pumpToAccountManagement(tester, firebase: firebase);
-      await Messages.of(tester.element(find.byType(AccountManagementPage))).load();
-      await tester.pumpTimes();
+    group('conversations that stay with the other person (#568)', () {
+      final holding = Thread(id: 't1', connectionId: 'c1', otherName: 'Whiskers', lastAt: DateTime.utc(2026, 11, 14));
+      const coaching = {'feature-yourCoach': 'on'};
 
-      await tester.tap(find.text('Delete account'));
-      await tester.pumpTimes();
-      expect(find.textContaining('Your conversation stays with the other person'), findsOneWidget);
+      setUp(() {
+        when(db.storeThread(any, any)).thenAnswer((_) async {});
+        when(db.storeThreads(any, any)).thenAnswer((_) async {});
+        when(db.getThreadItems(any, any)).thenAnswer((_) async => []);
+        when(db.deleteThreadItems(any, any)).thenAnswer((_) async {});
+      });
 
-      await tester.tapByKey(AppKeys.deleteAccountConversations);
-      await tester.pumpTimes();
-      await tester.tapByKey(AppKeys.deleteAccountConversationsConfirm);
-      await tester.pumpTimes();
+      testWidgets('are said once the inbox arrives, and can be deleted first, for both', (tester) async {
+        var cleared = false;
+        when(db.getThreads(any)).thenAnswer((_) async => []);
+        // the server drops the time of the last message with them
+        when(api.getThreads()).thenAnswer(
+          (_) async => [
+            switch (cleared) {
+              true => Thread(
+                id: 't1',
+                connectionId: 'c1',
+                otherName: 'Whiskers',
+                clearedAt: DateTime.utc(2026, 11, 15),
+              ),
+              false => holding,
+            },
+          ],
+        );
+        when(api.clearThread('t1')).thenAnswer((_) async => cleared = true);
+        final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
+        await pumpToAccountManagement(tester, firebase: firebase, prefs: coaching);
 
-      verify(api.clearThread('t1')).called(1);
-      expect(find.text('Your conversations are deleted for both sides.'), findsOneWidget);
-      expect(find.byKey(AppKeys.deleteAccountConversations), findsNothing);
-      verifyNever(api.deleteAccount(accountId: anyNamed('accountId'), appleGrant: anyNamed('appleGrant')));
-    });
+        await tester.tap(find.text('Delete account'));
+        await tester.pumpTimes();
+        expect(find.textContaining('Your conversation stays with the other person'), findsOneWidget);
 
-    testWidgets('with no conversations, nothing is said of them', (tester) async {
-      final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
-      await pumpToAccountManagement(tester, firebase: firebase);
+        await tester.tapByKey(AppKeys.deleteAccountConversations);
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.deleteAccountConversationsConfirm);
+        await tester.pumpTimes();
 
-      await tester.tap(find.text('Delete account'));
-      await tester.pumpTimes();
+        verify(api.clearThread('t1')).called(1);
+        expect(find.text('Your messages are deleted for both sides.'), findsOneWidget);
+        expect(find.byKey(AppKeys.deleteAccountConversations), findsNothing);
+        verifyNever(api.deleteAccount(accountId: anyNamed('accountId'), appleGrant: anyNamed('appleGrant')));
+      });
 
-      expect(find.byKey(AppKeys.deleteAccountConversations), findsNothing);
+      testWidgets('one that could not be deleted is said in the dialog, and offered again', (tester) async {
+        when(db.getThreads(any)).thenAnswer((_) async => []);
+        when(api.getThreads()).thenAnswer((_) async => [holding]);
+        when(api.clearThread('t1')).thenThrow(Exception('offline'));
+        final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
+        await pumpToAccountManagement(tester, firebase: firebase, prefs: coaching);
+
+        await tester.tap(find.text('Delete account'));
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.deleteAccountConversations);
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.deleteAccountConversationsConfirm);
+        await tester.pumpTimes();
+
+        expect(find.text("Couldn't delete a conversation. Try again."), findsOneWidget);
+        expect(find.byKey(AppKeys.deleteAccountConversations), findsOneWidget);
+      });
+
+      testWidgets('while they are being deleted, the account cannot be, nor are they deleted twice', (tester) async {
+        final server = Completer<void>();
+        when(db.getThreads(any)).thenAnswer((_) async => []);
+        when(api.getThreads()).thenAnswer((_) async => [holding]);
+        when(api.clearThread('t1')).thenAnswer((_) => server.future);
+        final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
+        await pumpToAccountManagement(tester, firebase: firebase, prefs: coaching);
+
+        await tester.tap(find.text('Delete account'));
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.deleteAccountConversations);
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.deleteAccountConversationsConfirm);
+        await tester.pump();
+
+        expect(find.byKey(AppKeys.deleteAccountConversations), findsNothing);
+        expect(find.text('Yep, go on without me!'), findsNothing);
+        expect(find.byType(CircularProgressIndicator), findsNWidgets(2));
+
+        server.complete();
+        await tester.pumpTimes();
+        expect(find.text('Yep, go on without me!'), findsOneWidget);
+        verify(api.clearThread('t1')).called(1);
+      });
+
+      testWidgets('a conversation that holds nothing is not mentioned', (tester) async {
+        final emptied = Thread(
+          id: 't1',
+          connectionId: 'c1',
+          otherName: 'Whiskers',
+          clearedAt: DateTime.utc(2026, 11, 15),
+        );
+        when(db.getThreads(any)).thenAnswer((_) async => []);
+        when(api.getThreads()).thenAnswer((_) async => [emptied]);
+        final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
+        await pumpToAccountManagement(tester, firebase: firebase, prefs: coaching);
+
+        await tester.tap(find.text('Delete account'));
+        await tester.pumpTimes();
+
+        verify(api.getThreads()).called(greaterThanOrEqualTo(1));
+        expect(find.textContaining('stays with the other person'), findsNothing);
+        expect(find.byKey(AppKeys.deleteAccountConversations), findsNothing);
+      });
+
+      testWidgets('with coaching off, nothing is said of them, nor read', (tester) async {
+        when(db.getThreads(any)).thenAnswer((_) async => [holding]);
+        when(api.getThreads()).thenAnswer((_) async => [holding]);
+        final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
+        await pumpToAccountManagement(tester, firebase: firebase);
+
+        await tester.tap(find.text('Delete account'));
+        await tester.pumpTimes();
+
+        expect(find.textContaining('stays with the other person'), findsNothing);
+        expect(find.byKey(AppKeys.deleteAccountConversations), findsNothing);
+        verifyNever(api.getThreads());
+      });
     });
 
     testWidgets('a provider account (no password) skips straight past the password prompt', (tester) async {
