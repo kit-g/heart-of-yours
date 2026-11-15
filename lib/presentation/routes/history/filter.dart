@@ -1,8 +1,9 @@
 part of 'history.dart';
 
-/// The groups History filters by (#610), head to foot: the order of the menu
-/// and of the chips, whatever order they were picked in.
-const _filterGroups = <MuscleGroupKey>[
+/// The muscle groups, head to foot: the order of the filter's menu and chips
+/// (#610), whatever order they were picked in, and of a compact card's line
+/// (#611).
+const _groupOrder = <MuscleGroupKey>[
   .chest,
   .back,
   .shoulders,
@@ -39,7 +40,7 @@ class _FilterButton extends StatelessWidget {
       context: context,
       position: menuOver(context, context.findRenderObject()! as RenderBox),
       items: [
-        for (final group in _filterGroups)
+        for (final group in _groupOrder)
           CheckedPopupMenuItem<MuscleGroupKey>(
             key: AppKeys.historyFilterGroup(group.value),
             value: group,
@@ -84,7 +85,7 @@ class _FilterChips extends StatelessWidget {
       child: Row(
         spacing: 8,
         children: [
-          for (final group in _filterGroups.where(filter.groups.contains))
+          for (final group in _groupOrder.where(filter.groups.contains))
             RemovableChip(
               label: group.label(l),
               onDeleted: () => filter.remove(group),

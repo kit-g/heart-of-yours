@@ -289,6 +289,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                     onDeleteWorkout: widget.onDeleteWorkout,
                     onTapImageIcon: widget.onTapImage,
                     highlighted: workout.id == widget.selectedId,
+                    compact: preferences.historyDensity == .compact,
                   ),
                   TrainingSkip skip => _SkipItem(skip: skip, onTap: widget.onTapSkip),
                   _ => const SizedBox.shrink(),

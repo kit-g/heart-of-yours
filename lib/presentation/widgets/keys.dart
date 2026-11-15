@@ -27,6 +27,12 @@ abstract final class AppKeys {
   static const calendarLog = Key('History.calendar.log');
   static const historyCalendar = Key('History.calendar');
   static const historyViewSetting = Key('Settings.historyView');
+  static const historyDensitySetting = Key('Settings.historyDensity');
+
+  /// A workout's compact card in History (#611), and its line of muscle
+  /// groups.
+  static Key compactWorkout(String workoutId) => Key('History.compact.$workoutId');
+  static Key compactWorkoutGroups(String workoutId) => Key('History.compact.$workoutId.groups');
 
   /// History's muscle-group filter (#610): the button, a group in its menu,
   /// the chips of the groups set, and the empty state with its way out.

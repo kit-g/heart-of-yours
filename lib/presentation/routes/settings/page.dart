@@ -66,6 +66,9 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :screens,
       :historyView,
       :historyAsList,
+      :historyDensity,
+      :historyDensityFull,
+      :historyDensityCompact,
       :calendar,
     ) = L.of(
       context,
@@ -175,6 +178,34 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                               children: {
                                 .list: Text(historyAsList),
                                 .calendar: Text(calendar),
+                              },
+                            ),
+                          };
+                        },
+                      ),
+                    ),
+                    // how History's list draws a workout (#611)
+                    Padding(
+                      padding: const .symmetric(horizontal: 16.0),
+                      child: Selector<Preferences, HistoryDensity?>(
+                        selector: (_, provider) => switch (provider.isInitialized) {
+                          true => provider.historyDensity,
+                          false => null,
+                        },
+                        builder: (context, density, _) {
+                          return switch (density) {
+                            null => const SizedBox.shrink(),
+                            HistoryDensity value => FixedLengthSettingPicker<HistoryDensity>(
+                              key: AppKeys.historyDensitySetting,
+                              title: historyDensity,
+                              value: value,
+                              onValueChanged: (density) {
+                                buzz();
+                                if (density != null) Preferences.of(context).setHistoryDensity(density);
+                              },
+                              children: {
+                                .full: Text(historyDensityFull),
+                                .compact: Text(historyDensityCompact),
                               },
                             ),
                           };
