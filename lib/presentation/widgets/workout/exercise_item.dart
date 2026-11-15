@@ -39,6 +39,9 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final bool allowCompleting;
   final void Function(Exercise)? onTapExercise;
   final bool pinsNotes;
+
+  /// Whether the Previous column is there: not over someone else's sets
+  /// (#591). Its share of the row stays, so the values do not widen.
   final bool showsPrevious;
 
   const new({
@@ -72,7 +75,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     required this.allowCompleting,
     this.onTapExercise,
     this.pinsNotes = true,
-    this.showsPrevious = true,
+    required this.showsPrevious,
   });
 
   @override
@@ -95,7 +98,11 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
         currentlyHoveredItem.value = exercise;
       },
       builder: (_, candidates, rejects) {
-        final previous = PreviousExercises.watch(context);
+        // no column, nothing to repaint for: the header fill still reads it
+        final previous = switch (showsPrevious) {
+          true => PreviousExercises.watch(context),
+          false => PreviousExercises.of(context),
+        };
         return ValueListenableBuilder<WorkoutExercise?>(
           valueListenable: dragState,
           builder: (_, draggedExercise, _) {
@@ -263,9 +270,11 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                             ),
                             if (showsPrevious)
                               Expanded(
-                                flex: 3,
+                                flex: _previousFlex,
                                 child: _ColumnLabel(secondColumnCopy),
-                              ),
+                              )
+                            else
+                              const Spacer(flex: _previousFlex),
                             ..._buttonsHeader(context, previous),
                             SizedBox(
                               width: _fixedColumnWidth,
@@ -298,7 +307,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                             onRemoveSet: onRemoveSet,
                             isLocked: !allowCompleting,
                             onSetDone: onSetDone,
-                            previousValue: previous.matching(exercise, set.$1),
+                            previousValue: showsPrevious ? previous.matching(exercise, set.$1) : null,
                             showsPrevious: showsPrevious,
                           );
                         },

@@ -12,17 +12,11 @@ class TemplateEditor extends StatefulWidget {
   /// template is something more particular than a template.
   final ({String title, String hint})? words;
 
-  /// Whether the Previous column is there: off for a session written for
-  /// someone else, a coach's library or a client's copy (#591), where this
-  /// account's own last sets would read as theirs.
-  final bool showsPrevious;
-
   const new({
     super.key,
     required this.isNewTemplate,
     required this.drafts,
     this.words,
-    this.showsPrevious = true,
   });
 
   @override
@@ -105,58 +99,60 @@ class _TemplateEditorState extends State<TemplateEditor> {
           ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(56),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: AppBarTextField(
-                hint: hint,
-                style: textTheme.titleMedium,
-                hintStyle: textTheme.bodyLarge,
-                onChanged: (value) {
-                  templates.editable?.name = value.trim();
-                },
-                focusNode: _focusNode,
-                controller: _controller,
+            // over the set table, as wide as it is (#592)
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const .new(maxWidth: setTableWidth),
+                child: Padding(
+                  padding: const .symmetric(horizontal: 8),
+                  child: AppBarTextField(
+                    hint: hint,
+                    style: textTheme.titleMedium,
+                    hintStyle: textTheme.bodyLarge,
+                    onChanged: (value) {
+                      templates.editable?.name = value.trim();
+                    },
+                    focusNode: _focusNode,
+                    controller: _controller,
+                  ),
+                ),
               ),
             ),
           ),
         ),
-        // a column of rows, not the whole pane (#592): beside the rail on an
-        // iPad the cells drifted to both edges and Add exercises ran 1,200pt
         body: SafeArea(
-          child: Align(
-            alignment: .topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: readableWidth),
-              child: WorkoutDetail(
-                exercises: templates.editable ?? [],
-                // what the plan works, as it grows (#263)
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: TemplateMuscles(
-                      exercises: templates.editable ?? [],
-                      padding: const .symmetric(horizontal: 8),
-                    ),
+          // a session a coach writes is a client's: no Previous column of the
+          // coach's own last sets, and no header fill from them (#591)
+          child: PreviousScope(
+            someoneElse: templates.forSomeoneElse,
+            child: WorkoutDetail(
+              exercises: templates.editable ?? [],
+              // what the plan works, as it grows (#263)
+              slivers: [
+                SliverToBoxAdapter(
+                  child: TemplateMuscles(
+                    exercises: templates.editable ?? [],
+                    padding: const .symmetric(horizontal: 8),
                   ),
-                ],
-                onDragExercise: templates.append,
-                onRemoveSet: templates.removeSet,
-                onSetType: templates.setSetType,
-                onSetTarget: templates.setSetTarget,
-                onAddSet: templates.addSet,
-                onRemoveExercise: templates.removeExercise,
-                onGroup: templates.group,
-                onLeaveGroup: templates.leaveGroup,
-                needsCancelWorkoutButton: false,
-                onAddExercises: (exercises) async {
-                  for (final each in exercises) {
-                    await templates.add(each);
-                  }
-                },
-                allowsCompletingSet: false,
-                onSwapExercise: templates.swap,
-                onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
-                showsPrevious: widget.showsPrevious,
-              ),
+                ),
+              ],
+              onDragExercise: templates.append,
+              onRemoveSet: templates.removeSet,
+              onSetType: templates.setSetType,
+              onSetTarget: templates.setSetTarget,
+              onAddSet: templates.addSet,
+              onRemoveExercise: templates.removeExercise,
+              onGroup: templates.group,
+              onLeaveGroup: templates.leaveGroup,
+              needsCancelWorkoutButton: false,
+              onAddExercises: (exercises) async {
+                for (final each in exercises) {
+                  await templates.add(each);
+                }
+              },
+              allowsCompletingSet: false,
+              onSwapExercise: templates.swap,
+              onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
             ),
           ),
         ),

@@ -225,6 +225,10 @@ class CoachLibrary with ChangeNotifier, TemplateDrafting implements SignOutState
 
   static CoachLibrary watch(BuildContext context) => Provider.of<CoachLibrary>(context, listen: true);
 
+  /// A session is a client's, never the coach's own (#591).
+  @override
+  bool get forSomeoneElse => true;
+
   CoachingStatus get status => _status;
 
   /// The library, the most recently changed first.

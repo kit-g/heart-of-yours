@@ -145,9 +145,6 @@ class WorkoutDetail extends StatefulWidget {
   /// nothing to do with. Its note in this workout is [onNoteChanged]'s.
   final bool pinsNotes;
 
-  /// Whether the Previous column is there: this account's own last sets,
-  /// which say nothing to a session written for someone else (#591).
-  final bool showsPrevious;
   final Future<void> Function(WorkoutImage)? onDeleteImage;
 
   const new({
@@ -182,7 +179,6 @@ class WorkoutDetail extends StatefulWidget {
     this.workoutId,
     this.onTapExercise,
     this.pinsNotes = true,
-    this.showsPrevious = true,
   });
 
   @override
@@ -241,99 +237,110 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
           const SliverToBoxAdapter(
             child: SizedBox(height: 4),
           ),
-        ...?widget.slivers,
-        SliverToBoxAdapter(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SizeTransition(
-                  sizeFactor: animation,
-                  alignment: const Alignment(0, -1),
-                  child: child,
-                ),
-              );
-            },
-            child: switch (widget.workoutImages) {
-              null => const SizedBox.shrink(),
-              Iterable i when i.isEmpty => const SizedBox.shrink(),
-              Iterable<WorkoutImage> images => Padding(
-                padding: const .only(top: 8),
-                child: _Media(
-                  images: images.toList(),
-                  onTapImage: (index) => widget.onTapImage?.call(
-                    images,
-                    startingIndex: index,
-                    workoutId: widget.workoutId,
-                  ),
-                  onDeleteImage: (image) async => await widget.onDeleteImage?.call(image),
-                ),
-              ),
-            },
-          ),
-        ),
-        switch (exercises.isEmpty) {
-          true => const _EmptyState(size: 320),
-          false => _exerciseList(colorScheme, addSet, setCopy, previous),
-        },
-        SliverToBoxAdapter(
-          child: DragTarget<WorkoutExercise>(
-            onWillAcceptWithDetails: (_) {
-              _currentlyHoveredExercise.value = null;
-              return true;
-            },
-            onLeave: (_) {
-              _currentlyHoveredExercise.value = null;
-            },
-            onAcceptWithDetails: (details) {
-              widget.onDragExercise(details.data);
-            },
-            builder: (_, _, _) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Column(
-                  children: [
-                    PrimaryButton.wide(
-                      onPressed: () {
-                        _showExerciseDialog(context);
-                      },
-                      key: WorkoutDetailKeys.addExercises,
-                      child: Center(
-                        child: Text(addExercises),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    if (widget.needsCancelWorkoutButton) ...[
-                      PrimaryButton.wide(
-                        key: WorkoutDetailKeys.cancelWorkout,
-                        onPressed: () {
-                          showCancelWorkoutDialog(
-                            context,
-                            onFinish: () {
-                              Scrolls.of(context)
-                                ..resetExerciseStack()
-                                ..resetHistoryStack();
-                            },
-                          );
-                        },
-                        backgroundColor: colorScheme.errorContainer,
-                        child: Center(
-                          child: Text(
-                            cancelWorkout,
-                            style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+        // a column of rows, not the whole pane (#592), inside the scroll view
+        // so the pane still scrolls from either side and its bar sits at the edge
+        SliverLayoutBuilder(
+          builder: (context, constraints) => SliverPadding(
+            padding: .symmetric(horizontal: max(0, (constraints.crossAxisExtent - setTableWidth) / 2)),
+            sliver: SliverMainAxisGroup(
+              slivers: [
+                ...?widget.slivers,
+                SliverToBoxAdapter(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SizeTransition(
+                          sizeFactor: animation,
+                          alignment: const Alignment(0, -1),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: switch (widget.workoutImages) {
+                      null => const SizedBox.shrink(),
+                      Iterable i when i.isEmpty => const SizedBox.shrink(),
+                      Iterable<WorkoutImage> images => Padding(
+                        padding: const .only(top: 8),
+                        child: _Media(
+                          images: images.toList(),
+                          onTapImage: (index) => widget.onTapImage?.call(
+                            images,
+                            startingIndex: index,
+                            workoutId: widget.workoutId,
                           ),
+                          onDeleteImage: (image) async => await widget.onDeleteImage?.call(image),
                         ),
                       ),
-                      const SizedBox(height: 60),
-                    ],
-                  ],
+                    },
+                  ),
                 ),
-              );
-            },
+                switch (exercises.isEmpty) {
+                  true => const _EmptyState(size: 320),
+                  false => _exerciseList(colorScheme, addSet, setCopy, previous),
+                },
+                SliverToBoxAdapter(
+                  child: DragTarget<WorkoutExercise>(
+                    onWillAcceptWithDetails: (_) {
+                      _currentlyHoveredExercise.value = null;
+                      return true;
+                    },
+                    onLeave: (_) {
+                      _currentlyHoveredExercise.value = null;
+                    },
+                    onAcceptWithDetails: (details) {
+                      widget.onDragExercise(details.data);
+                    },
+                    builder: (_, _, _) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Column(
+                          children: [
+                            PrimaryButton.wide(
+                              onPressed: () {
+                                _showExerciseDialog(context);
+                              },
+                              key: WorkoutDetailKeys.addExercises,
+                              child: Center(
+                                child: Text(addExercises),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            if (widget.needsCancelWorkoutButton) ...[
+                              PrimaryButton.wide(
+                                key: WorkoutDetailKeys.cancelWorkout,
+                                onPressed: () {
+                                  showCancelWorkoutDialog(
+                                    context,
+                                    onFinish: () {
+                                      Scrolls.of(context)
+                                        ..resetExerciseStack()
+                                        ..resetHistoryStack();
+                                    },
+                                  );
+                                },
+                                backgroundColor: colorScheme.errorContainer,
+                                child: Center(
+                                  child: Text(
+                                    cancelWorkout,
+                                    style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 60),
+                            ],
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                ...?widget.trailingSlivers,
+              ],
+            ),
           ),
         ),
-        ...?widget.trailingSlivers,
       ],
     );
   }
@@ -476,7 +483,8 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                                 allowCompleting: widget.allowsCompletingSet,
                                 onTapExercise: widget.onTapExercise,
                                 pinsNotes: widget.pinsNotes,
-                                showsPrevious: widget.showsPrevious,
+                                // this account's last time, beside its own sets only (#591)
+                                showsPrevious: !PreviousScope.isSomeoneElses(context),
                               ),
                             ),
                           ),
