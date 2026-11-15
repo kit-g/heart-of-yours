@@ -258,28 +258,16 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                             left: (index == 0) ? 8.0 : 0.0,
                             right: (index == exercises.filters.length - 1) ? 8.0 : 0.0,
                           ),
-                          child: Chip(
-                            deleteButtonTooltipMessage: removeFilter,
-                            labelPadding: .zero,
-                            label: Padding(
-                              padding: const .symmetric(horizontal: 4),
-                              child: Text(
-                                // every filter carries an identifier; the
-                                // presentation layer words them
-                                switch (filter) {
-                                  MovementFilter filter => filter.chipLabel(L.of(context)),
-                                  Category category => category.label(L.of(context)),
-                                  Target target => target.label(L.of(context)),
-                                  _ => filter.value,
-                                },
-                                style: textTheme.bodyMedium,
-                              ),
-                            ),
-                            visualDensity: const VisualDensity(vertical: -4, horizontal: -0),
-                            onDeleted: () {
-                              buzz();
-                              exercises.removeFilter(filter);
+                          child: RemovableChip(
+                            // every filter carries an identifier; the
+                            // presentation layer words them
+                            label: switch (filter) {
+                              MovementFilter filter => filter.chipLabel(L.of(context)),
+                              Category category => category.label(L.of(context)),
+                              Target target => target.label(L.of(context)),
+                              _ => filter.value,
                             },
+                            onDeleted: () => exercises.removeFilter(filter),
                           ),
                         );
                       },

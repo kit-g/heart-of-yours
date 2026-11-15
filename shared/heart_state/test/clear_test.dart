@@ -513,6 +513,7 @@ void main() {
             ChangeNotifierProvider<Exercises>.value(value: exercises),
             ChangeNotifierProvider<Goals>.value(value: goals),
             ChangeNotifierProvider<Health>.value(value: health),
+            ChangeNotifierProvider<HistoryFilter>(create: (_) => HistoryFilter()),
             ChangeNotifierProvider<PreviousExercises>.value(value: previous),
             ChangeNotifierProvider<Stats>.value(value: stats),
             ChangeNotifierProvider<Templates>.value(value: templates),
@@ -680,6 +681,7 @@ void main() {
             ChangeNotifierProvider<Exercises>.value(value: exercises),
             ChangeNotifierProvider<Goals>.value(value: goals),
             ChangeNotifierProvider<Health>.value(value: health),
+            ChangeNotifierProvider<HistoryFilter>(create: (_) => HistoryFilter()),
             ChangeNotifierProvider<PreviousExercises>.value(value: previous),
             ChangeNotifierProvider<Stats>.value(value: stats),
             ChangeNotifierProvider<Templates>.value(value: templates),
@@ -809,7 +811,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the twenty-four known notifiers', () {
+    test('the fan-out list is the twenty-five known notifiers', () {
       final fanned = _fannedOut(File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync()).toSet();
 
       expect(fanned, {
@@ -826,6 +828,7 @@ void main() {
         'Exercises',
         'Goals',
         'Health',
+        'HistoryFilter',
         'Messages',
         'CoachNotes',
         'PreviousExercises',

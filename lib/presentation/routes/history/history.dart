@@ -23,6 +23,7 @@ import 'package:heart/presentation/widgets/health/metric.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/removable_chip.dart';
 import 'package:heart/presentation/widgets/part_of_program.dart';
 import 'package:heart/presentation/widgets/menu.dart';
 import 'package:heart/presentation/widgets/muscle_figures.dart';
@@ -42,6 +43,7 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'entry_review_page.dart';
+part 'filter.dart';
 part 'page.dart';
 part 'skip_item.dart';
 part 'skip_page.dart';

@@ -6190,5 +6190,15 @@
   "pickerGroupCollapse": "Hide exercises",
   "@pickerGroupCollapse": {"description": "Screen reader action hint on an open group heading in the exercise picker: folds it (#620)", "type": "text", "placeholders": {}},
   "settingsPickerGrouping": "Group exercises",
-  "@settingsPickerGrouping": {"description": "Settings row: how the exercise picker groups the library, by category, target, movement, or not at all (#620)", "type": "text", "placeholders": {}}
+  "@settingsPickerGrouping": {"description": "Settings row: how the exercise picker groups the library, by category, target, movement, or not at all (#620)", "type": "text", "placeholders": {}},
+  "historyFilterTooltip": "Filter by muscle group",
+  "@historyFilterTooltip": {"description": "Tooltip on History's button that narrows the list and calendar to workouts that trained chosen muscle groups (#610)", "type": "text", "placeholders": {}},
+  "historyFilterEmptyTitle": "No workouts match",
+  "@historyFilterEmptyTitle": {"description": "Title shown on History when the muscle-group filter matches no workout (#610)", "type": "text", "placeholders": {}},
+  "historyFilterEmptyBody": "None of your workouts trained these muscle groups.",
+  "@historyFilterEmptyBody": {"description": "Body shown on History when the muscle-group filter matches no workout (#610)", "type": "text", "placeholders": {}},
+  "historyFilterClear": "Clear filter",
+  "@historyFilterClear": {"description": "Button that removes every muscle group from History's filter (#610)", "type": "text", "placeholders": {}},
+  "historyFilterSearching": "Looking through older workouts…",
+  "@historyFilterSearching": {"description": "Shown on History while the muscle-group filter loads older workouts to search (#610)", "type": "text", "placeholders": {}}
 }

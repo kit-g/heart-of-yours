@@ -23,6 +23,7 @@ export 'src/features.dart';
 export 'src/go_easy.dart';
 export 'src/goals.dart';
 export 'src/health.dart';
+export 'src/history_filter.dart';
 export 'src/import.dart';
 export 'src/balance.dart';
 export 'src/lens.dart';

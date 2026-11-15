@@ -86,12 +86,16 @@ void main() {
       final account = _Account(568);
       final pager = _Pager(store, pages: 27);
 
-      await build(store, account, pager).run(user);
+      final backfill = build(store, account, pager);
+      expect(backfill.isWhole, isFalse);
+      await backfill.run(user);
 
       // the whole point of the mark: an ordinary launch costs one local read
       // of the `syncs` table and not a single request
       expect(account.calls, 0);
       expect(pager.fetched, 0);
+      // and it says the device holds the whole history (#610)
+      expect(backfill.isWhole, isTrue);
     });
 
     test('an already whole mirror settles on one request, without paging', () async {
@@ -105,6 +109,7 @@ void main() {
       expect(account.calls, 1);
       expect(pager.fetched, 0);
       expect(store.marked, contains(user));
+      expect(backfill.isWhole, isTrue);
       // nothing for the row to say
       expect(backfill.status, BackfillStatus.idle);
     });
@@ -149,6 +154,7 @@ void main() {
       expect(pager.fetched, 4);
       expect(store.held, 100);
       expect(store.marked, contains(user));
+      expect(backfill.isWhole, isTrue);
       expect(backfill.status, BackfillStatus.idle);
       // still one request: the total came from the same call that said to run
       expect(account.calls, 1);
@@ -182,6 +188,7 @@ void main() {
       expect(backfill.status, BackfillStatus.failed);
       // the mark is a claim the mirror is whole, and this run cannot make it
       expect(store.marked, isEmpty);
+      expect(backfill.isWhole, isFalse);
     });
 
     test('retry picks up from where it stopped', () async {
@@ -206,7 +213,9 @@ void main() {
       final account = _Account(100);
       final pager = _Pager(store, pages: 1);
 
-      await build(store, account, pager).run(user);
+      final backfill = build(store, account, pager);
+      await backfill.run(user);
+      expect(backfill.isWhole, isFalse);
 
       // `hasMore: false` said paging finished; the count says the mirror is
       // not the account, so the next launch tries again
@@ -277,6 +286,7 @@ void main() {
 
       expect(backfill.userId, isNull);
       expect(backfill.status, BackfillStatus.idle);
+      expect(backfill.isWhole, isFalse);
       // whatever it had fetched is stored; what it had not is nobody's problem
       expect(store.marked, isEmpty);
     });
