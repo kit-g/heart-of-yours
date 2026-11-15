@@ -37,7 +37,8 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final ValueNotifier<WorkoutExercise?> dragState;
   final ValueNotifier<WorkoutExercise?> currentlyHoveredItem;
   final bool allowCompleting;
-  final void Function(Exercise) onTapExercise;
+  final void Function(Exercise)? onTapExercise;
+  final bool pinsNotes;
 
   const new({
     required this.index,
@@ -68,7 +69,8 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     required this.dragState,
     required this.currentlyHoveredItem,
     required this.allowCompleting,
-    required this.onTapExercise,
+    this.onTapExercise,
+    this.pinsNotes = true,
   });
 
   @override
@@ -105,7 +107,10 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                   // edge, and release builds clip that silently (#615)
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => onTapExercise(exercise.exercise),
+                      onTap: switch (onTapExercise) {
+                        final open? => () => open(exercise.exercise),
+                        null => null,
+                      },
                       child: Text(
                         exercise.exercise.name,
                         style: textTheme.titleMedium,
@@ -243,6 +248,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         _ExerciseNote(
                           exercise: exercise,
                           onChanged: onNoteChanged,
+                          pins: pinsNotes,
                           onEdit: () => _editNote(context),
                         ),
                       Padding(
@@ -522,7 +528,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
           },
           onPick: (_) => _editNote(context),
         ),
-        if (exercises.canPinNote && exercises.noteFor(id) != null)
+        if (pinsNotes && exercises.canPinNote && exercises.noteFor(id) != null)
           _option(
             icon: Icons.push_pin_outlined,
             label: l.unpinExerciseNote,
@@ -552,14 +558,15 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
           value: _unitCopy(l, current),
           onPick: (anchor) => _pickUnit(context, anchor, current),
         ),
-      _option(
-        icon: Icons.info_outline_rounded,
-        label: l.aboutExercise,
-        onPick: (_) {
-          buzz();
-          onTapExercise(exercise.exercise);
-        },
-      ),
+      if (onTapExercise case final open?)
+        _option(
+          icon: Icons.info_outline_rounded,
+          label: l.aboutExercise,
+          onPick: (_) {
+            buzz();
+            open(exercise.exercise);
+          },
+        ),
       _removeOption(context, l.removeExercise),
     ];
   }

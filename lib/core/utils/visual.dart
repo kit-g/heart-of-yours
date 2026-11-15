@@ -147,6 +147,7 @@ Future<T?> showBrandedDialog<T>(
   TextStyle? contentTextStyle,
   List<Widget>? actions,
   EdgeInsetsGeometry padding = const .only(left: 16, right: 16, bottom: 12),
+  bool scrollable = false,
 }) {
   return showDialog<T>(
     context: context,
@@ -173,9 +174,44 @@ Future<T?> showBrandedDialog<T>(
         },
         contentTextStyle: contentTextStyle,
         actions: actions,
+        // content that can outgrow a short screen, or a large text size,
+        // scrolls under the title rather than overflowing it
+        scrollable: scrollable,
       );
     },
   );
+}
+
+/// Asks before something that can't be undone: [cancel] and [confirm], the
+/// latter in the error colour under [key]. Answers whether it was confirmed.
+Future<bool> confirmDestructive(
+  BuildContext context, {
+  required String title,
+  required String body,
+  required String confirm,
+  required String cancel,
+  required Key key,
+}) async {
+  final colorScheme = Theme.of(context).colorScheme;
+  final sure = await showBrandedDialog<bool>(
+    context,
+    title: Text(title),
+    content: Text(body),
+    actions: [
+      TextButton(
+        style: TextButton.styleFrom(minimumSize: const .new(64, 48)),
+        onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
+        child: Text(cancel),
+      ),
+      TextButton(
+        key: key,
+        style: TextButton.styleFrom(minimumSize: const .new(64, 48), foregroundColor: colorScheme.error),
+        onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
+        child: Text(confirm),
+      ),
+    ],
+  );
+  return sure ?? false;
 }
 
 class BottomMenuAction {
@@ -266,6 +302,16 @@ extension SectionHeaderStyle on ThemeData {
       fontWeight: .bold,
     );
   }
+}
+
+/// Where a menu opens under whatever [context] belongs to, as wide as it.
+/// Measured against the navigator's overlay, as [menuUnderValue] is.
+RelativeRect menuUnder(BuildContext context) {
+  final box = context.findRenderObject();
+  final overlay = Navigator.of(context).overlay?.context.findRenderObject();
+  if (box is! RenderBox || overlay is! RenderBox) return RelativeRect.fill;
+  final rect = box.localToGlobal(Offset.zero, ancestor: overlay) & box.size;
+  return RelativeRect.fromRect(rect.bottomLeft & Size(rect.width, 0), Offset.zero & overlay.size);
 }
 
 /// Where a menu opens off a trailing value: under it, its right edge on the
