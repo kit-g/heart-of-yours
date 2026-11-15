@@ -311,12 +311,10 @@ final class HeartRouter {
   /// the programs are read, so the link itself asks again (#593).
   static String? _programSessionLink(BuildContext context, Uri uri) {
     if (ProgramSessionLink.parse(uri) case ProgramSessionLink link) {
-      final preferences = Preferences.of(context);
-      if (preferences.programsReach) {
+      if (Preferences.of(context).programsReach) {
         unawaited(
           runProgramSessionLink(
             link,
-            preferences: preferences,
             programs: Programs.of(context),
             templates: Templates.of(context),
             workouts: Workouts.of(context),

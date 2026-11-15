@@ -424,6 +424,20 @@ void main() {
       expect(sut.programShown(own), isFalse);
       expect(sut.programsReach, isFalse);
     });
+
+    test("the calendar follows a shown program: a coach's keeps it with Programs off", () async {
+      await answers(programs: false, yourCoach: true);
+      expect(sut.programCalendarOn(coached), isTrue);
+      expect(sut.programCalendarOn(own), isFalse);
+    });
+
+    test('the calendar left out of Programs is off for every program, a coach\'s too', () async {
+      await answers(programs: true, yourCoach: true);
+      sut.setOption(.programsCalendar, on: false);
+      expect(sut.programCalendarOn(own), isFalse);
+      sut.setFeature(.programs, on: false);
+      expect(sut.programCalendarOn(coached), isFalse, reason: 'what was left out stays out');
+    });
   });
 
   group('opt-in features (#138)', () {

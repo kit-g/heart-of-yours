@@ -12,6 +12,8 @@ class ExerciseArchive extends StatelessWidget {
   Widget build(BuildContext context) {
     final L(:archivedExercises) = L.of(context);
     final archived = Exercises.watch(context).archived.toList();
+    final preferences = Preferences.watch(context);
+    final goEasy = goEasyOn(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(archivedExercises),
@@ -21,7 +23,8 @@ class ExerciseArchive extends StatelessWidget {
           final each = archived[index];
           return ExerciseItem(
             exercise: each,
-            preferences: Preferences.watch(context),
+            preferences: preferences,
+            goEasy: goEasy,
             selected: false,
             onExerciseSelected: onExercise,
           );

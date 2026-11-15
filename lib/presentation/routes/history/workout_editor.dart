@@ -221,6 +221,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                     someoneElse: widget.loggingFor != null,
                     child: WorkoutDetail(
                       exercises: workout,
+                      programId: workout.programId,
                       needsCancelWorkoutButton: false,
                       slivers: [
                         const SliverToBoxAdapter(child: RecordCountRow()),

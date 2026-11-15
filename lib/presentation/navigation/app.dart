@@ -62,6 +62,7 @@ import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:heart_health/heart_health.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:heart_models/heart_models.dart' show Program;
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -701,7 +702,14 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
       final coached = programs.pullCoached().then(templates.pull);
       // a session the coach logged for them while they were away (#560): once
       // the copies and the sessions it names are read, over moves read afresh
-      _growLogged(workouts, templates, programs, read: (coached, workouts.refreshHistory()).wait, reread: true);
+      _growLogged(
+        workouts,
+        templates,
+        programs,
+        shown: preferences.programShown,
+        read: (coached, workouts.refreshHistory()).wait,
+        reread: true,
+      );
     }
     // messages whose push may never have come (#556)
     final auth = Auth.of(context);
@@ -1154,7 +1162,7 @@ Future<void> _initApp(
                 programs: programs,
                 backfill: backfill,
                 upsync: upsync,
-                growsLogged: _growsLogged(prefs),
+                preferences: prefs,
               );
             },
           );
@@ -1248,7 +1256,7 @@ Future<void> _initTrainingData({
   required Programs programs,
   required Backfill backfill,
   required Upsync upsync,
-  required bool growsLogged,
+  required Preferences preferences,
 }) {
   final templatesRead = templates.init();
   final programsRead = programs.init();
@@ -1284,18 +1292,28 @@ Future<void> _initTrainingData({
       }
 
       // what a coach logged for this person moves their program here (#560)
-      if (growsLogged) await _growLogged(workouts, templates, programs, read: (templatesRead, programsRead).wait);
+      if (_growsLogged(preferences)) {
+        await _growLogged(
+          workouts,
+          templates,
+          programs,
+          shown: preferences.programShown,
+          read: (templatesRead, programsRead).wait,
+        );
+      }
     },
   );
 }
 
 /// Moves this person's programs by what their coach logged for them (#560),
 /// once the programs and the sessions they were logged from are read; with
-/// [reread], over their moves read from the server again.
+/// [reread], over their moves read from the server again. Only a program
+/// [shown] moves: with Programs off, the user's own stays as it was (#593).
 Future<void> _growLogged(
   Workouts workouts,
   Templates templates,
   Programs programs, {
+  required bool Function(Program program) shown,
   required Future<void> read,
   bool reread = false,
 }) async {
@@ -1304,7 +1322,7 @@ Future<void> _growLogged(
   } catch (_) {
     // each reports its own failure; what was read still counts
   }
-  await programs.growLogged(workouts.history, sessionOf: templates.lookup, reread: reread);
+  await programs.growLogged(workouts.history, sessionOf: templates.lookup, shown: shown, reread: reread);
 }
 
 /// The replay is done and the remote leg is open: pull what the account holds
@@ -1333,7 +1351,7 @@ void _resync(BuildContext context, Upsync upsync) {
         programs: programs,
         backfill: backfill,
         upsync: upsync,
-        growsLogged: _growsLogged(preferences),
+        preferences: preferences,
       );
     },
   );

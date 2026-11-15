@@ -3,6 +3,10 @@ part of 'exercises.dart';
 class ExerciseItem extends StatelessWidget {
   final Exercise exercise;
   final Preferences preferences;
+
+  /// Whether the row marks what the exercise is harder on among the things
+  /// the user goes easy on ([goEasyOn]), decided once for the list.
+  final bool goEasy;
   final void Function(Exercise, TapDownDetails?)? onExerciseSelected;
   final bool selected;
 
@@ -23,6 +27,7 @@ class ExerciseItem extends StatelessWidget {
     super.key,
     required this.exercise,
     required this.preferences,
+    required this.goEasy,
     required this.selected,
     this.highlighted = false,
     this.refusal,
@@ -33,7 +38,7 @@ class ExerciseItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final style = textTheme.bodySmall;
-    final marks = goEasyMarks(context, exercise);
+    final marks = goEasy ? goEasyMarks(context, exercise) : const <GoEasyEntry>[];
     TapDownDetails? details;
 
     final row = TweenAnimationBuilder<Color?>(

@@ -15,6 +15,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/misc.dart';
+import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/core/utils/weeks.dart';
 import 'package:heart/presentation/widgets/setting_picker.dart';

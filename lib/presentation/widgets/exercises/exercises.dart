@@ -3,6 +3,7 @@ library;
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/exercises/movement_copy.dart';

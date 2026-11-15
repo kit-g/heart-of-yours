@@ -58,21 +58,23 @@ class _ProgramsSection extends StatelessWidget {
 
     final section = Builder(builder: _section);
     return SliverToBoxAdapter(
-      // the library is Programs': a coach's programs alone never download it
-      child: preferences.isOn(.programs) ? _LibraryReader(child: section) : section,
+      child: _GoEasyReader(
+        // the library is Programs': a coach's programs alone never download it
+        child: preferences.isOn(.programs) ? _LibraryReader(child: section) : section,
+      ),
     );
   }
 
   Widget _section(BuildContext context) {
     final programs = Programs.watch(context);
+    final shown = shownPrograms(context, listen: true);
     final templates = Templates.watch(context);
-    final preferences = Preferences.watch(context);
     // making one, from a folder or the library, is Programs' alone
-    final making = preferences.isOn(.programs);
+    final making = Preferences.watch(context).isOn(.programs);
     final library = ProgramLibrary.watch(context).available && making;
-    final following = programs.following.where(preferences.programShown).toList();
-    final waiting = programs.waiting.where(preferences.programShown).toList();
-    final stopped = programs.all.where((program) => program.archived && preferences.programShown(program)).toList();
+    final following = shown.following.toList();
+    final waiting = shown.waiting.toList();
+    final stopped = shown.stopped.toList();
     final folders = making ? templates.programFolders : const <TemplateFolder>[];
     if (following.isEmpty && waiting.isEmpty && stopped.isEmpty && folders.isEmpty && !library) {
       return const SizedBox.shrink();
@@ -165,7 +167,30 @@ class _LibraryReaderState extends State<_LibraryReader> {
   void initState() {
     super.initState();
     ProgramLibrary.of(context).ensure();
-    GoEasy.of(context).ensure();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+/// Reads what the user goes easy on (#396) once it is in play ([goEasyOn]):
+/// with Programs on, or once a coach's program is shown under Your coach
+/// (#593) — whose session, started from the tab, runs with its constraint
+/// without its page ever opening.
+class _GoEasyReader extends StatefulWidget {
+  final Widget child;
+
+  const new({required this.child});
+
+  @override
+  State<_GoEasyReader> createState() => _GoEasyReaderState();
+}
+
+class _GoEasyReaderState extends State<_GoEasyReader> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (goEasyOn(context)) GoEasy.of(context).ensure();
   }
 
   @override

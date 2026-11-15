@@ -1,7 +1,7 @@
+import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
-import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The one mark for "this belongs to a program": a template folder its
@@ -23,12 +23,11 @@ class PartOfProgram extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // a coach's program is shown under Your coach alone (#593)
-    final preferences = Preferences.watch(context);
     final program = switch (programId) {
-      final String id when preferences.programsReach => Programs.watch(context).lookup(id),
-      _ => null,
+      final String id => shownPrograms(context, listen: true).lookup(id),
+      null => null,
     };
-    if (program == null || !preferences.programShown(program)) return const SizedBox.shrink();
+    if (program == null) return const SizedBox.shrink();
     final ThemeData(:colorScheme) = Theme.of(context);
 
     return IconButton(

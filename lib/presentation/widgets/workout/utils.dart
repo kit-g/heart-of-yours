@@ -555,7 +555,7 @@ Future<void> finishWorkout(BuildContext context, Workouts workouts, {DateTime? a
   // before the finish drops the ones nobody ticked (#350)
   // a coach's program grows under Your coach alone (#593)
   final grows = switch (session) {
-    Workout(:final String programId) && final finished when Preferences.programIdShown(context, programId) => (
+    Workout(:final String programId) && final finished when programIdShown(context, programId) => (
       workout: finished,
       template: switch (finished.templateId) {
         final String id => Templates.of(context).lookup(id),
@@ -753,7 +753,7 @@ Future<void> startPlanned(
 /// lighter. Anything else starts as it was written, with no plan.
 PlannedWorkout startingWorkout(BuildContext context, Template template) {
   final preferences = Preferences.of(context);
-  if (!Preferences.programIdShown(context, template.programId)) return (workout: template.toWorkout(), plan: null);
+  if (!programIdShown(context, template.programId)) return (workout: template.toWorkout(), plan: null);
   final exercises = Exercises.of(context);
   return Programs.of(context).plan(
     template,
@@ -771,7 +771,7 @@ PlannedWorkout startingWorkout(BuildContext context, Template template) {
 /// that aim for something or hold something typed. Empty for any other
 /// workout, and while its program is not shown.
 List<(WorkoutExercise, List<ExerciseSet>)> _untickedInPlan(BuildContext context, Workout workout) {
-  if (!Preferences.programIdShown(context, workout.programId)) return const [];
+  if (!programIdShown(context, workout.programId)) return const [];
   return [
     for (final exercise in workout)
       if (exercise.where((set) => !set.isCompleted && (set.target != null || set.canBeCompleted)).toList()

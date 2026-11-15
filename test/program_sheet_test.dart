@@ -6,6 +6,7 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:heart/core/utils/column_fill.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
@@ -182,6 +183,58 @@ void main() {
       expect(find.textContaining('of your max'), findsNothing);
       expect(find.text('+'), findsNothing);
       expect(find.byKey(AppKeys.partOfProgram('p1')), findsNothing);
+    });
+
+    /// The app up with no workout under way, and [template] open in its
+    /// editor.
+    Future<void> edit(WidgetTester tester, Template template) async {
+      await const TestAppHarness().pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: MockFirebaseAuth(
+          mockUser: MockUser(uid: userId, email: '$userId@test'),
+          signedIn: true,
+        ),
+        hasLocalNotifications: false,
+        settle: false,
+      );
+      await tester.pumpTimes();
+      final context = tester.element(find.byType(MaterialApp));
+      await Programs.of(context).init();
+      Templates.of(context).editable = template;
+      GoRouter.of(tester.element(find.byType(Navigator).first)).go('/workout/templates');
+      await tester.pumpTimes();
+    }
+
+    /// A session of [programId] with a supplemental set, or a template of
+    /// no program.
+    Template supplemental({String? programId}) {
+      final draft = Template.empty(id: 't1', order: 0)
+        ..name = 'Squat day'
+        ..add(squat);
+      draft.first.first.target = SetTarget({.reps: TargetRange.exactly(5)}, share: 0.6, supplemental: true);
+      return Template.fromJson({...draft.toMap(), 'programId': ?programId});
+    }
+
+    testWidgets("its session's editor plans by the session it shows, with no workout under way", (tester) async {
+      answers(yourCoach: true);
+      when(db.getPrograms(userId)).thenAnswer((_) async => [coached]);
+      when(api.getPrograms()).thenAnswer((_) async => [coached]);
+      await edit(tester, supplemental(programId: 'p1'));
+
+      expect(Workouts.of(tester.element(find.byType(MaterialApp))).activeWorkout, isNull);
+      expect(find.text('+'), findsOneWidget);
+    });
+
+    testWidgets('a template of no program has no plan to show', (tester) async {
+      answers(yourCoach: true);
+      when(db.getPrograms(userId)).thenAnswer((_) async => [coached]);
+      when(api.getPrograms()).thenAnswer((_) async => [coached]);
+      await edit(tester, supplemental());
+
+      expect(find.text('+'), findsNothing);
     });
 
     testWidgets('with Your coach off too, the sheet is as it was', (tester) async {

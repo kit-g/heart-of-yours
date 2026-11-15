@@ -426,7 +426,7 @@ void main() {
       expect(started.programId, 'c1');
     });
 
-    testWidgets('its page opens, and stays while Programs is off', (tester) async {
+    testWidgets('its page opens, stays while Programs is off, and leaves with Your coach', (tester) async {
       withSent(yourCoach: true);
       await openWorkoutTab(tester);
 
@@ -434,6 +434,16 @@ void main() {
       await tester.pumpTimes();
       expect(find.byType(ProgramPage), findsOneWidget);
       expect(find.byKey(AppKeys.programWaiting('c1')), findsOneWidget);
+
+      // any change of preference asks the page again: it stays while shown
+      final preferences = Preferences.of(tester.element(find.byType(ProgramPage)))..setFeature(.rpe, on: true);
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsOneWidget);
+
+      // and leaves once Your coach is off: the program is no longer shown
+      preferences.setFeature(.yourCoach, on: false);
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsNothing);
     });
 
     testWidgets('with Your coach off too, there is nothing', (tester) async {

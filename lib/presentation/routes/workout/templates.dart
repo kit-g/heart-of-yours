@@ -258,24 +258,14 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
 
   Widget _userCard(BuildContext context, Template template) {
     final templates = Templates.of(context);
-    final programs = Programs.watch(context);
     // a program's session can leave it, and a template in a program's folder
     // that is not one can join it (#489): an assistant's, a tap from joining.
     // Only a program that is shown: a coach's under Your coach alone (#593)
-    final preferences = Preferences.of(context);
-    Program? shown(Program? program) => preferences.programShown(program) ? program : null;
+    final programs = shownPrograms(context, listen: true);
     final (joins, leaves) = switch ((template.programId, template.folder)) {
-      _ when !preferences.programsReach => (null, null),
-      (final String id, _) => (null, shown(programs.lookup(id))),
+      (final String id, _) => (null, programs.lookup(id)),
       (null, final TemplateFolder folder) => (
-        templates
-            .templatesIn(folder)
-            .map((each) => each.programId)
-            .nonNulls
-            .map(programs.lookup)
-            .nonNulls
-            .where(preferences.programShown)
-            .firstOrNull,
+        templates.templatesIn(folder).map((each) => each.programId).nonNulls.map(programs.lookup).nonNulls.firstOrNull,
         null,
       ),
       (null, null) => (null, null),

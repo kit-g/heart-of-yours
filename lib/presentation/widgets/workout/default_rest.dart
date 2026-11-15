@@ -22,8 +22,9 @@ class const _DefaultRestOffer({required final WorkoutExercise exercise}) extends
     // a tick elsewhere, or a timer set on this exercise, moves the slot
     final workout = Workouts.watch(context).activeWorkout;
     Timers.watch(context);
+    final planned = _Plan.of(context, listen: true).shown;
     final anchor = workout
-        ?.where((each) => each.any((set) => set.isCompleted) && restFor(context, each) == null)
+        ?.where((each) => each.any((set) => set.isCompleted) && restFor(context, each, planned: planned) == null)
         .firstOrNull;
     if (anchor?.id != exercise.id) return const SizedBox.shrink();
 

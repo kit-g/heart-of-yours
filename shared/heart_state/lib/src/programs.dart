@@ -256,6 +256,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     };
   }
 
+  /// These programs as far as [shown] lets any be seen (#593): the app passes
+  /// `Preferences.programShown`, which hides the user's own with Programs off
+  /// and keeps a coach's under Your coach.
+  ShownPrograms shown(bool Function(Program program) shown) => ShownPrograms._(this, shown);
+
   List<ProgramAction> actionsOf(String programId) => UnmodifiableListView(_actions[programId] ?? const []);
 
   /// The sessions of [programId] the user set aside ("Not today", #312),
@@ -1311,9 +1316,13 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// One logged from a session this device hasn't read yet waits, with every
   /// later one of its program: grown without it, the rules would read the
   /// wrong lifts, and the answer would stay. They are tried again next time.
+  ///
+  /// Only a program [shown] lets be seen moves (#593): one hidden is left as
+  /// it was, as if Programs had never been built.
   Future<void> growLogged(
     Iterable<Workout> workouts, {
     required Template? Function(String templateId) sessionOf,
+    bool Function(Program program) shown = _every,
     bool reread = false,
   }) async {
     final uid = userId;
@@ -1324,7 +1333,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     List<(Workout, String)> waiting() => [
       for (final workout in workouts)
         if ((workout.loggedBy, workout.programId) case (final String by, final String programId)
-            when by != uid && _waits(workout, programId, starts))
+            when by != uid && _waits(workout, programId, starts, shown: shown))
           (workout, programId),
     ];
     if (reread && _remote.allowed) {
@@ -1348,9 +1357,19 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   }
 
   /// Whether [workout], logged in [programId], still has its program to move:
-  /// one followed, that it hasn't moved yet, and that nothing moved since.
-  bool _waits(Workout workout, String programId, Map<String, DateTime> starts) {
-    if (!(_programs[programId]?.live ?? false) || _grown.containsKey(workout.id)) return false;
+  /// one followed and [shown], that it hasn't moved yet, and that nothing
+  /// moved since.
+  bool _waits(
+    Workout workout,
+    String programId,
+    Map<String, DateTime> starts, {
+    required bool Function(Program program) shown,
+  }) {
+    final followed = switch (_programs[programId]) {
+      final Program program => program.live && shown(program),
+      null => false,
+    };
+    if (!followed || _grown.containsKey(workout.id)) return false;
     bool causedBy(String? cause) => cause == workout.id;
     if (basesOf(programId).any((base) => causedBy(base.workoutId))) return false;
     if (actionsOf(programId).any((action) => causedBy(action.workoutId))) return false;
@@ -1992,4 +2011,44 @@ extension ProgramLife on Program {
 
   /// Followed: neither stopped nor waiting to be started.
   bool get live => !archived && !waits;
+}
+
+/// Every program, for [Programs.growLogged]'s default.
+bool _every(Program _) => true;
+
+/// [Programs] as far as a predicate lets any be seen (#593): the same reads,
+/// without the programs it hides.
+final class ShownPrograms {
+  final Programs _programs;
+  final bool Function(Program program) _shown;
+
+  new _(this._programs, this._shown);
+
+  /// [Programs.all] that are shown, archived ones included.
+  Iterable<Program> get all => _programs.all.where(_shown);
+
+  /// [Programs.following] that are shown.
+  Iterable<Program> get following => _programs.following.where(_shown);
+
+  /// [Programs.waiting] that are shown.
+  Iterable<Program> get waiting => _programs.waiting.where(_shown);
+
+  /// The shown programs the user stopped following.
+  Iterable<Program> get stopped => all.where((program) => program.archived);
+
+  /// Whether any program is shown, stopped ones included.
+  bool get isNotEmpty => all.isNotEmpty;
+
+  /// [Programs.lookup], while that program is shown.
+  Program? lookup(String programId) => _only(_programs.lookup(programId));
+
+  /// [Programs.programOf], while that program is shown.
+  Program? programOf(TrainingSkip skip) => _only(_programs.programOf(skip));
+
+  Program? _only(Program? program) {
+    return switch (program) {
+      final Program program when _shown(program) => program,
+      _ => null,
+    };
+  }
 }

@@ -9,13 +9,12 @@ typedef ProgramFeed = ({Program program, ProgramPosition position, List<ProgramB
 /// Programs off, a coach's under Your coach (#593), and otherwise none, so
 /// goals look as they did before.
 List<ProgramFeed> programFeeds(BuildContext context) {
-  final preferences = Preferences.watch(context);
-  if (!preferences.programsReach) return const [];
+  if (!Preferences.watch(context).programsReach) return const [];
   final programs = Programs.watch(context);
   final firstWeekday = firstWeekdayOf(context, listen: true);
   final now = DateTime.now();
   return [
-    for (final program in programs.following.where(preferences.programShown))
+    for (final program in shownPrograms(context, listen: true).following)
       if (program.id case final String id)
         if (programs.position(program, now: now, firstWeekday: firstWeekday) case final position
             when !position.finished)
@@ -57,7 +56,7 @@ List<Program> runningPrograms(BuildContext context) {
   final firstWeekday = preferences.firstWeekday;
   final now = DateTime.now();
   return [
-    for (final program in programs.following.where(preferences.programShown))
+    for (final program in shownPrograms(context).following)
       if (!programs.position(program, now: now, firstWeekday: firstWeekday).finished) program,
   ];
 }

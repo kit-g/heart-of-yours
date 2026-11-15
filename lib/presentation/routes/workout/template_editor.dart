@@ -117,6 +117,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
         body: SafeArea(
           child: WorkoutDetail(
             exercises: templates.editable ?? [],
+            programId: templates.editable?.programId,
             // what the plan works, as it grows (#263)
             slivers: [
               SliverToBoxAdapter(

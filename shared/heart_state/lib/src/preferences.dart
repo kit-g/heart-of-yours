@@ -10,8 +10,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'features.dart';
 import 'plates.dart';
-import 'programs.dart' show Programs;
-import 'workouts.dart' show Workouts;
 import 'warmups.dart';
 import 'rest_defaults.dart';
 
@@ -233,29 +231,6 @@ class Preferences with ChangeNotifier {
 
   static Preferences watch(BuildContext context) {
     return Provider.of<Preferences>(context, listen: true);
-  }
-
-  /// [programShown] for the program [programId] names, as a widget asks it:
-  /// false for no program, and the programs read only with Programs off.
-  static bool programIdShown(BuildContext context, String? programId, {bool listen = false}) {
-    final preferences = Provider.of<Preferences>(context, listen: listen);
-    return switch (programId) {
-      null => false,
-      _ when preferences.isOn(.programs) => true,
-      final String id => preferences.programShown(Provider.of<Programs>(context, listen: listen).lookup(id)),
-    };
-  }
-
-  /// Whether what a program plans shows in the workout under way — its rests,
-  /// its supplemental sets, its constraint: always with Programs on, and with
-  /// it off in a session of a coach's program (#593). The workout and the
-  /// programs are read only then.
-  static bool planShown(BuildContext context, {bool listen = false}) {
-    final preferences = Provider.of<Preferences>(context, listen: listen);
-    if (preferences.isOn(.programs)) return true;
-    if (!preferences.isOn(.yourCoach)) return false;
-    final programId = Provider.of<Workouts>(context, listen: listen).activeWorkout?.programId;
-    return programIdShown(context, programId, listen: listen);
   }
 
   bool _disposed = false;
@@ -617,6 +592,14 @@ class Preferences with ChangeNotifier {
   /// Whether some program can be shown: [programShown]'s answer before the
   /// program is known.
   bool get programsReach => isOn(.programs) || isOn(.yourCoach);
+
+  /// Whether [program]'s sessions go to the device calendar (#391): Programs'
+  /// calendar, unless it was left out, for a program [programShown] allows —
+  /// with Programs off, a coach's keeps the calendar Programs would give it
+  /// (#593).
+  bool programCalendarOn(Program program) {
+    return programShown(program) && !_without(.programs).contains(FeatureOption.programsCalendar);
+  }
 
   /// Offers already shown in this session. [FeatureAnswer.pending] outlives the
   /// session and this does not, which is what makes an unanswered offer a no

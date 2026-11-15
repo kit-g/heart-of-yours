@@ -123,7 +123,12 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                     children: [
                       Builder(
                         builder: (context) {
-                          final timer = restFor(context, exercise, listen: true);
+                          final timer = restFor(
+                            context,
+                            exercise,
+                            planned: _Plan.of(context, listen: true).shown,
+                            listen: true,
+                          );
                           return Selector<Alarms, (ValueNotifier<int>?, num?, String?)>(
                             selector: (_, provider) => (
                               provider.remainsInActiveExercise,
@@ -364,7 +369,8 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   Future<void> _replaceAny(BuildContext context, ReplaceExercise onReplace) async {
     final l = L.of(context);
     final source = exercise.exercise;
-    final suggested = replacementsInWorkout(context, source);
+    final (:shown, :programId) = _Plan.of(context);
+    final suggested = replacementsInWorkout(context, source, planned: shown, programId: programId);
     final picked = await showSingleExercisePicker(
       context,
       except: source.id,
@@ -505,7 +511,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
         label: l.restTimer,
         onPick: (_) {
           buzz();
-          _selectRestTime(context, initialValue: restFor(context, exercise));
+          _selectRestTime(context, initialValue: restFor(context, exercise, planned: _Plan.of(context).shown));
         },
       ),
       if ((onAddWarmups, preferences.isOn(.warmups)) case (final add?, true))
