@@ -103,6 +103,11 @@ enum Feature {
   /// Asked once, in context: the first time a ticked set would have been a
   /// record, the offer sits under that set. Computes nothing it stores; off,
   /// nothing is read.
+  ///
+  /// Also the switch for live goal notes (#625): the tick that reaches a goal's
+  /// rung says so in the same note, with a burst of confetti. The one offer
+  /// also sits under a set that would have reached a goal; nothing for
+  /// someone without one.
   liveRecords('liveRecords'),
 
   /// Suspicious entries (#428, heart-api#42): the sets and durations the

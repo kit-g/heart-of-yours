@@ -1,4 +1,7 @@
-part of 'done.dart';
+import 'dart:math';
+
+import 'package:heart/core/utils/visual.dart';
+import 'package:material_ui/material_ui.dart';
 
 class _Particle {
   /// initial horizontal position
@@ -94,7 +97,7 @@ class _ConfettiPainter extends CustomPainter {
       if (particle.isStar) {
         _drawStar(canvas, 0, 0, particle.size, paint);
       } else {
-        _drawHeart(canvas, 0, 0, particle.size, paint);
+        drawHeart(canvas, 0, 0, particle.size, paint);
       }
 
       canvas.restore();
@@ -126,6 +129,9 @@ class _ConfettiPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
+/// A burst of hearts and stars from one point: the Done page's celebration,
+/// and a smaller one when a set reaches a goal (#625). Plays once, and not at
+/// all with less motion asked for (#595).
 class Confetti extends StatefulWidget {
   final int particleCount;
   final int duration;
@@ -209,3 +215,41 @@ class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin
 }
 
 final _rng = Random();
+
+/// A heart [size] across, drawn into [canvas] at ([x], [y]) with [paint]: the
+/// confetti's, and the Done page's workout counter's.
+void drawHeart(Canvas canvas, double x, double y, double size, Paint paint) {
+  final width = size;
+  final height = size;
+  final path = Path();
+  final startX = (size / 2) - (width / 2);
+  final startY = (size / 2) - height * 0.6;
+
+  path
+    ..moveTo(
+      startX + (0.5 * width),
+      startY + (height * 0.4),
+    )
+    ..cubicTo(
+      startX + (0.2 * width),
+      startY + (height * 0.1),
+      startX + (-0.25 * width),
+      startY + (height * 0.6),
+      startX + (0.5 * width),
+      startY + height,
+    )
+    ..moveTo(
+      startX + (0.5 * width),
+      startY + (height * 0.4),
+    )
+    ..cubicTo(
+      startX + (0.8 * width),
+      startY + (height * 0.1),
+      startX + (1.25 * width),
+      startY + (height * 0.6),
+      startX + (0.5 * width),
+      startY + height,
+    );
+
+  canvas.drawPath(path, paint);
+}

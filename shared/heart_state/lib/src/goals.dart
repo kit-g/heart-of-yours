@@ -26,9 +26,17 @@ abstract interface class LocalGoalService implements GoalService {
 
 /// A rung the app has just noticed was met, and the goal it belongs to.
 ///
-/// Returned by [Goals.observeProgress] so a caller can say so — the workout
-/// summary congratulates you for the rung the session you just finished earned.
+/// Returned by [Goals.observeProgress] and [Goals.stampCrossed] so a caller
+/// can say so — the workout summary congratulates you for the rung the session
+/// you just finished earned, and live goal notes (#625) for the one a set just
+/// reached.
 typedef GoalAchievement = ({Goal goal, GoalStage stage});
+
+extension GoalStageReach on GoalStage {
+  /// Whether [value] meets this rung. Pace is the one metric where progress
+  /// means going down, so its rungs are met from above.
+  bool isMetBy(num value, GoalMetric metric) => metric.lowerIsBetter ? value <= target : value >= target;
+}
 
 /// A write the server considered and refused.
 ///
@@ -436,7 +444,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
 
       for (final stage in goal.stages) {
         if (stage.isAchieved || stage.id == null) continue;
-        if (!_meets(stage, value, goal.metric.lowerIsBetter)) continue;
+        if (!stage.isMetBy(value, goal.metric)) continue;
 
         try {
           final stamped = await markStageAchieved(
@@ -458,61 +466,41 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     return achieved;
   }
 
-  /// Recurring goals this session carried over their target.
+  /// Stamps the rungs in [crossed] — what one session carried over the line
+  /// (#625) — and hands [crossed] back with each goal as it now stands, for
+  /// the caller to announce.
   ///
-  /// Separate from [observeProgress] because nothing is stamped: a cadence goal
-  /// resets each period and is never "done", so there is no achievement to
-  /// record — only something worth saying once.
+  /// Which rungs a session crossed is the caller's to work out: the workout
+  /// summary and the note over a workout in progress ask the same question of
+  /// the same numbers, and the answer has to be one answer. This only records
+  /// it.
   ///
-  /// Announced when the session made the difference: with it the period meets
-  /// the target, without it the period did not. That is both truer than "is it
-  /// met right now" and self-limiting — a later session in the same period
-  /// cannot re-announce, because by then the period already met the target
-  /// without it. No marker to persist, and nothing to reset when the week
-  /// rolls over.
-  Future<List<GoalAchievement>> observePeriodWins({
-    required Future<num?> Function(Goal goal) valueOf,
-    required Future<num?> Function(Goal goal) valueBefore,
-    bool Function(Goal goal)? setAside,
-  }) async {
-    final wins = <GoalAchievement>[];
-    if (userId == null) return wins;
-
-    for (final goal in List.of(_goals)) {
-      if (goal.cadence == null) continue;
-      if (setAside?.call(goal) ?? false) continue;
-      // the db gives a cadence goal exactly one stage
-      final stage = goal.stages.firstOrNull;
-      if (stage == null) continue;
-
-      final num? now;
-      final num? before;
-      try {
-        now = await valueOf(goal);
-        before = await valueBefore(goal);
-      } catch (error, stacktrace) {
-        onError?.call(error, stacktrace: stacktrace);
-        continue;
-      }
-
-      if (now == null) continue;
-      if (!_meets(stage, now, goal.metric.lowerIsBetter)) continue;
-      // already there without this session, so this session is not the news
-      if (before != null && _meets(stage, before, goal.metric.lowerIsBetter)) continue;
-
-      wins.add((goal: goal, stage: stage));
-    }
-
-    return wins;
+  /// - A recurring goal's rung passes through unstamped: it resets each
+  ///   period and is never "done", so there is nothing to record — only
+  ///   something worth saying once.
+  /// - A rung already stamped keeps its timestamp, which says when the target
+  ///   was *first* met.
+  /// - A refusal is reported, not raised, and the rung is still announced: the
+  ///   session did reach it, whatever the server made of the credit.
+  Future<List<GoalAchievement>> stampCrossed(List<GoalAchievement> crossed, {String? achievedBy}) async {
+    if (userId == null) return crossed;
+    return [for (final crossing in crossed) await _stamp(crossing, achievedBy: achievedBy)];
   }
 
-  /// Pace is the one metric where progress means going down, so its rungs are
-  /// met from above.
-  bool _meets(GoalStage stage, num value, bool lowerIsBetter) {
-    return switch (lowerIsBetter) {
-      true => value <= stage.target,
-      false => value >= stage.target,
-    };
+  Future<GoalAchievement> _stamp(GoalAchievement crossing, {String? achievedBy}) async {
+    final (:goal, :stage) = crossing;
+    switch ((goal.id, stage.id)) {
+      case (final String goalId, final String stageId) when goal.cadence == null && !stage.isAchieved:
+        try {
+          final stamped = await markStageAchieved(goalId, stageId, DateTime.timestamp(), achievedBy: achievedBy);
+          return (goal: stamped, stage: stage);
+        } on GoalRejected catch (rejection, stacktrace) {
+          onError?.call(rejection, stacktrace: stacktrace);
+          return crossing;
+        }
+      case _:
+        return crossing;
+    }
   }
 
   /// Re-attempts the push for goals persisted locally but never confirmed —

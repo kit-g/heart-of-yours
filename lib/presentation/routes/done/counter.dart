@@ -121,7 +121,7 @@ class _PulsePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = color;
-    _drawHeart(canvas, 0, 0, size.width, paint);
+    drawHeart(canvas, 0, 0, size.width, paint);
   }
 
   @override
