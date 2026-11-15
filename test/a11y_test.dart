@@ -119,6 +119,7 @@ enum _Screen {
   whatsNew,
   restTimers,
   pushSettings,
+  yourDevices,
   features,
   recaps,
   monthlyReport,
@@ -1118,6 +1119,15 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.pushSettings, _Guideline.androidTapTarget, null),
   (_Screen.pushSettings, _Guideline.iosTapTarget, null),
 
+  // Your devices (lib/presentation/routes/settings/your_devices.dart, #555):
+  // Your coach on, so keys run; this device and one not approved yet, with
+  // its Compare codes button
+  (_Screen.yourDevices, _Guideline.labeledTapTarget, null),
+  (_Screen.yourDevices, _Guideline.textContrastLight, null),
+  (_Screen.yourDevices, _Guideline.textContrastDark, null),
+  (_Screen.yourDevices, _Guideline.androidTapTarget, null),
+  (_Screen.yourDevices, _Guideline.iosTapTarget, null),
+
   // Features (lib/presentation/routes/settings/features.dart, #226): the
   // opt-in switches, the muscle map on so its options unfold under it.
   (_Screen.features, _Guideline.labeledTapTarget, null),
@@ -1364,7 +1374,7 @@ void main() {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on'});
     }
     // a coaching switch on, so the push client runs (#567, #554)
-    if (screen == _Screen.pushSettings) {
+    if (screen == _Screen.pushSettings || screen == _Screen.yourDevices) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-yourCoach': 'on'});
     }
     // default rest (#174) on, so the page's kinds are held to it as well
@@ -1865,6 +1875,45 @@ void main() {
             ],
           ),
         );
+      case _Screen.yourDevices:
+        when(api.registerAccount(any)).thenAnswer((invocation) async => invocation.positionalArguments.single);
+        when(api.getConnections()).thenAnswer((_) async => []);
+        when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
+        CryptoDevice? published;
+        when(
+          api.publishCryptoDevice(
+            id: anyNamed('id'),
+            identityKey: anyNamed('identityKey'),
+            signingKey: anyNamed('signingKey'),
+            fallbackKey: anyNamed('fallbackKey'),
+            vouch: anyNamed('vouch'),
+          ),
+        ).thenAnswer(
+          (invocation) async => published = CryptoDevice(
+            id: invocation.namedArguments[#id] as String,
+            userId: 'u1',
+            identityKey: invocation.namedArguments[#identityKey] as String,
+            signingKey: invocation.namedArguments[#signingKey] as String,
+            fallbackKey: invocation.namedArguments[#fallbackKey] as String,
+            createdAt: DateTime.utc(2026, 10, 1),
+          ),
+        );
+        when(api.addOneTimeKeys(any, any)).thenAnswer((_) async => 50);
+        when(api.countOneTimeKeys(any)).thenAnswer((_) async => 50);
+        when(api.getKeyQueue(any)).thenAnswer((_) async => []);
+        when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer(
+          (_) async => [
+            ?published,
+            CryptoDevice(
+              id: '01a1e000-0000-7000-8000-00000000ab12',
+              userId: 'u1',
+              identityKey: 'tablet-identity',
+              signingKey: 'tablet-signing',
+              fallbackKey: 'tablet-fallback',
+              createdAt: DateTime.utc(2026, 11, 2),
+            ),
+          ],
+        );
       case _Screen.restTimers:
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench]));
         when(api.getExercises()).thenAnswer((_) async => [_bench]);
@@ -2034,7 +2083,7 @@ void main() {
       firebaseAuth: firebase,
       hasLocalNotifications: false,
       // notes are there only where keys can be kept
-      keyVault: screen == _Screen.coachingNotes ? MemoryKeyVault() : null,
+      keyVault: screen == _Screen.coachingNotes || screen == _Screen.yourDevices ? MemoryKeyVault() : null,
       // the dashboard animates indefinitely — settle would hang on it
       settle: false,
     );
@@ -2466,6 +2515,11 @@ void main() {
         await tester.pumpTimes();
         expect(find.byType(PushSettingsPage), findsOneWidget);
         expect(find.text('Messages'), findsOneWidget);
+      case _Screen.yourDevices:
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/settings/devices');
+        await tester.pumpTimes();
+        expect(find.byType(YourDevicesPage), findsOneWidget);
+        expect(find.byKey(AppKeys.compareCodes('01a1e000-0000-7000-8000-00000000ab12')), findsOneWidget);
       case _Screen.features:
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();

@@ -200,6 +200,10 @@ extension on BuildContext {
     return goNamed(_pushSettingsName);
   }
 
+  void goToYourDevices() {
+    return goNamed(_yourDevicesName);
+  }
+
   void goToFeatures() {
     return goNamed(_featuresName);
   }

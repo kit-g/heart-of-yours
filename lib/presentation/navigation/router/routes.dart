@@ -69,6 +69,7 @@ RouteBase _profileRoute() {
             onWhatsNew: context.goToWhatsNew,
             onRestTimers: context.goToRestTimers,
             onPushSettings: context.goToPushSettings,
+            onYourDevices: context.goToYourDevices,
             onFeatures: context.goToFeatures,
             onDeveloperApi: context.goToApiTokens,
             onErased: context.goToProfile,
@@ -127,6 +128,17 @@ RouteBase _profileRoute() {
             },
             builder: (_, _) => const PushSettingsPage(),
             name: _pushSettingsName,
+          ),
+          GoRoute(
+            path: _yourDevicesPath,
+            // only where device keys run (#555): off, a link here is one the
+            // app has no screen for (`docs/opt-in.md`)
+            redirect: (context, _) => switch (pushesOn(context) && DeviceKeys.of(context).supported) {
+              true => null,
+              false => '$_profilePath/$_settingsPath',
+            },
+            builder: (_, _) => const YourDevicesPage(onError: reportToSentry),
+            name: _yourDevicesName,
           ),
           GoRoute(
             path: _featuresPath,
