@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
+import 'test_utils.dart';
+
 /// The server's side, in memory.
 class _Server implements CoachingService {
   final connections = <Connection>[];
@@ -164,6 +166,14 @@ Connection _with(Connection connection, {ConnectionStatus? status, List<String>?
     acceptedAt: connection.acceptedAt,
     shares: shares ?? connection.shares,
   );
+}
+
+/// What was logged, as lists a deep match can compare: a record holds its
+/// map by identity.
+List<List<Object>> _logged(ReportedAnalytics reported) {
+  return [
+    for (final (name, parameters) in reported.events) [name, parameters],
+  ];
 }
 
 void main() {
@@ -378,6 +388,91 @@ void main() {
       await coaching.invite('Muffin');
       coaching.onSignOut();
       expect(coaching.invitations, isEmpty);
+    });
+  });
+
+  group('analytics (#568)', () {
+    late ReportedAnalytics reported;
+
+    setUp(() {
+      reported = ReportedAnalytics();
+      coaching = Coaching(
+        service: server,
+        analytics: Analytics(service: reported),
+      );
+    });
+
+    test("each change is counted once the server took it, with this account's side", () async {
+      server.connections.addAll([_connection('alex', .student), _connection('muffin', .coach)]);
+      await coaching.load();
+
+      await coaching.pause(coaching.coaches.single);
+      await coaching.resume(coaching.coaches.single);
+      await coaching.end(coaching.coaches.single);
+      await coaching.block(coaching.clients.single);
+
+      expect(_logged(reported), [
+        [
+          'coaching_changed',
+          {'role': 'student', 'coaching_action': 'paused'},
+        ],
+        [
+          'coaching_changed',
+          {'role': 'student', 'coaching_action': 'resumed'},
+        ],
+        [
+          'coaching_changed',
+          {'role': 'student', 'coaching_action': 'ended'},
+        ],
+        [
+          'coaching_changed',
+          {'role': 'coach', 'coaching_action': 'blocked'},
+        ],
+      ]);
+    });
+
+    test('a change the server refused is not counted', () async {
+      server.connections.add(_connection('alex', .student));
+      await coaching.load();
+      server.refuse = {'code': 'forbidden'};
+
+      await expectLater(coaching.pause(coaching.coaches.single), throwsA(isA<Map>()));
+
+      expect(reported.events, isEmpty);
+    });
+
+    test('an invitation made, and each answer to one', () async {
+      await coaching.invite('Muffin');
+      await coaching.accept('good', {.history});
+      await coaching.decline('good');
+      await coaching.blockInviter('good');
+
+      expect(_logged(reported), [
+        [
+          'invitation_created',
+          {'with_program': 'false'},
+        ],
+        [
+          'invitation_answered',
+          {'accepted': 'true'},
+        ],
+        [
+          'invitation_answered',
+          {'accepted': 'false'},
+        ],
+        [
+          'invitation_answered',
+          {'accepted': 'false'},
+        ],
+      ]);
+    });
+
+    test('a refused invitation is not counted', () async {
+      server.refuse = {'code': 'coaching_beta'};
+
+      await expectLater(coaching.invite('Muffin'), throwsA(isA<Map>()));
+
+      expect(reported.names, isNot(contains('invitation_created')));
     });
   });
 

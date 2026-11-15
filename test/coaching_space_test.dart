@@ -71,7 +71,13 @@ void main() {
 
   /// A phone by default. Settings is swept wide, as the a11y harness does:
   /// under the test font its pickers overflow a phone's width.
-  Future<void> pump(WidgetTester tester, Map<String, Object> prefs, {bool wide = false, KeyVault? keyVault}) async {
+  Future<void> pump(
+    WidgetTester tester,
+    Map<String, Object> prefs, {
+    bool wide = false,
+    KeyVault? keyVault,
+    AnalyticsService? analytics,
+  }) async {
     tester.view.physicalSize = wide ? const Size(1200, 2400) : const Size(1179, 2556);
     tester.view.devicePixelRatio = wide ? 1 : 3;
     addTearDown(tester.view.resetPhysicalSize);
@@ -87,6 +93,10 @@ void main() {
         signedIn: true,
       ),
       keyVault: keyVault,
+      analytics: switch (analytics) {
+        final AnalyticsService service => Analytics(service: service),
+        null => null,
+      },
       settle: false,
     );
     await tester.pumpTimes();
@@ -325,12 +335,22 @@ void main() {
       expect(find.text('Your coach'), findsNothing);
     });
 
-    testWidgets("once asked about, Your coach's switch is there", (tester) async {
+    testWidgets("once asked about, Your coach's switch is there, and flipping it is counted as Settings'", (
+      tester,
+    ) async {
       account(coach: false);
-      await pump(tester, {'feature-yourCoach': 'off'}, wide: true);
+      final recorded = RecordedAnalytics();
+      await pump(tester, {'feature-yourCoach': 'off'}, wide: true, analytics: recorded);
       await openFeatures(tester);
       await tester.scrollUntilVisible(find.text('Your coach'), 200);
       expect(find.text('Your coach'), findsOneWidget);
+
+      await tester.tap(find.text('Your coach'));
+      await tester.pumpTimes();
+
+      expect(recorded.of('feature_switched'), [
+        {'feature': 'yourCoach', 'on': 'true', 'source': 'settings'},
+      ]);
     });
   });
 
@@ -358,7 +378,11 @@ void main() {
       account(coach: true);
       clients([sam, pip, riley]);
       when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
-      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      final recorded = RecordedAnalytics();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, analytics: recorded);
+      expect(recorded.property('coaching_role'), [
+        'coach',
+      ], reason: 'once the entitlements are known, and never a role before');
 
       expect(find.text('No clients yet'), findsNothing);
       expect(find.text('Strength block · week 2 of 6'), findsOneWidget);
@@ -377,6 +401,7 @@ void main() {
       await tester.pumpTimes();
 
       verify(api.markReviewed('c-sam', at: anyNamed('at'))).called(1);
+      expect(recorded.of('client_reviewed'), hasLength(1));
       expect(
         find.descendant(of: find.byKey(AppKeys.coachingClient('c-sam')), matching: find.text("Hasn't trained lately")),
         findsOneWidget,

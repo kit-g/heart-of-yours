@@ -13,21 +13,11 @@ import 'package:material_ui/material_ui.dart';
 import 'mocks.mocks.dart';
 import 'support/harness.dart';
 
-class _Recorded implements AnalyticsService {
-  final events = <(String, Map<String, Object>)>[];
-
-  @override
-  Future<void> logEvent(String name, Map<String, Object> parameters) async => events.add((name, parameters));
-
-  @override
-  Future<void> setUserProperty(String name, String? value) async {}
-}
-
 void main() {
   late MockLocalDatabase db;
   late MockApi api;
   late MockCdn cdn;
-  late _Recorded recorded;
+  late RecordedAnalytics recorded;
   late HeartRouter router;
 
   // every note about the muscle map carries one; the newest is the one on top
@@ -38,14 +28,12 @@ void main() {
     db = MockLocalDatabase();
     api = MockApi();
     cdn = MockCdn();
-    recorded = _Recorded();
+    recorded = RecordedAnalytics();
     router = HeartRouter();
     stubStartup(db, api);
   });
 
-  Iterable<Map<String, Object>> linked() {
-    return recorded.events.where((event) => event.$1 == 'feature_linked').map((event) => event.$2);
-  }
+  Iterable<Map<String, Object>> linked() => recorded.of('feature_linked');
 
   Future<void> pumpApp(WidgetTester tester) async {
     // rootBundle caches each load's future, and one cached under an earlier

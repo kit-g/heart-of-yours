@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'analytics.dart';
 import 'coaching.dart' show CoachingStatus;
 import 'device_keys.dart';
 import 'remote.dart';
@@ -79,12 +80,17 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
   final String Function() _newId;
   final DateTime Function() _now;
 
+  /// Told of a note kept or deleted here, sealed: it reaches the server when
+  /// it can, and one written offline is still a note written.
+  final Analytics? analytics;
+
   new({
     required this._service,
     required this._local,
     required this._cipher,
     RemoteAccess? remote,
     this.onError,
+    this.analytics,
     String Function()? newId,
     DateTime Function()? now,
   }) : _remote = remote ?? RemoteAccess(),
@@ -239,8 +245,16 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
     if (userId != _userId) return noteId;
     final note = CoachNote(id: noteId, connectionId: connectionId, content: content, updatedAt: _now().toUtc());
     await _inTurn(userId, () async {
+      // what it said before, read before it is written over: the same words
+      // again are no note written
+      final existed = _stored[noteId]?.deleted == false;
+      final before = switch (_opened[noteId]) {
+        (_, ReadNote(:final text)) when existed => text,
+        _ => null,
+      };
       final stored = (note: note, pending: true, deleted: false);
       await _local.storeCoachNotes(userId, [stored]);
+      if (before != text) analytics?.coachNoteSaved(edited: existed);
       if (userId != _userId) return;
       _stored[noteId] = stored;
       _touched?.add(noteId);
@@ -264,6 +278,7 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
       if (stored == null) return;
       final deleting = (note: stored.note, pending: true, deleted: true);
       await _local.storeCoachNotes(userId, [deleting]);
+      if (!stored.deleted) analytics?.coachNoteDeleted();
       if (userId != _userId) return;
       _stored[id] = deleting;
       _touched?.add(id);
