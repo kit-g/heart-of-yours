@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/routes/history/history.dart';
@@ -55,17 +56,23 @@ void main() {
     return workout..finish(start.add(const Duration(hours: 1)));
   }
 
-  final now = DateTime.now();
-  final chestDay = finished('Chest day', bench, DateTime(now.year, now.month, 1, 9));
-  final legDay = finished('Leg day', squat, DateTime(now.year, now.month, 1, 18));
-  final backDay = finished('Back day', own, DateTime(now.year, now.month - 1, 3, 9));
+  // A fixed day, read through package:clock as the calendar reads it: no
+  // fixture's day is "today" by accident, whatever day the suite runs on.
+  final now = DateTime(2026, 11, 20, 12);
+  void testFilter(String description, WidgetTesterCallback body) {
+    testWidgets(description, (tester) => withClock(Clock.fixed(now), () => body(tester)));
+  }
+
+  final chestDay = finished('Chest day', bench, DateTime(2026, 11, 5, 9));
+  final legDay = finished('Leg day', squat, DateTime(2026, 11, 5, 18));
+  final backDay = finished('Back day', own, DateTime(2026, 10, 3, 9));
 
   Future<MockApi> pumpApp(
     WidgetTester tester, {
     required List<Workout> history,
     Size size = const Size(390, 844),
     bool account = false,
-    void Function(MockApi api)? stub,
+    void Function(MockLocalDatabase db, MockApi api)? stub,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -74,7 +81,7 @@ void main() {
     final api = MockApi();
     stubStartup(db, api);
     when(db.getWorkoutHistory(any)).thenAnswer((_) async => history);
-    stub?.call(api);
+    stub?.call(db, api);
     when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench, squat]));
     await const TestAppHarness().pumpHeartApp(
       tester,
@@ -107,7 +114,7 @@ void main() {
     return tester.widgetList<WorkoutItem>(find.byType(WorkoutItem)).map((item) => item.workout.name);
   }
 
-  testWidgets('the list shows the workouts that trained any group picked (#610)', (tester) async {
+  testFilter('the list shows the workouts that trained any group picked (#610)', (tester) async {
     await pumpApp(tester, history: [chestDay, legDay, backDay]);
     expect(cards(tester), hasLength(3));
     expect(find.byKey(AppKeys.historyFilterChips), findsNothing);
@@ -116,8 +123,7 @@ void main() {
     expect(cards(tester), ['Leg day']);
     expect(find.byKey(AppKeys.historyFilterChips), findsOneWidget);
     // a month with nothing in the filter has no heading either
-    final previous = DateTime(now.year, now.month - 1);
-    expect(find.text(DateFormat.yMMMM('en').format(previous).toUpperCase()), findsNothing);
+    expect(find.text('OCTOBER 2026'), findsNothing);
 
     // the user's own row, untagged, counts by its target
     await pick(tester, .back);
@@ -131,7 +137,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('secondary muscles do not count: a bench session is no arm day (#610)', (tester) async {
+  testFilter('secondary muscles do not count: a bench session is no arm day (#610)', (tester) async {
     await pumpApp(tester, history: [chestDay, legDay]);
     final context = tester.element(find.byType(HistoryPage));
     HistoryFilter.of(context).toggle(.arms);
@@ -147,8 +153,11 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('with the whole history here, a group none of it trained is greyed (#610)', (tester) async {
+  testFilter('with the whole history here, a group none of it trained is greyed (#610)', (tester) async {
     await pumpApp(tester, history: [chestDay, legDay]);
+    // greyed only once the library's tags are read
+    await Exercises.of(tester.element(find.byType(HistoryPage))).init();
+    await tester.pumpTimes();
     await tester.tapByKey(AppKeys.historyFilter);
     await tester.pumpTimes();
 
@@ -164,10 +173,11 @@ void main() {
     expect(enabled(.neck), isFalse);
   });
 
-  testWidgets('the calendar marks only the days the filter lets through (#610)', (tester) async {
+  testFilter('the calendar marks only the days the filter lets through (#610)', (tester) async {
     final semantics = tester.ensureSemantics();
-    final other = finished('Chest again', bench, DateTime(now.year, now.month, 2, 9));
-    await pumpApp(tester, history: [chestDay, legDay, other], size: const Size(1194, 834));
+    final other = finished('Chest again', bench, DateTime(2026, 11, 6, 9));
+    final today = finished('Chest today', bench, DateTime(2026, 11, 20, 8));
+    await pumpApp(tester, history: [chestDay, legDay, other, today], size: const Size(1194, 834));
     final context = tester.element(find.byType(HistoryPage));
     Preferences.of(context).setHistoryView(.calendar);
     HistoryFilter.of(context).toggle(.legs);
@@ -177,53 +187,92 @@ void main() {
     Finder day(String label) =>
         find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.label == label);
 
-    // the 1st holds two, one of them legs: one mark, and it opens that one
+    // the 5th holds two, one of them legs: one mark, and it opens that one
     expect(day('${label(chestDay.start)}, edit workout'), findsOneWidget);
-    // the 2nd trained only chest: plain, and it does nothing — it is not empty
-    final second = tester.widget<Semantics>(day(label(other.start)));
-    expect(second.properties.onTap, isNull);
+    // the 6th trained only chest: plain, and it does nothing — it is not empty
+    expect(tester.widget<Semantics>(day(label(other.start))).properties.onTap, isNull);
+    // nor does today, for the same reason: no "start", no "add another"
+    expect(tester.widget<Semantics>(day('${label(today.start)}, today')).properties.onTap, isNull);
     expect(find.byKey(AppKeys.historyFilterChips), findsOneWidget);
     expect(tester.takeException(), isNull);
     semantics.dispose();
   });
 
-  testWidgets('while older pages are still to come, the filter pages them in and looks there too (#610)', (
-    tester,
-  ) async {
-    final older = finished('Old leg day', squat, DateTime(now.year - 1, 3, 4, 9));
-    final page = Completer<Iterable<Workout>>();
-    // enough that the list's own tail is never in sight, so nothing pages but the filter
-    final recent = [
-      for (final day in List.generate(12, (index) => index + 1))
-        finished('Chest $day', bench, DateTime(now.year, now.month, 1, day)),
-    ];
+  // what the server's pages say there is, beyond what the device holds
+  final recent = [
+    for (final hour in List.generate(12, (index) => index + 1))
+      finished('Chest $hour', bench, DateTime(2026, 11, 1, hour)),
+  ];
+  final older = finished('Old leg day', squat, DateTime(2025, 3, 4, 9));
+
+  testFilter('a device holding the whole history filters it without paging (#610)', (tester) async {
     final api = await pumpApp(
       tester,
       history: recent,
       account: true,
-      // the device holds a prefix: the server says there is more behind it
-      stub: (api) => when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since'))).thenAnswer(
-        (invocation) async => switch (invocation.namedArguments[#since]) {
-          null => Page(items: recent.reversed.toList(), hasMore: true),
-          _ => page.future,
-        },
-      ),
+      // the server's first page says there is more, as it does on every
+      // launch; the mark says the device already has it all
+      stub: (_, api) => when(
+        api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')),
+      ).thenAnswer((_) async => Page(items: recent.reversed.toList(), hasMore: true)),
     );
     final context = tester.element(find.byType(HistoryPage));
-    final workouts = Workouts.of(context);
-    expect(workouts.hasMoreHistory, isTrue);
+    await Backfill.of(context).run('u1');
+    expect(Workouts.of(context).hasMoreHistory, isTrue);
 
     HistoryFilter.of(context).toggle(.legs);
     await tester.pumpTimes();
-    // nothing in what is here, and more to look through: no "nothing matches" yet
+
+    expect(find.byKey(AppKeys.historyFilterEmpty), findsOneWidget);
+    verifyNever(
+      api.getWorkouts(
+        any,
+        pageSize: anyNamed('pageSize'),
+        since: argThat(isNotNull, named: 'since'),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testFilter('while the backfill is still bringing history down, the filter waits for it (#610)', (tester) async {
+    final page = Completer<Iterable<Workout>>();
+    await pumpApp(
+      tester,
+      history: recent,
+      account: true,
+      stub: (db, api) {
+        // a device short of the account, with the rest still to come
+        when(db.isHistoryBackfilled(any)).thenAnswer((_) async => false);
+        when(db.mirrorSummary(any)).thenAnswer(
+          (_) async => const AccountSummary(
+            collections: {ExportableCollection.workouts: CollectionSummary(count: 12)},
+          ),
+        );
+        when(api.getAccountSummary()).thenAnswer(
+          (_) async => const AccountSummary(
+            collections: {ExportableCollection.workouts: CollectionSummary(count: 13)},
+          ),
+        );
+        when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since'))).thenAnswer(
+          (invocation) => switch (invocation.namedArguments[#since]) {
+            null => Future.value(Page(items: recent.reversed.toList(), hasMore: true)),
+            _ => page.future,
+          },
+        );
+      },
+    );
+    final context = tester.element(find.byType(HistoryPage));
+    unawaited(Backfill.of(context).run('u1'));
+    HistoryFilter.of(context).toggle(.legs);
+    await tester.pumpTimes();
+
+    // nothing in what is here, and more on its way: no "nothing matches" yet
     expect(find.text('Looking through older workouts…'), findsOneWidget);
     expect(find.byKey(AppKeys.historyFilterEmpty), findsNothing);
 
     page.complete(Page(items: [older], hasMore: false));
     await tester.pumpTimes();
 
-    verify(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: recent.first.id)).called(1);
-    expect(workouts.hasMoreHistory, isFalse);
     expect(cards(tester), ['Old leg day']);
     expect(tester.takeException(), isNull);
   });

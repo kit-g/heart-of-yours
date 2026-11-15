@@ -472,20 +472,7 @@ extension MuscleGroupCopy on MuscleGroup {
 /// The same words for heart_models' own groups, which are the atlas's ten by
 /// id (#610).
 extension MuscleGroupKeyCopy on MuscleGroupKey {
-  String label(L l) {
-    return switch (this) {
-      .legs => l.targetLegs,
-      .adductors => l.muscleGroupAdductors,
-      .hamstrings => l.muscleGroupHamstrings,
-      .glutes => l.muscleGroupGlutes,
-      .arms => l.targetArms,
-      .neck => l.muscleGroupNeck,
-      .back => l.targetBack,
-      .core => l.targetCore,
-      .shoulders => l.targetShoulders,
-      .chest => l.targetChest,
-    };
-  }
+  String label(L l) => MuscleGroup.fromString(value).label(l);
 }
 
 /// "Chest: 4 sets" — a group and its count, halves and all. Whole counts take

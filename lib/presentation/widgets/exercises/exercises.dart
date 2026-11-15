@@ -13,6 +13,7 @@ import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/removable_chip.dart';
 import 'package:heart/presentation/widgets/menu.dart';
 import 'package:heart/presentation/widgets/search_field.dart';
 import 'package:heart_language/heart_language.dart';

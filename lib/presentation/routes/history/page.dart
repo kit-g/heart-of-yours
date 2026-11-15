@@ -53,21 +53,6 @@ const _imageSize = 120.0;
 const _calendarMinHeight = 420.0;
 
 class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage>, HasHaptic {
-  // a plain flag: it only debounces a request and must never cause a frame
-  bool _pageScheduled = false;
-
-  /// While a filter is set, the rest of history is paged in (#610): what it
-  /// finds has to be found in all of it, not in the pages scrolled to. The
-  /// background backfill (#113) has usually done this already.
-  void _searchOlder(Workouts workouts) {
-    if (_pageScheduled || workouts.loadingMoreHistory || workouts.historyPageError || !workouts.hasMoreHistory) return;
-    _pageScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _pageScheduled = false;
-      if (mounted && HistoryFilter.of(context).isOn) Workouts.of(context).loadMoreHistory();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final ThemeData(scaffoldBackgroundColor: backgroundColor, :textTheme, :colorScheme, :sectionHeader) = Theme.of(
@@ -78,15 +63,24 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final workouts = Workouts.watch(context);
     final byMonth = workouts.byMonth;
     // History narrowed to some muscle groups (#610). What a workout trained is
-    // read off the library, so the page hears when that loads.
+    // read off the library, so the page hears when it loads or changes.
     final filter = HistoryFilter.watch(context);
-    context.select<Exercises, bool>((exercises) => exercises.isInitialized);
-    final lookup = Exercises.of(context).lookup;
+    final exercises = Exercises.watch(context);
+    final trained = WorkoutGroups(exercises.lookup);
     final bool Function(Workout)? shows = switch (filter.isOn) {
-      true => (workout) => filter.shows(workout, lookup: lookup),
+      true => (workout) => filter.shows(workout, trained),
       false => null,
     };
-    if (filter.isOn) _searchOlder(workouts);
+    // How much of history the filter sees: all of it once the backfill (#113)
+    // has it on the device — the server's pages say there is more on every
+    // launch, so they are not the word on that. Until then, the backfill is
+    // the one bringing it down; the filter never pages for itself.
+    final backfill = Backfill.watch(context);
+    final whole = !workouts.hasMoreHistory || backfill.isWhole;
+    final (searching, stalled) = switch (whole) {
+      true => (false, false),
+      false => (backfill.status == .running, backfill.status == .failed),
+    };
     // the days set aside: a program's while it is shown (Programs on, or a
     // coach's under Your coach, #593), a plain day's while "Not today" is
     // (#312); with all off, History is as it was
@@ -99,13 +93,23 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
       },
     );
     // the photo strip is the whole history's, so a filter puts it away
-    final images = switch (filter.isOn) {
-      true => const <WorkoutImage>[],
-      false => workouts.images,
-    };
+    final images = filter.isOn ? const <WorkoutImage>[] : workouts.images;
     final layout = LayoutProvider.of(context);
     final view = preferences.historyView;
     final appBar = SliverAppBar(
+      // Narrows both views to some muscle groups (#610). On the leading side,
+      // which the centred title leaves free: the actions already reach the
+      // title on a phone with Copy for AI and Past workouts on, and in a
+      // tablet's narrow list pane.
+      leading: switch (workouts.history.isNotEmpty || filter.isOn) {
+        true => _FilterButton(
+          filter: filter,
+          trained: trained,
+          // greyed only off the whole history, read with the library's tags
+          whole: whole && exercises.isInitialized,
+        ),
+        false => null,
+      },
       actions: [
         // Copy for AI (#259): a stretch of training, while it is on
         if (preferences.isOn(.copyForAi) && workouts.history.isNotEmpty)
@@ -127,8 +131,6 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
             icon: const Icon(Icons.more_time_rounded),
             onPressed: () => log(),
           ),
-        // narrows both views to some muscle groups (#610)
-        if (workouts.history.isNotEmpty || filter.isOn) _FilterButton(filter: filter, lookup: lookup),
         // the switch between the two views (#609), remembered as the
         // view History opens on
         IconButton(
@@ -238,20 +240,20 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
           if (items.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: switch ((filter.isOn, workouts.hasMoreHistory, workouts.historyPageError)) {
+              child: switch ((filter.isOn, searching, stalled)) {
                 (false, _, _) => const _EmptyState(),
-                // nothing yet, and older pages still to look through
-                (true, true, false) => const _Searching(),
-                // and one of them would not come: no saying there is nothing
-                (true, true, true) => Center(
+                // nothing yet, and older workouts still coming down
+                (true, true, _) => const _Searching(),
+                // and they stopped coming: no saying there is nothing
+                (true, _, true) => Center(
                   child: _HistoryTail(
                     loading: false,
                     error: true,
                     hasMore: true,
-                    onRetry: () => Workouts.of(context).loadMoreHistory(),
+                    onRetry: () => Backfill.of(context).retry(),
                   ),
                 ),
-                (true, false, _) => _FilteredEmpty(onClear: filter.clear),
+                (true, false, false) => _FilteredEmpty(onClear: filter.clear),
               },
             )
           else
@@ -263,7 +265,12 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                 // build; loadMoreHistory is a no-op when already loading or done.
                 // Pauses on error so a failed page doesn't auto-retry in a loop —
                 // the tail shows a manual retry instead.
-                if (workouts.hasMoreHistory && !workouts.historyPageError && index >= items.length - 3) {
+                // Under a filter the list is a few rows of the whole history, its
+                // tail always in sight: the backfill brings the rest, not this.
+                if (!filter.isOn &&
+                    workouts.hasMoreHistory &&
+                    !workouts.historyPageError &&
+                    index >= items.length - 3) {
                   WidgetsBinding.instance.addPostFrameCallback(
                     (_) {
                       if (context.mounted) Workouts.of(context).loadMoreHistory();
@@ -290,12 +297,21 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
             ),
           if (items.isNotEmpty)
             SliverToBoxAdapter(
-              child: _HistoryTail(
-                loading: workouts.loadingMoreHistory,
-                error: workouts.historyPageError,
-                hasMore: workouts.hasMoreHistory,
-                onRetry: () => Workouts.of(context).loadMoreHistory(),
-              ),
+              child: switch (filter.isOn) {
+                // where the filter's search stands (#610)
+                true => _HistoryTail(
+                  loading: searching,
+                  error: stalled,
+                  hasMore: !whole,
+                  onRetry: () => Backfill.of(context).retry(),
+                ),
+                false => _HistoryTail(
+                  loading: workouts.loadingMoreHistory,
+                  error: workouts.historyPageError,
+                  hasMore: workouts.hasMoreHistory,
+                  onRetry: () => Workouts.of(context).loadMoreHistory(),
+                ),
+              },
             ),
         ],
       );

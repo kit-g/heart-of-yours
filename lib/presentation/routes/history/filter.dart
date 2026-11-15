@@ -19,21 +19,21 @@ const _filterGroups = <MuscleGroupKey>[
 /// of the groups, each one ticked while it is in the filter. Filled while any
 /// is.
 ///
-/// Once the whole history is on the device, a group none of it trained is
-/// greyed: picking it could only empty the page. One already in the filter
-/// stays live, so it can always be taken out.
+/// Once the whole history is on the device ([whole]), a group none of it
+/// trained is greyed: picking it could only empty the page. One already in
+/// the filter stays live, so it can always be taken out.
 class _FilterButton extends StatelessWidget {
   final HistoryFilter filter;
-  final Exercise? Function(ExerciseId) lookup;
+  final WorkoutGroups trained;
+  final bool whole;
 
-  const new({required this.filter, required this.lookup});
+  const new({required this.filter, required this.trained, required this.whole});
 
   Future<void> _choose(BuildContext context) async {
     final l = L.of(context);
-    final workouts = Workouts.of(context);
-    final trained = switch (workouts.hasMoreHistory) {
-      false => {for (final workout in workouts.history) ...workoutGroupsOf(workout, lookup: lookup)},
-      true => null,
+    final reached = switch (whole) {
+      true => {for (final workout in Workouts.of(context).history) ...trained.of(workout)},
+      false => null,
     };
     final picked = await showMenu<MuscleGroupKey>(
       context: context,
@@ -44,7 +44,7 @@ class _FilterButton extends StatelessWidget {
             key: AppKeys.historyFilterGroup(group.value),
             value: group,
             checked: filter.groups.contains(group),
-            enabled: filter.groups.contains(group) || (trained?.contains(group) ?? true),
+            enabled: filter.groups.contains(group) || (reached?.contains(group) ?? true),
             child: Text(group.label(l)),
           ),
       ],
@@ -54,12 +54,15 @@ class _FilterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // in the leading slot, which Material inks in onSurface, but one of the
+    // header's actions in look, which it inks in onSurfaceVariant
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
     return IconButton(
       key: AppKeys.historyFilter,
       tooltip: L.of(context).historyFilterTooltip,
       isSelected: filter.isOn,
-      icon: const Icon(Icons.filter_alt_outlined),
-      selectedIcon: const Icon(Icons.filter_alt_rounded),
+      icon: Icon(Icons.filter_alt_outlined, color: color),
+      selectedIcon: Icon(Icons.filter_alt_rounded, color: color),
       onPressed: () => _choose(context),
     );
   }
@@ -74,7 +77,6 @@ class _FilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
-    final ThemeData(:textTheme) = Theme.of(context);
     return SingleChildScrollView(
       key: AppKeys.historyFilterChips,
       scrollDirection: .horizontal,
@@ -83,14 +85,8 @@ class _FilterChips extends StatelessWidget {
         spacing: 8,
         children: [
           for (final group in _filterGroups.where(filter.groups.contains))
-            Chip(
-              deleteButtonTooltipMessage: l.removeFilter,
-              labelPadding: .zero,
-              label: Padding(
-                padding: const .symmetric(horizontal: 4),
-                child: Text(group.label(l), style: textTheme.bodyMedium),
-              ),
-              visualDensity: const VisualDensity(vertical: -4),
+            RemovableChip(
+              label: group.label(l),
               onDeleted: () => filter.remove(group),
             ),
         ],

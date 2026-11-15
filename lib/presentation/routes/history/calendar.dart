@@ -464,8 +464,8 @@ class _CalendarDay extends StatelessWidget {
             },
             Text(switch ((extra, sessions.isEmpty)) {
               (.start, _) => l.startNewWorkout,
-              (.log, true) when !filteredOut => l.calendarLogOnDay,
-              (.log, _) => l.calendarAddAnother,
+              (.log, true) => l.calendarLogOnDay,
+              (.log, false) => l.calendarAddAnother,
             }),
           ),
       ],
@@ -497,8 +497,10 @@ class _CalendarDay extends StatelessWidget {
         () => _choose(context, extras),
       ),
       ([_, ...], _) => (l.calendarDayWorkouts(day, sessions.length), null),
+      // trained, but nothing the filter lets through: plain, today too
+      ([], _) when filteredOut => (day, null),
       ([], _) => switch (when) {
-        .past when !_known || filteredOut => (day, null),
+        .past when !_known => (day, null),
         .past => switch ((actions.log, actions.askToLog)) {
           (final log?, _) => (l.calendarDayLog(day), () => log(date)),
           (null, final ask?) => (l.calendarDayLog(day), () => ask(date)),
