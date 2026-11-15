@@ -1440,6 +1440,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "exerciseNameTaken": "You already have an exercise with this name",
+  "@exerciseNameTaken": {
+    "description": "Error shown when renaming one of the user's own exercises to a name another of their own exercises already has",
+    "type": "text",
+    "placeholders": {}
+  },
   "folderNameTaken": "You already have a folder with this name",
   "@folderNameTaken": {
     "description": "Error shown when creating or renaming a folder to a name already in use",

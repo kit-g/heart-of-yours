@@ -57,12 +57,15 @@ class ExerciseDetailPage extends StatelessWidget {
     //
     // The remembered tab survives because it is library-scoped, not State —
     // see [_rememberedSection].
-    final key = ValueKey(exercise.id);
+    // the current copy, so an edit made from this page — a rename, a new
+    // target (#616) — shows at once, and the menu acts on what is shown
+    final current = Exercises.watch(context).lookup(exercise.id) ?? exercise;
+    final key = ValueKey(current.id);
 
     return switch (Theme.of(context).platform) {
       .iOS || .macOS => _CupertinoExerciseDetailPage(
         key: key,
-        exercise: exercise,
+        exercise: current,
         onTapWorkout: onTapWorkout,
         allowOptions: allowOptions,
         leading: leading,
@@ -75,7 +78,7 @@ class ExerciseDetailPage extends StatelessWidget {
       ),
       _ => _MaterialExerciseDetailPage(
         key: key,
-        exercise: exercise,
+        exercise: current,
         onTapWorkout: onTapWorkout,
         allowOptions: allowOptions,
         leading: leading,
