@@ -114,6 +114,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
        _newId = newId ?? uuidV7,
        _now = now ?? DateTime.now {
     _handlers[threadKeyKind] = _takeThreadKey;
+    _handlers[threadKeyRequestKind] = _takeKeyRequest;
     _handlers[noteKeyKind] = _takeNoteKey;
     for (final kind in DeviceApproval._kinds) {
       _handlers[kind] = approval._take;
@@ -148,17 +149,35 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
   /// What a thread's key travels as between devices (#556).
   static const threadKeyKind = 'thread_key';
 
+  /// What a request for thread keys travels as, to the devices that made
+  /// them (#556).
+  static const threadKeyRequestKind = 'thread_key_request';
+
   final _threadKeys = StreamController<String>.broadcast();
 
   @override
   Stream<String> get threadKeys => _threadKeys.stream;
 
+  final _keyRequests = StreamController<KeyRequest>.broadcast();
+
+  @override
+  Stream<KeyRequest> get keyRequests => _keyRequests.stream;
+
+  @override
+  Future<void> ask(String threadId, List<ThreadCiphertext> items) async {
+    try {
+      await _ask(threadId, items);
+    } on _Stopped {
+      // stopped on the way: asked again when the thread is next read
+    }
+  }
+
   @override
   Future<SealedMessage> seal(String threadId, String text) => _seal(threadId, text);
 
   @override
-  Future<void> share(String threadId, {required String userId, String? fingerprint}) {
-    return _share(threadId, userId: userId, fingerprint: fingerprint);
+  Future<void> share(String threadId, {required String userId, String? fingerprint, bool again = false}) {
+    return _share(threadId, userId: userId, fingerprint: fingerprint, again: again);
   }
 
   @override
@@ -304,6 +323,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
   @override
   void dispose() {
     _threadKeys.close();
+    _keyRequests.close();
     _noteKeys.close();
     approval.dispose();
     super.dispose();

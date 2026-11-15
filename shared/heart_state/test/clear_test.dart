@@ -283,6 +283,9 @@ class _NoCipher implements ThreadCipher {
   Stream<String> get threadKeys => const Stream.empty();
 
   @override
+  Stream<KeyRequest> get keyRequests => const Stream.empty();
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 

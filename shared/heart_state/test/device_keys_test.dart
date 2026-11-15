@@ -1022,6 +1022,96 @@ void main() {
       expect(arrived, isEmpty);
     });
 
+    test('a device that came after the last message asks for the key, and the one that made it answers', () async {
+      final coach = device('dana');
+      final phone = device('sam');
+      await coach.start('dana');
+      await phone.start('sam');
+      final sealed = await coach.seal(thread, 'squats today');
+      await coach.share(thread, userId: 'sam');
+      final requests = <KeyRequest>[];
+      final listening = coach.keyRequests.listen(requests.add);
+      addTearDown(listening.cancel);
+
+      // the student's new tablet, and a coach who doesn't write again
+      final tablet = device('sam');
+      await tablet.start('sam');
+      final items = [item('m1', sealed, 'dana')];
+      expect((await tablet.open(thread, items)).single, isA<Locked>());
+
+      await tablet.ask(thread, items);
+      await coach.receive();
+      await pumpEventQueue();
+      expect(requests, [(threadId: thread, userId: 'sam')]);
+
+      await coach.share(thread, userId: 'sam', again: true);
+      await tablet.receive();
+
+      expect(((await tablet.open(thread, items)).single as Opened).text, 'squats today');
+      expect(errors, isEmpty);
+    });
+
+    test('a key asked for is not asked for again for a while, nor one already here', () async {
+      var now = DateTime.utc(2026, 11, 15, 9);
+      final coach = device('dana');
+      final tablet = device('sam', now: () => now);
+      await coach.start('dana');
+      await tablet.start('sam');
+      final sealed = await coach.seal(thread, 'hello');
+      final items = [item('m1', sealed, 'dana')];
+      int asks() => server.calls.where((each) => each.startsWith('enqueue')).length;
+
+      await tablet.ask(thread, items);
+      final first = asks();
+      await tablet.ask(thread, items);
+      expect(asks(), first, reason: 'asked a moment ago');
+
+      now = now.add(const Duration(minutes: 20));
+      await tablet.ask(thread, items);
+      expect(asks(), greaterThan(first));
+
+      await coach.share(thread, userId: 'sam');
+      await tablet.receive();
+      final before = asks();
+      now = now.add(const Duration(hours: 1));
+      await tablet.ask(thread, items);
+      expect(asks(), before, reason: 'the key is here');
+    });
+
+    test("a request for a key this device didn't make goes nowhere", () async {
+      final coach = device('dana');
+      final student = device('sam');
+      await coach.start('dana');
+      await student.start('sam');
+      final mine = await coach.seal(thread, 'mine');
+      await coach.share(thread, userId: 'sam');
+      await student.receive();
+      final requests = <KeyRequest>[];
+      final listening = coach.keyRequests.listen(requests.add);
+      addTearDown(listening.cancel);
+
+      await student.deliver(
+        userId: 'dana',
+        kind: DeviceKeys.threadKeyRequestKind,
+        payload: jsonEncode({
+          't': thread,
+          's': ['someone-elses'],
+        }),
+      );
+      await student.deliver(
+        userId: 'dana',
+        kind: DeviceKeys.threadKeyRequestKind,
+        payload: jsonEncode({
+          't': 'other-thread',
+          's': [sessionOf(mine)],
+        }),
+      );
+      await coach.receive();
+      await pumpEventQueue();
+
+      expect(requests, isEmpty);
+    });
+
     test('a mismatched fingerprint shares nothing', () async {
       final coach = device('dana');
       final student = device('sam');

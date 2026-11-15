@@ -9,6 +9,10 @@ typedef SealedMessage = ({String content, String commitment});
 /// under.
 typedef ThreadCiphertext = ({String id, String? senderId, String content, String commitment});
 
+/// Someone asked this device for keys it made for [threadId]: [userId] is
+/// whose device asked, already known to be one who reads the thread.
+typedef KeyRequest = ({String threadId, String userId});
+
 /// What became of opening one thread item.
 sealed class OpenedMessage {
   const new();
@@ -49,8 +53,9 @@ abstract interface class ThreadCipher {
   /// doesn't hold it yet.
   ///
   /// Refuses with [KeyMismatch] when [userId]'s devices don't match
-  /// [fingerprint].
-  Future<void> share(String threadId, {required String userId, String? fingerprint});
+  /// [fingerprint]. A share that reached everyone a moment ago is not made
+  /// again, unless [again]: the devices are then read afresh.
+  Future<void> share(String threadId, {required String userId, String? fingerprint, bool again = false});
 
   /// Opens [items], in the server's order: the first item at a position wins
   /// it, and a later one there is [Refused].
@@ -62,6 +67,15 @@ abstract interface class ThreadCipher {
 
   /// The thread whose key just arrived, so what was [Locked] can open.
   Stream<String> get threadKeys;
+
+  /// Asks whoever sealed [items] for the keys this device lacks to open them:
+  /// the devices that made a key hand it over again, to each device they
+  /// share with. Once in a while per key, however often it is called.
+  Future<void> ask(String threadId, List<ThreadCiphertext> items);
+
+  /// Someone who reads a thread asked for keys this device made for it: what
+  /// [share] with `again` answers.
+  Stream<KeyRequest> get keyRequests;
 }
 
 /// Stored threads (Megolm) for messages (#556), in the vault beside the
@@ -83,6 +97,12 @@ extension _Threads on DeviceKeys {
   /// How long a share that reached everyone holds before devices are read
   /// again, unless one of them changed meanwhile.
   static const _shareLife = Duration(minutes: 10);
+
+  /// How long before a key asked for and still missing is asked for again.
+  static const _askAgain = Duration(minutes: 15);
+
+  /// The most keys one request names: it travels in a single queue item.
+  static const _keysPerAsk = 4;
 
   Future<SealedMessage> _seal(String threadId, String text) async {
     final run = _run;
@@ -138,13 +158,13 @@ extension _Threads on DeviceKeys {
     return out;
   }
 
-  Future<void> _share(String threadId, {required String userId, String? fingerprint}) async {
+  Future<void> _share(String threadId, {required String userId, String? fingerprint, bool again = false}) async {
     final run = _run;
     if (run == null) throw StateError('device keys are off');
     final readers = {userId, run.userId};
-    final fresh = switch (run.sharedAt[threadId]) {
-      final DateTime at => _now().difference(at) < _shareLife,
-      null => false,
+    final fresh = switch ((again, run.sharedAt[threadId])) {
+      (false, final DateTime at) => _now().difference(at) < _shareLife,
+      _ => false,
     };
     final record = await _serial(run, () => _ThreadRecord.read(run, threadId));
     if (fresh && record.own.every((key) => readers.every((reader) => _covers(run, key, reader)))) return;
@@ -283,6 +303,59 @@ extension _Threads on DeviceKeys {
         _ => const Refused(),
       };
     }
+  }
+
+  /// Asks the senders of [items] for the keys this device lacks, one request
+  /// to each sender's devices: only the device that made a key answers it.
+  Future<void> _ask(String threadId, List<ThreadCiphertext> items) async {
+    final run = _run;
+    if (run == null || !_remote.allowed || !(run.device?.published ?? false)) return;
+    final inbound = await _serial(run, () => _InboundKeys.read(run, threadId));
+    final now = _now();
+    // sender → the keys of theirs this device lacks and hasn't asked for lately
+    final wanted = <String, Set<String>>{};
+    for (final item in items) {
+      final (sender, envelope) = (item.senderId, _ThreadEnvelope.decode(item.content));
+      if (sender == null || envelope == null || inbound.keys.containsKey(envelope.sessionId)) continue;
+      if (run.asked['$threadId.${envelope.sessionId}'] case final DateTime at when now.difference(at) < _askAgain) {
+        continue;
+      }
+      wanted.putIfAbsent(sender, () => {}).add(envelope.sessionId);
+    }
+    for (final MapEntry(key: sender, value: sessions) in wanted.entries) {
+      for (final batch in _batches(sessions.toList(), _keysPerAsk)) {
+        await deliver(
+          userId: sender,
+          kind: DeviceKeys.threadKeyRequestKind,
+          payload: jsonEncode({'t': threadId, 's': batch}),
+        );
+        for (final session in batch) {
+          run.asked['$threadId.$session'] = now;
+        }
+      }
+    }
+  }
+
+  /// Takes a request for keys: passed on when this device made one of them
+  /// and whoever asked reads the thread, by its own record of whom its keys
+  /// reached. Whether the asking device gets them is the share's to decide,
+  /// as for any other device.
+  Future<void> _takeKeyRequest(KeyDelivery delivery) async {
+    final run = _run;
+    if (run == null) throw StateError('device keys are off');
+    final (threadId, sessions) = switch (_decodeMap(delivery.payload)) {
+      {'t': final String threadId, 's': final List sessions} => (threadId, sessions.whereType<String>().toSet()),
+      _ => (null, const <String>{}),
+    };
+    if (threadId == null) {
+      _report(const KeyFailure('unreadable_key_request'));
+      return;
+    }
+    final record = await _serial(run, () => _ThreadRecord.read(run, threadId));
+    if (!record.own.any((key) => sessions.contains(key.sessionId))) return;
+    final readers = {run.userId, for (final key in record.own) ...key.shared.values};
+    if (!readers.contains(delivery.fromUserId)) return;
+    if (!_keyRequests.isClosed) _keyRequests.add((threadId: threadId, userId: delivery.fromUserId));
   }
 
   /// Takes a thread key another device shared.

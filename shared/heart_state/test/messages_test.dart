@@ -92,6 +92,67 @@ void main() {
     });
   });
 
+  group('keys asked for (#556)', () {
+    test("the other person's request shares the thread's keys again, checked against their fingerprint", () async {
+      await messages.load();
+
+      cipher.request(threadId, coach);
+      await pumpEventQueue();
+
+      expect(cipher.shares, ['t1 whiskers print-c1 again']);
+    });
+
+    test("a request from the account's own device is answered the same way", () async {
+      await messages.load();
+
+      cipher.request(threadId, me);
+      await pumpEventQueue();
+
+      expect(cipher.shares, ['t1 whiskers print-c1 again']);
+    });
+
+    test("from someone not in the thread, or for a thread this account doesn't hold, nothing goes", () async {
+      await messages.load();
+
+      cipher
+        ..request(threadId, 'stranger')
+        ..request('elsewhere', coach);
+      await pumpEventQueue();
+
+      expect(cipher.shares, isEmpty);
+    });
+
+    test('a second request from the same person within a minute is the first one', () async {
+      await messages.load();
+
+      cipher
+        ..request(threadId, coach)
+        ..request(threadId, coach);
+      await pumpEventQueue();
+
+      expect(cipher.shares, hasLength(1));
+    });
+
+    test('one that arrives before the inbox was read finds the thread on the device', () async {
+      store.threads[me] = [Thread(id: threadId, connectionId: 'c1', otherId: coach)];
+
+      cipher.request(threadId, coach);
+      await pumpEventQueue();
+
+      expect(cipher.shares, ['t1 whiskers print-c1 again']);
+    });
+
+    test('a share that fails is reported, and the next request tries again', () async {
+      await messages.load();
+      cipher.shareFails = StateError('offline');
+
+      cipher.request(threadId, coach);
+      await pumpEventQueue();
+
+      expect(errors, [isA<StateError>()]);
+    });
+  });
+
   group('a thread', () {
     test("opens in the server's order, marks read to the newest, and says whose is whose", () async {
       server.items = [
@@ -183,6 +244,25 @@ void main() {
       await messages.resume();
 
       expect(messages.status, CoachingStatus.idle);
+    });
+
+    test('one still locked once the queue is read is asked for, and nothing opened is', () async {
+      server.items = [_item('open', cursor: 'c1'), _item('stuck', cursor: 'c2')];
+      cipher.missing.add('stuck');
+      await messages.load();
+
+      await messages.open(threadId);
+
+      expect(cipher.asks, ['t1 item-stuck']);
+    });
+
+    test('nothing locked asks for nothing', () async {
+      server.items = [_item('open', cursor: 'c1')];
+      await messages.load();
+
+      await messages.open(threadId);
+
+      expect(cipher.asks, isEmpty);
     });
 
     test('nothing locked reads no queue', () async {
@@ -865,7 +945,11 @@ class _Store implements LocalThreadService {
 /// prefix off.
 class _Cipher implements ThreadCipher {
   final _keys = StreamController<String>.broadcast();
+  final _requests = StreamController<KeyRequest>.broadcast();
   final shares = <String>[];
+
+  /// What [ask] was asked for: `<thread> <item ids>`.
+  final asks = <String>[];
   final missing = <String>{};
   Object? shareFails;
   Object? sealFails;
@@ -887,7 +971,20 @@ class _Cipher implements ThreadCipher {
     queued = {};
   }
 
-  void dispose() => _keys.close();
+  void request(String threadId, String userId) => _requests.add((threadId: threadId, userId: userId));
+
+  void dispose() {
+    _keys.close();
+    _requests.close();
+  }
+
+  @override
+  Stream<KeyRequest> get keyRequests => _requests.stream;
+
+  @override
+  Future<void> ask(String threadId, List<ThreadCiphertext> items) async {
+    asks.add('$threadId ${items.map((each) => each.id).join(',')}');
+  }
 
   @override
   Stream<String> get threadKeys => _keys.stream;
@@ -899,9 +996,9 @@ class _Cipher implements ThreadCipher {
   }
 
   @override
-  Future<void> share(String threadId, {required String userId, String? fingerprint}) async {
+  Future<void> share(String threadId, {required String userId, String? fingerprint, bool again = false}) async {
     if (shareFails case final Object failure) throw failure;
-    shares.add('$threadId $userId $fingerprint');
+    shares.add('$threadId $userId $fingerprint${again ? ' again' : ''}');
   }
 
   @override

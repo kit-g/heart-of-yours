@@ -222,8 +222,21 @@ class _Conversation extends StatelessWidget {
     // newest at the bottom, where the eye and the box are
     final shown = thread.messages.reversed.toList();
     final places = const MessageRuns().of([for (final each in thread.messages) (at: each.at, mine: each.mine)]);
+    final locked = thread.messages.where((each) => each.opened is Locked);
+    final (theirs, yours) = (locked.where((each) => !each.mine).length, locked.where((each) => each.mine).length);
     return Column(
       children: [
+        if (theirs > 0 || yours > 0)
+          _Locked(
+            lines: [
+              if (theirs > 0)
+                l.messagesLockedTheirs(
+                  theirs,
+                  threadName(context, messages.lookup(threadId), connectionId: connectionId),
+                ),
+              if (yours > 0) l.messagesLockedYours(yours),
+            ],
+          ),
         Expanded(
           child: switch ((shown, thread.status)) {
             ([], .idle || .loading) => const Center(child: CircularProgressIndicator.adaptive()),
@@ -503,6 +516,40 @@ class _Composer extends StatelessWidget {
                 true => null,
                 false => onSend,
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Above a conversation holding messages this device can't open yet: why,
+/// and what opens them. The device has already asked for their keys.
+class _Locked extends StatelessWidget {
+  final List<String> lines;
+
+  const new({required this.lines});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final style = textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant);
+    return Container(
+      key: AppKeys.threadLocked,
+      width: double.infinity,
+      color: colorScheme.surfaceContainerHighest,
+      padding: const .symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        crossAxisAlignment: .start,
+        children: [
+          Icon(Icons.key_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: .start,
+              spacing: 6,
+              children: [for (final line in lines) Text(line, style: style)],
             ),
           ),
         ],
