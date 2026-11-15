@@ -25,12 +25,24 @@ class ClientsPage extends StatefulWidget {
   /// Opens a client's copy of their program.
   final void Function(String connectionId, String programId) onOpenProgram;
 
+  /// Opens the conversation with a client.
+  final ValueChanged<String> onMessage;
+
+  /// Opens the coach's notes on a client.
+  final ValueChanged<String> onNotes;
+
+  /// Opens a workout to log for a client (#560).
+  final void Function(String connectionId, PastWorkout past) onLog;
+
   const new({
     super.key,
     required this.onYourTraining,
     required this.onOpenClient,
     required this.onOpenWorkout,
     required this.onOpenProgram,
+    required this.onMessage,
+    required this.onNotes,
+    required this.onLog,
   });
 
   @override
@@ -173,6 +185,9 @@ class _ClientsPageState extends State<ClientsPage> {
                         connectionId: shown,
                         onOpenWorkout: (workoutId) => widget.onOpenWorkout(shown, workoutId),
                         onOpenProgram: (programId) => widget.onOpenProgram(shown, programId),
+                        onMessage: widget.onMessage,
+                        onNotes: widget.onNotes,
+                        onLog: widget.onLog,
                         leading: Align(
                           alignment: .centerRight,
                           child: IconButton(

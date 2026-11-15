@@ -182,8 +182,8 @@ enum AccountState {
 }
 
 /// Which real estate the app is running on. GA4 reports a device category of
-/// its own, but the phone/tablet split this app acts on is `_isPhone`'s, and
-/// only the app can state it.
+/// its own, but the phone/tablet split this app acts on is the app's
+/// `FormFactorWatch`'s, and only the app can state it.
 enum FormFactor {
   phone('phone'),
   tablet('tablet');

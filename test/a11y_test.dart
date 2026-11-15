@@ -104,6 +104,8 @@ enum _Screen {
   coachingReview,
   coachingClientCopy,
   coachingMessages,
+  coachingThread,
+  coachingNotes,
   coachingPrograms,
   coachingProgram,
   coachingSendDialog,
@@ -969,6 +971,18 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingMessages, _Guideline.androidTapTarget, null),
   (_Screen.coachingMessages, _Guideline.iosTapTarget, null),
 
+  (_Screen.coachingThread, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingThread, _Guideline.textContrastLight, null),
+  (_Screen.coachingThread, _Guideline.textContrastDark, null),
+  (_Screen.coachingThread, _Guideline.androidTapTarget, null),
+  (_Screen.coachingThread, _Guideline.iosTapTarget, null),
+
+  (_Screen.coachingNotes, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingNotes, _Guideline.textContrastLight, null),
+  (_Screen.coachingNotes, _Guideline.textContrastDark, null),
+  (_Screen.coachingNotes, _Guideline.androidTapTarget, null),
+  (_Screen.coachingNotes, _Guideline.iosTapTarget, null),
+
   (_Screen.coachingPrograms, _Guideline.labeledTapTarget, null),
   (_Screen.coachingPrograms, _Guideline.textContrastLight, null),
   (_Screen.coachingPrograms, _Guideline.textContrastDark, null),
@@ -1343,6 +1357,8 @@ void main() {
       _Screen.coachingReview: AppKeys.coachingClientsStack,
       _Screen.coachingClientCopy: AppKeys.coachingClientsStack,
       _Screen.coachingMessages: AppKeys.coachingMessagesStack,
+      _Screen.coachingThread: AppKeys.coachingMessagesStack,
+      _Screen.coachingNotes: AppKeys.coachingClientsStack,
       _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
       _Screen.coachingProgram: AppKeys.coachingProgramsStack,
       _Screen.coachingSendDialog: AppKeys.coachingProgramsStack,
@@ -1369,6 +1385,69 @@ void main() {
       });
       when(api.getConnections()).thenAnswer((_) async => []);
       when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
+      // a coach's notes (#556): one, sealed under a key this device never got
+      when(db.replaceCoachNotes(any, any, keep: anyNamed('keep'))).thenAnswer((_) async {});
+      when(db.getCoachNotes(any)).thenAnswer(
+        (_) async => [
+          (
+            note: CoachNote(
+              id: 'n1',
+              connectionId: 'c-sam',
+              content: 'n1.key.sealed',
+              updatedAt: DateTime.utc(2026, 11, 7, 18),
+            ),
+            pending: false,
+            deleted: false,
+          ),
+        ],
+      );
+      when(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          notes: [
+            CoachNote(
+              id: 'n1',
+              connectionId: 'c-sam',
+              content: 'n1.key.sealed',
+              updatedAt: DateTime.utc(2026, 11, 7, 18),
+            ),
+          ],
+          cursor: null,
+        ),
+      );
+      // an inbox of one conversation (#556), with something unread
+      when(api.getThreads()).thenAnswer(
+        (_) async => [
+          Thread(
+            id: 't-sam',
+            connectionId: 'c-sam',
+            otherId: 'sam',
+            otherName: 'Sam',
+            unread: 2,
+            lastAt: DateTime.utc(2026, 11, 7, 18),
+          ),
+        ],
+      );
+      // what the conversation holds: sealed under a key this device never got
+      when(api.getThreadItems('t-sam', limit: anyNamed('limit'))).thenAnswer(
+        (_) async => (
+          items: [
+            ThreadItem(
+              id: 'i1',
+              threadId: 't-sam',
+              senderId: 'sam',
+              kind: 'message',
+              content: 'm1.session.ciphertext',
+              commitment: 'c',
+              tag: 't',
+              tagKey: 'k',
+              at: DateTime.utc(2026, 11, 7, 18),
+              createdAt: DateTime.utc(2026, 11, 7, 18),
+              cursor: 'c1',
+            ),
+          ],
+          cursor: null,
+        ),
+      );
       when(api.getInvitations(cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: <Invitation>[], cursor: null));
       // a roster to read, but none for the invite dialog, which opens from
@@ -1381,6 +1460,7 @@ void main() {
         _Screen.coachingClients ||
         _Screen.coachingActivity ||
         _Screen.coachingClient ||
+        _Screen.coachingNotes ||
         _Screen.coachingReview ||
         _Screen.coachingClientCopy => [
           ClientSummary(
@@ -1926,6 +2006,8 @@ void main() {
       cdn: cdn,
       firebaseAuth: firebase,
       hasLocalNotifications: false,
+      // notes are there only where keys can be kept
+      keyVault: screen == _Screen.coachingNotes ? MemoryKeyVault() : null,
       // the dashboard animates indefinitely — settle would hang on it
       settle: false,
     );
@@ -2422,6 +2504,8 @@ void main() {
           _Screen.coachingReview ||
           _Screen.coachingClientCopy ||
           _Screen.coachingMessages ||
+          _Screen.coachingThread ||
+          _Screen.coachingNotes ||
           _Screen.coachingPrograms ||
           _Screen.coachingProgram ||
           _Screen.coachingSendDialog ||
@@ -2436,9 +2520,18 @@ void main() {
           await tester.pumpTimes();
         }
         if (screen == _Screen.coachingClient ||
+            screen == _Screen.coachingNotes ||
             screen == _Screen.coachingReview ||
             screen == _Screen.coachingClientCopy) {
           await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingNotes) {
+          await tester.tapByKey(AppKeys.coachingClientNotes);
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingThread) {
+          await tester.tapByKey(AppKeys.inboxThread('t-sam'));
           await tester.pumpTimes();
         }
         if (screen == _Screen.coachingClientCopy) {

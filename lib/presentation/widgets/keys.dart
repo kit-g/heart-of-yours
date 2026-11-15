@@ -428,4 +428,50 @@ abstract final class AppKeys {
 
   static Key yourCoachUnblock(String userId) => Key('YourCoach.unblock.$userId');
   static const invitationRetry = Key('Invitation.retry');
+
+  // messages (#556)
+  static const thread = Key('Messages.thread');
+  static const messageBox = Key('Messages.box');
+  static const messageSend = Key('Messages.send');
+  static const coachingClientMessages = Key('Coaching.clientMessages');
+  // a coach's notes on a client (#556)
+  static const coachingClientNotes = Key('Coaching.clientNotes');
+  // a workout a coach logs for a client (#560)
+  static const coachingLogFor = Key('Coaching.logFor');
+  static Key coachingLogSession(String id) => Key('Coaching.logSession.$id');
+  static const coachingLogBlank = Key('Coaching.logBlank');
+  // what deleting an account leaves with the other person (#568)
+  static const deleteAccountConversations = Key('Account.deleteConversations');
+  static const deleteAccountConversationsConfirm = Key('Account.deleteConversationsConfirm');
+  static Key loggedBy(String workoutId) => Key('History.loggedBy.$workoutId');
+  static const coachingNoteNew = Key('Coaching.noteNew');
+  static const coachingNoteFirst = Key('Coaching.noteFirst');
+  static Key coachingNote(String id) => Key('Coaching.note.$id');
+  static const coachingNoteEditor = Key('Coaching.noteEditor');
+  static const coachingNoteText = Key('Coaching.noteText');
+  static const coachingNoteSave = Key('Coaching.noteSave');
+  static const coachingNoteDelete = Key('Coaching.noteDelete');
+  static const coachingNoteDeleteConfirm = Key('Coaching.noteDeleteConfirm');
+
+  static Key message(String id) => Key('Messages.message.$id');
+
+  static Key inboxThread(String id) => Key('Messages.inbox.$id');
+
+  static Key yourCoachMessage(String id) => Key('YourCoach.message.$id');
+
+  static const threadMenu = Key('Messages.menu');
+  static const threadDelete = Key('Messages.delete');
+  static const threadDeleteConfirm = Key('Messages.deleteConfirm');
+  static const threadReport = Key('Messages.report');
+  static const threadBlock = Key('Messages.block');
+  static const threadBlockConfirm = Key('Messages.blockConfirm');
+  static const threadCleared = Key('Messages.cleared');
+  static const messageReport = Key('Messages.messageReport');
+  static const reportSheet = Key('Report.sheet');
+  static const reportInclude = Key('Report.include');
+  static const reportBlock = Key('Report.block');
+  static const reportSend = Key('Report.send');
+  static const profileMessages = Key('Profile.messages');
+
+  static Key reportReason(String reason) => Key('Report.reason.$reason');
 }

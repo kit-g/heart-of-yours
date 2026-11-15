@@ -12,7 +12,24 @@ class ClientPage extends StatelessWidget {
   /// Opens the client's copy of their program.
   final ValueChanged<String> onOpenProgram;
 
-  const new({super.key, required this.connectionId, required this.onOpenWorkout, required this.onOpenProgram});
+  /// Opens the conversation with them.
+  final ValueChanged<String> onMessage;
+
+  /// Opens the coach's notes on them.
+  final ValueChanged<String> onNotes;
+
+  /// Opens a workout to log for them (#560).
+  final void Function(String connectionId, PastWorkout past) onLog;
+
+  const new({
+    super.key,
+    required this.connectionId,
+    required this.onOpenWorkout,
+    required this.onOpenProgram,
+    required this.onMessage,
+    required this.onNotes,
+    required this.onLog,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +46,14 @@ class ClientPage extends StatelessWidget {
         alignment: .topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: readableWidth),
-          child: _ClientView(connectionId: connectionId, onOpenWorkout: onOpenWorkout, onOpenProgram: onOpenProgram),
+          child: _ClientView(
+            connectionId: connectionId,
+            onOpenWorkout: onOpenWorkout,
+            onOpenProgram: onOpenProgram,
+            onMessage: onMessage,
+            onNotes: onNotes,
+            onLog: onLog,
+          ),
         ),
       ),
     );
@@ -63,6 +87,9 @@ class _ClientView extends StatefulWidget {
   final String connectionId;
   final ValueChanged<String> onOpenWorkout;
   final ValueChanged<String> onOpenProgram;
+  final ValueChanged<String> onMessage;
+  final ValueChanged<String> onNotes;
+  final void Function(String connectionId, PastWorkout past) onLog;
 
   /// The pane beside the roster names the client itself; a page has its
   /// title for that.
@@ -73,6 +100,9 @@ class _ClientView extends StatefulWidget {
     required this.connectionId,
     required this.onOpenWorkout,
     required this.onOpenProgram,
+    required this.onMessage,
+    required this.onNotes,
+    required this.onLog,
     this.leading,
   });
 
@@ -100,6 +130,10 @@ class _ClientViewState extends State<_ClientView> {
     // the row they were opened from may be stale, and opened from a link
     // the roster may never have been read
     final programs = ClientPrograms.of(context);
+    // every client's at once, read the first time any is opened, where
+    // notes can be sealed at all
+    final notes = CoachNotes.of(context);
+    if (DeviceKeys.of(context).supported && notes.status == .idle) unawaited(notes.load());
     if (roster.client(widget.connectionId) case final ClientSummary client) {
       await (roster.load(), roster.loadRecord(client.studentId), programs.loadManaged(client.studentId)).wait;
     } else {
@@ -152,6 +186,32 @@ class _ClientViewState extends State<_ClientView> {
             ?widget.leading,
             // a page names them in its title
             _ClientHeader(client: client, named: widget.leading != null),
+            // their one conversation with the coach (#556), in Messages
+            ListTile(
+              key: AppKeys.coachingClientMessages,
+              leading: const Icon(Icons.forum_outlined),
+              title: Text(
+                switch (client.name?.trim()) {
+                  final String name when name.isNotEmpty => l.messagesWith(name),
+                  _ => l.coachingMessages,
+                },
+                maxLines: 1,
+                overflow: .ellipsis,
+              ),
+              trailing: switch (Messages.watch(context).threadOf(client.connectionId)?.unread ?? 0) {
+                0 => const Icon(Icons.chevron_right_rounded),
+                final int count => Badge(label: Text('$count', semanticsLabel: l.messagesUnread(count))),
+              },
+              onTap: () => widget.onMessage(client.connectionId),
+            ),
+            // the coach's own notes on them, which they never see (#556):
+            // not where this device has nowhere to keep the keys
+            if (DeviceKeys.of(context).supported)
+              _NotesTile(connectionId: client.connectionId, onTap: () => widget.onNotes(client.connectionId)),
+            // a session they trained together, logged as theirs (#560): while
+            // they are a client, which a former one is not
+            if (client.status case 'active' || 'paused')
+              _LogForTile(client: client, onLog: (past) => widget.onLog(client.connectionId, past)),
             // what they follow, and every copy the coach sent them, waiting
             // or not: the ones both of them edit (#558)
             for (final (id, name, waiting) in _programsOf(client, ClientPrograms.watch(context).managed(id)))
@@ -321,4 +381,34 @@ List<(String id, String name, bool waiting)> _programsOf(ClientSummary client, L
     for (final copy in managed)
       if (copy.id case final String id when id != following?.$1) (id, copy.name, copy.waitingSince != null),
   ];
+}
+
+/// The way to the coach's notes on a client: the latest, or that only the
+/// coach reads them.
+class _NotesTile extends StatelessWidget {
+  final String connectionId;
+  final VoidCallback onTap;
+
+  const new({required this.connectionId, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final latest = CoachNotes.watch(context).on(connectionId).firstOrNull;
+    return ListTile(
+      key: AppKeys.coachingClientNotes,
+      leading: const Icon(Icons.sticky_note_2_outlined),
+      title: Text(l.coachingNotes),
+      subtitle: Text(
+        switch (latest?.text?.trim()) {
+          final String text when text.isNotEmpty => text,
+          _ => l.coachingNotesOnlyYou,
+        },
+        maxLines: 1,
+        overflow: .ellipsis,
+      ),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: onTap,
+    );
+  }
 }

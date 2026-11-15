@@ -79,6 +79,19 @@ class _CoachCard extends StatelessWidget {
             Text(l.yourCoachPaused, style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
           share(.history, l.invitationShareHistory),
           share(.goals, l.invitationShareGoals),
+          // their one conversation (#556): only while Your coach runs, since
+          // off sends nothing anywhere
+          if ((coach.connectionId, Preferences.watch(context).isOn(.yourCoach)) case (final String id, true))
+            Align(
+              alignment: .centerLeft,
+              child: TextButton.icon(
+                key: AppKeys.yourCoachMessage(id),
+                style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+                onPressed: () => HeartRouter.of(context).openThread(id),
+                icon: const Icon(Icons.forum_outlined),
+                label: Text(l.messagesWith(name ?? l.yourCoach)),
+              ),
+            ),
           Align(
             alignment: .centerLeft,
             child: TextButton(
