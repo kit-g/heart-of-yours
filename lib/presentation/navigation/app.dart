@@ -35,6 +35,7 @@ import 'package:heart/core/utils/messages.dart';
 import 'package:heart/core/utils/pushes.dart';
 import 'package:heart/core/utils/device_keys.dart';
 import 'package:heart/core/utils/workout_plans.dart';
+import 'package:heart/core/utils/live_goals.dart';
 import 'package:heart/core/utils/live_records.dart';
 import 'package:heart/core/utils/record_book.dart';
 import 'package:heart/core/utils/charts.dart';
@@ -156,6 +157,7 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<LiveRecords>(
           create: (_) => LiveRecords(without: db.getRecordWithout, onError: reportToSentry),
         ),
+        ChangeNotifierProvider<LiveGoals>(create: (_) => LiveGoals(onError: reportToSentry)),
         ChangeNotifierProvider<Stats>(
           create: (_) => Stats(
             onError: reportToSentry,

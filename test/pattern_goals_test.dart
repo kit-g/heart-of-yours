@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/core/utils/goal_crossings.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -61,14 +62,13 @@ void main() {
     );
   }
 
-  Future<num?> read(Goal goal, {DateTime? without, DateTime? asOf, int firstWeekday = DateTime.monday}) {
+  Future<num?> read(Goal goal, {DateTime? asOf, int firstWeekday = DateTime.monday}) {
     return currentGoalValue(
       goal,
       exercises: exercises,
       firstWeekday: firstWeekday,
       lensSets: lensSets,
       asOf: asOf ?? now,
-      without: without,
     );
   }
 
@@ -98,8 +98,18 @@ void main() {
     expect(await read(goal(pattern: 'vertical_pull')), 0);
   });
 
-  test('without leaves out the session that started then', () async {
-    expect(await read(goal(pattern: 'horizontal_press'), without: now), 3);
+  test("a goal's prior leaves out the session that started then (#625)", () async {
+    final prior = await readGoalPrior(
+      goal(pattern: 'horizontal_press'),
+      Workout()..start = now,
+      exercises: exercises,
+      firstWeekday: DateTime.monday,
+      workoutCount: (_) async => 0,
+      lensSets: lensSets,
+      asOf: now,
+    );
+    expect(prior, isA<LensPrior>());
+    expect(goalValue(goal(pattern: 'horizontal_press'), prior!), 3);
   });
 
   test("a muscle takes each set at the group's share", () async {

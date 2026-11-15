@@ -2,17 +2,22 @@ part of 'workout_detail.dart';
 
 /// Live records (#160) over the active workout: a quiet note the moment a
 /// ticked working set beats a previous best, and the record pills under the
-/// sets that hold one, as a past workout's page has them.
+/// sets that hold one, as a past workout's page has them. And live goal notes
+/// (#625), under the same switch: the tick that carries a goal over one of
+/// its rungs says so in the same note, with a burst of the Done page's
+/// confetti — small for a rung on the way, full for the goal's last.
 ///
 /// The records are [liveRecordMarks]: the fold the Done page runs on the
 /// finished workout, over the same sets, so what shows here is what that page
-/// will say. Unticking or editing a set re-folds, and a record it no longer
-/// holds goes, note and pill both.
+/// will say. The goals are [goalCrossings], which is what the Done page lists,
+/// over priors read the way it reads them. Unticking or editing a set
+/// re-folds, and a record or rung it no longer holds goes from the note.
 ///
 /// Off, the sheet is what it was before the feature: no pills, no note, and
 /// nothing read. Never answered, it folds only to find the moment to ask —
 /// the first ticked set that would have been a record — and puts the offer
-/// under that set.
+/// under that set. Goals are folded only while it is on, and only for someone
+/// who has one.
 class _LiveRecordsScope extends StatefulWidget {
   final Widget child;
 
@@ -22,7 +27,13 @@ class _LiveRecordsScope extends StatefulWidget {
   State<_LiveRecordsScope> createState() => _LiveRecordsScopeState();
 }
 
-typedef _LiveNote = ({String setId, Exercise exercise, List<RecordKind> kinds});
+/// One note: the records a set just beat, the goal rungs a tick just
+/// reached, or both.
+typedef _LiveNote = ({String? setId, Exercise? exercise, List<RecordKind> kinds, List<GoalAchievement> goals});
+
+/// A goal's celebration: [serial] tells one burst from the next, [full] a
+/// goal's last rung from one on the way.
+typedef _Burst = ({int serial, bool full});
 
 class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
   static const _feature = Feature.liveRecords;
@@ -33,6 +44,12 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
   final _note = ValueNotifier<_LiveNote?>(null);
   Timer? _noteTimer;
 
+  final _burst = ValueNotifier<_Burst?>(null);
+  Timer? _burstTimer;
+
+  /// Counts bursts, so each is a new one rather than the last one replayed.
+  var _bursts = 0;
+
   /// The marks as of the last build, and the exercises read by then: a mark
   /// is news only when it arrives on an exercise already read. One arriving
   /// with its exercise's read — a workout restored after a restart — was
@@ -40,10 +57,17 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
   RecordMarks _marks = const {};
   Set<ExerciseId> _read = const {};
 
+  /// The same for goals: the rungs crossed as of the last build, and the
+  /// goals whose priors had been read by then.
+  Set<GoalCrossingKey> _crossed = const {};
+  Set<String?> _goalsRead = const {};
+
   @override
   void dispose() {
     _noteTimer?.cancel();
+    _burstTimer?.cancel();
     _note.dispose();
+    _burst.dispose();
     super.dispose();
   }
 
@@ -51,6 +75,8 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
   Widget build(BuildContext context) {
     final preferences = Preferences.watch(context);
     final live = LiveRecords.watch(context);
+    final liveGoals = LiveGoals.watch(context);
+    final goals = Goals.watch(context);
     // every tick, untick, edit and retype notifies, and each is a re-fold
     final workouts = Workouts.watch(context);
     final on = preferences.isOn(_feature);
@@ -60,16 +86,32 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
     switch ((on || offering, workouts.userId, workouts.activeWorkout)) {
       case (true, final String userId, final Workout workout):
         live.prime(userId, workout);
-        _track(workout, liveRecordMarks(workout, live.prior), live, on: on);
+        final aimed = on && goals.isNotEmpty ? _aimed(goals) : const <Goal>[];
+        if (aimed.isNotEmpty) liveGoals.prime(workout, aimed, _reader(workout));
+        _track(
+          workout,
+          liveRecordMarks(workout, live.prior),
+          goalCrossings(aimed, liveGoals.priorOf, workout),
+          live,
+          read: {
+            for (final goal in aimed)
+              if (liveGoals.hasRead(goal)) goal.id,
+          },
+          on: on,
+        );
       case _:
         _marks = const {};
         _read = const {};
+        _crossed = const {};
+        _goalsRead = const {};
         if (_note.value != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _withdraw();
           });
         }
     }
+
+    final still = lessMotion(context);
 
     // the same shape whatever the answer, so turning it on from the offer
     // keeps the sheet's scroll where it was
@@ -95,7 +137,8 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
                       valueListenable: _note,
                       builder: (context, note, _) {
                         return AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 220),
+                          // with less motion asked for, the note is simply there
+                          duration: still ? Duration.zero : const Duration(milliseconds: 220),
                           switchInCurve: Curves.easeOut,
                           switchOutCurve: Curves.easeIn,
                           transitionBuilder: (child, animation) => FadeTransition(
@@ -106,11 +149,7 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
                             ),
                           ),
                           child: switch (note) {
-                            final _LiveNote note => _LiveRecordNote(
-                              key: ValueKey(note),
-                              exercise: note.exercise,
-                              kinds: note.kinds,
-                            ),
+                            final _LiveNote note => _LiveNoteCard(key: ValueKey(note), note: note),
                             null => const SizedBox.shrink(),
                           },
                         );
@@ -120,15 +159,76 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
                 ),
               ),
             ),
+            Positioned(
+              // from the note's middle, over everything and in nobody's way
+              top: 72,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                child: ValueListenableBuilder<_Burst?>(
+                  valueListenable: _burst,
+                  builder: (context, burst, _) {
+                    return switch (burst) {
+                      (:final serial, :final full) => Center(
+                        key: WorkoutDetailKeys.liveGoalBurst,
+                        child: Confetti(
+                          key: ValueKey(serial),
+                          particleCount: full ? 48 : 14,
+                          duration: _burstFor(full: full).inSeconds,
+                        ),
+                      ),
+                      null => const SizedBox.shrink(),
+                    };
+                  },
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  /// Takes in this build's [marks]: what is news is noted (or, unanswered,
-  /// offered), and a note whose record went is withdrawn.
-  void _track(Workout workout, RecordMarks marks, LiveRecords live, {required bool on}) {
+  /// How long a burst plays: brief, and briefer for a rung on the way.
+  static Duration _burstFor({required bool full}) => Duration(seconds: full ? 3 : 2);
+
+  /// The goals a set can be judged against now: all of them but the ones a
+  /// running program's cadence sets aside, as on the Done page.
+  List<Goal> _aimed(Goals goals) {
+    final running = runningPrograms(context);
+    return [
+      for (final goal in goals)
+        if (!pausedByPrograms(goal, running)) goal,
+    ];
+  }
+
+  /// How a goal's prior is read for [workout]: as the Done page reads it.
+  Future<GoalPrior?> Function(Goal goal) _reader(Workout workout) {
+    final exercises = Exercises.of(context);
+    final stats = Stats.of(context);
+    final firstWeekday = Preferences.of(context).firstWeekday;
+    final lensSets = sharedLensSets(stats.getLensSets);
+    return (goal) => readGoalPrior(
+      goal,
+      workout,
+      exercises: exercises,
+      firstWeekday: firstWeekday,
+      workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
+      lensSets: lensSets,
+    );
+  }
+
+  /// Takes in this build's [marks] and [crossings]: what is news is noted (or,
+  /// unanswered, offered), and whatever a note says that no longer stands is
+  /// taken back. [read] is the goals whose priors have landed.
+  void _track(
+    Workout workout,
+    RecordMarks marks,
+    List<GoalAchievement> crossings,
+    LiveRecords live, {
+    required Set<String?> read,
+    required bool on,
+  }) {
     final exerciseOf = {
       for (final entry in workout)
         for (final set in entry) set.id: entry.exercise,
@@ -139,42 +239,77 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
           if (kinds.any((kind) => !(_marks[setId]?.contains(kind) ?? false)))
             (setId: setId, exercise: exercise, kinds: kinds),
     ];
+    final crossed = {for (final crossing in crossings) crossingKey(crossing)};
+    final reached = [
+      for (final crossing in crossings)
+        if (_goalsRead.contains(crossing.goal.id) && !_crossed.contains(crossingKey(crossing))) crossing,
+    ];
     if (!_same(marks, _marks)) _marks = marks;
     _read = live.prior.keys.toSet();
+    _crossed = crossed;
+    _goalsRead = read;
 
     final note = _note.value;
-    if (fresh.isEmpty && note == null) return;
+    if (fresh.isEmpty && reached.isEmpty && note == null) return;
     // after the frame: a note, a buzz and an offer are not things a build does
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (fresh.lastOrNull case final _LiveNote news) {
-        if (on) {
-          _show(news);
-        } else {
-          live.offerUnder(news.setId);
+      final record = fresh.lastOrNull;
+      if (record != null || reached.isNotEmpty) {
+        switch ((on, record)) {
+          case (true, _):
+            _show((
+              setId: record?.setId,
+              exercise: record?.exercise,
+              kinds: record?.kinds ?? const [],
+              goals: reached,
+            ));
+          case (false, (:final setId, exercise: _, kinds: _)?):
+            live.offerUnder(setId);
+          case (false, null):
+            break;
         }
       } else if (note != null && identical(_note.value, note)) {
-        final standing = note.kinds.where((kind) => marks[note.setId]?.contains(kind) ?? false).toList();
-        if (standing.isEmpty) {
+        final kinds = note.kinds.where((kind) => marks[note.setId]?.contains(kind) ?? false).toList();
+        final goals = note.goals.where((crossing) => crossed.contains(crossingKey(crossing))).toList();
+        if (kinds.isEmpty && goals.isEmpty) {
           _withdraw();
-        } else if (standing.length < note.kinds.length) {
-          _note.value = (setId: note.setId, exercise: note.exercise, kinds: standing);
+        } else if (kinds.length < note.kinds.length || goals.length < note.goals.length) {
+          _note.value = (setId: note.setId, exercise: note.exercise, kinds: kinds, goals: goals);
         }
       }
     });
   }
 
   void _show(_LiveNote note) {
-    HapticFeedback.lightImpact();
+    if (note.goals.isEmpty) {
+      HapticFeedback.lightImpact();
+    } else {
+      HapticFeedback.mediumImpact();
+      _celebrate(full: note.goals.any(isFinalRung));
+    }
     _note.value = note;
     _noteTimer?.cancel();
     _noteTimer = Timer(_noteFor, _withdraw);
+  }
+
+  /// One burst at a time: two goals on one tick are one burst, the bigger,
+  /// and a new one replaces whatever is still falling. With less motion asked
+  /// for (#595) there is none — the note alone says it.
+  void _celebrate({required bool full}) {
+    if (lessMotion(context)) return;
+    _burst.value = (serial: ++_bursts, full: full);
+    _burstTimer?.cancel();
+    _burstTimer = Timer(_burstFor(full: full), () => _burst.value = null);
   }
 
   void _withdraw() {
     _noteTimer?.cancel();
     _noteTimer = null;
     _note.value = null;
+    _burstTimer?.cancel();
+    _burstTimer = null;
+    _burst.value = null;
   }
 
   static bool _same(RecordMarks a, RecordMarks b) {
@@ -232,27 +367,43 @@ class _LiveRecordOffer extends StatelessWidget {
   }
 }
 
-/// The note itself: "New record", and the exercise with the records the set
-/// beat. Quiet — the accent only on the trophy and the heading — and said to a
-/// screen reader as it arrives.
-class _LiveRecordNote extends StatelessWidget {
-  final Exercise exercise;
-  final List<RecordKind> kinds;
+/// The note itself: "New record" with the exercise and the records the set
+/// beat, "Goal reached" with each rung a tick just reached, or both, one under
+/// the other. Quiet — the accent only on the glyphs and the headings — and
+/// said to a screen reader as it arrives.
+class _LiveNoteCard extends StatelessWidget {
+  final _LiveNote note;
 
-  const new({super.key, required this.exercise, required this.kinds});
+  const new({super.key, required this.note});
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    final ThemeData(:colorScheme) = Theme.of(context);
     final l = L.of(context);
-    final heading = l.recordsAchievedHeading(kinds.length);
-    final line = l.liveRecordLine(exercise.name, kinds.map((kind) => recordKindLabel(context, kind)).join(', '));
+    final sections = [
+      if (note case (exercise: final Exercise exercise, :final kinds, setId: _, goals: _) when kinds.isNotEmpty)
+        (
+          icon: Icons.emoji_events_rounded,
+          color: colorScheme.tertiary,
+          heading: l.recordsAchievedHeading(kinds.length),
+          lines: [l.liveRecordLine(exercise.name, kinds.map((kind) => recordKindLabel(context, kind)).join(', '))],
+        ),
+      if (note.goals case final goals when goals.isNotEmpty)
+        (
+          icon: Icons.flag_rounded,
+          color: colorScheme.primary,
+          heading: l.goalsAchievedHeading(goals.length),
+          lines: [for (final crossing in goals) _goalLine(context, crossing)],
+        ),
+    ];
 
     return Semantics(
       key: WorkoutDetailKeys.liveRecordNote,
       liveRegion: true,
       container: true,
-      label: '$heading. $line',
+      label: [
+        for (final (icon: _, color: _, :heading, :lines) in sections) [heading, ...lines].join('. '),
+      ].join('. '),
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -265,30 +416,64 @@ class _LiveRecordNote extends StatelessWidget {
         ),
         child: Padding(
           padding: const .symmetric(horizontal: 14, vertical: 10),
-          child: Row(
+          child: Column(
             mainAxisSize: .min,
-            spacing: 10,
+            crossAxisAlignment: .start,
+            spacing: 8,
             children: [
-              Icon(Icons.emoji_events_rounded, size: 20, color: colorScheme.tertiary),
-              Flexible(
-                child: Column(
-                  mainAxisSize: .min,
-                  crossAxisAlignment: .start,
-                  children: [
-                    Text(heading, style: textTheme.titleSmall?.copyWith(color: colorScheme.tertiary)),
-                    Text(
-                      line,
-                      maxLines: 2,
-                      overflow: .ellipsis,
-                      style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ),
+              for (final (:icon, :color, :heading, :lines) in sections)
+                _LiveNoteSection(icon: icon, color: color, heading: heading, lines: lines),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// A rung as the Done page states it: the goal, and the target in the
+  /// user's own units.
+  static String _goalLine(BuildContext context, GoalAchievement crossing) {
+    final (:goal, :stage) = crossing;
+    final exercises = Exercises.of(context);
+    final scale = goalScale(goal, exercises);
+    final target = goalTargetLabel(context, goal, stage.target, settings: Preferences.of(context), scale: scale);
+    return L.of(context).goalAchievedTarget(goalTitle(context, goal, goalExercise(goal, exercises)), target);
+  }
+}
+
+class _LiveNoteSection extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String heading;
+  final List<String> lines;
+
+  const new({required this.icon, required this.color, required this.heading, required this.lines});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    return Row(
+      mainAxisSize: .min,
+      spacing: 10,
+      children: [
+        Icon(icon, size: 20, color: color),
+        Flexible(
+          child: Column(
+            mainAxisSize: .min,
+            crossAxisAlignment: .start,
+            children: [
+              Text(heading, style: textTheme.titleSmall?.copyWith(color: color)),
+              for (final line in lines)
+                Text(
+                  line,
+                  maxLines: 2,
+                  overflow: .ellipsis,
+                  style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -11,6 +11,7 @@ class WorkoutDetailKeys {
   static Key recordPill(String kind) => Key('WorkoutDetail.recordPill.$kind');
   static const recordCount = Key('WorkoutDetail.recordCount');
   static const liveRecordNote = Key('WorkoutDetail.liveRecordNote');
+  static const liveGoalBurst = Key('WorkoutDetail.liveGoalBurst');
   static const liveRecordsOffer = Key('WorkoutDetail.liveRecordsOffer');
   static const liveRecordsAccept = Key('WorkoutDetail.liveRecordsAccept');
   static const liveRecordsDecline = Key('WorkoutDetail.liveRecordsDecline');

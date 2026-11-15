@@ -878,55 +878,37 @@ RouteBase _workoutDoneRoute() {
             // a goal a running program's cadence overrides is not judged, so
             // nothing celebrates what is set aside
             final running = runningPrograms(context);
-            bool setAside(Goal goal) => pausedByPrograms(goal, running);
 
             // The id the server settled on, not the one this device saved
             // under: `saveWorkout` adopts the server's when they differ, and
             // crediting a rung with the pre-save id had the server reject the
             // attribution outright — it was an id it had never seen.
-            final finished = await workouts.finishing;
-            // the aggregation is what whole-workout goals are judged against,
-            // and it predates the workout that just landed
+            final finished = await workouts.finishing ?? workout;
+            // the aggregation predates the workout that just landed
             await stats.init();
-            // the windows every goal below reads, each read once; `without`
-            // filters what was read, so the before reading shares them too
+            // the windows every goal below reads, each read once
             final lensSets = sharedLensSets(stats.getLensSets);
-            final stamped = await goals.observeProgress(
-              (goal) => currentGoalValue(
-                goal,
-                exercises: exercises,
-                firstWeekday: firstWeekday,
-                workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
-                lensSets: lensSets,
-              ),
-              // this screen is the one place that knows which session earned it
-              achievedBy: finished?.id ?? workout.id,
-              setAside: setAside,
-            );
+            final judged = [
+              for (final goal in goals)
+                if (!pausedByPrograms(goal, running)) goal,
+            ];
+            final priors = {
+              for (final goal in judged)
+                goal: await readGoalPrior(
+                  goal,
+                  finished,
+                  exercises: exercises,
+                  firstWeekday: firstWeekday,
+                  workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
+                  lensSets: lensSets,
+                ),
+            };
 
-            // A recurring goal is never stamped, so it would otherwise go
-            // uncelebrated the week it is met — announced here when this
-            // session is what carried the period over.
-            final carried = await goals.observePeriodWins(
-              setAside: setAside,
-              valueOf: (goal) => currentGoalValue(
-                goal,
-                exercises: exercises,
-                firstWeekday: firstWeekday,
-                workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
-                lensSets: lensSets,
-              ),
-              valueBefore: (goal) => currentGoalValue(
-                goal,
-                exercises: exercises,
-                firstWeekday: firstWeekday,
-                workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
-                lensSets: lensSets,
-                without: workout.start,
-              ),
-            );
-
-            return [...stamped, ...carried];
+            // what the session carried over the line: the calculation live
+            // goal notes make as the sets are ticked (#625), so the two agree
+            final crossed = goalCrossings(judged, (goal) => priors[goal], finished);
+            // this screen is the one place that knows which session earned it
+            return goals.stampCrossed(crossed, achievedBy: finished.id);
           },
           // Same contract as the goals: wait out the write, then ask which
           // records now credit this session. The fold ties records to the

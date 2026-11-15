@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/core/utils/goal_crossings.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -163,9 +164,9 @@ void main() {
       expect(await read(goal(metric: .averagePace, target: 300)), isNull);
     });
 
-    test('can answer what the period was worth before one session', () async {
-      // the workout summary asks twice — with and without the session that just
-      // ended — and announces only when the difference crosses the target
+    test('reads what the period was worth before one session (#625)', () async {
+      // the workout summary and live goal notes fold the session back in, so
+      // the prior leaves it out, by its start
       final session = DateTime(2026, 8, 6, 9);
       history([
         (240, session),
@@ -173,16 +174,16 @@ void main() {
       ]);
 
       expect(await read(goal()), 840);
-      expect(
-        await currentGoalValue(
-          goal(),
-          exercises: exercises,
-          firstWeekday: DateTime.monday,
-          asOf: now,
-          without: session,
-        ),
-        600,
+      final prior = await readGoalPrior(
+        goal(),
+        Workout()..start = session,
+        exercises: exercises,
+        firstWeekday: DateTime.monday,
+        workoutCount: (_) async => 0,
+        lensSets: (_, _) async => const [],
+        asOf: now,
       );
+      expect(prior, isA<SessionsPrior>().having((each) => each.values, 'values', [600]));
     });
 
     test('sums a month the same way it sums a week', () async {

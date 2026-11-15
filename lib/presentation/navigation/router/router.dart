@@ -9,6 +9,7 @@ import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/env/shortcuts.dart';
+import 'package:heart/core/utils/goal_crossings.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/records.dart';

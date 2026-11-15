@@ -112,70 +112,71 @@ void main() {
     });
   });
 
-  group('observePeriodWins', () {
-    Goal weekly({num target = 2000}) {
+  group('stampCrossed', () {
+    Goal weekly() {
       return Goal(
         id: 'goal-w',
         metric: .totalVolume,
         exerciseId: 'exercise-1',
         cadence: .week,
-        stages: [GoalStage(id: 's0', target: target)],
+        stages: [GoalStage(id: 's0', target: 2000)],
       );
     }
 
-    Future<List<GoalAchievement>> observe({required num now, required num before}) {
-      return sut.observePeriodWins(
-        valueOf: (_) async => now,
-        valueBefore: (_) async => before,
-      );
+    Future<void> seed(List<Goal> goals) {
+      local.goals.addAll(goals);
+      remote.goals.addAll(goals);
+      return sut.init();
     }
 
-    Future<void> seedWeekly() async {
+    test('stamps a milestone rung, credited to the session, and hands it back stamped', () async {
+      final milestone = ladder(id: 'goal-1', stageId: 'stage-1', target: 100);
+      await seed([milestone]);
+
+      final announced = await sut.stampCrossed([
+        (goal: milestone, stage: milestone.stages.single),
+      ], achievedBy: 'workout-7');
+
+      expect(local.achieved, ['stage-1']);
+      expect(remote.attributed, ['workout-7']);
+      expect(announced.single.goal.stages.single.isAchieved, isTrue);
+    });
+
+    test('a recurring goal is announced and never stamped', () async {
       final goal = weekly();
-      local.goals.add(goal);
-      remote.goals.add(goal);
-      await sut.init();
-    }
+      await seed([goal]);
 
-    test('announces the session that carried the period over', () async {
-      await seedWeekly();
+      final announced = await sut.stampCrossed([(goal: goal, stage: goal.stages.single)]);
 
-      final wins = await observe(now: 2160, before: 1200);
-
-      expect(wins, hasLength(1));
-      expect(wins.single.goal.id, 'goal-w');
-    });
-
-    test('stays quiet for a later session in a period already won', () async {
-      // otherwise it congratulates you again every workout until the week ends
-      await seedWeekly();
-
-      expect(await observe(now: 3000, before: 2400), isEmpty);
-    });
-
-    test('stays quiet while the period is still short', () async {
-      await seedWeekly();
-
-      expect(await observe(now: 1800, before: 900), isEmpty);
-    });
-
-    test('stamps nothing — a recurring goal is never done', () async {
-      await seedWeekly();
-
-      await observe(now: 2160, before: 1200);
-
+      expect(announced, hasLength(1));
       expect(local.achieved, isEmpty);
       expect(remote.achieved, isEmpty);
-      expect(sut.single.stages.single.isAchieved, isFalse);
     });
 
-    test('leaves milestones to observeProgress', () async {
-      final milestone = ladder(id: 'goal-1', stageId: 'stage-1', target: 100);
-      local.goals.add(milestone);
-      remote.goals.add(milestone);
-      await sut.init();
+    test('a rung already stamped keeps its first timestamp', () async {
+      final first = DateTime.utc(2026, 8, 1);
+      final goal = Goal(
+        id: 'goal-1',
+        metric: .topSetWeight,
+        exerciseId: 'exercise-1',
+        stages: [GoalStage(id: 'stage-1', target: 100, achievedAt: first)],
+      );
+      await seed([goal]);
 
-      expect(await observe(now: 120, before: 0), isEmpty);
+      final announced = await sut.stampCrossed([(goal: goal, stage: goal.stages.single)]);
+
+      expect(local.achieved, isEmpty);
+      expect(announced.single.stage.achievedAt, first);
+    });
+  });
+
+  group('isMetBy', () {
+    test('a rung is met at its target, and pace from above', () {
+      final stage = GoalStage(target: 100);
+      expect(stage.isMetBy(100, .topSetWeight), isTrue);
+      expect(stage.isMetBy(99, .topSetWeight), isFalse);
+      expect(stage.isMetBy(100, .averagePace), isTrue);
+      expect(stage.isMetBy(101, .averagePace), isFalse);
     });
   });
 
