@@ -324,7 +324,17 @@ RelativeRect menuUnder(BuildContext context) {
 /// starts after the rail, so a window offset lands the menu a rail's width to
 /// the right of the value.
 RelativeRect menuUnderValue(BuildContext context, GlobalKey key, {required double width}) {
-  final box = key.currentContext?.findRenderObject();
+  return switch (key.currentContext) {
+    BuildContext value => menuEndingUnder(value, width: width),
+    null => RelativeRect.fill,
+  };
+}
+
+/// [menuUnderValue] for the widget [context] belongs to: a menu [width] wide
+/// under it, its right edge on the widget's — for a trailing button that has
+/// its own context to hand and no key.
+RelativeRect menuEndingUnder(BuildContext context, {required double width}) {
+  final box = context.findRenderObject();
   final overlay = Navigator.of(context).overlay?.context.findRenderObject();
   if (box is! RenderBox || overlay is! RenderBox) return RelativeRect.fill;
   final Offset(:dx, :dy) = box.localToGlobal(Offset.zero, ancestor: overlay);

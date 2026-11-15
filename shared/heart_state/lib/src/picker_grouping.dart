@@ -16,15 +16,7 @@ enum PickerGrouping {
 
   /// Null for anything this version does not know — a newer app's grouping —
   /// so it never replaces a choice with a guess.
-  static PickerGrouping? fromString(String? value) {
-    return switch (value) {
-      'none' => none,
-      'category' => category,
-      'target' => target,
-      'movement' => movement,
-      _ => null,
-    };
-  }
+  static PickerGrouping? fromString(String? value) => values.asNameMap()[value];
 }
 
 /// One heading of a grouped picker. Carries identifiers only; the picker
@@ -67,7 +59,8 @@ final class const PatternGroup(final String pattern) extends ExerciseGroup {
 /// under Movement, after every pattern.
 final class const NoPatternGroup() extends ExerciseGroup {
   @override
-  String get id => 'movement:';
+  // no colon: every [PatternGroup] has one, whatever its pattern
+  String get id => 'movement';
 }
 
 typedef GroupedExercises = ({ExerciseGroup group, List<Exercise> exercises});
@@ -79,35 +72,50 @@ typedef GroupedExercises = ({ExerciseGroup group, List<Exercise> exercises});
 /// with nothing under it is left out — a filter can empty one.
 ///
 /// An exercise that trains several patterns is under each of them, as the
-/// movement filter finds it under each. [PickerGrouping.none] has no headings.
+/// movement filter finds it under each; an empty pattern key is no pattern.
+/// [patterns] is only asked for by movement — it walks the whole library.
+/// [PickerGrouping.none] has no headings.
 List<GroupedExercises> groupExercises(
   Iterable<Exercise> exercises,
   PickerGrouping by, {
-  Iterable<String> patterns = const [],
+  Iterable<String> Function()? patterns,
 }) {
-  List<GroupedExercises> under<T>(Iterable<T> keys, ExerciseGroup Function(T) group, bool Function(Exercise, T) fits) {
-    return [
-      for (final key in keys)
-        if (exercises.where((each) => fits(each, key)).toList() case final members when members.isNotEmpty)
-          (group: group(key), exercises: members),
-    ];
+  Iterable<ExerciseGroup> groupsOf(Exercise exercise) {
+    return switch (by) {
+      .none => const [],
+      .category => [CategoryGroup(exercise.category)],
+      .target => [TargetGroup(exercise.target)],
+      .movement => switch (exercise.movement.groups.where((each) => each.isNotEmpty)) {
+        Iterable<String> found when found.isEmpty => const [NoPatternGroup()],
+        Iterable<String> found => found.toSet().map(PatternGroup.new),
+      },
+    };
   }
 
-  return switch (by) {
+  // one pass over the list, each exercise into every group it is under
+  final buckets = exercises
+      .expand((each) => groupsOf(each).map((group) => (group, each)))
+      .fold(
+        <ExerciseGroup, List<Exercise>>{},
+        (buckets, entry) => buckets..putIfAbsent(entry.$1, () => []).add(entry.$2),
+      );
+
+  final Iterable<ExerciseGroup> order = switch (by) {
     .none => const [],
-    .category => under(Category.values, CategoryGroup.new, (each, category) => each.category == category),
-    .target => under(Target.values, TargetGroup.new, (each, target) => each.target == target),
-    .movement => [
-      // a pattern [patterns] does not know yet still gets its heading, last
-      ...under(
-        {...patterns, ...exercises.expand((each) => each.movement.groups)},
-        PatternGroup.new,
-        (each, pattern) => each.movement.groups.contains(pattern),
-      ),
-      if (exercises.where((each) => each.movement.groups.isEmpty).toList() case final rest when rest.isNotEmpty)
-        (group: const NoPatternGroup(), exercises: rest),
-    ],
+    .category => Category.values.map(CategoryGroup.new),
+    .target => Target.values.map(TargetGroup.new),
+    .movement => {
+      ...?patterns?.call().where((each) => each.isNotEmpty).map(PatternGroup.new),
+      // a pattern [patterns] does not know yet still gets its heading, after it
+      ...buckets.keys.whereType<PatternGroup>(),
+      const NoPatternGroup(),
+    },
   };
+
+  return [
+    for (final group in order)
+      if (buckets[group] case final members?) (group: group, exercises: members),
+  ];
 }
 
 /// Where the choice lives in the account's [Settings]: `extra.pickerGrouping`,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
@@ -575,6 +576,28 @@ void _weekSync() {
       expect(account.saved, isEmpty);
     });
 
+    test('a day picked while the last one is still being written stays owed, and goes up after it', () async {
+      SharedPreferences.setMockInitialValues({});
+      preferences = Preferences();
+      await preferences.init(locale: const Locale('en', 'GB'));
+      final slow = _SlowAccount();
+      account = slow;
+      final sync = SettingsSync(preferences: preferences, auth: slow);
+      addTearDown(sync.dispose);
+      account.arrive(const Settings());
+      await settle();
+
+      preferences.setFirstWeekday(DateTime.sunday);
+      await settle();
+      preferences.setFirstWeekday(DateTime.saturday);
+      slow.release();
+      await settle();
+      await settle();
+
+      expect(preferences.firstWeekdayOwed, isFalse);
+      expect([for (final each in account.saved) each.firstWeekday], [DateTime.sunday, DateTime.saturday]);
+    });
+
     test('an anonymous session keeps its day on the device, and it goes up once there is an account', () async {
       await boot();
       account.isAnonymous = true;
@@ -592,6 +615,22 @@ void _weekSync() {
       expect(account.saved.single.firstWeekday, DateTime.sunday);
     });
   });
+}
+
+/// Holds every write until [release]d, so a change can land while one is out.
+class _SlowAccount extends _Account {
+  var _gate = Completer<void>();
+
+  void release() {
+    _gate.complete();
+    _gate = Completer<void>()..complete();
+  }
+
+  @override
+  Future<Settings?> saveSettings(Settings settings) async {
+    await _gate.future;
+    return super.saveSettings(settings);
+  }
 }
 
 class _FailingAccount extends _Account {

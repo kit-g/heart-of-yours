@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show ValueListenable, listEquals;
 import 'package:heart_models/heart_models.dart';
 import 'package:intl/date_symbol_data_local.dart' show dateTimeSymbolMap;
 import 'package:intl/date_symbols.dart' show DateSymbols;
@@ -222,17 +222,19 @@ class Preferences with ChangeNotifier {
   /// The account holds this device's choice now.
   void settlePickerGrouping() => _prefs?.remove(_pickerGroupingOwed);
 
-  /// Whether the picker's group [id] ([ExerciseGroup.id]) is open. Groups
-  /// start folded — a screen of headings is the point of grouping 300
-  /// exercises — and one opened stays open on this device. View state, kept
-  /// like [isFolderCollapsed] and for the same reason; it does not sync.
-  bool isPickerGroupOpen(String id) => _prefs?.getStringList(_openPickerGroups)?.contains(id) ?? false;
+  /// The ids ([ExerciseGroup.id]) of the picker's open groups. Groups start
+  /// folded — a screen of headings is the point of grouping 300 exercises —
+  /// and one opened stays open on this device. View state, kept like
+  /// [isFolderCollapsed] and for the same reason; it does not sync.
+  ///
+  /// A listenable of its own rather than [notifyListeners]: a fold changes
+  /// one list, and nothing else that watches the preferences.
+  ValueListenable<Set<String>> get openPickerGroups => _openGroups;
+
+  final _openGroups = ValueNotifier<Set<String>>(const {});
 
   void togglePickerGroup(String id) {
-    final open = {...?_prefs?.getStringList(_openPickerGroups)};
-    if (!open.remove(id)) open.add(id);
-    _prefs?.setStringList(_openPickerGroups, open.toList());
-    notifyListeners();
+    _openGroups.value = _toggleInList(_openPickerGroups, id).ids;
   }
 
   /// The first day of the week where [locale] lives, from the same CLDR data
@@ -285,6 +287,7 @@ class Preferences with ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _openGroups.dispose();
     super.dispose();
   }
 
@@ -297,6 +300,7 @@ class Preferences with ChangeNotifier {
     if (_disposed) return;
 
     _isInitialized = true;
+    _openGroups.value = {...?_prefs?.getStringList(_openPickerGroups)};
     _localeFirstWeekday = localeFirstWeekday(locale);
     final unit = defaultUnit(locale?.countryCode);
     _initMeasurementUnits(
@@ -375,15 +379,19 @@ class Preferences with ChangeNotifier {
   }
 
   Future<bool>? toggleFolderCollapsed(String folderId) {
-    final collapsed = (_prefs?.getStringList(_collapsedFolders) ?? []).toSet();
-    if (!collapsed.remove(folderId)) {
-      collapsed.add(folderId);
-    }
-    // setStringList updates the in-memory cache synchronously, so listeners
-    // rebuilt by this notify already read the new state
-    final write = _prefs?.setStringList(_collapsedFolders, collapsed.toList());
+    final (ids: _, :write) = _toggleInList(_collapsedFolders, folderId);
     notifyListeners();
     return write;
+  }
+
+  /// Adds [id] to the string list stored under [key], or takes it out when it
+  /// is there: the list as it now stands, and the write. setStringList
+  /// updates the in-memory cache synchronously, so whatever this wakes
+  /// already reads the new state.
+  ({Set<String> ids, Future<bool>? write}) _toggleInList(String key, String id) {
+    final ids = {...?_prefs?.getStringList(key)};
+    if (!ids.remove(id)) ids.add(id);
+    return (ids: ids, write: _prefs?.setStringList(key, ids.toList()));
   }
 
   /// Whether the user has waved away the offer to read their health data.

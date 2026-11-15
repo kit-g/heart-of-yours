@@ -4,9 +4,13 @@ part of 'settings.dart';
 /// picker's own button, listed with the other choices about how a screen lays
 /// itself out.
 ///
-/// The control sits under its name rather than beside it: four segments, in
-/// Russian or French, do not share a phone's row with a title.
-class const _PickerGroupingPicker() extends StatelessWidget {
+/// A row with the value at its end and a menu off it, as the developer API's
+/// token purpose is: four segments in Spanish, French or Russian overflowed a
+/// 360dp phone at larger text, and a menu fits any number of choices at any
+/// size.
+class const _PickerGroupingPicker() extends StatelessWidget with HasHaptic {
+  static const _menuWidth = 200.0;
+
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
@@ -14,29 +18,41 @@ class const _PickerGroupingPicker() extends StatelessWidget {
 
     return Selector<Preferences, PickerGrouping>(
       selector: (_, preferences) => preferences.pickerGrouping,
-      builder: (context, grouping, _) {
-        return Padding(
-          padding: const .symmetric(horizontal: 16, vertical: 4),
-          child: Column(
-            crossAxisAlignment: .start,
-            spacing: 8,
+      // this context's render box is the row's: the menu hangs off its far
+      // end, where the value is
+      builder: (row, grouping, _) {
+        return ListTile(
+          key: AppKeys.settingsPickerGrouping,
+          contentPadding: const .symmetric(horizontal: 16),
+          title: Text(l.settingsPickerGrouping),
+          trailing: Row(
+            mainAxisSize: .min,
+            spacing: 4,
             children: [
-              Text(l.settingsPickerGrouping, style: textTheme.bodyLarge),
-              SizedBox(
-                width: double.infinity,
-                child: SettingSwitcher<PickerGrouping>(
-                  value: grouping,
-                  onValueChanged: (picked) {
-                    if (picked != null) Preferences.of(context).setPickerGrouping(picked);
-                  },
-                  children: {
-                    for (final each in PickerGrouping.values)
-                      each: Text(each.label(l), maxLines: 1, overflow: .ellipsis),
-                  },
-                ),
-              ),
+              Text(grouping.label(l), style: textTheme.bodyMedium),
+              const Icon(Icons.unfold_more_rounded, size: 20),
             ],
           ),
+          onTap: () async {
+            buzz();
+            final picked = await showMenu<PickerGrouping>(
+              context: row,
+              position: menuEndingUnder(row, width: _menuWidth),
+              constraints: const .tightFor(width: _menuWidth),
+              items: [
+                for (final each in PickerGrouping.values)
+                  CheckedPopupMenuItem<PickerGrouping>(
+                    value: each,
+                    checked: each == grouping,
+                    child: Text(each.label(l)),
+                  ),
+              ],
+            );
+            if (!row.mounted) return;
+            if (picked case final PickerGrouping picked when picked != grouping) {
+              Preferences.of(row).setPickerGrouping(picked);
+            }
+          },
         );
       },
     );

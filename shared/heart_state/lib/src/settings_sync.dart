@@ -121,8 +121,10 @@ class SettingsSync {
           settings = withPickerGrouping(settings, grouping);
         }
         final saved = await _auth.saveSettings(settings);
-        if (saved != null && owed) _preferences.settleFirstWeekday();
         // a choice made while the write was out is still owed
+        if (saved != null && owed && _preferences.chosenFirstWeekday == mine) {
+          _preferences.settleFirstWeekday();
+        }
         if (saved != null && groupingOwed && _preferences.chosenPickerGrouping == myGrouping) {
           _preferences.settlePickerGrouping();
         }

@@ -326,6 +326,7 @@ abstract final class AppKeys {
   /// found nothing (#529).
   static const pickerCreateExercise = Key('ExercisePicker.createExercise');
   static const pickerGrouping = Key('ExercisePicker.grouping');
+  static const settingsPickerGrouping = Key('Settings.pickerGrouping');
 
   /// The Coaching space (#566): the way in on Profile, the way back out, its
   /// tabs, and the line that leads back to a workout still going.

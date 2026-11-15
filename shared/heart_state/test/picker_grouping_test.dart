@@ -56,7 +56,7 @@ void main() {
       final groups = groupExercises(
         library,
         .movement,
-        patterns: ['vertical_press', 'horizontal_press', 'squat_bilateral', 'deadlift_floor'],
+        patterns: () => ['vertical_press', 'horizontal_press', 'squat_bilateral', 'deadlift_floor'],
       );
       expect(shape(groups), [
         'movement:vertical_press: id-thruster',
@@ -65,7 +65,7 @@ void main() {
         // patterns the order did not name keep a heading, after it
         'movement:horizontal_row: id-row',
         'movement:chest_fly: id-fly',
-        'movement:: id-custom',
+        'movement: id-custom',
       ]);
       expect(groups.last.group, const NoPatternGroup());
       expect(groups.first.group, const PatternGroup('vertical_press'));
@@ -79,8 +79,33 @@ void main() {
       expect(groupExercises(const [], .category), isEmpty);
     });
 
-    test('a target and a category of one name are two groups', () {
+    test('a target and a category of one name are two groups, and Other is no pattern\'s', () {
       expect(const CategoryGroup(.cardio).id, isNot(const TargetGroup(.cardio).id));
+      expect(const NoPatternGroup().id, isNot(const PatternGroup('').id));
+    });
+
+    test('an empty pattern key is no pattern', () {
+      final blank = lift('blank', patterns: ['']);
+      final half = lift('half', patterns: ['', 'shrug']);
+      expect(shape(groupExercises([blank, half], .movement, patterns: () => ['', 'shrug'])), [
+        'movement:shrug: id-half',
+        'movement: id-blank',
+      ]);
+    });
+
+    test('only movement asks for the library\'s patterns', () {
+      var asked = 0;
+      List<String> patterns() {
+        asked++;
+        return const [];
+      }
+
+      for (final by in [PickerGrouping.none, PickerGrouping.category, PickerGrouping.target]) {
+        groupExercises(library, by, patterns: patterns);
+      }
+      expect(asked, 0);
+      groupExercises(library, .movement, patterns: patterns);
+      expect(asked, 1);
     });
   });
 
@@ -132,23 +157,29 @@ void main() {
       expect(preferences.pickerGrouping, PickerGrouping.target);
     });
 
-    test('groups start folded, and one opened stays open across launches', () async {
+    test('groups start folded, and one opened stays open across launches, waking only its own listeners', () async {
       SharedPreferences.setMockInitialValues({});
       final preferences = Preferences();
       await preferences.init();
       const chest = TargetGroup(.chest);
-      expect(preferences.isPickerGroupOpen(chest.id), isFalse);
+      expect(preferences.openPickerGroups.value, isEmpty);
 
+      var everyone = 0;
+      var folds = 0;
+      preferences.addListener(() => everyone++);
+      preferences.openPickerGroups.addListener(() => folds++);
       preferences.togglePickerGroup(chest.id);
-      expect(preferences.isPickerGroupOpen(chest.id), isTrue);
-      expect(preferences.isPickerGroupOpen(const CategoryGroup(.barbell).id), isFalse);
+
+      expect(preferences.openPickerGroups.value, {chest.id});
+      expect(folds, 1);
+      expect(everyone, 0);
 
       final relaunched = Preferences();
       await relaunched.init();
-      expect(relaunched.isPickerGroupOpen(chest.id), isTrue);
+      expect(relaunched.openPickerGroups.value, {chest.id});
 
       relaunched.togglePickerGroup(chest.id);
-      expect(relaunched.isPickerGroupOpen(chest.id), isFalse);
+      expect(relaunched.openPickerGroups.value, isEmpty);
     });
   });
 }

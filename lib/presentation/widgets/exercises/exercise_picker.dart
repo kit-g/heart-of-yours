@@ -91,7 +91,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                 _MovementFilterButton(exercises: exercises),
                 // beside the movement filter rather than in the Target and
                 // Category row below, whose two halves stay even (#488)
-                _GroupingButton(),
+                _GroupingButton(preferences.pickerGrouping),
               ],
             ),
           ),
@@ -357,23 +357,32 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                   ],
                   if (suggestions.isNotEmpty || recent.isNotEmpty)
                     SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerAllExercises)),
-                  ...switch (grouping) {
-                    .none => [list(found)],
-                    .category || .target || .movement => [
-                      for (final (:group, exercises: members) in groupExercises(
-                        found,
-                        grouping,
-                        patterns: exercises.patterns,
-                      ))
-                        _ExerciseGroupSliver(
-                          key: ValueKey(group.id),
-                          group: group,
-                          count: members.length,
-                          open: preferences.isPickerGroupOpen(group.id),
-                          backgroundColor: backgroundColor,
-                          list: list(members),
-                        ),
-                    ],
+                  switch (grouping) {
+                    .none => list(found),
+                    .category || .target || .movement => ValueListenableBuilder<Set<String>>(
+                      // its own listenable: a fold rebuilds this list, not
+                      // everything that watches the preferences
+                      valueListenable: preferences.openPickerGroups,
+                      builder: (_, open, _) {
+                        return SliverMainAxisGroup(
+                          slivers: [
+                            for (final (:group, exercises: members) in groupExercises(
+                              found,
+                              grouping,
+                              patterns: () => exercises.patterns,
+                            ))
+                              _ExerciseGroupSliver(
+                                key: ValueKey(group.id),
+                                group: group,
+                                count: members.length,
+                                open: open.contains(group.id),
+                                backgroundColor: backgroundColor,
+                                list: list(members),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                   },
                   if (onCreateExercise case final create? when searching && found.isEmpty)
                     SliverToBoxAdapter(

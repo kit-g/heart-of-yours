@@ -255,7 +255,7 @@ void main() {
       await tester.pump();
 
       expect(names(tester), [barbell.name, dumbbell.name, incline.name]);
-      expect(preferences.isPickerGroupOpen('target:chest'), isTrue);
+      expect(preferences.openPickerGroups.value, {'target:chest'});
 
       await tester.tap(heading('target:chest'));
       await tester.pump();
@@ -270,7 +270,7 @@ void main() {
         ..setPickerGrouping(.movement)
         ..togglePickerGroup('movement:horizontal_press')
         ..togglePickerGroup('movement:incline_press')
-        ..togglePickerGroup('movement:');
+        ..togglePickerGroup('movement');
       await pump(tester, showsRecent: false);
 
       expect(find.text('Other'), findsOneWidget);
@@ -285,7 +285,7 @@ void main() {
         squat.name,
       ]);
       expect(
-        tester.getTopLeft(heading('movement:')).dy,
+        tester.getTopLeft(heading('movement')).dy,
         greaterThan(tester.getTopLeft(heading('movement:incline_press')).dy),
       );
     });
@@ -350,7 +350,7 @@ void main() {
       expect(
         tester.getSemantics(heading('target:chest')),
         isSemantics(
-          label: 'Chest',
+          label: 'Chest, 3 exercises',
           value: 'Collapsed',
           isHeader: true,
           isButton: true,
@@ -364,7 +364,7 @@ void main() {
 
       expect(
         tester.getSemantics(heading('target:chest')),
-        isSemantics(label: 'Chest', value: 'Expanded', isHeader: true, onTapHint: 'Hide exercises'),
+        isSemantics(label: 'Chest, 3 exercises', value: 'Expanded', isHeader: true, onTapHint: 'Hide exercises'),
       );
       semantics.dispose();
     });
@@ -397,6 +397,62 @@ void main() {
       expect(preferences.pickerGrouping, PickerGrouping.movement);
       expect(preferences.pickerGroupingOwed, isTrue);
       expect(heading('movement:horizontal_press'), findsOneWidget);
+      // the button says what it is set to
+      expect(find.byTooltip('Group by: Movement'), findsOneWidget);
+    });
+
+    testWidgets('folding a group from its pinned heading brings the list back to the group\'s start', (tester) async {
+      // Legs open too, so the list still scrolls once Chest is folded
+      tall(tester, height: 220);
+      preferences
+        ..setPickerGrouping(.target)
+        ..togglePickerGroup('target:chest')
+        ..togglePickerGroup('target:legs');
+      await pump(tester, showsRecent: false);
+
+      final top = tester.getTopLeft(heading('target:chest')).dy;
+      await tester.drag(find.byKey(AppKeys.exercisePicker), const Offset(0, -60));
+      await tester.pump();
+      expect(tester.getTopLeft(heading('target:chest')).dy, top);
+
+      await tester.tap(heading('target:chest'));
+      await tester.pump();
+
+      // the folded heading where it was, and the next group straight under it
+      final chest = tester.getRect(heading('target:chest'));
+      expect(chest.top, top);
+      expect(tester.getTopLeft(heading('target:legs')).dy, chest.bottom);
+    });
+
+    testWidgets('a heading grows with the text, rather than clipping it', (tester) async {
+      tall(tester);
+      preferences.setPickerGrouping(.target);
+      await pump(tester, showsRecent: false);
+      final regular = tester.getSize(heading('target:chest')).height;
+      expect(regular, 48);
+
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pump();
+
+      final large = tester.getSize(heading('target:chest')).height;
+      final line = tester.getSize(find.text('Chest')).height;
+      expect(large, greaterThan(regular));
+      expect(large, greaterThanOrEqualTo(line));
+    });
+
+    testWidgets('a fold rebuilds the list, not what else watches the preferences', (tester) async {
+      tall(tester);
+      preferences.setPickerGrouping(.target);
+      await pump(tester, showsRecent: false);
+      var notified = 0;
+      preferences.addListener(() => notified++);
+
+      await tester.tap(heading('target:chest'));
+      await tester.pump();
+
+      expect(names(tester), [barbell.name, dumbbell.name, incline.name]);
+      expect(notified, 0);
     });
   });
 }
