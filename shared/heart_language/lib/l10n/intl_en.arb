@@ -1440,6 +1440,24 @@
     "type": "text",
     "placeholders": {}
   },
+  "exerciseInstructions": "Instructions",
+  "@exerciseInstructions": {
+    "description": "Label of the optional free-text field on the create/edit exercise dialog where users describe how to do their own exercise",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseInstructionsKept": "Instructions can be changed, not removed yet",
+  "@exerciseInstructionsKept": {
+    "description": "Shown under an emptied instructions field on the edit exercise dialog for a signed-in user: the account can't remove instructions yet, so Save stays off until some text is there",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseInstructionsHint": "Setup, cues, which machine",
+  "@exerciseInstructionsHint": {
+    "description": "Placeholder inside the empty instructions field on the create/edit exercise dialog, suggesting what to write",
+    "type": "text",
+    "placeholders": {}
+  },
   "exerciseNameTaken": "You already have an exercise with this name",
   "@exerciseNameTaken": {
     "description": "Error shown when renaming one of the user's own exercises to a name another of their own exercises already has",
