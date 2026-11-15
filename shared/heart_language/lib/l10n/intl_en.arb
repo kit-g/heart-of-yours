@@ -1,7 +1,7 @@
 {
   "calendar": "Calendar",
   "@calendar": {
-    "description": "History calendar action and dialog title",
+    "description": "Name of History's calendar view, and the Settings choice of it beside List (#609)",
     "type": "text",
     "placeholders": {}
   },
@@ -5933,6 +5933,18 @@
   "@programCoachChangesMore": {"description": "The latest change a coach made to the student's copy of a program, and how many more there are since the student last looked (#558)", "type": "text", "placeholders": {"change": {"type": "String"}, "count": {"type": "int"}}},
   "programCoachChangesSeen": "Mark as seen",
   "@programCoachChangesSeen": {"description": "Tooltip: dismisses the line saying what the coach changed in a program (#558)", "type": "text", "placeholders": {}},
+  "historyView": "History opens on",
+  "@historyView": {"description": "Settings row title: which view History opens on, a list or a calendar (#609)", "type": "text", "placeholders": {}},
+  "historyAsList": "List",
+  "@historyAsList": {"description": "Settings choice: History opens on the list of workouts (#609); the other choice is the existing 'calendar' string", "type": "text", "placeholders": {}},
+  "showAsList": "Show as list",
+  "@showAsList": {"description": "Tooltip on History's app-bar button that switches from the calendar to the list of workouts (#609)", "type": "text", "placeholders": {}},
+  "showAsCalendar": "Show as calendar",
+  "@showAsCalendar": {"description": "Tooltip on History's app-bar button that switches from the list of workouts to the calendar (#609)", "type": "text", "placeholders": {}},
+  "screens": "Screens",
+  "@screens": {"description": "Settings section header: how the app's screens show themselves, e.g. what History opens on (#609)", "type": "text", "placeholders": {}},
+  "calendarWorkouts": "{count, plural, =1{1 workout} other{{count} workouts}}",
+  "@calendarWorkouts": {"description": "History calendar: how many workouts a day holds, read out after the date on a day with more than one (#619)", "type": "text", "placeholders": {"count": {"type": "int"}}},
   "messagesHint": "Message",
   "@messagesHint": {"description": "Placeholder of the box a message is written in (#556)", "type": "text", "placeholders": {}},
   "messagesSend": "Send",

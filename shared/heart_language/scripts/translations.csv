@@ -1,5 +1,5 @@
 id,description,en,en_CA,ru,es,fr
-calendar,History calendar action and dialog title,Calendar,Calendar,Календарь,Calendario,Calendrier
+calendar,Name of History's calendar view and the Settings choice of it beside List (#609),Calendar,Calendar,Календарь,Calendario,Calendrier
 appearance,Label,Appearance,Appearance,Внешний вид,Apariencia,Apparence
 units,Label,Units,Units,Единицы измерения,Unidades,Unités
 motto,"App's motto. A tagline, not copy — it stays in English in every locale, the way 'Just do it' does. Do not translate.",Every beat counts.,Every beat counts.,Every beat counts.,Every beat counts.,Every beat counts.
@@ -1633,6 +1633,12 @@ exerciseNameTaken,Error shown when renaming one of the user's own exercises to a
 exerciseInstructions,Label of the optional free-text field on the create/edit exercise dialog where users describe how to do their own exercise,Instructions,Instructions,Инструкция,Instrucciones,Instructions
 exerciseInstructionsHint,"Placeholder inside the empty instructions field on the create/edit exercise dialog, suggesting what to write","Setup, cues, which machine","Setup, cues, which machine","Установка, подсказки, какой тренажёр","Preparación, claves, qué máquina","Installation, consignes, quelle machine"
 exerciseInstructionsKept,"Shown under an emptied instructions field on the edit exercise dialog for a signed-in user: the account can't remove instructions yet, so Save stays off until some text is there","Instructions can be changed, not removed yet","Instructions can be changed, not removed yet","Инструкцию пока можно изменить, но не удалить","Por ahora las instrucciones se pueden cambiar, pero no borrar","Pour l'instant, les instructions peuvent être modifiées, pas supprimées"
+historyView,"Settings row title: which view History opens on, a list or a calendar (#609)",History opens on,History opens on,Вид истории,El historial se abre en,L'historique s'ouvre sur
+historyAsList,Settings choice: History opens on the list of workouts (#609); the other choice is the existing 'calendar' string,List,List,Список,Lista,Liste
+showAsList,Tooltip on History's app-bar button that switches from the calendar to the list of workouts (#609),Show as list,Show as list,Показать списком,Ver como lista,Afficher en liste
+showAsCalendar,Tooltip on History's app-bar button that switches from the list of workouts to the calendar (#609),Show as calendar,Show as calendar,Показать календарём,Ver como calendario,Afficher en calendrier
+screens,"Settings section header: how the app's screens show themselves, e.g. what History opens on (#609)",Screens,Screens,Экраны,Pantallas,Écrans
+calendarWorkouts,"History calendar: how many workouts a day holds, read out after the date on a day with more than one (#619)","{count, plural, =1{1 workout} other{{count} workouts}}","{count, plural, =1{1 workout} other{{count} workouts}}","{count, plural, one{{count} тренировка} few{{count} тренировки} many{{count} тренировок} other{{count} тренировки}}","{count, plural, =1{1 entrenamiento} other{{count} entrenamientos}}","{count, plural, one{{count} séance} other{{count} séances}}"
 messagesHint,Placeholder of the box a message is written in (#556),Message,Message,Сообщение,Mensaje,Message
 messagesSend,Tooltip of the button that sends a message (#556),Send,Send,Отправить,Enviar,Envoyer
 messagesEmpty,A conversation with nothing in it yet (#556),No messages yet,No messages yet,Сообщений пока нет,Aún no hay mensajes,Pas encore de messages

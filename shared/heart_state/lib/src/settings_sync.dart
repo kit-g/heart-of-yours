@@ -5,6 +5,7 @@ import 'package:heart_models/heart_models.dart';
 
 import 'features.dart';
 import 'preferences.dart';
+import 'screen_choices.dart';
 
 /// What [SettingsSync] needs of the session: who is signed in, whether that is
 /// an account at all, and a way to write its settings. [Auth] is the one the
@@ -20,7 +21,8 @@ abstract interface class SettingsAccount implements Listenable {
 }
 
 /// Keeps a signed-in account's settings the same on every device it is used
-/// on: the opt-in answers (#138) and the week's first day (#339).
+/// on: the opt-in answers (#138), the week's first day (#339) and the screen
+/// choices (#609), which travel the way the answers do.
 ///
 /// The device's [Preferences] stay the store the app reads; the account's
 /// [Settings] carry a copy. For the answers that is `extra.features` (see
@@ -90,6 +92,17 @@ class SettingsSync {
           if (remote[feature] case final theirs when theirs == null || mine.at.isAfter(theirs.at)) feature: mine,
       };
 
+      final remoteChoices = screenChoicesOf(user.settings);
+      final localChoices = _preferences.screenChoices;
+      final choicesThere = {
+        for (final MapEntry(key: choice, value: theirs) in remoteChoices.entries)
+          if (localChoices[choice] case final mine when mine == null || theirs.at.isAfter(mine.at)) choice: theirs,
+      };
+      final choicesHere = {
+        for (final MapEntry(key: choice, value: mine) in localChoices.entries)
+          if (remoteChoices[choice] case final theirs when theirs == null || mine.at.isAfter(theirs.at)) choice: mine,
+      };
+
       final mine = _preferences.chosenFirstWeekday;
       final theirs = user.settings.firstWeekday;
       final owed = _preferences.firstWeekdayOwed && mine != null;
@@ -97,14 +110,16 @@ class SettingsSync {
       // adopting notifies, which lands back here — as a no-op, since the two
       // sides then agree on everything adopted
       _preferences.adoptFeatureRecords(newerThere);
+      _preferences.adoptScreenChoices(choicesThere);
       if (!owed && theirs != null && theirs != mine) {
         _preferences.adoptFirstWeekday(theirs);
       }
 
       final writesDay = owed && theirs != mine;
-      if (newerHere.isNotEmpty || writesDay) {
+      if (newerHere.isNotEmpty || choicesHere.isNotEmpty || writesDay) {
         var settings = user.settings;
         if (newerHere.isNotEmpty) settings = withFeatureRecords(settings, newerHere);
+        if (choicesHere.isNotEmpty) settings = withScreenChoices(settings, choicesHere);
         if (writesDay) settings = settings.copyWith(firstWeekday: mine);
         final saved = await _auth.saveSettings(settings);
         if (saved != null && owed) _preferences.settleFirstWeekday();

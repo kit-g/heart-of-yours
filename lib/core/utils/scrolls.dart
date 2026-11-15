@@ -3,12 +3,18 @@ import 'package:material_ui/material_ui.dart';
 
 class Scrolls {
   final _historyScrollController = ScrollController();
+
+  // History's calendar (#609) scrolls its months by itself: a controller of
+  // its own, so the two views never share one while they swap
+  final _historyCalendarScrollController = ScrollController();
   final _exercisesScrollController = ScrollController();
   final _profileScrollController = ScrollController();
   final _workoutScrollController = ScrollController();
   final _editWorkoutScrollController = ScrollController();
 
   ScrollController get historyScrollController => _historyScrollController;
+
+  ScrollController get historyCalendarScrollController => _historyCalendarScrollController;
 
   ScrollController get exercisesScrollController => _exercisesScrollController;
 
@@ -66,7 +72,9 @@ class Scrolls {
     return _scrollToTop(_exercisesScrollController);
   }
 
-  Future<void> resetHistoryStack() {
-    return _scrollToTop(_historyScrollController);
+  /// Whichever view History is on: the list's top, or the calendar's
+  /// current month — the reversed months' start.
+  Future<void> resetHistoryStack() async {
+    await Future.wait([_scrollToTop(_historyScrollController), _scrollToTop(_historyCalendarScrollController)]);
   }
 }
