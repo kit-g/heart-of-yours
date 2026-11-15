@@ -319,6 +319,9 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               );
               // searching ranks one list by match, whatever the grouping
               final grouping = searching ? PickerGrouping.none : preferences.pickerGrouping;
+              // grouped here, outside the fold's builder: a fold changes which
+              // groups are open, not what is in them
+              final groups = groupExercises(found, grouping, patterns: () => exercises.patterns);
 
               SliverList list(List<Exercise> exercises) {
                 return SliverList.separated(
@@ -363,25 +366,19 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                       // its own listenable: a fold rebuilds this list, not
                       // everything that watches the preferences
                       valueListenable: preferences.openPickerGroups,
-                      builder: (_, open, _) {
-                        return SliverMainAxisGroup(
-                          slivers: [
-                            for (final (:group, exercises: members) in groupExercises(
-                              found,
-                              grouping,
-                              patterns: () => exercises.patterns,
-                            ))
-                              _ExerciseGroupSliver(
-                                key: ValueKey(group.id),
-                                group: group,
-                                count: members.length,
-                                open: open.contains(group.id),
-                                backgroundColor: backgroundColor,
-                                list: list(members),
-                              ),
-                          ],
-                        );
-                      },
+                      builder: (_, open, _) => SliverMainAxisGroup(
+                        slivers: [
+                          for (final (:group, exercises: members) in groups)
+                            _ExerciseGroupSliver(
+                              key: ValueKey(group.id),
+                              group: group,
+                              count: members.length,
+                              open: open.contains(group.id),
+                              backgroundColor: backgroundColor,
+                              list: list(members),
+                            ),
+                        ],
+                      ),
                     ),
                   },
                   if (onCreateExercise case final create? when searching && found.isEmpty)

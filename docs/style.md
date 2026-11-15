@@ -176,6 +176,12 @@ row at a time. A literal in a widget is a finding.
   the native-ish sliding control Settings uses for Imperial/Metric, Cupertino
   on Apple platforms. Not Material's rounded `SegmentedButton`, which reads as
   a different app.
+  Its segments have to fit one row at the largest text in every language;
+  when they don't (four groupings in Russian on a 360dp phone), the row shows
+  the value at its end and opens a `showMenu` of the choices from it, as the
+  API token purpose and the picker grouping rows do. The value is `MenuValue`
+  (`widgets/menu.dart`), which caps its width so the title keeps the rest of
+  the row; key it and anchor the menu on the key's context.
 - **A snackbar is `snack`** (`core/utils/visual.dart`), never a bare
   `SnackBar`: with an action, Flutter's `persist` defaults to true and the bar
   stays until tapped — an Undo that followed the user through a workout.

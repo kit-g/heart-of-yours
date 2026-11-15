@@ -84,15 +84,6 @@ void main() {
       expect(const NoPatternGroup().id, isNot(const PatternGroup('').id));
     });
 
-    test('an empty pattern key is no pattern', () {
-      final blank = lift('blank', patterns: ['']);
-      final half = lift('half', patterns: ['', 'shrug']);
-      expect(shape(groupExercises([blank, half], .movement, patterns: () => ['', 'shrug'])), [
-        'movement:shrug: id-half',
-        'movement: id-blank',
-      ]);
-    });
-
     test('only movement asks for the library\'s patterns', () {
       var asked = 0;
       List<String> patterns() {
@@ -164,5 +155,30 @@ void main() {
       relaunched.togglePickerGroup(chest.id);
       expect(relaunched.openPickerGroups.value, isEmpty);
     });
+
+    test(
+      'a fold before the store has loaded applies at once, is kept when it loads, and the set handed out cannot be changed',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'openPickerGroups': ['target:back'],
+        });
+        final preferences = Preferences();
+        const chest = TargetGroup(.chest);
+        const legs = TargetGroup(.legs);
+
+        preferences.togglePickerGroup(chest.id);
+        expect(preferences.openPickerGroups.value, {chest.id});
+        preferences.togglePickerGroup(legs.id);
+        preferences.togglePickerGroup(legs.id);
+
+        await preferences.init();
+        expect(preferences.openPickerGroups.value, {'target:back', chest.id});
+        expect(() => preferences.openPickerGroups.value.add('x'), throwsUnsupportedError);
+
+        final relaunched = Preferences();
+        await relaunched.init();
+        expect(relaunched.openPickerGroups.value, {'target:back', chest.id});
+      },
+    );
   });
 }

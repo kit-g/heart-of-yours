@@ -88,7 +88,7 @@ List<GroupedExercises> groupExercises(
       .none => const [],
       .category => [CategoryGroup(exercise.category)],
       .target => [TargetGroup(exercise.target)],
-      .movement => switch (exercise.movement.groups.where((each) => each.isNotEmpty)) {
+      .movement => switch (exercise.movement.groups) {
         Iterable<String> found when found.isEmpty => const [NoPatternGroup()],
         Iterable<String> found => found.toSet().map(PatternGroup.new),
       },
@@ -108,7 +108,7 @@ List<GroupedExercises> groupExercises(
     .category => Category.values.map(CategoryGroup.new),
     .target => Target.values.map(TargetGroup.new),
     .movement => {
-      ...?patterns?.call().where((each) => each.isNotEmpty).map(PatternGroup.new),
+      ...?patterns?.call().map(PatternGroup.new),
       // a pattern [patterns] does not know yet still gets its heading, after it
       ...buckets.keys.whereType<PatternGroup>(),
       const NoPatternGroup(),

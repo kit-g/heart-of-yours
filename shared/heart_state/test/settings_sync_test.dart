@@ -490,11 +490,11 @@ void _weekSync() {
     late Preferences preferences;
     late _Account account;
 
-    Future<void> boot({Map<String, Object> stored = const {}}) async {
+    Future<void> boot({Map<String, Object> stored = const {}, _Account? on}) async {
       SharedPreferences.setMockInitialValues(stored);
       preferences = Preferences();
       await preferences.init(locale: const Locale('en', 'GB'));
-      account = _Account();
+      account = on ?? _Account();
       final sync = SettingsSync(preferences: preferences, auth: account);
       addTearDown(sync.dispose);
     }
@@ -568,13 +568,8 @@ void _weekSync() {
     });
 
     test('a day picked while the last one is still being written stays owed, and goes up after it', () async {
-      SharedPreferences.setMockInitialValues({});
-      preferences = Preferences();
-      await preferences.init(locale: const Locale('en', 'GB'));
       final slow = _SlowAccount();
-      account = slow;
-      final sync = SettingsSync(preferences: preferences, auth: slow);
-      addTearDown(sync.dispose);
+      await boot(on: slow);
       account.arrive(const Settings());
       await settle();
 

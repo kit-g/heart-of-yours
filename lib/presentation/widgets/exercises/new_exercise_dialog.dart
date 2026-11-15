@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/menu.dart' show MenuValue;
 import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/exercises/muscle_picker.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -404,15 +405,7 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                                   contentPadding: .zero,
                                   title: Text(l.exercisePattern, style: textTheme.titleMedium),
                                   // the menu hangs off the value, not the row's far-left edge
-                                  trailing: Row(
-                                    key: patternKey,
-                                    mainAxisSize: .min,
-                                    spacing: 4,
-                                    children: [
-                                      Text(_patternLabel(selected, l), style: textTheme.bodyMedium),
-                                      const Icon(Icons.unfold_more_rounded, size: 20),
-                                    ],
-                                  ),
+                                  trailing: MenuValue(_patternLabel(selected, l), key: patternKey),
                                   onTap: () => _pickPattern(context, patternKey, pattern),
                                 );
                               },
