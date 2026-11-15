@@ -67,10 +67,15 @@ class WorkoutGroups {
   new(this._lookup);
 
   Set<MuscleGroupKey> of(Workout workout) {
-    return {
-      for (final each in workout.where((each) => each.any(_counts)))
-        ...(_byExercise[each.exercise.id] ??= _groupsOf(each.exercise)),
-    };
+    return {for (final each in done(workout)) ...ofExercise(each.exercise)};
+  }
+
+  /// The exercises of [workout] that count: those with a working set done.
+  static Iterable<WorkoutExercise> done(Workout workout) => workout.where((each) => each.any(_counts));
+
+  /// The groups one exercise counts toward, by the rule above.
+  Set<MuscleGroupKey> ofExercise(Exercise exercise) {
+    return _byExercise[exercise.id] ??= _groupsOf(exercise);
   }
 
   Set<MuscleGroupKey> _groupsOf(Exercise copy) {

@@ -62,6 +62,7 @@ void main() {
   // squat before bench: the line reads head to foot, not in workout order
   final mixed = finished('Upper and lower', [squat, bench], DateTime(2026, 11, 5, 9));
   final swimming = finished('Pool', [swim], DateTime(2026, 11, 6, 9));
+  final both = finished('Squat then swim', [squat, swim], DateTime(2026, 11, 7, 9));
 
   Future<void> pumpApp(WidgetTester tester, {required Size size, required bool compact}) async {
     tester.view.physicalSize = size;
@@ -75,7 +76,7 @@ void main() {
       if (compact) 'screen-historyDensity': 'compact',
       if (compact) 'screen-historyDensity-at': now.toUtc().toIso8601String(),
     });
-    when(db.getWorkoutHistory(any)).thenAnswer((_) async => [mixed, swimming]);
+    when(db.getWorkoutHistory(any)).thenAnswer((_) async => [mixed, swimming, both]);
     when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench, squat, swim]));
     await const TestAppHarness().pumpHeartApp(
       tester,
@@ -96,7 +97,21 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  for (final size in [const Size(390, 844), const Size(1194, 834)]) {
+  String groupsOf(WidgetTester tester, Workout workout) {
+    return tester.widget<Text>(find.byKey(AppKeys.compactWorkoutGroups(workout.id))).data!;
+  }
+
+  testDensity('until the library is read, the line waits rather than guess (#611)', (tester) async {
+    await pumpApp(tester, size: const Size(390, 844), compact: true);
+    expect(groupsOf(tester, mixed), isEmpty);
+
+    await Exercises.of(tester.element(find.byType(HistoryPage))).init();
+    await tester.pumpTimes();
+    expect(groupsOf(tester, mixed), 'Chest, Legs');
+  });
+
+  // phone; tablet master pane; a single pane wider than a readable line
+  for (final size in [const Size(390, 844), const Size(1194, 834), const Size(580, 900)]) {
     testDensity('a compact card names what the session trained, in place of its exercises, at $size (#611)', (
       tester,
     ) async {
@@ -109,11 +124,15 @@ void main() {
       // no exercise lines, and the groups head to foot: chest before legs,
       // and no arms, which bench works only secondarily
       expect(find.textContaining('Bench Press'), findsNothing);
-      expect(tester.widget<Text>(find.byKey(AppKeys.compactWorkoutGroups(mixed.id))).data, 'Chest, Legs');
-      // a session no group answers to says what it was
-      expect(tester.widget<Text>(find.byKey(AppKeys.compactWorkoutGroups(swimming.id))).data, 'Swimming');
+      expect(groupsOf(tester, mixed), 'Chest, Legs');
+      // an exercise no group answers to says what it was, alone or after the groups
+      expect(groupsOf(tester, swimming), 'Swimming');
+      expect(groupsOf(tester, both), 'Legs, Swimming');
+      // the numbers are the day, the time and the volume — no best set
+      // standing in for it, and no separator left hanging without one
+      expect(find.text('Fri, Nov 6 · 1 h'), findsOneWidget);
       // the menu is still there, on each card
-      expect(find.byTooltip('More options'), findsNWidgets(2));
+      expect(find.byTooltip('More options'), findsNWidgets(3));
       // and a wide pane does not stretch it
       expect(tester.getSize(card).width, lessThanOrEqualTo(readableWidth + 32));
       expect(tester.takeException(), isNull);

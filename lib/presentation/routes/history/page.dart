@@ -48,6 +48,10 @@ class HistoryPage extends StatefulWidget {
 
 const _imageSize = 120.0;
 
+/// The widest a row of History's list gets (#611): a readable line, plus the
+/// cards' own 16pt margins either side.
+const _rowWidth = readableWidth + 32;
+
 /// The weekday row and one six-week month: less than this, and the calendar
 /// is not worth showing beside its header.
 const _calendarMinHeight = 420.0;
@@ -96,6 +100,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final images = filter.isOn ? const <WorkoutImage>[] : workouts.images;
     final layout = LayoutProvider.of(context);
     final view = preferences.historyView;
+    final compact = preferences.historyDensity == .compact;
     final appBar = SliverAppBar(
       // Narrows both views to some muscle groups (#610). On the leading side,
       // which the centred title leaves free: the actions already reach the
@@ -278,7 +283,10 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                   );
                 }
                 final item = items[index];
-                return switch (item) {
+                // Measured and capped, every row alike (#611): a compact card's
+                // three lines must not stretch into a bar across a wide pane,
+                // and the rows beside it keep the same width.
+                final row = switch (item) {
                   String key => _MonthHeader(monthKey: key),
                   Workout workout => WorkoutItem(
                     workout: workout,
@@ -289,11 +297,19 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                     onDeleteWorkout: widget.onDeleteWorkout,
                     onTapImageIcon: widget.onTapImage,
                     highlighted: workout.id == widget.selectedId,
-                    compact: preferences.historyDensity == .compact,
+                    compact: compact,
+                    trained: trained,
                   ),
                   TrainingSkip skip => _SkipItem(skip: skip, onTap: widget.onTapSkip),
                   _ => const SizedBox.shrink(),
                 };
+                return Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: _rowWidth),
+                    child: row,
+                  ),
+                );
               },
             ),
           if (items.isNotEmpty)

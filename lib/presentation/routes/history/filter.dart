@@ -1,20 +1,30 @@
 part of 'history.dart';
 
-/// The muscle groups, head to foot: the order of the filter's menu and chips
+/// Where [group] sits head to foot: the order of the filter's menu and chips
 /// (#610), whatever order they were picked in, and of a compact card's line
-/// (#611).
-const _groupOrder = <MuscleGroupKey>[
-  .chest,
-  .back,
-  .shoulders,
-  .arms,
-  .core,
-  .legs,
-  .glutes,
-  .hamstrings,
-  .adductors,
-  .neck,
-];
+/// (#611). A switch, so a group heart_models adds cannot go unplaced.
+int _headToFoot(MuscleGroupKey group) {
+  return switch (group) {
+    .neck => 0,
+    .chest => 1,
+    .back => 2,
+    .shoulders => 3,
+    .arms => 4,
+    .core => 5,
+    .glutes => 6,
+    .legs => 7,
+    .hamstrings => 8,
+    .adductors => 9,
+  };
+}
+
+/// [groups] head to foot.
+List<MuscleGroupKey> _inBodyOrder(Iterable<MuscleGroupKey> groups) {
+  return [...groups]..sort((one, two) => _headToFoot(one).compareTo(_headToFoot(two)));
+}
+
+/// Every group, head to foot.
+final _groupOrder = _inBodyOrder(MuscleGroupKey.values);
 
 /// Narrows History to workouts that trained some muscle groups (#610): a menu
 /// of the groups, each one ticked while it is in the filter. Filled while any
