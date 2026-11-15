@@ -2,9 +2,11 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
+import 'package:heart/presentation/routes/history/history.dart' show WorkoutEditor;
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show TemplateEditor;
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetail;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -571,6 +573,38 @@ void main() {
       expect(find.text('Skipped a session'), findsOneWidget);
     });
 
+    testWidgets("a client's page leads to the coach's own notes on them (#556)", (tester) async {
+      withSam();
+      when(db.getCoachNotes(any)).thenAnswer((_) async => []);
+      when(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (notes: <CoachNote>[], cursor: null));
+      when(db.replaceCoachNotes(any, any, keep: anyNamed('keep'))).thenAnswer((_) async {});
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault());
+
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      expect(find.text('Only you can read them'), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.coachingClientNotes);
+      await tester.pumpTimes();
+
+      expect(find.byType(ClientNotesPage), findsOneWidget);
+      expect(find.text('No notes yet'), findsOneWidget);
+      verify(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor'))).called(greaterThan(0));
+    });
+
+    testWidgets('where keys have nowhere to be kept, as on the web, there are no notes to lead to', (tester) async {
+      withSam();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byType(ClientPage), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientNotes), findsNothing);
+      verifyNever(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor')));
+    });
+
     testWidgets('a workout puts target beside done, saying what was lighter and skipped', (tester) async {
       withSam();
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
@@ -698,10 +732,10 @@ void main() {
       });
     }
 
-    void withCopy() {
+    void withCopy({ClientSummary? client}) {
       account(coach: true);
       when(api.getClients(former: false, cursor: anyNamed('cursor')))
-          .thenAnswer((_) async => (items: [sam], cursor: null));
+          .thenAnswer((_) async => (items: [client ?? sam], cursor: null));
       when(api.getClientWorkouts('sam', cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: <Workout>[], cursor: null));
       when(api.getClientSkips('sam')).thenAnswer((_) async => <TrainingSkip>[]);
@@ -732,6 +766,105 @@ void main() {
         ],
       );
     }
+
+    /// Opens Sam's page and starts a log from Day A, up to the editor.
+    Future<WorkoutEditor> logDayA(WidgetTester tester) async {
+      // wide: the times dialog's wheels overflow a phone under the test font
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      await tester.ensureVisible(find.byKey(AppKeys.coachingLogFor));
+      await tester.tapByKey(AppKeys.coachingLogFor);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.coachingLogBlank), findsOneWidget, reason: 'or something not in the program');
+      await tester.tapByKey(AppKeys.coachingLogSession('s1'));
+      await tester.pumpTimes();
+      expect(find.text('When was it?'), findsOneWidget);
+      await tester.tap(find.text('Next'));
+      await tester.pumpTimes();
+      return tester.widget<WorkoutEditor>(find.byType(WorkoutEditor));
+    }
+
+    testWidgets('a session they trained together is logged as theirs, from their program (#560)', (tester) async {
+      withCopy();
+      when(api.logClientWorkout('sam', any)).thenAnswer(
+        (invocation) async => Workout.fromJson({
+          ...(invocation.positionalArguments.last as Workout).toMap(),
+          'loggedBy': 'muffin',
+          'loggedByName': 'Muffin',
+        }),
+      );
+
+      final editor = await logDayA(tester);
+
+      expect(find.text('Logging for Sam'), findsOneWidget);
+      expect((editor.copy.name, editor.copy.templateId, editor.copy.programId), ('Day A', 's1', 'p1'));
+      // the exercise's page and pinned notes are the coach's own
+      final detail = tester.widget<WorkoutDetail>(find.byType(WorkoutDetail));
+      expect((detail.onTapExercise, detail.pinsNotes), (null, false));
+
+      await editor.logTo!(tester.element(find.byType(WorkoutEditor)), editor.copy);
+      await tester.pumpTimes();
+
+      verify(api.logClientWorkout('sam', editor.copy)).called(1);
+      expect(find.text('Logged for Sam'), findsOneWidget);
+    });
+
+    testWidgets('a refusal says why and offers nothing; a failure that may pass offers Retry (#560)', (tester) async {
+      withCopy();
+      when(api.logClientWorkout('sam', any)).thenThrow({'code': 'forbidden'});
+
+      final editor = await logDayA(tester);
+      final context = tester.element(find.byType(WorkoutEditor));
+      await editor.logTo!(context, editor.copy);
+      await tester.pumpTimes();
+
+      expect(find.text("Couldn't log it: Sam is no longer your client"), findsOneWidget);
+      expect(find.text('Retry'), findsNothing);
+
+      when(api.logClientWorkout('sam', any)).thenThrow({'code': 'unavailable'});
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      await editor.logTo!(context, editor.copy);
+      await tester.pumpTimes();
+
+      expect(find.text("Couldn't log it for Sam"), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+    });
+
+    testWidgets('a second tap while the first is starting starts nothing, and where they are is read afresh', (
+      tester,
+    ) async {
+      withCopy();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      clearInteractions(api);
+
+      await tester.ensureVisible(find.byKey(AppKeys.coachingLogFor));
+      // both before a frame: the second reaches the tile as it was
+      final tile = tester.widget<ListTile>(find.byKey(AppKeys.coachingLogFor));
+      tile.onTap!();
+      tile.onTap!();
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget, reason: 'the chevron, while it reads');
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingLogBlank), findsOneWidget, reason: 'one menu');
+      verify(api.getClientProgram('sam', 'p1')).called(1);
+    });
+
+    testWidgets('a former client has no log', (tester) async {
+      withCopy(
+        client: ClientSummary(connectionId: 'c-sam', studentId: 'sam', name: 'Sam', status: 'severed', programId: 'p1'),
+      );
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingClientMessages), findsOneWidget, reason: 'their page is open');
+      expect(find.byKey(AppKeys.coachingLogFor), findsNothing);
+    });
 
     Future<void> openCopy(WidgetTester tester) async {
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});

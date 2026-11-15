@@ -5,15 +5,24 @@ import 'package:material_ui/material_ui.dart';
 /// that would otherwise be its own last time, and — with "Last time in this
 /// template" on (#172) — the last run of [templateId] first.
 ///
-/// Neither applying, [child] reads the app's own [PreviousExercises].
+/// Neither applying, [child] reads the app's own [PreviousExercises]. For
+/// [someoneElse]'s workout, a coach's client's (#560), there is no last time:
+/// this account never saw theirs.
 class const PreviousScope({
   required final Widget child,
   final String? templateId,
   final DateTime? before,
+  final bool someoneElse = false,
   super.key,
 }) extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    if (someoneElse) {
+      return ChangeNotifierProvider<PreviousExercises>(
+        create: (context) => PreviousExercises.of(context).none(),
+        child: child,
+      );
+    }
     final template = switch (Preferences.watch(context).isOn(.previousInTemplate)) {
       true => templateId,
       false => null,

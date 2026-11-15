@@ -40,6 +40,9 @@ class RemoteRoster implements RosterService {
   Future<WorkoutPlan?> getClientWorkoutPlan(String studentId, String workoutId) {
     return _api.getClientWorkoutPlan(studentId, workoutId);
   }
+
+  @override
+  Future<Workout> logClientWorkout(String studentId, Workout workout) => _api.logClientWorkout(studentId, workout);
 }
 
 /// Presents [Api] as the [ClientProgramService] [ClientPrograms] wants (#558).

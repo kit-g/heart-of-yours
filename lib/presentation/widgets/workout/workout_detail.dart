@@ -135,7 +135,15 @@ class WorkoutDetail extends StatefulWidget {
   final Iterable<WorkoutImage>? workoutImages;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
   final String? workoutId;
-  final void Function(Exercise) onTapExercise;
+
+  /// Opens an exercise's own page, with this account's charts and records.
+  /// Without it, as in someone else's workout (#560), its name is no button.
+  final void Function(Exercise)? onTapExercise;
+
+  /// Whether a note on an exercise can be pinned to it, or a pinned one taken
+  /// off: this account's own notes, which someone else's workout (#560) has
+  /// nothing to do with. Its note in this workout is [onNoteChanged]'s.
+  final bool pinsNotes;
   final Future<void> Function(WorkoutImage)? onDeleteImage;
 
   const new({
@@ -168,7 +176,8 @@ class WorkoutDetail extends StatefulWidget {
     this.onDeleteImage,
     this.onTapImage,
     this.workoutId,
-    required this.onTapExercise,
+    this.onTapExercise,
+    this.pinsNotes = true,
   });
 
   @override
@@ -461,6 +470,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                                 },
                                 allowCompleting: widget.allowsCompletingSet,
                                 onTapExercise: widget.onTapExercise,
+                                pinsNotes: widget.pinsNotes,
                               ),
                             ),
                           ),
