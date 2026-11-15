@@ -872,12 +872,9 @@ RouteBase _workoutDoneRoute() {
           achievementsCallback: () async {
             final workouts = Workouts.of(context);
             final goals = Goals.of(context);
-            final exercises = Exercises.of(context);
             final stats = Stats.of(context);
-            final firstWeekday = Preferences.of(context).firstWeekday;
-            // a goal a running program's cadence overrides is not judged, so
-            // nothing celebrates what is set aside
-            final running = runningPrograms(context);
+            // the goals live goal notes judge, read and folded the same way
+            final judge = goalJudge(context);
 
             // The id the server settled on, not the one this device saved
             // under: `saveWorkout` adopts the server's when they differ, and
@@ -886,27 +883,14 @@ RouteBase _workoutDoneRoute() {
             final finished = await workouts.finishing ?? workout;
             // the aggregation predates the workout that just landed
             await stats.init();
-            // the windows every goal below reads, each read once
-            final lensSets = sharedLensSets(stats.getLensSets);
-            final judged = [
-              for (final goal in goals)
-                if (!pausedByPrograms(goal, running)) goal,
-            ];
-            final priors = {
-              for (final goal in judged)
-                goal: await readGoalPrior(
-                  goal,
-                  finished,
-                  exercises: exercises,
-                  firstWeekday: firstWeekday,
-                  workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
-                  lensSets: lensSets,
-                ),
-            };
+            final priors = Map.fromIterables(
+              judge.goals,
+              await Future.wait(judge.goals.map((goal) => judge.read(goal, finished))),
+            );
 
             // what the session carried over the line: the calculation live
             // goal notes make as the sets are ticked (#625), so the two agree
-            final crossed = goalCrossings(judged, (goal) => priors[goal], finished);
+            final crossed = goalCrossings(judge.goals, (goal) => priors[goal], finished, fold: judge.fold);
             // this screen is the one place that knows which session earned it
             return goals.stampCrossed(crossed, achievedBy: finished.id);
           },

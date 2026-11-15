@@ -13,6 +13,7 @@ import 'dart:math';
 import 'package:flutter_body_atlas/flutter_body_atlas.dart' show MuscleGroup;
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/core/utils/goal_crossings.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/visual.dart';
@@ -37,6 +38,7 @@ import 'package:material_ui/material_ui.dart';
 
 part 'card.dart';
 part 'flip.dart';
+part 'judged.dart';
 part 'detail.dart';
 part 'ladder.dart';
 part 'program.dart';

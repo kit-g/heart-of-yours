@@ -105,8 +105,9 @@ enum Feature {
   /// nothing is read.
   ///
   /// Also the switch for live goal notes (#625): the tick that reaches a goal's
-  /// rung says so in the same note, with a burst of confetti. No second ask,
-  /// and nothing for someone without a goal.
+  /// rung says so in the same note, with a burst of confetti. The one offer
+  /// also sits under a set that would have reached a goal; nothing for
+  /// someone without one.
   liveRecords('liveRecords'),
 
   /// Suspicious entries (#428, heart-api#42): the sets and durations the

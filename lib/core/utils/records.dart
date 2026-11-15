@@ -24,6 +24,10 @@ enum RecordKind {
   new(this.key);
 }
 
+/// Ticked and not a warm-up: the sets every record, chart, lens count and
+/// goal counts (#151).
+bool isWorkingSet(ExerciseSet set) => set.isCompleted && set.setType != .warmup;
+
 /// One record standing after a workout: which exercise, which kind, and the
 /// record entry itself (value, set context, workoutId, at).
 typedef AchievedRecord = ({Exercise exercise, RecordKind kind, Map record});
@@ -75,7 +79,7 @@ RecordMarks recordMarks(Workout workout, Iterable<AchievedRecord> achieved) {
     final holder = workout
         .where((entry) => entry.exercise.id == exercise.id)
         .expand((entry) => entry)
-        .where((set) => set.isCompleted && set.setType != .warmup)
+        .where(isWorkingSet)
         .where((set) => _holds(set, record))
         .firstOrNull;
     if (holder != null) marks.putIfAbsent(holder.id, () => []).add(kind);
@@ -114,7 +118,7 @@ Map? _foldToday(Workout workout, Exercise exercise, Map? prior) {
   final today = workout
       .where((entry) => entry.exercise.id == exercise.id)
       .expand((entry) => entry)
-      .where((set) => set.isCompleted && set.setType != .warmup)
+      .where(isWorkingSet)
       .map(
         (set) => RecordSet(
           weight: set.weight,

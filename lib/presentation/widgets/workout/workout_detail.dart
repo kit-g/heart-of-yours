@@ -37,7 +37,7 @@ import 'package:heart/presentation/widgets/exercises/exercise_picker_dialog.dart
 import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/exercises/new_exercise_dialog.dart';
 import 'package:heart/presentation/widgets/formatters.dart';
-import 'package:heart/presentation/widgets/goals/goals.dart' show goalTargetLabel, goalTitle, runningPrograms;
+import 'package:heart/presentation/widgets/goals/goals.dart' show GoalJudge, goalJudge, goalTargetLabel, goalTitle;
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart' show PreviousSet;
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart';
 import 'package:heart/presentation/widgets/image.dart';

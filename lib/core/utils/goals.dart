@@ -148,11 +148,14 @@ Future<num?> currentGoalValue(
 }
 
 /// What [goal] read before [workout] (#625): everything its value is made of
-/// but that workout, for [goalValue] to fold it back in. Live goal notes read
-/// it as a goal comes into a workout in progress; the workout summary once
-/// the finish has landed. Either way the session is left out by its start —
-/// the instant the store keys a session by, and the one thing a finish does
-/// not change (its id may become the server's).
+/// but that workout, for [goalCrossings] to fold it back in. Live goal notes
+/// read it as a goal comes into a workout in progress; the workout summary
+/// once the finish has landed. Either way the session is left out by its
+/// start — the instant the store keys a session by, and the one thing a
+/// finish does not change (its id may become the server's) — and the window
+/// is the one the workout started in, so a session running past midnight on
+/// a week's last day is judged as one of that week. [workoutCount] counts
+/// over that window too.
 ///
 /// Null for a goal that cannot be measured, as [currentGoalValue] would read
 /// it.
@@ -163,24 +166,21 @@ Future<GoalPrior?> readGoalPrior(
   required int firstWeekday,
   required Future<int> Function(GoalCadence? period) workoutCount,
   required LensSetsReader lensSets,
-  DateTime? asOf,
 }) async {
-  final window = goalWindow(goal, asOf ?? DateTime.now(), firstWeekday: firstWeekday);
-  final (from, to) = window;
+  final (from, to) = _goalWindow(goal, workout.start, firstWeekday: firstWeekday);
   bool apart(DateTime at) => !at.isAtSameMomentAs(workout.start);
 
   if (goal.metric.isWholeWorkout) {
     final count = await workoutCount(goal.cadence);
     // the store counts finished workouts, so a finished one is in the count
-    final finished = workout.end != null && !workout.start.isBefore(from) && workout.start.isBefore(to);
-    return WorkoutsPrior(window, finished ? count - 1 : count);
+    return WorkoutsPrior(workout.end != null ? count - 1 : count);
   }
   if (goal.metric.countsSubject) {
-    if (subjectShare(goal.subject) == null) return null;
-    return LensPrior(window, [
-      for (final row in await lensSets(from, to))
-        if (apart(row.start)) row,
-    ]);
+    final rows = await lensSets(from, to);
+    return switch (subjectCount(goal, rows.where((row) => apart(row.start)))) {
+      final num count => LensPrior(count),
+      null => null,
+    };
   }
 
   // by its id: the history is the store's, whether or not the catalogue has
@@ -189,7 +189,7 @@ Future<GoalPrior?> readGoalPrior(
   if (metric == null || exerciseId == null) return null;
   final limit = goal.cadence == null ? _milestoneHistory : _sessionsPerPeriod;
   final history = await exercises.getChartExerciseMetics(metric, exerciseId, limit: limit);
-  return SessionsPrior(window, [
+  return SessionsPrior.of(goal, [
     for (final (value, at) in history ?? const <(num, DateTime)>[])
       if (!at.isBefore(from) && at.isBefore(to) && apart(at)) value,
   ]);
@@ -206,7 +206,7 @@ Future<num?> _subjectValue(
   DateTime? asOf,
 }) async {
   if (lensSets == null || subjectShare(goal.subject) == null) return null;
-  final (from, to) = goalWindow(goal, asOf ?? DateTime.now(), firstWeekday: firstWeekday);
+  final (from, to) = _goalWindow(goal, asOf ?? DateTime.now(), firstWeekday: firstWeekday);
   return subjectCount(goal, await lensSets(from, to));
 }
 
@@ -233,7 +233,7 @@ num? subjectCount(Goal goal, Iterable<LensSets> rows) {
 
 /// The window [goal] is measured over as of [now]: its period, or all time for
 /// a milestone.
-(DateTime, DateTime) goalWindow(Goal goal, DateTime now, {required int firstWeekday}) {
+(DateTime, DateTime) _goalWindow(Goal goal, DateTime now, {required int firstWeekday}) {
   return switch (goal.cadence) {
     final GoalCadence cadence => goalPeriod(cadence, now, firstWeekday: firstWeekday),
     null => (DateTime.utc(1970), DateTime.utc(3000)),

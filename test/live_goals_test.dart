@@ -112,7 +112,8 @@ void main() {
     ], name: 'Push');
   }
 
-  Future<BuildContext> start(WidgetTester tester, {bool on = true}) async {
+  /// [on] null leaves the feature unasked.
+  Future<BuildContext> start(WidgetTester tester, {bool? on = true}) async {
     await const TestAppHarness().pumpHeartApp(
       tester,
       db: db,
@@ -127,7 +128,7 @@ void main() {
     );
     await tester.pumpTimes();
     final context = tester.element(find.byType(MaterialApp));
-    Preferences.of(context).setFeature(.liveRecords, on: on);
+    if (on != null) Preferences.of(context).setFeature(.liveRecords, on: on);
     await Goals.of(context).init();
     await Workouts.of(context).startWorkout(source: .template, template: pressing());
     await tester.tapByKey(AppKeys.workoutStack);
@@ -263,6 +264,46 @@ void main() {
     expect(reached, findsOneWidget);
     expect(find.textContaining('110'), findsOneWidget);
     expect(find.textContaining('104'), findsNothing);
+    await tester.pumpTimes(40);
+  });
+
+  testWidgets('unasked: a set that would reach a goal is where the offer sits, and says so', (tester) async {
+    // a week with nothing in it yet, and a goal of one workout: the first
+    // tick reaches it, though 60 × 5 beats no best
+    goals([
+      Goal(
+        id: 'goal-w',
+        metric: .workouts,
+        cadence: .week,
+        stages: [GoalStage(id: 'w0', target: 1)],
+      ),
+    ]);
+    when(db.getWorkoutCountBetween(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => 0);
+    final context = await start(tester, on: null);
+    // the goal is read once there is a workout to judge it against
+    await tester.pumpTimes();
+
+    await tester.tapByKey(WorkoutDetailKeys.doneFor(bench.id, 1));
+    await tester.pumpTimes();
+
+    expect(find.byKey(WorkoutDetailKeys.liveRecordsOffer), findsOneWidget);
+    expect(find.text('That set reached a goal'), findsOneWidget);
+    expect(note, findsNothing);
+    expect(burst, findsNothing);
+    expect(Preferences.of(context).featureAnswer(.liveRecords), FeatureAnswer.pending);
+  });
+
+  testWidgets('a read that fails is asked once, not on every tick', (tester) async {
+    when(db.getExerciseMetics(any, any, any, limit: anyNamed('limit'))).thenThrow(StateError('closed'));
+    await start(tester);
+
+    for (final index in [1, 2, 1, 2]) {
+      await tester.tapByKey(WorkoutDetailKeys.doneFor(bench.id, index));
+      await tester.pumpTimes();
+    }
+
+    expect(reached, findsNothing);
+    verify(db.getExerciseMetics(any, any, any, limit: anyNamed('limit'))).called(1);
     await tester.pumpTimes(40);
   });
 }

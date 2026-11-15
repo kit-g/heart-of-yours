@@ -181,7 +181,6 @@ void main() {
         firstWeekday: DateTime.monday,
         workoutCount: (_) async => 0,
         lensSets: (_, _) async => const [],
-        asOf: now,
       );
       expect(prior, isA<SessionsPrior>().having((each) => each.values, 'values', [600]));
     });

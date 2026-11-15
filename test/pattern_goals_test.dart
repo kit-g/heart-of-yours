@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:heart/core/utils/goal_crossings.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -106,10 +105,8 @@ void main() {
       firstWeekday: DateTime.monday,
       workoutCount: (_) async => 0,
       lensSets: lensSets,
-      asOf: now,
     );
-    expect(prior, isA<LensPrior>());
-    expect(goalValue(goal(pattern: 'horizontal_press'), prior!), 3);
+    expect(prior?.before, 3);
   });
 
   test("a muscle takes each set at the group's share", () async {

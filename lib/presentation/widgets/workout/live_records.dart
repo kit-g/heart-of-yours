@@ -15,9 +15,9 @@ part of 'workout_detail.dart';
 ///
 /// Off, the sheet is what it was before the feature: no pills, no note, and
 /// nothing read. Never answered, it folds only to find the moment to ask —
-/// the first ticked set that would have been a record — and puts the offer
-/// under that set. Goals are folded only while it is on, and only for someone
-/// who has one.
+/// the first ticked set that would have been a record or reached a goal —
+/// and puts the offer under that set. Nothing about goals is read for someone
+/// without one.
 class _LiveRecordsScope extends StatefulWidget {
   final Widget child;
 
@@ -62,6 +62,12 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
   Set<GoalCrossingKey> _crossed = const {};
   Set<String?> _goalsRead = const {};
 
+  /// The working sets ticked as of the last build, each with what it
+  /// measured: a goal crossing is news only on a build where one of them
+  /// changed. A goal edited, retargeted or synced under a workout, or a store
+  /// read landing, moves a crossing without a tick, and says nothing.
+  Map<String, Object> _ticked = const {};
+
   @override
   void dispose() {
     _noteTimer?.cancel();
@@ -86,12 +92,24 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
     switch ((on || offering, workouts.userId, workouts.activeWorkout)) {
       case (true, final String userId, final Workout workout):
         live.prime(userId, workout);
-        final aimed = on && goals.isNotEmpty ? _aimed(goals) : const <Goal>[];
-        if (aimed.isNotEmpty) liveGoals.prime(workout, aimed, _reader(workout));
+        // nothing read, and nothing folded, for someone without a goal
+        final judge = goals.isEmpty ? null : goalJudge(context);
+        final aimed = judge?.goals ?? const <Goal>[];
+        if (judge != null && aimed.isNotEmpty) {
+          liveGoals.prime(
+            workout,
+            aimed,
+            (goal) => judge.read(goal, workout),
+            revision: (workouts.historyRevision, workout.start, preferences.firstWeekday),
+          );
+        }
         _track(
           workout,
           liveRecordMarks(workout, live.prior),
-          goalCrossings(aimed, liveGoals.priorOf, workout),
+          switch (judge) {
+            final GoalJudge judge => goalCrossings(aimed, liveGoals.priorOf, workout, fold: judge.fold),
+            null => const [],
+          },
           live,
           read: {
             for (final goal in aimed)
@@ -104,6 +122,7 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
         _read = const {};
         _crossed = const {};
         _goalsRead = const {};
+        _ticked = const {};
         if (_note.value != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _withdraw();
@@ -192,32 +211,6 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
   /// How long a burst plays: brief, and briefer for a rung on the way.
   static Duration _burstFor({required bool full}) => Duration(seconds: full ? 3 : 2);
 
-  /// The goals a set can be judged against now: all of them but the ones a
-  /// running program's cadence sets aside, as on the Done page.
-  List<Goal> _aimed(Goals goals) {
-    final running = runningPrograms(context);
-    return [
-      for (final goal in goals)
-        if (!pausedByPrograms(goal, running)) goal,
-    ];
-  }
-
-  /// How a goal's prior is read for [workout]: as the Done page reads it.
-  Future<GoalPrior?> Function(Goal goal) _reader(Workout workout) {
-    final exercises = Exercises.of(context);
-    final stats = Stats.of(context);
-    final firstWeekday = Preferences.of(context).firstWeekday;
-    final lensSets = sharedLensSets(stats.getLensSets);
-    return (goal) => readGoalPrior(
-      goal,
-      workout,
-      exercises: exercises,
-      firstWeekday: firstWeekday,
-      workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
-      lensSets: lensSets,
-    );
-  }
-
   /// Takes in this build's [marks] and [crossings]: what is news is noted (or,
   /// unanswered, offered), and whatever a note says that no longer stands is
   /// taken back. [read] is the goals whose priors have landed.
@@ -239,15 +232,27 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
           if (kinds.any((kind) => !(_marks[setId]?.contains(kind) ?? false)))
             (setId: setId, exercise: exercise, kinds: kinds),
     ];
+    final ticked = {
+      for (final set in workout.expand((entry) => entry))
+        if (isWorkingSet(set)) set.id: (set.weight, set.reps, set.duration, set.distance, set.setType),
+    };
+    // the sets this build ticked or changed, the last of them the one a goal's
+    // offer sits under
+    final touched = [
+      for (final MapEntry(key: setId, :value) in ticked.entries)
+        if (_ticked[setId] != value) setId,
+    ];
     final crossed = {for (final crossing in crossings) crossingKey(crossing)};
     final reached = [
-      for (final crossing in crossings)
-        if (_goalsRead.contains(crossing.goal.id) && !_crossed.contains(crossingKey(crossing))) crossing,
+      if (touched.isNotEmpty)
+        for (final crossing in crossings)
+          if (_goalsRead.contains(crossing.goal.id) && !_crossed.contains(crossingKey(crossing))) crossing,
     ];
     if (!_same(marks, _marks)) _marks = marks;
     _read = live.prior.keys.toSet();
     _crossed = crossed;
     _goalsRead = read;
+    _ticked = ticked;
 
     final note = _note.value;
     if (fresh.isEmpty && reached.isEmpty && note == null) return;
@@ -267,7 +272,7 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
           case (false, (:final setId, exercise: _, kinds: _)?):
             live.offerUnder(setId);
           case (false, null):
-            break;
+            if (touched.lastOrNull case final String setId) live.offerUnder(setId, forGoal: true);
         }
       } else if (note != null && identical(_note.value, note)) {
         final kinds = note.kinds.where((kind) => marks[note.setId]?.contains(kind) ?? false).toList();
@@ -352,7 +357,7 @@ class _LiveRecordOffer extends StatelessWidget {
         acceptKey: WorkoutDetailKeys.liveRecordsAccept,
         declineKey: WorkoutDetailKeys.liveRecordsDecline,
         icon: feature.icon,
-        title: l.liveRecordsOfferTitle,
+        title: LiveRecords.watch(context).offeredForGoal ? l.liveGoalsOfferTitle : l.liveRecordsOfferTitle,
         body: l.liveRecordsOfferBody,
         onAnswer: (yes) => preferences.answerOffer(feature, yes: yes),
         onShown: () => preferences.markOffered(feature),

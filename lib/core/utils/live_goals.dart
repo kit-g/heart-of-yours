@@ -18,37 +18,56 @@ class LiveGoals with ChangeNotifier {
 
   /// The workout [_prior] is for: another one starts the cache over.
   String? _workoutId;
+
+  /// What the store looked like when [_prior] was read: another revision —
+  /// a workout logged or synced meanwhile, a moved start, another first
+  /// weekday — reads every goal again. What was read stays meanwhile, so a
+  /// note does not blink out while the new reads land.
+  Object? _revision;
   final _asked = <_Shape>{};
   final _prior = <_Shape, GoalPrior?>{};
 
   /// [goal]'s prior: null for one still being read, or one that cannot be
-  /// measured.
+  /// measured or read.
   GoalPrior? priorOf(Goal goal) => _prior[_shapeOf(goal)];
 
   /// Whether [goal]'s read has landed, measurable or not.
   bool hasRead(Goal goal) => _prior.containsKey(_shapeOf(goal));
 
-  /// Reads what [goals] have not been read for yet, with [read]. Idempotent
-  /// and silent until a read lands, so a build may call it.
-  void prime(Workout workout, Iterable<Goal> goals, Future<GoalPrior?> Function(Goal goal) read) {
+  /// Reads what [goals] have not been read for yet at [revision], with
+  /// [read]. Each goal is asked once per workout and revision, whatever the
+  /// answer — a read that failed is remembered as unmeasurable rather than
+  /// asked again by every rebuild. Idempotent and silent until a read lands,
+  /// so a build may call it.
+  void prime(
+    Workout workout,
+    Iterable<Goal> goals,
+    Future<GoalPrior?> Function(Goal goal) read, {
+    required Object revision,
+  }) {
     if (workout.id != _workoutId) {
       _workoutId = workout.id;
-      _asked.clear();
       _prior.clear();
+      _asked.clear();
+    }
+    if (revision != _revision) {
+      _revision = revision;
+      _asked.clear();
     }
     for (final goal in goals) {
       final shape = _shapeOf(goal);
       if (!_asked.add(shape)) continue;
+      void land(GoalPrior? prior) {
+        if (_workoutId != workout.id || _revision != revision) return;
+        _prior[shape] = prior;
+        notifyListeners();
+      }
+
       read(goal).then(
-        (prior) {
-          if (_workoutId != workout.id) return;
-          _prior[shape] = prior;
-          notifyListeners();
-        },
+        land,
         onError: (error, stacktrace) {
-          // asked again by the next build, rather than never
-          _asked.remove(shape);
           onError?.call(error, stacktrace: stacktrace);
+          land(null);
         },
       );
     }

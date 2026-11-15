@@ -484,22 +484,23 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   ///   session did reach it, whatever the server made of the credit.
   Future<List<GoalAchievement>> stampCrossed(List<GoalAchievement> crossed, {String? achievedBy}) async {
     if (userId == null) return crossed;
-    final announced = <GoalAchievement>[];
-    for (final (:goal, :stage) in crossed) {
-      switch ((goal.id, stage.id)) {
-        case (final String goalId, final String stageId) when goal.cadence == null && !stage.isAchieved:
-          try {
-            final stamped = await markStageAchieved(goalId, stageId, DateTime.timestamp(), achievedBy: achievedBy);
-            announced.add((goal: stamped, stage: stage));
-          } on GoalRejected catch (rejection, stacktrace) {
-            onError?.call(rejection, stacktrace: stacktrace);
-            announced.add((goal: goal, stage: stage));
-          }
-        case _:
-          announced.add((goal: goal, stage: stage));
-      }
+    return [for (final crossing in crossed) await _stamp(crossing, achievedBy: achievedBy)];
+  }
+
+  Future<GoalAchievement> _stamp(GoalAchievement crossing, {String? achievedBy}) async {
+    final (:goal, :stage) = crossing;
+    switch ((goal.id, stage.id)) {
+      case (final String goalId, final String stageId) when goal.cadence == null && !stage.isAchieved:
+        try {
+          final stamped = await markStageAchieved(goalId, stageId, DateTime.timestamp(), achievedBy: achievedBy);
+          return (goal: stamped, stage: stage);
+        } on GoalRejected catch (rejection, stacktrace) {
+          onError?.call(rejection, stacktrace: stacktrace);
+          return crossing;
+        }
+      case _:
+        return crossing;
     }
-    return announced;
   }
 
   /// Re-attempts the push for goals persisted locally but never confirmed —
