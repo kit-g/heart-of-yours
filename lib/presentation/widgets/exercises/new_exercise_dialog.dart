@@ -5,6 +5,7 @@ import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/exercises/muscle_picker.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/selection_controls.dart';
+import 'package:heart_api/heart_api.dart' show ExerciseNameTaken;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -14,6 +15,9 @@ import 'package:material_ui/material_ui.dart';
 // ("T-bar row", "Farmer's walk", "Жим лёжа"): only control characters, such
 // as a pasted tab or line break, stay out (#527).
 final _formatter = FilteringTextInputFormatter.deny(RegExp(r'\p{Cc}', unicode: true));
+
+// the server's limit on a name, created or renamed (heart-api#429)
+final _length = LengthLimitingTextInputFormatter(200);
 
 /// A name as a library search would hear it: letters and digits only, any
 /// case — "Farmer's walk" and "Farmer's Walk" are one name.
@@ -26,6 +30,26 @@ const _patternMenuWidth = 280.0;
 /// null when the dialog was closed or the save failed. [name] fills in a new
 /// exercise's name, such as a search that found nothing (#529).
 Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editable, String? name}) {
+  // the current copy, not the one the caller holds: a page opened before an
+  // edit still has the old name, and saving from it would put that back
+  final current = switch (editable) {
+    Exercise given => Exercises.of(context).lookup(given.id) ?? given,
+    null => null,
+  };
+  return _showDialog(context, editable: current, name: name);
+}
+
+/// Whether another of the account's own exercises, archived ones included,
+/// already goes by [typed], as the server matches names: case aside. It
+/// refuses such a rename, so the dialog says so before Save does (#616).
+bool _ownNameTaken(Exercises exercises, Exercise editable, String typed) {
+  final wanted = typed.toLowerCase();
+  return [...exercises, ...exercises.archived].any(
+    (each) => each.isMine && each.id != editable.id && each.name.trim().toLowerCase() == wanted,
+  );
+}
+
+Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String? name}) {
   final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
   final L(:createNewExercise, :save, name: nameCopy, category: categoryCopy, target: targetCopy) = L.of(context);
   final category = ValueNotifier<Category?>(editable?.category);
@@ -38,7 +62,14 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
   final initialRoles = rolesOf(editable?.muscles ?? MuscleTagging.empty());
   final roles = ValueNotifier(initialRoles);
   final loading = ValueNotifier(false);
-  final nameController = TextEditingController(text: name);
+  // an own exercise is renamable: its id is the identity, the name only copy
+  // (#616); the library's names are the library's
+  final renamable = editable?.isMine ?? true;
+  final nameController = TextEditingController(text: editable?.name ?? name);
+  // the server's 409, for a name taken since the dialog checked; cleared by
+  // the next keystroke
+  final refused = ValueNotifier(false);
+  nameController.addListener(() => refused.value = false);
   return showDialog<Exercise>(
     barrierDismissible: true,
     context: context,
@@ -90,12 +121,19 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                                 nameController.value,
                               );
                               final retagged = !sameRoles(r, initialRoles);
+                              final typed = n.text.trim();
                               final enough = switch (editable) {
                                 Exercise e =>
                                   t != null &&
                                       c != null &&
-                                      (e.category != c || e.movement.groups.firstOrNull != p || retagged),
-                                null => t != null && c != null && n.text.isNotEmpty,
+                                      typed.isNotEmpty &&
+                                      !_ownNameTaken(Exercises.of(context), e, typed) &&
+                                      (typed != e.name.trim() ||
+                                          e.target != t ||
+                                          e.category != c ||
+                                          e.movement.groups.firstOrNull != p ||
+                                          retagged),
+                                null => t != null && c != null && typed.isNotEmpty,
                               };
                               final movement = _withPattern(editable?.movement ?? Movement.empty(), p);
                               return PrimaryButton.shrunk(
@@ -108,6 +146,10 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                                       final root = Navigator.of(context, rootNavigator: true);
                                       final route = ModalRoute.of<Exercise>(context);
                                       Exercise? saved;
+                                      // a name already taken is the one refusal worth staying
+                                      // open for: the fix is a keystroke away, and the field
+                                      // says why, where a snack would sit under the barrier
+                                      var close = true;
                                       try {
                                         loading.value = true;
                                         if (editable == null) {
@@ -123,8 +165,13 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                                           await Exercises.of(context).makeExercise(exercise);
                                           saved = exercise;
                                         } else {
-                                          final edited = editable.copyWith(
+                                          // a stored name padded with whitespace is not a rename
+                                          final named = typed == editable.name.trim()
+                                              ? editable
+                                              : editable.renamed(typed);
+                                          final edited = named.copyWith(
                                             category: c,
+                                            target: t,
                                             movement: movement,
                                             // untouched, the tagging stays exactly as it was
                                             tags: retagged ? taggingOf(r) : null,
@@ -133,6 +180,9 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                                           saved = edited;
                                         }
                                         loading.value = false;
+                                      } on ExerciseNameTaken {
+                                        close = false;
+                                        refused.value = true;
                                       } on ArgumentError catch (e) {
                                         messenger.snack('${e.message}');
                                       } catch (e) {
@@ -142,6 +192,8 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                                         // this dialog's route and nothing else: a bare pop
                                         // takes whatever is on top by then
                                         switch (route) {
+                                          case _ when !close:
+                                            break;
                                           case ModalRoute<Exercise>(isCurrent: true):
                                             root.pop(saved);
                                           case final ModalRoute<Exercise> route when route.isActive:
@@ -171,25 +223,40 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                               nameCopy,
                               style: textTheme.titleMedium,
                             ),
-                            if (editable == null)
-                              TextField(
-                                controller: nameController,
-                                inputFormatters: [_formatter],
-                                selectionControls: context.platformSpecificSelectionControls(),
+                            if (renamable)
+                              ListenableBuilder(
+                                listenable: Listenable.merge([nameController, refused]),
+                                builder: (context, _) {
+                                  final taken = switch (editable) {
+                                    Exercise e => _ownNameTaken(Exercises.of(context), e, nameController.text.trim()),
+                                    null => false,
+                                  };
+                                  return TextField(
+                                    controller: nameController,
+                                    inputFormatters: [_formatter, _length],
+                                    selectionControls: context.platformSpecificSelectionControls(),
+                                    decoration: InputDecoration(
+                                      errorText: taken || refused.value ? L.of(context).exerciseNameTaken : null,
+                                    ),
+                                  );
+                                },
                               ),
                             // the same name in the library, told apart only by case
                             // or punctuation: said, not refused, since a machine at
                             // one gym can share a name with the library's (#529)
-                            if (editable == null)
+                            if (renamable)
                               ValueListenableBuilder<TextEditingValue>(
                                 valueListenable: nameController,
                                 builder: (context, value, _) {
                                   final key = _nameKey(value.text);
                                   final twin = switch (key.isEmpty) {
                                     true => null,
-                                    false => Exercises.of(
-                                      context,
-                                    ).where((each) => _nameKey(each.name) == key).firstOrNull,
+                                    false =>
+                                      Exercises.of(
+                                            context,
+                                          )
+                                          .where((each) => each.id != editable?.id && _nameKey(each.name) == key)
+                                          .firstOrNull,
                                   };
                                   return switch (twin) {
                                     Exercise twin => Text(
@@ -203,7 +270,7 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                             else
                               Center(
                                 child: Text(
-                                  editable.name,
+                                  nameController.text,
                                   style: textTheme.titleLarge,
                                   textAlign: TextAlign.center,
                                 ),
@@ -224,7 +291,10 @@ Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editabl
                                       ...Target.values.map(
                                         (each) {
                                           return InputChip(
-                                            isEnabled: editable == null, // new exercise
+                                            // a label, not a shape: unlike category, it decides
+                                            // no column a set is logged in, so an own exercise
+                                            // can change it as freely as its name (#616)
+                                            isEnabled: renamable,
                                             selected: each == selected,
                                             onSelected: (selected) {
                                               HapticFeedback.mediumImpact();
