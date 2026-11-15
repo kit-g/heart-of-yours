@@ -24,7 +24,9 @@ Future<void> _startSent(BuildContext context, Program program) async {
   final programs = Programs.of(context);
   final exercises = Exercises.of(context);
   final messenger = ScaffoldMessenger.of(context);
-  final replacing = programs.following.where((each) => each.id != program.id).toList();
+  // what the user cannot see is not theirs to give up here: with Programs
+  // off, their own programs stay as they were (#593)
+  final replacing = shownPrograms(context).following.where((each) => each.id != program.id).toList();
 
   if (replacing.isNotEmpty) {
     final sure = await showBrandedDialog<bool>(

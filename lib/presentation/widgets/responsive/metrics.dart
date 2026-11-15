@@ -11,6 +11,16 @@ library;
 /// tables have their own answers.
 const readableWidth = 480.0;
 
+/// Widest a workout's set table gets: the exercises, their set rows and Add
+/// exercises, on every page that shows one (#592).
+///
+/// A row is a set number, last time, two values and a tick. Past a phone's
+/// width there is nothing more for it to show, only distance between the
+/// number and its values; beside an iPad's rail the cells drifted to both
+/// edges and Add exercises ran 1,200pt. Wider than any phone held upright, so
+/// one shows the table as it always has.
+const setTableWidth = 600.0;
+
 /// The gap between two tiles sharing a row, and the number anything wanting to
 /// line up with one of them has to subtract before halving the width.
 ///

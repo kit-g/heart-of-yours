@@ -39,6 +39,7 @@ class LiveRecords with ChangeNotifier {
       _asked.clear();
       _prior.clear();
       _offeredUnder = null;
+      _offeredForGoal = false;
     }
     for (final exercise in workout.map((entry) => entry.exercise)) {
       if (!_asked.add(exercise.id)) continue;
@@ -58,13 +59,19 @@ class LiveRecords with ChangeNotifier {
   }
 
   String? _offeredUnder;
+  bool _offeredForGoal = false;
 
   /// The set the feature's offer sits under, in this session.
   String? get offeredUnder => _offeredUnder;
 
-  void offerUnder(String setId) {
-    if (_offeredUnder == setId) return;
+  /// Whether that set reached a goal (#625) rather than beat a best: the
+  /// offer says which.
+  bool get offeredForGoal => _offeredForGoal;
+
+  void offerUnder(String setId, {bool forGoal = false}) {
+    if (_offeredUnder == setId && _offeredForGoal == forGoal) return;
     _offeredUnder = setId;
+    _offeredForGoal = forGoal;
     notifyListeners();
   }
 }

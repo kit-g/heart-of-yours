@@ -10,6 +10,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'support/exercise_detail_test_helpers.dart';
 
 /// The About tab's chip row: equipment, movement pattern, body part.
 ///
@@ -299,5 +300,42 @@ void main() {
 
     expect(find.text('About'), findsOneWidget);
     expect(find.textContaining('Pull the bar down.'), findsWidgets);
+  });
+
+  // last: the page remembers the tab it was on (`_rememberedSection`), and
+  // these land on History, which the About-only fixture above can't build
+  group("an own exercise's instructions (#621)", () {
+    Exercise own({String? instructions}) {
+      return Exercise.fromJson({
+        'id': 'own-1',
+        'name': 'Landmine Press',
+        'category': 'Barbell',
+        'target': 'Shoulders',
+        'own': 1,
+        'instructions': ?instructions,
+      });
+    }
+
+    testWidgets('are shown as typed, not read as markdown', (tester) async {
+      const typed = 'Seat 4\n---\n![](https://example.com/x.png)';
+      await pumpAbout(tester, own(instructions: typed));
+
+      expect(find.byType(Prose), findsNothing);
+      expect(find.text(typed), findsOneWidget);
+    });
+
+    testWidgets('gaining them while the page is open brings the About tab, without a mismatch', (tester) async {
+      final state = await buildExerciseDetailState();
+      await state.exercises.makeExercise(own());
+      await pumpExerciseDetail(tester, own(), state: state);
+      await tester.pumpAndSettle();
+      expect(find.text('About'), findsNothing);
+
+      await state.exercises.editExercise(own(instructions: 'Knee on a pad.'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('About'), findsOneWidget);
+    });
   });
 }

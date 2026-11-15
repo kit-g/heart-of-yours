@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:heart/presentation/navigation/pushes.dart' show coachingSpaceRuns;
 import 'package:heart_state/heart_state.dart';
 
 /// Keeps [Coaching] in step with the two coaching switches (#566): it reads
@@ -26,6 +27,11 @@ class CoachingPresenter extends StatefulWidget {
 class _CoachingPresenterState extends State<CoachingPresenter> {
   Preferences? _preferences;
   Auth? _auth;
+  Coaching? _coaching;
+
+  /// The `coaching_role` last told to analytics, so a sync that changes
+  /// nothing sends nothing: a record, because null is an answer too.
+  (CoachingRole?,)? _role;
 
   /// Who was last read for, with which switches: null while nothing is on.
   (String, bool, bool)? _read;
@@ -51,6 +57,11 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
       _auth?.removeListener(_sync);
       _auth = auth..addListener(_sync);
     }
+    final coaching = Coaching.of(context);
+    if (!identical(coaching, _coaching)) {
+      _coaching?.removeListener(_reportRole);
+      _coaching = coaching..addListener(_reportRole);
+    }
     _sync();
   }
 
@@ -58,12 +69,14 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
   void dispose() {
     _preferences?.removeListener(_sync);
     _auth?.removeListener(_sync);
+    _coaching?.removeListener(_reportRole);
     super.dispose();
   }
 
   void _sync() {
     final (preferences, auth) = (_preferences, _auth);
     if (preferences == null || auth == null || !preferences.isInitialized) return;
+    _reportRole();
     // a link kept while the person made an account: before the switches,
     // since following a first invitation is how Your coach gets turned on
     // an account, settled: before Firebase's first answer there is no user at
@@ -90,7 +103,7 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
       return;
     }
     final user = auth.user;
-    final space = coachPeople && (user?.mayCoach ?? false);
+    final space = coachingSpaceRuns(preferences, auth);
 
     if (space && !_space) widget.onSpaceAvailable();
     _space = space;
@@ -108,6 +121,37 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
     if (!RemoteAccess.of(context).allowed) return;
     _read = read;
     Coaching.of(context).load();
+    // the inbox too, for the unread counts on the ways in (#556): after the
+    // frame, once the account's id has reached the messages
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Messages.of(context).load();
+    });
+  }
+
+  /// Which sides of coaching this account is on, as the `coaching_role` user
+  /// property: it coaches with Coach people on and the entitlement to, and is
+  /// coached with Your coach on and a coach live or paused. Null with no
+  /// account. Says nothing until each side it reports is settled, so a launch
+  /// never reports a role away and back: the session, the entitlements for
+  /// the coaching side (until the server's copy arrives, a coach reads as one
+  /// who may not), and the connections for the coached side.
+  void _reportRole() {
+    final (preferences, auth, coaching) = (_preferences, _auth, _coaching);
+    if (preferences == null || auth == null || coaching == null) return;
+    if (!preferences.isInitialized) return;
+    // no user yet, before Firebase's first answer: not the same as none
+    if (auth.user == null && !auth.isInitialized) return;
+    final account = auth.user != null && !auth.isAnonymous;
+    final yourCoach = preferences.isOn(.yourCoach);
+    if (account && preferences.isOn(.coachPeople) && !auth.entitlementsKnown) return;
+    if (account && yourCoach && coaching.status != .loaded) return;
+    final role = switch (account) {
+      true => CoachingRole.of(coaches: coachingSpaceRuns(preferences, auth), coached: yourCoach && coaching.hasCoach),
+      false => null,
+    };
+    if (_role case (final reported,) when reported == role) return;
+    _role = (role,);
+    Analytics.of(context).setCoachingRole(role);
   }
 
   /// Your coach off pauses every coach: the coach stops seeing new workouts

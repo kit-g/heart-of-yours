@@ -61,14 +61,13 @@ void main() {
     );
   }
 
-  Future<num?> read(Goal goal, {DateTime? without, DateTime? asOf, int firstWeekday = DateTime.monday}) {
+  Future<num?> read(Goal goal, {DateTime? asOf, int firstWeekday = DateTime.monday}) {
     return currentGoalValue(
       goal,
       exercises: exercises,
       firstWeekday: firstWeekday,
       lensSets: lensSets,
       asOf: asOf ?? now,
-      without: without,
     );
   }
 
@@ -98,8 +97,16 @@ void main() {
     expect(await read(goal(pattern: 'vertical_pull')), 0);
   });
 
-  test('without leaves out the session that started then', () async {
-    expect(await read(goal(pattern: 'horizontal_press'), without: now), 3);
+  test("a goal's prior leaves out the session that started then (#625)", () async {
+    final prior = await readGoalPrior(
+      goal(pattern: 'horizontal_press'),
+      Workout()..start = now,
+      exercises: exercises,
+      firstWeekday: DateTime.monday,
+      workoutCount: (_) async => 0,
+      lensSets: lensSets,
+    );
+    expect(prior?.before, 3);
   });
 
   test("a muscle takes each set at the group's share", () async {

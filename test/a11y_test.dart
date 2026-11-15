@@ -31,7 +31,6 @@ import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
 import 'support/file_picker.dart';
-import 'support/finders.dart';
 import 'support/harness.dart';
 
 /// LoginPage's Apple button probes availability via this channel, unawaited,
@@ -87,7 +86,12 @@ enum _Screen {
   skipPage,
   notTodaySheet,
   calendar,
+  calendarDay,
+  pastWorkoutsOffer,
+  historyFilterMenu,
+  historyFiltered,
   exercises,
+  exercisesGrouped,
   settings,
   anonymousSettings,
   accountManagement,
@@ -104,6 +108,8 @@ enum _Screen {
   coachingReview,
   coachingClientCopy,
   coachingMessages,
+  coachingThread,
+  coachingNotes,
   coachingPrograms,
   coachingProgram,
   coachingSendDialog,
@@ -116,6 +122,7 @@ enum _Screen {
   whatsNew,
   restTimers,
   pushSettings,
+  yourDevices,
   features,
   recaps,
   monthlyReport,
@@ -668,6 +675,42 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.calendar, _Guideline.androidTapTarget, null),
   (_Screen.calendar, _Guideline.iosTapTarget, null),
 
+  // a day of two workouts (#619): its count, and the list of them it opens
+  (_Screen.calendarDay, _Guideline.labeledTapTarget, null),
+  (_Screen.calendarDay, _Guideline.textContrastLight, null),
+  (_Screen.calendarDay, _Guideline.textContrastDark, null),
+  (_Screen.calendarDay, _Guideline.androidTapTarget, null),
+  (_Screen.calendarDay, _Guideline.iosTapTarget, null),
+
+  // the one ask for Past workouts (#618), on the first tap of an empty past
+  // day in the calendar
+  (_Screen.pastWorkoutsOffer, _Guideline.labeledTapTarget, null),
+  (_Screen.pastWorkoutsOffer, _Guideline.textContrastLight, null),
+  (_Screen.pastWorkoutsOffer, _Guideline.textContrastDark, null),
+  (
+    _Screen.pastWorkoutsOffer,
+    _Guideline.androidTapTarget,
+    'the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart), as in every FeatureOffer, are below 48x48 — visual-density change, out of scope',
+  ),
+  (
+    _Screen.pastWorkoutsOffer,
+    _Guideline.iosTapTarget,
+    'the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart), as in every FeatureOffer, are below 44x44 — visual-density change, out of scope',
+  ),
+
+  // the muscle-group filter (#610): its menu of groups, and History under a
+  // filter that matches nothing — the chips, and the way out
+  (_Screen.historyFilterMenu, _Guideline.labeledTapTarget, null),
+  (_Screen.historyFilterMenu, _Guideline.textContrastLight, null),
+  (_Screen.historyFilterMenu, _Guideline.textContrastDark, null),
+  (_Screen.historyFilterMenu, _Guideline.androidTapTarget, null),
+  (_Screen.historyFilterMenu, _Guideline.iosTapTarget, null),
+  (_Screen.historyFiltered, _Guideline.labeledTapTarget, null),
+  (_Screen.historyFiltered, _Guideline.textContrastLight, null),
+  (_Screen.historyFiltered, _Guideline.textContrastDark, null),
+  (_Screen.historyFiltered, _Guideline.androidTapTarget, null),
+  (_Screen.historyFiltered, _Guideline.iosTapTarget, null),
+
   (_Screen.history, _Guideline.labeledTapTarget, null),
   (_Screen.history, _Guideline.textContrastLight, null),
   (_Screen.history, _Guideline.textContrastDark, null),
@@ -794,6 +837,21 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
   (
     _Screen.exercises,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+
+  // grouped by target (#620): folded headings in place of the flat list
+  (_Screen.exercisesGrouped, _Guideline.labeledTapTarget, null),
+  (_Screen.exercisesGrouped, _Guideline.textContrastLight, null),
+  (_Screen.exercisesGrouped, _Guideline.textContrastDark, null),
+  (
+    _Screen.exercisesGrouped,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.exercisesGrouped,
     _Guideline.iosTapTarget,
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
@@ -962,6 +1020,18 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingMessages, _Guideline.androidTapTarget, null),
   (_Screen.coachingMessages, _Guideline.iosTapTarget, null),
 
+  (_Screen.coachingThread, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingThread, _Guideline.textContrastLight, null),
+  (_Screen.coachingThread, _Guideline.textContrastDark, null),
+  (_Screen.coachingThread, _Guideline.androidTapTarget, null),
+  (_Screen.coachingThread, _Guideline.iosTapTarget, null),
+
+  (_Screen.coachingNotes, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingNotes, _Guideline.textContrastLight, null),
+  (_Screen.coachingNotes, _Guideline.textContrastDark, null),
+  (_Screen.coachingNotes, _Guideline.androidTapTarget, null),
+  (_Screen.coachingNotes, _Guideline.iosTapTarget, null),
+
   (_Screen.coachingPrograms, _Guideline.labeledTapTarget, null),
   (_Screen.coachingPrograms, _Guideline.textContrastLight, null),
   (_Screen.coachingPrograms, _Guideline.textContrastDark, null),
@@ -1080,6 +1150,15 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.pushSettings, _Guideline.textContrastDark, null),
   (_Screen.pushSettings, _Guideline.androidTapTarget, null),
   (_Screen.pushSettings, _Guideline.iosTapTarget, null),
+
+  // Your devices (lib/presentation/routes/settings/your_devices.dart, #555):
+  // Your coach on, so keys run; this device and one not approved yet, with
+  // its Compare codes button
+  (_Screen.yourDevices, _Guideline.labeledTapTarget, null),
+  (_Screen.yourDevices, _Guideline.textContrastLight, null),
+  (_Screen.yourDevices, _Guideline.textContrastDark, null),
+  (_Screen.yourDevices, _Guideline.androidTapTarget, null),
+  (_Screen.yourDevices, _Guideline.iosTapTarget, null),
 
   // Features (lib/presentation/routes/settings/features.dart, #226): the
   // opt-in switches, the muscle map on so its options unfold under it.
@@ -1280,6 +1359,15 @@ void main() {
     if (screen == _Screen.plateCalculator) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-plateCalculator': 'on'});
     }
+    if (screen == _Screen.exercisesGrouped) {
+      // one heading open and one folded, so both states are checked
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'screen-pickerGrouping': 'target',
+        'screen-pickerGrouping-at': '2026-11-01T10:00:00.000Z',
+        'openPickerGroups': ['target:chest'],
+      });
+    }
     if (screen == _Screen.templateMuscles) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
     }
@@ -1318,7 +1406,7 @@ void main() {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on'});
     }
     // a coaching switch on, so the push client runs (#567, #554)
-    if (screen == _Screen.pushSettings) {
+    if (screen == _Screen.pushSettings || screen == _Screen.yourDevices) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-yourCoach': 'on'});
     }
     // default rest (#174) on, so the page's kinds are held to it as well
@@ -1336,6 +1424,8 @@ void main() {
       _Screen.coachingReview: AppKeys.coachingClientsStack,
       _Screen.coachingClientCopy: AppKeys.coachingClientsStack,
       _Screen.coachingMessages: AppKeys.coachingMessagesStack,
+      _Screen.coachingThread: AppKeys.coachingMessagesStack,
+      _Screen.coachingNotes: AppKeys.coachingClientsStack,
       _Screen.coachingPrograms: AppKeys.coachingProgramsStack,
       _Screen.coachingProgram: AppKeys.coachingProgramsStack,
       _Screen.coachingSendDialog: AppKeys.coachingProgramsStack,
@@ -1362,6 +1452,69 @@ void main() {
       });
       when(api.getConnections()).thenAnswer((_) async => []);
       when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
+      // a coach's notes (#556): one, sealed under a key this device never got
+      when(db.replaceCoachNotes(any, any, keep: anyNamed('keep'))).thenAnswer((_) async {});
+      when(db.getCoachNotes(any)).thenAnswer(
+        (_) async => [
+          (
+            note: CoachNote(
+              id: 'n1',
+              connectionId: 'c-sam',
+              content: 'n1.key.sealed',
+              updatedAt: DateTime.utc(2026, 11, 7, 18),
+            ),
+            pending: false,
+            deleted: false,
+          ),
+        ],
+      );
+      when(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          notes: [
+            CoachNote(
+              id: 'n1',
+              connectionId: 'c-sam',
+              content: 'n1.key.sealed',
+              updatedAt: DateTime.utc(2026, 11, 7, 18),
+            ),
+          ],
+          cursor: null,
+        ),
+      );
+      // an inbox of one conversation (#556), with something unread
+      when(api.getThreads()).thenAnswer(
+        (_) async => [
+          Thread(
+            id: 't-sam',
+            connectionId: 'c-sam',
+            otherId: 'sam',
+            otherName: 'Sam',
+            unread: 2,
+            lastAt: DateTime.utc(2026, 11, 7, 18),
+          ),
+        ],
+      );
+      // what the conversation holds: sealed under a key this device never got
+      when(api.getThreadItems('t-sam', limit: anyNamed('limit'))).thenAnswer(
+        (_) async => (
+          items: [
+            ThreadItem(
+              id: 'i1',
+              threadId: 't-sam',
+              senderId: 'sam',
+              kind: 'message',
+              content: 'm1.session.ciphertext',
+              commitment: 'c',
+              tag: 't',
+              tagKey: 'k',
+              at: DateTime.utc(2026, 11, 7, 18),
+              createdAt: DateTime.utc(2026, 11, 7, 18),
+              cursor: 'c1',
+            ),
+          ],
+          cursor: null,
+        ),
+      );
       when(api.getInvitations(cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: <Invitation>[], cursor: null));
       // a roster to read, but none for the invite dialog, which opens from
@@ -1374,6 +1527,7 @@ void main() {
         _Screen.coachingClients ||
         _Screen.coachingActivity ||
         _Screen.coachingClient ||
+        _Screen.coachingNotes ||
         _Screen.coachingReview ||
         _Screen.coachingClientCopy => [
           ClientSummary(
@@ -1702,6 +1856,8 @@ void main() {
             _ => Future.error(const SocketException('offline')),
           },
         );
+      case _Screen.exercisesGrouped:
+        when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench, _squat]));
       case _Screen.moveHistoryDialog:
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench, _squat]));
         when(db.getExerciseUnits(any)).thenAnswer((_) async => {});
@@ -1750,6 +1906,45 @@ void main() {
               ),
             ],
           ),
+        );
+      case _Screen.yourDevices:
+        when(api.registerAccount(any)).thenAnswer((invocation) async => invocation.positionalArguments.single);
+        when(api.getConnections()).thenAnswer((_) async => []);
+        when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
+        CryptoDevice? published;
+        when(
+          api.publishCryptoDevice(
+            id: anyNamed('id'),
+            identityKey: anyNamed('identityKey'),
+            signingKey: anyNamed('signingKey'),
+            fallbackKey: anyNamed('fallbackKey'),
+            vouch: anyNamed('vouch'),
+          ),
+        ).thenAnswer(
+          (invocation) async => published = CryptoDevice(
+            id: invocation.namedArguments[#id] as String,
+            userId: 'u1',
+            identityKey: invocation.namedArguments[#identityKey] as String,
+            signingKey: invocation.namedArguments[#signingKey] as String,
+            fallbackKey: invocation.namedArguments[#fallbackKey] as String,
+            createdAt: DateTime.utc(2026, 10, 1),
+          ),
+        );
+        when(api.addOneTimeKeys(any, any)).thenAnswer((_) async => 50);
+        when(api.countOneTimeKeys(any)).thenAnswer((_) async => 50);
+        when(api.getKeyQueue(any)).thenAnswer((_) async => []);
+        when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer(
+          (_) async => [
+            ?published,
+            CryptoDevice(
+              id: '01a1e000-0000-7000-8000-00000000ab12',
+              userId: 'u1',
+              identityKey: 'tablet-identity',
+              signingKey: 'tablet-signing',
+              fallbackKey: 'tablet-fallback',
+              createdAt: DateTime.utc(2026, 11, 2),
+            ),
+          ],
         );
       case _Screen.restTimers:
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench]));
@@ -1919,6 +2114,8 @@ void main() {
       cdn: cdn,
       firebaseAuth: firebase,
       hasLocalNotifications: false,
+      // notes are there only where keys can be kept
+      keyVault: screen == _Screen.coachingNotes || screen == _Screen.yourDevices ? MemoryKeyVault() : null,
       // the dashboard animates indefinitely — settle would hang on it
       settle: false,
     );
@@ -2261,6 +2458,56 @@ void main() {
         // the row is only honest if it is the move it checked
         expect(find.textContaining('next time'), findsOneWidget);
         expect(find.textContaining('Keep'), findsOneWidget);
+      case _Screen.pastWorkoutsOffer:
+        // a month back, so last month is drawn too: a past day to tap even
+        // on the first of the month
+        final older = _unsynced()..start = DateTime.now().subtract(const Duration(days: 40));
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [older]);
+        when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
+            .thenAnswer((_) async => [older]);
+        await tester.tapByKey(AppKeys.historyStack);
+        await tester.pumpTimes();
+        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
+        await tester.pumpTimes();
+        await tester.tap(find.bySemanticsLabel(RegExp(r', log a workout on this day$')).first);
+        await tester.pumpTimes();
+        expect(find.byKey(AppKeys.pastWorkoutsOffer), findsOneWidget);
+      case _Screen.calendarDay:
+        // both early today, so the two can never fall either side of midnight
+        final today = DateTime.now();
+        final first = _unsynced()..start = DateTime(today.year, today.month, today.day, 0, 1);
+        final second = _unsynced()..start = DateTime(today.year, today.month, today.day, 0, 2);
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [second, first]);
+        when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
+            .thenAnswer((_) async => [second, first]);
+        await tester.tapByKey(AppKeys.historyStack);
+        await tester.pumpTimes();
+        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
+        await tester.pumpTimes();
+        await tester.tap(find.bySemanticsLabel(RegExp(r', 2 workouts$')));
+        await tester.pumpTimes();
+        // the screen is only honest if the list is open on it: today's two
+        // workouts, and starting another (#618)
+        expect(find.byType(PopupMenuItem<Object>), findsNWidgets(3));
+        expect(find.byKey(AppKeys.calendarStart), findsOneWidget);
+      case _Screen.historyFilterMenu || _Screen.historyFiltered:
+        final completed = Workout.fromJson(_unsynced().toMap());
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
+        when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
+            .thenAnswer((_) async => [completed]);
+        await tester.tapByKey(AppKeys.historyStack);
+        await tester.pumpTimes();
+        if (screen == _Screen.historyFilterMenu) {
+          await tester.tapByKey(AppKeys.historyFilter);
+          await tester.pumpTimes();
+          expect(find.byType(CheckedPopupMenuItem<MuscleGroupKey>), findsNWidgets(10));
+        } else {
+          // a group nothing here trained: the chips, and nothing matches
+          HistoryFilter.of(tester.element(find.byType(MaterialApp))).toggle(.neck);
+          await tester.pumpTimes();
+          expect(find.byKey(AppKeys.historyFilterChips), findsOneWidget);
+          expect(find.byKey(AppKeys.historyFilterEmpty), findsOneWidget);
+        }
       case _Screen.calendar:
         final completed = Workout.fromJson(_unsynced().toMap());
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
@@ -2268,7 +2515,7 @@ void main() {
             .thenAnswer((_) async => [completed]);
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
-        await tester.tap(find.tooltip('Calendar'));
+        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
       case _Screen.history:
         await tester.tapByKey(AppKeys.historyStack);
       case _Screen.pastWorkoutTimes || _Screen.pastWorkoutEditor:
@@ -2309,6 +2556,16 @@ void main() {
         }
       case _Screen.exercises:
         await tester.tapByKey(AppKeys.exercisesStack);
+      case _Screen.exercisesGrouped:
+        // the catalog the way start-up would read it (see the upsync case)
+        unawaited(Exercises.of(tester.element(find.byType(MaterialApp))).init());
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.exercisesStack);
+        await tester.pumpTimes();
+        // Legs folded, Chest open onto its one exercise
+        expect(find.text('Legs'), findsOneWidget);
+        expect(find.text(_squat.name), findsNothing);
+        expect(find.text(_bench.name), findsOneWidget);
       case _Screen.settings || _Screen.anonymousSettings:
         await tester.tap(find.byIcon(Icons.settings_rounded));
       case _Screen.recaps:
@@ -2324,6 +2581,11 @@ void main() {
         await tester.pumpTimes();
         expect(find.byType(PushSettingsPage), findsOneWidget);
         expect(find.text('Messages'), findsOneWidget);
+      case _Screen.yourDevices:
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/settings/devices');
+        await tester.pumpTimes();
+        expect(find.byType(YourDevicesPage), findsOneWidget);
+        expect(find.byKey(AppKeys.compareCodes('01a1e000-0000-7000-8000-00000000ab12')), findsOneWidget);
       case _Screen.features:
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
@@ -2399,6 +2661,8 @@ void main() {
           _Screen.coachingReview ||
           _Screen.coachingClientCopy ||
           _Screen.coachingMessages ||
+          _Screen.coachingThread ||
+          _Screen.coachingNotes ||
           _Screen.coachingPrograms ||
           _Screen.coachingProgram ||
           _Screen.coachingSendDialog ||
@@ -2413,9 +2677,18 @@ void main() {
           await tester.pumpTimes();
         }
         if (screen == _Screen.coachingClient ||
+            screen == _Screen.coachingNotes ||
             screen == _Screen.coachingReview ||
             screen == _Screen.coachingClientCopy) {
           await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingNotes) {
+          await tester.tapByKey(AppKeys.coachingClientNotes);
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingThread) {
+          await tester.tapByKey(AppKeys.inboxThread('t-sam'));
           await tester.pumpTimes();
         }
         if (screen == _Screen.coachingClientCopy) {

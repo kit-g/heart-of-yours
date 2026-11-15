@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/push.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
+import 'package:heart_models/heart_models.dart' show Program;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -48,8 +49,14 @@ bool pushesOn(BuildContext context, {bool listen = false}) {
 /// for coaching and for nothing else.
 bool coachingRuns(Preferences preferences, Auth auth) {
   final account = auth.user != null && !auth.isAnonymous;
-  final space = preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false);
-  return account && (space || preferences.isOn(.yourCoach));
+  return account && (coachingSpaceRuns(preferences, auth) || preferences.isOn(.yourCoach));
+}
+
+/// Whether the Coaching space is there at all: Coach people is on, for an
+/// account that may coach. The one rule the space's ways in, the presenter
+/// and [coachingRuns] all read.
+bool coachingSpaceRuns(Preferences preferences, Auth auth) {
+  return preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false);
 }
 
 /// Whether [coachingRuns]'s answer can be acted on. A coach with only Coach
@@ -273,11 +280,13 @@ class _PushPresenterState extends State<PushPresenter> {
       case .queueWaiting:
         // every app of the account's hears it: the one whose device it names reads
         if (push.deviceId case final String deviceId) await DeviceKeys.of(context).queueWaiting(deviceId);
-      // messages (#556) are not built yet: nothing on the device holds a
-      // thread to refresh
+      case .coachingMessage:
+        // the inbox again, and the thread when it is open (#556)
+        if (push.threadId case final String threadId) await Messages.of(context).arrived(threadId);
       case .threadCleared:
+        if (push.threadId case final String threadId) await Messages.of(context).cleared(threadId);
       // nothing to fetch: the tap opens where the news is read
-      case .coachingMessage || .workoutDigest || .commentCreated || null:
+      case .workoutDigest || .commentCreated || null:
         break;
     }
   }
@@ -292,21 +301,48 @@ class _PushPresenterState extends State<PushPresenter> {
       // a push about a client opens Coaching (the design's rule)
       case .invitationAccepted || .workoutDigest when space:
         router.goToCoachingClients();
-      case .coachingMessage when space:
-        router.goToCoachingMessages();
-      case .programReceived || .programChanged when preferences.isOn(.programs):
+      case .coachingMessage:
+        // the thread itself, wherever it lives: a coach's in Coaching, a
+        // student's over the app (#556)
+        final messages = Messages.of(context);
+        if (push.threadId case final String threadId) {
+          if (messages.lookup(threadId) == null) await messages.load();
+          final connectionId = messages.lookup(threadId)?.connectionId;
+          if (!mounted) return;
+          switch ((connectionId, space && _coaches(connectionId))) {
+            case (final String id, true):
+              router.goToCoachingThread(id);
+            case (final String id, false):
+              router.openThread(id);
+            case (null, true):
+              router.goToCoachingMessages();
+            case (null, false):
+              break;
+          }
+        }
+      // a coach's program is shown under Your coach alone (#593)
+      case .programReceived || .programChanged when preferences.programsReach:
         if (push.programId case final String programId) {
           // fetched first: a tap that launched the app arrives before the
           // program is anywhere on the device
           if (Programs.of(context).lookup(programId) == null) await _fetch(push);
-          if (mounted && Programs.of(context).lookup(programId) != null) router.goToProgram(programId);
+          if (!mounted) return;
+          if (Programs.of(context).lookup(programId) case final Program program
+              when preferences.programShown(program)) {
+            router.goToProgram(programId);
+          }
         }
-      case .invitationAccepted || .workoutDigest || .coachingMessage || .programReceived || .programChanged:
-      // nowhere to read these yet: comments have no screen in the app, and a
-      // student's messages come with #556
+      case .invitationAccepted || .workoutDigest || .programReceived || .programChanged:
+      // nowhere to read these yet: comments have no screen in the app
       case .commentCreated || .threadCleared || .devicesChanged || .queueWaiting || null:
         break;
     }
+  }
+
+  /// Whether [connectionId] is one where this person coaches: its thread
+  /// lives in Coaching.
+  bool _coaches(String? connectionId) {
+    return Coaching.of(context).clients.any((each) => each.connectionId == connectionId);
   }
 
   @override

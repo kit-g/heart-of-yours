@@ -3,6 +3,7 @@
 /// on Profile, while Coach people is on.
 library;
 
+import 'dart:async';
 import 'dart:math';
 
 import 'package:clock/clock.dart';
@@ -12,9 +13,11 @@ import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/navigation/pushes.dart';
+import 'package:heart/presentation/routes/messages/messages.dart';
 import 'package:heart/presentation/widgets/avatar.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/workout/past_workout.dart';
 import 'package:heart/presentation/widgets/shared_program.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
@@ -36,14 +39,17 @@ part 'invitation.dart';
 part 'invite.dart';
 part 'library.dart';
 part 'library_program.dart';
+part 'messages.dart';
+part 'log_for.dart';
+part 'notes.dart';
 part 'pages.dart';
 part 'review.dart';
 
-/// Whether the Coaching space is there at all: Coach people is on, for an
-/// account that may coach. Off for either reason, the app looks as if
-/// coaching had never been built.
+/// [coachingSpaceRuns], read off [context]: off for either reason, the app
+/// looks as if coaching had never been built.
 bool coachingSpaceOn(BuildContext context, {bool listen = false}) {
-  final preferences = Provider.of<Preferences>(context, listen: listen);
-  final auth = Provider.of<Auth>(context, listen: listen);
-  return preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false);
+  return coachingSpaceRuns(
+    Provider.of<Preferences>(context, listen: listen),
+    Provider.of<Auth>(context, listen: listen),
+  );
 }

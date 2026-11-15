@@ -153,6 +153,18 @@ class WorkoutItem extends StatelessWidget {
                 L.of(context).fullDate(workout.start),
                 style: textTheme.bodySmall,
               ),
+              // a session their coach logged for them (#560), while Your coach
+              // is on: off, it is a workout like any other
+              if (workout.loggedByName?.trim() case final String coach
+                  when coach.isNotEmpty && Preferences.watch(context).isOn(.yourCoach))
+                Padding(
+                  key: AppKeys.loggedBy(workout.id),
+                  padding: const .only(top: 4),
+                  child: Text(
+                    L.of(context).loggedBy(coach),
+                    style: textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                  ),
+                ),
               if (workout.note case String note)
                 Padding(
                   padding: const .only(top: 6),
@@ -250,10 +262,10 @@ class WorkoutItem extends StatelessWidget {
         .fold(0.0, (sum, each) => sum + _done(each).fold(0.0, (sum, set) => sum + (set.total ?? 0)));
   }
 
-  /// What the card counts: the working sets that were ticked. A saved workout
-  /// keeps its planned sets that were never done, and heart_models' own
-  /// `best`/`total` read every set but warm-ups — so an exercise done ×0 still
-  /// showed a "best" beside its count, and the volume counted it (#613).
+  /// What the card counts: the working sets that were ticked, the same sets as
+  /// its ×N. heart_models' own `best`/`total` read every set but warm-ups, so a
+  /// workout holding an unticked set showed an exercise done ×0 with a "best"
+  /// beside it, and counted that set in the volume (#613).
   static Iterable<ExerciseSet> _done(WorkoutExercise exercise) {
     return exercise.where((set) => set.isCompleted && set.setType != .warmup);
   }

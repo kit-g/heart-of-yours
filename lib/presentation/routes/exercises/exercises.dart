@@ -7,6 +7,7 @@ import 'package:flutter_body_atlas/flutter_body_atlas.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/utils/column_fill.dart';
 import 'package:heart/core/utils/records.dart';
+import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/chart_dimension.dart';

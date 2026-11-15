@@ -44,6 +44,8 @@ const _restTimersPath = 'rest-timers';
 const _restTimersName = 'restTimers';
 const _pushSettingsPath = 'notifications';
 const _pushSettingsName = 'pushSettings';
+const _yourDevicesPath = 'devices';
+const _yourDevicesName = 'yourDevices';
 const _apiTokensPath = 'tokens';
 const _apiTokensName = 'apiTokens';
 const _newApiTokenPath = 'new';
@@ -97,6 +99,14 @@ const _coachingClientProgramName = 'coachingClientProgram';
 const _coachingClientSessionName = 'coachingClientSession';
 const _coachingMessagesName = 'coachingMessages';
 const _coachingMessagesPath = '$_coachingPath/messages';
+const _coachingThreadName = 'coachingThread';
+const _coachingClientThreadName = 'coachingClientThread';
+// a coach's notes on a client (#556)
+const _coachingClientNotesName = 'coachingClientNotes';
+// a workout a coach logs for a client (#560)
+const _coachingClientLogName = 'coachingClientLog';
+const _threadName = 'thread';
+const _threadPath = '/messages/:connectionId';
 const _coachingProgramsName = 'coachingPrograms';
 const _coachingProgramsPath = '$_coachingPath/programs';
 // a coach's library (#557), under the Programs tab

@@ -77,11 +77,12 @@ class _Charts extends StatelessWidget {
 }
 
 extension on _Charts {
-  /// The first program the user follows whose sessions hold [exercise]; null
-  /// while Programs is off or none does.
+  /// The first shown program the user follows whose sessions hold
+  /// [exercise]; null while none does. With Programs off, only a coach's is
+  /// shown, under Your coach (#593).
   Program? _programOf(BuildContext context) {
-    if (!Preferences.watch(context).isOn(.programs)) return null;
-    final following = {for (final program in Programs.watch(context).following) program.id: program};
+    if (!Preferences.watch(context).programsReach) return null;
+    final following = {for (final program in shownPrograms(context, listen: true).following) program.id: program};
     return Templates.watch(context)
         .where((session) => following.containsKey(session.programId))
         .where((session) => session.any((each) => each.exercise.id == exercise.id))

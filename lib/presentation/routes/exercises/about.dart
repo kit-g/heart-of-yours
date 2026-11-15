@@ -161,7 +161,13 @@ class _About extends StatelessWidget {
           if (instructions case String instructions when instructions.isNotEmpty)
             Padding(
               padding: const .symmetric(horizontal: 16),
-              child: Prose(instructions, selectable: true),
+              // the user's own words, as typed: Prose would read them as
+              // markdown, turn a line of dashes into a heading and fetch an
+              // image link from wherever it points (#621)
+              child: switch (exercise.isMine) {
+                true => SelectableText(instructions, style: textTheme.bodyMedium),
+                false => Prose(instructions, selectable: true),
+              },
             ),
         ],
       ),

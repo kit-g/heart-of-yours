@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
+import 'test_utils.dart';
+
 /// One copy on the server, with revisions as the server keeps them.
 class _Server implements ClientProgramService {
   var programRevision = 0;
@@ -190,6 +192,34 @@ void main() {
 
     await programs.open('sam', 'p1');
     expect(programs.mayChange('p1'), isFalse);
+  });
+
+  test('each change is counted once it landed, and one kept as a conflict is not (#568)', () async {
+    final reported = ReportedAnalytics();
+    programs = ClientPrograms(
+      service: server,
+      analytics: Analytics(service: reported),
+    );
+    await programs.open('sam', 'p1');
+    final change = ProgramChange(id: 'c1', programId: 'p1', kind: 'edit', revision: 1, at: DateTime.utc(2026, 11, 1));
+
+    programs.editSession('sam', 'p1', session: programs.view('p1')!.sessions.single);
+    await programs.saveEditable();
+    // the client got there first: kept, not counted
+    programs.editSession('sam', 'p1', session: programs.view('p1')!.sessions.single);
+    server.sessionRevisions['s1'] = 9;
+    await programs.saveEditable();
+    await programs.editFields('sam', programs.view('p1')!.program);
+    await programs.revert('sam', 'p1', change);
+    await programs.deleteSession('sam', 'p1', 's1');
+
+    expect(reported.events.map((each) => each.$2['coaching_action']), [
+      'session',
+      'fields',
+      'reverted',
+      'session_deleted',
+    ]);
+    expect(reported.names, everyElement('client_program_edited'));
   });
 
   test('sign-out forgets every copy', () async {

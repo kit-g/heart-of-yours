@@ -37,7 +37,12 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final ValueNotifier<WorkoutExercise?> dragState;
   final ValueNotifier<WorkoutExercise?> currentlyHoveredItem;
   final bool allowCompleting;
-  final void Function(Exercise) onTapExercise;
+  final void Function(Exercise)? onTapExercise;
+  final bool pinsNotes;
+
+  /// Whether the Previous column is there: not over someone else's sets
+  /// (#591). Its share of the row stays, so the values do not widen.
+  final bool showsPrevious;
 
   const new({
     required this.index,
@@ -68,7 +73,9 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     required this.dragState,
     required this.currentlyHoveredItem,
     required this.allowCompleting,
-    required this.onTapExercise,
+    this.onTapExercise,
+    this.pinsNotes = true,
+    required this.showsPrevious,
   });
 
   @override
@@ -91,7 +98,11 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
         currentlyHoveredItem.value = exercise;
       },
       builder: (_, candidates, rejects) {
-        final previous = PreviousExercises.watch(context);
+        // no column, nothing to repaint for: the header fill still reads it
+        final previous = switch (showsPrevious) {
+          true => PreviousExercises.watch(context),
+          false => PreviousExercises.of(context),
+        };
         return ValueListenableBuilder<WorkoutExercise?>(
           valueListenable: dragState,
           builder: (_, draggedExercise, _) {
@@ -105,7 +116,10 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                   // edge, and release builds clip that silently (#615)
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => onTapExercise(exercise.exercise),
+                      onTap: switch (onTapExercise) {
+                        final open? => () => open(exercise.exercise),
+                        null => null,
+                      },
                       child: Text(
                         exercise.exercise.name,
                         style: textTheme.titleMedium,
@@ -118,7 +132,12 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                     children: [
                       Builder(
                         builder: (context) {
-                          final timer = restFor(context, exercise, listen: true);
+                          final timer = restFor(
+                            context,
+                            exercise,
+                            planned: _Plan.of(context, listen: true).shown,
+                            listen: true,
+                          );
                           return Selector<Alarms, (ValueNotifier<int>?, num?, String?)>(
                             selector: (_, provider) => (
                               provider.remainsInActiveExercise,
@@ -243,6 +262,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         _ExerciseNote(
                           exercise: exercise,
                           onChanged: onNoteChanged,
+                          pins: pinsNotes,
                           onEdit: () => _editNote(context),
                         ),
                       Padding(
@@ -253,10 +273,13 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                               width: _setColumnWidth,
                               child: _ColumnLabel(firstColumnCopy),
                             ),
-                            Expanded(
-                              flex: 3,
-                              child: _ColumnLabel(secondColumnCopy),
-                            ),
+                            if (showsPrevious)
+                              Expanded(
+                                flex: _previousFlex,
+                                child: _ColumnLabel(secondColumnCopy),
+                              )
+                            else
+                              const Spacer(flex: _previousFlex),
                             ..._buttonsHeader(context, previous),
                             SizedBox(
                               width: _fixedColumnWidth,
@@ -289,7 +312,8 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                             onRemoveSet: onRemoveSet,
                             isLocked: !allowCompleting,
                             onSetDone: onSetDone,
-                            previousValue: previous.matching(exercise, set.$1),
+                            previousValue: showsPrevious ? previous.matching(exercise, set.$1) : null,
+                            showsPrevious: showsPrevious,
                           );
                         },
                       ),
@@ -358,7 +382,8 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   Future<void> _replaceAny(BuildContext context, ReplaceExercise onReplace) async {
     final l = L.of(context);
     final source = exercise.exercise;
-    final suggested = replacementsInWorkout(context, source);
+    final (:shown, :programId) = _Plan.of(context);
+    final suggested = replacementsInWorkout(context, source, planned: shown, programId: programId);
     final picked = await showSingleExercisePicker(
       context,
       except: source.id,
@@ -499,7 +524,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
         label: l.restTimer,
         onPick: (_) {
           buzz();
-          _selectRestTime(context, initialValue: restFor(context, exercise));
+          _selectRestTime(context, initialValue: restFor(context, exercise, planned: _Plan.of(context).shown));
         },
       ),
       if ((onAddWarmups, preferences.isOn(.warmups)) case (final add?, true))
@@ -522,7 +547,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
           },
           onPick: (_) => _editNote(context),
         ),
-        if (exercises.canPinNote && exercises.noteFor(id) != null)
+        if (pinsNotes && exercises.canPinNote && exercises.noteFor(id) != null)
           _option(
             icon: Icons.push_pin_outlined,
             label: l.unpinExerciseNote,
@@ -552,14 +577,15 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
           value: _unitCopy(l, current),
           onPick: (anchor) => _pickUnit(context, anchor, current),
         ),
-      _option(
-        icon: Icons.info_outline_rounded,
-        label: l.aboutExercise,
-        onPick: (_) {
-          buzz();
-          onTapExercise(exercise.exercise);
-        },
-      ),
+      if (onTapExercise case final open?)
+        _option(
+          icon: Icons.info_outline_rounded,
+          label: l.aboutExercise,
+          onPick: (_) {
+            buzz();
+            open(exercise.exercise);
+          },
+        ),
       _removeOption(context, l.removeExercise),
     ];
   }

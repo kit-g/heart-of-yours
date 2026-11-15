@@ -122,6 +122,8 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
           ),
         ),
         actions: [
+          // a student's coach, when there is one to write to (#556)
+          const _CoachMessages(),
           // opt-in (#566): off, Settings is the first action, as before
           if (coachingSpaceOn(context, listen: true))
             IconButton(

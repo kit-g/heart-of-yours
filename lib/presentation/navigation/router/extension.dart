@@ -18,6 +18,27 @@ extension on BuildContext {
     pushNamed(_coachingClientName, pathParameters: {'connectionId': connectionId});
   }
 
+  /// The conversation with a client (#556), over their page.
+  void pushCoachingClientThread(String connectionId) {
+    pushNamed(_coachingClientThreadName, pathParameters: {'connectionId': connectionId});
+  }
+
+  /// A workout a coach logs for a client (#560), filled in from [past].
+  void pushCoachingClientLog(String connectionId, PastWorkout past) {
+    pushNamed(_coachingClientLogName, pathParameters: {'connectionId': connectionId}, extra: past);
+  }
+
+  /// The coach's notes on a client (#556).
+  void pushCoachingClientNotes(String connectionId) {
+    pushNamed(_coachingClientNotesName, pathParameters: {'connectionId': connectionId});
+  }
+
+  /// A conversation of the Messages tab (#556), where there's no room for it
+  /// beside the list.
+  void pushCoachingThread(String connectionId) {
+    pushNamed(_coachingThreadName, pathParameters: {'connectionId': connectionId});
+  }
+
   /// A client's workout, target beside done (#559).
   void pushCoachingClientWorkout(String connectionId, String workoutId) {
     pushNamed(_coachingClientWorkoutName, pathParameters: {'connectionId': connectionId, 'workoutId': workoutId});
@@ -179,6 +200,10 @@ extension on BuildContext {
     return goNamed(_pushSettingsName);
   }
 
+  void goToYourDevices() {
+    return goNamed(_yourDevicesName);
+  }
+
   void goToFeatures() {
     return goNamed(_featuresName);
   }
@@ -238,8 +263,9 @@ extension on BuildContext {
     return goNamed(_historyLogName, extra: past);
   }
 
-  /// Asks when a past workout was, then opens it to fill in (#530).
-  void logPast() => logPastWorkout(this, open: goToLogWorkout);
+  /// Asks when a past workout was, then opens it to fill in (#530): by default
+  /// the last hour, or the same hour [on] another day (#618).
+  void logPast({DateTime? on}) => logPastWorkout(this, open: goToLogWorkout, on: on);
 
   /// A workout from the suspicious entries' list (#428), within History:
   /// pushed on a phone, so Back returns to the list; in the pane on a tablet,

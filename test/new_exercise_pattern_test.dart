@@ -100,7 +100,7 @@ void main() {
 
   testWidgets('a new exercise saves without a pattern, and with the one picked', (tester) async {
     await pumpDialog(tester, [fly]);
-    await tester.enterText(find.byType(TextField), 'Cable Fly');
+    await tester.enterText(find.byKey(AppKeys.newExerciseName), 'Cable Fly');
     await tester.tap(find.widgetWithText(InputChip, 'Chest'));
     await tester.ensureVisible(find.widgetWithText(InputChip, 'Machine'));
     await tester.tap(find.widgetWithText(InputChip, 'Machine'));

@@ -50,6 +50,12 @@ class KeyDelivery {
 /// Takes one delivered item. Done when it returns: the item is forgotten.
 typedef KeyDeliveryHandler = Future<void> Function(KeyDelivery delivery);
 
+/// What a handler throws to leave a delivery where it is, unreported, for a
+/// later dispatch: one it can't take yet, and will.
+class _Held implements Exception {
+  const new();
+}
+
 /// Reading the queue, opening what is on it, and handing it over.
 extension _Arrivals on DeviceKeys {
   /// Reads what waits for [run]'s device and opens it. What opened is kept,
@@ -206,11 +212,16 @@ extension _Arrivals on DeviceKeys {
         final waiting = await _serial(run, run.inbox);
         final handled = <String>{};
         for (final delivery in waiting) {
+          // another account signed in meanwhile: a handler reads the current
+          // one, and this one's deliveries wait for its next start
+          if (!identical(_run, run)) throw _Stopped();
           final handler = _handlers[delivery.kind];
           if (handler == null) continue;
           try {
             await handler(delivery);
             handled.add(delivery.id);
+          } on _Held {
+            // not yet: kept, and handed again once it can be taken
           } catch (error, stacktrace) {
             // kept, and handed again on the next run
             _report(error, stacktrace);
@@ -227,6 +238,34 @@ extension _Arrivals on DeviceKeys {
     });
     _dispatching = done.then<void>((_) {}, onError: (_) {});
     return done;
+  }
+
+  /// Hands over again what waits, without waiting for it: something a handler
+  /// held may be taken now.
+  void _redispatch(_Run run) {
+    unawaited(
+      _dispatch(run).catchError((Object error, StackTrace stacktrace) {
+        // kept on the device for the next run
+        _report(error, stacktrace);
+      }),
+    );
+  }
+
+  /// Throws [_Held] unless [delivery] came from this device or one of the
+  /// account's this one trusts: a key from a device the server merely lists
+  /// could be anyone's, and waits until a code is compared with it, or one
+  /// that is trusted vouches for it.
+  Future<void> _fromTrusted(_Run run, KeyDelivery delivery) async {
+    bool trusts(Peer? own) {
+      return own?.devices.any((each) => each.id == delivery.fromDeviceId && each.trusted) ?? false;
+    }
+
+    if (delivery.fromDeviceId == run.device?.id || trusts(run.peers[run.userId])) return;
+    // read again only for a device not known yet: one known and not trusted
+    // waits for the word that trust changed, which hands it over again
+    final known = run.peers[run.userId]?.devices.any((each) => each.id == delivery.fromDeviceId) ?? false;
+    if (!known && trusts(await devicesOf(run.userId))) return;
+    throw const _Held();
   }
 }
 

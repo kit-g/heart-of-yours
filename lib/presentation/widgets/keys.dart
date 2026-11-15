@@ -18,6 +18,24 @@ abstract final class AppKeys {
   /// Asserting on it distinguishes "nothing selected" from "no detail pane".
   static const noSelection = Key('AppFrame.noSelection');
 
+  /// History's switch between the list and the calendar, and the calendar
+  /// itself (#609).
+  static const historyViewSwitch = Key('History.view.switch');
+
+  /// A calendar day's list (#618): start a workout today, log one on the day.
+  static const calendarStart = Key('History.calendar.start');
+  static const calendarLog = Key('History.calendar.log');
+  static const historyCalendar = Key('History.calendar');
+  static const historyViewSetting = Key('Settings.historyView');
+
+  /// History's muscle-group filter (#610): the button, a group in its menu,
+  /// the chips of the groups set, and the empty state with its way out.
+  static const historyFilter = Key('History.filter');
+  static Key historyFilterGroup(String group) => Key('History.filter.$group');
+  static const historyFilterChips = Key('History.filter.chips');
+  static const historyFilterEmpty = Key('History.filter.empty');
+  static const historyFilterClear = Key('History.filter.clear');
+
   /// Dismisses a two-pane detail. Distinct from a back button: it clears the
   /// selection rather than popping a route.
   static const closeDetail = Key('AppFrame.closeDetail');
@@ -81,6 +99,12 @@ abstract final class AppKeys {
   static const copyForAiOffer = ValueKey('copyForAiOffer');
   static const copyForAiAccept = ValueKey('copyForAiAccept');
   static const copyForAiDecline = ValueKey('copyForAiDecline');
+
+  /// The one ask for Past workouts (#618), on the first tap of an empty past
+  /// day in History's calendar.
+  static const pastWorkoutsOffer = ValueKey('pastWorkoutsOffer');
+  static const pastWorkoutsAccept = ValueKey('pastWorkoutsAccept');
+  static const pastWorkoutsDecline = ValueKey('pastWorkoutsDecline');
   static const copyForAiHistory = ValueKey('copyForAiHistory');
   static const copyForAiExercise = ValueKey('copyForAiExercise');
   static const copyForAiSheet = ValueKey('copyForAiSheet');
@@ -185,6 +209,15 @@ abstract final class AppKeys {
   static const loginEmail = Key('Login.email');
   static const loginName = Key('Login.name');
   static const loginPassword = Key('Login.password');
+
+  /// Your devices (#555): the Settings row, each device's row and its
+  /// Compare codes button, and the comparison sheet's answers.
+  static const yourDevices = Key('Settings.yourDevices');
+  static Key deviceRow(String id) => Key('YourDevices.row.$id');
+  static Key compareCodes(String id) => Key('YourDevices.compare.$id');
+  static const codesMatch = Key('CompareCodes.match');
+  static const codesDontMatch = Key('CompareCodes.dontMatch');
+  static const closeComparison = Key('CompareCodes.close');
 
   /// The developer API (#271): the Settings row, the tokens page's controls
   /// and each token's row and revoke button.
@@ -319,12 +352,20 @@ abstract final class AppKeys {
   /// choices.
   static const newExercisePattern = Key('NewExercise.pattern');
   static Key newExercisePatternOption(String? pattern) => Key('NewExercise.pattern.${pattern ?? 'none'}');
+
+  /// The new-exercise dialog's name field.
+  static const newExerciseName = Key('NewExercise.name');
+
+  /// The new-exercise dialog's instructions field (#621).
+  static const newExerciseInstructions = Key('NewExercise.instructions');
+
   static const musclePickerRole = Key('MusclePicker.role');
   static const musclePickerFigures = Key('MusclePicker.figures');
 
   /// The picker's offer to create an exercise named after a search that
   /// found nothing (#529).
   static const pickerCreateExercise = Key('ExercisePicker.createExercise');
+  static const settingsPickerGrouping = Key('Settings.pickerGrouping');
 
   /// The Coaching space (#566): the way in on Profile, the way back out, its
   /// tabs, and the line that leads back to a workout still going.
@@ -422,4 +463,50 @@ abstract final class AppKeys {
 
   static Key yourCoachUnblock(String userId) => Key('YourCoach.unblock.$userId');
   static const invitationRetry = Key('Invitation.retry');
+
+  // messages (#556)
+  static const thread = Key('Messages.thread');
+  static const messageBox = Key('Messages.box');
+  static const messageSend = Key('Messages.send');
+  static const coachingClientMessages = Key('Coaching.clientMessages');
+  // a coach's notes on a client (#556)
+  static const coachingClientNotes = Key('Coaching.clientNotes');
+  // a workout a coach logs for a client (#560)
+  static const coachingLogFor = Key('Coaching.logFor');
+  static Key coachingLogSession(String id) => Key('Coaching.logSession.$id');
+  static const coachingLogBlank = Key('Coaching.logBlank');
+  // what deleting an account leaves with the other person (#568)
+  static const deleteAccountConversations = Key('Account.deleteConversations');
+  static const deleteAccountConversationsConfirm = Key('Account.deleteConversationsConfirm');
+  static Key loggedBy(String workoutId) => Key('History.loggedBy.$workoutId');
+  static const coachingNoteNew = Key('Coaching.noteNew');
+  static const coachingNoteFirst = Key('Coaching.noteFirst');
+  static Key coachingNote(String id) => Key('Coaching.note.$id');
+  static const coachingNoteEditor = Key('Coaching.noteEditor');
+  static const coachingNoteText = Key('Coaching.noteText');
+  static const coachingNoteSave = Key('Coaching.noteSave');
+  static const coachingNoteDelete = Key('Coaching.noteDelete');
+  static const coachingNoteDeleteConfirm = Key('Coaching.noteDeleteConfirm');
+
+  static Key message(String id) => Key('Messages.message.$id');
+
+  static Key inboxThread(String id) => Key('Messages.inbox.$id');
+
+  static Key yourCoachMessage(String id) => Key('YourCoach.message.$id');
+
+  static const threadMenu = Key('Messages.menu');
+  static const threadDelete = Key('Messages.delete');
+  static const threadDeleteConfirm = Key('Messages.deleteConfirm');
+  static const threadReport = Key('Messages.report');
+  static const threadBlock = Key('Messages.block');
+  static const threadBlockConfirm = Key('Messages.blockConfirm');
+  static const threadCleared = Key('Messages.cleared');
+  static const messageReport = Key('Messages.messageReport');
+  static const reportSheet = Key('Report.sheet');
+  static const reportInclude = Key('Report.include');
+  static const reportBlock = Key('Report.block');
+  static const reportSend = Key('Report.send');
+  static const profileMessages = Key('Profile.messages');
+
+  static Key reportReason(String reason) => Key('Report.reason.$reason');
 }

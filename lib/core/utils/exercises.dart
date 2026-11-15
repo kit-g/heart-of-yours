@@ -37,6 +37,16 @@ class RemoteExercisePreferences implements RemoteExercisePreferenceService {
   }
 }
 
+/// [Api.renameExercise] as the notifier asks for it (#616).
+class RemoteExerciseRenames implements RemoteExerciseRenameService {
+  final Api _api;
+
+  const new(this._api);
+
+  @override
+  Future<Exercise> renameExercise(Exercise exercise) => _api.renameExercise(exercise);
+}
+
 /// Local pins and their account copy share the same adapter during replay.
 class ExerciseNotes implements ExerciseNoteService {
   final LocalDatabase _db;

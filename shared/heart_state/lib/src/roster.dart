@@ -4,9 +4,11 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'analytics.dart';
 import 'coaching.dart' show CoachingStatus;
 import 'remote.dart';
 import 'workout_review.dart';
+import 'workouts.dart' show LoggedAfter;
 
 /// What the server does with a coach's view of everyone they coach
 /// (heart-of-yours#559). Like [CoachingService], the app's view of a few
@@ -33,6 +35,10 @@ abstract interface class RosterService {
 
   /// What a client's workout was asked to be; null when it had no plan.
   Future<WorkoutPlan?> getClientWorkoutPlan(String studentId, String workoutId);
+
+  /// Logs a workout as the client's (#560), by its own id: a retry answers
+  /// the stored one.
+  Future<Workout> logClientWorkout(String studentId, Workout workout);
 }
 
 /// What a coach has read of one client: their workouts, a page at a time, and
@@ -101,6 +107,7 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
   final RosterService _service;
   final RemoteAccess _remote;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
+  final Analytics? analytics;
 
   final _clients = <ClientSummary>[];
   final _former = <ClientSummary>[];
@@ -117,6 +124,7 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
     required this._service,
     RemoteAccess? remote,
     this.onError,
+    this.analytics,
   }) : _remote = remote ?? RemoteAccess();
 
   static Roster of(BuildContext context) => Provider.of<Roster>(context, listen: false);
@@ -216,6 +224,32 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
+  /// Logs [workout] as [studentId]'s (#560): a session the coach was there
+  /// for, theirs from now on, in their history and marked as the coach's
+  /// doing. Only what was done goes, as with a workout the user logs for
+  /// themselves. Throws what the service threw, so the caller can say so and
+  /// try again under the same id.
+  ///
+  /// Their record keeps the server's order, newest id first, and a workout
+  /// logged now has the newest id there is: it goes first, whenever it was.
+  Future<Workout> logFor(String studentId, Workout workout) async {
+    workout.keepDone();
+    final logged = await _service.logClientWorkout(studentId, workout);
+    // what was sent, after keepDone dropped what wasn't done: the server's
+    // answer is the same workout, and the client's history is what it holds
+    analytics?.workoutLoggedFor(
+      exerciseCount: workout.length,
+      setCount: workout.expand((exercise) => exercise).length,
+    );
+    if (_records[studentId] case final _Record record) {
+      record.workouts
+        ..removeWhere((each) => each.id == logged.id)
+        ..insert(0, logged);
+      notifyListeners();
+    }
+    return logged;
+  }
+
   /// The next older page of [studentId]'s workouts, if there is one.
   Future<void> moreRecord(String studentId) async {
     final record = _records[studentId];
@@ -296,6 +330,7 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
   /// to the server too. The client moves down among those without reasons.
   Future<void> markReviewed(ClientSummary client) async {
     await _service.markReviewed(client.connectionId, at: DateTime.timestamp());
+    analytics?.clientReviewed();
     final index = _clients.indexWhere((each) => each.connectionId == client.connectionId);
     if (index == -1) return;
     final reasons = [

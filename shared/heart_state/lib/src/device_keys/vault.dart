@@ -28,6 +28,13 @@ class _Run {
 
   final peers = <String, Peer>{};
 
+  /// When each thread last shared its keys with every device it knew of.
+  final sharedAt = <String, DateTime>{};
+
+  /// The note keys' turn: their record is read and written one step at a
+  /// time, apart from the steps that wait on the network.
+  Future<void> notesTail = Future.value();
+
   void end() => _over = true;
 
   /// Throws [_Stopped] once the run is over.
@@ -111,6 +118,70 @@ class _Run {
     return vault.write(
       _key('seen.$userId'),
       jsonEncode({for (final MapEntry(:key, :value) in seen.entries) key: value?.toUtc().toIso8601String()}),
+    );
+  }
+
+  /// The account's devices this one compared a code with, each by the keys
+  /// it had then: what this device trusts of its own besides itself.
+  Future<Map<String, String>> compared() async {
+    return switch (_decode(await read('compared'))) {
+      final Map compared => {
+        for (final MapEntry(:key, :value) in compared.entries)
+          if (value case final String keys) '$key': keys,
+      },
+      _ => {},
+    };
+  }
+
+  Future<void> saveCompared(String deviceId, String keys) async {
+    await write('compared', jsonEncode({...await compared(), deviceId: keys}));
+  }
+
+  /// The devices this one compared a code with whose vouch didn't reach the
+  /// server, each by the keys compared: tried again until it does, or until
+  /// the server lists it vouched for by another.
+  Future<Map<String, String>> owed() async {
+    final owed = switch (_decode(await read('owed'))) {
+      final Map owed => {
+        for (final MapEntry(:key, :value) in owed.entries)
+          if (value case final String keys) '$key': keys,
+      },
+      _ => <String, String>{},
+    };
+    owing
+      ..clear()
+      ..addAll(owed.keys);
+    return owed;
+  }
+
+  Future<void> saveOwed(Map<String, String> owed) async {
+    await write('owed', jsonEncode(owed));
+    owing
+      ..clear()
+      ..addAll(owed.keys);
+  }
+
+  /// [owed]'s devices, as last read or written: what a screen asks without
+  /// waiting on the vault.
+  final owing = <String>{};
+
+  /// The threads this device made a key for: what it shares again when one of
+  /// the account's devices comes to be trusted.
+  Future<Set<String>> threads() async {
+    return switch (_decode(await read('threads'))) {
+      {'ids': final List ids} => {for (final each in ids) '$each'},
+      _ => {},
+    };
+  }
+
+  Future<void> addThread(String threadId) async {
+    final known = await threads();
+    if (known.contains(threadId)) return;
+    await write(
+      'threads',
+      jsonEncode({
+        'ids': [...known, threadId],
+      }),
     );
   }
 

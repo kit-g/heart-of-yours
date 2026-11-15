@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'analytics.dart';
 import 'remote.dart';
 
 /// What the server does with an account's connections and hidden workouts
@@ -111,6 +112,10 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
   final RemoteAccess _remote;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
+  /// Every change below is reported once the server took it, never on the
+  /// way in: a refused pause is no pause.
+  final Analytics? analytics;
+
   final _connections = <Connection>[];
   final _hidden = <String, DateTime>{};
   final _invitations = <Invitation>[];
@@ -122,6 +127,7 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
     required this._service,
     RemoteAccess? remote,
     this.onError,
+    this.analytics,
   }) : _remote = remote ?? RemoteAccess();
 
   static Coaching of(BuildContext context) => Provider.of<Coaching>(context, listen: false);
@@ -212,16 +218,19 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
   /// side may pause; only the student resumes.
   Future<void> pause(Connection connection) async {
     _replace(await _service.setConnectionStatus(_idOf(connection), .paused));
+    analytics?.coachingChanged(role: connection.role, action: .paused);
   }
 
   Future<void> resume(Connection connection) async {
     _replace(await _service.setConnectionStatus(_idOf(connection), .active));
+    analytics?.coachingChanged(role: connection.role, action: .resumed);
   }
 
   /// Ends [connection] for both people. It stays in [all] as ended, and out of
   /// [clients] and [coaches].
   Future<void> end(Connection connection) async {
     await _service.endConnection(_idOf(connection));
+    analytics?.coachingChanged(role: connection.role, action: .ended);
     _replace(
       Connection(
         targetId: connection.targetId,
@@ -234,6 +243,13 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
         shares: connection.shares,
       ),
     );
+  }
+
+  /// Blocks the other person of [connection]: it ends, neither may message
+  /// the other, and they can't connect again until this person lifts it.
+  Future<void> block(Connection connection) async {
+    _replace(await _service.setConnectionStatus(_idOf(connection), .blocked));
+    analytics?.coachingChanged(role: connection.role, action: .blocked);
   }
 
   /// Keeps [workoutId] out of every connection's view, peers' too.
@@ -273,6 +289,7 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
   /// caller's job.
   Future<Invitation> invite(String name, {String? programId}) async {
     final invitation = await _service.createInvitation(name, programId: programId);
+    analytics?.invitationCreated(withProgram: programId != null);
     _invitations.insert(0, invitation);
     notifyListeners();
     return invitation;
@@ -322,14 +339,22 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
   /// The coach joins [coaches] at once.
   Future<AcceptedInvitation> accept(String token, Set<ConnectionShare> shares) async {
     final accepted = await _service.acceptInvitation(token, shares);
+    analytics?.invitationAnswered(accepted: true);
     _replace(accepted.connection);
     return accepted;
   }
 
-  Future<void> decline(String token) => _service.declineInvitation(token);
+  Future<void> decline(String token) async {
+    await _service.declineInvitation(token);
+    analytics?.invitationAnswered(accepted: false);
+  }
 
-  /// Blocks whoever sent the link, though nobody is connected yet.
-  Future<void> blockInviter(String token) => _service.blockInviter(token);
+  /// Blocks whoever sent the link, though nobody is connected yet. A no, as
+  /// far as the invitation goes: there is no connection to block.
+  Future<void> blockInviter(String token) async {
+    await _service.blockInviter(token);
+    analytics?.invitationAnswered(accepted: false);
+  }
 
   // ---- blocks (#553) ----
 

@@ -8,6 +8,7 @@ import 'package:network_utils/network_utils.dart';
 import 'imports.dart';
 import 'moves.dart';
 import 'programs.dart';
+import 'renames.dart';
 
 part 'routes/accounts.dart';
 part 'routes/workouts.dart';
@@ -22,6 +23,8 @@ part 'routes/roster.dart';
 part 'routes/library.dart';
 part 'routes/push.dart';
 part 'routes/keys.dart';
+part 'routes/threads.dart';
+part 'routes/notes.dart';
 part 'router.dart';
 
 class Api
@@ -39,7 +42,9 @@ class Api
         _RosterRoutes,
         _LibraryRoutes,
         _PushRoutes,
-        _KeyRoutes
+        _KeyRoutes,
+        _ThreadRoutes,
+        _NoteRoutes
     implements
         AccountService,
         AnomalyService,

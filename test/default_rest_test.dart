@@ -137,8 +137,8 @@ void main() {
     expect(Preferences.of(context).isOn(.defaultRest), isTrue);
     expect(find.byKey(WorkoutDetailKeys.defaultRestOffer), findsNothing);
     expect(find.byKey(AppKeys.featureDeclinedNotice), findsNothing);
-    expect(restFor(sheet(tester), workout.first), RestKind.compound.seconds);
-    expect(restFor(sheet(tester), workout.last), RestKind.isolation.seconds);
+    expect(restFor(sheet(tester), workout.first, planned: false), RestKind.compound.seconds);
+    expect(restFor(sheet(tester), workout.last, planned: false), RestKind.isolation.seconds);
   });
 
   testWidgets('no: the one notice in its place, and no rest', (tester) async {
@@ -154,7 +154,7 @@ void main() {
     expect(preferences.shouldOffer(.defaultRest), isFalse);
     expect(find.byKey(WorkoutDetailKeys.defaultRestOffer), findsNothing);
     expect(find.byKey(AppKeys.featureDeclinedNotice), findsOneWidget);
-    expect(restFor(sheet(tester), workout.first), isNull);
+    expect(restFor(sheet(tester), workout.first, planned: false), isNull);
   });
 
   testWidgets('off, the sheet is as it was: no offer and no rest', (tester) async {
@@ -165,7 +165,7 @@ void main() {
 
     expect(find.byKey(WorkoutDetailKeys.defaultRestOffer), findsNothing);
     expect(find.byKey(AppKeys.featureDeclinedNotice), findsNothing);
-    expect(restFor(sheet(tester), workout.first), isNull);
+    expect(restFor(sheet(tester), workout.first, planned: false), isNull);
   });
 
   testWidgets("a timer of the exercise's own wins over the default", (tester) async {
@@ -175,8 +175,8 @@ void main() {
     await Timers.of(context).setRestTimer(squat.id, 45);
     await tester.pumpTimes();
 
-    expect(restFor(sheet(tester), workout.first), 45);
-    expect(restFor(sheet(tester), workout.last), RestKind.isolation.seconds);
+    expect(restFor(sheet(tester), workout.first, planned: false), 45);
+    expect(restFor(sheet(tester), workout.last, planned: false), RestKind.isolation.seconds);
   });
 
   testWidgets('a kind set to no rest gives none, and its length is the one picked', (tester) async {
@@ -188,8 +188,8 @@ void main() {
       ..setDefaultRest(.isolation, 75);
     await tester.pumpTimes();
 
-    expect(restFor(sheet(tester), workout.first), isNull);
-    expect(restFor(sheet(tester), workout.last), 75);
+    expect(restFor(sheet(tester), workout.first, planned: false), isNull);
+    expect(restFor(sheet(tester), workout.last, planned: false), 75);
   });
 
   testWidgets('an anonymous session has timers of its own and the default alike', (tester) async {
@@ -203,7 +203,7 @@ void main() {
     await Timers.of(context).setRestTimer(squat.id, 45);
     await tester.pumpTimes();
 
-    expect(restFor(sheet(tester), workout.first), 45);
-    expect(restFor(sheet(tester), workout.last), RestKind.isolation.seconds);
+    expect(restFor(sheet(tester), workout.first, planned: false), 45);
+    expect(restFor(sheet(tester), workout.last, planned: false), RestKind.isolation.seconds);
   });
 }

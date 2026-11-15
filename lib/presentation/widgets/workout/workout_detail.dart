@@ -12,9 +12,13 @@ import 'package:heart/core/utils/assets.dart';
 import 'package:heart/core/utils/column_fill.dart';
 import 'package:heart/core/utils/replacements.dart';
 import 'package:heart/core/utils/image_picker.dart';
+import 'package:heart/core/utils/goal_crossings.dart';
+import 'package:heart/core/utils/goals.dart';
+import 'package:heart/core/utils/live_goals.dart';
 import 'package:heart/core/utils/live_records.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/core/utils/weeks.dart';
@@ -23,6 +27,7 @@ import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/part_of_program.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
+import 'package:heart/presentation/widgets/confetti.dart';
 import 'package:heart/presentation/widgets/countdown.dart';
 import 'package:heart/presentation/widgets/duration_picker.dart';
 import 'package:heart/presentation/widgets/feature_copy.dart';
@@ -33,6 +38,7 @@ import 'package:heart/presentation/widgets/exercises/exercise_picker_dialog.dart
 import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/exercises/new_exercise_dialog.dart';
 import 'package:heart/presentation/widgets/formatters.dart';
+import 'package:heart/presentation/widgets/goals/goals.dart' show GoalJudge, goalJudge, goalTargetLabel, goalTitle;
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart' show PreviousSet;
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart';
 import 'package:heart/presentation/widgets/image.dart';
@@ -111,8 +117,13 @@ class WorkoutDetail extends StatefulWidget {
   final AddWarmups? onAddWarmups;
 
   /// Whether each exercise says its program's plan in a line under its name
-  /// (#349): a program's workout while Programs is on.
+  /// (#349): a program's workout while its program is shown.
   final bool showsPlan;
+
+  /// The program the workout or template shown here is a session of, if any:
+  /// what its rests, set types and replacements follow ([planShown]), decided
+  /// once here of this workout, never of the active one (#593).
+  final String? programId;
 
   /// Puts another exercise in one's place, before any of its sets is ticked:
   /// an open slot's swap within its pattern (#349), and any other exercise's
@@ -135,7 +146,16 @@ class WorkoutDetail extends StatefulWidget {
   final Iterable<WorkoutImage>? workoutImages;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
   final String? workoutId;
-  final void Function(Exercise) onTapExercise;
+
+  /// Opens an exercise's own page, with this account's charts and records.
+  /// Without it, as in someone else's workout (#560), its name is no button.
+  final void Function(Exercise)? onTapExercise;
+
+  /// Whether a note on an exercise can be pinned to it, or a pinned one taken
+  /// off: this account's own notes, which someone else's workout (#560) has
+  /// nothing to do with. Its note in this workout is [onNoteChanged]'s.
+  final bool pinsNotes;
+
   final Future<void> Function(WorkoutImage)? onDeleteImage;
 
   const new({
@@ -155,6 +175,7 @@ class WorkoutDetail extends StatefulWidget {
     this.onSetTarget,
     this.onAddWarmups,
     this.showsPlan = false,
+    this.programId,
     this.onReplaceExercise,
     this.onGroup,
     this.onLeaveGroup,
@@ -168,7 +189,8 @@ class WorkoutDetail extends StatefulWidget {
     this.onDeleteImage,
     this.onTapImage,
     this.workoutId,
-    required this.onTapExercise,
+    this.onTapExercise,
+    this.pinsNotes = true,
   });
 
   @override
@@ -217,110 +239,125 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
       context,
     );
 
-    return CustomScrollView(
-      controller: widget.controller,
-      physics: const ClampingScrollPhysics(),
-      slivers: [
-        if (widget.appBar case Widget appbar)
-          appbar
-        else
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 4),
-          ),
-        ...?widget.slivers,
-        SliverToBoxAdapter(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SizeTransition(
-                  sizeFactor: animation,
-                  alignment: const Alignment(0, -1),
-                  child: child,
-                ),
-              );
-            },
-            child: switch (widget.workoutImages) {
-              null => const SizedBox.shrink(),
-              Iterable i when i.isEmpty => const SizedBox.shrink(),
-              Iterable<WorkoutImage> images => Padding(
-                padding: const .only(top: 8),
-                child: _Media(
-                  images: images.toList(),
-                  onTapImage: (index) => widget.onTapImage?.call(
-                    images,
-                    startingIndex: index,
-                    workoutId: widget.workoutId,
-                  ),
-                  onDeleteImage: (image) async => await widget.onDeleteImage?.call(image),
-                ),
-              ),
-            },
-          ),
-        ),
-        switch (exercises.isEmpty) {
-          true => const _EmptyState(size: 320),
-          false => _exerciseList(colorScheme, addSet, setCopy, previous),
-        },
-        SliverToBoxAdapter(
-          child: DragTarget<WorkoutExercise>(
-            onWillAcceptWithDetails: (_) {
-              _currentlyHoveredExercise.value = null;
-              return true;
-            },
-            onLeave: (_) {
-              _currentlyHoveredExercise.value = null;
-            },
-            onAcceptWithDetails: (details) {
-              widget.onDragExercise(details.data);
-            },
-            builder: (_, _, _) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Column(
-                  children: [
-                    PrimaryButton.wide(
-                      onPressed: () {
-                        _showExerciseDialog(context);
+    return _Plan(
+      shown: planShown(context, widget.programId, listen: true),
+      programId: widget.programId,
+      child: CustomScrollView(
+        controller: widget.controller,
+        physics: const ClampingScrollPhysics(),
+        slivers: [
+          if (widget.appBar case Widget appbar)
+            appbar
+          else
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 4),
+            ),
+          // a column of rows, not the whole pane (#592), inside the scroll view
+          // so the pane still scrolls from either side and its bar sits at the edge
+          SliverLayoutBuilder(
+            builder: (context, constraints) => SliverPadding(
+              padding: .symmetric(horizontal: max(0, (constraints.crossAxisExtent - setTableWidth) / 2)),
+              sliver: SliverMainAxisGroup(
+                slivers: [
+                  ...?widget.slivers,
+                  SliverToBoxAdapter(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SizeTransition(
+                            sizeFactor: animation,
+                            alignment: const Alignment(0, -1),
+                            child: child,
+                          ),
+                        );
                       },
-                      key: WorkoutDetailKeys.addExercises,
-                      child: Center(
-                        child: Text(addExercises),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    if (widget.needsCancelWorkoutButton) ...[
-                      PrimaryButton.wide(
-                        key: WorkoutDetailKeys.cancelWorkout,
-                        onPressed: () {
-                          showCancelWorkoutDialog(
-                            context,
-                            onFinish: () {
-                              Scrolls.of(context)
-                                ..resetExerciseStack()
-                                ..resetHistoryStack();
-                            },
-                          );
-                        },
-                        backgroundColor: colorScheme.errorContainer,
-                        child: Center(
-                          child: Text(
-                            cancelWorkout,
-                            style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                      child: switch (widget.workoutImages) {
+                        null => const SizedBox.shrink(),
+                        Iterable i when i.isEmpty => const SizedBox.shrink(),
+                        Iterable<WorkoutImage> images => Padding(
+                          padding: const .only(top: 8),
+                          child: _Media(
+                            images: images.toList(),
+                            onTapImage: (index) => widget.onTapImage?.call(
+                              images,
+                              startingIndex: index,
+                              workoutId: widget.workoutId,
+                            ),
+                            onDeleteImage: (image) async => await widget.onDeleteImage?.call(image),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 60),
-                    ],
-                  ],
-                ),
-              );
-            },
+                      },
+                    ),
+                  ),
+                  switch (exercises.isEmpty) {
+                    true => const _EmptyState(size: 320),
+                    false => _exerciseList(colorScheme, addSet, setCopy, previous),
+                  },
+                  SliverToBoxAdapter(
+                    child: DragTarget<WorkoutExercise>(
+                      onWillAcceptWithDetails: (_) {
+                        _currentlyHoveredExercise.value = null;
+                        return true;
+                      },
+                      onLeave: (_) {
+                        _currentlyHoveredExercise.value = null;
+                      },
+                      onAcceptWithDetails: (details) {
+                        widget.onDragExercise(details.data);
+                      },
+                      builder: (_, _, _) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Column(
+                            children: [
+                              PrimaryButton.wide(
+                                onPressed: () {
+                                  _showExerciseDialog(context);
+                                },
+                                key: WorkoutDetailKeys.addExercises,
+                                child: Center(
+                                  child: Text(addExercises),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              if (widget.needsCancelWorkoutButton) ...[
+                                PrimaryButton.wide(
+                                  key: WorkoutDetailKeys.cancelWorkout,
+                                  onPressed: () {
+                                    showCancelWorkoutDialog(
+                                      context,
+                                      onFinish: () {
+                                        Scrolls.of(context)
+                                          ..resetExerciseStack()
+                                          ..resetHistoryStack();
+                                      },
+                                    );
+                                  },
+                                  backgroundColor: colorScheme.errorContainer,
+                                  child: Center(
+                                    child: Text(
+                                      cancelWorkout,
+                                      style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 60),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  ...?widget.trailingSlivers,
+                ],
+              ),
+            ),
           ),
-        ),
-        ...?widget.trailingSlivers,
-      ],
+        ],
+      ),
     );
   }
 
@@ -461,6 +498,9 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                                 },
                                 allowCompleting: widget.allowsCompletingSet,
                                 onTapExercise: widget.onTapExercise,
+                                pinsNotes: widget.pinsNotes,
+                                // this account's last time, beside its own sets only (#591)
+                                showsPrevious: !PreviousScope.isSomeoneElses(context),
                               ),
                             ),
                           ),
@@ -585,9 +625,14 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
         // let the close animation finish before the list visibly resets
         Future.delayed(
           const Duration(milliseconds: 100),
-          () => allExercises
-            ..unselectAll()
-            ..clearFilters(),
+          () {
+            allExercises
+              ..unselectAll()
+              ..clearFilters();
+            // the search too: the controller is this State's and outlives the
+            // dialog, so the next Add exercises opened on the last one's text
+            if (mounted) _searchController.clear();
+          },
         );
       },
     );
@@ -952,6 +997,9 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     super.initState();
     _sheetController.addListener(_onSheetChanged);
     _finishAtLastSetRequested.addListener(_offerFinishAtLastSet);
+    // a program's constraint and what the user goes easy on shape the
+    // replacements, whichever way the session started (#593)
+    if (planShown(context, widget.workouts.activeWorkout?.programId)) GoEasy.of(context).ensure();
     // asked for before the sheet was up: a notification tap on a cold start
     WidgetsBinding.instance.addPostFrameCallback((_) => _offerFinishAtLastSet());
   }
@@ -1074,8 +1122,9 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     final workouts = widget.workouts;
     final active = workouts.activeWorkout!;
     // a program's session (#349): its plan under each exercise, and a lighter
-    // cycle said once at the top
-    final planned = Preferences.watch(context).isOn(.programs) && active.programId != null;
+    // cycle said once at the top; a coach's program runs under Your coach
+    // alone (#593)
+    final planned = programIdShown(context, active.programId, listen: true);
     final programs = Programs.watch(context);
     final program = switch ((planned, active.programId)) {
       (true, final String id) => programs.lookup(id),
@@ -1129,6 +1178,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                           child: WorkoutDetail(
                             controller: scrollController,
                             exercises: active,
+                            programId: active.programId,
                             workoutImages: active.images?.values,
                             onTapImage: widget.onTapImage,
                             workoutId: active.id,
@@ -1437,4 +1487,27 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       workouts.attachImageToActiveWorkout(localImage);
     }
   }
+}
+
+/// What [WorkoutDetail] decided once of the workout it shows (#593): whether
+/// its program's plan shows ([planShown]), and which program that is. Its
+/// rests, set types and replacements read it here, never off the active
+/// workout — a template's editor is not the session under way.
+class _Plan extends InheritedWidget {
+  final bool shown;
+  final String? programId;
+
+  const new({required this.shown, required this.programId, required super.child});
+
+  /// The plan of the [WorkoutDetail] above [context]; none outside one.
+  static ({bool shown, String? programId}) of(BuildContext context, {bool listen = false}) {
+    final plan = switch (listen) {
+      true => context.dependOnInheritedWidgetOfExactType<_Plan>(),
+      false => context.getInheritedWidgetOfExactType<_Plan>(),
+    };
+    return (shown: plan?.shown ?? false, programId: plan?.programId);
+  }
+
+  @override
+  bool updateShouldNotify(_Plan old) => old.shown != shown || old.programId != programId;
 }

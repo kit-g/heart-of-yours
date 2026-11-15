@@ -505,6 +505,41 @@ void main() {
       verify(library.getLibrary(cached: null)).called(1);
     });
 
+    // #612: a stamp passes every comparison the manifest makes, so rows that
+    // disagree with it would never be replaced
+    test('a Russian stamp over English rows is not trusted, and is reported', () async {
+      const inRussian = (version: 'run-1', locale: 'ru', etag: '"abc"');
+      final errors = <Object?>[];
+      sut = build(onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (DateTime(2024), [ex('Squat')]));
+      when(catalog.getCatalogStamp()).thenAnswer((_) async => inRussian);
+
+      await sut.init(locale: 'ru-RU');
+
+      verify(library.getLibrary(cached: null)).called(1);
+      expect(errors, [
+        isA<CatalogLanguageMismatch>()
+            .having((e) => e.stamped, 'stamped', 'ru')
+            .having((e) => e.device, 'device', 'ru-RU'),
+      ]);
+    });
+
+    test('a Russian stamp over Russian rows is trusted', () async {
+      const inRussian = (version: 'run-1', locale: 'ru', etag: '"abc"');
+      final errors = <Object?>[];
+      sut = build(onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer(
+        (_) async => (DateTime(2024), [ex('Squat'), ex('Приседания (штанга)')]),
+      );
+      when(catalog.getCatalogStamp()).thenAnswer((_) async => inRussian);
+      when(library.getLibrary(cached: inRussian)).thenAnswer((_) async => (null, inRussian));
+
+      await sut.init(locale: 'ru-RU');
+
+      verify(library.getLibrary(cached: inRussian)).called(1);
+      expect(errors, isEmpty);
+    });
+
     test('routes errors to onError and does not throw', () async {
       Object? err;
       sut = build(onError: (e, {stacktrace}) => err = e);
@@ -576,6 +611,20 @@ void main() {
       await sut.onLocaleChanged('en');
 
       expect(sut.lookup(en.id)?.name, 'Bench Press');
+    });
+
+    test('a fetch that fails keeps the old tag, so the same change tries again', () async {
+      await sut.init(locale: 'en');
+      when(library.getLibrary(cached: anyNamed('cached'))).thenThrow(Exception('offline'));
+
+      await sut.onLocaleChanged('ru');
+
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[], glossary: SearchGlossary.empty()), stamp));
+      clearInteractions(library);
+      await sut.onLocaleChanged('ru');
+
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
     });
 
     test('a change before init is only recorded — init fetches under the new header anyway', () async {
@@ -958,6 +1007,58 @@ void main() {
     });
   });
 
+  group('editExercise (#616)', () {
+    late _Renames renames;
+    final own = Exercise.fromJson({
+      'id': 'own-1',
+      'name': 'Landmine Press',
+      'category': 'Barbell',
+      'target': 'Shoulders',
+      'own': 1,
+    });
+
+    setUp(() async {
+      renames = _Renames();
+      sut = Exercises(
+        remoteService: remote,
+        remote: access,
+        service: local,
+        libraryService: library,
+        catalogService: catalog,
+        preferenceService: preferences,
+        renameService: renames,
+      )..userId = 'u1';
+      when(remote.editExercise(any)).thenAnswer((i) async => i.positionalArguments.first as Exercise);
+      await sut.makeExercise(own);
+      clearInteractions(remote);
+    });
+
+    test('a new name goes through the rename', () async {
+      await sut.editExercise(own.renamed('Half-kneeling Press'));
+
+      expect(renames.sent.single.name, 'Half-kneeling Press');
+      verifyNever(remote.editExercise(any));
+      expect(sut.lookup(own.id)?.name, 'Half-kneeling Press');
+    });
+
+    test('an edit that keeps the name never sends one', () async {
+      await sut.editExercise(own.copyWith(target: .chest));
+
+      expect(renames.sent, isEmpty);
+      verify(remote.editExercise(any)).called(1);
+    });
+
+    test('archiving acts on the current copy, not the one it was handed', () async {
+      await sut.editExercise(own.renamed('Half-kneeling Press'));
+
+      await sut.archive(own);
+
+      final archived = verify(remote.editExercise(captureAny)).captured.single as Exercise;
+      expect(archived.name, 'Half-kneeling Press');
+      expect(archived.isArchived, isTrue);
+    });
+  });
+
   group('showingMine', () {
     test('getter/setter works and notifies', () {
       final probe = ListenerProbe()..attach(sut);
@@ -1319,5 +1420,15 @@ class _MoveFake implements ExerciseMoveService {
   Future<void> mirror(ExerciseMoveReport report, {required String userId}) async {
     if (mirrorFails) throw StateError('locked');
     mirrored.add((report, userId));
+  }
+}
+
+class _Renames implements RemoteExerciseRenameService {
+  final sent = <Exercise>[];
+
+  @override
+  Future<Exercise> renameExercise(Exercise exercise) async {
+    sent.add(exercise);
+    return exercise;
   }
 }

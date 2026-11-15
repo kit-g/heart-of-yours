@@ -112,15 +112,16 @@ ticket doesn't say:
   offer (it stays for that session, then reads as no); tapping it opens the
   ask, and yes goes straight on to the copy. Nothing interrupts a user who
   never reaches for it.
-- Past workouts (`Feature.pastWorkouts`, #530) are the first feature with
-  **no ask at all**: its switch in Settings › Features is the only way on.
-  An offer has to come at the moment the feature would help, and nothing in
-  ordinary use marks a lifter who logs after the fact, so any moment chosen
-  would be a guess and the offer a nag. Off, the Workout tab and History have
-  no way in; a workout already logged this way is an ordinary workout.
+- Past workouts (`Feature.pastWorkouts`, #530) shipped with **no ask at all**:
+  an offer has to come at the moment the feature would help, and nothing in
+  ordinary use marked a lifter who logs after the fact. History's calendar
+  (#618) made that moment: **tapping an empty past day is the signal**. The
+  first such tap asks; yes goes straight on to logging that day, and after a
+  no the tap does nothing. Off, the Workout tab and History have no way in;
+  a workout already logged this way is an ordinary workout.
 - Coaching (#566) is two features, because it is two people's choices. **Coach
-  people** (`Feature.coachPeople`) has no ask, like Past workouts, and is the
-  first switch that depends on the account: during the beta it shows only for an
+  people** (`Feature.coachPeople`) has no ask, as Past workouts had none before
+  #618, and is the first switch that depends on the account: during the beta it shows only for an
   account holding the `coach` entitlement, which the server grants by hand. Off,
   or without the entitlement, Profile has no Coaching button and a link into the
   space lands on Profile. **Your coach** (`Feature.yourCoach`) is asked when an
@@ -155,6 +156,14 @@ asks. Everything else in the contract holds: the switch in Settings › Features
 is live both ways, an explicit off stays off and the app looks as if Programs
 had never been built, and the data stays whole either way. The default is not
 an answer: only a switch the user actually flipped syncs to the account.
+
+One exception crosses two switches (#593): with Programs off and Your coach
+on, a program a coach sent (`Program.coachId`) is shown and runs as Programs
+would run it — its band, its page, its plan, its growth, its calendar —
+because a no to Programs is never asked again, and the student would otherwise
+never see it. Their own programs, the library and every way of making one stay
+Programs'. `Preferences.programShown` is the one rule every surface asks;
+`Programs.shown` is the programs as it lets them be seen.
 
 Sets a week (`Feature.weeklySets`, #526) is the second, and the first core
 feature made a choice after it shipped: the profile card was core under #341,

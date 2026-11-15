@@ -11,6 +11,10 @@ const _fixedColumnWidth = 32.0;
 /// fit.
 const _setColumnWidth = 44.0;
 const _fixedButtonHeight = 24.0;
+
+/// The Previous column's share of a set row, kept as a gap where the column is
+/// absent (#591): the value cells are as wide as they ever are.
+const _previousFlex = 3;
 const _emptyValue = '-';
 
 final _floatingPointFormatters = <TextInputFormatter>[
@@ -553,8 +557,9 @@ Future<void> finishWorkout(BuildContext context, Workouts workouts, {DateTime? a
 
   // which template exercise each of the session's exercises came from, read
   // before the finish drops the ones nobody ticked (#350)
-  final grows = switch ((session, Preferences.of(context).isOn(.programs))) {
-    (Workout(programId: String _) && final finished, true) => (
+  // a coach's program grows under Your coach alone (#593)
+  final grows = switch (session) {
+    Workout(:final String programId) && final finished when programIdShown(context, programId) => (
       workout: finished,
       template: switch (finished.templateId) {
         final String id => Templates.of(context).lookup(id),
@@ -745,13 +750,14 @@ Future<void> startPlanned(
   return workouts.startWorkout(source: source, template: workout, plan: plan, applyPinnedNotes: true);
 }
 
-/// [template] as the workout it starts. A program's session, while Programs
-/// is on, comes with its targets as the program has them this time (#349):
+/// [template] as the workout it starts. A program's session, while its
+/// program is shown (Programs on, or a coach's under Your coach, #593), comes
+/// with its targets as the program has them this time (#349):
 /// a share of a base as a weight on the user's plates, a lighter cycle
 /// lighter. Anything else starts as it was written, with no plan.
 PlannedWorkout startingWorkout(BuildContext context, Template template) {
   final preferences = Preferences.of(context);
-  if (template.programId == null || !preferences.isOn(.programs)) return (workout: template.toWorkout(), plan: null);
+  if (!programIdShown(context, template.programId)) return (workout: template.toWorkout(), plan: null);
   final exercises = Exercises.of(context);
   return Programs.of(context).plan(
     template,
@@ -767,9 +773,9 @@ PlannedWorkout startingWorkout(BuildContext context, Template template) {
 
 /// The sets a program's session leaves unticked, by exercise (#349): those
 /// that aim for something or hold something typed. Empty for any other
-/// workout, and while Programs is off.
+/// workout, and while its program is not shown.
 List<(WorkoutExercise, List<ExerciseSet>)> _untickedInPlan(BuildContext context, Workout workout) {
-  if (workout.programId == null || !Preferences.of(context).isOn(.programs)) return const [];
+  if (!programIdShown(context, workout.programId)) return const [];
   return [
     for (final exercise in workout)
       if (exercise.where((set) => !set.isCompleted && (set.target != null || set.canBeCompleted)).toList()

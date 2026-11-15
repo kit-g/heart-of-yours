@@ -165,6 +165,15 @@ const _schema = [
   // v31 (#558)
   addProgramRevision,
   addProgramSessionRevisions,
+  // v32 (#556)
+  createThreads,
+  createThreadItems,
+  threadItemsIndex,
+  // v33 (#556)
+  createCoachNotes,
+  // v34 (#560)
+  addWorkoutLoggedBy,
+  addWorkoutLoggedByName,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production

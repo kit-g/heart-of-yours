@@ -9,7 +9,7 @@ import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/env/shortcuts.dart';
-import 'package:heart/core/utils/goals.dart';
+import 'package:heart/core/utils/goal_crossings.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
@@ -21,13 +21,14 @@ import 'package:heart/presentation/routes/done/done.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/login/login.dart';
+import 'package:heart/presentation/routes/messages/messages.dart';
 import 'package:heart/presentation/routes/onboarding/onboarding.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/recaps/recaps.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/settings/upgrade_app.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
-import 'package:heart/presentation/widgets/goals/goals.dart' show runningPrograms;
+import 'package:heart/presentation/widgets/goals/goals.dart' show goalJudge;
 import 'package:heart/presentation/widgets/app_frame.dart';
 import 'package:heart/presentation/widgets/greetings_pane.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -87,6 +88,7 @@ final class HeartRouter {
           ),
           _coachingRoute(),
           _invitationRoute(),
+          _threadRoute(),
           _upgradeRequiredRoute(),
           _onboardingRoute(),
           _activeWorkoutRoute(),
@@ -304,11 +306,12 @@ final class HeartRouter {
   }
 
   /// Where a [ProgramSessionLink] in [uri] sends the app, having set it going
-  /// — or null: not one. With Programs off there is no program to open, and
-  /// the link is only the workouts tab.
+  /// — or null: not one. With no program shown there is none to open, and
+  /// the link is only the workouts tab; which program is shown is known once
+  /// the programs are read, so the link itself asks again (#593).
   static String? _programSessionLink(BuildContext context, Uri uri) {
     if (ProgramSessionLink.parse(uri) case ProgramSessionLink link) {
-      if (Preferences.of(context).isOn(.programs)) {
+      if (Preferences.of(context).programsReach) {
         unawaited(
           runProgramSessionLink(
             link,
@@ -366,6 +369,16 @@ final class HeartRouter {
 
   /// The Coaching space's messages, from a push saying one arrived (#567).
   void goToCoachingMessages() => config.goNamed(_coachingMessagesName);
+
+  /// One conversation of the coach's, in Coaching (#556).
+  void goToCoachingThread(String connectionId) {
+    config.goNamed(_coachingThreadName, pathParameters: {'connectionId': connectionId});
+  }
+
+  /// A student's conversation with their coach, over the app (#556).
+  void openThread(String connectionId) {
+    config.pushNamed(_threadName, pathParameters: {'connectionId': connectionId});
+  }
 
   /// A coach's invitation (#553), as its link would open it.
   void openInvitation(String token, {String? fingerprint}) {

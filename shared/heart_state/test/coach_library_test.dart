@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
+import 'test_utils.dart';
+
 /// The server's side, in memory: a document per program, a new version per
 /// save, as heart-api keeps them.
 class _Server implements CoachLibraryService {
@@ -305,6 +307,22 @@ void main() {
     expect(id, program.id);
     expect(connections, ['c-muffin', 'c-biscuit']);
     expect([for (final each in deliveries) each.programId], ['copy-c-muffin', 'copy-c-biscuit']);
+  });
+
+  test('a send is counted by the clients it reached, and one that reached none is not (#568)', () async {
+    final reported = ReportedAnalytics();
+    library = CoachLibrary(
+      service: server,
+      exerciseOf: exerciseOf,
+      analytics: Analytics(service: reported),
+    );
+    final program = await written();
+
+    await library.send(program.id, ['c-muffin', 'c-biscuit']);
+    await library.send(program.id, const []);
+
+    expect(reported.names, ['program_sent']);
+    expect(reported.parametersOf('program_sent'), {'clients': 2});
   });
 
   test('refusals are read by their codes, and an unknown one is none of them', () {

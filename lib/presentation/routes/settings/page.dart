@@ -12,6 +12,9 @@ class SettingsPage extends StatelessWidget with HasHaptic {
 
   /// What reaches the person by push (#554), while the push client runs.
   final VoidCallback onPushSettings;
+
+  /// The account's devices and letting one in (#555), where device keys run.
+  final VoidCallback onYourDevices;
   final VoidCallback onFeatures;
   final VoidCallback onDeveloperApi;
 
@@ -26,6 +29,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
     required this.onWhatsNew,
     required this.onRestTimers,
     required this.onPushSettings,
+    required this.onYourDevices,
     required this.onFeatures,
     required this.onDeveloperApi,
     required this.onErased,
@@ -58,6 +62,11 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :account,
       :app,
       :developerApi,
+      :yourDevices,
+      :screens,
+      :historyView,
+      :historyAsList,
+      :calendar,
     ) = L.of(
       context,
     );
@@ -136,6 +145,43 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                     // no page padding: the swatch strip scrolls to the screen
                     // edge and carries the inset itself
                     _PresetPicker(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // how the screens show themselves (#609, #620); History's view
+                // and the exercise picker's grouping are also switched, and
+                // remembered, from those screens themselves
+                _Section(
+                  title: screens,
+                  children: [
+                    Padding(
+                      padding: const .symmetric(horizontal: 16.0),
+                      child: Selector<Preferences, HistoryView?>(
+                        selector: (_, provider) => switch (provider.isInitialized) {
+                          true => provider.historyView,
+                          false => null,
+                        },
+                        builder: (context, view, _) {
+                          return switch (view) {
+                            null => const SizedBox.shrink(),
+                            HistoryView value => FixedLengthSettingPicker<HistoryView>(
+                              key: AppKeys.historyViewSetting,
+                              title: historyView,
+                              value: value,
+                              onValueChanged: (view) {
+                                buzz();
+                                if (view != null) Preferences.of(context).setHistoryView(view);
+                              },
+                              children: {
+                                .list: Text(historyAsList),
+                                .calendar: Text(calendar),
+                              },
+                            ),
+                          };
+                        },
+                      ),
+                    ),
+                    const _PickerGroupingPicker(),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -281,6 +327,16 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                         title: Text(developerApi),
                         onTap: onDeveloperApi,
                       ),
+                      // where coaching's encryption keys run (#555): a device
+                      // is let in by one the account already has
+                      if (pushesOn(context, listen: true) && DeviceKeys.of(context).supported)
+                        ListTile(
+                          key: AppKeys.yourDevices,
+                          leading: const Icon(Icons.devices_rounded),
+                          title: Text(yourDevices),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: onYourDevices,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 24),

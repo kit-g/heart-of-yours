@@ -57,6 +57,31 @@ void stubStartup(MockLocalDatabase db, MockApi api) {
   when(api.getWorkoutGallery(cursor: anyNamed('cursor'))).thenAnswer((_) async => ProgressGalleryResponse.fromJson({}));
 }
 
+/// An analytics transport that keeps what it was told, for a test to assert
+/// on: every event in order, and every user property each time it was set.
+class RecordedAnalytics implements AnalyticsService {
+  final events = <(String, Map<String, Object>)>[];
+  final properties = <(String, String?)>[];
+
+  /// The parameters of every event called [name], in order.
+  List<Map<String, Object>> of(String name) => [
+    for (final (each, parameters) in events)
+      if (each == name) parameters,
+  ];
+
+  /// Each value the user property [name] was set to, in order.
+  List<String?> property(String name) => [
+    for (final (each, value) in properties)
+      if (each == name) value,
+  ];
+
+  @override
+  Future<void> logEvent(String name, Map<String, Object> parameters) async => events.add((name, parameters));
+
+  @override
+  Future<void> setUserProperty(String name, String? value) async => properties.add((name, value));
+}
+
 /// Where the active workout's pauses are stored (#134): nothing open on disk,
 /// and every write taken.
 void stubPauses(MockLocalDatabase db) {

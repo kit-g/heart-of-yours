@@ -14,9 +14,10 @@ class HistoryPage extends StatefulWidget {
   /// feature off, History has no way there.
   final VoidCallback? onEntryReview;
 
-  /// Logs a workout that already happened (#530). Without it, or with the
-  /// feature off, History has no way in.
-  final VoidCallback? onLogPastWorkout;
+  /// Logs a workout that already happened (#530), by default in the last
+  /// hour, or [on] a day tapped in the calendar (#618). Without it, or with
+  /// the feature off, History has no way in.
+  final void Function({DateTime? on})? onLogPastWorkout;
   final VoidCallback onOpenActiveWorkout;
   final Widget? detail;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
@@ -47,7 +48,11 @@ class HistoryPage extends StatefulWidget {
 
 const _imageSize = 120.0;
 
-class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage> {
+/// The weekday row and one six-week month: less than this, and the calendar
+/// is not worth showing beside its header.
+const _calendarMinHeight = 420.0;
+
+class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage>, HasHaptic {
   @override
   Widget build(BuildContext context) {
     final ThemeData(scaffoldBackgroundColor: backgroundColor, :textTheme, :colorScheme, :sectionHeader) = Theme.of(
@@ -57,174 +62,330 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final L(:myProgression) = L.of(context);
     final workouts = Workouts.watch(context);
     final byMonth = workouts.byMonth;
-    // the days set aside: a program's while Programs is on, a plain day's
-    // while "Not today" is (#312); with both off, History is as it was
+    // History narrowed to some muscle groups (#610). What a workout trained is
+    // read off the library, so the page hears when it loads or changes.
+    final filter = HistoryFilter.watch(context);
+    final exercises = Exercises.watch(context);
+    final trained = WorkoutGroups(exercises.lookup);
+    final bool Function(Workout)? shows = switch (filter.isOn) {
+      true => (workout) => filter.shows(workout, trained),
+      false => null,
+    };
+    // How much of history the filter sees: all of it once the backfill (#113)
+    // has it on the device — the server's pages say there is more on every
+    // launch, so they are not the word on that. Until then, the backfill is
+    // the one bringing it down; the filter never pages for itself.
+    final backfill = Backfill.watch(context);
+    final whole = !workouts.hasMoreHistory || backfill.isWhole;
+    final (searching, stalled) = switch (whole) {
+      true => (false, false),
+      false => (backfill.status == .running, backfill.status == .failed),
+    };
+    // the days set aside: a program's while it is shown (Programs on, or a
+    // coach's under Your coach, #593), a plain day's while "Not today" is
+    // (#312); with all off, History is as it was
     final preferences = Preferences.watch(context);
-    final skips = Programs.watch(context).skips.where(
+    final programs = Programs.watch(context);
+    final skips = programs.skips.where(
       (skip) => switch (skip.isDay) {
         true => preferences.isOn(.notToday),
-        false => preferences.isOn(.programs),
+        false => preferences.programShown(programs.programOf(skip)),
       },
     );
-    final items = _historyRows(byMonth, skips, partial: workouts.hasMoreHistory);
-    final images = workouts.images;
+    // the photo strip is the whole history's, so a filter puts it away
+    final images = filter.isOn ? const <WorkoutImage>[] : workouts.images;
     final layout = LayoutProvider.of(context);
-    final listview = CustomScrollView(
-      physics: const ClampingScrollPhysics(),
-      controller: Scrolls.of(context).historyScrollController,
-      slivers: [
-        SliverAppBar(
-          actions: [
-            // Copy for AI (#259): a stretch of training, while it is on
-            if (preferences.isOn(.copyForAi) && workouts.history.isNotEmpty)
-              IconButton(
-                key: AppKeys.copyForAiHistory,
-                tooltip: L.of(context).copyForAi,
-                icon: const Icon(Icons.auto_awesome_outlined),
-                onPressed: () => copyPeriodForAi(context),
-              ),
-            if (widget.onEntryReview case final VoidCallback open) _EntryReviewButton(onPressed: open),
-            // a workout that already happened (#530), while it is on
-            if ((widget.onLogPastWorkout, preferences.isOn(.pastWorkouts)) case (final VoidCallback log, true))
-              IconButton(
-                key: AppKeys.logPastWorkout,
-                tooltip: L.of(context).logPastWorkout,
-                icon: const Icon(Icons.more_time_rounded),
-                onPressed: log,
-              ),
-            IconButton(
-              tooltip: L.of(context).calendar,
-              icon: const Icon(Icons.calendar_month_rounded),
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (_) => HistoryCalendar(onTapImage: widget.onTapImage),
-              ),
-            ),
-          ],
-          scrolledUnderElevation: 0,
-          backgroundColor: backgroundColor,
-          pinned: true,
-          expandedHeight: 80.0,
-          flexibleSpace: FlexibleSpaceBar(
-            title: Text(L.of(context).history),
-            centerTitle: true,
-          ),
+    final view = preferences.historyView;
+    final appBar = SliverAppBar(
+      // Narrows both views to some muscle groups (#610). On the leading side,
+      // which the centred title leaves free: the actions already reach the
+      // title on a phone with Copy for AI and Past workouts on, and in a
+      // tablet's narrow list pane.
+      leading: switch (workouts.history.isNotEmpty || filter.isOn) {
+        true => _FilterButton(
+          filter: filter,
+          trained: trained,
+          // greyed only off the whole history, read with the library's tags
+          whole: whole && exercises.isInitialized,
         ),
-        // the one ask for suspicious entries, once there is one (#428)
-        const SliverToBoxAdapter(child: _EntryReviewOffer()),
-        if (images.isNotEmpty)
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: .start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text(
-                    myProgression.toUpperCase(),
-                    style: sectionHeader,
+        false => null,
+      },
+      actions: [
+        // Copy for AI (#259): a stretch of training, while it is on
+        if (preferences.isOn(.copyForAi) && workouts.history.isNotEmpty)
+          IconButton(
+            key: AppKeys.copyForAiHistory,
+            tooltip: L.of(context).copyForAi,
+            icon: const Icon(Icons.auto_awesome_outlined),
+            onPressed: () => copyPeriodForAi(context),
+          ),
+        if (widget.onEntryReview case final VoidCallback open) _EntryReviewButton(onPressed: open),
+        // a workout that already happened (#530), while it is on
+        if ((widget.onLogPastWorkout, preferences.isOn(.pastWorkouts)) case (
+          final void Function({DateTime? on}) log,
+          true,
+        ))
+          IconButton(
+            key: AppKeys.logPastWorkout,
+            tooltip: L.of(context).logPastWorkout,
+            icon: const Icon(Icons.more_time_rounded),
+            onPressed: () => log(),
+          ),
+        // the switch between the two views (#609), remembered as the
+        // view History opens on
+        IconButton(
+          key: AppKeys.historyViewSwitch,
+          tooltip: switch (view) {
+            .list => L.of(context).showAsCalendar,
+            .calendar => L.of(context).showAsList,
+          },
+          icon: Icon(switch (view) {
+            .list => Icons.calendar_month_rounded,
+            .calendar => Icons.view_agenda_outlined,
+          }),
+          onPressed: () {
+            buzz();
+            Preferences.of(context).setHistoryView(switch (view) {
+              .list => .calendar,
+              .calendar => .list,
+            });
+          },
+        ),
+      ],
+      scrolledUnderElevation: 0,
+      backgroundColor: backgroundColor,
+      pinned: true,
+      expandedHeight: 80.0,
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(L.of(context).history),
+        centerTitle: true,
+      ),
+    );
+    // built only for the view on screen: the rows are a pass over all of
+    // history, and Workouts notifies every second of an active workout
+    Widget listview() {
+      final items = switch (shows) {
+        // the days set aside are no workout of any group
+        final bool Function(Workout) shows => _historyRows(
+          {
+            for (final MapEntry(:key, :value) in byMonth.entries)
+              if (value.where(shows).toList() case final shown when shown.isNotEmpty) key: shown,
+          },
+          const [],
+          partial: workouts.hasMoreHistory,
+        ),
+        null => _historyRows(byMonth, skips, partial: workouts.hasMoreHistory),
+      };
+      return CustomScrollView(
+        // keyed by view, so switching replaces the scrollable rather than
+        // handing one view's offset and physics to the other
+        key: const ValueKey(HistoryView.list),
+        physics: const ClampingScrollPhysics(),
+        controller: Scrolls.of(context).historyScrollController,
+        slivers: [
+          appBar,
+          // the one ask for suspicious entries, once there is one (#428)
+          const SliverToBoxAdapter(child: _EntryReviewOffer()),
+          if (filter.isOn) SliverToBoxAdapter(child: _FilterChips(filter: filter)),
+          if (images.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: .start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      myProgression.toUpperCase(),
+                      style: sectionHeader,
+                    ),
                   ),
-                ),
-                SizedBox(
-                  height: _imageSize,
-                  child: ListView.builder(
-                    scrollDirection: .horizontal,
-                    itemBuilder: (context, index) {
-                      final image = images[index];
-                      final last = index == images.length - 1;
-                      final first = index == 0;
-                      return GestureDetector(
-                        onTap: () {
-                          widget.onTapImage?.call(
-                            images,
-                            startingIndex: index,
-                            workoutId: image.workoutId,
-                          );
-                        },
-                        child: Padding(
-                          padding: EdgeInsets.only(left: first ? 16 : 2, right: last ? 16 : 2),
-                          child: SizedBox(
-                            width: _imageSize,
-                            child: ClipRRect(
-                              borderRadius: BorderRadiusGeometry.circular(4),
-                              child: AppImage(
-                                url: image.link,
-                                bytes: image.bytes,
-                                fit: .cover,
+                  SizedBox(
+                    height: _imageSize,
+                    child: ListView.builder(
+                      scrollDirection: .horizontal,
+                      itemBuilder: (context, index) {
+                        final image = images[index];
+                        final last = index == images.length - 1;
+                        final first = index == 0;
+                        return GestureDetector(
+                          onTap: () {
+                            widget.onTapImage?.call(
+                              images,
+                              startingIndex: index,
+                              workoutId: image.workoutId,
+                            );
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.only(left: first ? 16 : 2, right: last ? 16 : 2),
+                            child: SizedBox(
+                              width: _imageSize,
+                              child: ClipRRect(
+                                borderRadius: BorderRadiusGeometry.circular(4),
+                                child: AppImage(
+                                  url: image.link,
+                                  bytes: image.bytes,
+                                  fit: .cover,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                    itemCount: images.length,
+                        );
+                      },
+                      itemCount: images.length,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (items.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: switch ((filter.isOn, searching, stalled)) {
+                (false, _, _) => const _EmptyState(),
+                // nothing yet, and older workouts still coming down
+                (true, true, _) => const _Searching(),
+                // and they stopped coming: no saying there is nothing
+                (true, _, true) => Center(
+                  child: _HistoryTail(
+                    loading: false,
+                    error: true,
+                    hasMore: true,
+                    onRetry: () => Backfill.of(context).retry(),
                   ),
                 ),
-              ],
+                (true, false, false) => _FilteredEmpty(onClear: filter.clear),
+              },
+            )
+          else
+            SliverList.builder(
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                // Build-position trigger: as the tail of the list comes into view,
+                // pull the next page. Deferred a frame so it never notifies during
+                // build; loadMoreHistory is a no-op when already loading or done.
+                // Pauses on error so a failed page doesn't auto-retry in a loop —
+                // the tail shows a manual retry instead.
+                // Under a filter the list is a few rows of the whole history, its
+                // tail always in sight: the backfill brings the rest, not this.
+                if (!filter.isOn &&
+                    workouts.hasMoreHistory &&
+                    !workouts.historyPageError &&
+                    index >= items.length - 3) {
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) {
+                      if (context.mounted) Workouts.of(context).loadMoreHistory();
+                    },
+                  );
+                }
+                final item = items[index];
+                return switch (item) {
+                  String key => _MonthHeader(monthKey: key),
+                  Workout workout => WorkoutItem(
+                    workout: workout,
+                    onStartNewWorkout: widget.onNewWorkout,
+                    onSaveAsTemplate: widget.onSaveAsTemplate,
+                    onEditWorkout: widget.onEditWorkout,
+                    onTap: widget.onTapWorkout,
+                    onDeleteWorkout: widget.onDeleteWorkout,
+                    onTapImageIcon: widget.onTapImage,
+                    highlighted: workout.id == widget.selectedId,
+                  ),
+                  TrainingSkip skip => _SkipItem(skip: skip, onTap: widget.onTapSkip),
+                  _ => const SizedBox.shrink(),
+                };
+              },
             ),
-          ),
-        if (items.isEmpty)
-          const SliverFillRemaining(
-            child: _EmptyState(),
-          )
-        else
-          SliverList.builder(
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              // Build-position trigger: as the tail of the list comes into view,
-              // pull the next page. Deferred a frame so it never notifies during
-              // build; loadMoreHistory is a no-op when already loading or done.
-              // Pauses on error so a failed page doesn't auto-retry in a loop —
-              // the tail shows a manual retry instead.
-              if (workouts.hasMoreHistory && !workouts.historyPageError && index >= items.length - 3) {
-                WidgetsBinding.instance.addPostFrameCallback(
-                  (_) {
-                    if (context.mounted) Workouts.of(context).loadMoreHistory();
-                  },
-                );
-              }
-              final item = items[index];
-              return switch (item) {
-                String key => _MonthHeader(monthKey: key),
-                Workout workout => WorkoutItem(
-                  workout: workout,
-                  onStartNewWorkout: widget.onNewWorkout,
-                  onSaveAsTemplate: widget.onSaveAsTemplate,
-                  onEditWorkout: widget.onEditWorkout,
-                  onTap: widget.onTapWorkout,
-                  onDeleteWorkout: widget.onDeleteWorkout,
-                  onTapImageIcon: widget.onTapImage,
-                  highlighted: workout.id == widget.selectedId,
+          if (items.isNotEmpty)
+            SliverToBoxAdapter(
+              child: switch (filter.isOn) {
+                // where the filter's search stands (#610)
+                true => _HistoryTail(
+                  loading: searching,
+                  error: stalled,
+                  hasMore: !whole,
+                  onRetry: () => Backfill.of(context).retry(),
                 ),
-                TrainingSkip skip => _SkipItem(skip: skip, onTap: widget.onTapSkip),
-                _ => const SizedBox.shrink(),
-              };
+                false => _HistoryTail(
+                  loading: workouts.loadingMoreHistory,
+                  error: workouts.historyPageError,
+                  hasMore: workouts.hasMoreHistory,
+                  onRetry: () => Workouts.of(context).loadMoreHistory(),
+                ),
+              },
+            ),
+        ],
+      );
+    }
+
+    // The same header over the calendar (#609), whose months scroll by
+    // themselves. The calendar takes what is left under the header and any
+    // offer; when that is too little for a month (a small phone, large text,
+    // an offer showing), it takes the screen under the collapsed bar instead,
+    // and the header and offer scroll away to make room.
+    Widget calendar() {
+      return CustomScrollView(
+        key: const ValueKey(HistoryView.calendar),
+        physics: const ClampingScrollPhysics(),
+        slivers: [
+          appBar,
+          const SliverToBoxAdapter(child: _EntryReviewOffer()),
+          if (filter.isOn) SliverToBoxAdapter(child: _FilterChips(filter: filter)),
+          SliverLayoutBuilder(
+            builder: (context, constraints) {
+              final remaining = constraints.viewportMainAxisExtent - constraints.precedingScrollExtent;
+              return SliverToBoxAdapter(
+                child: SizedBox(
+                  height: remaining >= _calendarMinHeight
+                      ? remaining
+                      : constraints.viewportMainAxisExtent - kToolbarHeight,
+                  child: HistoryCalendar(
+                    key: AppKeys.historyCalendar,
+                    byMonth: byMonth,
+                    shows: shows,
+                    onTapWorkout: widget.onTapWorkout,
+                    selectedId: widget.selectedId,
+                    controller: Scrolls.of(context).historyCalendarScrollController,
+                    onLogOn: switch (widget.onLogPastWorkout) {
+                      final void Function({DateTime? on}) log => (day) => log(on: day),
+                      null => null,
+                    },
+                    onStartWorkout: () async {
+                      final workouts = Workouts.of(context);
+                      // read at the tap: the day's list may have been up while one started
+                      // somewhere else — the watch, a shortcut — and that one is the way in
+                      if (!workouts.hasActiveWorkout) {
+                        await workouts.startWorkout(source: .blank, name: L.of(context).defaultWorkoutName());
+                      }
+                      if (mounted && workouts.hasActiveWorkout) widget.onNewWorkout();
+                    },
+                  ),
+                ),
+              );
             },
           ),
-        if (items.isNotEmpty)
-          SliverToBoxAdapter(
-            child: _HistoryTail(
-              loading: workouts.loadingMoreHistory,
-              error: workouts.historyPageError,
-              hasMore: workouts.hasMoreHistory,
-              onRetry: () => Workouts.of(context).loadMoreHistory(),
-            ),
-          ),
-      ],
-    );
+        ],
+      );
+    }
+
+    final page = switch (view) {
+      .list => listview(),
+      .calendar => calendar(),
+    };
 
     return SafeArea(
       child: Scaffold(
-        body: switch (workouts.historyInitialized) {
+        // the view is a stored choice: until it is read, neither one
+        body: switch (workouts.historyInitialized && preferences.isInitialized) {
           false => const Center(
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           true => switch (layout) {
-            .compact => listview,
+            .compact => page,
             .wide => Row(
               children: [
                 Expanded(
                   flex: 2,
-                  child: listview,
+                  child: page,
                 ),
                 const VerticalDivider(width: 1),
                 // held open whether or not anything is selected, so picking a
@@ -302,7 +463,10 @@ class _Placeholder extends StatelessWidget {
   final String title;
   final String body;
 
-  const new({super.key, required this.title, required this.body});
+  /// The way out of the state, under its words.
+  final Widget? action;
+
+  const new({super.key, required this.title, required this.body, this.action});
 
   @override
   Widget build(BuildContext context) {
@@ -328,6 +492,7 @@ class _Placeholder extends StatelessWidget {
                 style: textTheme.bodyLarge,
                 textAlign: .center,
               ),
+              ?action,
             ],
           ),
         ),

@@ -76,6 +76,16 @@ mixin _RosterRoutes on Requests {
     };
   }
 
+  /// Logs [workout] as [studentId]'s (#560): one the coach was there for,
+  /// in the client's history from now on, marked as logged by the coach.
+  /// The id is the device's, so a retry answers the stored one; an id someone
+  /// else used is refused (`id_taken`), and so is a client this coach no
+  /// longer coaches (`forbidden`), both thrown whole.
+  Future<Workout> logClientWorkout(String studentId, Workout workout) async {
+    final (json, _) = _created(await post(Router.clientWorkouts(studentId), body: workout.toMap()));
+    return Workout.fromJson(json);
+  }
+
   /// The copies the coach manages for a client.
   Future<List<Program>> getClientPrograms(String studentId) async {
     final (json, code) = await get(Router.clientPrograms(studentId));

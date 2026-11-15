@@ -32,9 +32,14 @@ class SkipPage extends StatelessWidget {
     // taken back, or not read yet; and a skip whose feature is off is one
     // the app has no page for
     final preferences = Preferences.watch(context);
-    final shown = switch (skip?.isDay) {
-      true => preferences.isOn(.notToday),
-      false => preferences.isOn(.programs),
+    final program = switch (skip) {
+      final TrainingSkip skip => programs.programOf(skip),
+      null => null,
+    };
+    final shown = switch (skip) {
+      TrainingSkip(isDay: true) => preferences.isOn(.notToday),
+      // a program's while it is shown: a coach's under Your coach (#593)
+      TrainingSkip() => preferences.programShown(program),
       null => false,
     };
     if (skip == null || !shown) {
@@ -43,10 +48,6 @@ class SkipPage extends StatelessWidget {
 
     final session = switch (skip.templateId) {
       final String id => Templates.watch(context).lookup(id)?.name,
-      null => null,
-    };
-    final program = switch (skip.programId) {
-      final String id => programs.lookup(id),
       null => null,
     };
     final muted = textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant);

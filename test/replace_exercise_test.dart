@@ -347,6 +347,28 @@ void main() {
       expect(suggested(tester), containsAll(['Front Squat', 'Goblet Squat']));
     });
 
+    testWidgets("a coach's session with Programs off reads the map itself, page never opened (#593)", (tester) async {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'weightUnit': 'metric',
+        'distanceUnit': 'metric',
+        'feature-programs': FeatureAnswer.off.name,
+        'feature-yourCoach': FeatureAnswer.on.name,
+      });
+      final coached = Program.fromJson({
+        ...program.copyWith(constraint: 'lower_back').toMap(),
+        'coachId': 'coach-muffin',
+        'coachName': 'Muffin',
+      });
+      when(db.getPrograms(userId)).thenAnswer((_) async => [coached]);
+      when(api.getPrograms()).thenAnswer((_) async => [coached]);
+      // no ensure by hand: the sheet of a session whose plan shows reads it
+      await start(tester, squats(programId: 'p1'));
+      await openReplace(tester);
+
+      expect(suggested(tester), ['Goblet Squat']);
+    });
+
     testWidgets("what the user goes easy on leaves out the same, the program's or not (#396)", (tester) async {
       when(db.getGoEasy(any)).thenAnswer((_) async => {'lower_back'});
       final context = await start(tester, squats());

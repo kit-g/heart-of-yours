@@ -30,9 +30,12 @@ import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/programs.dart';
+import 'package:heart/core/utils/coach_notes.dart';
+import 'package:heart/core/utils/messages.dart';
 import 'package:heart/core/utils/pushes.dart';
 import 'package:heart/core/utils/device_keys.dart';
 import 'package:heart/core/utils/workout_plans.dart';
+import 'package:heart/core/utils/live_goals.dart';
 import 'package:heart/core/utils/live_records.dart';
 import 'package:heart/core/utils/record_book.dart';
 import 'package:heart/core/utils/charts.dart';
@@ -60,6 +63,7 @@ import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:heart_health/heart_health.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:heart_models/heart_models.dart' show Program;
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -135,6 +139,7 @@ class HeartApp extends StatelessWidget {
               libraryService: CdnExerciseLibrary(cdn),
               catalogService: LocalCatalog(db),
               preferenceService: RemoteExercisePreferences(api),
+              renameService: RemoteExerciseRenames(api),
               noteService: ExerciseNotes(db, api),
               moveService: ExerciseMoves(db, api),
               remote: RemoteAccess.of(context),
@@ -154,6 +159,7 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<LiveRecords>(
           create: (_) => LiveRecords(without: db.getRecordWithout, onError: reportToSentry),
         ),
+        ChangeNotifierProvider<LiveGoals>(create: (_) => LiveGoals(onError: reportToSentry)),
         ChangeNotifierProvider<Stats>(
           create: (_) => Stats(
             onError: reportToSentry,
@@ -180,6 +186,8 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        // History's muscle-group filter (#610): for the run, never stored
+        ChangeNotifierProvider<HistoryFilter>(create: (_) => HistoryFilter()),
         ChangeNotifierProvider<Templates>(
           create: (context) => Templates(
             service: db,
@@ -261,7 +269,7 @@ class HeartApp extends StatelessWidget {
           // waits on `Preferences.initialized`, and the sooner that is read
           // the shorter the wait. `_initApp` reads it again with the rest;
           // the second read is harmless.
-          create: (_) => Preferences()..init(locale: PlatformDispatcher.instance.locale),
+          create: (_) => Preferences(analytics: analytics)..init(locale: PlatformDispatcher.instance.locale),
         ),
         ChangeNotifierProvider<AppInfo>(
           create: (_) => AppInfo(
@@ -336,6 +344,7 @@ class HeartApp extends StatelessWidget {
             service: RemoteCoaching(api),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            analytics: analytics,
           ),
         ),
         // The push client's registration and settings (#567, #554):
@@ -355,6 +364,48 @@ class HeartApp extends StatelessWidget {
             vault: keyVault,
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            // a coach's notes are Coach people's: off, a new device of the
+            // account's hears nothing of them (keys only one who wrote notes
+            // holds, so the entitlement adds nothing here)
+            sharesNoteKeys: () => Preferences.of(context).isOn(.coachPeople),
+          ),
+        ),
+        // Coaching messages (#556): sealed on this device with its keys,
+        // kept here as the server keeps them, ciphertext, and read only from
+        // a coaching screen, which exists only with a switch on.
+        ChangeNotifierProvider<Messages>(
+          create: (context) => Messages(
+            service: RemoteThreads(api),
+            local: LocalThreads(db),
+            cipher: DeviceKeys.of(context),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+            // the link's fingerprint names the coach's keys: it checks the
+            // other person only where this one is the student, since the
+            // same connection seen from the coach's side is someone else
+            fingerprintFor: (thread) => switch (thread.connectionId) {
+              final String id when Coaching.of(context).coaches.any((each) => each.connectionId == id) =>
+                Preferences.of(context).coachFingerprint(id),
+              _ => null,
+            },
+            analytics: analytics,
+            roleFor: (thread) {
+              final connections = Coaching.of(context).all;
+              return connections.where((each) => each.connectionId == thread.connectionId).firstOrNull?.role;
+            },
+          ),
+        ),
+        // A coach's notes on their clients (#556): sealed for the coach's
+        // own devices, kept here as ciphertext, and read only from a coach's
+        // screen, which exists only with Coach people on.
+        ChangeNotifierProvider<CoachNotes>(
+          create: (context) => CoachNotes(
+            service: RemoteNotes(api),
+            local: LocalNotes(db),
+            cipher: DeviceKeys.of(context),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+            analytics: analytics,
           ),
         ),
         // A coach's roster and feed (#559): server-only, read when the
@@ -364,6 +415,7 @@ class HeartApp extends StatelessWidget {
             service: RemoteRoster(api),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            analytics: analytics,
           ),
         ),
         // A coach's work on a client's copy (#558): server-only, read when
@@ -373,6 +425,7 @@ class HeartApp extends StatelessWidget {
             service: RemoteClientPrograms(api),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            analytics: analytics,
           ),
         ),
         // A coach's library (#557): server-only, read when the Programs tab
@@ -384,6 +437,7 @@ class HeartApp extends StatelessWidget {
             exerciseOf: (id) => Exercises.of(context).lookup(id),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            analytics: analytics,
           ),
         ),
         ChangeNotifierProvider<Health>(
@@ -523,6 +577,8 @@ class HeartApp extends StatelessWidget {
                 GoEasy.of(context).userId = user?.id;
                 Timers.of(context).userId = user?.id;
                 Workouts.of(context).userId = user?.id;
+                Messages.of(context).userId = user?.id;
+                CoachNotes.of(context).userId = user?.id;
                 if (user?.id case String id) unawaited(_prepareOpening(context, id));
               },
               onError: reportToSentry,
@@ -651,12 +707,35 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     // the sweep that flags entries runs nightly: a phone left open overnight
     // learns of the morning's flags when it comes back
     Anomalies.of(context).pull();
-    // a coach's edits to their copies, whose push may never have come (#558)
+    // a coach's edits to their copies, whose push may never have come (#558);
+    // a coach's programs run under Your coach alone (#593)
     final preferences = Preferences.of(context);
-    if (preferences.isOn(.programs) && preferences.isOn(.yourCoach)) {
+    if (_growsLogged(preferences)) {
       final templates = Templates.of(context);
-      Programs.of(context).pullCoached().then(templates.pull);
+      final programs = Programs.of(context);
+      final workouts = Workouts.of(context);
+      final coached = programs.pullCoached().then(templates.pull);
+      // a session the coach logged for them while they were away (#560): once
+      // the copies and the sessions it names are read, over moves read afresh
+      _growLogged(
+        workouts,
+        templates,
+        programs,
+        shown: preferences.programShown,
+        read: (coached, workouts.refreshHistory()).wait,
+        reread: true,
+      );
     }
+    // messages whose push may never have come (#556)
+    final auth = Auth.of(context);
+    if (coachingRuns(preferences, auth)) Messages.of(context).resume();
+    // a coach's notes, only where the Coaching space is there and keys run
+    if (preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false) && DeviceKeys.of(context).supported) {
+      CoachNotes.of(context).resume();
+    }
+    // a language change whose library fetch failed is retried here; the same
+    // tag as the catalog's is a no-op (heart-of-yours#612)
+    Exercises.of(context).onLocaleChanged(languageTag());
   }
 
   /// Localized backend content (the exercise catalog) is served per request
@@ -1098,6 +1177,7 @@ Future<void> _initApp(
                 programs: programs,
                 backfill: backfill,
                 upsync: upsync,
+                preferences: prefs,
               );
             },
           );
@@ -1191,9 +1271,10 @@ Future<void> _initTrainingData({
   required Programs programs,
   required Backfill backfill,
   required Upsync upsync,
+  required Preferences preferences,
 }) {
-  templates.init();
-  programs.init();
+  final templatesRead = templates.init();
+  final programsRead = programs.init();
   // Pulls what other devices logged into the local mirror, and heals anything
   // stranded here by a failed save. Until this ran at startup the only thing
   // that ran it was opening the History screen — so a workout from the phone
@@ -1224,8 +1305,39 @@ Future<void> _initTrainingData({
         // back — `adopt` stands down while a replay is still owed.
         await upsync.adopt(uid);
       }
+
+      // what a coach logged for this person moves their program here (#560)
+      if (_growsLogged(preferences)) {
+        await _growLogged(
+          workouts,
+          templates,
+          programs,
+          shown: preferences.programShown,
+          read: (templatesRead, programsRead).wait,
+        );
+      }
     },
   );
+}
+
+/// Moves this person's programs by what their coach logged for them (#560),
+/// once the programs and the sessions they were logged from are read; with
+/// [reread], over their moves read from the server again. Only a program
+/// [shown] moves: with Programs off, the user's own stays as it was (#593).
+Future<void> _growLogged(
+  Workouts workouts,
+  Templates templates,
+  Programs programs, {
+  required bool Function(Program program) shown,
+  required Future<void> read,
+  bool reread = false,
+}) async {
+  try {
+    await read;
+  } catch (_) {
+    // each reports its own failure; what was read still counts
+  }
+  await programs.growLogged(workouts.history, sessionOf: templates.lookup, shown: shown, reread: reread);
 }
 
 /// The replay is done and the remote leg is open: pull what the account holds
@@ -1234,6 +1346,7 @@ Future<void> _initTrainingData({
 void _resync(BuildContext context, Upsync upsync) {
   if (!context.mounted) return;
   final exercises = Exercises.of(context);
+  final preferences = Preferences.of(context);
   final workouts = Workouts.of(context);
   final previous = PreviousExercises.of(context);
   final stats = Stats.of(context);
@@ -1253,6 +1366,7 @@ void _resync(BuildContext context, Upsync upsync) {
         programs: programs,
         backfill: backfill,
         upsync: upsync,
+        preferences: preferences,
       );
     },
   );
@@ -1285,3 +1399,8 @@ Future<void> _initApi({required AppConfig config, String? sessionToken, String? 
     ),
   );
 }
+
+/// Whether a workout a coach logged moves this person's program here (#560):
+/// with a coach to have logged it. Programs needn't be on: a coach's
+/// programs run under Your coach alone (#593).
+bool _growsLogged(Preferences preferences) => preferences.isOn(.yourCoach);

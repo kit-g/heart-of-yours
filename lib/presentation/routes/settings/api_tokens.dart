@@ -487,15 +487,7 @@ class _NewApiTokenPageState extends State<NewApiTokenPage>
               contentPadding: const .symmetric(horizontal: 16),
               title: Text(apiTokenPurpose),
               // the menu hangs off the value, not the row's far-left edge
-              trailing: Row(
-                key: _purposeKey,
-                mainAxisSize: .min,
-                spacing: 4,
-                children: [
-                  Text(purpose.label(l), style: textTheme.bodyMedium),
-                  const Icon(Icons.unfold_more_rounded, size: 20),
-                ],
-              ),
+              trailing: MenuValue(purpose.label(l), key: _purposeKey),
               onTap: () => _pickPurpose(context),
             );
           },

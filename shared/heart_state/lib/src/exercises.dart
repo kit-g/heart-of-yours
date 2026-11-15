@@ -12,6 +12,14 @@ import 'remote.dart';
 /// conditional re-fetch when only the version moved.
 typedef CatalogStamp = ({String version, String locale, String? etag});
 
+/// The cached library's stamp names a locale its rows are not written in, so
+/// the cache was downloaded afresh (#612). Carries the stamped locale file and
+/// the device's language tag, and nothing about the user or the rows.
+class const CatalogLanguageMismatch(final String stamped, final String? device) implements Exception {
+  @override
+  String toString() => 'CatalogLanguageMismatch: library stamped $stamped holds no $stamped names (device $device)';
+}
+
 /// One locale file of the library: its exercises, and the words lifters search
 /// them by — abbreviations and muscle names — in that locale (#135).
 typedef CatalogLibrary = ({Iterable<Exercise> exercises, SearchGlossary glossary});
@@ -73,12 +81,39 @@ abstract interface class ExerciseNoteService {
 /// Moving an exercise's history onto another (#338): the account's move, and
 /// the mirror's copy of it. One interface for both halves, like
 /// [ExerciseNoteService], because the second only ever follows the first.
+/// Renaming an own exercise on the account (#616). Apart from the edit
+/// because the server checks a name against the account's other exercises
+/// whenever one is sent: an edit that only archives, or changes the target,
+/// must not carry it, or an account holding names that differ only in case
+/// could no longer archive either. `RemoteExerciseService` is the server's
+/// contract and cannot take the distinction; the app adapts `Api` onto this.
+abstract interface class RemoteExerciseRenameService {
+  /// The edit, with [Exercise.name] as the new name. Throws when another of
+  /// the account's own exercises already has it.
+  Future<Exercise> renameExercise(Exercise exercise);
+}
+
 abstract interface class ExerciseMoveService {
   /// The account's move, or with [dryRun] what it would do, written nowhere.
   Future<ExerciseMoveReport> move(String sourceId, String targetId, {bool dryRun = false});
 
   /// Re-keys the device's rows the way [report] says the server did.
   Future<void> mirror(ExerciseMoveReport report, {required String userId});
+}
+
+/// Renaming an own exercise (#616). The id is the exercise's identity, so a
+/// new name is display copy only, and every screen that resolves the id picks
+/// it up.
+extension RenamedExercise on Exercise {
+  /// This exercise under [name]. Through the model's own map rather than
+  /// `copyWith`, which has no name: the name was the identity when it was
+  /// written. The round trip is the one every stored row already makes.
+  Exercise renamed(String name) => Exercise.fromJson({...toMap(), 'name': name});
+
+  /// This exercise with [text] as its instructions (#621), or none for null.
+  /// The same round trip as [renamed]: `copyWith` reads a null as "keep", so
+  /// it can set instructions but never clear them.
+  Exercise withInstructions(String? text) => Exercise.fromJson({...toMap(), 'instructions': text});
 }
 
 class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateSentry {
@@ -108,6 +143,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   final ExerciseNoteService? _noteService;
   final ExerciseMoveService? _moveService;
+  final RemoteExerciseRenameService? _renameService;
   final _notes = <String, String>{};
 
   bool isInitialized = false;
@@ -132,6 +168,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     this.onRestTimer,
     this._noteService,
     this._moveService,
+    this._renameService,
     required this._remoteService,
     required this._service,
     required this._libraryService,
@@ -284,8 +321,17 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   ///
   /// A change arriving before [init] is just recorded — init resolves under
   /// the new tag anyway.
+  ///
+  /// The new tag is only kept once the library has been fetched under it. A
+  /// failed fetch — offline, or the app backgrounded mid-request — puts the
+  /// old one back, so the next call with this tag (the app calls on every
+  /// resume) tries again instead of answering "already done" to a library
+  /// still in the old language. Before this, the chrome switched and the
+  /// exercise names stayed behind until the process died, which on Android
+  /// can be days.
   Future<void> onLocaleChanged(String locale) async {
     if (locale == _catalogLocale) return;
+    final previous = _catalogLocale;
     _catalogLocale = locale;
     if (!isInitialized) return;
 
@@ -293,8 +339,35 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
       await _syncLibrary();
       notifyListeners();
     } catch (e, s) {
+      _catalogLocale = previous;
       onError?.call(e, stacktrace: s);
     }
+  }
+
+  /// Locales whose names give their language away by alphabet alone. Only a
+  /// file written in a script other than English's can be checked this way;
+  /// Spanish and French share it, and go unchecked.
+  static final _scripts = {'ru': RegExp(r'[Ѐ-ӿ]')};
+
+  /// Whether the cached library rows are written in the language [stamp]
+  /// vouches for. Answers true wherever that cannot be told (see [_scripts])
+  /// or there are no library rows to judge.
+  ///
+  /// One translated name is enough: the check is for a cache whose rows and
+  /// stamp disagree outright (#612), not for an exercise the file itself left
+  /// untranslated.
+  bool _rowsMatch(CatalogStamp stamp) {
+    final script = _scripts[stamp.locale.split('_').first];
+    final library = _exercises.values.where((each) => !each.isMine);
+    return script == null || library.isEmpty || library.any((each) => script.hasMatch(each.name));
+  }
+
+  /// [stamp] if the rows behind it are what it says, else null — reported,
+  /// so the library is downloaded afresh rather than called current.
+  CatalogStamp? _vouched(CatalogStamp? stamp) {
+    if (stamp == null || _rowsMatch(stamp)) return stamp;
+    onError?.call(CatalogLanguageMismatch(stamp.locale, _catalogLocale), stacktrace: StackTrace.current);
+    return null;
   }
 
   /// Brings the library up to what the CDN publishes, downloading only when
@@ -303,12 +376,18 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// The stamp is trusted only when library rows sit behind it. A stamp over
   /// an empty catalog — a wiped table, a first launch that stored the stamp
   /// but not the rows — would have the manifest answer "unchanged" forever.
+  ///
+  /// Nor is it trusted over rows written in another language than it names:
+  /// such a cache passes every stamp comparison and would never be replaced
+  /// (#612). It is downloaded afresh, and reported — the report carries the
+  /// two language codes and nothing else, and is how the cause gets found.
   Future<void> _syncLibrary() async {
     final warm = _exercises.values.any((each) => !each.isMine);
-    final cached = switch (warm) {
+    final stored = switch (warm) {
       true => await _catalogService.getCatalogStamp(),
       false => null,
     };
+    final cached = _vouched(stored);
 
     final (library, stamp) = await _libraryService.getLibrary(cached: cached);
     switch (library) {
@@ -656,10 +735,13 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   }
 
   /// [exercise] as the server has it, with the movement pattern (#343) and
-  /// the muscles (#176) the user gave it on this device. The server keeps
-  /// neither on a custom exercise, so an empty one from there is silence,
-  /// never a clearing: the mirror's copy stands until the server has one of
-  /// its own.
+  /// the muscles (#176) the user gave it on this device. The server keeps no
+  /// muscles on a custom exercise, and a pattern only from builds that send
+  /// it (#616) — every one set before them is on its device alone — so an
+  /// empty one from there is silence, never a clearing: the mirror's copy
+  /// stands until the server has one of its own. The cost: a pattern cleared
+  /// on one device survives on another, and that one's next edit sends it
+  /// back.
   Exercise _withLocalTags(Exercise exercise) {
     final local = _exercises[exercise.id];
     final movement = switch ((exercise.movement.isEmpty, local?.movement)) {
@@ -687,8 +769,16 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     notifyListeners();
   }
 
+  /// Saves an edit of an own exercise. A new name goes through the rename,
+  /// and nothing else does — see [RemoteExerciseRenameService].
   Future<void> editExercise(Exercise exercise) async {
-    if (_remote.allowed) await _remoteService.editExercise(exercise);
+    final renamed = _exercises[exercise.id]?.name != exercise.name;
+    if (_remote.allowed) {
+      await switch ((renamed, _renameService)) {
+        (true, RemoteExerciseRenameService service) => service.renameExercise(exercise),
+        _ => _remoteService.editExercise(exercise),
+      };
+    }
     _exercises[exercise.id] = exercise;
     await _storeLocalExercise(exercise);
     notifyListeners();
@@ -703,9 +793,11 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   }
 
   /// The server's copy wins where there is one; otherwise the edit is the copy.
+  ///
+  /// The current copy, not [exercise]: a page holding the one it was opened
+  /// with would otherwise archive a name or a pattern edited since.
   Future<void> _setArchived(Exercise exercise, bool archived) async {
-    final edited = exercise.copyWith(isArchived: archived);
-    _exercises[exercise.id] = edited;
+    final edited = (_exercises[exercise.id] ?? exercise).copyWith(isArchived: archived);
     final saved = switch (_remote.allowed) {
       true => _withLocalTags(await _remoteService.editExercise(edited)),
       false => edited,

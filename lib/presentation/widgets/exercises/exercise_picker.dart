@@ -65,6 +65,8 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
     final preferences = Preferences.watch(context);
+    // once for the list, not once a row (#593)
+    final goEasy = goEasyOn(context);
     final previous = PreviousExercises.watch(context);
 
     return CustomScrollView(
@@ -256,28 +258,16 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                             left: (index == 0) ? 8.0 : 0.0,
                             right: (index == exercises.filters.length - 1) ? 8.0 : 0.0,
                           ),
-                          child: Chip(
-                            deleteButtonTooltipMessage: removeFilter,
-                            labelPadding: .zero,
-                            label: Padding(
-                              padding: const .symmetric(horizontal: 4),
-                              child: Text(
-                                // every filter carries an identifier; the
-                                // presentation layer words them
-                                switch (filter) {
-                                  MovementFilter filter => filter.chipLabel(L.of(context)),
-                                  Category category => category.label(L.of(context)),
-                                  Target target => target.label(L.of(context)),
-                                  _ => filter.value,
-                                },
-                                style: textTheme.bodyMedium,
-                              ),
-                            ),
-                            visualDensity: const VisualDensity(vertical: -4, horizontal: -0),
-                            onDeleted: () {
-                              buzz();
-                              exercises.removeFilter(filter);
+                          child: RemovableChip(
+                            // every filter carries an identifier; the
+                            // presentation layer words them
+                            label: switch (filter) {
+                              MovementFilter filter => filter.chipLabel(L.of(context)),
+                              Category category => category.label(L.of(context)),
+                              Target target => target.label(L.of(context)),
+                              _ => filter.value,
                             },
+                            onDeleted: () => exercises.removeFilter(filter),
                           ),
                         );
                       },
@@ -315,6 +305,11 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                 isMine: mine,
                 lastDone: searching ? previous.lastDone : null,
               );
+              // searching ranks one list by match, whatever the grouping
+              final grouping = searching ? PickerGrouping.none : preferences.pickerGrouping;
+              // grouped here, outside the fold's builder: a fold changes which
+              // groups are open, not what is in them
+              final groups = groupExercises(found, grouping, patterns: () => exercises.patterns);
 
               SliverList list(List<Exercise> exercises) {
                 return SliverList.separated(
@@ -324,6 +319,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                     return ExerciseItem(
                       exercise: exercise,
                       preferences: preferences,
+                      goEasy: goEasy,
                       onExerciseSelected: onExerciseSelected,
                       selected: this.exercises.hasSelected(exercise),
                       highlighted: exercise.id == highlightedName,
@@ -352,7 +348,27 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                   ],
                   if (suggestions.isNotEmpty || recent.isNotEmpty)
                     SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerAllExercises)),
-                  list(found),
+                  switch (grouping) {
+                    .none => list(found),
+                    .category || .target || .movement => ValueListenableBuilder<Set<String>>(
+                      // its own listenable: a fold rebuilds this list, not
+                      // everything that watches the preferences
+                      valueListenable: preferences.openPickerGroups,
+                      builder: (_, open, _) => SliverMainAxisGroup(
+                        slivers: [
+                          for (final (:group, exercises: members) in groups)
+                            _ExerciseGroupSliver(
+                              key: ValueKey(group.id),
+                              group: group,
+                              count: members.length,
+                              open: open.contains(group.id),
+                              backgroundColor: backgroundColor,
+                              list: list(members),
+                            ),
+                        ],
+                      ),
+                    ),
+                  },
                   if (onCreateExercise case final create? when searching && found.isEmpty)
                     SliverToBoxAdapter(
                       child: _CreateExercise(name: value.text.trim(), onCreate: create),

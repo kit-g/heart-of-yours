@@ -469,6 +469,12 @@ extension MuscleGroupCopy on MuscleGroup {
   }
 }
 
+/// The same words for heart_models' own groups, which are the atlas's ten by
+/// id (#610).
+extension MuscleGroupKeyCopy on MuscleGroupKey {
+  String label(L l) => MuscleGroup.fromString(value).label(l);
+}
+
 /// "Chest: 4 sets" — a group and its count, halves and all. Whole counts take
 /// the plural forms; a half cannot, so it has its own phrasing.
 String setsOfGroup(L l, MuscleGroup group, double sets) {

@@ -69,6 +69,7 @@ RouteBase _profileRoute() {
             onWhatsNew: context.goToWhatsNew,
             onRestTimers: context.goToRestTimers,
             onPushSettings: context.goToPushSettings,
+            onYourDevices: context.goToYourDevices,
             onFeatures: context.goToFeatures,
             onDeveloperApi: context.goToApiTokens,
             onErased: context.goToProfile,
@@ -127,6 +128,17 @@ RouteBase _profileRoute() {
             },
             builder: (_, _) => const PushSettingsPage(),
             name: _pushSettingsName,
+          ),
+          GoRoute(
+            path: _yourDevicesPath,
+            // only where device keys run (#555): off, a link here is one the
+            // app has no screen for (`docs/opt-in.md`)
+            redirect: (context, _) => switch (pushesOn(context) && DeviceKeys.of(context).supported) {
+              true => null,
+              false => '$_profilePath/$_settingsPath',
+            },
+            builder: (_, _) => const YourDevicesPage(onError: reportToSentry),
+            name: _yourDevicesName,
           ),
           GoRoute(
             path: _featuresPath,
@@ -337,6 +349,25 @@ RouteBase _activeWorkoutRoute() {
   );
 }
 
+/// A wide shell with nothing in its detail pane still builds its navigator.
+/// go_router reads the shell's navigator on Back, and one that was never
+/// built reads as null: Back on an Android tablet's Exercises or History root
+/// crashed (#628). Offstage, it is in the tree and shows nothing; the same
+/// global key moves it into the pane once something is selected.
+///
+/// Always the same Stack with [page] first, so selecting or clearing the pane
+/// never rebuilds the page from scratch — a remounted page re-runs its own
+/// start-up.
+Widget _withNavigator(Widget navigator, {required bool shown, required Widget page}) {
+  return Stack(
+    fit: .expand,
+    children: [
+      page,
+      if (!shown) Offstage(child: navigator),
+    ],
+  );
+}
+
 RouteBase _historyRoute() {
   final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -352,35 +383,39 @@ RouteBase _historyRoute() {
 
       return switch (LayoutProvider.of(context)) {
         LayoutSize.compact => child,
-        LayoutSize.wide => HistoryPage(
-          selectedId: workoutId,
-          onNewWorkout: context.goToActiveWorkout,
-          onSaveAsTemplate: (workout) {
-            Templates.of(context).workoutToTemplate(workout);
-            context.goToTemplateEditor(newTemplate: true);
-          },
-          onEditWorkout: (workout) {
-            context.goToWorkoutEditor(workout.id);
-          },
-          onTapWorkout: (workout) {
-            context.goToWorkoutEditor(workout.id);
-          },
-          onDeleteWorkout: (_) {
-            context.goToHistory();
-          },
-          onTapSkip: (skip) {
-            if (skip.id case final String id) context.goToSkip(id);
-          },
-          onEntryReview: context.goToEntryReview,
-          onLogPastWorkout: context.logPast,
-          onOpenActiveWorkout: () {
-            HapticFeedback.mediumImpact();
-            context.goToActiveWorkout();
-          },
-          detail: switch ((workoutId, reviewing || logging)) {
-            (String(), _) || (_, true) => child, // workout selected, or the list
-            (null, false) => null,
-          },
+        LayoutSize.wide => _withNavigator(
+          child,
+          shown: workoutId != null || reviewing || logging,
+          page: HistoryPage(
+            selectedId: workoutId,
+            onNewWorkout: context.goToActiveWorkout,
+            onSaveAsTemplate: (workout) {
+              Templates.of(context).workoutToTemplate(workout);
+              context.goToTemplateEditor(newTemplate: true);
+            },
+            onEditWorkout: (workout) {
+              context.goToWorkoutEditor(workout.id);
+            },
+            onTapWorkout: (workout) {
+              context.goToWorkoutEditor(workout.id);
+            },
+            onDeleteWorkout: (_) {
+              context.goToHistory();
+            },
+            onTapSkip: (skip) {
+              if (skip.id case final String id) context.goToSkip(id);
+            },
+            onEntryReview: context.goToEntryReview,
+            onLogPastWorkout: context.logPast,
+            onOpenActiveWorkout: () {
+              HapticFeedback.mediumImpact();
+              context.goToActiveWorkout();
+            },
+            detail: switch ((workoutId, reviewing || logging)) {
+              (String(), _) || (_, true) => child, // workout selected, or the list
+              (null, false) => null,
+            },
+          ),
         ),
       };
     },
@@ -447,6 +482,7 @@ RouteBase _historyRoute() {
               return WorkoutEditor(
                 copy: past.workout,
                 logTo: past.logTo,
+                loggingFor: past.loggingFor,
                 onClose: switch (LayoutProvider.of(context)) {
                   .compact => null,
                   .wide => context.goToHistory,
@@ -476,7 +512,9 @@ RouteBase _historyRoute() {
                 final workoutId = state.pathParameters['workoutId']!;
                 final workout = Workouts.of(context).lookup(workoutId);
                 return WorkoutEditor(
-                  copy: workout!,
+                  // a copy, so edits the user then discards never reach the
+                  // workout History shows; Save hands the copy back
+                  copy: Workout.fromJson(workout!.toMap()),
                   onTapImage: context.goToGallery,
                   onClose: switch (LayoutProvider.of(context)) {
                     .compact => null,
@@ -498,7 +536,9 @@ RouteBase _historyRoute() {
             redirect: (context, state) async {
               final workouts = Workouts.of(context);
               return switch (state.pathParameters['workoutId']) {
-                String id when workouts.lookup(id) != null => null,
+                // a stripped mirror row (#85) is not a workout to edit: the
+                // server's copy is the real one
+                String id when workouts.lookupWhole(id) != null => null,
                 String id => switch (await workouts.fetchWorkout(id)) {
                   true => null,
                   false => _historyPath,
@@ -523,18 +563,22 @@ RouteBase _exercisesRoute() {
 
       return switch (LayoutProvider.of(context)) {
         .compact => detail,
-        .wide => ExercisesPage(
-          selectedId: selectedExerciseId,
-          detail: switch (selectedExerciseId) {
-            null => null,
-            _ => detail,
-          },
-          onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
-          onOpenActiveWorkout: () {
-            HapticFeedback.mediumImpact();
-            context.goToActiveWorkout();
-          },
-          onShowArchived: context.goToExerciseArchive,
+        .wide => _withNavigator(
+          detail,
+          shown: selectedExerciseId != null,
+          page: ExercisesPage(
+            selectedId: selectedExerciseId,
+            detail: switch (selectedExerciseId) {
+              null => null,
+              _ => detail,
+            },
+            onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
+            onOpenActiveWorkout: () {
+              HapticFeedback.mediumImpact();
+              context.goToActiveWorkout();
+            },
+            onShowArchived: context.goToExerciseArchive,
+          ),
         ),
       };
     },
@@ -844,61 +888,27 @@ RouteBase _workoutDoneRoute() {
           achievementsCallback: () async {
             final workouts = Workouts.of(context);
             final goals = Goals.of(context);
-            final exercises = Exercises.of(context);
             final stats = Stats.of(context);
-            final firstWeekday = Preferences.of(context).firstWeekday;
-            // a goal a running program's cadence overrides is not judged, so
-            // nothing celebrates what is set aside
-            final running = runningPrograms(context);
-            bool setAside(Goal goal) => pausedByPrograms(goal, running);
+            // the goals live goal notes judge, read and folded the same way
+            final judge = goalJudge(context);
 
             // The id the server settled on, not the one this device saved
             // under: `saveWorkout` adopts the server's when they differ, and
             // crediting a rung with the pre-save id had the server reject the
             // attribution outright — it was an id it had never seen.
-            final finished = await workouts.finishing;
-            // the aggregation is what whole-workout goals are judged against,
-            // and it predates the workout that just landed
+            final finished = await workouts.finishing ?? workout;
+            // the aggregation predates the workout that just landed
             await stats.init();
-            // the windows every goal below reads, each read once; `without`
-            // filters what was read, so the before reading shares them too
-            final lensSets = sharedLensSets(stats.getLensSets);
-            final stamped = await goals.observeProgress(
-              (goal) => currentGoalValue(
-                goal,
-                exercises: exercises,
-                firstWeekday: firstWeekday,
-                workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
-                lensSets: lensSets,
-              ),
-              // this screen is the one place that knows which session earned it
-              achievedBy: finished?.id ?? workout.id,
-              setAside: setAside,
+            final priors = Map.fromIterables(
+              judge.goals,
+              await Future.wait(judge.goals.map((goal) => judge.read(goal, finished))),
             );
 
-            // A recurring goal is never stamped, so it would otherwise go
-            // uncelebrated the week it is met — announced here when this
-            // session is what carried the period over.
-            final carried = await goals.observePeriodWins(
-              setAside: setAside,
-              valueOf: (goal) => currentGoalValue(
-                goal,
-                exercises: exercises,
-                firstWeekday: firstWeekday,
-                workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
-                lensSets: lensSets,
-              ),
-              valueBefore: (goal) => currentGoalValue(
-                goal,
-                exercises: exercises,
-                firstWeekday: firstWeekday,
-                workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
-                lensSets: lensSets,
-                without: workout.start,
-              ),
-            );
-
-            return [...stamped, ...carried];
+            // what the session carried over the line: the calculation live
+            // goal notes make as the sets are ticked (#625), so the two agree
+            final crossed = goalCrossings(judge.goals, (goal) => priors[goal], finished, fold: judge.fold);
+            // this screen is the one place that knows which session earned it
+            return goals.stampCrossed(crossed, achievedBy: finished.id);
           },
           // Same contract as the goals: wait out the write, then ask which
           // records now credit this session. The fold ties records to the
@@ -1279,6 +1289,9 @@ RouteBase _coachingRoute() {
               onOpenClient: context.pushCoachingClient,
               onOpenWorkout: context.pushCoachingClientWorkout,
               onOpenProgram: context.pushCoachingClientProgram,
+              onMessage: context.pushCoachingClientThread,
+              onNotes: context.pushCoachingClientNotes,
+              onLog: context.pushCoachingClientLog,
             ),
             routes: [
               GoRoute(
@@ -1291,9 +1304,44 @@ RouteBase _coachingRoute() {
                     connectionId: connectionId,
                     onOpenWorkout: (workoutId) => context.pushCoachingClientWorkout(connectionId, workoutId),
                     onOpenProgram: (programId) => context.pushCoachingClientProgram(connectionId, programId),
+                    onMessage: context.pushCoachingClientThread,
+                    onNotes: context.pushCoachingClientNotes,
+                    onLog: context.pushCoachingClientLog,
                   );
                 },
                 routes: [
+                  GoRoute(
+                    path: 'messages',
+                    name: _coachingClientThreadName,
+                    builder: (context, state) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+                  ),
+                  // a workout the coach logs for them (#560): it lives in what
+                  // it was opened with, so a location without it goes back
+                  GoRoute(
+                    path: 'log',
+                    name: _coachingClientLogName,
+                    redirect: (_, state) => switch (state.extra) {
+                      PastWorkout _ => null,
+                      _ => '$_coachingClientsPath/${state.pathParameters['connectionId']}',
+                    },
+                    builder: (context, state) {
+                      final past = state.extra as PastWorkout;
+                      return WorkoutEditor(copy: past.workout, logTo: past.logTo, loggingFor: past.loggingFor);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'notes',
+                    name: _coachingClientNotesName,
+                    // nowhere to keep the keys that open them, as on the web
+                    redirect: (context, state) => switch (DeviceKeys.of(context).supported) {
+                      true => null,
+                      false => state.namedLocation(
+                        _coachingClientName,
+                        pathParameters: {'connectionId': state.pathParameters['connectionId']!},
+                      ),
+                    },
+                    builder: (context, state) => ClientNotesPage(connectionId: state.pathParameters['connectionId']!),
+                  ),
                   GoRoute(
                     path: 'programs/:programId',
                     name: _coachingClientProgramName,
@@ -1347,7 +1395,24 @@ RouteBase _coachingRoute() {
         ],
       ),
       StatefulShellBranch(
-        routes: [page(_coachingMessagesPath, _coachingMessagesName, (back) => CoachMessagesPage(onYourTraining: back))],
+        routes: [
+          GoRoute(
+            path: _coachingMessagesPath,
+            name: _coachingMessagesName,
+            redirect: off,
+            builder: (context, _) => CoachMessagesPage(
+              onYourTraining: context.leaveCoaching,
+              onOpen: context.pushCoachingThread,
+            ),
+            routes: [
+              GoRoute(
+                path: ':connectionId',
+                name: _coachingThreadName,
+                builder: (context, state) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+              ),
+            ],
+          ),
+        ],
       ),
       StatefulShellBranch(routes: [_coachingProgramsRoute(off)]),
       StatefulShellBranch(
@@ -1466,6 +1531,28 @@ GoRoute _coachingProgramsRoute(GoRouterRedirect off) {
         ],
       ),
     ],
+  );
+}
+
+/// A student's conversation with their coach (#556), over whatever is on
+/// screen. There only while coaching runs: off, a link to it is one the app
+/// has no screen for.
+RouteBase _threadRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _threadPath,
+    name: _threadName,
+    redirect: (context, _) => switch (pushesOn(context)) {
+      true => null,
+      false => _profilePath,
+    },
+    builder: (context, state) {
+      // outside the shell, so the layout is this route's to provide
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+      );
+    },
   );
 }
 
