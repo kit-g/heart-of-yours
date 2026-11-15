@@ -38,6 +38,9 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
           'name': exercise.name,
           'category': exercise.category.value,
           'target': exercise.target.value,
+          // the server keeps it, so a reinstall or a second device sees it
+          // too (#616); the device's own copy no longer has to carry it alone
+          'pattern': ?exercise.movement.groups.firstOrNull,
         },
       ),
     );
@@ -56,18 +59,31 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   }
 
   @override
-  Future<Exercise> editExercise(Exercise exercise) async {
+  Future<Exercise> editExercise(Exercise exercise) => _editExercise(exercise, rename: false);
+
+  /// [editExercise] that also sends the name (heart-api#429). Its own call
+  /// because the server checks a sent name against the account's other own
+  /// exercises, case-insensitively, even when it is the name already held:
+  /// sent on every edit, an account with two names differing only in case
+  /// could archive neither. A name taken is [ExerciseNameTaken].
+  Future<Exercise> renameExercise(Exercise exercise) => _editExercise(exercise, rename: true);
+
+  Future<Exercise> _editExercise(Exercise exercise, {required bool rename}) async {
     final (json, code) = await put(
       '${Router.exercises}/${exercise.id}',
       body: {
+        if (rename) 'name': exercise.name,
         'category': exercise.category.value,
         'target': exercise.target.value,
         'instructions': ?exercise.instructions,
         'archived': exercise.isArchived,
+        // always sent: null is "none", and clears one the server holds (#616)
+        'pattern': exercise.movement.groups.firstOrNull,
       },
     );
-    return switch (code) {
-      200 => Exercise.fromJson(json),
+    return switch ((code, json)) {
+      (200, _) => Exercise.fromJson(json),
+      (409, {'code': 'name_taken'}) => throw const ExerciseNameTaken(),
       _ => throw ArgumentError(json),
     };
   }
