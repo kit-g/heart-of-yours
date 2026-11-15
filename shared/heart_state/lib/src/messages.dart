@@ -215,7 +215,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
        _newId = newId ?? uuidV7,
        _now = now ?? DateTime.now {
     _keys = _cipher.threadKeys.listen(_keyArrived);
-    _requests = _cipher.keyRequests.listen(_keysAsked);
+    _cipher.onKeyRequest = _keysAsked;
   }
 
   static Messages of(BuildContext context) => Provider.of<Messages>(context, listen: false);
@@ -226,13 +226,12 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   static const _page = 50;
 
   late final StreamSubscription<String> _keys;
-  late final StreamSubscription<KeyRequest> _requests;
 
-  /// How long one person's request for a thread's keys holds before another
-  /// of theirs is answered: each answer reads their devices afresh.
+  /// How long one device's request for a thread's keys holds before another
+  /// of its is answered: each answer reads its person's devices afresh.
   static const _answerAgain = Duration(minutes: 1);
 
-  /// When each `<thread> <person>` was last answered.
+  /// When each `<thread> <device>` was last answered.
   final _answered = <String, DateTime>{};
 
   String? _userId;
@@ -607,7 +606,11 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       ];
       if (locked.isNotEmpty) {
         await _cipher.receive();
-        await _cipher.ask(threadId, locked);
+        if (userId != _userId) return;
+        // nothing here waits on it: the answer comes as a key, whenever it does
+        if (lookup(threadId) case final Thread thread) {
+          unawaited(_cipher.ask(threadId, locked, fingerprint: fingerprintFor?.call(thread)));
+        }
       }
     } catch (error, stacktrace) {
       if (userId != _userId) return;
@@ -814,25 +817,47 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     await _show(threadId);
   }
 
-  /// Someone who reads a thread asked for keys this device made: shared again,
-  /// to every device of theirs the share lets in, checked as any share is.
-  /// Only for a thread of this account's, from its other person or the
-  /// account's own devices.
-  Future<void> _keysAsked(KeyRequest request) async {
+  /// A device asked for keys this device made for a thread: answered when
+  /// the thread is this account's and still takes messages, and the device
+  /// is its other person's or the account's own. Whether that device gets
+  /// them is the cipher's to decide, as for any share. Answers false to keep
+  /// the request for later: no account yet, or the answer failed.
+  Future<bool> _keysAsked(KeyRequest request) async {
     final userId = _userId;
-    if (userId == null) return;
+    if (userId == null) return false;
+    final thread = lookup(request.threadId) ?? await _heldThread(userId, request.threadId);
+    if (userId != _userId) return false;
+    final otherId = thread?.otherId;
+    // not a thread of this account's, one whose connection ended, or one
+    // that takes nothing more: nothing goes
+    if (thread == null || otherId == null || thread.connectionId == null || this.thread(thread.id).closed) return true;
+    if (!{userId, otherId}.contains(request.userId)) return true;
+    final answered = '${thread.id} ${request.deviceId}';
+    if (_answered[answered] case final DateTime at when _now().difference(at) < _answerAgain) return true;
     try {
-      await _loadHeld(userId);
-      final thread = lookup(request.threadId);
-      final otherId = thread?.otherId;
-      if (thread == null || otherId == null || !{userId, otherId}.contains(request.userId)) return;
-      final answered = '${thread.id} ${request.userId}';
-      if (_answered[answered] case final DateTime at when _now().difference(at) < _answerAgain) return;
+      await _cipher.answer(
+        request,
+        fingerprint: switch (request.userId == otherId) {
+          true => fingerprintFor?.call(thread),
+          false => null,
+        },
+      );
       _answered[answered] = _now();
-      await _cipher.share(thread.id, userId: otherId, fingerprint: fingerprintFor?.call(thread), again: true);
+      return true;
     } catch (error, stacktrace) {
-      // the asking device asks again later
       onError?.call(error, stacktrace: stacktrace);
+      return false;
+    }
+  }
+
+  /// [threadId] as this device holds it, for a request that came before the
+  /// inbox was read.
+  Future<Thread?> _heldThread(String userId, String threadId) async {
+    try {
+      return (await _local.getThreads(userId)).where((each) => each.id == threadId).firstOrNull;
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+      return null;
     }
   }
 
@@ -917,7 +942,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   @override
   void dispose() {
     _keys.cancel();
-    _requests.cancel();
+    _cipher.onKeyRequest = null;
     _forget();
     super.dispose();
   }

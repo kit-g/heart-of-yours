@@ -93,63 +93,71 @@ void main() {
   });
 
   group('keys asked for (#556)', () {
-    test("the other person's request shares the thread's keys again, checked against their fingerprint", () async {
+    test("the other person's device is answered, checked against their fingerprint", () async {
       await messages.load();
 
-      cipher.request(threadId, coach);
-      await pumpEventQueue();
+      expect(await cipher.request(threadId, coach), isTrue);
 
-      expect(cipher.shares, ['t1 whiskers print-c1 again']);
+      expect(cipher.answers, ['t1 tablet print-c1']);
     });
 
-    test("a request from the account's own device is answered the same way", () async {
+    test("the account's own device is answered with no fingerprint: its own devices are checked by trust", () async {
       await messages.load();
 
-      cipher.request(threadId, me);
-      await pumpEventQueue();
+      expect(await cipher.request(threadId, me), isTrue);
 
-      expect(cipher.shares, ['t1 whiskers print-c1 again']);
+      expect(cipher.answers, ['t1 tablet null']);
     });
 
-    test("from someone not in the thread, or for a thread this account doesn't hold, nothing goes", () async {
+    test('someone not in the thread, or a thread this account does not hold, is turned down for good', () async {
       await messages.load();
 
-      cipher
-        ..request(threadId, 'stranger')
-        ..request('elsewhere', coach);
-      await pumpEventQueue();
+      expect(await cipher.request(threadId, 'stranger'), isTrue);
+      expect(await cipher.request('elsewhere', coach), isTrue);
 
-      expect(cipher.shares, isEmpty);
+      expect(cipher.answers, isEmpty);
     });
 
-    test('a second request from the same person within a minute is the first one', () async {
+    test('a conversation whose connection ended, or that takes nothing more, answers nothing', () async {
+      server.threads = [Thread(id: threadId, otherId: coach, otherName: 'Whiskers')];
       await messages.load();
 
-      cipher
-        ..request(threadId, coach)
-        ..request(threadId, coach);
-      await pumpEventQueue();
+      expect(await cipher.request(threadId, coach), isTrue);
 
-      expect(cipher.shares, hasLength(1));
+      expect(cipher.answers, isEmpty);
+    });
+
+    test('a second request from the same device within a minute is the first one', () async {
+      await messages.load();
+
+      await cipher.request(threadId, coach);
+      await cipher.request(threadId, coach);
+      await cipher.request(threadId, coach, deviceId: 'phone');
+
+      expect(cipher.answers, ['t1 tablet print-c1', 't1 phone print-c1']);
     });
 
     test('one that arrives before the inbox was read finds the thread on the device', () async {
       store.threads[me] = [Thread(id: threadId, connectionId: 'c1', otherId: coach)];
 
-      cipher.request(threadId, coach);
-      await pumpEventQueue();
+      expect(await cipher.request(threadId, coach), isTrue);
 
-      expect(cipher.shares, ['t1 whiskers print-c1 again']);
+      expect(cipher.answers, ['t1 tablet print-c1']);
     });
 
-    test('a share that fails is reported, and the next request tries again', () async {
+    test('with no account yet, or an answer that fails, the request is kept for later', () async {
+      messages.userId = null;
+      expect(await cipher.request(threadId, coach), isFalse);
+
+      messages.userId = me;
       await messages.load();
-      cipher.shareFails = StateError('offline');
-
-      cipher.request(threadId, coach);
-      await pumpEventQueue();
-
+      cipher.answerFails = StateError('offline');
+      expect(await cipher.request(threadId, coach), isFalse);
       expect(errors, [isA<StateError>()]);
+
+      cipher.answerFails = null;
+      expect(await cipher.request(threadId, coach), isTrue, reason: 'a failure holds nothing back');
+      expect(cipher.answers, ['t1 tablet print-c1']);
     });
   });
 
@@ -253,7 +261,8 @@ void main() {
 
       await messages.open(threadId);
 
-      expect(cipher.asks, ['t1 item-stuck']);
+      await pumpEventQueue();
+      expect(cipher.asks, ['t1 item-stuck print-c1']);
     });
 
     test('nothing locked asks for nothing', () async {
@@ -945,11 +954,16 @@ class _Store implements LocalThreadService {
 /// prefix off.
 class _Cipher implements ThreadCipher {
   final _keys = StreamController<String>.broadcast();
-  final _requests = StreamController<KeyRequest>.broadcast();
   final shares = <String>[];
 
-  /// What [ask] was asked for: `<thread> <item ids>`.
+  /// What [ask] was asked for: `<thread> <item ids> <fingerprint>`.
   final asks = <String>[];
+
+  /// Requests answered: `<thread> <device> <fingerprint>`.
+  final answers = <String>[];
+  Object? answerFails;
+
+  KeyRequestHandler? onRequest;
   final missing = <String>{};
   Object? shareFails;
   Object? sealFails;
@@ -971,19 +985,26 @@ class _Cipher implements ThreadCipher {
     queued = {};
   }
 
-  void request(String threadId, String userId) => _requests.add((threadId: threadId, userId: userId));
+  /// A request from [userId]'s [deviceId], as the cipher hands it over:
+  /// whether it was dealt with.
+  Future<bool> request(String threadId, String userId, {String deviceId = 'tablet'}) {
+    return onRequest!((threadId: threadId, userId: userId, deviceId: deviceId, sessions: {'s1'}));
+  }
 
-  void dispose() {
-    _keys.close();
-    _requests.close();
+  void dispose() => _keys.close();
+
+  @override
+  set onKeyRequest(KeyRequestHandler? handler) => onRequest = handler;
+
+  @override
+  Future<void> ask(String threadId, List<ThreadCiphertext> items, {String? fingerprint}) async {
+    asks.add('$threadId ${items.map((each) => each.id).join(',')} $fingerprint');
   }
 
   @override
-  Stream<KeyRequest> get keyRequests => _requests.stream;
-
-  @override
-  Future<void> ask(String threadId, List<ThreadCiphertext> items) async {
-    asks.add('$threadId ${items.map((each) => each.id).join(',')}');
+  Future<void> answer(KeyRequest request, {String? fingerprint}) async {
+    if (answerFails case final Object failure) throw failure;
+    answers.add('${request.threadId} ${request.deviceId} $fingerprint');
   }
 
   @override
@@ -996,9 +1017,9 @@ class _Cipher implements ThreadCipher {
   }
 
   @override
-  Future<void> share(String threadId, {required String userId, String? fingerprint, bool again = false}) async {
+  Future<void> share(String threadId, {required String userId, String? fingerprint}) async {
     if (shareFails case final Object failure) throw failure;
-    shares.add('$threadId $userId $fingerprint${again ? ' again' : ''}');
+    shares.add('$threadId $userId $fingerprint');
   }
 
   @override

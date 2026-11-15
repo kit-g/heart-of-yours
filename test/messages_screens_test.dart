@@ -89,33 +89,16 @@ void main() {
     expect(first.dy, lessThan(second.dy));
     // under the test font each letter is as wide as it is tall: short words keep the bubbles apart
     expect(second.dx, lessThan(first.dx), reason: "theirs sit left, the coach's own right");
-    expect(_message("Waiting for this message's key"), findsOneWidget);
-    expect(
-      find.text("One message can't be read on this device yet. It opens once Muffin has been online."),
-      findsOneWidget,
-      reason: 'the conversation says why, and what opens it',
-    );
+    expect(_message("Locked until the sender's device has been online"), findsOneWidget);
     expect(server.calls, contains('read t1 c3'));
   });
 
-  testWidgets("one's own messages from another device point to letting this one in", (tester) async {
-    server.items = [
-      _item('i1', 'locked', sender: 'whiskers', cursor: 'c1'),
-      _item('i2', 'locked', sender: 'whiskers', cursor: 'c2'),
-    ];
+  testWidgets("one's own message from another device says what lets it open", (tester) async {
+    server.items = [_item('i1', 'locked', sender: 'whiskers', cursor: 'c1')];
 
     await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
 
-    expect(find.textContaining("2 messages you wrote on another device can't be read here yet"), findsOneWidget);
-    expect(find.textContaining('Muffin has been online'), findsNothing);
-  });
-
-  testWidgets('a conversation that opens whole says nothing of keys', (tester) async {
-    server.items = [_item('i1', 'Squats?', sender: 'muffin', cursor: 'c1')];
-
-    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
-
-    expect(find.byKey(AppKeys.threadLocked), findsNothing);
+    expect(_message('Written on another device. Opens once that device lets this one in'), findsOneWidget);
   });
 
   testWidgets('a long press copies what was said; one that never opened offers nothing', (tester) async {
@@ -131,7 +114,7 @@ void main() {
     addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
     await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
 
-    await tester.longPress(_message("Waiting for this message's key"));
+    await tester.longPress(_message("Locked until the sender's device has been online"));
     await tester.pumpAndSettle();
     expect(find.text('Copy'), findsNothing);
 
@@ -613,10 +596,13 @@ class _Cipher implements ThreadCipher {
   Stream<String> get threadKeys => const Stream.empty();
 
   @override
-  Stream<KeyRequest> get keyRequests => const Stream.empty();
+  set onKeyRequest(KeyRequestHandler? handler) {}
 
   @override
-  Future<void> ask(String threadId, List<ThreadCiphertext> items) async {}
+  Future<void> ask(String threadId, List<ThreadCiphertext> items, {String? fingerprint}) async {}
+
+  @override
+  Future<void> answer(KeyRequest request, {String? fingerprint}) async {}
 
   @override
   Future<SealedMessage> seal(String threadId, String text) async {
@@ -625,7 +611,7 @@ class _Cipher implements ThreadCipher {
   }
 
   @override
-  Future<void> share(String threadId, {required String userId, String? fingerprint, bool again = false}) async {}
+  Future<void> share(String threadId, {required String userId, String? fingerprint}) async {}
 
   @override
   Future<List<OpenedMessage>> open(String threadId, List<ThreadCiphertext> items) async {

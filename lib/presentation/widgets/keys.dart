@@ -493,7 +493,6 @@ abstract final class AppKeys {
   static const threadBlock = Key('Messages.block');
   static const threadBlockConfirm = Key('Messages.blockConfirm');
   static const threadCleared = Key('Messages.cleared');
-  static const threadLocked = Key('Messages.locked');
   static const messageReport = Key('Messages.messageReport');
   static const reportSheet = Key('Report.sheet');
   static const reportInclude = Key('Report.include');

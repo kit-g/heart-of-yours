@@ -158,26 +158,35 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
   @override
   Stream<String> get threadKeys => _threadKeys.stream;
 
-  final _keyRequests = StreamController<KeyRequest>.broadcast();
+  KeyRequestHandler? _onKeyRequest;
 
   @override
-  Stream<KeyRequest> get keyRequests => _keyRequests.stream;
+  set onKeyRequest(KeyRequestHandler? handler) {
+    _onKeyRequest = handler;
+    // what waited for someone to decide may be decided now
+    if ((handler, _run) case (_?, final _Run run)) _redispatch(run);
+  }
 
   @override
-  Future<void> ask(String threadId, List<ThreadCiphertext> items) async {
+  Future<void> ask(String threadId, List<ThreadCiphertext> items, {String? fingerprint}) async {
     try {
-      await _ask(threadId, items);
+      await _ask(threadId, items, fingerprint);
     } on _Stopped {
       // stopped on the way: asked again when the thread is next read
+    } catch (error, stacktrace) {
+      _report(error, stacktrace);
     }
   }
+
+  @override
+  Future<void> answer(KeyRequest request, {String? fingerprint}) => _answer(request, fingerprint);
 
   @override
   Future<SealedMessage> seal(String threadId, String text) => _seal(threadId, text);
 
   @override
-  Future<void> share(String threadId, {required String userId, String? fingerprint, bool again = false}) {
-    return _share(threadId, userId: userId, fingerprint: fingerprint, again: again);
+  Future<void> share(String threadId, {required String userId, String? fingerprint}) {
+    return _share(threadId, userId: userId, fingerprint: fingerprint);
   }
 
   @override
@@ -323,7 +332,6 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
   @override
   void dispose() {
     _threadKeys.close();
-    _keyRequests.close();
     _noteKeys.close();
     approval.dispose();
     super.dispose();
