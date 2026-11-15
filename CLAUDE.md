@@ -1,5 +1,15 @@
 # CLAUDE.md
 
+## Content production
+Before any Heart social post, carousel, screenshot composition, feature ad,
+video or narration task, read `docs/content-production.md`. It contains Kit's
+settled preferences and the visual checks to complete before presenting a
+draft. Read it again when resuming content work in a new session. Record new
+accepted lessons there; do not rely on conversation memory. This applies to
+content artifacts outside the repository too when working from this project.
+The guide is private and gitignored: never stage, commit or publish it. If it
+is missing in another checkout, report that rather than assume it was loaded.
+
 ## Code navigation
 Use the Dart MCP LSP (`ToolSearch` → `select:mcp__dart__lsp`) for symbol/type
 resolution instead of grep: `resolveWorkspaceSymbol` to find a definition,
