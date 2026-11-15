@@ -259,8 +259,9 @@ extension on BuildContext {
     return goNamed(_historyLogName, extra: past);
   }
 
-  /// Asks when a past workout was, then opens it to fill in (#530).
-  void logPast() => logPastWorkout(this, open: goToLogWorkout);
+  /// Asks when a past workout was, then opens it to fill in (#530): by default
+  /// the last hour, or the same hour [on] another day (#618).
+  void logPast({DateTime? on}) => logPastWorkout(this, open: goToLogWorkout, on: on);
 
   /// A workout from the suspicious entries' list (#428), within History:
   /// pushed on a phone, so Back returns to the list; in the pane on a tablet,

@@ -30,9 +30,10 @@ class PastWorkout {
 /// Asks when a past workout was, then hands [open] the workout to fill in
 /// (#530). The date, start and end are picked first, by default the last hour
 /// of today; none of them may be in the future, and the end comes after the
-/// start. [workout] is the one to fill, a new empty one unless given, and
-/// [logTo] is where it goes on Save. Dismissed, nothing opens and nothing is
-/// stored.
+/// start. [on] moves that hour to another day — one tapped in History's
+/// calendar (#618) — keeping the time of day. [workout] is the one to fill, a
+/// new empty one unless given, and [logTo] is where it goes on Save.
+/// Dismissed, nothing opens and nothing is stored.
 ///
 /// A workout in progress is never part of this: logging one that already
 /// happened works the same beside it.
@@ -42,11 +43,17 @@ Future<void> logPastWorkout(
   Workout? workout,
   LogTo logTo = logToHistory,
   String? loggingFor,
+  DateTime? on,
 }) async {
   final L(:whenWasIt, :next) = L.of(context);
   // to the minute, as the wheels pick it
   final now = DateTime.now();
-  final end = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+  final day = on ?? now;
+  final end = switch (DateTime(day.year, day.month, day.day, now.hour, now.minute)) {
+    // just after midnight, the hour before a past day is the day before it
+    final at when at.hour == 0 && at.isBefore(DateUtils.dateOnly(now)) => at.add(const Duration(hours: 1)),
+    final at => at,
+  };
   PastWorkout? picked;
   await showAdjustTimesDialog(
     context,

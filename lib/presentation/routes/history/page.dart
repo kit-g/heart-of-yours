@@ -14,9 +14,10 @@ class HistoryPage extends StatefulWidget {
   /// feature off, History has no way there.
   final VoidCallback? onEntryReview;
 
-  /// Logs a workout that already happened (#530). Without it, or with the
-  /// feature off, History has no way in.
-  final VoidCallback? onLogPastWorkout;
+  /// Logs a workout that already happened (#530), by default in the last
+  /// hour, or [on] a day tapped in the calendar (#618). Without it, or with
+  /// the feature off, History has no way in.
+  final void Function({DateTime? on})? onLogPastWorkout;
   final VoidCallback onOpenActiveWorkout;
   final Widget? detail;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
@@ -85,12 +86,15 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
           ),
         if (widget.onEntryReview case final VoidCallback open) _EntryReviewButton(onPressed: open),
         // a workout that already happened (#530), while it is on
-        if ((widget.onLogPastWorkout, preferences.isOn(.pastWorkouts)) case (final VoidCallback log, true))
+        if ((widget.onLogPastWorkout, preferences.isOn(.pastWorkouts)) case (
+          final void Function({DateTime? on}) log,
+          true,
+        ))
           IconButton(
             key: AppKeys.logPastWorkout,
             tooltip: L.of(context).logPastWorkout,
             icon: const Icon(Icons.more_time_rounded),
-            onPressed: log,
+            onPressed: () => log(),
           ),
         // the switch between the two views (#609), remembered as the
         // view History opens on
@@ -263,6 +267,15 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                     onTapWorkout: widget.onTapWorkout,
                     selectedId: widget.selectedId,
                     controller: Scrolls.of(context).historyCalendarScrollController,
+                    onLogOn: switch (widget.onLogPastWorkout) {
+                      final void Function({DateTime? on}) log => (day) => log(on: day),
+                      null => null,
+                    },
+                    onStartWorkout: () async {
+                      final name = L.of(context).defaultWorkoutName();
+                      await Workouts.of(context).startWorkout(source: .blank, name: name);
+                      widget.onNewWorkout();
+                    },
                   ),
                 ),
               );
