@@ -1385,6 +1385,8 @@ RouteBase _coachingRoute() {
                           return TemplateEditor(
                             isNewTemplate: isNew,
                             drafts: ClientPrograms.of(context),
+                            // written for someone else: no last sets of the coach's
+                            showsPrevious: false,
                             words: (
                               title: switch (isNew) {
                                 true => l.coachingProgramNewSession,
@@ -1536,6 +1538,8 @@ GoRoute _coachingProgramsRoute(GoRouterRedirect off) {
               return TemplateEditor(
                 isNewTemplate: isNew,
                 drafts: CoachLibrary.of(context),
+                // written for someone else: no last sets of the coach's
+                showsPrevious: false,
                 words: (
                   title: switch (isNew) {
                     true => l.coachingProgramNewSession,

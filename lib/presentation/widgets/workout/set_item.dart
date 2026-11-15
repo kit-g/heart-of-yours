@@ -16,6 +16,9 @@ class _ExerciseSetItem extends StatefulWidget {
   final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
   final bool isLocked;
   final Map<String, dynamic>? previousValue;
+
+  /// Whether the Previous cell is there at all (#591).
+  final bool showsPrevious;
   final void Function(ExerciseSet, SetType)? onSetType;
 
   /// Rates the set from its number's popup (#234); null where sets are not
@@ -38,6 +41,7 @@ class _ExerciseSetItem extends StatefulWidget {
     this.onSetDone,
     required this.isLocked,
     this.previousValue,
+    this.showsPrevious = true,
   });
 
   @override
@@ -293,74 +297,75 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                       onSetRpe: widget.onSetRpe,
                       onSetTarget: widget.onSetTarget,
                     ),
-                    Expanded(
-                      flex: 3,
-                      child: Center(
-                        child: switch (widget.previousValue) {
-                          // only a previous that shows real values gets the tappable
-                          // pill — a legacy row missing its category's fields renders
-                          // a bare dash, same as no previous at all
-                          Map<String, dynamic> m when PreviousSet.represents(exercise.exercise, m) =>
-                            PrimaryButton.shrunk(
-                              backgroundColor: scaffoldBackgroundColor,
-                              margin: const EdgeInsets.all(4),
-                              child: PreviousSet(
-                                previousValue: m,
-                                exercise: exercise.exercise,
-                                prefs: prefs,
+                    if (widget.showsPrevious)
+                      Expanded(
+                        flex: 3,
+                        child: Center(
+                          child: switch (widget.previousValue) {
+                            // only a previous that shows real values gets the tappable
+                            // pill — a legacy row missing its category's fields renders
+                            // a bare dash, same as no previous at all
+                            Map<String, dynamic> m when PreviousSet.represents(exercise.exercise, m) =>
+                              PrimaryButton.shrunk(
+                                backgroundColor: scaffoldBackgroundColor,
+                                margin: const EdgeInsets.all(4),
+                                child: PreviousSet(
+                                  previousValue: m,
+                                  exercise: exercise.exercise,
+                                  prefs: prefs,
+                                ),
+                                onPressed: () {
+                                  buzz();
+                                  switch (exercise.exercise.category) {
+                                    case .weightedBodyWeight:
+                                    case .assistedBodyWeight:
+                                    case .machine:
+                                    case .dumbbell:
+                                    case .barbell:
+                                      switch (m) {
+                                        case {'weight': num weight, 'reps': int reps}:
+                                          _weightController.text = prefs.weight(weight, unit: _unitOverride);
+                                          _repsController.text = '$reps';
+                                        // bodyweight with nothing added: last time had no load
+                                        case {'reps': int reps}:
+                                          _weightController.clear();
+                                          _repsController.text = '$reps';
+                                      }
+                                    case .repsOnly:
+                                      switch (m) {
+                                        case {'reps': int reps}:
+                                          _repsController.text = '$reps';
+                                      }
+                                    case .cardio:
+                                      switch (m) {
+                                        case {'duration': num duration, 'distance': num distance}:
+                                          _durationController.text = duration.toInt().toDuration();
+                                          _distanceController.text = _shownDistance(prefs, distance);
+                                      }
+                                    case .duration:
+                                      switch (m) {
+                                        case {'duration': num duration}:
+                                          _durationController.text = duration.toInt().toDuration();
+                                      }
+                                    case .weightedDistance:
+                                      switch (m) {
+                                        case {'weight': num weight, 'distance': num distance}:
+                                          _weightController.text = prefs.weight(weight, unit: _unitOverride);
+                                          _distanceController.text = _shownDistance(prefs, distance);
+                                      }
+                                    case .weightedDuration:
+                                      switch (m) {
+                                        case {'weight': num weight, 'duration': num duration}:
+                                          _weightController.text = prefs.weight(weight, unit: _unitOverride);
+                                          _durationController.text = duration.toInt().toDuration();
+                                      }
+                                  }
+                                },
                               ),
-                              onPressed: () {
-                                buzz();
-                                switch (exercise.exercise.category) {
-                                  case .weightedBodyWeight:
-                                  case .assistedBodyWeight:
-                                  case .machine:
-                                  case .dumbbell:
-                                  case .barbell:
-                                    switch (m) {
-                                      case {'weight': num weight, 'reps': int reps}:
-                                        _weightController.text = prefs.weight(weight, unit: _unitOverride);
-                                        _repsController.text = '$reps';
-                                      // bodyweight with nothing added: last time had no load
-                                      case {'reps': int reps}:
-                                        _weightController.clear();
-                                        _repsController.text = '$reps';
-                                    }
-                                  case .repsOnly:
-                                    switch (m) {
-                                      case {'reps': int reps}:
-                                        _repsController.text = '$reps';
-                                    }
-                                  case .cardio:
-                                    switch (m) {
-                                      case {'duration': num duration, 'distance': num distance}:
-                                        _durationController.text = duration.toInt().toDuration();
-                                        _distanceController.text = _shownDistance(prefs, distance);
-                                    }
-                                  case .duration:
-                                    switch (m) {
-                                      case {'duration': num duration}:
-                                        _durationController.text = duration.toInt().toDuration();
-                                    }
-                                  case .weightedDistance:
-                                    switch (m) {
-                                      case {'weight': num weight, 'distance': num distance}:
-                                        _weightController.text = prefs.weight(weight, unit: _unitOverride);
-                                        _distanceController.text = _shownDistance(prefs, distance);
-                                    }
-                                  case .weightedDuration:
-                                    switch (m) {
-                                      case {'weight': num weight, 'duration': num duration}:
-                                        _weightController.text = prefs.weight(weight, unit: _unitOverride);
-                                        _durationController.text = duration.toInt().toDuration();
-                                    }
-                                }
-                              },
-                            ),
-                          _ => const Text(_emptyValue),
-                        },
+                            _ => const Text(_emptyValue),
+                          },
+                        ),
                       ),
-                    ),
                     Expanded(
                       flex: 2,
                       child: Row(

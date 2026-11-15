@@ -1137,6 +1137,7 @@ void main() {
       await tester.pumpTimes();
       expect(find.byType(TemplateEditor), findsOneWidget);
       expect(find.text('Edit session'), findsOneWidget);
+      expect(find.text('Previous'), findsNothing, reason: "the coach's own last sets aren't the client's (#591)");
 
       await tester.enterText(
         find.descendant(of: find.byType(AppBar), matching: find.byType(TextField)),

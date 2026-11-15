@@ -144,6 +144,10 @@ class WorkoutDetail extends StatefulWidget {
   /// off: this account's own notes, which someone else's workout (#560) has
   /// nothing to do with. Its note in this workout is [onNoteChanged]'s.
   final bool pinsNotes;
+
+  /// Whether the Previous column is there: this account's own last sets,
+  /// which say nothing to a session written for someone else (#591).
+  final bool showsPrevious;
   final Future<void> Function(WorkoutImage)? onDeleteImage;
 
   const new({
@@ -178,6 +182,7 @@ class WorkoutDetail extends StatefulWidget {
     this.workoutId,
     this.onTapExercise,
     this.pinsNotes = true,
+    this.showsPrevious = true,
   });
 
   @override
@@ -471,6 +476,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                                 allowCompleting: widget.allowsCompletingSet,
                                 onTapExercise: widget.onTapExercise,
                                 pinsNotes: widget.pinsNotes,
+                                showsPrevious: widget.showsPrevious,
                               ),
                             ),
                           ),

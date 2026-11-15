@@ -39,6 +39,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final bool allowCompleting;
   final void Function(Exercise)? onTapExercise;
   final bool pinsNotes;
+  final bool showsPrevious;
 
   const new({
     required this.index,
@@ -71,6 +72,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     required this.allowCompleting,
     this.onTapExercise,
     this.pinsNotes = true,
+    this.showsPrevious = true,
   });
 
   @override
@@ -259,10 +261,11 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                               width: _setColumnWidth,
                               child: _ColumnLabel(firstColumnCopy),
                             ),
-                            Expanded(
-                              flex: 3,
-                              child: _ColumnLabel(secondColumnCopy),
-                            ),
+                            if (showsPrevious)
+                              Expanded(
+                                flex: 3,
+                                child: _ColumnLabel(secondColumnCopy),
+                              ),
                             ..._buttonsHeader(context, previous),
                             SizedBox(
                               width: _fixedColumnWidth,
@@ -296,6 +299,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                             isLocked: !allowCompleting,
                             onSetDone: onSetDone,
                             previousValue: previous.matching(exercise, set.$1),
+                            showsPrevious: showsPrevious,
                           );
                         },
                       ),
