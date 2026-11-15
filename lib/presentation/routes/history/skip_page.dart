@@ -32,9 +32,10 @@ class SkipPage extends StatelessWidget {
     // taken back, or not read yet; and a skip whose feature is off is one
     // the app has no page for
     final preferences = Preferences.watch(context);
-    final shown = switch (skip?.isDay) {
-      true => preferences.isOn(.notToday),
-      false => preferences.isOn(.programs),
+    final shown = switch (skip) {
+      TrainingSkip(isDay: true) => preferences.isOn(.notToday),
+      // a program's while it is shown: a coach's under Your coach (#593)
+      final TrainingSkip skip => preferences.programShown(programs.programOf(skip)),
       null => false,
     };
     if (skip == null || !shown) {

@@ -248,6 +248,14 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
 
   Program? lookup(String programId) => _programs[programId];
 
+  /// The program [skip] was set aside in, while it is on the device.
+  Program? programOf(TrainingSkip skip) {
+    return switch (skip.programId) {
+      final String id => _programs[id],
+      null => null,
+    };
+  }
+
   List<ProgramAction> actionsOf(String programId) => UnmodifiableListView(_actions[programId] ?? const []);
 
   /// The sessions of [programId] the user set aside ("Not today", #312),

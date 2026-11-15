@@ -28,6 +28,7 @@ ProgramSessionLink? _inFlight;
 /// bounded — for the programs, the templates and the active workout to be read.
 Future<void> runProgramSessionLink(
   ProgramSessionLink link, {
+  required Preferences preferences,
   required Programs programs,
   required Templates templates,
   required Workouts workouts,
@@ -49,7 +50,8 @@ Future<void> runProgramSessionLink(
     final router = HeartRouter.of(context);
     final analytics = Analytics.of(context);
     final program = programs.lookup(link.programId);
-    if (program == null) return;
+    // with Programs off, only a coach's program is there to open (#593)
+    if (program == null || !preferences.programShown(program)) return;
 
     final state = await programs.occurrence(
       program,

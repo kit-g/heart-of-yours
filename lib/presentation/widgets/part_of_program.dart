@@ -22,11 +22,13 @@ class PartOfProgram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final program = switch ((Preferences.watch(context).isOn(.programs), programId)) {
-      (true, final String id) => Programs.watch(context).lookup(id),
+    // a coach's program is shown under Your coach alone (#593)
+    final preferences = Preferences.watch(context);
+    final program = switch (programId) {
+      final String id when preferences.programsReach => Programs.watch(context).lookup(id),
       _ => null,
     };
-    if (program == null) return const SizedBox.shrink();
+    if (program == null || !preferences.programShown(program)) return const SizedBox.shrink();
     final ThemeData(:colorScheme) = Theme.of(context);
 
     return IconButton(

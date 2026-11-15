@@ -14,7 +14,7 @@ import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show ProgramPage;
 import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/keys.dart';
-import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetailKeys;
+import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetailKeys, startingWorkout;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -349,6 +349,100 @@ void main() {
 
       expect(find.byKey(AppKeys.programWaiting('c1')), findsNothing);
       expect(tester.widget<Text>(find.byKey(AppKeys.programSentBy)).data, 'From Muffin');
+    });
+  });
+
+  group("a coach's program with Programs off (#593)", () {
+    final sent = Program.fromJson({
+      ...Program(
+        id: 'c1',
+        name: 'Strength block',
+        perWeek: 2,
+        weeks: 4,
+        sessions: const ['t3'],
+        createdAt: DateTime.utc(2026, 11, 10),
+      ).toMap(),
+      'coachId': 'coach-muffin',
+      'coachName': 'Muffin',
+      'waitingSince': '2026-11-10T12:00:00.000Z',
+    });
+
+    /// The user's own [program] followed and [sent] waiting, with Programs
+    /// off and Your coach as [yourCoach] says.
+    void withSent({required bool yourCoach}) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-programs': 'off',
+        'feature-yourCoach': yourCoach ? 'on' : 'off',
+      });
+      when(db.getPrograms(userId)).thenAnswer((_) async => [program, sent]);
+      when(api.getPrograms()).thenAnswer((_) async => [program, sent]);
+      when(db.getTemplates(userId)).thenAnswer(
+        (_) async => [
+          template('t1', 0, 'Push', programId: 'p1'),
+          template('t2', 1, 'Pull', programId: 'p1'),
+          template('t3', 2, 'Day A', programId: 'c1'),
+        ],
+      );
+      when(api.startProgram('c1')).thenAnswer((_) async {});
+    }
+
+    testWidgets('with Your coach on, it waits; their own program and every way to make one stay away', (
+      tester,
+    ) async {
+      withSent(yourCoach: true);
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsOneWidget);
+      expect(find.byKey(AppKeys.programBand('p1')), findsNothing);
+      expect(find.byKey(AppKeys.programsFromFolder), findsNothing);
+      expect(find.byKey(AppKeys.libraryEntry), findsNothing);
+
+      await tester.tap(find.byTooltip('More options').first);
+      await tester.pumpTimes();
+      expect(find.text('Make a program'), findsNothing);
+    });
+
+    testWidgets('started, it replaces nothing hidden, and its session starts with its plan', (tester) async {
+      withSent(yourCoach: true);
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.programStartSent('c1'));
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.programStartSentConfirm), findsNothing, reason: 'nothing shown to replace');
+      verify(api.startProgram('c1')).called(1);
+      verifyNever(api.editProgram(any));
+      expect(find.byKey(AppKeys.programBand('c1')), findsOneWidget);
+
+      final context = tester.element(find.byType(MaterialApp));
+      final templates = Templates.of(context);
+      expect(startingWorkout(context, templates.lookup('t3')!).plan, isNotNull);
+      expect(startingWorkout(context, templates.lookup('t1')!).plan, isNull, reason: 'their own stays plain');
+
+      await tester.tapByKey(AppKeys.programStart('c1'));
+      await tester.pumpTimes();
+      final started = verify(db.startWorkout(captureAny, any)).captured.single as Workout;
+      expect(started.templateId, 't3');
+      expect(started.programId, 'c1');
+    });
+
+    testWidgets('its page opens, and stays while Programs is off', (tester) async {
+      withSent(yourCoach: true);
+      await openWorkoutTab(tester);
+
+      await tester.tap(find.text('Strength block'));
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsOneWidget);
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsOneWidget);
+    });
+
+    testWidgets('with Your coach off too, there is nothing', (tester) async {
+      withSent(yourCoach: false);
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsNothing);
+      expect(find.byKey(AppKeys.programBand('p1')), findsNothing);
+      expect(find.text('Programs'), findsNothing);
     });
   });
 

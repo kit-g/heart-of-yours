@@ -35,6 +35,9 @@ extension on Templates {
 /// Off, unanswered or declined, it is nothing at all: the tab is the 1.13 tab
 /// (#345). On with nothing to show and no folder to make one from, it is
 /// nothing too, rather than a header over an apology.
+///
+/// With Programs off and Your coach on, it holds only what a coach sent
+/// (#593): their programs run as any other, and nothing here makes one.
 class _ProgramsSection extends StatelessWidget {
   final void Function(Program) onOpen;
   final void Function(TemplateFolder) onFromFolder;
@@ -50,22 +53,28 @@ class _ProgramsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!Preferences.watch(context).isOn(.programs)) return const SliverToBoxAdapter();
+    final preferences = Preferences.watch(context);
+    if (!preferences.programsReach) return const SliverToBoxAdapter();
 
+    final section = Builder(builder: _section);
     return SliverToBoxAdapter(
-      child: _LibraryReader(child: Builder(builder: _section)),
+      // the library is Programs': a coach's programs alone never download it
+      child: preferences.isOn(.programs) ? _LibraryReader(child: section) : section,
     );
   }
 
   Widget _section(BuildContext context) {
     final programs = Programs.watch(context);
     final templates = Templates.watch(context);
-    final library = ProgramLibrary.watch(context);
-    final following = programs.following.toList();
-    final waiting = programs.waiting.toList();
-    final stopped = programs.all.where((program) => program.archived).toList();
-    final folders = templates.programFolders;
-    if (following.isEmpty && waiting.isEmpty && stopped.isEmpty && folders.isEmpty && !library.available) {
+    final preferences = Preferences.watch(context);
+    // making one, from a folder or the library, is Programs' alone
+    final making = preferences.isOn(.programs);
+    final library = ProgramLibrary.watch(context).available && making;
+    final following = programs.following.where(preferences.programShown).toList();
+    final waiting = programs.waiting.where(preferences.programShown).toList();
+    final stopped = programs.all.where((program) => program.archived && preferences.programShown(program)).toList();
+    final folders = making ? templates.programFolders : const <TemplateFolder>[];
+    if (following.isEmpty && waiting.isEmpty && stopped.isEmpty && folders.isEmpty && !library) {
       return const SizedBox.shrink();
     }
 
@@ -132,7 +141,7 @@ class _ProgramsSection extends StatelessWidget {
               },
             ),
           for (final program in stopped) _StoppedProgram(program: program, onOpen: () => onOpen(program)),
-          if (library.available) _LibraryEntry(onTap: onLibrary),
+          if (library) _LibraryEntry(onTap: onLibrary),
           const SizedBox(height: 8),
         ],
       ),
@@ -591,10 +600,14 @@ class _StoppedProgram extends StatelessWidget {
 /// as if Programs had never been built, which has no such page, so it leaves
 /// for the tab it was opened from rather than stay on a page that should not
 /// exist.
+///
+/// A page about one [program] stays while that program is shown: a coach's
+/// runs under Your coach alone (#593).
 class _ProgramsOnly extends StatefulWidget {
+  final Program? program;
   final Widget child;
 
-  const new({required this.child});
+  const new({required this.child, this.program});
 
   @override
   State<_ProgramsOnly> createState() => _ProgramsOnlyState();
@@ -618,7 +631,7 @@ class _ProgramsOnlyState extends State<_ProgramsOnly> {
   }
 
   void _onPreferences() {
-    if (!mounted || _preferences.isOn(.programs)) return;
+    if (!mounted || _preferences.programShown(widget.program)) return;
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 

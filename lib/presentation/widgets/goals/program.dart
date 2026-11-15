@@ -5,15 +5,17 @@ part of 'goals.dart';
 /// made of.
 typedef ProgramFeed = ({Program program, ProgramPosition position, List<ProgramBase> bases, int sessionsDone});
 
-/// The programs the user follows that are still running, or none while
-/// Programs is off: with the switch off, goals look as they did before.
+/// The programs the user follows that are still running and shown: with
+/// Programs off, a coach's under Your coach (#593), and otherwise none, so
+/// goals look as they did before.
 List<ProgramFeed> programFeeds(BuildContext context) {
-  if (!Preferences.watch(context).isOn(.programs)) return const [];
+  final preferences = Preferences.watch(context);
+  if (!preferences.programsReach) return const [];
   final programs = Programs.watch(context);
   final firstWeekday = firstWeekdayOf(context, listen: true);
   final now = DateTime.now();
   return [
-    for (final program in programs.following)
+    for (final program in programs.following.where(preferences.programShown))
       if (program.id case final String id)
         if (programs.position(program, now: now, firstWeekday: firstWeekday) case final position
             when !position.finished)
@@ -49,12 +51,13 @@ List<ImpliedGoal> impliedBy(List<ProgramFeed> feeds, Iterable<Goal> held) {
 /// judged off the build — the Done page, the home-screen widget — to know
 /// whether a program's cadence sets it aside ([pausedByPrograms]).
 List<Program> runningPrograms(BuildContext context) {
-  if (!Preferences.of(context).isOn(.programs)) return const [];
+  final preferences = Preferences.of(context);
+  if (!preferences.programsReach) return const [];
   final programs = Programs.of(context);
-  final firstWeekday = Preferences.of(context).firstWeekday;
+  final firstWeekday = preferences.firstWeekday;
   final now = DateTime.now();
   return [
-    for (final program in programs.following)
+    for (final program in programs.following.where(preferences.programShown))
       if (!programs.position(program, now: now, firstWeekday: firstWeekday).finished) program,
   ];
 }

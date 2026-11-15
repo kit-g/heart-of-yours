@@ -67,7 +67,9 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
     final ExerciseSet(:setType) = widget.set;
     // a program's supplemental set (#349): after the main ones, never judged
     final supplemental =
-        setType == .normal && (widget.set.target?.supplemental ?? false) && Preferences.watch(context).isOn(.programs);
+        setType == .normal &&
+        (widget.set.target?.supplemental ?? false) &&
+        Preferences.planShown(context, listen: true);
 
     final label = switch ((setType, supplemental)) {
       (.normal, true) => Text(
@@ -144,7 +146,7 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
     final onSetRpe = preferences.isOn(.rpe) ? widget.onSetRpe : null;
     // the "+" says what it is where it is tapped: a line, not a choice
     final supplemental =
-        current == .normal && (widget.set.target?.supplemental ?? false) && preferences.isOn(.programs);
+        current == .normal && (widget.set.target?.supplemental ?? false) && Preferences.planShown(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final picked = await showMenu<_SetChoice>(
       context: context,

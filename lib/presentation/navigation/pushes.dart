@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/push.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
+import 'package:heart_models/heart_models.dart' show Program;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -313,12 +314,17 @@ class _PushPresenterState extends State<PushPresenter> {
               break;
           }
         }
-      case .programReceived || .programChanged when preferences.isOn(.programs):
+      // a coach's program is shown under Your coach alone (#593)
+      case .programReceived || .programChanged when preferences.programsReach:
         if (push.programId case final String programId) {
           // fetched first: a tap that launched the app arrives before the
           // program is anywhere on the device
           if (Programs.of(context).lookup(programId) == null) await _fetch(push);
-          if (mounted && Programs.of(context).lookup(programId) != null) router.goToProgram(programId);
+          if (!mounted) return;
+          if (Programs.of(context).lookup(programId) case final Program program
+              when preferences.programShown(program)) {
+            router.goToProgram(programId);
+          }
         }
       case .invitationAccepted || .workoutDigest || .programReceived || .programChanged:
       // nowhere to read these yet: comments have no screen in the app

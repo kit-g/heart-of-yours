@@ -6,9 +6,9 @@ import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// How long [exercise] rests after a set, in seconds: the user's own timer for
-/// it, otherwise what its program session plans (#349) while Programs is on,
-/// and otherwise its kind's default rest (#174) while that is on. The user's
-/// word wins: a timer they set is a choice, a plan a default, and the default
+/// it, otherwise what its program session plans (#349) while the plan shows
+/// ([Preferences.planShown]), and otherwise its kind's default rest (#174)
+/// while that is on. The user's word wins: a timer they set is a choice, a plan a default, and the default
 /// rest the most general of all.
 ///
 /// Every surface that starts or shows a rest reads it here — the countdown,
@@ -17,7 +17,7 @@ import 'package:material_ui/material_ui.dart';
 int? restFor(BuildContext context, WorkoutExercise exercise, {bool listen = false}) {
   final timers = Provider.of<Timers>(context, listen: listen);
   final preferences = Provider.of<Preferences>(context, listen: listen);
-  final planned = switch (preferences.isOn(.programs)) {
+  final planned = switch (Preferences.planShown(context, listen: listen)) {
     true => exercise.rest,
     false => null,
   };

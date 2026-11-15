@@ -157,9 +157,10 @@ class _Sources {
       preferences: preferences,
       exercises: Exercises.of(context),
       history: Workouts.of(context).history.toList()..sort((a, b) => b.start.compareTo(a.start)),
-      // a program's workouts are a stretch only while Programs is on
-      programs: switch (preferences.isOn(.programs)) {
-        true => Programs.of(context).all,
+      // a program's workouts are a stretch only while it is shown: with
+      // Programs off, a coach's under Your coach (#593)
+      programs: switch (preferences.programsReach) {
+        true => Programs.of(context).all.where(preferences.programShown).toList(),
         false => const [],
       },
       book: RecordBook.maybeOf(context),

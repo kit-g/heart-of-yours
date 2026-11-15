@@ -150,6 +150,52 @@ void main() {
     expect(find.byTooltip(L.of(tester.element(find.byType(WorkoutDetail))).restTimer), findsNothing);
   });
 
+  group("a coach's session with Programs off (#593)", () {
+    final coached = Program.fromJson({...program.toMap(), 'coachId': 'coach-muffin', 'coachName': 'Muffin'});
+
+    void answers({required bool yourCoach}) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'weightUnit': 'metric',
+        'distanceUnit': 'metric',
+        'feature-programs': FeatureAnswer.off.name,
+        'feature-yourCoach': (yourCoach ? FeatureAnswer.on : FeatureAnswer.off).name,
+      });
+    }
+
+    testWidgets('with Your coach on, the sheet plans as Programs would', (tester) async {
+      answers(yourCoach: true);
+      when(db.getPrograms(userId)).thenAnswer((_) async => [coached]);
+      when(api.getPrograms()).thenAnswer((_) async => [coached]);
+      await start(tester, squatDay(rest: 90));
+
+      expect(find.textContaining('of your max'), findsWidgets);
+      expect(find.text('+'), findsOneWidget);
+      expect(find.byTooltip(L.of(tester.element(find.byType(WorkoutDetail))).restTimer), findsOneWidget);
+      expect(find.byKey(AppKeys.partOfProgram('p1')), findsOneWidget);
+    });
+
+    testWidgets("with Your coach on, the user's own program's session is as it was", (tester) async {
+      answers(yourCoach: true);
+      await start(tester, squatDay(rest: 90));
+
+      expect(find.textContaining('of your max'), findsNothing);
+      expect(find.text('+'), findsNothing);
+      expect(find.byKey(AppKeys.partOfProgram('p1')), findsNothing);
+    });
+
+    testWidgets('with Your coach off too, the sheet is as it was', (tester) async {
+      answers(yourCoach: false);
+      when(db.getPrograms(userId)).thenAnswer((_) async => [coached]);
+      when(api.getPrograms()).thenAnswer((_) async => [coached]);
+      await start(tester, squatDay(rest: 90));
+
+      expect(find.textContaining('of your max'), findsNothing);
+      expect(find.text('+'), findsNothing);
+      expect(find.byKey(AppKeys.partOfProgram('p1')), findsNothing);
+    });
+  });
+
   testWidgets("a plan's rest is the exercise's timer while the user has set none", (tester) async {
     await start(tester, squatDay(rest: 90));
 

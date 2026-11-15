@@ -40,11 +40,11 @@ List<Exercise> replacementsFor(
 }
 
 /// [replacementsFor] as the active workout asks it: with its program's
-/// constraint while Programs is on and the workout is one of its sessions,
-/// and with what the user goes easy on while Programs is on.
+/// constraint while the workout is one of its sessions, and with what the
+/// user goes easy on, while a plan shows ([Preferences.planShown]): Programs
+/// on, or a session of a coach's program (#593).
 List<Exercise> replacementsInWorkout(BuildContext context, Exercise exercise) {
-  final programsOn = Preferences.of(context).isOn(.programs);
-  if (!programsOn) return replacementsFor(Exercises.of(context), exercise);
+  if (!Preferences.planShown(context)) return replacementsFor(Exercises.of(context), exercise);
 
   final easy = GoEasy.of(context);
   final constraint = switch (Workouts.of(context).activeWorkout?.programId) {

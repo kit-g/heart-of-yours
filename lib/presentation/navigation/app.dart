@@ -691,9 +691,10 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     // the sweep that flags entries runs nightly: a phone left open overnight
     // learns of the morning's flags when it comes back
     Anomalies.of(context).pull();
-    // a coach's edits to their copies, whose push may never have come (#558)
+    // a coach's edits to their copies, whose push may never have come (#558);
+    // a coach's programs run under Your coach alone (#593)
     final preferences = Preferences.of(context);
-    if (preferences.isOn(.programs) && preferences.isOn(.yourCoach)) {
+    if (_growsLogged(preferences)) {
       final templates = Templates.of(context);
       final programs = Programs.of(context);
       final workouts = Workouts.of(context);
@@ -1367,5 +1368,6 @@ Future<void> _initApi({required AppConfig config, String? sessionToken, String? 
 }
 
 /// Whether a workout a coach logged moves this person's program here (#560):
-/// with programs on, and a coach to have logged it.
-bool _growsLogged(Preferences preferences) => preferences.isOn(.programs) && preferences.isOn(.yourCoach);
+/// with a coach to have logged it. Programs needn't be on: a coach's
+/// programs run under Your coach alone (#593).
+bool _growsLogged(Preferences preferences) => preferences.isOn(.yourCoach);

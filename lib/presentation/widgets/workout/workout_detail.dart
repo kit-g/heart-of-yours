@@ -1084,8 +1084,9 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     final workouts = widget.workouts;
     final active = workouts.activeWorkout!;
     // a program's session (#349): its plan under each exercise, and a lighter
-    // cycle said once at the top
-    final planned = Preferences.watch(context).isOn(.programs) && active.programId != null;
+    // cycle said once at the top; a coach's program runs under Your coach
+    // alone (#593)
+    final planned = Preferences.programIdShown(context, active.programId, listen: true);
     final programs = Programs.watch(context);
     final program = switch ((planned, active.programId)) {
       (true, final String id) => programs.lookup(id),
