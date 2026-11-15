@@ -678,6 +678,25 @@ class Preferences with ChangeNotifier {
   /// before the feature was built.
   bool isOn(Feature feature) => featureAnswer(feature) == .on;
 
+  /// Whether [program] is shown and run at all (#593). Programs shows every
+  /// program. With it off, one a coach sent still runs under Your coach:
+  /// someone who said no to Programs is never asked again, and would
+  /// otherwise never see what their coach sent. Their own programs, and
+  /// every way of making one, stay Programs'.
+  bool programShown(Program? program) => isOn(.programs) || (program?.coachId != null && isOn(.yourCoach));
+
+  /// Whether some program can be shown: [programShown]'s answer before the
+  /// program is known.
+  bool get programsReach => isOn(.programs) || isOn(.yourCoach);
+
+  /// Whether [program]'s sessions go to the device calendar (#391): Programs'
+  /// calendar, unless it was left out, for a program [programShown] allows —
+  /// with Programs off, a coach's keeps the calendar Programs would give it
+  /// (#593).
+  bool programCalendarOn(Program program) {
+    return programShown(program) && !_without(.programs).contains(FeatureOption.programsCalendar);
+  }
+
   /// Offers already shown in this session. [FeatureAnswer.pending] outlives the
   /// session and this does not, which is what makes an unanswered offer a no
   /// from the next launch on.

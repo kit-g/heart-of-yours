@@ -36,7 +36,7 @@ class ProgramPage extends StatelessWidget {
     // deleted, here or on another device, while the page is open
     if (program == null) return Scaffold(appBar: AppBar());
 
-    return _ProgramsOnly(child: _page(context, programs, program));
+    return _ProgramsOnly(program: program, child: _page(context, programs, program));
   }
 
   Widget _page(BuildContext context, Programs programs, Program program) {
@@ -213,7 +213,9 @@ class ProgramPage extends StatelessWidget {
                       _Growth(program: program),
                       // a copy of one of Heart's programs keeps its way back to
                       // the research, which stays in the library, never the copy
-                      if (program.source case final String key)
+                      // the library is Programs': a coach's copy of one keeps
+                      // the link only while it is there (#593)
+                      if (program.source case final String key when Preferences.watch(context).isOn(.programs))
                         _LibraryReader(
                           child: Builder(
                             builder: (context) {

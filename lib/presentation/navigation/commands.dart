@@ -1,5 +1,6 @@
 import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
+import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/countdown.dart';
 import 'package:heart/presentation/widgets/workout/rest.dart';
@@ -100,7 +101,7 @@ CommandOutcome applyWorkoutCommand(BuildContext context, WatchCommand command) {
       // last one once every set is done
       final exercise = upNextIn(workout, after: workouts.latestMarkedSet)?.exercise ?? workout.lastOrNull;
       if (exercise == null) return .stale;
-      final length = seconds ?? restFor(context, exercise);
+      final length = seconds ?? restFor(context, exercise, planned: planShown(context, workout.programId));
       if (length == null) return .stale;
       // placed when it was asked for, which a queue may have held a while;
       // one that would already be over does not start at all

@@ -10,6 +10,7 @@ import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/program_calendar.dart';
+import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/core/utils/weeks.dart';
 import 'package:heart/core/utils/goals.dart' show sharedLensSets;

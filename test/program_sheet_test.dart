@@ -6,6 +6,7 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:heart/core/utils/column_fill.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
@@ -148,6 +149,104 @@ void main() {
     expect(find.text('+'), findsNothing);
     // no plan to rest by, and no user timer: no timer in the header
     expect(find.byTooltip(L.of(tester.element(find.byType(WorkoutDetail))).restTimer), findsNothing);
+  });
+
+  group("a coach's session with Programs off (#593)", () {
+    final coached = Program.fromJson({...program.toMap(), 'coachId': 'coach-muffin', 'coachName': 'Muffin'});
+
+    void answers({required bool yourCoach}) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'weightUnit': 'metric',
+        'distanceUnit': 'metric',
+        'feature-programs': FeatureAnswer.off.name,
+        'feature-yourCoach': (yourCoach ? FeatureAnswer.on : FeatureAnswer.off).name,
+      });
+    }
+
+    testWidgets('with Your coach on, the sheet plans as Programs would', (tester) async {
+      answers(yourCoach: true);
+      when(db.getPrograms(userId)).thenAnswer((_) async => [coached]);
+      when(api.getPrograms()).thenAnswer((_) async => [coached]);
+      await start(tester, squatDay(rest: 90));
+
+      expect(find.textContaining('of your max'), findsWidgets);
+      expect(find.text('+'), findsOneWidget);
+      expect(find.byTooltip(L.of(tester.element(find.byType(WorkoutDetail))).restTimer), findsOneWidget);
+      expect(find.byKey(AppKeys.partOfProgram('p1')), findsOneWidget);
+    });
+
+    testWidgets("with Your coach on, the user's own program's session is as it was", (tester) async {
+      answers(yourCoach: true);
+      await start(tester, squatDay(rest: 90));
+
+      expect(find.textContaining('of your max'), findsNothing);
+      expect(find.text('+'), findsNothing);
+      expect(find.byKey(AppKeys.partOfProgram('p1')), findsNothing);
+    });
+
+    /// The app up with no workout under way, and [template] open in its
+    /// editor.
+    Future<void> edit(WidgetTester tester, Template template) async {
+      await const TestAppHarness().pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: MockFirebaseAuth(
+          mockUser: MockUser(uid: userId, email: '$userId@test'),
+          signedIn: true,
+        ),
+        hasLocalNotifications: false,
+        settle: false,
+      );
+      await tester.pumpTimes();
+      final context = tester.element(find.byType(MaterialApp));
+      await Programs.of(context).init();
+      Templates.of(context).editable = template;
+      GoRouter.of(tester.element(find.byType(Navigator).first)).go('/workout/templates');
+      await tester.pumpTimes();
+    }
+
+    /// A session of [programId] with a supplemental set, or a template of
+    /// no program.
+    Template supplemental({String? programId}) {
+      final draft = Template.empty(id: 't1', order: 0)
+        ..name = 'Squat day'
+        ..add(squat);
+      draft.first.first.target = SetTarget({.reps: TargetRange.exactly(5)}, share: 0.6, supplemental: true);
+      return Template.fromJson({...draft.toMap(), 'programId': ?programId});
+    }
+
+    testWidgets("its session's editor plans by the session it shows, with no workout under way", (tester) async {
+      answers(yourCoach: true);
+      when(db.getPrograms(userId)).thenAnswer((_) async => [coached]);
+      when(api.getPrograms()).thenAnswer((_) async => [coached]);
+      await edit(tester, supplemental(programId: 'p1'));
+
+      expect(Workouts.of(tester.element(find.byType(MaterialApp))).activeWorkout, isNull);
+      expect(find.text('+'), findsOneWidget);
+    });
+
+    testWidgets('a template of no program has no plan to show', (tester) async {
+      answers(yourCoach: true);
+      when(db.getPrograms(userId)).thenAnswer((_) async => [coached]);
+      when(api.getPrograms()).thenAnswer((_) async => [coached]);
+      await edit(tester, supplemental());
+
+      expect(find.text('+'), findsNothing);
+    });
+
+    testWidgets('with Your coach off too, the sheet is as it was', (tester) async {
+      answers(yourCoach: false);
+      when(db.getPrograms(userId)).thenAnswer((_) async => [coached]);
+      when(api.getPrograms()).thenAnswer((_) async => [coached]);
+      await start(tester, squatDay(rest: 90));
+
+      expect(find.textContaining('of your max'), findsNothing);
+      expect(find.text('+'), findsNothing);
+      expect(find.byKey(AppKeys.partOfProgram('p1')), findsNothing);
+    });
   });
 
   testWidgets("a plan's rest is the exercise's timer while the user has set none", (tester) async {

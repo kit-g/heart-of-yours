@@ -61,13 +61,15 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final L(:myProgression) = L.of(context);
     final workouts = Workouts.watch(context);
     final byMonth = workouts.byMonth;
-    // the days set aside: a program's while Programs is on, a plain day's
-    // while "Not today" is (#312); with both off, History is as it was
+    // the days set aside: a program's while it is shown (Programs on, or a
+    // coach's under Your coach, #593), a plain day's while "Not today" is
+    // (#312); with all off, History is as it was
     final preferences = Preferences.watch(context);
-    final skips = Programs.watch(context).skips.where(
+    final programs = Programs.watch(context);
+    final skips = programs.skips.where(
       (skip) => switch (skip.isDay) {
         true => preferences.isOn(.notToday),
-        false => preferences.isOn(.programs),
+        false => preferences.programShown(programs.programOf(skip)),
       },
     );
     final images = workouts.images;

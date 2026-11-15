@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/record_book.dart';
 import 'package:heart/core/utils/records.dart';
+import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/feature_offer.dart';
@@ -157,9 +158,11 @@ class _Sources {
       preferences: preferences,
       exercises: Exercises.of(context),
       history: Workouts.of(context).history.toList()..sort((a, b) => b.start.compareTo(a.start)),
-      // a program's workouts are a stretch only while Programs is on
-      programs: switch (preferences.isOn(.programs)) {
-        true => Programs.of(context).all,
+      // a program's workouts are a stretch only while it is shown: with
+      // Programs off, a coach's under Your coach (#593); with both off the
+      // programs are never read
+      programs: switch (preferences.programsReach) {
+        true => shownPrograms(context).all.toList(),
         false => const [],
       },
       book: RecordBook.maybeOf(context),

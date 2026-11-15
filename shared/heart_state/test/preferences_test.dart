@@ -391,6 +391,55 @@ void main() {
     });
   });
 
+  group('which programs are shown (#593)', () {
+    final own = Program(id: 'p1', name: 'Split', sessions: const [], createdAt: DateTime.utc(2026, 10, 1));
+    final coached = Program.fromJson({...own.toMap(), 'id': 'c1', 'coachId': 'coach-muffin'});
+
+    Future<void> answers({required bool programs, required bool yourCoach}) async {
+      await sut.init();
+      sut
+        ..setFeature(.programs, on: programs)
+        ..setFeature(.yourCoach, on: yourCoach);
+    }
+
+    test('with Programs on, every program, and an unknown one', () async {
+      await answers(programs: true, yourCoach: false);
+      expect(sut.programShown(own), isTrue);
+      expect(sut.programShown(coached), isTrue);
+      expect(sut.programShown(null), isTrue);
+      expect(sut.programsReach, isTrue);
+    });
+
+    test("with Programs off and Your coach on, only a coach's", () async {
+      await answers(programs: false, yourCoach: true);
+      expect(sut.programShown(coached), isTrue);
+      expect(sut.programShown(own), isFalse);
+      expect(sut.programShown(null), isFalse);
+      expect(sut.programsReach, isTrue);
+    });
+
+    test('with both off, none', () async {
+      await answers(programs: false, yourCoach: false);
+      expect(sut.programShown(coached), isFalse);
+      expect(sut.programShown(own), isFalse);
+      expect(sut.programsReach, isFalse);
+    });
+
+    test("the calendar follows a shown program: a coach's keeps it with Programs off", () async {
+      await answers(programs: false, yourCoach: true);
+      expect(sut.programCalendarOn(coached), isTrue);
+      expect(sut.programCalendarOn(own), isFalse);
+    });
+
+    test('the calendar left out of Programs is off for every program, a coach\'s too', () async {
+      await answers(programs: true, yourCoach: true);
+      sut.setOption(.programsCalendar, on: false);
+      expect(sut.programCalendarOn(own), isFalse);
+      sut.setFeature(.programs, on: false);
+      expect(sut.programCalendarOn(coached), isFalse, reason: 'what was left out stays out');
+    });
+  });
+
   group('opt-in features (#138)', () {
     const feature = Feature.muscleMap;
 

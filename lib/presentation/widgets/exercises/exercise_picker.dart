@@ -65,6 +65,8 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
     final preferences = Preferences.watch(context);
+    // once for the list, not once a row (#593)
+    final goEasy = goEasyOn(context);
     final previous = PreviousExercises.watch(context);
 
     return CustomScrollView(
@@ -326,6 +328,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                     return ExerciseItem(
                       exercise: exercise,
                       preferences: preferences,
+                      goEasy: goEasy,
                       onExerciseSelected: onExerciseSelected,
                       selected: this.exercises.hasSelected(exercise),
                       highlighted: exercise.id == highlightedName,

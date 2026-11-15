@@ -39,15 +39,20 @@ List<Exercise> replacementsFor(
   return candidates.take(limit).toList();
 }
 
-/// [replacementsFor] as the active workout asks it: with its program's
-/// constraint while Programs is on and the workout is one of its sessions,
-/// and with what the user goes easy on while Programs is on.
-List<Exercise> replacementsInWorkout(BuildContext context, Exercise exercise) {
-  final programsOn = Preferences.of(context).isOn(.programs);
-  if (!programsOn) return replacementsFor(Exercises.of(context), exercise);
+/// [replacementsFor] as a workout's sheet asks it: with its program's
+/// constraint while the workout is a session of [programId], and with what
+/// the user goes easy on, while that workout's plan shows ([planned], see
+/// `planShown`): Programs on, or a session of a coach's program (#593).
+List<Exercise> replacementsInWorkout(
+  BuildContext context,
+  Exercise exercise, {
+  required bool planned,
+  String? programId,
+}) {
+  if (!planned) return replacementsFor(Exercises.of(context), exercise);
 
   final easy = GoEasy.of(context);
-  final constraint = switch (Workouts.of(context).activeWorkout?.programId) {
+  final constraint = switch (programId) {
     final String id => easy.entryFor(Programs.of(context).lookup(id)?.constraint),
     null => null,
   };

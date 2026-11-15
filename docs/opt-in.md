@@ -156,6 +156,14 @@ is live both ways, an explicit off stays off and the app looks as if Programs
 had never been built, and the data stays whole either way. The default is not
 an answer: only a switch the user actually flipped syncs to the account.
 
+One exception crosses two switches (#593): with Programs off and Your coach
+on, a program a coach sent (`Program.coachId`) is shown and runs as Programs
+would run it — its band, its page, its plan, its growth, its calendar —
+because a no to Programs is never asked again, and the student would otherwise
+never see it. Their own programs, the library and every way of making one stay
+Programs'. `Preferences.programShown` is the one rule every surface asks;
+`Programs.shown` is the programs as it lets them be seen.
+
 Sets a week (`Feature.weeklySets`, #526) is the second, and the first core
 feature made a choice after it shipped: the profile card was core under #341,
 and feedback from experienced lifters asked for a way to turn it off. Default
