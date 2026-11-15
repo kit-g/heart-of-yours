@@ -22,10 +22,12 @@ Future<void> showPickerGroupingMenu(BuildContext anchor) async {
     ],
   );
   if (!anchor.mounted) return;
-  // set whatever was picked, not just a change from the grouping the menu
-  // opened on: sync can adopt another device's while the menu is up, and the
-  // pick then has to win over it. Picking what is stored already is a no-op.
-  if (picked case final PickerGrouping picked) Preferences.of(anchor).setPickerGrouping(picked);
+  // a change from what the menu showed checked, not from what is stored now:
+  // tapping the checked one keeps what the user saw, and must not overwrite
+  // a newer grouping sync adopted from another device while the menu was up
+  if (picked case final PickerGrouping picked when picked != grouping) {
+    Preferences.of(anchor).setPickerGrouping(picked);
+  }
 }
 
 /// One group of a grouped picker: its heading, pinned while its exercises

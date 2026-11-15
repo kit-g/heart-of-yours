@@ -321,14 +321,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               final grouping = searching ? PickerGrouping.none : preferences.pickerGrouping;
               // grouped here, outside the fold's builder: a fold changes which
               // groups are open, not what is in them
-              final groups = switch (grouping) {
-                .none => const <GroupedExercises>[],
-                .category || .target || .movement => groupExercises(
-                  found,
-                  grouping,
-                  patterns: () => exercises.patterns,
-                ),
-              };
+              final groups = groupExercises(found, grouping, patterns: () => exercises.patterns);
 
               SliverList list(List<Exercise> exercises) {
                 return SliverList.separated(

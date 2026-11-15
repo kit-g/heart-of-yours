@@ -216,9 +216,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   Iterable<String> get patterns {
     final counts = <String, int>{};
     for (final exercise in _exercises.values.where((each) => !each.isArchived)) {
-      // an empty key is no pattern: the library carries some, and a chip or a
-      // heading labelled with nothing is a control that says nothing
-      for (final pattern in exercise.movement.groups.where((each) => each.isNotEmpty)) {
+      for (final pattern in exercise.movement.groups) {
         counts.update(pattern, (n) => n + 1, ifAbsent: () => 1);
       }
     }

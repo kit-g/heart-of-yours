@@ -88,7 +88,7 @@ List<GroupedExercises> groupExercises(
       .none => const [],
       .category => [CategoryGroup(exercise.category)],
       .target => [TargetGroup(exercise.target)],
-      .movement => switch (exercise.movement.groups.where((each) => each.isNotEmpty)) {
+      .movement => switch (exercise.movement.groups) {
         Iterable<String> found when found.isEmpty => const [NoPatternGroup()],
         Iterable<String> found => found.toSet().map(PatternGroup.new),
       },

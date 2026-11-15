@@ -37,6 +37,7 @@ import 'package:heart/presentation/widgets/health/settings.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/logo.dart';
+import 'package:heart/presentation/widgets/menu.dart' show MenuValue;
 import 'package:heart/presentation/widgets/prose.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/selection_controls.dart';

@@ -63,4 +63,16 @@ void main() {
     expect(preferences.pickerGrouping, PickerGrouping.target);
     expect(find.descendant(of: row, matching: find.text(PickerGrouping.target.label(l))), findsOneWidget);
   });
+
+  testWidgets('picking what the menu showed checked keeps a grouping that arrived while it was open', (tester) async {
+    final (preferences, l, row) = await openSettings(tester, size: const Size(1200, 2400));
+    await tester.tap(row);
+    await tester.pumpTimes();
+
+    // another device's choice, adopted by sync while the menu is up
+    preferences.setPickerGrouping(.movement);
+    await tester.tap(find.widgetWithText(CheckedPopupMenuItem<PickerGrouping>, PickerGrouping.none.label(l)));
+    await tester.pumpTimes();
+    expect(preferences.pickerGrouping, PickerGrouping.movement);
+  });
 }

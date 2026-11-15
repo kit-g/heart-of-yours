@@ -245,12 +245,24 @@ class Preferences with ChangeNotifier {
   final _openGroups = ValueNotifier<Set<String>>(const {});
 
   void togglePickerGroup(String id) {
-    // from what is published, not from the store: the two stay one state even
-    // before the store has loaded, when a toggle has nothing to read back
-    final ids = {..._openGroups.value};
-    if (!ids.remove(id)) ids.add(id);
-    _openGroups.value = Set.unmodifiable(ids);
-    _prefs?.setStringList(_openPickerGroups, ids.toList());
+    // from what is published, not from the store: the two stay one state, and
+    // a toggle before the store has loaded is replayed onto it by [init]
+    _openGroups.value = .unmodifiable(_toggled(_openGroups.value, id));
+    switch (_prefs) {
+      case final SharedPreferences prefs:
+        prefs.setStringList(_openPickerGroups, _openGroups.value.toList());
+      case null:
+        _pendingGroupToggles.add(id);
+    }
+  }
+
+  /// Folds and unfolds made before [init] loaded the store, in order.
+  final _pendingGroupToggles = <String>[];
+
+  static Set<String> _toggled(Set<String> ids, String id) {
+    final toggled = {...ids};
+    if (!toggled.remove(id)) toggled.add(id);
+    return toggled;
   }
 
   void _storeScreenChoice(ScreenChoice choice, ScreenChoiceRecord record) {
@@ -345,7 +357,13 @@ class Preferences with ChangeNotifier {
     if (_disposed) return;
 
     _isInitialized = true;
-    _openGroups.value = Set.unmodifiable({...?_prefs?.getStringList(_openPickerGroups)});
+    _openGroups.value = .unmodifiable(
+      _pendingGroupToggles.fold<Set<String>>({...?_prefs?.getStringList(_openPickerGroups)}, _toggled),
+    );
+    if (_pendingGroupToggles.isNotEmpty) {
+      _pendingGroupToggles.clear();
+      _prefs?.setStringList(_openPickerGroups, _openGroups.value.toList());
+    }
     _localeFirstWeekday = localeFirstWeekday(locale);
     final unit = defaultUnit(locale?.countryCode);
     _initMeasurementUnits(
@@ -425,19 +443,16 @@ class Preferences with ChangeNotifier {
   }
 
   Future<bool>? toggleFolderCollapsed(String folderId) {
-    final (ids: _, :write) = _toggleInList(_collapsedFolders, folderId);
+    final write = _toggleInList(_collapsedFolders, folderId);
     notifyListeners();
     return write;
   }
 
   /// Adds [id] to the string list stored under [key], or takes it out when it
-  /// is there: the list as it now stands, and the write. setStringList
-  /// updates the in-memory cache synchronously, so whatever this wakes
-  /// already reads the new state.
-  ({Set<String> ids, Future<bool>? write}) _toggleInList(String key, String id) {
-    final ids = {...?_prefs?.getStringList(key)};
-    if (!ids.remove(id)) ids.add(id);
-    return (ids: ids, write: _prefs?.setStringList(key, ids.toList()));
+  /// is there, and returns the write. setStringList updates the in-memory
+  /// cache synchronously, so whatever this wakes already reads the new state.
+  Future<bool>? _toggleInList(String key, String id) {
+    return _prefs?.setStringList(key, _toggled({...?_prefs?.getStringList(key)}, id).toList());
   }
 
   /// Whether the user has waved away the offer to read their health data.
