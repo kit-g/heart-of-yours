@@ -145,6 +145,9 @@ mixin _Exercises on _LocalDatabase
           // same trap for the slug: absent on a custom, and a row promoted
           // into someone's customs must shed it rather than keep a stale one
           row['key'] = each.key;
+          // and for instructions, which an own exercise's edit can clear
+          // (#621): absent, the conflict-update kept the old text
+          row['instructions'] = each.instructions;
           // a list is no column value, and an empty one must clear the old
           row['aliases'] = each.aliases.isNotEmpty ? jsonEncode([...each.aliases]) : null;
           // the unit preference is per-user (exercise_details), not a column on

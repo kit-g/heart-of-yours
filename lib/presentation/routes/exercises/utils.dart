@@ -233,6 +233,16 @@ Future<void> _onExerciseOptions(
           showNewExerciseDialog(context);
         },
       ),
+      // how the library and every exercise picker group the list (#620); the
+      // title names the grouping in force, so it is heard before it is opened
+      BottomMenuAction(
+        title: L.of(context).pickerGroupBy(Preferences.of(context).pickerGrouping.label(L.of(context))),
+        icon: const Icon(Icons.view_agenda_outlined),
+        onPressed: () {
+          Navigator.of(context).pop();
+          showPickerGroupingMenu(context);
+        },
+      ),
       if (hasArchived)
         BottomMenuAction(
           title: L.of(context).showArchived,

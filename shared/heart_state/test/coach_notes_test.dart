@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
+import 'test_utils.dart';
+
 /// A coach's notes (#556): kept here sealed, sent when the server can be
 /// reached, and shown by client.
 void main() {
@@ -314,6 +316,33 @@ void main() {
     );
     await pumpEventQueue();
     expect(store.notes[me] ?? {}, isEmpty);
+  });
+
+  test('each note kept or deleted is counted once, as new or edited, never for the same words again (#568)', () async {
+    final reported = ReportedAnalytics();
+    notes = CoachNotes(
+      service: server,
+      local: store,
+      cipher: cipher,
+      remote: access,
+      analytics: Analytics(service: reported),
+      newId: () => 'n${ids++}',
+    )..userId = me;
+
+    final id = await notes.save(client, 'left knee');
+    await notes.save(client, 'left knee', id: id);
+    await notes.save(client, 'right knee', id: id);
+    await expectLater(notes.save(client, 'x' * 20000), throwsA(isA<KeyFailure>()));
+    await notes.delete(id);
+    await notes.delete(id);
+    await notes.delete('never-written');
+
+    expect(reported.names, ['coach_note_saved', 'coach_note_saved', 'coach_note_deleted']);
+    expect(reported.events.map((each) => each.$2), [
+      {'edited': 'false'},
+      {'edited': 'true'},
+      isEmpty,
+    ]);
   });
 
   test('a sign-out forgets them here, and the next account sees none', () async {

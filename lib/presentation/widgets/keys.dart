@@ -202,6 +202,15 @@ abstract final class AppKeys {
   static const loginName = Key('Login.name');
   static const loginPassword = Key('Login.password');
 
+  /// Your devices (#555): the Settings row, each device's row and its
+  /// Compare codes button, and the comparison sheet's answers.
+  static const yourDevices = Key('Settings.yourDevices');
+  static Key deviceRow(String id) => Key('YourDevices.row.$id');
+  static Key compareCodes(String id) => Key('YourDevices.compare.$id');
+  static const codesMatch = Key('CompareCodes.match');
+  static const codesDontMatch = Key('CompareCodes.dontMatch');
+  static const closeComparison = Key('CompareCodes.close');
+
   /// The developer API (#271): the Settings row, the tokens page's controls
   /// and each token's row and revoke button.
   static const developerApi = Key('Settings.developerApi');
@@ -335,12 +344,20 @@ abstract final class AppKeys {
   /// choices.
   static const newExercisePattern = Key('NewExercise.pattern');
   static Key newExercisePatternOption(String? pattern) => Key('NewExercise.pattern.${pattern ?? 'none'}');
+
+  /// The new-exercise dialog's name field.
+  static const newExerciseName = Key('NewExercise.name');
+
+  /// The new-exercise dialog's instructions field (#621).
+  static const newExerciseInstructions = Key('NewExercise.instructions');
+
   static const musclePickerRole = Key('MusclePicker.role');
   static const musclePickerFigures = Key('MusclePicker.figures');
 
   /// The picker's offer to create an exercise named after a search that
   /// found nothing (#529).
   static const pickerCreateExercise = Key('ExercisePicker.createExercise');
+  static const settingsPickerGrouping = Key('Settings.pickerGrouping');
 
   /// The Coaching space (#566): the way in on Profile, the way back out, its
   /// tabs, and the line that leads back to a workout still going.

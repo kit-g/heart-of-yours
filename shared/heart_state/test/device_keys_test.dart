@@ -29,6 +29,37 @@ void main() {
     );
   }
 
+  /// [a] and [b], two devices of one account, let each other in as a
+  /// compared code would: each vouches for the other while the server lists
+  /// it as vouched for by no one.
+  Future<void> approve(DeviceKeys a, DeviceKeys b) async {
+    for (final (voucher, vouched) in [(a, b), (b, a)]) {
+      if (server.devices[vouched.deviceId]! case final CryptoDevice device when device.vouchedBy == null) {
+        await voucher.vouchFor(device);
+      }
+    }
+  }
+
+  /// Each side reads its queue in turn until the codes are on both screens.
+  Future<void> codes(DeviceKeys phone, DeviceKeys tablet) async {
+    await phone.approval.start(tablet.deviceId!);
+    await tablet.receive();
+    await phone.receive();
+    await tablet.receive();
+  }
+
+  /// The whole comparison, both sides saying the codes match, until each
+  /// heard the other is done.
+  Future<void> compare(DeviceKeys phone, DeviceKeys tablet) async {
+    await codes(phone, tablet);
+    await phone.approval.confirm();
+    await tablet.approval.confirm();
+    await tablet.receive();
+    await phone.receive();
+    await tablet.receive();
+    await phone.receive();
+  }
+
   setUp(() {
     server = _Server()..connect('dana', 'sam');
     errors = [];
@@ -1014,6 +1045,7 @@ void main() {
       final tablet = device('dana');
       await phone.start('dana');
       await tablet.start('dana');
+      await approve(phone, tablet);
 
       final content = await phone.sealNote('n1', connectionId: client, text: 'left knee, no deep squats');
       await phone.shareNoteKeys();
@@ -1051,6 +1083,7 @@ void main() {
       final tablet = device('dana');
       await phone.start('dana');
       await tablet.start('dana');
+      await approve(phone, tablet);
       var arrived = 0;
       final listening = tablet.noteKeys.listen((_) => arrived++);
       addTearDown(listening.cancel);
@@ -1071,6 +1104,7 @@ void main() {
       final tablet = device('dana');
       await phone.start('dana');
       await tablet.start('dana');
+      await approve(phone, tablet);
       final first = await phone.sealNote('n1', connectionId: client, text: 'one');
       final second = await tablet.sealNote('n2', connectionId: client, text: 'two');
 
@@ -1091,6 +1125,9 @@ void main() {
 
       final laptop = device('dana');
       await laptop.start('dana');
+      // a new device takes keys only from one it compared a code with, or
+      // one vouched for from there
+      await compare(phone, laptop);
       await phone.shareNoteKeys();
       await tablet.devicesChanged('dana');
       await laptop.receive();
@@ -1120,6 +1157,7 @@ void main() {
       final tablet = device('dana');
       await phone.start('dana');
       await tablet.start('dana');
+      await approve(phone, tablet);
       final first = await phone.sealNote('n1', connectionId: client, text: 'before');
       await phone.shareNoteKeys();
       await tablet.receive();
@@ -1141,6 +1179,7 @@ void main() {
       await phone.sealNote('n1', connectionId: client, text: 'one');
       final tablet = device('dana');
       await tablet.start('dana');
+      await approve(phone, tablet);
       server.calls.clear();
 
       await phone.devicesChanged('dana');
@@ -1180,6 +1219,7 @@ void main() {
       await phone.sealNote('n1', connectionId: client, text: 'one');
       final tablet = device('dana');
       await tablet.start('dana');
+      await approve(phone, tablet);
       await phone.shareNoteKeys();
       server.calls.clear();
 
@@ -1188,6 +1228,7 @@ void main() {
 
       final laptop = device('dana');
       await laptop.start('dana');
+      await approve(phone, laptop);
       await phone.devicesChanged('dana');
 
       expect(server.calls.where((each) => each.startsWith('enqueue')), hasLength(1));
@@ -1220,6 +1261,468 @@ void main() {
         coach.sealNote('n1', connectionId: client, text: 'x' * 20000),
         throwsA(isA<KeyFailure>().having((each) => each.code, 'code', 'note_too_long')),
       );
+    });
+  });
+
+  group('comparing a code (#555)', () {
+    const thread = 'thread-1';
+
+    ComparisonPhase? phaseOf(DeviceKeys keys) => keys.approval.value?.phase;
+
+    test('both screens show the same code, and the new device ends vouched for by the one that asked', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+
+      await codes(phone, tablet);
+
+      final (asked, answered) = (phone.approval.value!, tablet.approval.value!);
+      expect((asked.role, asked.deviceId), (ComparisonRole.initiator, tablet.deviceId));
+      expect((answered.role, answered.deviceId), (ComparisonRole.responder, phone.deviceId));
+      final (mine, theirs) = (asked.phase as ComparisonCode, answered.phase as ComparisonCode);
+      expect(mine.decimals, hasLength(3));
+      expect(mine.decimals, theirs.decimals);
+      expect(mine.emoji, theirs.emoji);
+
+      await phone.approval.confirm();
+      expect(phone.approval.value!.confirmed, isTrue);
+      await tablet.approval.confirm();
+      await tablet.receive();
+      await phone.receive();
+      await tablet.receive();
+
+      expect(phaseOf(phone), isA<ComparisonDone>());
+      expect(phaseOf(tablet), isA<ComparisonDone>());
+      expect(server.devices[tablet.deviceId]!.vouchedBy, phone.deviceId);
+      final trust = {for (final each in phone.peer('dana')!.devices) each.id: each.trust};
+      expect(trust[tablet.deviceId], isNot(DeviceTrust.unverified));
+      final back = {for (final each in tablet.peer('dana')!.devices) each.id: each.trust};
+      expect(back[phone.deviceId], isNot(DeviceTrust.unverified));
+      expect(errors, isEmpty);
+    });
+
+    test('keys swapped in the list between the code and the proof fail it, and nothing is vouched for', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await codes(phone, tablet);
+
+      // the server hands out other keys for the tablet than the ones compared
+      final other = Sealbox(base64.encode(List.filled(32, 7))).createAccount(oneTimeKeys: 1);
+      server.swapIdentity(tablet.deviceId!, other.identityKey);
+      await phone.approval.confirm();
+      await tablet.approval.confirm();
+      await phone.receive();
+      await tablet.receive();
+
+      expect(phaseOf(phone), isA<ComparisonFailed>().having((each) => each.reason, 'reason', ComparisonFailure.keys));
+      // the phone's keys checked out on the tablet, which may let the phone
+      // in; the tablet's didn't on the phone
+      expect(server.devices[tablet.deviceId]!.vouchedBy, isNull);
+      final trust = {for (final each in phone.peer('dana')!.devices) each.id: each.trust};
+      expect(trust[tablet.deviceId], DeviceTrust.unverified);
+    });
+
+    test('the device asked may say no, and the one that asked hears it', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await phone.approval.start(tablet.deviceId!);
+      await tablet.receive();
+      expect(phaseOf(tablet), isA<ComparisonWaiting>());
+
+      await tablet.approval.deny();
+      await phone.receive();
+
+      expect(phaseOf(tablet), isA<ComparisonCancelled>());
+      expect(phaseOf(phone), isA<ComparisonCancelled>());
+      tablet.approval.dismiss();
+      expect(tablet.approval.value, isNull);
+    });
+
+    test("codes that don't match end it on both", () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await codes(phone, tablet);
+
+      await phone.approval.deny();
+      await tablet.receive();
+
+      expect(phaseOf(phone), isA<ComparisonCancelled>());
+      expect(phaseOf(tablet), isA<ComparisonCancelled>());
+      expect(server.devices.values.map((each) => each.vouchedBy), everyElement(isNull));
+    });
+
+    test("a key that isn't the one committed to fails it", () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      // the phone's messages, with a key changed on the way
+      final (committed, sent) = (Comparison.start(), Comparison.start());
+      addTearDown(committed.end);
+      addTearDown(sent.end);
+      final id = uuidV7();
+      Future<void> send(String kind, Map<String, String> payload) {
+        return phone.deliver(
+          userId: 'dana',
+          kind: kind,
+          payload: jsonEncode({'c': id, ...payload}),
+          to: (each) => each.id == tablet.deviceId,
+        );
+      }
+
+      await send('compare_start', {'commitment': committed.commitment});
+      await tablet.receive();
+      await send('compare_key', {'key': sent.publicKey});
+      await tablet.receive();
+
+      expect(
+        phaseOf(tablet),
+        isA<ComparisonFailed>().having((each) => each.reason, 'reason', ComparisonFailure.commitment),
+      );
+      expect(errors, [isA<KeyFailure>().having((each) => each.code, 'code', 'commitment_mismatch')]);
+    });
+
+    test('one runs at a time: a device busy comparing says no to another', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      final laptop = device('dana');
+      for (final keys in [phone, tablet, laptop]) {
+        await keys.start('dana');
+      }
+      await phone.approval.start(tablet.deviceId!);
+      await tablet.receive();
+
+      await laptop.approval.start(tablet.deviceId!);
+      await tablet.receive();
+      await laptop.receive();
+
+      expect(phaseOf(laptop), isA<ComparisonCancelled>());
+      expect(tablet.approval.value!.deviceId, phone.deviceId);
+      expect(() => phone.approval.start(laptop.deviceId!), throwsStateError);
+    });
+
+    test("an own device no code was compared with gets none of the account's keys, and gets them after", () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      final student = device('sam');
+      for (final (keys, user) in [(phone, 'dana'), (tablet, 'dana'), (student, 'sam')]) {
+        await keys.start(user);
+      }
+      final note = await phone.sealNote('n1', connectionId: 'connection-sam', text: 'left knee');
+      await phone.shareNoteKeys();
+      final sealed = await phone.seal(thread, 'squats today');
+      await phone.share(thread, userId: 'sam');
+      await tablet.receive();
+
+      CoachNote stored() =>
+          CoachNote(id: 'n1', connectionId: 'connection-sam', content: note, updatedAt: DateTime.now());
+      final message = (id: 'm1', senderId: 'dana', content: sealed.content, commitment: sealed.commitment);
+      expect(server.queue.where((each) => each.recipientDeviceId == tablet.deviceId), isEmpty);
+      expect((await tablet.openNotes([stored()])).single, isA<LockedNote>());
+      expect((await tablet.open(thread, [message])).single, isA<Locked>());
+
+      await compare(phone, tablet);
+      await phone.share(thread, userId: 'sam');
+      await tablet.receive();
+
+      expect((await tablet.openNotes([stored()])).single, isA<ReadNote>());
+      expect((await tablet.open(thread, [message])).single, isA<Opened>());
+      expect(errors, isEmpty);
+    });
+
+    test("one of the account's keys from a device not trusted here waits, and is taken once it is", () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      final student = device('sam');
+      for (final (keys, user) in [(phone, 'dana'), (tablet, 'dana'), (student, 'sam')]) {
+        await keys.start(user);
+      }
+      // the phone trusts the tablet, and the tablet nothing but itself
+      await phone.vouchFor(server.devices[tablet.deviceId]!);
+      final note = await phone.sealNote('n1', connectionId: 'connection-sam', text: 'left knee');
+      await phone.shareNoteKeys();
+      final sealed = await phone.seal(thread, 'squats today');
+      await phone.share(thread, userId: 'sam');
+      await tablet.receive();
+
+      CoachNote stored() =>
+          CoachNote(id: 'n1', connectionId: 'connection-sam', content: note, updatedAt: DateTime.now());
+      final message = (id: 'm1', senderId: 'dana', content: sealed.content, commitment: sealed.commitment);
+      expect((await tablet.openNotes([stored()])).single, isA<LockedNote>());
+      expect((await tablet.open(thread, [message])).single, isA<Locked>());
+      expect(server.queue.where((each) => each.recipientDeviceId == tablet.deviceId), isEmpty, reason: 'confirmed');
+      expect(errors, isEmpty, reason: 'waiting is not a failure');
+
+      // trusted now: what waited on the device is taken without another read
+      final arrived = tablet.noteKeys.first;
+      await tablet.vouchFor(server.devices[phone.deviceId]!);
+      await arrived.timeout(const Duration(seconds: 5));
+
+      expect((await tablet.openNotes([stored()])).single, isA<ReadNote>());
+      expect((await tablet.open(thread, [message])).single, isA<Opened>());
+      expect(errors, isEmpty);
+    });
+
+    test("the other person's keys reach only their devices a fingerprint anchors, and all without one", () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      final student = device('sam');
+      for (final (keys, user) in [(phone, 'dana'), (tablet, 'dana'), (student, 'sam')]) {
+        await keys.start(user);
+      }
+      final fingerprint = await phone.fingerprint();
+      Set<String> reached() => {
+        for (final each in server.queue)
+          if (each.kind == DeviceKeys.threadKeyKind && each.senderDeviceId == student.deviceId) each.recipientDeviceId,
+      };
+
+      // the link pinned the phone; the tablet, vouched for by no one, gets none
+      await student.seal('anchored', 'hello');
+      await student.share('anchored', userId: 'dana', fingerprint: fingerprint);
+      expect(reached(), {phone.deviceId});
+
+      await approve(phone, tablet);
+      await student.devicesChanged('dana');
+      await student.share('anchored', userId: 'dana', fingerprint: fingerprint);
+      expect(reached(), {phone.deviceId, tablet.deviceId});
+    });
+
+    test('with no fingerprint there is nothing to anchor to, and every device listed gets the key', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      final student = device('sam');
+      for (final (keys, user) in [(phone, 'dana'), (tablet, 'dana'), (student, 'sam')]) {
+        await keys.start(user);
+      }
+
+      await student.seal(thread, 'hello');
+      await student.share(thread, userId: 'dana');
+
+      expect(
+        {
+          for (final each in server.queue)
+            if (each.kind == DeviceKeys.threadKeyKind) each.recipientDeviceId,
+        },
+        {phone.deviceId, tablet.deviceId},
+      );
+    });
+
+    test('a device let in reads what was said before it at once, with nothing new sent', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      final student = device('sam');
+      for (final (keys, user) in [(phone, 'dana'), (tablet, 'dana'), (student, 'sam')]) {
+        await keys.start(user);
+      }
+      final sealed = await phone.seal(thread, 'squats today');
+      await phone.share(thread, userId: 'sam');
+      final message = (id: 'm1', senderId: 'dana', content: sealed.content, commitment: sealed.commitment);
+
+      await compare(phone, tablet);
+      await tablet.receive();
+
+      expect((await tablet.open(thread, [message])).single, isA<Opened>());
+      expect(errors, isEmpty);
+    });
+
+    test('the one that asked is done only once the other said it let it in too', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await codes(phone, tablet);
+
+      await tablet.approval.confirm();
+      await phone.approval.confirm();
+      await phone.receive();
+      // the phone let the tablet in; the tablet hasn't checked the phone yet
+      expect(server.devices[tablet.deviceId]!.vouchedBy, phone.deviceId);
+      expect(phaseOf(phone), isA<ComparisonCode>());
+      expect(phone.approval.value!.running, isTrue);
+
+      await tablet.receive();
+      await phone.receive();
+      expect(phaseOf(tablet), isA<ComparisonDone>());
+      expect(phaseOf(phone), isA<ComparisonDone>());
+    });
+
+    test('the other side failing after this one let it in says so, and claims nothing', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await codes(phone, tablet);
+
+      // the tablet is handed other keys for the phone than the ones compared
+      final other = Sealbox(base64.encode(List.filled(32, 7))).createAccount(oneTimeKeys: 1);
+      server.swapIdentity(phone.deviceId!, other.identityKey);
+      await phone.approval.confirm();
+      await tablet.approval.confirm();
+      await tablet.receive();
+      await phone.receive();
+
+      expect(phaseOf(tablet), isA<ComparisonFailed>().having((each) => each.reason, 'reason', ComparisonFailure.keys));
+      expect(
+        phaseOf(phone),
+        isA<ComparisonFailed>().having((each) => each.reason, 'reason', ComparisonFailure.unconfirmed),
+      );
+    });
+
+    test('a no while letting the other in ends nothing, and no cancel follows a done', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await codes(phone, tablet);
+      await phone.approval.confirm();
+      await tablet.approval.confirm();
+
+      final hold = server.holds['vouch'] = Completer();
+      final receiving = tablet.receive();
+      await server.called('vouch');
+      await tablet.approval.deny();
+      hold.complete();
+      await receiving;
+      await phone.receive();
+      await tablet.receive();
+
+      expect(phaseOf(tablet), isA<ComparisonDone>());
+      expect(phaseOf(phone), isA<ComparisonDone>());
+      expect(server.calls.where((each) => each.endsWith('compare_cancel')), isEmpty);
+    });
+
+    test('a step that waited finds the comparison ended, and goes no further', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await codes(phone, tablet);
+      await phone.approval.confirm();
+      await tablet.approval.confirm();
+
+      // the sender's list goes through; the proof's read of the list waits
+      server.passes['devices'] = 1;
+      final hold = server.holds['devices'] = Completer();
+      final before = server.calls.where((each) => each.startsWith('devices ')).length;
+      final receiving = tablet.receive();
+      while (server.calls.where((each) => each.startsWith('devices ')).length < before + 2) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      // ended here at once; its word to the phone waits its turn behind the read
+      final denying = tablet.approval.deny();
+      hold.complete();
+      await (denying, receiving).wait;
+
+      expect(phaseOf(tablet), isA<ComparisonCancelled>());
+      expect(server.calls.where((each) => each.startsWith('vouch ')), isEmpty);
+    });
+
+    test('a vouch that fails is owed, and paid on the next refresh', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      // the tablet's vouch for the phone goes through; the phone's fails
+      server
+        ..passes['vouch'] = 1
+        ..refuseNext['vouch'] = {'error': 'server error', 'code': 'internal'};
+
+      await compare(phone, tablet);
+
+      expect(phaseOf(phone), isA<ComparisonFailed>().having((each) => each.reason, 'reason', ComparisonFailure.vouch));
+      expect(phone.owesVouch(tablet.deviceId!), isTrue);
+      expect(server.devices[tablet.deviceId]!.vouchedBy, isNull);
+
+      await phone.refresh();
+
+      expect(server.devices[tablet.deviceId]!.vouchedBy, phone.deviceId);
+      expect(phone.owesVouch(tablet.deviceId!), isFalse);
+    });
+
+    test("a list that can't be read for the proof is read again shortly", () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await codes(phone, tablet);
+      await phone.approval.confirm();
+      await tablet.approval.confirm();
+
+      server
+        ..passes['devices'] = 1
+        ..refuseNext['devices'] = Exception('no network');
+      await tablet.receive();
+      expect(tablet.approval.value!.running, isTrue);
+      final deadline = DateTime.now().add(const Duration(seconds: 5));
+      while (server.calls.where((each) => each.startsWith('vouch ')).isEmpty && DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+      await phone.receive();
+      await tablet.receive();
+
+      expect(phaseOf(tablet), isA<ComparisonDone>());
+      expect(phaseOf(phone), isA<ComparisonDone>());
+    });
+
+    test('what arrives for a comparison that ended here is dropped without a word', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await codes(phone, tablet);
+
+      await phone.approval.deny();
+      // the tablet said they match before it heard
+      await tablet.approval.confirm();
+      await phone.receive();
+
+      expect(phaseOf(phone), isA<ComparisonCancelled>());
+      expect(errors, isEmpty);
+    });
+
+    test('a device said no to twice is said no to without asking for a while', () async {
+      final tablet = device('dana');
+      final laptop = device('dana');
+      await tablet.start('dana');
+      await laptop.start('dana');
+      for (final _ in [1, 2]) {
+        await laptop.approval.start(tablet.deviceId!);
+        await tablet.receive();
+        expect(tablet.approval.value!.running, isTrue);
+        await tablet.approval.deny();
+        await laptop.receive();
+      }
+
+      await laptop.approval.start(tablet.deviceId!);
+      final asked = laptop.approval.value!.id;
+      await tablet.receive();
+      await laptop.receive();
+
+      expect(tablet.approval.value!.id, isNot(asked), reason: 'never shown');
+      expect(phaseOf(laptop), isA<ComparisonCancelled>());
+    });
+
+    test('gone with the keys, it sends nothing more', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await phone.approval.start(tablet.deviceId!);
+      await tablet.receive();
+
+      phone.approval.dispose();
+      final sent = server.calls.where((each) => each.startsWith('enqueue dana')).length;
+      await phone.receive();
+
+      expect(server.calls.where((each) => each.startsWith('enqueue dana')).length, sent);
+      expect(phone.approval.value, isNull);
     });
   });
 }
@@ -1279,6 +1782,10 @@ class _Server {
   /// Calls of a name wait here until it completes.
   final holds = <String, Completer<void>>{};
 
+  /// How many calls of a name go through before [holds] and [refuseNext]
+  /// apply to it.
+  final passes = <String, int>{};
+
   void connect(String a, String b) => _pairs
     ..add((a, b))
     ..add((b, a));
@@ -1310,6 +1817,21 @@ class _Server {
     );
   }
 
+  /// As a server lying about [deviceId]'s keys would list it.
+  void swapIdentity(String deviceId, String identityKey) {
+    final device = devices[deviceId]!;
+    devices[deviceId] = CryptoDevice(
+      id: device.id,
+      userId: device.userId,
+      identityKey: identityKey,
+      signingKey: device.signingKey,
+      fallbackKey: device.fallbackKey,
+      signature: device.signature,
+      vouchedBy: device.vouchedBy,
+      createdAt: device.createdAt,
+    );
+  }
+
   RemoteKeyService as(String userId) => _As(this, () => userId);
 
   /// Whoever is signed in when a call is made, as the app's `Api` is.
@@ -1332,6 +1854,10 @@ class _As implements RemoteKeyService {
   String get me => _who();
 
   Future<void> _answer(String name) async {
+    if (server.passes[name] case final int left when left > 0) {
+      server.passes[name] = left - 1;
+      return;
+    }
     if (server.holds[name] case final Completer<void> hold) await hold.future;
     if (server.refuseNext.remove(name) case final Object refusal) throw refusal;
   }

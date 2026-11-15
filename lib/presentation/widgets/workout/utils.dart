@@ -11,6 +11,10 @@ const _fixedColumnWidth = 32.0;
 /// fit.
 const _setColumnWidth = 44.0;
 const _fixedButtonHeight = 24.0;
+
+/// The Previous column's share of a set row, kept as a gap where the column is
+/// absent (#591): the value cells are as wide as they ever are.
+const _previousFlex = 3;
 const _emptyValue = '-';
 
 final _floatingPointFormatters = <TextInputFormatter>[

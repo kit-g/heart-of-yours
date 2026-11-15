@@ -13,6 +13,8 @@ import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'support/harness.dart';
+
 /// Coaching messages on screen (#556): a conversation in the server's order,
 /// writing in it, and a coach's inbox beside the open one on a wide pane.
 void main() {
@@ -23,6 +25,7 @@ void main() {
   late Preferences preferences;
   late _Connections connections;
   late Coaching coaching;
+  late RecordedAnalytics recorded;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -31,18 +34,21 @@ void main() {
     server = _Server();
     store = _Store();
     cipher = _Cipher();
-    messages = Messages(
-      service: server,
-      local: store,
-      cipher: cipher,
-      remote: RemoteAccess(hasToken: () => true)..account = true,
-    )..userId = 'whiskers';
     connections = _Connections();
     coaching = Coaching(
       service: connections,
       remote: RemoteAccess(hasToken: () => true)..account = true,
     );
     await coaching.load();
+    recorded = RecordedAnalytics();
+    messages = Messages(
+      service: server,
+      local: store,
+      cipher: cipher,
+      remote: RemoteAccess(hasToken: () => true)..account = true,
+      analytics: Analytics(service: recorded),
+      roleFor: (thread) => coaching.all.where((each) => each.connectionId == thread.connectionId).firstOrNull?.role,
+    )..userId = 'whiskers';
   });
 
   Future<void> pump(WidgetTester tester, Widget child, {Size size = const Size(400, 800)}) async {
@@ -56,6 +62,7 @@ void main() {
           ChangeNotifierProvider<Messages>.value(value: messages),
           ChangeNotifierProvider<Preferences>.value(value: preferences),
           ChangeNotifierProvider<Coaching>.value(value: coaching),
+          Provider<Analytics>.value(value: Analytics(service: recorded)),
         ],
         child: MaterialApp(
           localizationsDelegates: localizationsDelegates,
@@ -136,6 +143,9 @@ void main() {
 
     expect(server.posted, ['sealed:Deload this week']);
     expect(_message('Deload this week'), findsOneWidget);
+    expect(recorded.of('message_sent'), [
+      {'role': 'coach'},
+    ], reason: "the writer's side, never the words");
     expect(tester.widget<TextField>(find.byKey(AppKeys.messageBox)).controller!.text, isEmpty);
   });
 
@@ -150,6 +160,7 @@ void main() {
 
     expect(tester.widget<TextField>(find.byKey(AppKeys.messageBox)).controller!.text, 'Hello');
     expect(find.text("Couldn't send that. Your words are still here."), findsOneWidget);
+    expect(recorded.of('message_sent'), isEmpty, reason: 'nothing was kept, so nothing was sent');
   });
 
   testWidgets('what was being written survives the screen closing', (tester) async {
@@ -228,6 +239,9 @@ void main() {
       expect(_message('Squats?'), findsNothing);
       expect(store.items, isEmpty, reason: 'gone from the device too');
       expect(find.text('You deleted the messages before this.'), findsOneWidget);
+      expect(recorded.of('conversation_deleted'), [
+        {'role': 'coach'},
+      ]);
     });
 
     testWidgets('blocking asks first, ends the connection, and closes the box', (tester) async {
@@ -271,6 +285,9 @@ void main() {
       expect(words, ['Skip the warm-up']);
       expect(connections.statuses, [ConnectionStatus.blocked]);
       expect(find.text('Report sent. You blocked Muffin.'), findsOneWidget);
+      expect(recorded.of('person_reported'), [
+        {'reason': 'unsafe_advice', 'with_messages': 'true', 'also_blocked': 'true'},
+      ]);
     });
 
     testWidgets('a long press reports one message of theirs, and none of the person\'s own', (tester) async {

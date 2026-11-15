@@ -50,7 +50,12 @@ void main() {
 
   /// Wide: under the test font the page's longer lines and Settings overflow a
   /// phone, as the a11y harness's sweep knows.
-  Future<void> pump(WidgetTester tester, {Map<String, Object> prefs = const {}, bool signedIn = true}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    Map<String, Object> prefs = const {},
+    bool signedIn = true,
+    AnalyticsService? analytics,
+  }) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -62,6 +67,10 @@ void main() {
       api: api,
       cdn: cdn,
       router: router,
+      analytics: switch (analytics) {
+        final AnalyticsService service => Analytics(service: service),
+        null => null,
+      },
       firebaseAuth: switch (signedIn) {
         true => MockFirebaseAuth(
           mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
@@ -80,7 +89,8 @@ void main() {
     tester,
   ) async {
     when(api.acceptInvitation(token, any)).thenAnswer((_) async => AcceptedInvitation(coach(shares: ['goals'])));
-    await pump(tester);
+    final recorded = RecordedAnalytics();
+    await pump(tester, analytics: recorded);
 
     router.openInvitation(token, fingerprint: 'fp22chars');
     await tester.pumpTimes();
@@ -99,6 +109,13 @@ void main() {
     expect(preferences.coachFingerprint('c1'), 'fp22chars');
     expect(find.byType(ProfilePage), findsOneWidget);
     expect(find.text('Alex is your coach now'), findsOneWidget);
+    // the yes counted twice over: as an answer to the invitation, and as the ask's yes to Your coach
+    expect(recorded.of('invitation_answered'), [
+      {'accepted': 'true'},
+    ]);
+    expect(recorded.of('feature_switched'), [
+      {'feature': 'yourCoach', 'on': 'true', 'source': 'ask'},
+    ]);
   });
 
   testWidgets('a link that is no longer good says so, and offers no answer', (tester) async {
@@ -261,7 +278,8 @@ void main() {
     testWidgets('each coach by the name their invitation showed, and leaving one is asked once', (tester) async {
       when(api.getConnections()).thenAnswer((_) async => [coach()]);
       when(api.endConnection('c1')).thenAnswer((_) async {});
-      await pump(tester, prefs: {'feature-yourCoach': 'on', 'coachName-c1': 'Alex'});
+      final recorded = RecordedAnalytics();
+      await pump(tester, prefs: {'feature-yourCoach': 'on', 'coachName-c1': 'Alex'}, analytics: recorded);
       await openFeatures(tester);
 
       await tester.scrollUntilVisible(find.byKey(AppKeys.yourCoach('c1')), 200);
@@ -275,6 +293,9 @@ void main() {
 
       verify(api.endConnection('c1')).called(1);
       expect(find.byKey(AppKeys.yourCoach('c1')), findsNothing);
+      expect(recorded.of('coaching_changed'), [
+        {'role': 'student', 'coaching_action': 'ended'},
+      ]);
     });
 
     testWidgets('turning Your coach off pauses the coach, and on resumes them', (tester) async {
@@ -284,7 +305,11 @@ void main() {
         status = invocation.positionalArguments[1] as ConnectionStatus;
         return coach(status: status);
       });
-      await pump(tester, prefs: {'feature-yourCoach': 'on'});
+      final recorded = RecordedAnalytics();
+      await pump(tester, prefs: {'feature-yourCoach': 'on'}, analytics: recorded);
+      expect(recorded.property('coaching_role'), [
+        'student',
+      ], reason: 'coached, once the coach is read, and never a role before');
 
       preferencesOf(tester).setFeature(.yourCoach, on: false);
       await tester.pumpTimes();
@@ -293,6 +318,12 @@ void main() {
       preferencesOf(tester).setFeature(.yourCoach, on: true);
       await tester.pumpTimes();
       expect(status, ConnectionStatus.active);
+      // the switch's own pause and resume, counted as the student's
+      expect(recorded.of('coaching_changed'), [
+        {'role': 'student', 'coaching_action': 'paused'},
+        {'role': 'student', 'coaching_action': 'resumed'},
+      ]);
+      expect(recorded.property('coaching_role'), ['student', 'none', 'student']);
     });
 
     testWidgets('a pause that fails is owed, and goes through on a later try', (tester) async {
