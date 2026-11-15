@@ -1,7 +1,7 @@
 {
   "calendar": "Calendar",
   "@calendar": {
-    "description": "History calendar action and dialog title",
+    "description": "Name of History's calendar view, and the Settings choice of it beside List (#609)",
     "type": "text",
     "placeholders": {}
   },
@@ -1437,6 +1437,30 @@
   "noFolder": "No folder",
   "@noFolder": {
     "description": "Option in the move-to-folder dialog that unfiles the template",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseInstructions": "Instructions",
+  "@exerciseInstructions": {
+    "description": "Label of the optional free-text field on the create/edit exercise dialog where users describe how to do their own exercise",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseInstructionsKept": "Instructions can be changed, not removed yet",
+  "@exerciseInstructionsKept": {
+    "description": "Shown under an emptied instructions field on the edit exercise dialog for a signed-in user: the account can't remove instructions yet, so Save stays off until some text is there",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseInstructionsHint": "Setup, cues, which machine",
+  "@exerciseInstructionsHint": {
+    "description": "Placeholder inside the empty instructions field on the create/edit exercise dialog, suggesting what to write",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseNameTaken": "You already have an exercise with this name",
+  "@exerciseNameTaken": {
+    "description": "Error shown when renaming one of the user's own exercises to a name another of their own exercises already has",
     "type": "text",
     "placeholders": {}
   },
@@ -5909,6 +5933,18 @@
   "@programCoachChangesMore": {"description": "The latest change a coach made to the student's copy of a program, and how many more there are since the student last looked (#558)", "type": "text", "placeholders": {"change": {"type": "String"}, "count": {"type": "int"}}},
   "programCoachChangesSeen": "Mark as seen",
   "@programCoachChangesSeen": {"description": "Tooltip: dismisses the line saying what the coach changed in a program (#558)", "type": "text", "placeholders": {}},
+  "historyView": "History opens on",
+  "@historyView": {"description": "Settings row title: which view History opens on, a list or a calendar (#609)", "type": "text", "placeholders": {}},
+  "historyAsList": "List",
+  "@historyAsList": {"description": "Settings choice: History opens on the list of workouts (#609); the other choice is the existing 'calendar' string", "type": "text", "placeholders": {}},
+  "showAsList": "Show as list",
+  "@showAsList": {"description": "Tooltip on History's app-bar button that switches from the calendar to the list of workouts (#609)", "type": "text", "placeholders": {}},
+  "showAsCalendar": "Show as calendar",
+  "@showAsCalendar": {"description": "Tooltip on History's app-bar button that switches from the list of workouts to the calendar (#609)", "type": "text", "placeholders": {}},
+  "screens": "Screens",
+  "@screens": {"description": "Settings section header: how the app's screens show themselves, e.g. what History opens on (#609)", "type": "text", "placeholders": {}},
+  "calendarWorkouts": "{count, plural, =1{1 workout} other{{count} workouts}}",
+  "@calendarWorkouts": {"description": "History calendar: how many workouts a day holds, read out after the date on a day with more than one (#619)", "type": "text", "placeholders": {"count": {"type": "int"}}},
   "messagesHint": "Message",
   "@messagesHint": {"description": "Placeholder of the box a message is written in (#556)", "type": "text", "placeholders": {}},
   "messagesSend": "Send",
@@ -6120,5 +6156,23 @@
   "compareCodesCantStart": "Couldn't start comparing codes. Try again in a moment.",
   "@compareCodesCantStart": {"description": "Snackbar when Compare codes couldn't start, as while another comparison runs (#555)", "type": "text", "placeholders": {}},
   "deviceApprovedHereOnly": "Approved here, not yet on your other devices",
-  "@deviceApprovedHereOnly": {"description": "Your devices page: a device this one compared a code with, whose approval hasn't reached the server yet; the app retries by itself (#555)", "type": "text", "placeholders": {}}
+  "@deviceApprovedHereOnly": {"description": "Your devices page: a device this one compared a code with, whose approval hasn't reached the server yet; the app retries by itself (#555)", "type": "text", "placeholders": {}},
+  "pickerGroupBy": "Group by: {grouping}",
+  "@pickerGroupBy": {"description": "Entry in the Exercises tab's options menu that opens the choice of how exercise lists are grouped: by category, target or movement, or not at all; names the grouping in force: None, Category, Target or Movement (#620)", "type": "text", "placeholders": {"grouping": {}}},
+  "pickerGroupHeading": "{group}, {count, plural, =1{1 exercise} other{{count} exercises}}",
+  "@pickerGroupHeading": {"description": "Screen reader label of a group heading in the exercise picker: the group's name, such as Chest or Barbell, and how many exercises it holds (#620)", "type": "text", "placeholders": {"group": {}, "count": {"type": "int"}}},
+  "pickerGroupNone": "None",
+  "@pickerGroupNone": {"description": "Exercise picker grouping choice: one flat list as before (#620)", "type": "text", "placeholders": {}},
+  "pickerGroupOther": "Other",
+  "@pickerGroupOther": {"description": "Exercise picker heading, grouped by movement: the exercises with no movement pattern (#620)", "type": "text", "placeholders": {}},
+  "pickerGroupCollapsed": "Collapsed",
+  "@pickerGroupCollapsed": {"description": "Screen reader state of a folded group heading in the exercise picker (#620)", "type": "text", "placeholders": {}},
+  "pickerGroupExpanded": "Expanded",
+  "@pickerGroupExpanded": {"description": "Screen reader state of an open group heading in the exercise picker (#620)", "type": "text", "placeholders": {}},
+  "pickerGroupExpand": "Show exercises",
+  "@pickerGroupExpand": {"description": "Screen reader action hint on a folded group heading in the exercise picker: opens it (#620)", "type": "text", "placeholders": {}},
+  "pickerGroupCollapse": "Hide exercises",
+  "@pickerGroupCollapse": {"description": "Screen reader action hint on an open group heading in the exercise picker: folds it (#620)", "type": "text", "placeholders": {}},
+  "settingsPickerGrouping": "Group exercises",
+  "@settingsPickerGrouping": {"description": "Settings row: how the exercise picker groups the library, by category, target, movement, or not at all (#620)", "type": "text", "placeholders": {}}
 }

@@ -135,8 +135,9 @@ class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
 /// dialog. No phone is this wide, so nothing changes there.
 const dialogWidth = 560.0;
 
-/// Keeps the seven-column calendar at phone proportions even on tablets.
-const calendarDialogWidth = 400.0;
+/// Keeps the seven-column calendar at phone proportions even on tablets: History's
+/// calendar view (#609) centres itself in whatever is wider.
+const calendarWidth = 400.0;
 
 Future<T?> showBrandedDialog<T>(
   BuildContext context, {
@@ -324,12 +325,35 @@ RelativeRect menuUnder(BuildContext context) {
 /// starts after the rail, so a window offset lands the menu a rail's width to
 /// the right of the value.
 RelativeRect menuUnderValue(BuildContext context, GlobalKey key, {required double width}) {
-  final box = key.currentContext?.findRenderObject();
+  return switch (key.currentContext) {
+    BuildContext value => menuEndingUnder(value, width: width),
+    null => RelativeRect.fill,
+  };
+}
+
+/// [menuUnderValue] for the widget [context] belongs to: a menu [width] wide
+/// under it, its right edge on the widget's — for a trailing button that has
+/// its own context to hand and no key.
+RelativeRect menuEndingUnder(BuildContext context, {required double width}) {
+  final box = context.findRenderObject();
   final overlay = Navigator.of(context).overlay?.context.findRenderObject();
   if (box is! RenderBox || overlay is! RenderBox) return RelativeRect.fill;
   final Offset(:dx, :dy) = box.localToGlobal(Offset.zero, ancestor: overlay);
   final Size(width: w, height: h) = box.size;
   return RelativeRect.fromLTRB(dx + w - width, dy + h, overlay.size.width - (dx + w), dy + h);
+}
+
+/// Where a menu opens over [box]: its rect in the navigator's overlay, which
+/// is where [showMenu] lays the menu out. The window's coordinates are not:
+/// inside the two-pane shell the overlay starts after the rail (see
+/// [menuUnderValue]).
+RelativeRect menuOver(BuildContext context, RenderBox box) {
+  final overlay = Navigator.of(context).overlay?.context.findRenderObject();
+  if (overlay is! RenderBox) return RelativeRect.fill;
+  return RelativeRect.fromRect(
+    box.localToGlobal(Offset.zero, ancestor: overlay) & box.size,
+    Offset.zero & overlay.size,
+  );
 }
 
 /// Whether the user asked for less motion: Android's "Remove animations", or

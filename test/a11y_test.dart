@@ -31,7 +31,6 @@ import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
 import 'support/file_picker.dart';
-import 'support/finders.dart';
 import 'support/harness.dart';
 
 /// LoginPage's Apple button probes availability via this channel, unawaited,
@@ -87,7 +86,9 @@ enum _Screen {
   skipPage,
   notTodaySheet,
   calendar,
+  calendarDay,
   exercises,
+  exercisesGrouped,
   settings,
   anonymousSettings,
   accountManagement,
@@ -671,6 +672,13 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.calendar, _Guideline.androidTapTarget, null),
   (_Screen.calendar, _Guideline.iosTapTarget, null),
 
+  // a day of two workouts (#619): its count, and the list of them it opens
+  (_Screen.calendarDay, _Guideline.labeledTapTarget, null),
+  (_Screen.calendarDay, _Guideline.textContrastLight, null),
+  (_Screen.calendarDay, _Guideline.textContrastDark, null),
+  (_Screen.calendarDay, _Guideline.androidTapTarget, null),
+  (_Screen.calendarDay, _Guideline.iosTapTarget, null),
+
   (_Screen.history, _Guideline.labeledTapTarget, null),
   (_Screen.history, _Guideline.textContrastLight, null),
   (_Screen.history, _Guideline.textContrastDark, null),
@@ -797,6 +805,21 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
   (
     _Screen.exercises,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+
+  // grouped by target (#620): folded headings in place of the flat list
+  (_Screen.exercisesGrouped, _Guideline.labeledTapTarget, null),
+  (_Screen.exercisesGrouped, _Guideline.textContrastLight, null),
+  (_Screen.exercisesGrouped, _Guideline.textContrastDark, null),
+  (
+    _Screen.exercisesGrouped,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.exercisesGrouped,
     _Guideline.iosTapTarget,
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
@@ -1304,6 +1327,15 @@ void main() {
     if (screen == _Screen.plateCalculator) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-plateCalculator': 'on'});
     }
+    if (screen == _Screen.exercisesGrouped) {
+      // one heading open and one folded, so both states are checked
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'screen-pickerGrouping': 'target',
+        'screen-pickerGrouping-at': '2026-11-01T10:00:00.000Z',
+        'openPickerGroups': ['target:chest'],
+      });
+    }
     if (screen == _Screen.templateMuscles) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
     }
@@ -1792,6 +1824,8 @@ void main() {
             _ => Future.error(const SocketException('offline')),
           },
         );
+      case _Screen.exercisesGrouped:
+        when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench, _squat]));
       case _Screen.moveHistoryDialog:
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench, _squat]));
         when(db.getExerciseUnits(any)).thenAnswer((_) async => {});
@@ -2392,6 +2426,22 @@ void main() {
         // the row is only honest if it is the move it checked
         expect(find.textContaining('next time'), findsOneWidget);
         expect(find.textContaining('Keep'), findsOneWidget);
+      case _Screen.calendarDay:
+        // both early today, so the two can never fall either side of midnight
+        final today = DateTime.now();
+        final first = _unsynced()..start = DateTime(today.year, today.month, today.day, 0, 1);
+        final second = _unsynced()..start = DateTime(today.year, today.month, today.day, 0, 2);
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [second, first]);
+        when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
+            .thenAnswer((_) async => [second, first]);
+        await tester.tapByKey(AppKeys.historyStack);
+        await tester.pumpTimes();
+        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
+        await tester.pumpTimes();
+        await tester.tap(find.bySemanticsLabel(RegExp(r', 2 workouts$')));
+        await tester.pumpTimes();
+        // the screen is only honest if the list is open on it
+        expect(find.byType(PopupMenuItem<Workout>), findsNWidgets(2));
       case _Screen.calendar:
         final completed = Workout.fromJson(_unsynced().toMap());
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
@@ -2399,7 +2449,7 @@ void main() {
             .thenAnswer((_) async => [completed]);
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
-        await tester.tap(find.tooltip('Calendar'));
+        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
       case _Screen.history:
         await tester.tapByKey(AppKeys.historyStack);
       case _Screen.pastWorkoutTimes || _Screen.pastWorkoutEditor:
@@ -2440,6 +2490,16 @@ void main() {
         }
       case _Screen.exercises:
         await tester.tapByKey(AppKeys.exercisesStack);
+      case _Screen.exercisesGrouped:
+        // the catalog the way start-up would read it (see the upsync case)
+        unawaited(Exercises.of(tester.element(find.byType(MaterialApp))).init());
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.exercisesStack);
+        await tester.pumpTimes();
+        // Legs folded, Chest open onto its one exercise
+        expect(find.text('Legs'), findsOneWidget);
+        expect(find.text(_squat.name), findsNothing);
+        expect(find.text(_bench.name), findsOneWidget);
       case _Screen.settings || _Screen.anonymousSettings:
         await tester.tap(find.byIcon(Icons.settings_rounded));
       case _Screen.recaps:

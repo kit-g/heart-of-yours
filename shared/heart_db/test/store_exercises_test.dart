@@ -171,6 +171,19 @@ void main() {
   );
 
   test(
+    'should write instructions unconditionally so a cleared one clears (#621)',
+    () async {
+      await local.storeExercises([exercise(name: 'Push Up')]);
+
+      final [String statement, List<Object?> values] = verify(batch.rawInsert(captureAny, captureAny)).captured;
+      final columns = RegExp(r'\(([^)]*)\)').firstMatch(statement)!.group(1)!.split(',');
+      final index = columns.indexWhere((column) => column.trim() == 'instructions');
+      expect(index, isNonNegative, reason: 'the column is in the upsert, so its conflict-update sets it');
+      expect(values[index], isNull);
+    },
+  );
+
+  test(
     'should record the locale the catalog was fetched under',
     () async {
       await local.storeExercises([exercise()], locale: 'ru');

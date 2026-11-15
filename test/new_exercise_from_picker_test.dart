@@ -112,10 +112,7 @@ void main() {
   }
 
   Finder dialogName() {
-    return find.descendant(
-      of: find.ancestor(of: find.text('Create new exercise'), matching: find.byType(Card)),
-      matching: find.byType(TextField),
-    );
+    return find.byKey(AppKeys.newExerciseName);
   }
 
   /// Fills in what the dialog needs past a name and saves.
@@ -227,6 +224,19 @@ void main() {
       expect(find.text(name), findsWidgets, reason: 'in the list, not only selected');
       await addPicked(tester);
       expectInWorkout(tester);
+    });
+
+    testWidgets('the next Add exercises opens on an empty search', (tester) async {
+      await openWorkoutPicker(tester);
+      await createFromSearch(tester);
+      await addPicked(tester);
+      await tester.pump(const Duration(milliseconds: 200));
+
+      await tester.tapByKey(WorkoutDetailKeys.addExercises);
+      await tester.pumpTimes();
+
+      final search = find.descendant(of: find.byType(SearchField), matching: find.byType(TextField));
+      expect(tester.widget<TextField>(search).controller?.text, isEmpty);
     });
 
     testWidgets('closing the dialog leaves nothing made and nothing ticked', (tester) async {

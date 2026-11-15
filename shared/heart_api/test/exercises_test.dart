@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:heart_api/src/api.dart';
 import 'package:heart_api/src/moves.dart';
+import 'package:heart_api/src/renames.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:http/http.dart' as http;
 import 'package:mockito/mockito.dart';
@@ -85,6 +86,62 @@ void main() {
 
       final result = await api.editExercise(custom);
       expect(result.id, equals('019e8b5d-c52d-729e-be9c-a5403b04fd1b'));
+    });
+
+    group('editExercise (#616)', () {
+      final custom = Exercise.fromJson({
+        'id': '019e8b5d-c52d-729e-be9c-a5403b04fd1b',
+        'name': 'Landmine Press',
+        'category': 'Barbell',
+        'target': 'Shoulders',
+        'own': 1,
+        'movement': {
+          'groups': ['vertical_press'],
+        },
+      });
+      final path = '${Router.exercises}/${custom.id}';
+
+      Map<String, dynamic> sent() {
+        final captured = verify(client.put(any, headers: anyNamed('headers'), body: captureAnyNamed('body'))).captured;
+        return jsonDecode(captured.single as String) as Map<String, dynamic>;
+      }
+
+      test('an edit sends the pattern and leaves the name out', () async {
+        respond(client: client, method: 'PUT', path: path, statusCode: 200, body: custom.toMap());
+
+        await api.editExercise(custom);
+
+        expect(sent(), allOf(containsPair('pattern', 'vertical_press'), isNot(contains('name'))));
+      });
+
+      test('a rename sends the name', () async {
+        respond(client: client, method: 'PUT', path: path, statusCode: 200, body: custom.toMap());
+
+        await api.renameExercise(custom);
+
+        expect(sent(), containsPair('name', 'Landmine Press'));
+      });
+
+      test('no pattern is sent as null, so the server clears its own', () async {
+        final bare = Exercise.fromJson({...custom.toMap()..remove('movement')});
+        respond(client: client, method: 'PUT', path: path, statusCode: 200, body: bare.toMap());
+
+        await api.editExercise(bare);
+
+        expect(sent(), containsPair('pattern', null));
+      });
+
+      test('a name the account already has is ExerciseNameTaken', () async {
+        respond(
+          client: client,
+          method: 'PUT',
+          path: path,
+          statusCode: 409,
+          body: {'code': 'name_taken', 'reason': 'taken'},
+        );
+
+        expect(() => api.renameExercise(custom), throwsA(isA<ExerciseNameTaken>()));
+      });
     });
 
     test('getExercises returns empty list when response is invalid', () async {

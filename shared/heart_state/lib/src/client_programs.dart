@@ -2,6 +2,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'analytics.dart';
 import 'coaching.dart' show CoachingStatus;
 import 'remote.dart';
 import 'template_drafting.dart';
@@ -80,7 +81,12 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
   final RemoteAccess _remote;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
-  new({required this._service, RemoteAccess? remote, this.onError}) : _remote = remote ?? RemoteAccess();
+  /// Told of each change once the server took it: a save kept as a conflict
+  /// is not one, until [keepMine] lands it.
+  final Analytics? analytics;
+
+  new({required this._service, RemoteAccess? remote, this.onError, this.analytics})
+    : _remote = remote ?? RemoteAccess();
 
   static ClientPrograms of(BuildContext context) => Provider.of<ClientPrograms>(context, listen: false);
 
@@ -99,6 +105,10 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
 
   /// The client and copy [editable] belongs to.
   ({String studentId, String programId})? _drafting;
+
+  /// A session is a client's, never the coach's own (#591).
+  @override
+  bool get forSomeoneElse => true;
 
   CoachProgramView? view(String programId) => _views[programId];
 
@@ -209,6 +219,7 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
     try {
       await _service.editClientProgram(studentId, fields, baseRevision: base, changeId: uuidV7());
       _conflicts.remove(programId);
+      analytics?.clientProgramEdited(edit: .fields);
     } catch (error, stacktrace) {
       _settle(
         programId,
@@ -224,6 +235,7 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
   /// Removes a session of the copy. Throws what the service threw.
   Future<void> deleteSession(String studentId, String programId, String sessionId) async {
     await _service.deleteClientSession(studentId, programId, sessionId);
+    analytics?.clientProgramEdited(edit: .sessionDeleted);
     await open(studentId, programId);
   }
 
@@ -251,6 +263,7 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
   /// `409` among it when the client has since built on it.
   Future<void> revert(String studentId, String programId, ProgramChange change) async {
     await _service.revertClientChange(studentId, programId, change.id);
+    analytics?.clientProgramEdited(edit: .reverted);
     await open(studentId, programId);
   }
 
@@ -259,6 +272,7 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
     try {
       await _service.editClientSession(studentId, programId, session, baseRevision: base, changeId: uuidV7());
       _conflicts.remove(programId);
+      analytics?.clientProgramEdited(edit: .session);
     } catch (error, stacktrace) {
       _settle(
         programId,
