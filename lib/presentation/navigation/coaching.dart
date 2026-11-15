@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:heart/presentation/navigation/pushes.dart' show coachingSpaceRuns;
 import 'package:heart_state/heart_state.dart';
 
 /// Keeps [Coaching] in step with the two coaching switches (#566): it reads
@@ -102,7 +103,7 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
       return;
     }
     final user = auth.user;
-    final space = coachPeople && (user?.mayCoach ?? false);
+    final space = coachingSpaceRuns(preferences, auth);
 
     if (space && !_space) widget.onSpaceAvailable();
     _space = space;
@@ -130,19 +131,22 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
   /// Which sides of coaching this account is on, as the `coaching_role` user
   /// property: it coaches with Coach people on and the entitlement to, and is
   /// coached with Your coach on and a coach live or paused. Null with no
-  /// account. Waits for the connections before saying anything about a coach,
-  /// so a launch never reports one away and back.
+  /// account. Says nothing until each side it reports is settled, so a launch
+  /// never reports a role away and back: the session, the entitlements for
+  /// the coaching side (until the server's copy arrives, a coach reads as one
+  /// who may not), and the connections for the coached side.
   void _reportRole() {
     final (preferences, auth, coaching) = (_preferences, _auth, _coaching);
-    if (preferences == null || auth == null || coaching == null || !preferences.isInitialized) return;
+    if (preferences == null || auth == null || coaching == null) return;
+    if (!preferences.isInitialized) return;
+    // no user yet, before Firebase's first answer: not the same as none
+    if (auth.user == null && !auth.isInitialized) return;
     final account = auth.user != null && !auth.isAnonymous;
     final yourCoach = preferences.isOn(.yourCoach);
+    if (account && preferences.isOn(.coachPeople) && !auth.entitlementsKnown) return;
     if (account && yourCoach && coaching.status != .loaded) return;
     final role = switch (account) {
-      true => CoachingRole.of(
-        coaches: preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false),
-        coached: yourCoach && coaching.hasCoach,
-      ),
+      true => CoachingRole.of(coaches: coachingSpaceRuns(preferences, auth), coached: yourCoach && coaching.hasCoach),
       false => null,
     };
     if (_role case (final reported,) when reported == role) return;

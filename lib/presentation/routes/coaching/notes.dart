@@ -186,13 +186,7 @@ Future<void> _showNoteEditor(BuildContext context, {required String connectionId
     useRootNavigator: true,
     isScrollControlled: true,
     constraints: const BoxConstraints(maxWidth: dialogWidth),
-    builder: (_) => _NoteEditor(
-      connectionId: connectionId,
-      id: id,
-      text: text,
-      notes: CoachNotes.of(context),
-      analytics: Analytics.of(context),
-    ),
+    builder: (_) => _NoteEditor(connectionId: connectionId, id: id, text: text, notes: CoachNotes.of(context)),
   );
 }
 
@@ -207,15 +201,8 @@ class _NoteEditor extends StatefulWidget {
 
   /// Passed in: the sheet is a route of its own.
   final CoachNotes notes;
-  final Analytics analytics;
 
-  const new({
-    required this.connectionId,
-    required this.text,
-    required this.notes,
-    required this.analytics,
-    this.id,
-  });
+  const new({required this.connectionId, required this.text, required this.notes, this.id});
 
   @override
   State<_NoteEditor> createState() => _NoteEditorState();
@@ -263,9 +250,6 @@ class _NoteEditorState extends State<_NoteEditor> {
       _failed.value = l.coachingNoteFailed;
       return;
     }
-    // kept on the device, sealed: it reaches the server when it can, which a
-    // coach writing offline is still a note written
-    widget.analytics.coachNoteSaved(edited: widget.id != null);
     // closed meanwhile by the person: popping now would close what is under it
     if (mounted && (route?.isCurrent ?? false)) navigator.pop();
   }
@@ -302,7 +286,6 @@ class _NoteEditorState extends State<_NoteEditor> {
       if (mounted) _failed.value = l.coachingNoteDeleteFailed;
       return;
     }
-    widget.analytics.coachNoteDeleted();
     if (mounted) navigator.pop();
   }
 

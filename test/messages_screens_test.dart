@@ -34,12 +34,6 @@ void main() {
     server = _Server();
     store = _Store();
     cipher = _Cipher();
-    messages = Messages(
-      service: server,
-      local: store,
-      cipher: cipher,
-      remote: RemoteAccess(hasToken: () => true)..account = true,
-    )..userId = 'whiskers';
     connections = _Connections();
     coaching = Coaching(
       service: connections,
@@ -47,6 +41,14 @@ void main() {
     );
     await coaching.load();
     recorded = RecordedAnalytics();
+    messages = Messages(
+      service: server,
+      local: store,
+      cipher: cipher,
+      remote: RemoteAccess(hasToken: () => true)..account = true,
+      analytics: Analytics(service: recorded),
+      roleFor: (thread) => coaching.all.where((each) => each.connectionId == thread.connectionId).firstOrNull?.role,
+    )..userId = 'whiskers';
   });
 
   Future<void> pump(WidgetTester tester, Widget child, {Size size = const Size(400, 800)}) async {

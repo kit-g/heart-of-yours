@@ -27,14 +27,15 @@ void main() {
     server = _Server();
     store = _Store();
     cipher = _Cipher();
+    recorded = RecordedAnalytics();
     notes = CoachNotes(
       service: server,
       local: store,
       cipher: cipher,
       remote: RemoteAccess(hasToken: () => true)..account = true,
+      analytics: Analytics(service: recorded),
     )..userId = 'whiskers';
     roster = Roster(service: _NoRoster());
-    recorded = RecordedAnalytics();
   });
 
   tearDown(() => cipher.dispose());
@@ -49,7 +50,6 @@ void main() {
         providers: [
           ChangeNotifierProvider<CoachNotes>.value(value: notes),
           ChangeNotifierProvider<Roster>.value(value: roster),
-          Provider<Analytics>.value(value: Analytics(service: recorded)),
         ],
         child: MaterialApp(
           localizationsDelegates: localizationsDelegates,

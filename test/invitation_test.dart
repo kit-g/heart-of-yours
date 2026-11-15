@@ -307,7 +307,9 @@ void main() {
       });
       final recorded = RecordedAnalytics();
       await pump(tester, prefs: {'feature-yourCoach': 'on'}, analytics: recorded);
-      expect(recorded.property('coaching_role').last, 'student', reason: 'coached, once the coach is read');
+      expect(recorded.property('coaching_role'), [
+        'student',
+      ], reason: 'coached, once the coach is read, and never a role before');
 
       preferencesOf(tester).setFeature(.yourCoach, on: false);
       await tester.pumpTimes();
@@ -321,7 +323,7 @@ void main() {
         {'role': 'student', 'coaching_action': 'paused'},
         {'role': 'student', 'coaching_action': 'resumed'},
       ]);
-      expect(recorded.property('coaching_role'), containsAllInOrder(['student', 'none', 'student']));
+      expect(recorded.property('coaching_role'), ['student', 'none', 'student']);
     });
 
     testWidgets('a pause that fails is owed, and goes through on a later try', (tester) async {

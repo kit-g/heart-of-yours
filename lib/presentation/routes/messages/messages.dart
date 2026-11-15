@@ -163,15 +163,9 @@ class _ThreadViewState extends State<ThreadView> {
     if (threadId == null || text.isEmpty) return;
     final messenger = ScaffoldMessenger.of(context);
     final failed = L.of(context).messagesSendFailed;
-    final analytics = Analytics.of(context);
-    final role = _connectionOf(context, widget.connectionId)?.role;
     _text.clear();
     try {
       await _messages.send(threadId, text);
-      // sealed and kept, on its way: a message written offline waits on the
-      // device and still counts, so this is the intent to send, not the
-      // server's receipt
-      analytics.messageSent(role: role);
     } catch (_) {
       // nothing was kept: the words go back where they were written
       if (_text.text.isEmpty) _text.text = text;

@@ -195,12 +195,15 @@ enum FormFactor {
   new(this.id);
 }
 
-/// Where an opt-in feature's switch was answered: the in-context ask, or the
-/// switch in Settings › Features. The two read apart because the ask is the
-/// feature's reach and the switch is mostly its reversals.
+/// Where an opt-in feature's answer came from: the in-context ask, the switch
+/// in Settings › Features, or an ask left unanswered. They read apart because
+/// the ask is the feature's reach and the switch is mostly its reversals.
 enum FeatureSwitchSource {
   ask('ask'),
-  settings('settings');
+  settings('settings'),
+
+  /// An offer left unanswered, which became a no at the next launch.
+  lapsed('lapsed');
 
   final String id;
 
@@ -767,9 +770,10 @@ class Analytics {
   // title or anything a coach can read of a client's training: those are the
   // people's own, and most of them are sealed on the device besides.
 
-  /// An opt-in feature's switch answered (#138): the in-context ask's yes or
-  /// no, or the Settings switch either way. Generic, but it is how the
-  /// coaching switches' reach is read.
+  /// An opt-in feature's answer changed (#138): the in-context ask's yes or
+  /// no, the Settings switch either way, or an ask that lapsed into a no.
+  /// Only a change: an answer repeated is not counted again. Generic, but it
+  /// is how the coaching switches' reach is read.
   void featureSwitched({required Feature feature, required bool on, required FeatureSwitchSource source}) {
     _log(_featureSwitched, {_feature: feature.value, _on: _flag(on), _source: source.id});
   }

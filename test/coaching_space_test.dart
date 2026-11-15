@@ -380,7 +380,9 @@ void main() {
       when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
       final recorded = RecordedAnalytics();
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, analytics: recorded);
-      expect(recorded.property('coaching_role').last, 'coach');
+      expect(recorded.property('coaching_role'), [
+        'coach',
+      ], reason: 'once the entitlements are known, and never a role before');
 
       expect(find.text('No clients yet'), findsNothing);
       expect(find.text('Strength block · week 2 of 6'), findsOneWidget);

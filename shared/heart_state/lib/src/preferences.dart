@@ -48,8 +48,10 @@ class Preferences with ChangeNotifier {
   @visibleForTesting
   static const onboardingSeenKey = 'onboardingSeen';
 
-  /// Told when an offer is answered. The Settings switch reports from the
-  /// page itself: [setFeature] has other callers that are no one's answer.
+  /// Told when a feature's answer changes: an offer answered, the Settings
+  /// switch given its [FeatureSwitchSource], an offer lapsed. A switch thrown
+  /// with no source is no one's answer (the watch app's first launch, a Siri
+  /// shortcut used) and is not told.
   final Analytics? analytics;
 
   new({this.analytics});
@@ -265,6 +267,7 @@ class Preferences with ChangeNotifier {
     );
     // startup reads this twice (see app.dart); the second read is a no-op here
     if (!_initialized.isCompleted) _initialized.complete();
+    _countLapses();
     notifyListeners();
   }
 
@@ -621,9 +624,27 @@ class Preferences with ChangeNotifier {
   void answerOffer(Feature feature, {required bool yes}) {
     _offeredThisSession.remove(feature);
     if (!yes) _declinedThisSession.add(feature);
-    _setFeature(feature, on: yes);
-    analytics?.featureSwitched(feature: feature, on: yes, source: .ask);
+    _setFeature(feature, on: yes, source: .ask);
   }
+
+  /// Each offer left unanswered in an earlier session: a no from this launch
+  /// on ([FeatureAnswer.pending]), counted once as the no it became. The
+  /// answer itself stays pending, this device's business: only a real answer
+  /// travels, and a lapse must never outrank another device's.
+  void _countLapses() {
+    bool lapsed(Feature feature) {
+      return featureAnswer(feature) == .pending &&
+          !_offeredThisSession.contains(feature) &&
+          !(_prefs?.getBool(_lapsedKey(feature)) ?? false);
+    }
+
+    for (final feature in Feature.values.where(lapsed)) {
+      _prefs?.setBool(_lapsedKey(feature), true);
+      analytics?.featureSwitched(feature: feature, on: false, source: .lapsed);
+    }
+  }
+
+  String _lapsedKey(Feature feature) => '$_feature-${feature.value}-lapsed';
 
   /// Whether [feature] was declined in this session and its notice is still
   /// owed. Once acknowledged, or once the session ends, never again.
@@ -634,14 +655,19 @@ class Preferences with ChangeNotifier {
   }
 
   /// The Settings switch: always live, both ways. The switch is the answer, so
-  /// it retires any offer or notice still on screen.
-  void setFeature(Feature feature, {required bool on}) {
+  /// it retires any offer or notice still on screen. With a [source] it is
+  /// someone's answer, and reported when it changed the answer.
+  void setFeature(Feature feature, {required bool on, FeatureSwitchSource? source}) {
     _offeredThisSession.remove(feature);
     _declinedThisSession.remove(feature);
-    _setFeature(feature, on: on);
+    _setFeature(feature, on: on, source: source);
   }
 
-  void _setFeature(Feature feature, {required bool on}) {
+  /// Stores the answer, and reports it as [source]'s when it changed what the
+  /// feature reads as: a yes over a yes, as an invitation accepted with Your
+  /// coach already on, answers nothing.
+  void _setFeature(Feature feature, {required bool on, FeatureSwitchSource? source}) {
+    final was = featureAnswer(feature);
     _store(
       feature,
       FeatureRecord(
@@ -654,6 +680,9 @@ class Preferences with ChangeNotifier {
         },
       ),
     );
+    if (source != null && was != featureAnswer(feature)) {
+      analytics?.featureSwitched(feature: feature, on: on, source: source);
+    }
     notifyListeners();
   }
 
@@ -687,8 +716,9 @@ class Preferences with ChangeNotifier {
   /// flipped — and turning it back on selects them all again.
   ///
   /// A change of options is a change of answer: it travels with it, at a new
-  /// time ([FeatureRecord.without]).
-  void setOption(FeatureOption option, {required bool on}) {
+  /// time ([FeatureRecord.without]). The feature turned off by it is reported
+  /// as [setFeature] reports, given a [source].
+  void setOption(FeatureOption option, {required bool on, FeatureSwitchSource? source}) {
     final feature = option.feature;
     if (!isOn(feature)) return;
     final without = {..._without(feature)};
@@ -698,7 +728,7 @@ class Preferences with ChangeNotifier {
       without.add(option);
     }
     final parts = feature.options.where((option) => !option.addOn);
-    if (parts.isNotEmpty && parts.every(without.contains)) return setFeature(feature, on: false);
+    if (parts.isNotEmpty && parts.every(without.contains)) return setFeature(feature, on: false, source: source);
     _store(feature, FeatureRecord(on: true, at: DateTime.timestamp(), without: without));
     notifyListeners();
   }

@@ -382,6 +382,11 @@ class HeartApp extends StatelessWidget {
                 Preferences.of(context).coachFingerprint(id),
               _ => null,
             },
+            analytics: analytics,
+            roleFor: (thread) {
+              final connections = Coaching.of(context).all;
+              return connections.where((each) => each.connectionId == thread.connectionId).firstOrNull?.role;
+            },
           ),
         ),
         // A coach's notes on their clients (#556): sealed for the coach's
@@ -394,6 +399,7 @@ class HeartApp extends StatelessWidget {
             cipher: DeviceKeys.of(context),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            analytics: analytics,
           ),
         ),
         // A coach's roster and feed (#559): server-only, read when the

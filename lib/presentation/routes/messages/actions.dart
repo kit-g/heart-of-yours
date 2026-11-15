@@ -67,8 +67,6 @@ class ThreadMenu extends StatelessWidget {
     final l = L.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final messages = Messages.of(context);
-    final analytics = Analytics.of(context);
-    final role = _connectionOf(context, thread.connectionId)?.role;
     final sure = await confirmDestructive(
       context,
       title: l.messagesDeleteTitle,
@@ -80,7 +78,6 @@ class ThreadMenu extends StatelessWidget {
     if (!sure) return;
     try {
       await messages.clear(thread.id);
-      analytics.conversationDeleted(role: role);
     } catch (_) {
       messenger.snack(l.messagesDeleteFailed);
     }
@@ -255,9 +252,9 @@ class _ReportSheetState extends State<_ReportSheet> {
     final _ReportSheet(:thread, :theirs, :connection, :messenger, :name) = widget;
     _sending.value = true;
     _failed.value = false;
-    final sent = _include.value ? theirs : const <Message>[];
+    final int attached;
     try {
-      await widget.messages.report(thread, reason, messages: sent);
+      attached = await widget.messages.report(thread, reason, messages: _include.value ? theirs : const []);
     } catch (_) {
       if (!mounted) {
         messenger.snack(l.reportFailed);
@@ -284,7 +281,7 @@ class _ReportSheetState extends State<_ReportSheet> {
         messenger.snack(l.reportSent);
     }
     // counted once the block, if one was asked for, is settled
-    widget.analytics.personReported(reason: reason, withMessages: sent.isNotEmpty, alsoBlocked: blocked);
+    widget.analytics.personReported(reason: reason, withMessages: attached > 0, alsoBlocked: blocked);
   }
 
   @override
