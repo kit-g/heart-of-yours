@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
@@ -382,6 +383,106 @@ void main() {
 
   _weekSync();
   _screenChoices();
+  _groupingSync();
+}
+
+void _groupingSync() {
+  group('the picker\'s grouping, a screen choice (#620)', () {
+    late Preferences preferences;
+    late _Account account;
+
+    Future<void> boot({Map<String, Object> stored = const {}}) async {
+      SharedPreferences.setMockInitialValues(stored);
+      preferences = Preferences();
+      await preferences.init();
+      account = _Account();
+      final sync = SettingsSync(preferences: preferences, auth: account);
+      addTearDown(sync.dispose);
+    }
+
+    Future<void> settle() => Future<void>.delayed(Duration.zero);
+
+    ScreenChoiceRecord? sent() => screenChoicesOf(account.saved.last)[ScreenChoice.pickerGrouping];
+
+    test('none until chosen, and a grouping from a newer app reads as none', () async {
+      await boot();
+      expect(preferences.pickerGrouping, PickerGrouping.none);
+      expect(preferences.screenChoices, isEmpty);
+
+      await boot(
+        stored: {'screen-pickerGrouping': 'equipment', 'screen-pickerGrouping-at': '2026-09-01T10:00:00.000Z'},
+      );
+      expect(preferences.pickerGrouping, PickerGrouping.none);
+      // and choosing none over it is still a choice
+      preferences.setPickerGrouping(.none);
+      expect(preferences.screenChoices[ScreenChoice.pickerGrouping]?.value, 'none');
+    });
+
+    test('a grouping picked here goes up, with the account\'s other settings intact; none travels too', () async {
+      await boot();
+      account.arrive(const Settings(themeMode: 'dark', extra: {'kept': true}));
+      await settle();
+      expect(account.saved, isEmpty);
+
+      preferences.setPickerGrouping(.category);
+      await settle();
+      expect(sent()?.value, 'category');
+      expect(account.saved.last.themeMode, 'dark');
+      expect(account.saved.last.extra['kept'], isTrue);
+
+      preferences.setPickerGrouping(.none);
+      await settle();
+      expect(sent()?.value, 'none');
+    });
+
+    test('a newer grouping from another phone comes down; an older one does not overwrite this one', () async {
+      await boot(stored: {'screen-pickerGrouping': 'movement', 'screen-pickerGrouping-at': '2026-09-10T10:00:00.000Z'});
+      account.arrive(
+        withScreenChoices(const Settings(), {
+          ScreenChoice.pickerGrouping: ScreenChoiceRecord(value: 'target', at: DateTime.utc(2026, 9, 1)),
+        }),
+      );
+      await settle();
+      expect(preferences.pickerGrouping, PickerGrouping.movement);
+      expect(sent()?.value, 'movement');
+
+      final elsewhere = DateTime.timestamp().add(const Duration(minutes: 1));
+      account.arrive(
+        withScreenChoices(const Settings(), {
+          ScreenChoice.pickerGrouping: ScreenChoiceRecord(value: 'category', at: elsewhere),
+        }),
+      );
+      await settle();
+      expect(preferences.pickerGrouping, PickerGrouping.category);
+    });
+
+    test('an anonymous session keeps its grouping on the device until there is an account', () async {
+      await boot();
+      account.isAnonymous = true;
+      account.arrive(const Settings());
+      await settle();
+
+      preferences.setPickerGrouping(.target);
+      await settle();
+      expect(account.saved, isEmpty);
+
+      account.isAnonymous = false;
+      account.arrive(const Settings());
+      await settle();
+      expect(sent()?.value, 'target');
+    });
+
+    test('fold state never leaves the device', () async {
+      await boot();
+      account.arrive(const Settings());
+      await settle();
+
+      preferences.togglePickerGroup(const TargetGroup(.chest).id);
+      await settle();
+
+      expect(account.saved, isEmpty);
+    });
+  });
 }
 
 void _weekSync() {
@@ -464,6 +565,28 @@ void _weekSync() {
 
       expect(preferences.firstWeekday, DateTime.saturday);
       expect(account.saved, isEmpty);
+    });
+
+    test('a day picked while the last one is still being written stays owed, and goes up after it', () async {
+      SharedPreferences.setMockInitialValues({});
+      preferences = Preferences();
+      await preferences.init(locale: const Locale('en', 'GB'));
+      final slow = _SlowAccount();
+      account = slow;
+      final sync = SettingsSync(preferences: preferences, auth: slow);
+      addTearDown(sync.dispose);
+      account.arrive(const Settings());
+      await settle();
+
+      preferences.setFirstWeekday(DateTime.sunday);
+      await settle();
+      preferences.setFirstWeekday(DateTime.saturday);
+      slow.release();
+      await settle();
+      await settle();
+
+      expect(preferences.firstWeekdayOwed, isFalse);
+      expect([for (final each in account.saved) each.firstWeekday], [DateTime.sunday, DateTime.saturday]);
     });
 
     test('an anonymous session keeps its day on the device, and it goes up once there is an account', () async {
@@ -593,6 +716,22 @@ void _screenChoices() {
       expect(account.saved, isEmpty);
     });
   });
+}
+
+/// Holds every write until [release]d, so a change can land while one is out.
+class _SlowAccount extends _Account {
+  var _gate = Completer<void>();
+
+  void release() {
+    _gate.complete();
+    _gate = Completer<void>()..complete();
+  }
+
+  @override
+  Future<Settings?> saveSettings(Settings settings) async {
+    await _gate.future;
+    return super.saveSettings(settings);
+  }
 }
 
 class _FailingAccount extends _Account {

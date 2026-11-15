@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show ValueListenable, listEquals;
 import 'package:heart_models/heart_models.dart';
 import 'package:intl/date_symbol_data_local.dart' show dateTimeSymbolMap;
 import 'package:intl/date_symbols.dart' show DateSymbols;
@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'analytics.dart';
 import 'features.dart';
+import 'picker_grouping.dart';
 import 'plates.dart';
 import 'warmups.dart';
 import 'rest_defaults.dart';
@@ -41,6 +42,7 @@ const _barWeight = 'barWeight';
 const _platesWithout = 'platesWithout';
 const _warmupScheme = 'warmupScheme';
 const _defaultRest = 'defaultRest';
+const _openPickerGroups = 'openPickerGroups';
 const _screen = 'screen';
 
 class Preferences with ChangeNotifier {
@@ -214,6 +216,38 @@ class Preferences with ChangeNotifier {
     notifyListeners();
   }
 
+  /// How the exercise picker groups the library (#620): the last grouping
+  /// chosen, on this device or another, or [PickerGrouping.none] — the flat
+  /// list — until there is one. A screen choice, so it travels as History's
+  /// view does.
+  PickerGrouping get pickerGrouping {
+    return PickerGrouping.fromString(_prefs?.getString('$_screen-${ScreenChoice.pickerGrouping.value}')) ?? .none;
+  }
+
+  void setPickerGrouping(PickerGrouping grouping) {
+    // what is stored, not what it reads as: a newer app's grouping reads as
+    // none here, and choosing none over it is still a choice
+    final stored = _prefs?.getString('$_screen-${ScreenChoice.pickerGrouping.value}');
+    if (stored == grouping.name || (stored == null && grouping == .none)) return;
+    _storeScreenChoice(.pickerGrouping, ScreenChoiceRecord(value: grouping.name, at: DateTime.timestamp()));
+    notifyListeners();
+  }
+
+  /// The ids ([ExerciseGroup.id]) of the picker's open groups. Groups start
+  /// folded — a screen of headings is the point of grouping 300 exercises —
+  /// and one opened stays open on this device. View state, kept like
+  /// [isFolderCollapsed] and for the same reason; it does not sync.
+  ///
+  /// A listenable of its own rather than [notifyListeners]: a fold changes
+  /// one list, and nothing else that watches the preferences.
+  ValueListenable<Set<String>> get openPickerGroups => _openGroups;
+
+  final _openGroups = ValueNotifier<Set<String>>(const {});
+
+  void togglePickerGroup(String id) {
+    _openGroups.value = _toggleInList(_openPickerGroups, id).ids;
+  }
+
   void _storeScreenChoice(ScreenChoice choice, ScreenChoiceRecord record) {
     _prefs?.setString('$_screen-${choice.value}', record.value);
     _prefs?.setString('$_screen-${choice.value}-at', record.at.toUtc().toIso8601String());
@@ -293,6 +327,7 @@ class Preferences with ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _openGroups.dispose();
     super.dispose();
   }
 
@@ -305,6 +340,7 @@ class Preferences with ChangeNotifier {
     if (_disposed) return;
 
     _isInitialized = true;
+    _openGroups.value = {...?_prefs?.getStringList(_openPickerGroups)};
     _localeFirstWeekday = localeFirstWeekday(locale);
     final unit = defaultUnit(locale?.countryCode);
     _initMeasurementUnits(
@@ -384,15 +420,19 @@ class Preferences with ChangeNotifier {
   }
 
   Future<bool>? toggleFolderCollapsed(String folderId) {
-    final collapsed = (_prefs?.getStringList(_collapsedFolders) ?? []).toSet();
-    if (!collapsed.remove(folderId)) {
-      collapsed.add(folderId);
-    }
-    // setStringList updates the in-memory cache synchronously, so listeners
-    // rebuilt by this notify already read the new state
-    final write = _prefs?.setStringList(_collapsedFolders, collapsed.toList());
+    final (ids: _, :write) = _toggleInList(_collapsedFolders, folderId);
     notifyListeners();
     return write;
+  }
+
+  /// Adds [id] to the string list stored under [key], or takes it out when it
+  /// is there: the list as it now stands, and the write. setStringList
+  /// updates the in-memory cache synchronously, so whatever this wakes
+  /// already reads the new state.
+  ({Set<String> ids, Future<bool>? write}) _toggleInList(String key, String id) {
+    final ids = {...?_prefs?.getStringList(key)};
+    if (!ids.remove(id)) ids.add(id);
+    return (ids: ids, write: _prefs?.setStringList(key, ids.toList()));
   }
 
   /// Whether the user has waved away the offer to read their health data.

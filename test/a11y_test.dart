@@ -88,6 +88,7 @@ enum _Screen {
   calendar,
   calendarDay,
   exercises,
+  exercisesGrouped,
   settings,
   anonymousSettings,
   accountManagement,
@@ -807,6 +808,21 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
 
+  // grouped by target (#620): folded headings in place of the flat list
+  (_Screen.exercisesGrouped, _Guideline.labeledTapTarget, null),
+  (_Screen.exercisesGrouped, _Guideline.textContrastLight, null),
+  (_Screen.exercisesGrouped, _Guideline.textContrastDark, null),
+  (
+    _Screen.exercisesGrouped,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.exercisesGrouped,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+
   // the unit pickers now hold back until Preferences.isInitialized (the
   // goals/row.dart pattern), so the screen renders under this harness
   (_Screen.settings, _Guideline.labeledTapTarget, null),
@@ -1301,6 +1317,15 @@ void main() {
     if (screen == _Screen.plateCalculator) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-plateCalculator': 'on'});
     }
+    if (screen == _Screen.exercisesGrouped) {
+      // one heading open and one folded, so both states are checked
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'screen-pickerGrouping': 'target',
+        'screen-pickerGrouping-at': '2026-11-01T10:00:00.000Z',
+        'openPickerGroups': ['target:chest'],
+      });
+    }
     if (screen == _Screen.templateMuscles) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
     }
@@ -1789,6 +1814,8 @@ void main() {
             _ => Future.error(const SocketException('offline')),
           },
         );
+      case _Screen.exercisesGrouped:
+        when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench, _squat]));
       case _Screen.moveHistoryDialog:
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench, _squat]));
         when(db.getExerciseUnits(any)).thenAnswer((_) async => {});
@@ -2414,6 +2441,16 @@ void main() {
         }
       case _Screen.exercises:
         await tester.tapByKey(AppKeys.exercisesStack);
+      case _Screen.exercisesGrouped:
+        // the catalog the way start-up would read it (see the upsync case)
+        unawaited(Exercises.of(tester.element(find.byType(MaterialApp))).init());
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.exercisesStack);
+        await tester.pumpTimes();
+        // Legs folded, Chest open onto its one exercise
+        expect(find.text('Legs'), findsOneWidget);
+        expect(find.text(_squat.name), findsNothing);
+        expect(find.text(_bench.name), findsOneWidget);
       case _Screen.settings || _Screen.anonymousSettings:
         await tester.tap(find.byIcon(Icons.settings_rounded));
       case _Screen.recaps:

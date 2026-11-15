@@ -143,8 +143,9 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                   ],
                 ),
                 const SizedBox(height: 24),
-                // how the screens show themselves (#609); History's view is
-                // also switched, and remembered, from History itself
+                // how the screens show themselves (#609, #620); History's view
+                // and the exercise picker's grouping are also switched, and
+                // remembered, from those screens themselves
                 _Section(
                   title: screens,
                   children: [
@@ -175,6 +176,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                         },
                       ),
                     ),
+                    const _PickerGroupingPicker(),
                   ],
                 ),
                 const SizedBox(height: 24),
