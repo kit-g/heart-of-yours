@@ -48,6 +48,25 @@ class Api
   @override
   http.Client? client;
 
+  /// The device's own name for an exercise, by id: the library's in the
+  /// user's language, or an own exercise's latest (heart-of-yours#612, #616).
+  ///
+  /// The server names the exercises inside a workout, a template or a program
+  /// from its base rows, which are English and never translated, so a Russian
+  /// phone's History and templates read in English while its library reads in
+  /// Russian. Those payloads are renamed through this before they are read.
+  /// Null, or a null answer, keeps the server's name.
+  String? Function(String exerciseId)? exerciseName;
+
+  /// Told how many exercises in the account's own history, templates or
+  /// programs [exerciseName] could not name, out of how many. Every one of
+  /// the account's exercises is in the device's catalog, the library's and
+  /// its own, so a miss is a server name in English reaching the screen:
+  /// the catalog lacks it, or is not loaded yet. Other people's workouts (a
+  /// coach's view of a student's) are renamed but not counted: their own
+  /// exercises are never on this device.
+  void Function(int unnamed, int of)? onUnnamedExercises;
+
   @override
   void authenticate(Map<String, String> headers) {
     instance.defaultHeaders = headers;
@@ -315,7 +334,7 @@ class Api
   /// row and read it off this.
   Future<({Workout row, bool created})> replayWorkout(Workout workout) async {
     final (json, created) = _created(await post(Router.workouts, body: workout.toMap()));
-    return (row: Workout.fromJson(json), created: created);
+    return (row: Workout.fromJson(_named(json)), created: created);
   }
 
   /// `201` made the row, `200` found it — by id, or by name for the two
@@ -364,9 +383,9 @@ class Api
 
   /// A refusal with a JSON body comes back from `put` and `patch` as a result,
   /// not an exception, and parsed as a workout it dies on a null `start`.
-  static Workout _workoutOr(Map<String, dynamic> json, int code) {
+  Workout _workoutOr(Map<String, dynamic> json, int code) {
     return switch (code) {
-      >= 200 && < 300 => Workout.fromJson(json),
+      >= 200 && < 300 => Workout.fromJson(_named(json)),
       _ => throw NetworkException(statusCode: code, body: json),
     };
   }
@@ -379,7 +398,7 @@ class Api
   }) async {
     final (json, code) = await get(Router.userWorkout(targetUserId, workoutId));
     return switch ((code, json)) {
-      (200, Map json) => Workout.fromJson(json),
+      (200, Map json) => Workout.fromJson(_named(json)),
       // thrown whole: the body carries a stable `code`, which is how the caller
       // tells "no such workout" apart from "not yours to see" — and both apart
       // from an outage, where nothing named comes back at all
@@ -399,7 +418,7 @@ class Api
     );
     return switch (json) {
       {'workouts': List l} => Page<Workout>(
-        items: _readable(l, Workout.fromJson),
+        items: _readable(_namedAll([...l.whereType<Map>()], counts: true), Workout.fromJson),
         hasMore: json['cursor'] != null,
       ),
       _ => null,
@@ -508,7 +527,7 @@ class Api
   Future<List<Program>> getPrograms() async {
     final (json, code) = await get(Router.programs);
     return switch ((code, json)) {
-      (200, {'programs': List l}) => [for (final each in l) Program.fromJson(each as Map)],
+      (200, {'programs': List l}) => [for (final each in l) Program.fromJson(_named(each as Map))],
       _ => throw _programError(json),
     };
   }
@@ -530,7 +549,7 @@ class Api
       (Map json, 200) => (json, false),
       (final json, _) => throw _programError(json),
     };
-    return (row: Program.fromJson(json), created: created);
+    return (row: Program.fromJson(_named(json)), created: created);
   }
 
   /// A full replace of [program]'s own fields and rules. Sessions change
@@ -538,7 +557,7 @@ class Api
   Future<Program> editProgram(Program program) async {
     final (json, code) = await put(Router.program(program.id!), body: program.toMap());
     return switch ((code, json)) {
-      (200, Map json) => Program.fromJson(json),
+      (200, Map json) => Program.fromJson(_named(json)),
       _ => throw _programError(json),
     };
   }
@@ -562,7 +581,7 @@ class Api
       body: {...template.toMap(), 'programId': programId},
     );
     return switch ((code, json)) {
-      (200, Map json) => Template.fromJson(json),
+      (200, Map json) => Template.fromJson(_named(json)),
       _ => throw _programError(json),
     };
   }
@@ -829,7 +848,7 @@ class Api
   Future<Iterable<Template>?> getTemplates() async {
     final (json, _) = await get(Router.templates);
     return switch (json) {
-      {'templates': List l} => _readable(l, Template.fromJson),
+      {'templates': List l} => _readable(_namedAll([...l.whereType<Map>()], counts: true), Template.fromJson),
       _ => null,
     };
   }
@@ -847,13 +866,13 @@ class Api
   Future<({Template row, bool created})> replayTemplate(Template template) async {
     final body = <String, dynamic>{...template.toMap(), 'folderId': ?template.folderId};
     final (json, created) = _created(await post(Router.templates, body: _withClientId(body)));
-    return (row: Template.fromJson(json), created: created);
+    return (row: Template.fromJson(_named(json)), created: created);
   }
 
   @override
   Future<Template> editTemplate(Template template) async {
     final (json, code) = await put(Router.template(template.id), body: template.toMap());
-    return Template.fromJson(json);
+    return Template.fromJson(_named(json));
   }
 
   /// Files [template] into [folderId], or unfiles it when null.
@@ -871,7 +890,7 @@ class Api
       },
     );
     return switch ((code, json)) {
-      (200, Map json) => Template.fromJson(json),
+      (200, Map json) => Template.fromJson(_named(json)),
       _ => throw json,
     };
   }
@@ -1261,6 +1280,54 @@ abstract final class Router {
 /// Only for lists the app merges into its local copy. One that replaces a
 /// local slice is read whole or not at all, because a skipped item there
 /// would delete its local copy.
+extension on Api {
+  /// [json] with every exercise in it named by [Api.exerciseName]: any map
+  /// under an `exercise` key that carries an `id`, however deep, which is how
+  /// workouts, templates and programs (whose sessions are templates) all hold
+  /// theirs. Without a namer the payload is returned as it came.
+  Map _named(Map json) => _namedAll([json]).single;
+
+  /// [_named] over a whole response, counting what it could not name when
+  /// [counts]: the account's own payloads, see [Api.onUnnamedExercises].
+  List<Map> _namedAll(List<Map> payloads, {bool counts = false}) {
+    final name = exerciseName;
+    if (name == null) return payloads;
+    final tally = (unnamed: <String>{}, of: <String>{});
+    final renamed = [for (final each in payloads) _renamed(each, name, tally) as Map];
+    if (counts && tally.unnamed.isNotEmpty) onUnnamedExercises?.call(tally.unnamed.length, tally.of.length);
+    return renamed;
+  }
+
+  Object? _renamed(Object? json, String? Function(String id) name, ({Set<String> unnamed, Set<String> of}) tally) {
+    return switch (json) {
+      Map map => {
+        for (final MapEntry(:key, :value) in map.entries)
+          key: switch ((key, value)) {
+            ('exercise', {'id': String id} && Map exercise) => {
+              ...exercise,
+              'name': _nameOf(exercise, id, name, tally),
+            },
+            _ => _renamed(value, name, tally),
+          },
+      },
+      List list => [for (final each in list) _renamed(each, name, tally)],
+      _ => json,
+    };
+  }
+
+  Object? _nameOf(
+    Map exercise,
+    String id,
+    String? Function(String id) name,
+    ({Set<String> unnamed, Set<String> of}) tally,
+  ) {
+    tally.of.add(id);
+    if (name(id) case String named) return named;
+    tally.unnamed.add(id);
+    return exercise['name'];
+  }
+}
+
 List<T> _readable<T>(List raw, T Function(Map json) parse) {
   return [
     for (final each in raw)

@@ -780,6 +780,79 @@ void main() {
       expect((result as Page<Workout>).hasMore, isTrue);
     });
 
+    group('exercise names (#612)', () {
+      // the Api is a singleton: a namer left set would rename every later test.
+      // The catalog's names are ASCII here only because this file's fake
+      // response encodes its body as Latin-1.
+      tearDown(
+        () => api
+          ..exerciseName = null
+          ..onUnnamedExercises = null,
+      );
+
+      Map<String, dynamic> workout(String id, List<(String, String)> exercises) {
+        return {
+          'id': id,
+          'name': 'Morning',
+          'start': '2025-01-21T12:00:00Z',
+          'exercises': [
+            for (final (index, (exerciseId, name)) in exercises.indexed)
+              {
+                'id': '$id-$index',
+                'exercise': {'id': exerciseId, 'name': name, 'category': 'Barbell', 'target': 'Legs'},
+                'exercise_order': index,
+                'sets': [],
+              },
+          ],
+        };
+      }
+
+      test('the catalog names what the server named in English, and counts what it could not', () async {
+        final counted = <(int, int)>[];
+        api
+          ..exerciseName = ((id) => {'squat': 'Back Squat, mine'}[id])
+          ..onUnnamedExercises = (unnamed, of) => counted.add((unnamed, of));
+        _response(
+          client: client,
+          method: 'GET',
+          path: '${Router.accounts}/u1/workouts',
+          statusCode: 200,
+          query: {},
+          body: {
+            'workouts': [
+              workout('w1', [('squat', 'Squat (Barbell)'), ('mystery', 'Mystery Lift')]),
+              workout('w2', [('squat', 'Squat (Barbell)')]),
+            ],
+          },
+        );
+
+        final [first, second] = (await api.getWorkouts('u1'))!.toList();
+
+        expect(first.map((each) => each.exercise.name), ['Back Squat, mine', 'Mystery Lift']);
+        expect(second.single.exercise.name, 'Back Squat, mine');
+        expect(counted, [(1, 2)], reason: 'one report per response, distinct exercises');
+      });
+
+      test('without a namer the server names stand, and nothing is counted', () async {
+        _response(
+          client: client,
+          method: 'GET',
+          path: '${Router.accounts}/u1/workouts',
+          statusCode: 200,
+          query: {},
+          body: {
+            'workouts': [
+              workout('w1', [('squat', 'Squat (Barbell)')]),
+            ],
+          },
+        );
+
+        final [only] = (await api.getWorkouts('u1'))!.toList();
+
+        expect(only.single.exercise.name, 'Squat (Barbell)');
+      });
+    });
+
     test('getWorkouts reports end of list when cursor is absent', () async {
       const userId = 'u1';
       _response(
