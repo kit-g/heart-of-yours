@@ -5,8 +5,8 @@ part of 'history.dart';
 ///
 /// It is the page itself, not a dialog over it, so a marked day opens its
 /// workout the way a card in the list does — [onTapWorkout], pushed on a
-/// phone and in the detail pane on a tablet — and [selectedId] marks the day
-/// the pane is showing.
+/// phone and in the detail pane on a tablet — after asking which, on a day of
+/// several (#619). [selectedId] marks the day the pane is showing.
 class HistoryCalendar extends StatefulWidget {
   /// History's workouts by month, newest first ([Workouts.byMonth]), as the
   /// page already has them.
@@ -113,8 +113,8 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
                   // day it started, even one that ran past midnight
                   final sessions = byMonth[key] ?? const <Workout>[];
                   final days = {
-                    for (final day in sessions.map((workout) => workout.start.day).toSet())
-                      day: sessions.where((workout) => workout.start.day == day).toList(),
+                    for (final day in sessions.map(_dayOf).toSet())
+                      day: sessions.where((workout) => _dayOf(workout) == day).toList(),
                   };
                   return _CalendarMonth(
                     key: ValueKey(key),
@@ -182,7 +182,7 @@ class _CalendarMonth extends StatelessWidget {
                       [_, ...] && final sessions => _MarkedDay(
                         date: label,
                         sessions: sessions,
-                        selected: sessions.any((workout) => workout.id == selectedId),
+                        selectedId: selectedId,
                         onOpen: onOpen,
                         child: number,
                       ),
@@ -204,50 +204,65 @@ class _CalendarMonth extends StatelessWidget {
   }
 }
 
+/// The day of the month a workout counts on: the one it started, on the
+/// user's clock — a start is UTC.
+int _dayOf(Workout workout) => workout.start.toLocal().day;
+
 /// A day trained: filled, and outlined while the detail pane shows one of its
 /// workouts. Marked whether or not it opens anything.
 ///
 /// One workout carries a check and opens straight away. Several carry their
 /// count (#619) and open a short list of them, earliest first, rather than
-/// silently opening one.
+/// silently opening one; the one the pane shows is checked.
 class _MarkedDay extends StatelessWidget {
   /// The day, as read out.
   final String date;
 
   /// The day's workouts, newest first, as History holds them.
   final List<Workout> sessions;
-  final bool selected;
+
+  /// The workout open in the detail pane, if any.
+  final String? selectedId;
   final void Function(Workout)? onOpen;
   final Widget child;
 
   const new({
     required this.date,
     required this.sessions,
-    required this.selected,
     required this.child,
+    this.selectedId,
     this.onOpen,
   });
 
   Future<void> _choose(BuildContext context, void Function(Workout) open) async {
-    final locale = L.of(context).localeName;
+    final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    final box = context.findRenderObject()! as RenderBox;
-    final corner = box.localToGlobal(Offset(0, box.size.height));
+    final localizations = MaterialLocalizations.of(context);
+    final h24 = MediaQuery.alwaysUse24HourFormatOf(context);
     final picked = await showMenu<Workout>(
       context: context,
-      position: RelativeRect.fromLTRB(corner.dx, corner.dy, corner.dx + box.size.width, corner.dy),
+      position: menuOver(context, context.findRenderObject()! as RenderBox),
       constraints: const BoxConstraints(minWidth: 200, maxWidth: 280),
       items: [
         for (final workout in sessions.reversed)
-          PopupMenuItem<Workout>(
+          CheckedPopupMenuItem<Workout>(
             value: workout,
+            checked: workout.id == selectedId,
             child: Column(
               crossAxisAlignment: .start,
               mainAxisSize: .min,
               children: [
-                Text(workout.name ?? '?', maxLines: 1, overflow: .ellipsis, style: textTheme.bodyLarge),
                 Text(
-                  DateFormat.jm(locale).format(workout.start),
+                  workout.name ?? l.defaultWorkoutName(workout.start),
+                  maxLines: 1,
+                  overflow: .ellipsis,
+                  style: textTheme.bodyLarge,
+                ),
+                Text(
+                  localizations.formatTimeOfDay(
+                    TimeOfDay.fromDateTime(workout.start.toLocal()),
+                    alwaysUse24HourFormat: h24,
+                  ),
                   style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                 ),
               ],
@@ -265,15 +280,16 @@ class _MarkedDay extends StatelessWidget {
     );
     final l = L.of(context);
     final several = sessions.length > 1;
-    final label = switch ((several, onOpen)) {
-      (true, _) => '$date, ${l.calendarWorkouts(sessions.length)}',
-      (false, null) => date,
-      (false, _) => '$date, ${l.editWorkout}',
-    };
-    final VoidCallback? onTap = switch ((sessions, onOpen)) {
-      (_, null) => null,
-      ([final Workout only], final void Function(Workout) open) => () => open(only),
-      (_, final void Function(Workout) open) => () => _choose(context, open),
+    final selected = sessions.any((workout) => workout.id == selectedId);
+    // one choice of what the day says and does: one workout opens, several
+    // ask which, and a day that opens nothing still says it was trained
+    final (String label, VoidCallback? onTap) = switch ((sessions, onOpen)) {
+      ([final Workout only], final void Function(Workout) open) => ('$date, ${l.editWorkout}', () => open(only)),
+      (_, final void Function(Workout) open) => (
+        '$date, ${l.calendarWorkouts(sessions.length)}',
+        () => _choose(context, open),
+      ),
+      (_, null) => ('$date, ${l.calendarWorkouts(sessions.length)}', null),
     };
     return Semantics(
       container: true,
@@ -303,10 +319,11 @@ class _MarkedDay extends StatelessWidget {
               Positioned(
                 right: -2,
                 top: -2,
+                // grows with the count's text, so a large text size never
+                // clips it
                 child: Container(
-                  constraints: const BoxConstraints(minWidth: 18),
-                  height: 18,
-                  padding: several ? const .symmetric(horizontal: 4) : .zero,
+                  constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                  padding: several ? const .symmetric(horizontal: 4, vertical: 2) : .zero,
                   alignment: .center,
                   decoration: BoxDecoration(color: primary, borderRadius: const .all(.circular(9))),
                   child: switch (several) {

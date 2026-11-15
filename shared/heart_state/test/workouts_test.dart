@@ -694,6 +694,25 @@ void main() {
       expect(sut.hasResolvedActiveWorkout, isFalse);
     });
 
+    // a start is UTC; the month is the user's (#619). Run under a zone west
+    // of Greenwich (TZ=America/Toronto) to see the two differ.
+    test('byMonth files a workout under the month it started on the user\'s clock', () async {
+      final evening = Workout(name: 'Evening')..start = DateTime(2026, 11, 30, 21).toUtc();
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [evening..finish(evening.start)]);
+      when(local.getWorkoutGallery(userId: 'u1')).thenAnswer((_) async => ProgressGalleryResponse(images: []));
+      when(
+        remote.getWorkoutGallery(cursor: anyNamed('cursor')),
+      ).thenAnswer((_) async => ProgressGalleryResponse.fromJson({'images': []}));
+
+      // the mocks are the file's: later tests count calls from here
+      addTearDown(() {
+        clearInteractions(local);
+        clearInteractions(remote);
+      });
+      await sut.initHistory();
+      expect(sut.byMonth.keys, ['2026-11']);
+    });
+
     test('initHistory: uses local if present, otherwise remote + store', () async {
       // case 1: local present
       final w1 = Workout(name: 'w1');

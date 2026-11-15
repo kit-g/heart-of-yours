@@ -287,6 +287,19 @@ RelativeRect menuUnderValue(BuildContext context, GlobalKey key, {required doubl
   return RelativeRect.fromLTRB(dx + w - width, dy + h, overlay.size.width - (dx + w), dy + h);
 }
 
+/// Where a menu opens over [box]: its rect in the navigator's overlay, which
+/// is where [showMenu] lays the menu out. The window's coordinates are not:
+/// inside the two-pane shell the overlay starts after the rail (see
+/// [menuUnderValue]).
+RelativeRect menuOver(BuildContext context, RenderBox box) {
+  final overlay = Navigator.of(context).overlay?.context.findRenderObject();
+  if (overlay is! RenderBox) return RelativeRect.fill;
+  return RelativeRect.fromRect(
+    box.localToGlobal(Offset.zero, ancestor: overlay) & box.size,
+    Offset.zero & overlay.size,
+  );
+}
+
 /// Whether the user asked for less motion: Android's "Remove animations", or
 /// iOS's Reduce Motion.
 ///

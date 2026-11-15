@@ -248,7 +248,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return history.fold<Map<String, List<Workout>>>(
       result,
       (map, workout) {
-        final date = workout.start;
+        // the user's month: a start is UTC, and an evening at the end of a
+        // month west of Greenwich is already the next one there
+        final date = workout.start.toLocal();
         final monthKey = '${date.year}-${date.month.toString().padLeft(2, '0')}';
         return map..putIfAbsent(monthKey, () => []).add(workout);
       },

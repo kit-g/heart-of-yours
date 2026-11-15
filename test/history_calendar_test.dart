@@ -122,7 +122,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.check));
     await tester.pumpAndSettle();
     expect(opened.single.name, 'Session');
-    expect(find.byType(PopupMenuItem<Workout>), findsNothing);
+    expect(find.byType(CheckedPopupMenuItem<Workout>), findsNothing);
   });
 
   for (final count in [2, 3, 4]) {
@@ -143,7 +143,7 @@ void main() {
       await tester.tap(find.bySemanticsLabel(label));
       await tester.pumpAndSettle();
       expect(opened, isEmpty);
-      final items = find.byType(PopupMenuItem<Workout>);
+      final items = find.byType(CheckedPopupMenuItem<Workout>);
       expect(items, findsNWidgets(count));
       // earliest first
       expect(tester.getTopLeft(find.text('At 7')).dy, lessThan(tester.getTopLeft(find.text('At 11')).dy));
@@ -154,17 +154,31 @@ void main() {
     });
   }
 
-  testWidgets('a workout past midnight counts on the day it started (#619)', (tester) async {
+  // Starts are UTC in the app (`DateTime.timestamp()`, ISO strings ending in
+  // Z), so these give them as UTC; run under a zone west of Greenwich
+  // (`TZ=America/Toronto`) they cross into the next UTC day.
+  testWidgets('a workout counts on the day it started on the user\'s clock (#619)', (tester) async {
     final semantics = tester.ensureSemantics();
-    final late = Workout(name: 'Late')..start = DateTime(current.year, current.month, 5, 23, 30);
+    final morning = Workout(name: 'Morning')..start = DateTime(current.year, current.month, 5, 10).toUtc();
+    final late = Workout(name: 'Late')..start = DateTime(current.year, current.month, 5, 23, 30).toUtc();
     late.finish(late.start.add(const Duration(hours: 1)));
-    await pump(tester, _Workouts()..rows[key(current)] = [late]);
+    final next = Workout(name: 'Next')..start = DateTime(current.year, current.month, 6, 8).toUtc();
+    await pump(tester, _Workouts()..rows[key(current)] = [next, late, morning]);
     final date = DateFormat.yMMMMEEEEd('en');
     expect(
-      find.bySemanticsLabel('${date.format(DateTime(current.year, current.month, 5))}, Edit Workout'),
+      find.bySemanticsLabel('${date.format(DateTime(current.year, current.month, 5))}, 2 workouts'),
       findsOneWidget,
     );
-    expect(find.bySemanticsLabel(date.format(DateTime(current.year, current.month, 6))), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('${date.format(DateTime(current.year, current.month, 6))}, Edit Workout'),
+      findsOneWidget,
+    );
+
+    // and the list tells them apart by the user's time, not UTC's
+    await tester.tap(find.bySemanticsLabel('${date.format(DateTime(current.year, current.month, 5))}, 2 workouts'));
+    await tester.pumpAndSettle();
+    expect(find.text('10:00 AM'), findsOneWidget);
+    expect(find.text('11:30 PM'), findsOneWidget);
     semantics.dispose();
   });
 
@@ -173,7 +187,7 @@ void main() {
     await pump(tester, _Workouts()..rows[key(current)] = [workout(current, 5)], opens: false);
     expect(find.byIcon(Icons.check), findsOneWidget);
     final day = tester.getSemantics(
-      find.bySemanticsLabel(DateFormat.yMMMMEEEEd('en').format(DateTime(now.year, now.month, 5))),
+      find.bySemanticsLabel('${DateFormat.yMMMMEEEEd('en').format(DateTime(now.year, now.month, 5))}, 1 workout'),
     );
     expect(day.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
     semantics.dispose();
@@ -356,6 +370,24 @@ void main() {
     await tester.pumpTimes();
     expect(find.byType(WorkoutEditor), findsOneWidget);
     expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
+  testWidgets('on a tablet the list of a day opens at the day, not a rail away (#619)', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final first = finished(current, 5);
+    final second = finished(current, 5)..start = DateTime(current.year, current.month, 5, 18);
+    await pumpApp(tester, size: const Size(1194, 834), history: [second, first]);
+    Preferences.of(tester.element(find.byType(HistoryPage))).setHistoryView(.calendar);
+    await tester.pumpTimes();
+    final label = '${DateFormat.yMMMMEEEEd('en').format(first.start)}, 2 workouts';
+    final rect = tester.getRect(day(label));
+    await tester.tap(day(label));
+    await tester.pumpTimes();
+    final items = find.byType(CheckedPopupMenuItem<Workout>);
+    expect(items, findsNWidgets(2));
+    final menu = tester.getRect(items.first);
+    expect((menu.left - rect.left).abs(), lessThan(rect.width), reason: 'menu at $menu, day at $rect');
     semantics.dispose();
   });
 
