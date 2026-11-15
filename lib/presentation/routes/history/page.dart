@@ -53,6 +53,21 @@ const _imageSize = 120.0;
 const _calendarMinHeight = 420.0;
 
 class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage>, HasHaptic {
+  // a plain flag: it only debounces a request and must never cause a frame
+  bool _pageScheduled = false;
+
+  /// While a filter is set, the rest of history is paged in (#610): what it
+  /// finds has to be found in all of it, not in the pages scrolled to. The
+  /// background backfill (#113) has usually done this already.
+  void _searchOlder(Workouts workouts) {
+    if (_pageScheduled || workouts.loadingMoreHistory || workouts.historyPageError || !workouts.hasMoreHistory) return;
+    _pageScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pageScheduled = false;
+      if (mounted && HistoryFilter.of(context).isOn) Workouts.of(context).loadMoreHistory();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData(scaffoldBackgroundColor: backgroundColor, :textTheme, :colorScheme, :sectionHeader) = Theme.of(
@@ -62,6 +77,16 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final L(:myProgression) = L.of(context);
     final workouts = Workouts.watch(context);
     final byMonth = workouts.byMonth;
+    // History narrowed to some muscle groups (#610). What a workout trained is
+    // read off the library, so the page hears when that loads.
+    final filter = HistoryFilter.watch(context);
+    context.select<Exercises, bool>((exercises) => exercises.isInitialized);
+    final lookup = Exercises.of(context).lookup;
+    final bool Function(Workout)? shows = switch (filter.isOn) {
+      true => (workout) => filter.shows(workout, lookup: lookup),
+      false => null,
+    };
+    if (filter.isOn) _searchOlder(workouts);
     // the days set aside: a program's while it is shown (Programs on, or a
     // coach's under Your coach, #593), a plain day's while "Not today" is
     // (#312); with all off, History is as it was
@@ -73,7 +98,11 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
         false => preferences.programShown(programs.programOf(skip)),
       },
     );
-    final images = workouts.images;
+    // the photo strip is the whole history's, so a filter puts it away
+    final images = switch (filter.isOn) {
+      true => const <WorkoutImage>[],
+      false => workouts.images,
+    };
     final layout = LayoutProvider.of(context);
     final view = preferences.historyView;
     final appBar = SliverAppBar(
@@ -98,6 +127,8 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
             icon: const Icon(Icons.more_time_rounded),
             onPressed: () => log(),
           ),
+        // narrows both views to some muscle groups (#610)
+        if (workouts.history.isNotEmpty || filter.isOn) _FilterButton(filter: filter, lookup: lookup),
         // the switch between the two views (#609), remembered as the
         // view History opens on
         IconButton(
@@ -131,7 +162,18 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     // built only for the view on screen: the rows are a pass over all of
     // history, and Workouts notifies every second of an active workout
     Widget listview() {
-      final items = _historyRows(byMonth, skips, partial: workouts.hasMoreHistory);
+      final items = switch (shows) {
+        // the days set aside are no workout of any group
+        final bool Function(Workout) shows => _historyRows(
+          {
+            for (final MapEntry(:key, :value) in byMonth.entries)
+              if (value.where(shows).toList() case final shown when shown.isNotEmpty) key: shown,
+          },
+          const [],
+          partial: workouts.hasMoreHistory,
+        ),
+        null => _historyRows(byMonth, skips, partial: workouts.hasMoreHistory),
+      };
       return CustomScrollView(
         // keyed by view, so switching replaces the scrollable rather than
         // handing one view's offset and physics to the other
@@ -142,6 +184,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
           appBar,
           // the one ask for suspicious entries, once there is one (#428)
           const SliverToBoxAdapter(child: _EntryReviewOffer()),
+          if (filter.isOn) SliverToBoxAdapter(child: _FilterChips(filter: filter)),
           if (images.isNotEmpty)
             SliverToBoxAdapter(
               child: Column(
@@ -193,8 +236,23 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
               ),
             ),
           if (items.isEmpty)
-            const SliverFillRemaining(
-              child: _EmptyState(),
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: switch ((filter.isOn, workouts.hasMoreHistory, workouts.historyPageError)) {
+                (false, _, _) => const _EmptyState(),
+                // nothing yet, and older pages still to look through
+                (true, true, false) => const _Searching(),
+                // and one of them would not come: no saying there is nothing
+                (true, true, true) => Center(
+                  child: _HistoryTail(
+                    loading: false,
+                    error: true,
+                    hasMore: true,
+                    onRetry: () => Workouts.of(context).loadMoreHistory(),
+                  ),
+                ),
+                (true, false, _) => _FilteredEmpty(onClear: filter.clear),
+              },
             )
           else
             SliverList.builder(
@@ -255,6 +313,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
         slivers: [
           appBar,
           const SliverToBoxAdapter(child: _EntryReviewOffer()),
+          if (filter.isOn) SliverToBoxAdapter(child: _FilterChips(filter: filter)),
           SliverLayoutBuilder(
             builder: (context, constraints) {
               final remaining = constraints.viewportMainAxisExtent - constraints.precedingScrollExtent;
@@ -266,6 +325,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                   child: HistoryCalendar(
                     key: AppKeys.historyCalendar,
                     byMonth: byMonth,
+                    shows: shows,
                     onTapWorkout: widget.onTapWorkout,
                     selectedId: widget.selectedId,
                     controller: Scrolls.of(context).historyCalendarScrollController,
@@ -387,7 +447,10 @@ class _Placeholder extends StatelessWidget {
   final String title;
   final String body;
 
-  const new({super.key, required this.title, required this.body});
+  /// The way out of the state, under its words.
+  final Widget? action;
+
+  const new({super.key, required this.title, required this.body, this.action});
 
   @override
   Widget build(BuildContext context) {
@@ -413,6 +476,7 @@ class _Placeholder extends StatelessWidget {
                 style: textTheme.bodyLarge,
                 textAlign: .center,
               ),
+              ?action,
             ],
           ),
         ),

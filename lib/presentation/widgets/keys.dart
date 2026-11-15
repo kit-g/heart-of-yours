@@ -28,6 +28,14 @@ abstract final class AppKeys {
   static const historyCalendar = Key('History.calendar');
   static const historyViewSetting = Key('Settings.historyView');
 
+  /// History's muscle-group filter (#610): the button, a group in its menu,
+  /// the chips of the groups set, and the empty state with its way out.
+  static const historyFilter = Key('History.filter');
+  static Key historyFilterGroup(String group) => Key('History.filter.$group');
+  static const historyFilterChips = Key('History.filter.chips');
+  static const historyFilterEmpty = Key('History.filter.empty');
+  static const historyFilterClear = Key('History.filter.clear');
+
   /// Dismisses a two-pane detail. Distinct from a back button: it clears the
   /// selection rather than popping a route.
   static const closeDetail = Key('AppFrame.closeDetail');

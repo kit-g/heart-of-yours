@@ -88,6 +88,8 @@ enum _Screen {
   calendar,
   calendarDay,
   pastWorkoutsOffer,
+  historyFilterMenu,
+  historyFiltered,
   exercises,
   exercisesGrouped,
   settings,
@@ -695,6 +697,19 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Guideline.iosTapTarget,
     'the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart), as in every FeatureOffer, are below 44x44 — visual-density change, out of scope',
   ),
+
+  // the muscle-group filter (#610): its menu of groups, and History under a
+  // filter that matches nothing — the chips, and the way out
+  (_Screen.historyFilterMenu, _Guideline.labeledTapTarget, null),
+  (_Screen.historyFilterMenu, _Guideline.textContrastLight, null),
+  (_Screen.historyFilterMenu, _Guideline.textContrastDark, null),
+  (_Screen.historyFilterMenu, _Guideline.androidTapTarget, null),
+  (_Screen.historyFilterMenu, _Guideline.iosTapTarget, null),
+  (_Screen.historyFiltered, _Guideline.labeledTapTarget, null),
+  (_Screen.historyFiltered, _Guideline.textContrastLight, null),
+  (_Screen.historyFiltered, _Guideline.textContrastDark, null),
+  (_Screen.historyFiltered, _Guideline.androidTapTarget, null),
+  (_Screen.historyFiltered, _Guideline.iosTapTarget, null),
 
   (_Screen.history, _Guideline.labeledTapTarget, null),
   (_Screen.history, _Guideline.textContrastLight, null),
@@ -2475,6 +2490,24 @@ void main() {
         // workouts, and starting another (#618)
         expect(find.byType(PopupMenuItem<Object>), findsNWidgets(3));
         expect(find.byKey(AppKeys.calendarStart), findsOneWidget);
+      case _Screen.historyFilterMenu || _Screen.historyFiltered:
+        final completed = Workout.fromJson(_unsynced().toMap());
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
+        when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
+            .thenAnswer((_) async => [completed]);
+        await tester.tapByKey(AppKeys.historyStack);
+        await tester.pumpTimes();
+        if (screen == _Screen.historyFilterMenu) {
+          await tester.tapByKey(AppKeys.historyFilter);
+          await tester.pumpTimes();
+          expect(find.byType(CheckedPopupMenuItem<MuscleGroupKey>), findsNWidgets(10));
+        } else {
+          // a group nothing here trained: the chips, and nothing matches
+          HistoryFilter.of(tester.element(find.byType(MaterialApp))).toggle(.neck);
+          await tester.pumpTimes();
+          expect(find.byKey(AppKeys.historyFilterChips), findsOneWidget);
+          expect(find.byKey(AppKeys.historyFilterEmpty), findsOneWidget);
+        }
       case _Screen.calendar:
         final completed = Workout.fromJson(_unsynced().toMap());
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);

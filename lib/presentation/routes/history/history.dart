@@ -42,6 +42,7 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'entry_review_page.dart';
+part 'filter.dart';
 part 'page.dart';
 part 'skip_item.dart';
 part 'skip_page.dart';

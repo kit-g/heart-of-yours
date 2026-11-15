@@ -184,6 +184,8 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        // History's muscle-group filter (#610): for the run, never stored
+        ChangeNotifierProvider<HistoryFilter>(create: (_) => HistoryFilter()),
         ChangeNotifierProvider<Templates>(
           create: (context) => Templates(
             service: db,

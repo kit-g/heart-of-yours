@@ -12,10 +12,17 @@ part of 'history.dart';
 /// today starts or logs one, and a trained day can take another. Logging is
 /// Past workouts' (#530), so it is there only while that is on; the first
 /// tap of an empty past day while it was never asked about is its one ask.
+///
+/// Under History's muscle-group filter (#610) only the workouts [shows] lets
+/// through mark a day. A day whose workouts it all leaves out reads as plain
+/// and does nothing: it is not empty, so it never offers to log as if it were.
 class HistoryCalendar extends StatefulWidget {
   /// History's workouts by month, newest first ([Workouts.byMonth]), as the
   /// page already has them.
   final Map<String, List<Workout>> byMonth;
+
+  /// Which workouts mark their day, under History's filter (#610); null, all.
+  final bool Function(Workout)? shows;
 
   final void Function(Workout)? onTapWorkout;
 
@@ -35,6 +42,7 @@ class HistoryCalendar extends StatefulWidget {
   const new({
     super.key,
     required this.byMonth,
+    this.shows,
     this.onTapWorkout,
     this.selectedId,
     this.controller,
@@ -210,14 +218,20 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
                   // newest first, as byMonth has them; a workout counts on the
                   // day it started, even one that ran past midnight
                   final sessions = byMonth[key] ?? const <Workout>[];
+                  final shown = switch (widget.shows) {
+                    final bool Function(Workout) shows => sessions.where(shows).toList(),
+                    null => sessions,
+                  };
                   final days = {
-                    for (final day in sessions.map(_dayOf).toSet())
-                      day: sessions.where((workout) => _dayOf(workout) == day).toList(),
+                    for (final day in shown.map(_dayOf).toSet())
+                      day: shown.where((workout) => _dayOf(workout) == day).toList(),
                   };
                   return _CalendarMonth(
                     key: ValueKey(key),
                     month: month,
                     days: days,
+                    // trained, but none of it under the filter
+                    hidden: sessions.map(_dayOf).toSet().difference(days.keys.toSet()),
                     firstWeekday: firstWeekday,
                     selectedId: widget.selectedId,
                     actions: actions,
@@ -236,6 +250,9 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
 class _CalendarMonth extends StatelessWidget {
   final DateTime month;
   final Map<int, List<Workout>> days;
+
+  /// Days trained whose workouts the filter all leaves out (#610).
+  final Set<int> hidden;
   final int firstWeekday;
   final String? selectedId;
   final _DayActions actions;
@@ -245,6 +262,7 @@ class _CalendarMonth extends StatelessWidget {
     super.key,
     required this.month,
     required this.days,
+    this.hidden = const {},
     required this.firstWeekday,
     required this.actions,
     required this.today,
@@ -283,6 +301,7 @@ class _CalendarMonth extends StatelessWidget {
                       date: date,
                       label: label,
                       sessions: days[day] ?? const [],
+                      filteredOut: hidden.contains(day),
                       when: switch (date.compareTo(today)) {
                         < 0 => .past,
                         0 => .today,
@@ -349,8 +368,12 @@ class _CalendarDay extends StatelessWidget {
   /// The day, as read out: its full date.
   final String label;
 
-  /// The day's workouts, newest first, as History holds them.
+  /// The day's workouts, newest first, as History holds them: those the
+  /// filter lets through, while one is set (#610).
   final List<Workout> sessions;
+
+  /// Whether the day holds workouts the filter all leaves out (#610).
+  final bool filteredOut;
   final _When when;
 
   /// The workout open in the detail pane, if any.
@@ -362,6 +385,7 @@ class _CalendarDay extends StatelessWidget {
     required this.date,
     required this.label,
     required this.sessions,
+    this.filteredOut = false,
     required this.when,
     required this.actions,
     required this.child,
@@ -440,8 +464,8 @@ class _CalendarDay extends StatelessWidget {
             },
             Text(switch ((extra, sessions.isEmpty)) {
               (.start, _) => l.startNewWorkout,
-              (.log, true) => l.calendarLogOnDay,
-              (.log, false) => l.calendarAddAnother,
+              (.log, true) when !filteredOut => l.calendarLogOnDay,
+              (.log, _) => l.calendarAddAnother,
             }),
           ),
       ],
@@ -474,7 +498,7 @@ class _CalendarDay extends StatelessWidget {
       ),
       ([_, ...], _) => (l.calendarDayWorkouts(day, sessions.length), null),
       ([], _) => switch (when) {
-        .past when !_known => (day, null),
+        .past when !_known || filteredOut => (day, null),
         .past => switch ((actions.log, actions.askToLog)) {
           (final log?, _) => (l.calendarDayLog(day), () => log(date)),
           (null, final ask?) => (l.calendarDayLog(day), () => ask(date)),
