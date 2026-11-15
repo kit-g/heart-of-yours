@@ -1144,6 +1144,30 @@ void main() {
       expect(asks(), before, reason: 'the key is here');
     });
 
+    test("one's own device asks again as soon as one of the account's could answer it", () async {
+      final phone = device('dana');
+      final student = device('sam');
+      await phone.start('dana');
+      await student.start('sam');
+      final sealed = await phone.seal(thread, 'from the phone');
+      await phone.share(thread, userId: 'sam');
+      answering(phone);
+      final tablet = device('dana');
+      await tablet.start('dana');
+      final items = [item('m1', sealed, 'dana')];
+
+      // nothing of the account's is trusted yet: no request goes, and none
+      // is counted as asked
+      await tablet.ask(thread, items);
+      await approve(phone, tablet);
+      await tablet.ask(thread, items);
+      await phone.receive();
+      await tablet.receive();
+
+      expect(((await tablet.open(thread, items)).single as Opened).text, 'from the phone');
+      expect(errors, isEmpty);
+    });
+
     test('a key asked for stays asked for across a relaunch', () async {
       final vault = _Vault();
       final coach = device('dana');

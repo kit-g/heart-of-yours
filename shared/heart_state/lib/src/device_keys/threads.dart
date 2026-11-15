@@ -382,34 +382,10 @@ extension _Threads on DeviceKeys {
     for (final MapEntry(key: sender, value: sessions) in wanted.entries) {
       final own = sender == run.userId;
       for (final batch in _batches(sessions.toList(), _keysPerAsk)) {
-        try {
-          await deliver(
-            userId: sender,
-            kind: DeviceKeys.threadKeyRequestKind,
-            payload: jsonEncode({'t': threadId, 's': batch}),
-            fingerprint: switch (own) {
-              true => null,
-              false => fingerprint,
-            },
-            // only a device whose keys this one would take could have made
-            // them: the account's own once trusted, the other person's once
-            // the fingerprint anchored them, and any of theirs without one
-            to: (device) => device.trusted || (!own && fingerprint == null),
-          );
-        } on Map catch (refusal, stacktrace) {
-          switch (refusal) {
-            // someone this account can no longer reach, as under a block or
-            // after their account went: nothing to report
-            case {'code': 'forbidden' || 'not_found' || 'bad_request'}:
-              break;
-            default:
-              _report(refusal, stacktrace);
-          }
-        } on _Stopped {
-          rethrow;
-        } catch (error, stacktrace) {
-          _report(error, stacktrace);
-        }
+        final asked = await _askOnce(run, sender, threadId, batch, own ? null : fingerprint, own: own);
+        // a request that reached no device, as when none of the account's own
+        // is trusted yet, is asked again as soon as one could answer it
+        if (!asked) continue;
         await _serial(run, () async {
           final latest = await _Asked.read(run, threadId);
           latest.at.removeWhere((_, at) => now.difference(at) >= _askAgain);
@@ -417,6 +393,47 @@ extension _Threads on DeviceKeys {
           await latest.save(run);
         });
       }
+    }
+  }
+
+  /// Sends one request for [sessions] to [sender]'s devices: answers whether it
+  /// counts as asked, which is when it reached a device or failed. A failure is
+  /// reported, unless [sender] can no longer be reached at all.
+  Future<bool> _askOnce(
+    _Run run,
+    String sender,
+    String threadId,
+    List<String> sessions,
+    String? fingerprint, {
+    required bool own,
+  }) async {
+    try {
+      final reached = await deliver(
+        userId: sender,
+        kind: DeviceKeys.threadKeyRequestKind,
+        payload: jsonEncode({'t': threadId, 's': sessions}),
+        fingerprint: fingerprint,
+        // only a device whose keys this one would take could have made them:
+        // the account's own once trusted, the other person's once the
+        // fingerprint anchored them, and any of theirs without one
+        to: (device) => device.trusted || (!own && fingerprint == null),
+      );
+      return reached.isNotEmpty;
+    } on Map catch (refusal, stacktrace) {
+      switch (refusal) {
+        // someone this account can no longer reach, as under a block or after
+        // their account went: nothing to report
+        case {'code': 'forbidden' || 'not_found' || 'bad_request'}:
+          break;
+        default:
+          _report(refusal, stacktrace);
+      }
+      return true;
+    } on _Stopped {
+      rethrow;
+    } catch (error, stacktrace) {
+      _report(error, stacktrace);
+      return true;
     }
   }
 
