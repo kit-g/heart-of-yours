@@ -75,7 +75,7 @@ void main() {
     });
 
     test('the create carries the instructions (#621)', () async {
-      final exercise = custom().withInstructionsForTest('Low pulley, step out.');
+      final exercise = Exercise.fromJson({...custom().toMap(), 'instructions': 'Low pulley, step out.'});
       _post(client, Router.exercises, 201, exercise.toMap());
 
       await api.replayExercise(exercise);
@@ -339,7 +339,3 @@ class _Response(
   super.statusCode, {
   required super.request,
 }) extends http.Response;
-
-extension on Exercise {
-  Exercise withInstructionsForTest(String text) => Exercise.fromJson({...toMap(), 'instructions': text});
-}

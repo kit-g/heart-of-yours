@@ -291,6 +291,32 @@ void main() {
       expect(Exercises.of(context).lookup(own.id)?.hasInfo, isFalse, reason: 'no About tab for nothing');
     });
 
+    testWidgets('signed in, emptying the instructions says they stay, and Save stays off', (tester) async {
+      await harness.pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: MockFirebaseAuth(
+          mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+          signedIn: true,
+        ),
+        settle: false,
+      );
+      await tester.pumpTimes();
+      final context = tester.element(find.byType(Scaffold).first);
+      final described = Exercise.fromJson({...own.toMap(), 'instructions': 'Knee on a pad.'});
+      unawaited(showNewExerciseDialog(context, editable: described));
+      await tester.pumpTimes();
+
+      final field = find.byKey(AppKeys.newExerciseInstructions);
+      await tester.ensureVisible(field);
+      await tester.enterTextAndWait(field, '');
+
+      expect(find.text('Instructions can be changed, not removed yet'), findsOneWidget);
+      expect((save(tester) as PrimaryButton).onPressed, isNull);
+    });
+
     testWidgets("a library exercise's name is not a field", (tester) async {
       await pumpToEdit(tester, Exercise.fromJson({...own.toMap(), 'own': 0}));
 

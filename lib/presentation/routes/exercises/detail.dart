@@ -60,7 +60,9 @@ class ExerciseDetailPage extends StatelessWidget {
     // the current copy, so an edit made from this page — a rename, a new
     // target (#616) — shows at once, and the menu acts on what is shown
     final current = Exercises.watch(context).lookup(exercise.id) ?? exercise;
-    final key = ValueKey(current.id);
+    // and by whether it has info: an own exercise gains or loses its About tab
+    // with its instructions (#621), and the tab controller is sized once
+    final key = ValueKey((current.id, current.hasInfo));
 
     return switch (Theme.of(context).platform) {
       .iOS || .macOS => _CupertinoExerciseDetailPage(
