@@ -21,6 +21,10 @@ abstract final class AppKeys {
   /// History's switch between the list and the calendar, and the calendar
   /// itself (#609).
   static const historyViewSwitch = Key('History.view.switch');
+
+  /// A calendar day's list (#618): start a workout today, log one on the day.
+  static const calendarStart = Key('History.calendar.start');
+  static const calendarLog = Key('History.calendar.log');
   static const historyCalendar = Key('History.calendar');
   static const historyViewSetting = Key('Settings.historyView');
 
@@ -87,6 +91,12 @@ abstract final class AppKeys {
   static const copyForAiOffer = ValueKey('copyForAiOffer');
   static const copyForAiAccept = ValueKey('copyForAiAccept');
   static const copyForAiDecline = ValueKey('copyForAiDecline');
+
+  /// The one ask for Past workouts (#618), on the first tap of an empty past
+  /// day in History's calendar.
+  static const pastWorkoutsOffer = ValueKey('pastWorkoutsOffer');
+  static const pastWorkoutsAccept = ValueKey('pastWorkoutsAccept');
+  static const pastWorkoutsDecline = ValueKey('pastWorkoutsDecline');
   static const copyForAiHistory = ValueKey('copyForAiHistory');
   static const copyForAiExercise = ValueKey('copyForAiExercise');
   static const copyForAiSheet = ValueKey('copyForAiSheet');

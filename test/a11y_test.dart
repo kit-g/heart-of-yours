@@ -87,6 +87,7 @@ enum _Screen {
   notTodaySheet,
   calendar,
   calendarDay,
+  pastWorkoutsOffer,
   exercises,
   exercisesGrouped,
   settings,
@@ -678,6 +679,22 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.calendarDay, _Guideline.textContrastDark, null),
   (_Screen.calendarDay, _Guideline.androidTapTarget, null),
   (_Screen.calendarDay, _Guideline.iosTapTarget, null),
+
+  // the one ask for Past workouts (#618), on the first tap of an empty past
+  // day in the calendar
+  (_Screen.pastWorkoutsOffer, _Guideline.labeledTapTarget, null),
+  (_Screen.pastWorkoutsOffer, _Guideline.textContrastLight, null),
+  (_Screen.pastWorkoutsOffer, _Guideline.textContrastDark, null),
+  (
+    _Screen.pastWorkoutsOffer,
+    _Guideline.androidTapTarget,
+    'the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart), as in every FeatureOffer, are below 48x48 — visual-density change, out of scope',
+  ),
+  (
+    _Screen.pastWorkoutsOffer,
+    _Guideline.iosTapTarget,
+    'the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart), as in every FeatureOffer, are below 44x44 — visual-density change, out of scope',
+  ),
 
   (_Screen.history, _Guideline.labeledTapTarget, null),
   (_Screen.history, _Guideline.textContrastLight, null),
@@ -2426,6 +2443,20 @@ void main() {
         // the row is only honest if it is the move it checked
         expect(find.textContaining('next time'), findsOneWidget);
         expect(find.textContaining('Keep'), findsOneWidget);
+      case _Screen.pastWorkoutsOffer:
+        // a month back, so last month is drawn too: a past day to tap even
+        // on the first of the month
+        final older = _unsynced()..start = DateTime.now().subtract(const Duration(days: 40));
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [older]);
+        when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
+            .thenAnswer((_) async => [older]);
+        await tester.tapByKey(AppKeys.historyStack);
+        await tester.pumpTimes();
+        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
+        await tester.pumpTimes();
+        await tester.tap(find.bySemanticsLabel(RegExp(r', log a workout on this day$')).first);
+        await tester.pumpTimes();
+        expect(find.byKey(AppKeys.pastWorkoutsOffer), findsOneWidget);
       case _Screen.calendarDay:
         // both early today, so the two can never fall either side of midnight
         final today = DateTime.now();
@@ -2440,8 +2471,10 @@ void main() {
         await tester.pumpTimes();
         await tester.tap(find.bySemanticsLabel(RegExp(r', 2 workouts$')));
         await tester.pumpTimes();
-        // the screen is only honest if the list is open on it
-        expect(find.byType(PopupMenuItem<Workout>), findsNWidgets(2));
+        // the screen is only honest if the list is open on it: today's two
+        // workouts, and starting another (#618)
+        expect(find.byType(PopupMenuItem<Object>), findsNWidgets(3));
+        expect(find.byKey(AppKeys.calendarStart), findsOneWidget);
       case _Screen.calendar:
         final completed = Workout.fromJson(_unsynced().toMap());
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);

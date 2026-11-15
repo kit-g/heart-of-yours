@@ -1,5 +1,6 @@
 import 'dart:ui' show Tristate;
 
+import 'package:clock/clock.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,7 +44,14 @@ class _Workouts extends Workouts {
 }
 
 void main() {
-  final now = DateTime.now();
+  // A fixed day, mid-month, read through package:clock as the calendar reads
+  // it: no fixture's day is "today" by accident (#618), whatever day the
+  // suite runs on.
+  final now = DateTime(2026, 11, 20, 12);
+  void testCalendar(String description, WidgetTesterCallback body) {
+    testWidgets(description, (tester) => withClock(Clock.fixed(now), () => body(tester)));
+  }
+
   final current = DateTime(now.year, now.month);
   final previous = DateTime(now.year, now.month - 1);
   final before = DateTime(now.year, now.month - 2);
@@ -58,11 +66,14 @@ void main() {
     int? firstWeekday,
     void Function(Workout)? onTapWorkout,
     bool opens = true,
+    void Function(DateTime)? onLogOn,
+    VoidCallback? onStartWorkout,
+    Map<String, Object> stored = const {},
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    SharedPreferences.setMockInitialValues({'firstWeekday': ?firstWeekday});
+    SharedPreferences.setMockInitialValues({'firstWeekday': ?firstWeekday, ...stored});
     final preferences = Preferences();
     await tester.runAsync(() => preferences.init(locale: locale));
     await tester.pumpWidget(
@@ -83,6 +94,8 @@ void main() {
                   true => onTapWorkout ?? (_) {},
                   false => null,
                 },
+                onLogOn: onLogOn,
+                onStartWorkout: onStartWorkout,
               ),
             ),
           ),
@@ -97,7 +110,7 @@ void main() {
     (widget) => widget is Text && widget.data == '$count' && widget.style?.fontWeight == FontWeight.w700,
   );
 
-  testWidgets('one mark per completed day; empty days have no action', (tester) async {
+  testCalendar('one mark per completed day; empty days have no action', (tester) async {
     final semantics = tester.ensureSemantics();
 
     final workouts = _Workouts()..rows[key(current)] = [workout(current, 5), workout(current, 5), workout(current, 8)];
@@ -106,7 +119,7 @@ void main() {
     expect(find.byIcon(Icons.check), findsOneWidget);
     expect(badge(2), findsOneWidget);
     final marked = tester.getSemantics(
-      find.bySemanticsLabel('${DateFormat.yMMMMEEEEd('en').format(DateTime(now.year, now.month, 8))}, Edit Workout'),
+      find.bySemanticsLabel('${DateFormat.yMMMMEEEEd('en').format(DateTime(now.year, now.month, 8))}, edit workout'),
     );
     expect(marked.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
     final empty = tester.getSemantics(
@@ -116,17 +129,17 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('one workout opens straight away, its day announced as one to edit (#619)', (tester) async {
+  testCalendar('one workout opens straight away, its day announced as one to edit (#619)', (tester) async {
     final opened = <Workout>[];
     await pump(tester, _Workouts()..rows[key(current)] = [workout(current, 5)], onTapWorkout: opened.add);
     await tester.tap(find.byIcon(Icons.check));
     await tester.pumpAndSettle();
     expect(opened.single.name, 'Session');
-    expect(find.byType(PopupMenuItem<Workout>), findsNothing);
+    expect(find.byType(PopupMenuItem<Object>), findsNothing);
   });
 
   for (final count in [2, 3, 4]) {
-    testWidgets('a day of $count workouts shows and announces its count, and asks which (#619)', (tester) async {
+    testCalendar('a day of $count workouts shows and announces its count, and asks which (#619)', (tester) async {
       final semantics = tester.ensureSemantics();
       final sessions = [
         for (final hour in List.generate(count, (i) => 7 + i * 4))
@@ -143,7 +156,7 @@ void main() {
       await tester.tap(find.bySemanticsLabel(label));
       await tester.pumpAndSettle();
       expect(opened, isEmpty);
-      final items = find.byType(PopupMenuItem<Workout>);
+      final items = find.byType(PopupMenuItem<Object>);
       expect(items, findsNWidgets(count));
       // earliest first
       expect(tester.getTopLeft(find.text('At 7')).dy, lessThan(tester.getTopLeft(find.text('At 11')).dy));
@@ -157,7 +170,7 @@ void main() {
   // Starts are UTC in the app (`DateTime.timestamp()`, ISO strings ending in
   // Z), so these give them as UTC; run under a zone west of Greenwich
   // (`TZ=America/Toronto`) they cross into the next UTC day.
-  testWidgets('a workout counts on the day it started on the user\'s clock (#619)', (tester) async {
+  testCalendar('a workout counts on the day it started on the user\'s clock (#619)', (tester) async {
     final semantics = tester.ensureSemantics();
     final morning = Workout(name: 'Morning')..start = DateTime(current.year, current.month, 5, 10).toUtc();
     final late = Workout(name: 'Late')..start = DateTime(current.year, current.month, 5, 23, 30).toUtc();
@@ -170,7 +183,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel('${date.format(DateTime(current.year, current.month, 6))}, Edit Workout'),
+      find.bySemanticsLabel('${date.format(DateTime(current.year, current.month, 6))}, edit workout'),
       findsOneWidget,
     );
 
@@ -182,7 +195,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('a trained day is marked even where it opens nothing', (tester) async {
+  testCalendar('a trained day is marked even where it opens nothing', (tester) async {
     final semantics = tester.ensureSemantics();
     await pump(tester, _Workouts()..rows[key(current)] = [workout(current, 5)], opens: false);
     expect(find.byIcon(Icons.check), findsOneWidget);
@@ -193,7 +206,164 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('empty intervening month renders; scrolling stops at loaded window', (tester) async {
+  group('a day is a way in (#618)', () {
+    // built in the tests, once the app has loaded its locale data
+    String said(int day) => DateFormat.yMMMMEEEEd('en').format(DateTime(now.year, now.month, day));
+    const on = {'feature-pastWorkouts': 'on'};
+    const off = {'feature-pastWorkouts': 'off'};
+
+    testCalendar('with Past workouts on, an empty past day logs a workout on it', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final logged = <DateTime>[];
+      await pump(tester, _Workouts(), onLogOn: logged.add, stored: on);
+      await tester.tap(find.bySemanticsLabel('${said(10)}, log a workout on this day'));
+      await tester.pumpAndSettle();
+      expect(logged, [DateTime(now.year, now.month, 10)]);
+      semantics.dispose();
+    });
+
+    testCalendar('never asked, the first empty past day asks; yes turns it on and logs that day', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final logged = <DateTime>[];
+      await pump(tester, _Workouts(), onLogOn: logged.add);
+      await tester.tap(find.bySemanticsLabel('${said(10)}, log a workout on this day'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(AppKeys.pastWorkoutsOffer), findsOneWidget);
+      expect(logged, isEmpty);
+
+      await tester.tap(find.byKey(AppKeys.pastWorkoutsAccept));
+      await tester.pumpAndSettle();
+      final preferences = Preferences.of(tester.element(find.byType(HistoryCalendar)));
+      expect(preferences.isOn(.pastWorkouts), isTrue);
+      expect(logged, [DateTime(now.year, now.month, 10)]);
+      semantics.dispose();
+    });
+
+    testCalendar('a no is told once where the switch is, and the day then offers nothing', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final logged = <DateTime>[];
+      await pump(tester, _Workouts(), onLogOn: logged.add);
+      await tester.tap(find.bySemanticsLabel('${said(10)}, log a workout on this day'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.pastWorkoutsDecline));
+      await tester.pumpAndSettle();
+      final l = L.of(tester.element(find.byType(HistoryCalendar)));
+      expect(find.text(l.featureDeclinedNotice), findsOneWidget);
+      expect(logged, isEmpty);
+      final preferences = Preferences.of(tester.element(find.byType(HistoryCalendar)));
+      expect(preferences.featureAnswer(.pastWorkouts), FeatureAnswer.off);
+
+      final day = tester.getSemantics(find.bySemanticsLabel(said(10)));
+      expect(day.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
+      semantics.dispose();
+    });
+
+    testCalendar('with Past workouts off, an empty past day does nothing', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester, _Workouts(), onLogOn: (_) => fail('logged'), stored: off);
+      final day = tester.getSemantics(find.bySemanticsLabel(said(10)));
+      expect(day.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
+      semantics.dispose();
+    });
+
+    testCalendar('today starts a workout, or logs one while Past workouts is on', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final logged = <DateTime>[];
+      var started = 0;
+      await pump(tester, _Workouts(), onLogOn: logged.add, onStartWorkout: () => started++, stored: on);
+      await tester.tap(find.bySemanticsLabel('${said(20)}, today'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(AppKeys.calendarStart), findsOneWidget);
+      await tester.tap(find.byKey(AppKeys.calendarLog));
+      await tester.pumpAndSettle();
+      expect(logged, [DateTime(now.year, now.month, 20)]);
+
+      await tester.tap(find.bySemanticsLabel('${said(20)}, today'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.calendarStart));
+      await tester.pumpAndSettle();
+      expect(started, 1);
+      semantics.dispose();
+    });
+
+    testCalendar('with Past workouts off, today only starts one', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester, _Workouts(), onLogOn: (_) => fail('logged'), onStartWorkout: () {}, stored: off);
+      await tester.tap(find.bySemanticsLabel('${said(20)}, today'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(AppKeys.calendarStart), findsOneWidget);
+      expect(find.byKey(AppKeys.calendarLog), findsNothing);
+      semantics.dispose();
+    });
+
+    testCalendar('a trained day offers its workout and another one on it', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final logged = <DateTime>[];
+      final opened = <Workout>[];
+      await pump(
+        tester,
+        _Workouts()..rows[key(current)] = [workout(current, 5)],
+        onTapWorkout: opened.add,
+        onLogOn: logged.add,
+        stored: on,
+      );
+      await tester.tap(find.bySemanticsLabel('${said(5)}, 1 workout'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PopupMenuItem<Object>), findsNWidgets(2));
+      expect(find.text('Add another'), findsOneWidget);
+      await tester.tap(find.byKey(AppKeys.calendarLog));
+      await tester.pumpAndSettle();
+      expect(logged, [DateTime(now.year, now.month, 5)]);
+      expect(opened, isEmpty);
+      semantics.dispose();
+    });
+
+    testCalendar('a day before the oldest workout fetched is not taken for empty while more is to come', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pump(
+        tester,
+        _Workouts()
+          ..more = true
+          ..rows[key(current)] = [workout(current, 15)],
+        onLogOn: (_) {},
+        stored: on,
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(said(10))).getSemanticsData().hasAction(SemanticsAction.tap),
+        isFalse,
+      );
+      expect(find.bySemanticsLabel('${said(18)}, log a workout on this day'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testCalendar('a day that opens nothing lists no workouts, only what it can do', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(
+        tester,
+        _Workouts()..rows[key(current)] = [workout(current, 5)],
+        opens: false,
+        onLogOn: (_) {},
+        stored: on,
+      );
+      await tester.tap(find.bySemanticsLabel('${said(5)}, 1 workout'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PopupMenuItem<Object>), findsOneWidget);
+      expect(find.byKey(AppKeys.calendarLog), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testCalendar('a future day does nothing', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester, _Workouts(), onLogOn: (_) => fail('logged'), onStartWorkout: () {}, stored: on);
+      final day = tester.getSemantics(find.bySemanticsLabel(said(25)));
+      expect(day.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
+      semantics.dispose();
+    });
+  });
+
+  testCalendar('empty intervening month renders; scrolling stops at loaded window', (tester) async {
     final workouts = _Workouts()
       ..rows[key(current)] = [workout(current, 5)]
       ..rows[key(before)] = [workout(before, 5)];
@@ -205,7 +375,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('oldest month requests once, never while loading or erroring; retry is explicit', (tester) async {
+  testCalendar('oldest month requests once, never while loading or erroring; retry is explicit', (tester) async {
     final workouts = _Workouts()
       ..more = true
       ..rows[key(current)] = [workout(current, 5)];
@@ -224,7 +394,7 @@ void main() {
     expect(workouts.calls, 2);
   });
 
-  testWidgets('an older page extends upward without moving the visible months', (tester) async {
+  testCalendar('an older page extends upward without moving the visible months', (tester) async {
     final workouts = _Workouts()
       ..rows[key(current)] = [workout(current, 5)]
       ..rows[key(previous)] = [workout(previous, 5)];
@@ -242,14 +412,20 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  Future<MockLocalDatabase> pumpApp(WidgetTester tester, {required Size size, required List<Workout> history}) async {
+  Future<MockLocalDatabase> pumpApp(
+    WidgetTester tester, {
+    required Size size,
+    required List<Workout> history,
+    Map<String, Object> stored = const {},
+  }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    SharedPreferences.setMockInitialValues(pastOnboarding());
     final db = MockLocalDatabase();
     final api = MockApi();
     stubStartup(db, api);
+    // after the stubs, which seed the preferences of a device past onboarding
+    SharedPreferences.setMockInitialValues({...pastOnboarding(), ...stored});
     when(db.getWorkoutHistory(any)).thenAnswer((_) async => history);
     await const TestAppHarness().pumpHeartApp(
       tester,
@@ -275,7 +451,7 @@ void main() {
     return workout..finish(workout.start.add(const Duration(hours: 1)));
   }
 
-  testWidgets('the switch turns History into the calendar and back, and History opens on the last one (#609)', (
+  testCalendar('the switch turns History into the calendar and back, and History opens on the last one (#609)', (
     tester,
   ) async {
     await pumpApp(tester, size: const Size(390, 844), history: [finished(current, 5)]);
@@ -299,7 +475,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets("the calendar does not inherit the list's scroll (#609)", (tester) async {
+  testCalendar("the calendar does not inherit the list's scroll (#609)", (tester) async {
     final history = [for (final day in List.generate(12, (i) => 2 + i * 2)) finished(current, day)];
     await pumpApp(tester, size: const Size(390, 844), history: history);
     final list = tester.state<ScrollableState>(find.byType(Scrollable).first);
@@ -315,13 +491,13 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('edits discarded in a workout opened from the calendar never reach History (#609)', (tester) async {
+  testCalendar('edits discarded in a workout opened from the calendar never reach History (#609)', (tester) async {
     final session = finished(current, 5);
     await pumpApp(tester, size: const Size(1194, 834), history: [session]);
     final context = tester.element(find.byType(HistoryPage));
     Preferences.of(context).setHistoryView(.calendar);
     await tester.pumpTimes();
-    await tester.tap(day('${DateFormat.yMMMMEEEEd('en').format(session.start)}, Edit Workout'));
+    await tester.tap(day('${DateFormat.yMMMMEEEEd('en').format(session.start)}, edit workout'));
     await tester.pumpTimes();
 
     await tester.enterText(
@@ -338,14 +514,76 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a marked day opens its workout in the detail pane, and marks itself (#609)', (tester) async {
+  testWidgets('today moves at midnight, with the page left open (#618)', (tester) async {
+    var at = DateTime(2026, 11, 20, 23, 59);
+    await withClock(Clock(() => at), () async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester, _Workouts(), onStartWorkout: () {});
+      String said(int day) => DateFormat.yMMMMEEEEd('en').format(DateTime(2026, 11, day));
+      expect(find.bySemanticsLabel('${said(20)}, today'), findsOneWidget);
+
+      at = DateTime(2026, 11, 21, 0, 1);
+      await tester.pump(const Duration(minutes: 2));
+      expect(find.bySemanticsLabel('${said(21)}, today'), findsOneWidget);
+      expect(find.bySemanticsLabel('${said(20)}, today'), findsNothing);
+      semantics.dispose();
+    });
+  });
+
+  testWidgets('just after midnight, a workout logged on today starts today (#618)', (tester) async {
+    await withClock(Clock.fixed(DateTime(2026, 11, 20, 0, 20)), () async {
+      final semantics = tester.ensureSemantics();
+      await pumpApp(
+        tester,
+        size: const Size(1194, 834),
+        history: const [],
+        stored: {
+          'feature-pastWorkouts': 'on',
+          'screen-historyView': 'calendar',
+          'screen-historyView-at': '2026-11-01T00:00:00.000Z',
+        },
+      );
+      final today = DateTime(2026, 11, 20);
+      await tester.tap(day('${DateFormat.yMMMMEEEEd('en').format(today)}, today'));
+      await tester.pumpTimes();
+      await tester.tap(find.byKey(AppKeys.calendarLog));
+      await tester.pumpTimes();
+      final l = L.of(tester.element(find.byType(HistoryPage)));
+      await tester.tap(find.text(l.next));
+      await tester.pumpTimes();
+      final logging = tester.widget<WorkoutEditor>(find.byType(WorkoutEditor)).copy;
+      expect(logging.start.toLocal(), today);
+      semantics.dispose();
+    });
+  });
+
+  testCalendar('a workout logged from an empty day is on that day (#618)', (tester) async {
+    final semantics = tester.ensureSemantics();
+    // a tablet: the times dialog's rows overflow a phone under the test font
+    await pumpApp(tester, size: const Size(1194, 834), history: const [], stored: {'feature-pastWorkouts': 'on'});
+    Preferences.of(tester.element(find.byType(HistoryPage))).setHistoryView(.calendar);
+    await tester.pumpTimes();
+    final tenth = DateTime(now.year, now.month, 10);
+    await tester.tap(day('${DateFormat.yMMMMEEEEd('en').format(tenth)}, log a workout on this day'));
+    await tester.pumpTimes();
+    final l = L.of(tester.element(find.byType(HistoryPage)));
+    expect(find.text(l.whenWasIt), findsOneWidget);
+    await tester.tap(find.text(l.next));
+    await tester.pumpTimes();
+    final logging = tester.widget<WorkoutEditor>(find.byType(WorkoutEditor)).copy;
+    expect(DateUtils.dateOnly(logging.start.toLocal()), tenth);
+    expect(DateUtils.dateOnly(logging.end!.toLocal()), tenth);
+    semantics.dispose();
+  });
+
+  testCalendar('a marked day opens its workout in the detail pane, and marks itself (#609)', (tester) async {
     final semantics = tester.ensureSemantics();
     final session = finished(current, 5);
     await pumpApp(tester, size: const Size(1194, 834), history: [session]);
     Preferences.of(tester.element(find.byType(HistoryPage))).setHistoryView(.calendar);
     await tester.pumpTimes();
 
-    final label = '${DateFormat.yMMMMEEEEd('en').format(session.start)}, Edit Workout';
+    final label = '${DateFormat.yMMMMEEEEd('en').format(session.start)}, edit workout';
     await tester.tap(day(label));
     await tester.pumpTimes();
     expect(find.byType(WorkoutEditor), findsOneWidget);
@@ -360,20 +598,20 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('a marked day on a phone pushes its workout over the calendar (#609)', (tester) async {
+  testCalendar('a marked day on a phone pushes its workout over the calendar (#609)', (tester) async {
     final session = finished(current, 5);
     await pumpApp(tester, size: const Size(390, 844), history: [session]);
     Preferences.of(tester.element(find.byType(HistoryPage))).setHistoryView(.calendar);
     await tester.pumpTimes();
     final semantics = tester.ensureSemantics();
-    await tester.tap(day('${DateFormat.yMMMMEEEEd('en').format(session.start)}, Edit Workout'));
+    await tester.tap(day('${DateFormat.yMMMMEEEEd('en').format(session.start)}, edit workout'));
     await tester.pumpTimes();
     expect(find.byType(WorkoutEditor), findsOneWidget);
     expect(tester.takeException(), isNull);
     semantics.dispose();
   });
 
-  testWidgets('on a tablet the list of a day opens at the day, not a rail away (#619)', (tester) async {
+  testCalendar('on a tablet the list of a day opens at the day, not a rail away (#619)', (tester) async {
     final semantics = tester.ensureSemantics();
     final first = finished(current, 5);
     final second = finished(current, 5)..start = DateTime(current.year, current.month, 5, 18);
@@ -384,7 +622,7 @@ void main() {
     final rect = tester.getRect(day(label));
     await tester.tap(day(label));
     await tester.pumpTimes();
-    final items = find.byType(PopupMenuItem<Workout>);
+    final items = find.byType(PopupMenuItem<Object>);
     expect(items, findsNWidgets(2));
     final menu = tester.getRect(items.first);
     expect((menu.left - rect.left).abs(), lessThan(rect.width), reason: 'menu at $menu, day at $rect');
@@ -395,13 +633,16 @@ void main() {
     expect(find.byType(WorkoutEditor), findsOneWidget);
     await tester.tap(day(label));
     await tester.pumpTimes();
-    final checked = tester.widgetList<CheckedPopupMenuItem<Workout>>(find.byType(CheckedPopupMenuItem<Workout>));
-    expect([for (final item in checked) (item.value?.id, item.checked)], [(first.id, true), (second.id, false)]);
+    final checked = tester.widgetList<CheckedPopupMenuItem<Object>>(find.byType(CheckedPopupMenuItem<Object>));
+    expect(
+      [for (final item in checked) ((item.value as Workout?)?.id, item.checked)],
+      [(first.id, true), (second.id, false)],
+    );
     semantics.dispose();
   });
 
   for (final size in [const Size(390, 844), const Size(834, 1194), const Size(1194, 834)]) {
-    testWidgets('calendar is capped and fits $size', (tester) async {
+    testCalendar('calendar is capped and fits $size', (tester) async {
       await pump(tester, _Workouts(), size: size);
       final months = find.descendant(of: find.byType(HistoryCalendar), matching: find.byType(ListView));
       expect(tester.getSize(months).width, lessThanOrEqualTo(calendarWidth));
@@ -409,7 +650,7 @@ void main() {
     });
   }
 
-  testWidgets('Russian starts Monday, English starts Sunday', (tester) async {
+  testCalendar('Russian starts Monday, English starts Sunday', (tester) async {
     final semantics = tester.ensureSemantics();
 
     await pump(tester, _Workouts(), locale: const Locale('ru'));
@@ -426,7 +667,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets("the user's first day wins over the locale's (#339)", (tester) async {
+  testCalendar("the user's first day wins over the locale's (#339)", (tester) async {
     final semantics = tester.ensureSemantics();
 
     await pump(tester, _Workouts(), firstWeekday: DateTime.saturday);

@@ -112,15 +112,16 @@ ticket doesn't say:
   offer (it stays for that session, then reads as no); tapping it opens the
   ask, and yes goes straight on to the copy. Nothing interrupts a user who
   never reaches for it.
-- Past workouts (`Feature.pastWorkouts`, #530) are the first feature with
-  **no ask at all**: its switch in Settings › Features is the only way on.
-  An offer has to come at the moment the feature would help, and nothing in
-  ordinary use marks a lifter who logs after the fact, so any moment chosen
-  would be a guess and the offer a nag. Off, the Workout tab and History have
-  no way in; a workout already logged this way is an ordinary workout.
+- Past workouts (`Feature.pastWorkouts`, #530) shipped with **no ask at all**:
+  an offer has to come at the moment the feature would help, and nothing in
+  ordinary use marked a lifter who logs after the fact. History's calendar
+  (#618) made that moment: **tapping an empty past day is the signal**. The
+  first such tap asks; yes goes straight on to logging that day, and after a
+  no the tap does nothing. Off, the Workout tab and History have no way in;
+  a workout already logged this way is an ordinary workout.
 - Coaching (#566) is two features, because it is two people's choices. **Coach
-  people** (`Feature.coachPeople`) has no ask, like Past workouts, and is the
-  first switch that depends on the account: during the beta it shows only for an
+  people** (`Feature.coachPeople`) has no ask, as Past workouts had none before
+  #618, and is the first switch that depends on the account: during the beta it shows only for an
   account holding the `coach` entitlement, which the server grants by hand. Off,
   or without the entitlement, Profile has no Coaching button and a link into the
   space lands on Profile. **Your coach** (`Feature.yourCoach`) is asked when an
