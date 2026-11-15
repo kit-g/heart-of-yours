@@ -186,6 +186,15 @@ abstract final class AppKeys {
   static const loginName = Key('Login.name');
   static const loginPassword = Key('Login.password');
 
+  /// Your devices (#555): the Settings row, each device's row and its
+  /// Compare codes button, and the comparison sheet's answers.
+  static const yourDevices = Key('Settings.yourDevices');
+  static Key deviceRow(String id) => Key('YourDevices.row.$id');
+  static Key compareCodes(String id) => Key('YourDevices.compare.$id');
+  static const codesMatch = Key('CompareCodes.match');
+  static const codesDontMatch = Key('CompareCodes.dontMatch');
+  static const closeComparison = Key('CompareCodes.close');
+
   /// The developer API (#271): the Settings row, the tokens page's controls
   /// and each token's row and revoke button.
   static const developerApi = Key('Settings.developerApi');

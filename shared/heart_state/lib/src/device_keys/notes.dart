@@ -26,7 +26,8 @@ final class RefusedNote extends OpenedNote {
 }
 
 /// What a coach's notes want of encryption (#556): sealing for the coach
-/// alone, keys on every device of theirs, and opening what is stored.
+/// alone, keys on every device of theirs this one trusts, and opening what is
+/// stored.
 abstract interface class NoteCipher {
   /// Seals [text], on the client of [connectionId], as the note [noteId].
   /// Needs no network. Throws [KeyFailure] `note_too_long` past what the
@@ -37,8 +38,8 @@ abstract interface class NoteCipher {
   /// files it under is [RefusedNote].
   Future<List<OpenedNote>> openNotes(List<CoachNote> notes);
 
-  /// Hands the account's note keys to each of its devices that doesn't hold
-  /// them yet.
+  /// Hands the account's note keys to each of its devices this one trusts
+  /// that doesn't hold them yet.
   Future<void> shareNoteKeys();
 
   /// Reads what waits for this device, note keys among it.
@@ -53,7 +54,8 @@ abstract interface class NoteCipher {
 /// client never learns of.
 ///
 /// A device makes a key the first time it writes a note, and hands every key
-/// it holds to the account's other devices, inside pairwise sessions. It
+/// it holds to the account's other devices it trusts (pinned by a compared
+/// code, or vouched for from one that is), inside pairwise sessions. It
 /// seals under the newest key it made itself, and under the newest it
 /// received only when it made none: a key from another device opens that
 /// device's notes, but a device the account merely lists never chooses what
@@ -163,12 +165,21 @@ extension _Notes on DeviceKeys {
     final own = run.peers[run.userId];
     bool covered(String keyId) {
       return own != null &&
-          own.devices.every((each) => each.id == run.device?.id || (record.shared[keyId]?.contains(each.id) ?? false));
+          own.devices.every(
+            (each) => each.id == run.device?.id || !each.trusted || (record.shared[keyId]?.contains(each.id) ?? false),
+          );
     }
 
     if (fresh && record.keys.keys.every(covered)) return;
 
-    final listed = {for (final each in (await devicesOf(run.userId)).devices) each.id};
+    final devices = (await devicesOf(run.userId)).devices;
+    final listed = {for (final each in devices) each.id};
+    // only the devices this one trusts: one the server merely lists could be
+    // anyone's, and gets the keys once a code is compared with it
+    final trusted = {
+      for (final each in devices)
+        if (each.trusted) each.id,
+    };
     // a device that held the current key and is gone: what is written from
     // here on seals under a new one it never gets
     record = await _notesSerial(run, () async {
@@ -178,12 +189,9 @@ extension _Notes on DeviceKeys {
       return latest;
     });
     for (final MapEntry(key: keyId, value: key) in record.keys.entries) {
-      final missing = listed.where((id) => id != run.device?.id && !(record.shared[keyId]?.contains(id) ?? false));
+      final missing = trusted.where((id) => id != run.device?.id && !(record.shared[keyId]?.contains(id) ?? false));
       if (missing.isEmpty) continue;
       final targets = missing.toSet();
-      // every device the account lists, vouched for or not: holding a note
-      // back from one would need the two screens to compare a code first,
-      // which nothing asks of the coach yet
       final reached = await deliver(
         userId: run.userId,
         kind: DeviceKeys.noteKeyKind,

@@ -121,6 +121,22 @@ class _Run {
     );
   }
 
+  /// The account's devices this one compared a code with, each by the keys
+  /// it had then: what this device trusts of its own besides itself.
+  Future<Map<String, String>> compared() async {
+    return switch (_decode(await read('compared'))) {
+      final Map compared => {
+        for (final MapEntry(:key, :value) in compared.entries)
+          if (value case final String keys) '$key': keys,
+      },
+      _ => {},
+    };
+  }
+
+  Future<void> saveCompared(String deviceId, String keys) async {
+    await write('compared', jsonEncode({...await compared(), deviceId: keys}));
+  }
+
   static Map? _decode(String? json) {
     if (json == null) return null;
     try {

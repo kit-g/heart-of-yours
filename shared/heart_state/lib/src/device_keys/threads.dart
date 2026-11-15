@@ -45,7 +45,8 @@ abstract interface class ThreadCipher {
   Future<SealedMessage> seal(String threadId, String text);
 
   /// Hands every key this device made for [threadId] to each device of
-  /// [userId]'s, and of the account's own, that doesn't hold it yet.
+  /// [userId]'s, and of the account's own that this device trusts, that
+  /// doesn't hold it yet.
   ///
   /// Refuses with [KeyMismatch] when [userId]'s devices don't match
   /// [fingerprint].
@@ -67,7 +68,9 @@ abstract interface class ThreadCipher {
 /// device's own keys.
 ///
 /// Each device seals with a key of its own per thread, and shares it, inside
-/// pairwise sessions, with every device of both people. A key is shared from
+/// pairwise sessions, with every device of the other person's, and with the
+/// account's own devices this one trusts: pinned, which a compared code
+/// makes them, or vouched for from one that is. A key is shared from
 /// its first message, so a device that comes later reads the whole session.
 /// A key is replaced after [_messagesPerKey] messages, after [_keyLife], when
 /// one of the devices it reached is removed, and when its saved state turns
@@ -154,6 +157,13 @@ extension _Threads on DeviceKeys {
       final peer = await devicesOf(reader, fingerprint: checked);
       if (peer.check == .mismatch) throw KeyMismatch(reader);
       final listed = {for (final each in peer.devices) each.id};
+      // the account's own devices only once this one trusts them: one the
+      // server merely lists could be anyone's, and gets its keys once a code
+      // is compared with it
+      final receiving = {
+        for (final each in peer.devices)
+          if (_receives(run, reader, each)) each.id,
+      };
       // the other person with no device to read it on: nothing is sent yet
       if (reader == userId && listed.isEmpty) throw const KeyFailure('no_devices');
       record = await _serial(run, () => _ThreadRecord.read(run, threadId));
@@ -170,7 +180,7 @@ extension _Threads on DeviceKeys {
         }
       }
       for (final key in record.own) {
-        final missing = listed.where((id) => id != run.device?.id && !key.shared.containsKey(id)).toSet();
+        final missing = receiving.where((id) => id != run.device?.id && !key.shared.containsKey(id)).toSet();
         if (missing.isEmpty) continue;
         final reached = await deliver(
           userId: reader,
@@ -197,12 +207,19 @@ extension _Threads on DeviceKeys {
     run.sharedAt[threadId] = _now();
   }
 
-  /// Whether [key] reached every device of [reader]'s this device last read.
+  /// Whether [key] reached every device of [reader]'s this device last read
+  /// and shares with.
   bool _covers(_Run run, _OwnKey key, String reader) {
     final peer = run.peers[reader];
     if (peer == null) return false;
-    return peer.devices.every((each) => each.id == run.device?.id || key.shared.containsKey(each.id));
+    return peer.devices.every(
+      (each) => each.id == run.device?.id || !_receives(run, reader, each) || key.shared.containsKey(each.id),
+    );
   }
+
+  /// Whether [device], one of [reader]'s, gets this device's thread keys: the
+  /// other person's all do, the account's own only once trusted.
+  bool _receives(_Run run, String reader, PeerDevice device) => reader != run.userId || device.trusted;
 
   Future<List<OpenedMessage>> _openThread(String threadId, List<ThreadCiphertext> items) async {
     final run = _run;

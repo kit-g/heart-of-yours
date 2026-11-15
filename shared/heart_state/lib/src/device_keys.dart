@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +10,7 @@ import 'package:sealbox/sealbox.dart';
 
 import 'remote.dart';
 
+part 'device_keys/approval.dart';
 part 'device_keys/arrivals.dart';
 part 'device_keys/notes.dart';
 part 'device_keys/boundary.dart';
@@ -113,7 +115,13 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
        _now = now ?? DateTime.now {
     _handlers[threadKeyKind] = _takeThreadKey;
     _handlers[noteKeyKind] = _takeNoteKey;
+    for (final kind in DeviceApproval._kinds) {
+      _handlers[kind] = approval._take;
+    }
   }
+
+  /// Letting another device of the account's in by comparing a code.
+  late final approval = DeviceApproval._(this);
 
   static DeviceKeys of(BuildContext context) => Provider.of<DeviceKeys>(context, listen: false);
 
@@ -297,12 +305,14 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
   void dispose() {
     _threadKeys.close();
     _noteKeys.close();
+    approval.dispose();
     super.dispose();
   }
 
   /// Ends the run: whatever it still has queued finds it over and stops.
   void _end() {
     _starting = null;
+    approval._abandon();
     _run?.end();
     _run = null;
   }
@@ -354,7 +364,8 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     _run?.sharedAt.clear();
     try {
       await devicesOf(userId);
-      // a device of the account's own may be new: it gets the note keys
+      // a device of the account's own may be new, or newly vouched for: one
+      // this device trusts gets the note keys
       // without waiting for the notes to be opened somewhere
       if (userId == _run?.userId && (_run?.device?.published ?? false) && (sharesNoteKeys?.call() ?? true)) {
         await _shareNoteKeys();

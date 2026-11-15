@@ -27,6 +27,7 @@ import 'package:heart/presentation/navigation/router/router.dart' show HeartRout
 import 'package:heart/presentation/routes/coaching/coaching.dart' show coachingSpaceOn;
 import 'package:heart/presentation/widgets/avatar.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/compare_codes.dart';
 import 'package:heart/presentation/widgets/feature_copy.dart';
 import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/duration_picker.dart';
@@ -56,6 +57,7 @@ part 'push_settings.dart';
 part 'export_data.dart';
 part 'features.dart';
 part 'your_coach.dart';
+part 'your_devices.dart';
 part 'import_data.dart';
 part 'page.dart';
 part 'rest_timers.dart';
