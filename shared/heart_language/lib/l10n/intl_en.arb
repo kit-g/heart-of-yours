@@ -6112,5 +6112,13 @@
   "compareCodesNoAnswer": "The other device didn't answer. Try again with both open.",
   "@compareCodesNoAnswer": {"description": "Comparison sheet when the other device couldn't be reached or took too long (#555)", "type": "text", "placeholders": {}},
   "compareCodesCancelled": "The comparison ended. Nothing was let in.",
-  "@compareCodesCancelled": {"description": "Comparison sheet when either side ended it (#555)", "type": "text", "placeholders": {}}
+  "@compareCodesCancelled": {"description": "Comparison sheet when either side ended it (#555)", "type": "text", "placeholders": {}},
+  "compareCodesUnconfirmed": "This device let the other one in, but the other one couldn't confirm this device. Compare codes again.",
+  "@compareCodesUnconfirmed": {"description": "Comparison sheet when this device finished but the other device ended or went quiet before saying it let this one in (#555)", "type": "text", "placeholders": {}},
+  "compareCodesVouchOwed": "Your devices trust each other now. Your other devices hear of it once the server can be reached.",
+  "@compareCodesVouchOwed": {"description": "Comparison sheet when both devices let each other in but telling the server failed; the app retries by itself (#555)", "type": "text", "placeholders": {}},
+  "compareCodesCantStart": "Couldn't start comparing codes. Try again in a moment.",
+  "@compareCodesCantStart": {"description": "Snackbar when Compare codes couldn't start, as while another comparison runs (#555)", "type": "text", "placeholders": {}},
+  "deviceApprovedHereOnly": "Approved here, not yet on your other devices",
+  "@deviceApprovedHereOnly": {"description": "Your devices page: a device this one compared a code with, whose approval hasn't reached the server yet; the app retries by itself (#555)", "type": "text", "placeholders": {}}
 }

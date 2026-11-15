@@ -129,6 +129,7 @@ extension _Threads on DeviceKeys {
     final inbound = await _InboundKeys.read(run, threadId);
     inbound.keys[joined.sessionId] = (inbound: joined.inbound, from: run.userId);
     await inbound.save(run);
+    await run.addThread(threadId);
     final out = _Outbound(outbound: made.outbound, sessionId: made.sessionId, createdAt: _now(), count: 0);
     record
       ..current = out
@@ -145,7 +146,7 @@ extension _Threads on DeviceKeys {
       final DateTime at => _now().difference(at) < _shareLife,
       null => false,
     };
-    var record = await _serial(run, () => _ThreadRecord.read(run, threadId));
+    final record = await _serial(run, () => _ThreadRecord.read(run, threadId));
     if (fresh && record.own.every((key) => readers.every((reader) => _covers(run, key, reader)))) return;
 
     for (final reader in readers) {
@@ -156,55 +157,73 @@ extension _Threads on DeviceKeys {
       };
       final peer = await devicesOf(reader, fingerprint: checked);
       if (peer.check == .mismatch) throw KeyMismatch(reader);
-      final listed = {for (final each in peer.devices) each.id};
-      // the account's own devices only once this one trusts them: one the
-      // server merely lists could be anyone's, and gets its keys once a code
-      // is compared with it
-      final receiving = {
-        for (final each in peer.devices)
-          if (_receives(run, reader, each)) each.id,
-      };
       // the other person with no device to read it on: nothing is sent yet
-      if (reader == userId && listed.isEmpty) throw const KeyFailure('no_devices');
-      record = await _serial(run, () => _ThreadRecord.read(run, threadId));
-      // a device that held the current key and is gone: the next message
-      // seals under a new one
-      if (record.own.lastOrNull case final _OwnKey last when record.current?.sessionId == last.sessionId) {
-        final gone = last.shared.entries.where((each) => each.value == reader && !listed.contains(each.key));
-        if (gone.isNotEmpty) {
-          await _serial(run, () async {
-            final latest = await _ThreadRecord.read(run, threadId);
-            latest.current = null;
-            await latest.save(run);
-          });
-        }
-      }
-      for (final key in record.own) {
-        final missing = receiving.where((id) => id != run.device?.id && !key.shared.containsKey(id)).toSet();
-        if (missing.isEmpty) continue;
-        final reached = await deliver(
-          userId: reader,
-          kind: DeviceKeys.threadKeyKind,
-          payload: jsonEncode({'t': threadId, 'k': key.sessionKey}),
-          fingerprint: checked,
-          to: (device) => missing.contains(device.id),
-        );
-        if (reached.isEmpty) {
-          // a key none of the other person's devices holds: what it seals
-          // waits; one of the account's own can catch up later
-          if (reader == userId && !key.shared.containsValue(userId)) throw const KeyFailure('key_unreached');
-          continue;
-        }
+      if (reader == userId && peer.devices.isEmpty) throw const KeyFailure('no_devices');
+      await _shareWith(run, threadId, peer, fingerprint: checked, other: reader == userId);
+    }
+    run.sharedAt[threadId] = _now();
+  }
+
+  /// Hands every key this device made for [threadId] to [peer]'s devices
+  /// that get them and don't hold them yet. A key that reached none of the
+  /// [other] person's devices throws: what it seals would wait.
+  Future<void> _shareWith(_Run run, String threadId, Peer peer, {String? fingerprint, required bool other}) async {
+    final reader = peer.userId;
+    final listed = {for (final each in peer.devices) each.id};
+    final receiving = {
+      for (final each in peer.devices)
+        if (_receives(run, peer, each)) each.id,
+    };
+    final record = await _serial(run, () => _ThreadRecord.read(run, threadId));
+    // a device that held the current key and is gone: the next message
+    // seals under a new one
+    if (record.own.lastOrNull case final _OwnKey last when record.current?.sessionId == last.sessionId) {
+      final gone = last.shared.entries.where((each) => each.value == reader && !listed.contains(each.key));
+      if (gone.isNotEmpty) {
         await _serial(run, () async {
           final latest = await _ThreadRecord.read(run, threadId);
-          for (final each in latest.own.where((each) => each.sessionId == key.sessionId)) {
-            each.shared.addAll({for (final id in reached) id: reader});
-          }
+          latest.current = null;
           await latest.save(run);
         });
       }
     }
-    run.sharedAt[threadId] = _now();
+    for (final key in record.own) {
+      final missing = receiving.where((id) => id != run.device?.id && !key.shared.containsKey(id)).toSet();
+      if (missing.isEmpty) continue;
+      final reached = await deliver(
+        userId: reader,
+        kind: DeviceKeys.threadKeyKind,
+        payload: jsonEncode({'t': threadId, 'k': key.sessionKey}),
+        fingerprint: fingerprint,
+        to: (device) => missing.contains(device.id),
+      );
+      if (reached.isEmpty) {
+        // a key none of the other person's devices holds: what it seals
+        // waits; one of the account's own can catch up later
+        if (other && !key.shared.containsValue(reader)) throw const KeyFailure('key_unreached');
+        continue;
+      }
+      await _serial(run, () async {
+        final latest = await _ThreadRecord.read(run, threadId);
+        for (final each in latest.own.where((each) => each.sessionId == key.sessionId)) {
+          each.shared.addAll({for (final id in reached) id: reader});
+        }
+        await latest.save(run);
+      });
+    }
+  }
+
+  /// Hands the keys of every thread this device made one for to the
+  /// account's devices it trusts and that don't hold them yet: a device just
+  /// let in reads what was said before it, without waiting for the next
+  /// message.
+  Future<void> _shareThreadsWithOwn(_Run run) async {
+    final threads = await _serial(run, run.threads);
+    if (threads.isEmpty) return;
+    final own = run.peers[run.userId] ?? await devicesOf(run.userId);
+    for (final threadId in threads) {
+      await _shareWith(run, threadId, own, other: false);
+    }
   }
 
   /// Whether [key] reached every device of [reader]'s this device last read
@@ -213,13 +232,23 @@ extension _Threads on DeviceKeys {
     final peer = run.peers[reader];
     if (peer == null) return false;
     return peer.devices.every(
-      (each) => each.id == run.device?.id || !_receives(run, reader, each) || key.shared.containsKey(each.id),
+      (each) => each.id == run.device?.id || !_receives(run, peer, each) || key.shared.containsKey(each.id),
     );
   }
 
-  /// Whether [device], one of [reader]'s, gets this device's thread keys: the
-  /// other person's all do, the account's own only once trusted.
-  bool _receives(_Run run, String reader, PeerDevice device) => reader != run.userId || device.trusted;
+  /// Whether [device], one of [peer]'s, gets this device's thread keys. The
+  /// account's own, and the other person's once a fingerprint anchored them,
+  /// only once trusted: one the server merely lists could be anyone's, and
+  /// gets its keys once a code is compared with it or a trusted one vouches.
+  /// With no fingerprint known (a coach's side towards a student, or a link
+  /// opened some other way) there is no anchor to trust from, so every device
+  /// listed gets them, as the thread says.
+  bool _receives(_Run run, Peer peer, PeerDevice device) {
+    return switch ((peer.userId == run.userId, peer.check)) {
+      (true, _) || (false, .matched) => device.trusted,
+      (false, .nothingToCheck || .noDevices || .mismatch) => true,
+    };
+  }
 
   Future<List<OpenedMessage>> _openThread(String threadId, List<ThreadCiphertext> items) async {
     final run = _run;
@@ -269,6 +298,9 @@ extension _Threads on DeviceKeys {
       _report(const KeyFailure('unreadable_thread_key'));
       return;
     }
+    // a key from the account's own devices only from one this device trusts:
+    // kept until it is, and taken then
+    if (delivery.fromUserId == run.userId) await _fromTrusted(run, delivery);
     final taken = await _serial(run, () async {
       final ({String inbound, String sessionId, int firstKnownIndex}) joined;
       try {

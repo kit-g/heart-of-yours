@@ -227,6 +227,8 @@ extension _Notes on DeviceKeys {
       _report(const KeyFailure('unreadable_note_key'));
       return;
     }
+    // only from a device this one trusts: kept until it is, and taken then
+    await _fromTrusted(run, delivery);
     final taken = await _notesSerial(run, () async {
       final record = await _NoteKeys.read(run);
       // the first one kept: a key id names one key

@@ -45,18 +45,36 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
     }
   }
 
+  /// A comparison this page is starting, until its sheet closes: a second
+  /// tap before the sheet covers the button starts nothing.
+  bool _starting = false;
+
   Future<void> _compare(String deviceId) async {
-    final approval = DeviceKeys.of(context).approval;
-    // the sheet follows the comparison from its first step
-    final starting = approval.start(deviceId);
-    final sheet = showCodeComparison(context, approval);
+    if (_starting) return;
+    _starting = true;
     try {
-      await starting;
-    } catch (error, stacktrace) {
-      // the sheet says it failed: the cause goes to the logs
-      widget.onError?.call(error, stacktrace: stacktrace);
+      final approval = DeviceKeys.of(context).approval;
+      final Future<void> asking;
+      try {
+        asking = approval.start(deviceId);
+      } on StateError {
+        // another comparison runs, or keys stopped meanwhile: nothing began,
+        // so there is no sheet to show, and nothing for the logs
+        snack(context, L.of(context).compareCodesCantStart);
+        return;
+      }
+      // the sheet follows the comparison from its first step, and only it
+      final sheet = showCodeComparison(context, approval, approval.value!.id);
+      try {
+        await asking;
+      } catch (error, stacktrace) {
+        // the sheet says it failed: the cause goes to the logs
+        widget.onError?.call(error, stacktrace: stacktrace);
+      }
+      await sheet;
+    } finally {
+      _starting = false;
     }
-    await sheet;
   }
 
   @override
@@ -130,10 +148,15 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
           subtitle: Column(
             crossAxisAlignment: .start,
             children: [
-              Text(switch ((each.id == self, each.trusted)) {
-                (true, _) => l.thisDevice,
-                (false, true) => l.deviceApproved,
-                (false, false) => l.deviceNotApproved,
+              // approved: trusted from here, by a compared code or a vouch
+              // from one that was, and on the server for the account's other
+              // devices too; one whose vouch from here hasn't landed yet says
+              // so, and the vouch is tried again on its own
+              Text(switch ((each.id == self, each.trusted, keys.owesVouch(each.id))) {
+                (true, _, _) => l.thisDevice,
+                (false, true, false) => l.deviceApproved,
+                (false, true, true) => l.deviceApprovedHereOnly,
+                (false, false, _) => l.deviceNotApproved,
               }),
               Text(l.deviceAddedOn(format.format(each.device.createdAt.toLocal()))),
             ],

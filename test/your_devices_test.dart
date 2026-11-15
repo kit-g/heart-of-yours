@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
@@ -245,11 +246,16 @@ void main() {
       'mac': comparison.mac('${tablet.identityKey}|${tablet.signingKey}', info),
     });
 
-    expect(find.text(l(tester).compareCodesDone), findsOneWidget);
     verify(
       api.vouchForCryptoDevice(tablet.id, vouchedBy: phone.id, signature: anyNamed('signature')),
     ).called(1);
     expect(sent.last.kind, 'compare_done');
+    // let in here; done only once the tablet says it let this one in too
+    expect(find.text(l(tester).compareCodesDone), findsNothing);
+    expect(find.text(l(tester).compareCodesConfirmed), findsOneWidget);
+
+    await reply(tester, 'compare_done', {'c': asked['c']! as String});
+    expect(find.text(l(tester).compareCodesDone), findsOneWidget);
 
     await tester.tap(find.byKey(AppKeys.closeComparison));
     await tester.pumpTimes();
@@ -278,6 +284,102 @@ void main() {
     await tester.tap(find.byKey(AppKeys.closeComparison));
     await tester.pumpTimes();
     expect(DeviceKeys.of(root(tester)).approval.value, isNull);
+  });
+
+  /// The comparison up to the codes, as the tablet plays it: answers the
+  /// app's start with its key, and answers what the code is bound to.
+  Future<({String id, Comparison comparison, String info})> toCodes(WidgetTester tester) async {
+    final asked = opened('compare_start');
+    final comparison = Comparison.start();
+    addTearDown(comparison.end);
+    final id = asked['c']! as String;
+    await reply(tester, 'compare_key', {'c': id, 'key': comparison.publicKey});
+    comparison.establish(opened('compare_key')['key']! as String, theirCommitment: asked['commitment']! as String);
+    return (id: id, comparison: comparison, info: 'heart-of.me/compare/v1\n${phone.id}\n${tablet.id}');
+  }
+
+  testWidgets('a vouch that fails says the device is approved here only, and the rest are told later', (tester) async {
+    when(
+      api.vouchForCryptoDevice(any, vouchedBy: anyNamed('vouchedBy'), signature: anyNamed('signature')),
+    ).thenThrow({'error': 'server error', 'code': 'internal'});
+    await pump(tester);
+    await openDevices(tester);
+    await tester.tap(find.byKey(AppKeys.compareCodes(tablet.id)));
+    await tester.pumpTimes();
+    final (:id, :comparison, :info) = await toCodes(tester);
+
+    await tester.tap(find.byKey(AppKeys.codesMatch));
+    await tester.pumpTimes();
+    await reply(tester, 'compare_mac', {
+      'c': id,
+      'mac': comparison.mac('${tablet.identityKey}|${tablet.signingKey}', info),
+    });
+    await reply(tester, 'compare_done', {'c': id});
+
+    expect(find.text(l(tester).compareCodesVouchOwed), findsOneWidget);
+    await tester.tap(find.byKey(AppKeys.closeComparison));
+    await tester.pumpTimes();
+    expect(find.text(l(tester).deviceApprovedHereOnly), findsOneWidget);
+    expect(find.text(l(tester).deviceApproved), findsNothing);
+  });
+
+  testWidgets('a second tap on Compare codes starts nothing more', (tester) async {
+    await pump(tester);
+    await openDevices(tester);
+
+    await tester.tap(find.byKey(AppKeys.compareCodes(tablet.id)));
+    await tester.tap(find.byKey(AppKeys.compareCodes(tablet.id)), warnIfMissed: false);
+    await tester.pumpTimes();
+
+    expect(sent.where((each) => each.kind == 'compare_start'), hasLength(1));
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.text(l(tester).compareCodesCantStart), findsNothing);
+  });
+
+  testWidgets("one that can't start opens no sheet, and says so", (tester) async {
+    await pump(tester);
+    await openDevices(tester);
+    // already comparing, from somewhere that shows no sheet
+    unawaited(DeviceKeys.of(root(tester)).approval.start(tablet.id));
+    await tester.pumpTimes();
+
+    await tester.tap(find.byKey(AppKeys.compareCodes(tablet.id)));
+    await tester.pumpTimes();
+
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.text(l(tester).compareCodesCantStart), findsOneWidget);
+    expect(sent.where((each) => each.kind == 'compare_start'), hasLength(1));
+  });
+
+  testWidgets('a device asking while a sheet is up waits for it to close, and closing it ends only its own', (
+    tester,
+  ) async {
+    await pump(tester);
+    await openDevices(tester);
+    await tester.tap(find.byKey(AppKeys.compareCodes(tablet.id)));
+    await tester.pumpTimes();
+    final first = opened('compare_start')['c']! as String;
+    await reply(tester, 'compare_cancel', {'c': first});
+    expect(find.text(l(tester).compareCodesCancelled), findsOneWidget);
+
+    final again = Comparison.start();
+    addTearDown(again.end);
+    await reply(tester, 'compare_start', {'c': uuidV7(), 'commitment': again.commitment});
+
+    // the tablet's new ask runs, its key sent, behind the sheet still up
+    final name = 'Device ${tablet.id.replaceAll('-', '').substring(26).toUpperCase()}';
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.text(l(tester).compareCodesCancelled), findsOneWidget);
+    expect(find.text(l(tester).compareCodesAsked(name)), findsNothing);
+    expect(sent.last.kind, 'compare_key');
+
+    await tester.tap(find.byKey(AppKeys.closeComparison));
+    await tester.pumpTimes();
+
+    expect(sent.last.kind, 'compare_key', reason: 'closing the first said no to nothing');
+    expect(DeviceKeys.of(root(tester)).approval.value!.running, isTrue);
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.text(l(tester).compareCodesAsked(name)), findsOneWidget);
   });
 
   testWidgets('without a coaching switch on there is no row for it', (tester) async {

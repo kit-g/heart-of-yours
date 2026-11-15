@@ -24,6 +24,14 @@ enum ComparisonFailure {
 
   /// Nothing came back in time.
   timeout,
+
+  /// This device let the other one in, and the other never said it let this
+  /// one in: it ended, or went quiet, after this side was done.
+  unconfirmed,
+
+  /// Both let each other in, and the vouch didn't reach the server: the
+  /// account's other devices hear of it once it does, tried again on its own.
+  vouch,
 }
 
 /// Where a comparison stands.
@@ -44,12 +52,13 @@ final class ComparisonCode extends ComparisonPhase {
   const new({required this.decimals, required this.emoji});
 }
 
-/// Both sides said the codes match, and each proved its keys to the other.
+/// Both sides said the codes match, each proved its keys to the other, and
+/// each said it let the other in.
 final class ComparisonDone extends ComparisonPhase {
   const new();
 }
 
-/// It ended without letting anything in, for [reason].
+/// It ended without letting both in, for [reason].
 final class ComparisonFailed extends ComparisonPhase {
   final ComparisonFailure reason;
 
@@ -63,6 +72,9 @@ final class ComparisonCancelled extends ComparisonPhase {
 
 /// One comparison as a screen shows it.
 class CodeComparison {
+  /// The comparison's own id: what a screen opened for it is bound to.
+  final String id;
+
   /// The other device.
   final String deviceId;
   final ComparisonRole role;
@@ -72,7 +84,13 @@ class CodeComparison {
   /// hasn't yet.
   final bool confirmed;
 
-  const new({required this.deviceId, required this.role, required this.phase, this.confirmed = false});
+  const new({
+    required this.id,
+    required this.deviceId,
+    required this.role,
+    required this.phase,
+    this.confirmed = false,
+  });
 
   /// Whether it is still on its way.
   bool get running => switch (phase) {
@@ -87,7 +105,9 @@ class CodeComparison {
 /// both show the same code, and once the person says on each that it
 /// matches ([confirm]), each proves its keys to the other under the shared
 /// secret. What checks out is remembered on both, and vouched for on the
-/// server, so the account's own keys reach the new device from then on.
+/// server, so the account's own keys reach the new device from then on. Each
+/// side says when it let the other in, and shows it done only once the other
+/// said the same.
 ///
 /// Everything travels through the queue, sealed, one device to one device.
 /// The device that will see the other's key first commits to its own before
@@ -95,7 +115,8 @@ class CodeComparison {
 /// match ([Comparison]).
 ///
 /// Memory only: a restart abandons it. One at a time, and gone after five
-/// minutes.
+/// minutes. A device said no to twice in ten minutes is said no to for the
+/// next ten without asking: asking again is not a reason to be asked again.
 class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparison?> {
   final DeviceKeys _keys;
 
@@ -113,16 +134,30 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
 
   static const _life = Duration(minutes: 5);
 
+  /// How long two refusals of the same device keep it from asking again.
+  static const _quiet = Duration(minutes: 10);
+
+  /// Reading the account's devices again, when it fails on the way to a
+  /// proof: then the comparison fails.
+  static const _retries = [Duration(seconds: 1), Duration(seconds: 2), Duration(seconds: 4)];
+
   _Comparing? _current;
   CodeComparison? _value;
+
+  /// When this device last said no to each device that asked, the last two.
+  final _declines = <String, List<DateTime>>{};
 
   /// The comparison running, or the last one, until [dismiss].
   @override
   CodeComparison? get value => _value;
 
   /// Starts comparing a code with [deviceId], one of the account's other
-  /// devices. Refused while another comparison runs.
-  Future<void> start(String deviceId) async {
+  /// devices: [value] is the new comparison as soon as this returns, and the
+  /// future completes once the other device was asked.
+  ///
+  /// Throws [StateError] at once, before anything begins, while another
+  /// comparison runs, while keys are off, or for this device itself.
+  Future<void> start(String deviceId) {
     final run = _keys._run;
     final device = run?.device;
     if (run == null || device == null) throw StateError('device keys are off');
@@ -135,7 +170,7 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       role: .initiator,
       comparison: _guard(Comparison.start),
     );
-    await _send(comparing, _startKind, {'commitment': comparing.comparison.commitment});
+    return _send(comparing, _startKind, {'commitment': comparing.comparison.commitment});
   }
 
   /// The person says the codes match: this device proves its keys to the
@@ -148,27 +183,44 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     final run = comparing.run;
     final keys = run.sealbox.accountKeys(run.device!.account);
     final mac = _guard(
-      () => comparing.comparison.mac(_keysInput(keys.identityKey, keys.signingKey), comparing.info!),
+      () => comparing.comparison.mac(_keyPair(keys.identityKey, keys.signingKey), comparing.info!),
     );
-    if (!await _send(comparing, _macKind, {'mac': mac})) return;
+    if (!await _send(comparing, _macKind, {'mac': mac}) || !_live(comparing)) return;
     if (comparing.verified != null) await _complete(comparing);
   }
 
   /// The person says the codes don't match, or doesn't want to compare: ended
-  /// on both.
-  Future<void> deny() async {
+  /// on both. [id] names the comparison meant, so a screen left open on one
+  /// never ends the next; without it, the one running.
+  ///
+  /// Once both proofs checked out and this device is letting the other in,
+  /// it is too late to say no: that finishes.
+  Future<void> deny({String? id}) async {
     final comparing = _current;
-    if (comparing == null || comparing.ended) return;
+    if (comparing == null || comparing.ended || comparing.completing) return;
+    if (id != null && comparing.id != id) return;
+    if (comparing.role == .responder) _declined(comparing.deviceId);
     _finish(comparing, const ComparisonCancelled());
     await _cancel(comparing.run, comparing.deviceId, comparing.id);
   }
 
-  /// Forgets one that ended.
-  void dismiss() {
+  /// Forgets one that ended: [id]'s, or whichever it was.
+  void dismiss({String? id}) {
     if (_current case _Comparing(ended: false)) return;
+    if (id != null && _value?.id != id) return;
     _current = null;
     _value = null;
     notifyListeners();
+  }
+
+  /// Gone with the keys: whatever was on its way ends here, and nothing more
+  /// is sent.
+  @override
+  void dispose() {
+    if (_current case final _Comparing comparing when !comparing.ended) _end(comparing);
+    _current = null;
+    _value = null;
+    super.dispose();
   }
 
   /// The run ended: whatever was on its way is dropped.
@@ -203,9 +255,14 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     return comparing;
   }
 
+  /// Whether [comparing] is still the one running here: every step that
+  /// waited on something checks before it goes on.
+  bool _live(_Comparing comparing) => !comparing.ended && identical(comparing, _current);
+
   void _show(_Comparing comparing, ComparisonPhase phase) {
     if (!identical(comparing, _current)) return;
     _value = CodeComparison(
+      id: comparing.id,
       deviceId: comparing.deviceId,
       role: comparing.role,
       phase: phase,
@@ -217,7 +274,8 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
   void _end(_Comparing comparing) {
     comparing
       ..ended = true
-      ..timer?.cancel();
+      ..timer?.cancel()
+      ..retry?.cancel();
     try {
       comparing.comparison.end();
     } on SealboxException {
@@ -232,12 +290,34 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
   }
 
   Future<void> _fail(_Comparing comparing, ComparisonFailure reason) async {
-    if (comparing.ended) return;
+    if (comparing.ended || comparing.completing) return;
     _finish(comparing, ComparisonFailed(reason));
     await _cancel(comparing.run, comparing.deviceId, comparing.id);
   }
 
-  void _expire(_Comparing comparing) => unawaited(_fail(comparing, .timeout));
+  void _expire(_Comparing comparing) {
+    if (comparing.ended) return;
+    if (!comparing.completing) return unawaited(_fail(comparing, .timeout));
+    // letting the other in finishes; whether the other said it let this one
+    // in is settled once it has
+    comparing.expired = true;
+    _settle(comparing);
+  }
+
+  /// Once this side let the other in: done when the other said the same,
+  /// failed when it ended or went quiet, and still waiting otherwise.
+  void _settle(_Comparing comparing) {
+    if (comparing.ended || !comparing.completed) return;
+    if (comparing.theyCancelled || (comparing.expired && !comparing.theyDone)) {
+      // no cancel goes back: this side said it was done
+      return _finish(comparing, const ComparisonFailed(.unconfirmed));
+    }
+    if (!comparing.theyDone) return;
+    _finish(comparing, switch (comparing.vouchFailed) {
+      true => const ComparisonFailed(.vouch),
+      false => const ComparisonDone(),
+    });
+  }
 
   /// Sends [kind] to the other device. A send that reaches nothing fails the
   /// comparison; answers whether it went.
@@ -277,6 +357,21 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     }
   }
 
+  /// The person said no to [deviceId] asking.
+  void _declined(String deviceId) {
+    final times = [...?_declines[deviceId], _keys._now()];
+    _declines[deviceId] = times.skip(max(0, times.length - 2)).toList();
+  }
+
+  /// Whether [deviceId] was said no to twice within [_quiet], the last time
+  /// less than [_quiet] ago.
+  bool _throttled(String deviceId) {
+    return switch (_declines[deviceId]) {
+      [final first, final last] => last.difference(first) <= _quiet && _keys._now().difference(last) < _quiet,
+      _ => false,
+    };
+  }
+
   /// Takes what the other device sent.
   Future<void> _take(KeyDelivery delivery) async {
     final run = _keys._run;
@@ -297,17 +392,24 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     }
     if (delivery.kind == _startKind) return _asked(run, delivery, id, payload!);
     // only what belongs to the one running here: anything else is from one
-    // that ended, or never was
+    // that ended, here or on the other side, or never was, and says nothing
     final comparing = _current;
-    if (comparing == null || comparing.id != id || comparing.deviceId != delivery.fromDeviceId) return;
+    if (comparing == null || comparing.ended || comparing.id != id || comparing.deviceId != delivery.fromDeviceId) {
+      return;
+    }
     switch ((delivery.kind, payload)) {
-      case (_keyKind, {'key': final String key}) when !comparing.ended:
+      case (_keyKind, {'key': final String key}):
         await _keyed(comparing, key);
-      case (_macKind, {'mac': final String mac}) when !comparing.ended:
+      case (_macKind, {'mac': final String mac}):
         await _proved(comparing, mac);
+      case (_cancelKind, _) when comparing.completing:
+        comparing.theyCancelled = true;
+        _settle(comparing);
       case (_cancelKind, _):
         _finish(comparing, const ComparisonCancelled());
       case (_doneKind, _):
+        comparing.theyDone = true;
+        _settle(comparing);
         // the other side's vouch is on the server now: read it
         await _keys.devicesOf(run.userId);
       case _:
@@ -325,8 +427,13 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     // gave up: dropped
     final at = _timeOf(id);
     if (commitment == null || at == null || _keys._now().difference(at).abs() > _life) return;
-    if (_current case _Comparing(ended: false)) {
-      // busy with another: that one goes on, this one ends
+    // said no to twice just now: no again, without asking the person, or
+    // busy with another, which goes on
+    final busy = switch (_current) {
+      _Comparing(ended: false) => true,
+      _ => false,
+    };
+    if (busy || _throttled(delivery.fromDeviceId)) {
       await _cancel(run, delivery.fromDeviceId, id);
       return;
     }
@@ -355,7 +462,7 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     }
     // the side that asked sends its own key only now, after the other's
     if (comparing.role == .initiator) {
-      if (!await _send(comparing, _keyKind, {'key': comparing.comparison.publicKey})) return;
+      if (!await _send(comparing, _keyKind, {'key': comparing.comparison.publicKey}) || !_live(comparing)) return;
     }
     final own = comparing.run.device!.id;
     final info = comparing.info = switch (comparing.role) {
@@ -367,11 +474,33 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
   }
 
   /// The other device's proof of its keys, checked against its keys as the
-  /// account's device list has them.
-  Future<void> _proved(_Comparing comparing, String mac) async {
+  /// account's device list has them. A list that can't be read is read again
+  /// a few times, a little later each, before the comparison fails.
+  Future<void> _proved(_Comparing comparing, String mac, {int attempt = 0}) async {
     final info = comparing.info;
     if (info == null) return _fail(comparing, .keys);
-    final listed = await _keys.devicesOf(comparing.run.userId);
+    final Peer listed;
+    try {
+      listed = await _keys.devicesOf(comparing.run.userId);
+    } on _Stopped {
+      rethrow;
+    } catch (error, stacktrace) {
+      if (!_live(comparing)) return;
+      if (attempt >= _retries.length) {
+        _keys._report(error, stacktrace);
+        return _fail(comparing, .unreachable);
+      }
+      comparing.retry = Timer(_retries[attempt], () {
+        unawaited(
+          _proved(comparing, mac, attempt: attempt + 1).catchError((Object error, StackTrace stacktrace) {
+            // stopped on the way, or worse: it ends here
+            if (error is! _Stopped) _keys._report(error, stacktrace);
+          }),
+        );
+      });
+      return;
+    }
+    if (!_live(comparing)) return;
     final device = listed.devices.where((each) => each.id == comparing.deviceId).firstOrNull?.device;
     final valid = switch (device) {
       final CryptoDevice device => _verify(comparing, device, mac, info),
@@ -384,17 +513,17 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
 
   bool _verify(_Comparing comparing, CryptoDevice device, String mac, String info) {
     try {
-      return comparing.comparison.verifyMac(_keysInput(device.identityKey, device.signingKey), info, mac);
+      return comparing.comparison.verifyMac(_keysOf(device), info, mac);
     } on SealboxException {
       return false;
     }
   }
 
   /// Both sides said the codes match, and the other's proof checked out: the
-  /// other device is in.
+  /// other device is in. From here a no or the timeout no longer ends it.
   Future<void> _complete(_Comparing comparing) async {
     final device = comparing.verified;
-    if (device == null || comparing.ended || comparing.completing) return;
+    if (device == null || !_live(comparing) || comparing.completing) return;
     comparing.completing = true;
     final run = comparing.run;
     try {
@@ -410,19 +539,77 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
         } on _Stopped {
           rethrow;
         } catch (error, stacktrace) {
-          // remembered here all the same
+          // trusted here all the same, and owed: tried again until it lands
           _keys._report(error, stacktrace);
+          comparing.vouchFailed = true;
+          await _keys._serial(run, () async => run.saveOwed({...await run.owed(), device.id: _keysOf(device)}));
         }
       }
-      if (comparing.role == .initiator) await _tell(run, comparing.deviceId, _doneKind, comparing.id);
-      _finish(comparing, const ComparisonDone());
+      if (comparing.ended) return;
+      await _tell(run, comparing.deviceId, _doneKind, comparing.id);
+      comparing.completed = true;
+      _settle(comparing);
       await _keys.devicesOf(run.userId);
+      // what this device holds reaches the one it just let in, without
+      // waiting for the next message or note
+      await _keys._shareThreadsWithOwn(run);
       if (_keys.sharesNoteKeys?.call() ?? true) await _keys._shareNoteKeys();
     } on _Stopped {
       // stopped on the way: what was saved stands
     } catch (error, stacktrace) {
       _keys._report(error, stacktrace);
+      // the other side hears it ended, unless it already heard this one done
+      if (!comparing.completed && !comparing.ended) {
+        _finish(comparing, const ComparisonCancelled());
+        await _cancel(run, comparing.deviceId, comparing.id);
+      }
     }
+  }
+}
+
+/// Paying the vouches this device owes.
+extension _Owed on DeviceKeys {
+  /// Vouches again for each device this one compared a code with and whose
+  /// vouch didn't land. One gone, holding other keys than those compared, or
+  /// vouched for by another meanwhile, is owed nothing more.
+  Future<void> _payOwed(_Run run) async {
+    final owed = await _serial(run, run.owed);
+    if (owed.isEmpty) return;
+    final listed = {for (final each in (await devicesOf(run.userId)).devices) each.id: each};
+    final paid = <String>{};
+    for (final MapEntry(key: id, value: keys) in owed.entries) {
+      final device = listed[id];
+      if (device == null || _keysOf(device.device) != keys || device.vouched) {
+        paid.add(id);
+        continue;
+      }
+      try {
+        await vouchFor(device.device);
+        paid.add(id);
+      } on _Stopped {
+        rethrow;
+      } on Map catch (refusal) {
+        switch (refusal) {
+          // vouched for by another between the list and this: nothing owed
+          case {'code': 'already_vouched'}:
+            paid.add(id);
+          default:
+            _report(refusal);
+        }
+      } catch (error, stacktrace) {
+        // still owed: the next start, resume or word of the devices tries again
+        _report(error, stacktrace);
+      }
+    }
+    if (paid.isEmpty) return;
+    await _serial(run, () async {
+      final latest = await run.owed();
+      await run.saveOwed({
+        for (final MapEntry(:key, :value) in latest.entries)
+          if (!paid.contains(key)) key: value,
+      });
+    });
+    _changed(run);
   }
 }
 
@@ -448,9 +635,23 @@ class _Comparing {
   /// The other device, once its proof checked out.
   CryptoDevice? verified;
 
+  /// Letting the other in has begun: a no or the timeout no longer end it.
   bool completing = false;
+
+  /// This side let the other in, and said so.
+  bool completed = false;
+
+  /// What the other side said, or didn't, once this one is letting it in.
+  bool theyDone = false;
+  bool theyCancelled = false;
+  bool expired = false;
+
+  bool vouchFailed = false;
   bool ended = false;
   Timer? timer;
+
+  /// Reading the account's devices again, for a proof.
+  Timer? retry;
 
   new({
     required this.run,
@@ -461,9 +662,6 @@ class _Comparing {
     this.theirCommitment,
   });
 }
-
-/// What a device proves it holds: its two public keys.
-String _keysInput(String identityKey, String signingKey) => '$identityKey|$signingKey';
 
 /// When a UUIDv7 was made, from its first 48 bits.
 DateTime? _timeOf(String id) {

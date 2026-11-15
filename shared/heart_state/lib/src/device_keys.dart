@@ -268,7 +268,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
               false => each.device,
             },
         ];
-        run.peers[run.userId] = await _check(run, run.userId, devices);
+        _keep(run, await _check(run, run.userId, devices));
         _changed(run);
       }
       return vouched;
@@ -328,6 +328,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
       // room for a new one
       await _receive(run);
       await _serial(run, () => _restock(run));
+      await _payOwed(run);
     } on _Stopped {
       // stopped on the way: nothing more goes out
     } catch (error, stacktrace) {
@@ -364,12 +365,15 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     _run?.sharedAt.clear();
     try {
       await devicesOf(userId);
+      final run = _run;
+      if (run == null || userId != run.userId || !(run.device?.published ?? false)) return;
+      // a vouch this device owes may be due, or answered by another's
+      await _payOwed(run);
       // a device of the account's own may be new, or newly vouched for: one
-      // this device trusts gets the note keys
-      // without waiting for the notes to be opened somewhere
-      if (userId == _run?.userId && (_run?.device?.published ?? false) && (sharesNoteKeys?.call() ?? true)) {
-        await _shareNoteKeys();
-      }
+      // this device trusts gets the thread and note keys without waiting for
+      // the next message, or for the notes to be opened somewhere
+      await _shareThreadsWithOwn(run);
+      if (sharesNoteKeys?.call() ?? true) await _shareNoteKeys();
     } on _Stopped {
       // stopped on the way: read again at the next start
     } catch (error, stacktrace) {
@@ -401,7 +405,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
       final devices = await _listed(run, userId);
       final peer = await _check(run, userId, devices, fingerprint: fingerprint);
       run.check();
-      run.peers[userId] = peer;
+      _keep(run, peer);
       _changed(run);
       return peer;
     });
@@ -430,7 +434,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
       }
       final listed = await _listed(run, userId);
       final peer = await _check(run, userId, listed, fingerprint: fingerprint);
-      run.peers[userId] = peer;
+      _keep(run, peer);
       if (peer.check == .mismatch) throw KeyMismatch(userId);
       final targets = peer.devices.where((each) => each.id != device.id && (to?.call(each) ?? true)).toList();
       if (targets.isEmpty) return const <String>{};
@@ -493,6 +497,25 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     );
     return (session: started.session, sessionId: started.sessionId, identityKey: claimed.identityKey);
   }
+
+  /// Keeps [peer] as [run]'s latest of its person's devices. One of the
+  /// account's own coming to be trusted hands over again what waited for it:
+  /// keys it sent before this device trusted it.
+  void _keep(_Run run, Peer peer) {
+    final before = {
+      for (final each in run.peers[peer.userId]?.devices ?? const <PeerDevice>[])
+        if (each.trusted) each.id,
+    };
+    run.peers[peer.userId] = peer;
+    if (peer.userId == run.userId && peer.devices.any((each) => each.trusted && !before.contains(each.id))) {
+      _redispatch(run);
+    }
+  }
+
+  /// Whether this device compared a code with [deviceId] and its vouch hasn't
+  /// reached the server yet: trusted here, and not yet by the account's other
+  /// devices.
+  bool owesVouch(String deviceId) => _run?.owing.contains(deviceId) ?? false;
 
   /// Says [run] changed, while it is still the one running.
   void _changed(_Run run) {

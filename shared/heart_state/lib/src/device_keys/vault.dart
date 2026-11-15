@@ -137,6 +137,54 @@ class _Run {
     await write('compared', jsonEncode({...await compared(), deviceId: keys}));
   }
 
+  /// The devices this one compared a code with whose vouch didn't reach the
+  /// server, each by the keys compared: tried again until it does, or until
+  /// the server lists it vouched for by another.
+  Future<Map<String, String>> owed() async {
+    final owed = switch (_decode(await read('owed'))) {
+      final Map owed => {
+        for (final MapEntry(:key, :value) in owed.entries)
+          if (value case final String keys) '$key': keys,
+      },
+      _ => <String, String>{},
+    };
+    owing
+      ..clear()
+      ..addAll(owed.keys);
+    return owed;
+  }
+
+  Future<void> saveOwed(Map<String, String> owed) async {
+    await write('owed', jsonEncode(owed));
+    owing
+      ..clear()
+      ..addAll(owed.keys);
+  }
+
+  /// [owed]'s devices, as last read or written: what a screen asks without
+  /// waiting on the vault.
+  final owing = <String>{};
+
+  /// The threads this device made a key for: what it shares again when one of
+  /// the account's devices comes to be trusted.
+  Future<Set<String>> threads() async {
+    return switch (_decode(await read('threads'))) {
+      {'ids': final List ids} => {for (final each in ids) '$each'},
+      _ => {},
+    };
+  }
+
+  Future<void> addThread(String threadId) async {
+    final known = await threads();
+    if (known.contains(threadId)) return;
+    await write(
+      'threads',
+      jsonEncode({
+        'ids': [...known, threadId],
+      }),
+    );
+  }
+
   static Map? _decode(String? json) {
     if (json == null) return null;
     try {

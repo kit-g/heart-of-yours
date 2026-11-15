@@ -39,14 +39,16 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
 
   DeviceApproval? _approval;
 
-  /// A comparison sheet is up: another device asking again changes what it
-  /// shows, not how many there are.
-  bool _comparing = false;
+  /// The last comparison asked for that a sheet showed: closed while it
+  /// finishes, it isn't shown again.
+  String? _shown;
 
   @override
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(onResume: _onResume);
+    // a sheet closing may leave a request waiting that came while it was up
+    comparisonSheet.addListener(_asked);
   }
 
   @override
@@ -81,6 +83,7 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
     _auth?.removeListener(_sync);
     _upsync?.removeListener(_sync);
     _approval?.removeListener(_asked);
+    comparisonSheet.removeListener(_asked);
     _lifecycle.dispose();
     super.dispose();
   }
@@ -109,19 +112,24 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
     }
   }
 
-  /// Shows a comparison another device asked for. One this device started
-  /// is shown by the page that started it.
-  void _asked() {
+  /// Shows a comparison another device asked for, once no sheet is up: one
+  /// asked for while another sheet shows waits for it to close. One this
+  /// device started is shown by the page that started it.
+  ///
+  /// A turn later, never inside a route closing.
+  void _asked() => scheduleMicrotask(_show);
+
+  void _show() {
     final approval = _approval;
-    if (approval == null || _comparing) return;
+    if (!mounted || approval == null || comparisonSheet.value != null) return;
     final asked = switch (approval.value) {
-      CodeComparison(role: .responder, running: true) => true,
-      _ => false,
+      CodeComparison(role: .responder, running: true, :final id) => id,
+      _ => null,
     };
     final root = HeartRouter.maybeOf(context)?.rootContext;
-    if (!asked || root == null || !root.mounted) return;
-    _comparing = true;
-    unawaited(showCodeComparison(root, approval).whenComplete(() => _comparing = false));
+    if (asked == null || asked == _shown || root == null || !root.mounted) return;
+    _shown = asked;
+    unawaited(showCodeComparison(root, approval, asked));
   }
 
   void _onResume() {

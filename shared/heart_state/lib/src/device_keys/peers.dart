@@ -174,7 +174,11 @@ bool _signed(CryptoDevice voucher, CryptoDevice device, String signature) {
 
 /// A device's two public keys, as a comparison proves them and this device
 /// remembers them.
-String _keysOf(CryptoDevice device) => '${device.identityKey}|${device.signingKey}';
+String _keysOf(CryptoDevice device) => _keyPair(device.identityKey, device.signingKey);
+
+/// The one spelling of a device's two public keys: what a comparison's proof
+/// covers, and what [_Run.compared] keeps. Any other would never match.
+String _keyPair(String identityKey, String signingKey) => '$identityKey|$signingKey';
 
 String? _fingerprintOf(CryptoDevice device) {
   try {
