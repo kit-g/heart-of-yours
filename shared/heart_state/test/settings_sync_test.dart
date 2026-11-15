@@ -628,7 +628,7 @@ void _screenChoices() {
         extra: {
           'kept': 1,
           'screens': {
-            'historyDensity': {'value': 'compact', 'at': '2026-09-01T10:00:00.000Z'},
+            'templatesView': {'value': 'grid', 'at': '2026-09-01T10:00:00.000Z'},
             'historyView': {'value': 'list', 'at': '2026-09-01T10:00:00.000Z', 'theirs': true},
           },
         },
@@ -636,7 +636,7 @@ void _screenChoices() {
       final written = withScreenChoices(settings, records);
       expect(screenChoicesOf(written), records);
       expect(written.extra['kept'], 1);
-      expect(written.extra['screens'], containsPair('historyDensity', isA<Map>()));
+      expect(written.extra['screens'], containsPair('templatesView', isA<Map>()));
       expect((written.extra['screens'] as Map)['historyView'], containsPair('theirs', true));
       for (final odd in [
         null,
@@ -699,6 +699,27 @@ void _screenChoices() {
       await settle();
       expect(preferences.historyView, HistoryView.calendar);
       expect(screenChoicesOf(account.saved.single)[ScreenChoice.historyView]?.value, 'calendar');
+    });
+
+    test('History\'s cards are full until a choice is made, and it travels like the view (#611)', () async {
+      await boot();
+      expect(preferences.historyDensity, HistoryDensity.full);
+      account.arrive(const Settings());
+      await settle();
+
+      // the default chosen again is no choice
+      preferences.setHistoryDensity(.full);
+      await settle();
+      expect(account.saved, isEmpty);
+
+      preferences.setHistoryDensity(.compact);
+      await settle();
+      expect(preferences.historyDensity, HistoryDensity.compact);
+      expect(screenChoicesOf(account.saved.single)[ScreenChoice.historyDensity]?.value, 'compact');
+
+      // a newer app's density reads as full here
+      await boot(stored: {'screen-historyDensity': 'tiny', 'screen-historyDensity-at': later.toIso8601String()});
+      expect(preferences.historyDensity, HistoryDensity.full);
     });
 
     test('choosing the view already shown is not a choice', () async {
