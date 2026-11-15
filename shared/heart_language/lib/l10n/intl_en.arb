@@ -6088,5 +6088,15 @@
   "deleteAccountConversationsBody": "Each one is deleted for both of you, and can't be brought back.",
   "@deleteAccountConversationsBody": {"description": "Body of the dialog that asks before every conversation is deleted (#568)", "type": "text", "placeholders": {}},
   "deleteAccountConversationsFailed": "{count, plural, =1{Couldn't delete a conversation. Try again.} other{Couldn't delete {count} conversations. Try again.}}",
-  "@deleteAccountConversationsFailed": {"description": "In the account deletion dialog when some coaching conversations couldn't be deleted; the button to try again sits under it (#568)", "type": "text", "placeholders": {"count": {"type": "int"}}}
+  "@deleteAccountConversationsFailed": {"description": "In the account deletion dialog when some coaching conversations couldn't be deleted; the button to try again sits under it (#568)", "type": "text", "placeholders": {"count": {"type": "int"}}},
+  "calendarLogOnDay": "Log a workout on this day",
+  "@calendarLogOnDay": {"description": "History calendar: what tapping an empty past day does, read out after the date (#618)", "type": "text", "placeholders": {}},
+  "calendarAddAnother": "Add another",
+  "@calendarAddAnother": {"description": "History calendar: in a day's menu, logs one more workout on that day (#618)", "type": "text", "placeholders": {}},
+  "calendarToday": "today",
+  "@calendarToday": {"description": "History calendar: read out after today's date, lower case as it follows a comma (#618)", "type": "text", "placeholders": {}},
+  "pastWorkoutsOfferTitle": "Log workouts after they happened?",
+  "@pastWorkoutsOfferTitle": {"description": "The one offer to turn Past workouts on, shown the first time the user taps an empty past day in History's calendar (#618)", "type": "text", "placeholders": {}},
+  "pastWorkoutsOfferBody": "Tap a past day to write down what you did then. It counts like any other workout.",
+  "@pastWorkoutsOfferBody": {"description": "Under the Past workouts offer's title: what turning it on gives (#618)", "type": "text", "placeholders": {}}
 }
