@@ -2365,7 +2365,7 @@ void main() {
         await tester.tap(find.bySemanticsLabel(RegExp(r', 2 workouts$')));
         await tester.pumpTimes();
         // the screen is only honest if the list is open on it
-        expect(find.byType(CheckedPopupMenuItem<Workout>), findsNWidgets(2));
+        expect(find.byType(PopupMenuItem<Workout>), findsNWidgets(2));
       case _Screen.calendar:
         final completed = Workout.fromJson(_unsynced().toMap());
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);

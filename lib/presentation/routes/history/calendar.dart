@@ -239,35 +239,44 @@ class _MarkedDay extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final localizations = MaterialLocalizations.of(context);
     final h24 = MediaQuery.alwaysUse24HourFormatOf(context);
+    Widget entry(Workout workout) {
+      return Column(
+        crossAxisAlignment: .start,
+        mainAxisSize: .min,
+        children: [
+          Text(
+            workout.name ?? l.defaultWorkoutName(workout.start),
+            maxLines: 1,
+            overflow: .ellipsis,
+            style: textTheme.bodyLarge,
+          ),
+          Text(
+            localizations.formatTimeOfDay(
+              TimeOfDay.fromDateTime(workout.start.toLocal()),
+              alwaysUse24HourFormat: h24,
+            ),
+            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+          ),
+        ],
+      );
+    }
+
     final picked = await showMenu<Workout>(
       context: context,
       position: menuOver(context, context.findRenderObject()! as RenderBox),
       constraints: const BoxConstraints(minWidth: 200, maxWidth: 280),
       items: [
         for (final workout in sessions.reversed)
-          CheckedPopupMenuItem<Workout>(
-            value: workout,
-            checked: workout.id == selectedId,
-            child: Column(
-              crossAxisAlignment: .start,
-              mainAxisSize: .min,
-              children: [
-                Text(
-                  workout.name ?? l.defaultWorkoutName(workout.start),
-                  maxLines: 1,
-                  overflow: .ellipsis,
-                  style: textTheme.bodyLarge,
-                ),
-                Text(
-                  localizations.formatTimeOfDay(
-                    TimeOfDay.fromDateTime(workout.start.toLocal()),
-                    alwaysUse24HourFormat: h24,
-                  ),
-                  style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                ),
-              ],
+          // checked only while the pane shows one of them: a check column
+          // with nothing in it is an empty gutter on every row
+          switch (sessions.any((each) => each.id == selectedId)) {
+            true => CheckedPopupMenuItem<Workout>(
+              value: workout,
+              checked: workout.id == selectedId,
+              child: entry(workout),
             ),
-          ),
+            false => PopupMenuItem<Workout>(value: workout, child: entry(workout)),
+          },
       ],
     );
     if (picked != null) open(picked);

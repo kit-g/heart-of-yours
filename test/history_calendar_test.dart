@@ -122,7 +122,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.check));
     await tester.pumpAndSettle();
     expect(opened.single.name, 'Session');
-    expect(find.byType(CheckedPopupMenuItem<Workout>), findsNothing);
+    expect(find.byType(PopupMenuItem<Workout>), findsNothing);
   });
 
   for (final count in [2, 3, 4]) {
@@ -143,7 +143,7 @@ void main() {
       await tester.tap(find.bySemanticsLabel(label));
       await tester.pumpAndSettle();
       expect(opened, isEmpty);
-      final items = find.byType(CheckedPopupMenuItem<Workout>);
+      final items = find.byType(PopupMenuItem<Workout>);
       expect(items, findsNWidgets(count));
       // earliest first
       expect(tester.getTopLeft(find.text('At 7')).dy, lessThan(tester.getTopLeft(find.text('At 11')).dy));
@@ -384,10 +384,19 @@ void main() {
     final rect = tester.getRect(day(label));
     await tester.tap(day(label));
     await tester.pumpTimes();
-    final items = find.byType(CheckedPopupMenuItem<Workout>);
+    final items = find.byType(PopupMenuItem<Workout>);
     expect(items, findsNWidgets(2));
     final menu = tester.getRect(items.first);
     expect((menu.left - rect.left).abs(), lessThan(rect.width), reason: 'menu at $menu, day at $rect');
+
+    // the earlier one into the pane; asked again, the list checks it
+    await tester.tap(items.first);
+    await tester.pumpTimes();
+    expect(find.byType(WorkoutEditor), findsOneWidget);
+    await tester.tap(day(label));
+    await tester.pumpTimes();
+    final checked = tester.widgetList<CheckedPopupMenuItem<Workout>>(find.byType(CheckedPopupMenuItem<Workout>));
+    expect([for (final item in checked) (item.value?.id, item.checked)], [(first.id, true), (second.id, false)]);
     semantics.dispose();
   });
 
