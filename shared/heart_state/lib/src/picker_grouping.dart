@@ -1,11 +1,14 @@
 import 'package:heart_models/heart_models.dart';
 
+import 'screen_choices.dart';
+
 /// How the exercise picker lays out the library before any typing (#620): one
 /// flat list, or a heading per category, target or movement pattern.
 ///
 /// One choice for every place the picker appears — the Exercises tab, a
 /// workout's Add exercises, the goal and chart pickers, Move history — because
-/// it is the same list in all of them. Follows the account ([SettingsSync]).
+/// it is the same list in all of them. A screen choice
+/// ([ScreenChoice.pickerGrouping]), stored and synced by its [name].
 enum PickerGrouping {
   /// The library as it always was, and the default.
   none,
@@ -116,22 +119,4 @@ List<GroupedExercises> groupExercises(
     for (final group in order)
       if (buckets[group] case final members?) (group: group, exercises: members),
   ];
-}
-
-/// Where the choice lives in the account's [Settings]: `extra.pickerGrouping`,
-/// as the enum's name. heart-api keeps keys it does not know.
-const _settingsKey = 'pickerGrouping';
-
-/// The grouping [settings] carries; null when it carries none this version can
-/// read.
-PickerGrouping? pickerGroupingOf(Settings settings) {
-  return switch (settings.extra[_settingsKey]) {
-    String value => PickerGrouping.fromString(value),
-    _ => null,
-  };
-}
-
-/// [settings] carrying [grouping], every other key as it was.
-Settings withPickerGrouping(Settings settings, PickerGrouping grouping) {
-  return settings.copyWith(extra: {...settings.extra, _settingsKey: grouping.name});
 }

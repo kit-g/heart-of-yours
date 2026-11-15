@@ -1,52 +1,29 @@
 part of 'exercises.dart';
 
-/// Picks how the picker groups the library (#620), beside the filters it
-/// works with. One choice for every place the picker appears.
-///
-/// Filled while a grouping is on, as the movement button is while a movement
-/// filter is: the list's shape is the button's doing, and it should say so
-/// without being opened.
-class const _GroupingButton(final PickerGrouping grouping) extends StatelessWidget {
-  static const _menuWidth = 200.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData(:colorScheme) = Theme.of(context);
-    final l = L.of(context);
-    final active = grouping != .none;
-
-    return IconButton(
-      key: AppKeys.pickerGrouping,
-      constraints: const .tightFor(width: 36, height: 36),
-      padding: .zero,
-      iconSize: 20,
-      // names the grouping in force, so a screen reader hears what it is
-      tooltip: l.pickerGroupBy(grouping.label(l)),
-      icon: Icon(
-        active ? Icons.view_agenda_rounded : Icons.view_agenda_outlined,
-        color: active ? colorScheme.primary : null,
-      ),
-      onPressed: () async {
-        final picked = await showMenu<PickerGrouping>(
-          context: context,
-          // this context is the button's own: the menu hangs off its right edge
-          position: menuEndingUnder(context, width: _menuWidth),
-          constraints: const .tightFor(width: _menuWidth),
-          items: [
-            for (final each in PickerGrouping.values)
-              CheckedPopupMenuItem<PickerGrouping>(
-                value: each,
-                checked: each == grouping,
-                child: Text(each.label(l)),
-              ),
-          ],
-        );
-        if (!context.mounted) return;
-        if (picked case final PickerGrouping picked when picked != grouping) {
-          Preferences.of(context).setPickerGrouping(picked);
-        }
-      },
-    );
+/// Picks how the picker groups the library (#620): a menu of the groupings,
+/// the one in force checked, hanging off [anchor] — the Exercises tab's
+/// options button, which is where the choice lives. One choice for every
+/// place the picker appears; the others follow it.
+Future<void> showPickerGroupingMenu(BuildContext anchor) async {
+  const width = 200.0;
+  final l = L.of(anchor);
+  final grouping = Preferences.of(anchor).pickerGrouping;
+  final picked = await showMenu<PickerGrouping>(
+    context: anchor,
+    position: menuEndingUnder(anchor, width: width),
+    constraints: const .tightFor(width: width),
+    items: [
+      for (final each in PickerGrouping.values)
+        CheckedPopupMenuItem<PickerGrouping>(
+          value: each,
+          checked: each == grouping,
+          child: Text(each.label(l)),
+        ),
+    ],
+  );
+  if (!anchor.mounted) return;
+  if (picked case final PickerGrouping picked when picked != grouping) {
+    Preferences.of(anchor).setPickerGrouping(picked);
   }
 }
 

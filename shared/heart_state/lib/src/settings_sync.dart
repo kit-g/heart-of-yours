@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:heart_models/heart_models.dart';
 
 import 'features.dart';
-import 'picker_grouping.dart';
 import 'preferences.dart';
+import 'screen_choices.dart';
 
 /// What [SettingsSync] needs of the session: who is signed in, whether that is
 /// an account at all, and a way to write its settings. [Auth] is the one the
@@ -21,8 +21,8 @@ abstract interface class SettingsAccount implements Listenable {
 }
 
 /// Keeps a signed-in account's settings the same on every device it is used
-/// on: the opt-in answers (#138), the week's first day (#339) and how the
-/// exercise picker groups the library (#620).
+/// on: the opt-in answers (#138), the week's first day (#339) and the screen
+/// choices (#609, #620), which travel the way the answers do.
 ///
 /// The device's [Preferences] stay the store the app reads; the account's
 /// [Settings] carry a copy. For the answers that is `extra.features` (see
@@ -36,7 +36,6 @@ abstract interface class SettingsAccount implements Listenable {
 /// the account's day is the one this device follows, so a change made on
 /// another phone arrives here. Only a real choice travels: the locale's day
 /// stays on the device, and an account with no day leaves this one as it is.
-/// The picker's grouping travels the same way, in `extra.pickerGrouping`.
 ///
 /// An anonymous session has no account to follow, so its answers and its day
 /// stay on the device until it becomes one — at which point they are the
@@ -93,6 +92,17 @@ class SettingsSync {
           if (remote[feature] case final theirs when theirs == null || mine.at.isAfter(theirs.at)) feature: mine,
       };
 
+      final remoteChoices = screenChoicesOf(user.settings);
+      final localChoices = _preferences.screenChoices;
+      final choicesThere = {
+        for (final MapEntry(key: choice, value: theirs) in remoteChoices.entries)
+          if (localChoices[choice] case final mine when mine == null || theirs.at.isAfter(mine.at)) choice: theirs,
+      };
+      final choicesHere = {
+        for (final MapEntry(key: choice, value: mine) in localChoices.entries)
+          if (remoteChoices[choice] case final theirs when theirs == null || mine.at.isAfter(theirs.at)) choice: mine,
+      };
+
       final mine = _preferences.chosenFirstWeekday;
       final theirs = user.settings.firstWeekday;
       final owed = _preferences.firstWeekdayOwed && mine != null;
@@ -100,37 +110,24 @@ class SettingsSync {
       // adopting notifies, which lands back here — as a no-op, since the two
       // sides then agree on everything adopted
       _preferences.adoptFeatureRecords(newerThere);
+      _preferences.adoptScreenChoices(choicesThere);
       if (!owed && theirs != null && theirs != mine) {
         _preferences.adoptFirstWeekday(theirs);
       }
 
-      final myGrouping = _preferences.chosenPickerGrouping;
-      final theirGrouping = pickerGroupingOf(user.settings);
-      final groupingOwed = _preferences.pickerGroupingOwed && myGrouping != null;
-      if (!groupingOwed && theirGrouping != null && theirGrouping != myGrouping) {
-        _preferences.adoptPickerGrouping(theirGrouping);
-      }
-
       final writesDay = owed && theirs != mine;
-      final writesGrouping = groupingOwed && theirGrouping != myGrouping;
-      if (newerHere.isNotEmpty || writesDay || writesGrouping) {
+      if (newerHere.isNotEmpty || choicesHere.isNotEmpty || writesDay) {
         var settings = user.settings;
         if (newerHere.isNotEmpty) settings = withFeatureRecords(settings, newerHere);
+        if (choicesHere.isNotEmpty) settings = withScreenChoices(settings, choicesHere);
         if (writesDay) settings = settings.copyWith(firstWeekday: mine);
-        if (myGrouping case final PickerGrouping grouping when writesGrouping) {
-          settings = withPickerGrouping(settings, grouping);
-        }
         final saved = await _auth.saveSettings(settings);
         // a choice made while the write was out is still owed
         if (saved != null && owed && _preferences.chosenFirstWeekday == mine) {
           _preferences.settleFirstWeekday();
         }
-        if (saved != null && groupingOwed && _preferences.chosenPickerGrouping == myGrouping) {
-          _preferences.settlePickerGrouping();
-        }
-      } else {
-        if (owed) _preferences.settleFirstWeekday();
-        if (groupingOwed) _preferences.settlePickerGrouping();
+      } else if (owed) {
+        _preferences.settleFirstWeekday();
       }
     } catch (error, stacktrace) {
       // the device keeps its answer; the next change or sign-in tries again

@@ -13,6 +13,7 @@ import 'picker_grouping.dart';
 import 'plates.dart';
 import 'warmups.dart';
 import 'rest_defaults.dart';
+import 'screen_choices.dart';
 
 const _baseColor = 'baseColor';
 const _themeMode = 'themeMode';
@@ -40,9 +41,8 @@ const _barWeight = 'barWeight';
 const _platesWithout = 'platesWithout';
 const _warmupScheme = 'warmupScheme';
 const _defaultRest = 'defaultRest';
-const _pickerGrouping = 'pickerGrouping';
-const _pickerGroupingOwed = 'pickerGroupingOwed';
 const _openPickerGroups = 'openPickerGroups';
+const _screen = 'screen';
 
 class Preferences with ChangeNotifier {
   /// The key under which [onboardingSeen] is stored. Public so a test can seed
@@ -192,35 +192,37 @@ class Preferences with ChangeNotifier {
   /// The account holds this device's choice now.
   void settleFirstWeekday() => _prefs?.remove(_firstWeekdayOwed);
 
-  /// How the exercise picker groups the library (#620): [PickerGrouping.none],
-  /// the flat list, until the user picks. A choice follows the account like
-  /// [firstWeekday] does ([SettingsSync]): owed until the account holds it,
-  /// and while nothing is owed, the account's is the one this device shows.
-  PickerGrouping get pickerGrouping => chosenPickerGrouping ?? .none;
+  /// What History opens on (#609): the last view the user switched to, on
+  /// this device or another, or the list until they have.
+  HistoryView get historyView {
+    return HistoryView.fromValue(_prefs?.getString('$_screen-${ScreenChoice.historyView.value}')) ?? .list;
+  }
 
-  /// The user's own choice of [pickerGrouping], null while they have made none.
-  PickerGrouping? get chosenPickerGrouping => PickerGrouping.fromString(_prefs?.getString(_pickerGrouping));
+  void setHistoryView(HistoryView view) {
+    // what is stored, not what it reads as: a newer app's view reads as the
+    // list here, and choosing the list over it is still a choice
+    final stored = _prefs?.getString('$_screen-${ScreenChoice.historyView.value}');
+    if (stored == view.value || (stored == null && view == .list)) return;
+    _storeScreenChoice(.historyView, ScreenChoiceRecord(value: view.value, at: DateTime.timestamp()));
+    notifyListeners();
+  }
 
-  /// Whether the choice here is newer than the account's. [SettingsSync]
-  /// writes it and [settlePickerGrouping]s.
-  bool get pickerGroupingOwed => _prefs?.getBool(_pickerGroupingOwed) ?? false;
+  /// How the exercise picker groups the library (#620): the last grouping
+  /// chosen, on this device or another, or [PickerGrouping.none] — the flat
+  /// list — until there is one. A screen choice, so it travels as History's
+  /// view does.
+  PickerGrouping get pickerGrouping {
+    return PickerGrouping.fromString(_prefs?.getString('$_screen-${ScreenChoice.pickerGrouping.value}')) ?? .none;
+  }
 
   void setPickerGrouping(PickerGrouping grouping) {
-    _prefs?.setString(_pickerGrouping, grouping.name);
-    _prefs?.setBool(_pickerGroupingOwed, true);
+    // what is stored, not what it reads as: a newer app's grouping reads as
+    // none here, and choosing none over it is still a choice
+    final stored = _prefs?.getString('$_screen-${ScreenChoice.pickerGrouping.value}');
+    if (stored == grouping.name || (stored == null && grouping == .none)) return;
+    _storeScreenChoice(.pickerGrouping, ScreenChoiceRecord(value: grouping.name, at: DateTime.timestamp()));
     notifyListeners();
   }
-
-  /// Takes [grouping] as this device's choice: the account's, made elsewhere.
-  void adoptPickerGrouping(PickerGrouping grouping) {
-    if (chosenPickerGrouping == grouping && !pickerGroupingOwed) return;
-    _prefs?.setString(_pickerGrouping, grouping.name);
-    _prefs?.remove(_pickerGroupingOwed);
-    notifyListeners();
-  }
-
-  /// The account holds this device's choice now.
-  void settlePickerGrouping() => _prefs?.remove(_pickerGroupingOwed);
 
   /// The ids ([ExerciseGroup.id]) of the picker's open groups. Groups start
   /// folded — a screen of headings is the point of grouping 300 exercises —
@@ -235,6 +237,35 @@ class Preferences with ChangeNotifier {
 
   void togglePickerGroup(String id) {
     _openGroups.value = _toggleInList(_openPickerGroups, id).ids;
+  }
+
+  void _storeScreenChoice(ScreenChoice choice, ScreenChoiceRecord record) {
+    _prefs?.setString('$_screen-${choice.value}', record.value);
+    _prefs?.setString('$_screen-${choice.value}-at', record.at.toUtc().toIso8601String());
+  }
+
+  /// Every screen choice this device has made or taken, and when. What
+  /// [SettingsSync] compares with the account's. A default is not a choice,
+  /// and does not travel.
+  Map<ScreenChoice, ScreenChoiceRecord> get screenChoices {
+    return {
+      for (final choice in ScreenChoice.values)
+        if ((
+              _prefs?.getString('$_screen-${choice.value}'),
+              DateTime.tryParse(_prefs?.getString('$_screen-${choice.value}-at') ?? ''),
+            )
+            case (String value, DateTime at))
+          choice: ScreenChoiceRecord(value: value, at: at),
+    };
+  }
+
+  /// Takes [records] as this device's choices: made elsewhere, and newer.
+  void adoptScreenChoices(Map<ScreenChoice, ScreenChoiceRecord> records) {
+    if (records.isEmpty) return;
+    for (final MapEntry(key: choice, value: record) in records.entries) {
+      _storeScreenChoice(choice, record);
+    }
+    notifyListeners();
   }
 
   /// The first day of the week where [locale] lives, from the same CLDR data

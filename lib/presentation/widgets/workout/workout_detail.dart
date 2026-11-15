@@ -595,9 +595,14 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
         // let the close animation finish before the list visibly resets
         Future.delayed(
           const Duration(milliseconds: 100),
-          () => allExercises
-            ..unselectAll()
-            ..clearFilters(),
+          () {
+            allExercises
+              ..unselectAll()
+              ..clearFilters();
+            // the search too: the controller is this State's and outlives the
+            // dialog, so the next Add exercises opened on the last one's text
+            if (mounted) _searchController.clear();
+          },
         );
       },
     );

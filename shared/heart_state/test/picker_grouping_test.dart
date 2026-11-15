@@ -109,49 +109,32 @@ void main() {
     });
   });
 
-  group('the settings codec', () {
-    test('reads what it wrote, keeping every other key', () {
-      const settings = Settings(themeMode: 'dark', extra: {'kept': 1, 'features': {}});
-      for (final grouping in PickerGrouping.values) {
-        final written = withPickerGrouping(settings, grouping);
-        expect(pickerGroupingOf(written), grouping);
-        expect(written.extra['kept'], 1);
-        expect(written.extra['features'], isEmpty);
-        expect(written.themeMode, 'dark');
-        // through the wire and back
-        expect(pickerGroupingOf(Settings.fromJson(written.toMap())), grouping);
-      }
-    });
-
-    test('nothing, or a grouping from a newer version, reads as no choice', () {
-      expect(pickerGroupingOf(const Settings()), isNull);
-      expect(pickerGroupingOf(const Settings(extra: {'pickerGrouping': 'equipment'})), isNull);
-      expect(pickerGroupingOf(const Settings(extra: {'pickerGrouping': 3})), isNull);
-    });
-  });
-
   group('Preferences', () {
-    test('the grouping is none until chosen, then the choice, owed to the account', () async {
+    test('the grouping is none until chosen, then the choice, as a screen choice with its time', () async {
       SharedPreferences.setMockInitialValues({});
       final preferences = Preferences();
       await preferences.init();
       expect(preferences.pickerGrouping, PickerGrouping.none);
-      expect(preferences.chosenPickerGrouping, isNull);
+      expect(preferences.screenChoices, isEmpty);
 
       var notified = 0;
       preferences.addListener(() => notified++);
       preferences.setPickerGrouping(.movement);
 
       expect(preferences.pickerGrouping, PickerGrouping.movement);
-      expect(preferences.pickerGroupingOwed, isTrue);
+      expect(preferences.screenChoices[ScreenChoice.pickerGrouping]?.value, 'movement');
       expect(notified, 1);
 
-      preferences.settlePickerGrouping();
-      expect(preferences.pickerGroupingOwed, isFalse);
+      // the grouping already in force is not a new choice
+      preferences.setPickerGrouping(.movement);
+      expect(notified, 1);
     });
 
     test('the choice outlives the launch', () async {
-      SharedPreferences.setMockInitialValues({'pickerGrouping': 'target'});
+      SharedPreferences.setMockInitialValues({
+        'screen-pickerGrouping': 'target',
+        'screen-pickerGrouping-at': '2026-11-01T10:00:00.000Z',
+      });
       final preferences = Preferences();
       await preferences.init();
       expect(preferences.pickerGrouping, PickerGrouping.target);

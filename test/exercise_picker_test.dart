@@ -386,19 +386,15 @@ void main() {
       expect(tester.getTopLeft(heading('target:chest')).dy, top);
     });
 
-    testWidgets('the button beside the filters picks the grouping, for every picker', (tester) async {
+    testWidgets('a grouping chosen elsewhere is the one this picker shows', (tester) async {
+      // no control of its own: the Exercises tab's options set it for all
       await pump(tester);
+      expect(heading('movement:horizontal_press'), findsNothing);
 
-      await tester.tap(find.byKey(AppKeys.pickerGrouping));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(CheckedPopupMenuItem<PickerGrouping>, 'Movement'));
-      await tester.pumpAndSettle();
+      preferences.setPickerGrouping(.movement);
+      await tester.pump();
 
-      expect(preferences.pickerGrouping, PickerGrouping.movement);
-      expect(preferences.pickerGroupingOwed, isTrue);
       expect(heading('movement:horizontal_press'), findsOneWidget);
-      // the button says what it is set to
-      expect(find.byTooltip('Group by: Movement'), findsOneWidget);
     });
 
     testWidgets('folding a group from its pinned heading brings the list back to the group\'s start', (tester) async {

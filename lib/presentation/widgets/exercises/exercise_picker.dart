@@ -89,9 +89,6 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                   ),
                 ),
                 _MovementFilterButton(exercises: exercises),
-                // beside the movement filter rather than in the Target and
-                // Category row below, whose two halves stay even (#488)
-                _GroupingButton(preferences.pickerGrouping),
               ],
             ),
           ),
