@@ -5,7 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 /// The muscle groups History is narrowed to (#610): a workout shows while it
-/// trained any of them, by [workoutGroupsOf]. Empty is no filter, and History
+/// trained any of them, by [WorkoutGroups]. Empty is no filter, and History
 /// as it always was.
 ///
 /// Kept for the app's run and nowhere else: a launch, or a session changing
@@ -38,45 +38,49 @@ class HistoryFilter with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// Whether [workout] shows under the filter: always, with none set.
-  bool shows(Workout workout, {required Exercise? Function(ExerciseId) lookup}) {
-    return _groups.isEmpty || workoutGroupsOf(workout, lookup: lookup).any(_groups.contains);
+  bool shows(Workout workout, WorkoutGroups trained) {
+    return _groups.isEmpty || trained.of(workout).any(_groups.contains);
   }
 
   @override
   void onSignOut() => clear();
 }
 
-/// What [workoutGroupsOf] has already worked out, per workout as held. Every
-/// copy the store hands over is a new object, so an edited or refetched
-/// workout is read afresh, while History's every-second rebuilds during an
-/// active workout read the cache.
-final _cache = Expando<Set<MuscleGroupKey>>('workoutGroups');
+/// The muscle groups workouts trained, as History's filter reads them
+/// (#610), against the library as it stands now.
+///
+/// Each exercise with a working set done counts toward its *primary* groups
+/// only, so a bench session is no arm day; warm-ups count for nothing, as on
+/// the muscle map (#236). The library's copy of an exercise wins over the one
+/// the workout carries, which may have been synced without its tags. An
+/// exercise nobody tagged — one the user made — counts toward the group its
+/// target names, and a target no group answers to (cardio, the whole body)
+/// toward none.
+///
+/// Meant to live for one read of the history: each exercise is resolved once
+/// however many workouts hold it, and a library that changes (a re-tag, an
+/// edit to the user's own exercise) is read afresh by the next one.
+class WorkoutGroups {
+  final Exercise? Function(ExerciseId) _lookup;
+  final _byExercise = <ExerciseId, Set<MuscleGroupKey>>{};
 
-/// The muscle groups [workout] trained, as History's filter reads them
-/// (#610): each exercise with a set done counts toward its *primary* groups
-/// only, so a bench session is no arm day. The library's tagging wins over
-/// the copy the workout carries, which may have been synced without it; an
-/// exercise with no primary tags — one the user made — counts toward the
-/// group its target names, and a target no group answers to (cardio, the
-/// whole body) toward none.
-Set<MuscleGroupKey> workoutGroupsOf(Workout workout, {required Exercise? Function(ExerciseId) lookup}) {
-  if (_cache[workout] case final groups?) return groups;
-  final done = workout.where((each) => each.any((set) => set.isCompleted)).map((each) => each.exercise);
-  final groups = {for (final exercise in done) ...exerciseGroupsOf(exercise, lookup: lookup)};
-  // kept only once the library had its say on every exercise: read before
-  // it loads, a workout would keep the copy's tagging for the whole run
-  if (done.every((exercise) => lookup(exercise.id) != null)) _cache[workout] = groups;
-  return groups;
-}
+  new(this._lookup);
 
-/// [exercise]'s primary muscle groups, by [workoutGroupsOf]'s rule.
-Set<MuscleGroupKey> exerciseGroupsOf(Exercise exercise, {required Exercise? Function(ExerciseId) lookup}) {
-  final tagging = switch (lookup(exercise.id)?.muscles) {
-    final MuscleTagging muscles when !muscles.isEmpty => muscles,
-    _ => exercise.muscles,
-  };
-  return switch (tagging.primaryGroups) {
-    final groups when groups.isNotEmpty => groups,
-    _ => {?exercise.target.muscleGroup},
-  };
+  Set<MuscleGroupKey> of(Workout workout) {
+    return {
+      for (final each in workout.where((each) => each.any(_counts)))
+        ...(_byExercise[each.exercise.id] ??= _groupsOf(each.exercise)),
+    };
+  }
+
+  Set<MuscleGroupKey> _groupsOf(Exercise copy) {
+    final known = _lookup(copy.id);
+    final muscles = switch (known?.muscles) {
+      final MuscleTagging muscles when !muscles.isEmpty => muscles,
+      _ => copy.muscles,
+    };
+    return muscles.isEmpty ? {?(known ?? copy).target.muscleGroup} : muscles.primaryGroups;
+  }
+
+  static bool _counts(ExerciseSet set) => set.isCompleted && set.setType != .warmup;
 }

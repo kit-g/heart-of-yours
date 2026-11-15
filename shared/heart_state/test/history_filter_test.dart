@@ -36,53 +36,58 @@ void main() {
     return workout;
   }
 
-  Exercise? none(ExerciseId _) => null;
+  final none = WorkoutGroups((_) => null);
 
   final bench = exercise('bench', primary: ['chest'], secondary: ['arms', 'shoulders']);
   final squat = exercise('squat', target: 'Legs', primary: ['legs', 'glutes']);
 
-  group('workoutGroupsOf', () {
+  group('WorkoutGroups', () {
     test('primary groups only: a bench session is no arm day', () {
-      expect(workoutGroupsOf(workout([bench]), lookup: none), {MuscleGroupKey.chest});
+      expect(none.of(workout([bench])), {MuscleGroupKey.chest});
     });
 
     test('every exercise with a set done adds its groups', () {
       expect(
-        workoutGroupsOf(workout([bench, squat]), lookup: none),
+        none.of(workout([bench, squat])),
         {MuscleGroupKey.chest, MuscleGroupKey.legs, MuscleGroupKey.glutes},
       );
     });
 
     test('an exercise with nothing done adds nothing', () {
-      expect(workoutGroupsOf(workout([bench], done: false), lookup: none), isEmpty);
+      expect(none.of(workout([bench], done: false)), isEmpty);
     });
 
     test('an untagged exercise of the user\'s falls back to its target', () {
       final own = exercise('own', target: 'Back');
-      expect(workoutGroupsOf(workout([own]), lookup: none), {MuscleGroupKey.back});
+      expect(none.of(workout([own])), {MuscleGroupKey.back});
     });
 
     test('a target no group answers to places nothing', () {
       final run = exercise('run', target: 'Cardio');
-      expect(workoutGroupsOf(workout([run]), lookup: none), isEmpty);
+      expect(none.of(workout([run])), isEmpty);
     });
 
     test('the library\'s tagging wins over the copy the workout carries', () {
       final copy = exercise('row', target: 'Back');
       final library = exercise('row', target: 'Back', primary: ['back', 'arms']);
       expect(
-        workoutGroupsOf(workout([copy]), lookup: (id) => id == 'row' ? library : null),
+        WorkoutGroups((id) => id == 'row' ? library : null).of(workout([copy])),
         {MuscleGroupKey.back, MuscleGroupKey.arms},
       );
     });
 
-    test('read before the library loads, a workout is read again once it has', () {
-      final copy = exercise('row', target: 'Chest');
-      final library = exercise('row', target: 'Back', primary: ['back']);
-      final session = workout([copy]);
+    test('the library\'s target places an exercise nobody tagged, over the copy\'s', () {
+      final copy = exercise('own', target: 'Chest');
+      final edited = exercise('own', target: 'Back');
+      expect(WorkoutGroups((_) => edited).of(workout([copy])), {MuscleGroupKey.back});
+    });
 
-      expect(workoutGroupsOf(session, lookup: none), {MuscleGroupKey.chest});
-      expect(workoutGroupsOf(session, lookup: (_) => library), {MuscleGroupKey.back});
+    test('warm-ups count for nothing, as on the muscle map', () {
+      final session = workout([squat], done: false);
+      session.first.first
+        ..setType = .warmup
+        ..isCompleted = true;
+      expect(none.of(session), isEmpty);
     });
   });
 
@@ -90,16 +95,16 @@ void main() {
     test('shows everything with no group set', () {
       final filter = HistoryFilter();
       expect(filter.isOn, isFalse);
-      expect(filter.shows(workout([bench]), lookup: none), isTrue);
+      expect(filter.shows(workout([bench]), none), isTrue);
     });
 
     test('lets through a workout that trained any of its groups', () {
       final filter = HistoryFilter()
         ..toggle(.legs)
         ..toggle(.back);
-      expect(filter.shows(workout([squat]), lookup: none), isTrue);
-      expect(filter.shows(workout([bench]), lookup: none), isFalse);
-      expect(filter.shows(workout([bench, squat]), lookup: none), isTrue);
+      expect(filter.shows(workout([squat]), none), isTrue);
+      expect(filter.shows(workout([bench]), none), isFalse);
+      expect(filter.shows(workout([bench, squat]), none), isTrue);
     });
 
     test('toggling a group in the filter takes it out', () {
