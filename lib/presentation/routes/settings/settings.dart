@@ -31,7 +31,7 @@ import 'package:heart/presentation/widgets/compare_codes.dart';
 import 'package:heart/presentation/widgets/feature_copy.dart';
 import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/duration_picker.dart';
-import 'package:heart/presentation/widgets/exercises/exercises.dart' show ExerciseBadge;
+import 'package:heart/presentation/widgets/exercises/exercises.dart' show ExerciseBadge, showPickerGroupingMenu;
 import 'package:heart/presentation/widgets/exercises/movement_copy.dart' show PickerGroupingCopy;
 import 'package:heart/presentation/widgets/health/settings.dart';
 import 'package:heart/presentation/widgets/image.dart';

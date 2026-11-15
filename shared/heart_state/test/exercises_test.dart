@@ -1292,6 +1292,15 @@ void main() {
 
       expect(sut.patterns, ['horizontal_press']);
     });
+
+    test('leaves out an empty key, which names no pattern', () async {
+      await load([
+        ex('Bench Press', movement: movement(['horizontal_press', ''])),
+        ex('Plank', movement: movement([''])),
+      ]);
+
+      expect(sut.patterns, ['horizontal_press']);
+    });
   });
 
   group('moveHistory() (#338)', () {

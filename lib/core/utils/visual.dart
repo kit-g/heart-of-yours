@@ -123,7 +123,7 @@ class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant FixedHeightHeaderDelegate oldDelegate) {
-    return backgroundColor != oldDelegate.backgroundColor || child != oldDelegate.child;
+    return height != oldDelegate.height || backgroundColor != oldDelegate.backgroundColor || child != oldDelegate.child;
   }
 }
 
@@ -368,4 +368,10 @@ RelativeRect menuOver(BuildContext context, RenderBox box) {
 /// No `MediaQuery` above (a bare widget test) reads as no preference.
 bool lessMotion(BuildContext context) {
   return (MediaQuery.maybeDisableAnimationsOf(context) ?? false) || (MediaQuery.maybeReduceMotionOf(context) ?? false);
+}
+
+/// One line of [style] at [scaler]'s size: what a row of text takes, for a
+/// layout that has to know its extent before it lays the text out.
+double lineExtent(TextStyle? style, TextScaler scaler) {
+  return scaler.scale(style?.fontSize ?? 14) * (style?.height ?? 1.4);
 }

@@ -245,7 +245,12 @@ class Preferences with ChangeNotifier {
   final _openGroups = ValueNotifier<Set<String>>(const {});
 
   void togglePickerGroup(String id) {
-    _openGroups.value = _toggleInList(_openPickerGroups, id).ids;
+    // from what is published, not from the store: the two stay one state even
+    // before the store has loaded, when a toggle has nothing to read back
+    final ids = {..._openGroups.value};
+    if (!ids.remove(id)) ids.add(id);
+    _openGroups.value = Set.unmodifiable(ids);
+    _prefs?.setStringList(_openPickerGroups, ids.toList());
   }
 
   void _storeScreenChoice(ScreenChoice choice, ScreenChoiceRecord record) {
@@ -340,7 +345,7 @@ class Preferences with ChangeNotifier {
     if (_disposed) return;
 
     _isInitialized = true;
-    _openGroups.value = {...?_prefs?.getStringList(_openPickerGroups)};
+    _openGroups.value = Set.unmodifiable({...?_prefs?.getStringList(_openPickerGroups)});
     _localeFirstWeekday = localeFirstWeekday(locale);
     final unit = defaultUnit(locale?.countryCode);
     _initMeasurementUnits(

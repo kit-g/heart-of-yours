@@ -164,5 +164,24 @@ void main() {
       relaunched.togglePickerGroup(chest.id);
       expect(relaunched.openPickerGroups.value, isEmpty);
     });
+
+    test(
+      'a group folds and opens again before the store has loaded, and the set handed out cannot be changed',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final preferences = Preferences();
+        const chest = TargetGroup(.chest);
+
+        preferences.togglePickerGroup(chest.id);
+        expect(preferences.openPickerGroups.value, {chest.id});
+        preferences.togglePickerGroup(chest.id);
+        expect(preferences.openPickerGroups.value, isEmpty);
+
+        await preferences.init();
+        preferences.togglePickerGroup(chest.id);
+        expect(() => preferences.openPickerGroups.value.add('back'), throwsUnsupportedError);
+        expect(preferences.openPickerGroups.value, {chest.id});
+      },
+    );
   });
 }

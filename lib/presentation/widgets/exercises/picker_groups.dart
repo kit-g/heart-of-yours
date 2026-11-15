@@ -2,8 +2,8 @@ part of 'exercises.dart';
 
 /// Picks how the picker groups the library (#620): a menu of the groupings,
 /// the one in force checked, hanging off [anchor] — the Exercises tab's
-/// options button, which is where the choice lives. One choice for every
-/// place the picker appears; the others follow it.
+/// options button, which is where the choice lives, or Settings' row. One
+/// choice for every place the picker appears; the others follow it.
 Future<void> showPickerGroupingMenu(BuildContext anchor) async {
   const width = 200.0;
   final l = L.of(anchor);
@@ -22,9 +22,10 @@ Future<void> showPickerGroupingMenu(BuildContext anchor) async {
     ],
   );
   if (!anchor.mounted) return;
-  if (picked case final PickerGrouping picked when picked != grouping) {
-    Preferences.of(anchor).setPickerGrouping(picked);
-  }
+  // set whatever was picked, not just a change from the grouping the menu
+  // opened on: sync can adopt another device's while the menu is up, and the
+  // pick then has to win over it. Picking what is stored already is a no-op.
+  if (picked case final PickerGrouping picked) Preferences.of(anchor).setPickerGrouping(picked);
 }
 
 /// One group of a grouped picker: its heading, pinned while its exercises
@@ -57,7 +58,7 @@ class _ExerciseGroupSliver extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     // measured, not fixed: at the largest text sizes one line of the heading
     // is taller than a tap target, and a fixed extent clipped it
-    final line = _lineExtent(textTheme.titleSmall, MediaQuery.textScalerOf(context));
+    final line = lineExtent(textTheme.titleSmall, MediaQuery.textScalerOf(context));
 
     return SliverMainAxisGroup(
       slivers: [
@@ -74,12 +75,6 @@ class _ExerciseGroupSliver extends StatelessWidget {
       ],
     );
   }
-}
-
-/// One line of [style] at [scaler]'s size, as workout/card.dart measures its
-/// rows.
-double _lineExtent(TextStyle? style, TextScaler scaler) {
-  return scaler.scale(style?.fontSize ?? 14) * (style?.height ?? 1.4);
 }
 
 class _GroupHeading extends StatelessWidget {
