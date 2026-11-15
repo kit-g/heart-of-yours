@@ -381,6 +381,116 @@ void main() {
   });
 
   _weekSync();
+  _groupingSync();
+}
+
+void _groupingSync() {
+  group('the picker\'s grouping (#620)', () {
+    late Preferences preferences;
+    late _Account account;
+
+    Future<void> boot({Map<String, Object> stored = const {}}) async {
+      SharedPreferences.setMockInitialValues(stored);
+      preferences = Preferences();
+      await preferences.init();
+      account = _Account();
+      final sync = SettingsSync(preferences: preferences, auth: account);
+      addTearDown(sync.dispose);
+    }
+
+    Future<void> settle() => Future<void>.delayed(Duration.zero);
+
+    test('a grouping picked here goes up at once, with the account\'s other settings intact', () async {
+      await boot();
+      account.arrive(const Settings(themeMode: 'dark', extra: {'kept': true}));
+      await settle();
+      expect(account.saved, isEmpty);
+
+      preferences.setPickerGrouping(.category);
+      await settle();
+
+      final [saved] = account.saved;
+      expect(pickerGroupingOf(saved), PickerGrouping.category);
+      expect(saved.themeMode, 'dark');
+      expect(saved.extra['kept'], isTrue);
+      expect(preferences.pickerGroupingOwed, isFalse);
+    });
+
+    test('going back to none travels too', () async {
+      await boot(stored: {'pickerGrouping': 'movement'});
+      account.arrive(withPickerGrouping(const Settings(), .movement));
+      await settle();
+
+      preferences.setPickerGrouping(.none);
+      await settle();
+
+      expect(pickerGroupingOf(account.saved.single), PickerGrouping.none);
+    });
+
+    test('a device that never chose takes the account\'s grouping, and writes nothing', () async {
+      await boot();
+      account.arrive(withPickerGrouping(const Settings(), .target));
+      await settle();
+
+      expect(preferences.pickerGrouping, PickerGrouping.target);
+      expect(account.saved, isEmpty);
+    });
+
+    test('a choice here the account doesn\'t hold yet is written up at sign-in', () async {
+      await boot(stored: {'pickerGrouping': 'movement', 'pickerGroupingOwed': true});
+      account.arrive(withPickerGrouping(const Settings(), .category));
+      await settle();
+
+      expect(preferences.pickerGrouping, PickerGrouping.movement);
+      expect(pickerGroupingOf(account.saved.single), PickerGrouping.movement);
+      expect(preferences.pickerGroupingOwed, isFalse);
+    });
+
+    test('a choice already written up follows a change made on another phone', () async {
+      await boot(stored: {'pickerGrouping': 'movement'});
+      account.arrive(withPickerGrouping(const Settings(), .category));
+      await settle();
+
+      expect(preferences.pickerGrouping, PickerGrouping.category);
+      expect(account.saved, isEmpty);
+    });
+
+    test('an account with no grouping, or one this version cannot read, changes nothing here', () async {
+      await boot(stored: {'pickerGrouping': 'target'});
+      account.arrive(const Settings(extra: {'pickerGrouping': 'equipment'}));
+      await settle();
+
+      expect(preferences.pickerGrouping, PickerGrouping.target);
+      expect(account.saved, isEmpty);
+    });
+
+    test('an anonymous session keeps its grouping on the device until there is an account', () async {
+      await boot();
+      account.isAnonymous = true;
+      account.arrive(const Settings());
+      await settle();
+
+      preferences.setPickerGrouping(.target);
+      await settle();
+      expect(account.saved, isEmpty);
+
+      account.isAnonymous = false;
+      account.arrive(const Settings());
+      await settle();
+      expect(pickerGroupingOf(account.saved.single), PickerGrouping.target);
+    });
+
+    test('fold state never leaves the device', () async {
+      await boot();
+      account.arrive(const Settings());
+      await settle();
+
+      preferences.togglePickerGroup(const TargetGroup(.chest).id);
+      await settle();
+
+      expect(account.saved, isEmpty);
+    });
+  });
 }
 
 void _weekSync() {

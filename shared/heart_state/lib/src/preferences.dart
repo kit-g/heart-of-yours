@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'features.dart';
+import 'picker_grouping.dart';
 import 'plates.dart';
 import 'warmups.dart';
 import 'rest_defaults.dart';
@@ -39,6 +40,9 @@ const _barWeight = 'barWeight';
 const _platesWithout = 'platesWithout';
 const _warmupScheme = 'warmupScheme';
 const _defaultRest = 'defaultRest';
+const _pickerGrouping = 'pickerGrouping';
+const _pickerGroupingOwed = 'pickerGroupingOwed';
+const _openPickerGroups = 'openPickerGroups';
 
 class Preferences with ChangeNotifier {
   /// The key under which [onboardingSeen] is stored. Public so a test can seed
@@ -187,6 +191,49 @@ class Preferences with ChangeNotifier {
 
   /// The account holds this device's choice now.
   void settleFirstWeekday() => _prefs?.remove(_firstWeekdayOwed);
+
+  /// How the exercise picker groups the library (#620): [PickerGrouping.none],
+  /// the flat list, until the user picks. A choice follows the account like
+  /// [firstWeekday] does ([SettingsSync]): owed until the account holds it,
+  /// and while nothing is owed, the account's is the one this device shows.
+  PickerGrouping get pickerGrouping => chosenPickerGrouping ?? .none;
+
+  /// The user's own choice of [pickerGrouping], null while they have made none.
+  PickerGrouping? get chosenPickerGrouping => PickerGrouping.fromString(_prefs?.getString(_pickerGrouping));
+
+  /// Whether the choice here is newer than the account's. [SettingsSync]
+  /// writes it and [settlePickerGrouping]s.
+  bool get pickerGroupingOwed => _prefs?.getBool(_pickerGroupingOwed) ?? false;
+
+  void setPickerGrouping(PickerGrouping grouping) {
+    _prefs?.setString(_pickerGrouping, grouping.name);
+    _prefs?.setBool(_pickerGroupingOwed, true);
+    notifyListeners();
+  }
+
+  /// Takes [grouping] as this device's choice: the account's, made elsewhere.
+  void adoptPickerGrouping(PickerGrouping grouping) {
+    if (chosenPickerGrouping == grouping && !pickerGroupingOwed) return;
+    _prefs?.setString(_pickerGrouping, grouping.name);
+    _prefs?.remove(_pickerGroupingOwed);
+    notifyListeners();
+  }
+
+  /// The account holds this device's choice now.
+  void settlePickerGrouping() => _prefs?.remove(_pickerGroupingOwed);
+
+  /// Whether the picker's group [id] ([ExerciseGroup.id]) is open. Groups
+  /// start folded — a screen of headings is the point of grouping 300
+  /// exercises — and one opened stays open on this device. View state, kept
+  /// like [isFolderCollapsed] and for the same reason; it does not sync.
+  bool isPickerGroupOpen(String id) => _prefs?.getStringList(_openPickerGroups)?.contains(id) ?? false;
+
+  void togglePickerGroup(String id) {
+    final open = {...?_prefs?.getStringList(_openPickerGroups)};
+    if (!open.remove(id)) open.add(id);
+    _prefs?.setStringList(_openPickerGroups, open.toList());
+    notifyListeners();
+  }
 
   /// The first day of the week where [locale] lives, from the same CLDR data
   /// Flutter's calendars use: Sunday in the US and Canada, Monday in most of

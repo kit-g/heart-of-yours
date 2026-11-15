@@ -136,6 +136,8 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                     // no page padding: the swatch strip scrolls to the screen
                     // edge and carries the inset itself
                     _PresetPicker(),
+                    SizedBox(height: 16),
+                    _PickerGroupingPicker(),
                   ],
                 ),
                 const SizedBox(height: 24),

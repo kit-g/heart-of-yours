@@ -21,3 +21,4 @@ part 'exercise_item.dart';
 part 'exercise_picker.dart';
 part 'go_easy.dart';
 part 'movement_filter_sheet.dart';
+part 'picker_groups.dart';

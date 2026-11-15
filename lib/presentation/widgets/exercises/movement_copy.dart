@@ -1,5 +1,7 @@
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/heart_state.dart'
+    show ExerciseGroup, CategoryGroup, TargetGroup, PatternGroup, NoPatternGroup, PickerGrouping;
 
 /// Display copy for the exercise filters, which carry identifiers rather than
 /// words.
@@ -148,4 +150,28 @@ String _capitalize(String word) {
     '' => word,
     _ => '${word[0].toUpperCase()}${word.substring(1)}',
   };
+}
+
+/// A picker group's heading (#620), in the words its filter already uses.
+extension ExerciseGroupCopy on ExerciseGroup {
+  String label(L l10n) {
+    return switch (this) {
+      CategoryGroup(:final category) => category.label(l10n),
+      TargetGroup(:final target) => target.label(l10n),
+      PatternGroup(:final pattern) => _patternLabel(pattern, l10n),
+      NoPatternGroup() => l10n.pickerGroupOther,
+    };
+  }
+}
+
+/// A picker grouping's name: the dimension it groups by, as the filters name it.
+extension PickerGroupingCopy on PickerGrouping {
+  String label(L l10n) {
+    return switch (this) {
+      .none => l10n.pickerGroupNone,
+      .category => l10n.category,
+      .target => l10n.target,
+      .movement => l10n.movement,
+    };
+  }
 }
