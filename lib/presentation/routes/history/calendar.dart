@@ -51,10 +51,38 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
   bool _pageScheduled = false;
   final _ownController = ScrollController();
 
+  /// Today, on the user's clock: what a day's tap does turns on it (#618), so
+  /// it moves at midnight and on coming back to the app, not only on a build.
+  final _today = ValueNotifier(DateUtils.dateOnly(clock.now()));
+  Timer? _midnight;
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onResume: _turnTheDay);
+    _scheduleMidnight();
+  }
+
   @override
   void dispose() {
+    _midnight?.cancel();
+    _lifecycle.dispose();
+    _today.dispose();
     _ownController.dispose();
     super.dispose();
+  }
+
+  void _turnTheDay() {
+    _today.value = DateUtils.dateOnly(clock.now());
+    _scheduleMidnight();
+  }
+
+  void _scheduleMidnight() {
+    _midnight?.cancel();
+    final now = clock.now();
+    final next = DateTime(now.year, now.month, now.day + 1);
+    _midnight = Timer(next.difference(now), _turnTheDay);
   }
 
   void _loadOlder(Workouts workouts) {
@@ -73,18 +101,19 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
   /// The first tap of an empty past day while Past workouts was never asked
   /// about: the ask, and on yes straight on to logging that day.
   Future<void> _askThenLog(DateTime day) async {
-    final preferences = Preferences.of(context);
-    final yes = await _offerPastWorkouts(context);
-    if (!mounted) return;
-    preferences.answerOffer(.pastWorkouts, yes: yes);
-    switch (yes) {
-      case true:
-        widget.onLogOn?.call(day);
-      case false:
-        snack(context, L.of(context).featureDeclinedNotice);
-        // the snack was the notice: owed once, and now paid
-        preferences.acknowledgeDeclineNotice(.pastWorkouts);
-    }
+    final L(:pastWorkoutsOfferTitle, :pastWorkoutsOfferBody) = L.of(context);
+    final log = widget.onLogOn;
+    final yes = await askInSheet(
+      context,
+      .pastWorkouts,
+      icon: Icons.more_time_rounded,
+      title: pastWorkoutsOfferTitle,
+      body: pastWorkoutsOfferBody,
+      offerKey: AppKeys.pastWorkoutsOffer,
+      acceptKey: AppKeys.pastWorkoutsAccept,
+      declineKey: AppKeys.pastWorkoutsDecline,
+    );
+    if (yes && mounted) log?.call(day);
   }
 
   @override
@@ -102,11 +131,32 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
       },
       // one workout at a time: with one going, its button is the way there
       start: workouts.hasActiveWorkout ? null : widget.onStartWorkout,
+      // while older pages are still to come, a day before the oldest workout
+      // here may hold one not fetched yet: not a day to log on as if empty
+      loadedFrom: switch ((workouts.hasMoreHistory, byMonth.values.lastOrNull?.lastOrNull)) {
+        (true, final Workout oldest) => DateUtils.dateOnly(oldest.start.toLocal()),
+        (true, null) => DateUtils.dateOnly(clock.now()),
+        (false, _) => null,
+      },
     );
+
+    return ValueListenableBuilder<DateTime>(
+      valueListenable: _today,
+      builder: (context, today, _) => _months(context, workouts, preferences, actions, today),
+    );
+  }
+
+  Widget _months(
+    BuildContext context,
+    Workouts workouts,
+    Preferences preferences,
+    _DayActions actions,
+    DateTime today,
+  ) {
+    final byMonth = widget.byMonth;
     final dates = byMonth.keys.map((key) => DateTime.parse('$key-01')).toList()..sort();
-    // read at every build: the page can stay open across a month's end
-    final now = clock.now();
-    final latest = DateTime(now.year, now.month);
+    // the page can stay open across a month's end: today moves it on
+    final latest = DateTime(today.year, today.month);
     final newest = dates.isNotEmpty && dates.last.isAfter(latest) ? dates.last : latest;
     final oldest = dates.firstOrNull ?? newest;
     final count = (newest.year - oldest.year) * 12 + newest.month - oldest.month + 1;
@@ -171,6 +221,7 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
                     firstWeekday: firstWeekday,
                     selectedId: widget.selectedId,
                     actions: actions,
+                    today: today,
                   );
                 },
               ),
@@ -188,6 +239,7 @@ class _CalendarMonth extends StatelessWidget {
   final int firstWeekday;
   final String? selectedId;
   final _DayActions actions;
+  final DateTime today;
 
   const new({
     super.key,
@@ -195,6 +247,7 @@ class _CalendarMonth extends StatelessWidget {
     required this.days,
     required this.firstWeekday,
     required this.actions,
+    required this.today,
     this.selectedId,
   });
 
@@ -205,7 +258,6 @@ class _CalendarMonth extends StatelessWidget {
     final offset = (month.weekday % 7 - firstWeekday + 7) % 7;
     final length = DateTime(month.year, month.month + 1, 0).day;
     final rows = ((offset + length) / 7).ceil();
-    final today = DateUtils.dateOnly(clock.now());
     return Padding(
       padding: const .fromLTRB(4, 16, 4, 16),
       child: Column(
@@ -261,12 +313,16 @@ int _dayOf(Workout workout) => workout.start.toLocal().day;
 /// - [log]: log a workout on it, while Past workouts is on;
 /// - [askToLog]: the one ask for Past workouts, then logging, while it was
 ///   never asked about — offered only by an empty past day;
-/// - [start]: start a workout now, while none is going — offered only today.
+/// - [start]: start a workout now, while none is going — offered only today;
+/// - [loadedFrom]: while older history is still to come, the first day known
+///   whole. A day before it may hold workouts not fetched yet, so it never
+///   offers logging as if it were empty.
 typedef _DayActions = ({
   void Function(Workout)? open,
   void Function(DateTime day)? log,
   Future<void> Function(DateTime day)? askToLog,
   VoidCallback? start,
+  DateTime? loadedFrom,
 });
 
 /// Where a day falls, against today.
@@ -290,7 +346,7 @@ enum _Extra { start, log }
 class _CalendarDay extends StatelessWidget {
   final DateTime date;
 
-  /// The day, as read out.
+  /// The day, as read out: its full date.
   final String label;
 
   /// The day's workouts, newest first, as History holds them.
@@ -312,20 +368,29 @@ class _CalendarDay extends StatelessWidget {
     this.selectedId,
   });
 
-  Iterable<_Extra> get _extras {
+  /// Whether the day is known whole: false for one before the oldest page
+  /// fetched so far.
+  bool get _known => switch (actions.loadedFrom) {
+    final DateTime from => !date.isBefore(from),
+    null => true,
+  };
+
+  List<_Extra> get _extras {
     return [
       if (when == .today && actions.start != null) .start,
-      if (when != .future && actions.log != null) .log,
+      if (when != .future && _known && actions.log != null) .log,
     ];
   }
 
-  Future<void> _choose(BuildContext context) async {
+  Future<void> _choose(BuildContext context, List<_Extra> extras) async {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final localizations = MaterialLocalizations.of(context);
     final h24 = MediaQuery.alwaysUse24HourFormatOf(context);
-    final checks = sessions.any((each) => each.id == selectedId);
-    final extras = _extras;
+    final open = actions.open;
+    // a workout is listed only where it opens: a row that does nothing is dead
+    final listed = open == null ? const <Workout>[] : sessions;
+    final checks = listed.any((each) => each.id == selectedId);
 
     Widget entry(Workout workout) {
       return Column(
@@ -349,31 +414,31 @@ class _CalendarDay extends StatelessWidget {
       );
     }
 
+    // checked only while the pane shows one of them: a check column with
+    // nothing in it is an empty gutter on every row; and while it is there,
+    // every row takes it, so the rows line up
+    PopupMenuEntry<Object> item(Object value, Widget child, {Key? key, bool checked = false}) {
+      return switch (checks) {
+        true => CheckedPopupMenuItem<Object>(key: key, value: value, checked: checked, child: child),
+        false => PopupMenuItem<Object>(key: key, value: value, child: child),
+      };
+    }
+
     final picked = await showMenu<Object>(
       context: context,
       position: menuOver(context, context.findRenderObject()! as RenderBox),
       constraints: const BoxConstraints(minWidth: 200, maxWidth: 280),
       items: [
-        for (final workout in sessions.reversed)
-          // checked only while the pane shows one of them: a check column
-          // with nothing in it is an empty gutter on every row
-          switch (checks) {
-            true => CheckedPopupMenuItem<Object>(
-              value: workout,
-              checked: workout.id == selectedId,
-              child: entry(workout),
-            ),
-            false => PopupMenuItem<Object>(value: workout, child: entry(workout)),
-          },
-        if (sessions.isNotEmpty && extras.isNotEmpty) const PopupMenuDivider(),
+        for (final workout in listed.reversed) item(workout, entry(workout), checked: workout.id == selectedId),
+        if (listed.isNotEmpty && extras.isNotEmpty) const PopupMenuDivider(),
         for (final extra in extras)
-          PopupMenuItem<Object>(
+          item(
+            extra,
             key: switch (extra) {
               .start => AppKeys.calendarStart,
               .log => AppKeys.calendarLog,
             },
-            value: extra,
-            child: Text(switch ((extra, sessions.isEmpty)) {
+            Text(switch ((extra, sessions.isEmpty)) {
               (.start, _) => l.startNewWorkout,
               (.log, true) => l.calendarLogOnDay,
               (.log, false) => l.calendarAddAnother,
@@ -383,7 +448,7 @@ class _CalendarDay extends StatelessWidget {
     );
     switch (picked) {
       case Workout workout:
-        actions.open?.call(workout);
+        open?.call(workout);
       case _Extra.start:
         actions.start?.call();
       case _Extra.log:
@@ -393,42 +458,55 @@ class _CalendarDay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:textTheme, colorScheme: ColorScheme(:primary, :onPrimary, :surfaceContainerHighest)) = Theme.of(
-      context,
-    );
     final l = L.of(context);
-    final date = switch (when) {
-      .today => '$label, ${l.calendarToday}',
+    final day = switch (when) {
+      .today => l.calendarDayToday(label),
       .past || .future => label,
     };
-    final several = sessions.length > 1;
     final extras = _extras;
     final open = actions.open;
     // one choice of what the day says and does
-    final (String said, VoidCallback? onTap) = switch ((sessions, extras.isEmpty)) {
-      ([final Workout only], true) when open != null => ('$date, ${l.editWorkout}', () => open(only)),
+    final (String spoken, VoidCallback? onTap) = switch ((sessions, extras)) {
+      ([final Workout only], []) when open != null => (l.calendarDayEdit(day), () => open(only)),
       ([_, ...], _) when open != null || extras.isNotEmpty => (
-        '$date, ${l.calendarWorkouts(sessions.length)}',
-        () => _choose(context),
+        l.calendarDayWorkouts(day, sessions.length),
+        () => _choose(context, extras),
       ),
-      ([_, ...], _) => ('$date, ${l.calendarWorkouts(sessions.length)}', null),
+      ([_, ...], _) => (l.calendarDayWorkouts(day, sessions.length), null),
       ([], _) => switch (when) {
+        .past when !_known => (day, null),
         .past => switch ((actions.log, actions.askToLog)) {
-          (final log?, _) => ('$date, ${l.calendarLogOnDay}', () => log(this.date)),
-          (null, final ask?) => ('$date, ${l.calendarLogOnDay}', () => ask(this.date)),
-          (null, null) => (date, null),
+          (final log?, _) => (l.calendarDayLog(day), () => log(date)),
+          (null, final ask?) => (l.calendarDayLog(day), () => ask(date)),
+          (null, null) => (day, null),
         },
-        .today when extras.isNotEmpty => (date, () => _choose(context)),
-        .today || .future => (date, null),
+        .today when extras.isNotEmpty => (day, () => _choose(context, extras)),
+        .today || .future => (day, null),
       },
     };
+
+    // an empty day that does nothing is only its number: no ink, no button,
+    // and nothing to build on every tick of an active workout
+    if (sessions.isEmpty && onTap == null) {
+      return Semantics(
+        container: true,
+        label: spoken,
+        excludeSemantics: true,
+        child: Center(child: child),
+      );
+    }
+
+    final ThemeData(:textTheme, colorScheme: ColorScheme(:primary, :onPrimary, :surfaceContainerHighest)) = Theme.of(
+      context,
+    );
+    final several = sessions.length > 1;
     final selected = sessions.any((workout) => workout.id == selectedId);
 
     return Semantics(
       container: true,
       button: onTap != null,
       selected: selected,
-      label: said,
+      label: spoken,
       onTap: onTap,
       excludeSemantics: true,
       child: InkWell(
@@ -477,40 +555,4 @@ class _CalendarDay extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The one ask for Past workouts (#618), as a sheet over the calendar.
-/// Dismissing it is waving it away, which is a no.
-Future<bool> _offerPastWorkouts(BuildContext context) async {
-  final L(:pastWorkoutsOfferTitle, :pastWorkoutsOfferBody) = L.of(context);
-  final preferences = Preferences.of(context);
-  final answer = await showModalBottomSheet<bool>(
-    context: context,
-    useRootNavigator: true,
-    constraints: const BoxConstraints(maxWidth: dialogWidth),
-    builder: (context) {
-      return SafeArea(
-        child: Padding(
-          padding: const .fromLTRB(16, 24, 16, 16),
-          // the offer is laid out for a list, where it gets unbounded height
-          child: Column(
-            mainAxisSize: .min,
-            children: [
-              FeatureOffer(
-                key: AppKeys.pastWorkoutsOffer,
-                acceptKey: AppKeys.pastWorkoutsAccept,
-                declineKey: AppKeys.pastWorkoutsDecline,
-                icon: Icons.more_time_rounded,
-                title: pastWorkoutsOfferTitle,
-                body: pastWorkoutsOfferBody,
-                onAnswer: (yes) => Navigator.of(context).pop(yes),
-                onShown: () => preferences.markOffered(.pastWorkouts),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-  return answer ?? false;
 }

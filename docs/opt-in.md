@@ -120,8 +120,8 @@ ticket doesn't say:
   no the tap does nothing. Off, the Workout tab and History have no way in;
   a workout already logged this way is an ordinary workout.
 - Coaching (#566) is two features, because it is two people's choices. **Coach
-  people** (`Feature.coachPeople`) has no ask, like Past workouts, and is the
-  first switch that depends on the account: during the beta it shows only for an
+  people** (`Feature.coachPeople`) has no ask, as Past workouts had none before
+  #618, and is the first switch that depends on the account: during the beta it shows only for an
   account holding the `coach` entitlement, which the server grants by hand. Off,
   or without the entitlement, Profile has no Coaching button and a link into the
   space lands on Profile. **Your coach** (`Feature.yourCoach`) is asked when an

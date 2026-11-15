@@ -272,9 +272,13 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                       null => null,
                     },
                     onStartWorkout: () async {
-                      final name = L.of(context).defaultWorkoutName();
-                      await Workouts.of(context).startWorkout(source: .blank, name: name);
-                      widget.onNewWorkout();
+                      final workouts = Workouts.of(context);
+                      // read at the tap: the day's list may have been up while one started
+                      // somewhere else — the watch, a shortcut — and that one is the way in
+                      if (!workouts.hasActiveWorkout) {
+                        await workouts.startWorkout(source: .blank, name: L.of(context).defaultWorkoutName());
+                      }
+                      if (mounted && workouts.hasActiveWorkout) widget.onNewWorkout();
                     },
                   ),
                 ),

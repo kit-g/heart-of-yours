@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart' show runningPrograms;
 import 'package:heart_language/heart_language.dart';
@@ -46,18 +47,20 @@ Future<void> logPastWorkout(
   DateTime? on,
 }) async {
   final L(:whenWasIt, :next) = L.of(context);
-  // to the minute, as the wheels pick it
-  final now = DateTime.now();
+  // to the minute, as the wheels pick it, on the clock the calendar reads
+  final now = clock.now();
   final day = on ?? now;
-  final end = switch (DateTime(day.year, day.month, day.day, now.hour, now.minute)) {
-    // just after midnight, the hour before a past day is the day before it
-    final at when at.hour == 0 && at.isBefore(DateUtils.dateOnly(now)) => at.add(const Duration(hours: 1)),
-    final at => at,
+  final end = DateTime(day.year, day.month, day.day, now.hour, now.minute);
+  // a day asked for keeps the whole hour inside it: just after midnight, the
+  // hour before would start on the day before (#618)
+  final start = switch (end.subtract(const Duration(hours: 1))) {
+    final before when on != null && before.isBefore(DateUtils.dateOnly(day)) => DateUtils.dateOnly(day),
+    final before => before,
   };
   PastWorkout? picked;
   await showAdjustTimesDialog(
     context,
-    start: end.subtract(const Duration(hours: 1)),
+    start: start,
     end: end,
     title: whenWasIt,
     action: next,
