@@ -6,7 +6,7 @@ import 'package:heart/presentation/routes/history/history.dart' show WorkoutEdit
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show TemplateEditor;
 import 'package:heart/presentation/widgets/keys.dart';
-import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetail;
+import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetail, WorkoutDetailKeys;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -729,6 +729,7 @@ void main() {
   });
 
   group("a client's copy, edited by both (#558)", () {
+    final bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
     final sam = ClientSummary(
       connectionId: 'c-sam',
       studentId: 'sam',
@@ -828,6 +829,11 @@ void main() {
       // the exercise's page and pinned notes are the coach's own
       final detail = tester.widget<WorkoutDetail>(find.byType(WorkoutDetail));
       expect((detail.onTapExercise, detail.pinsNotes), (null, false));
+      // and so is last time: no column of it, not one left empty (#591)
+      detail.onAddExercises([bench]);
+      await tester.pumpTimes();
+      expect(find.byKey(WorkoutDetailKeys.fillFor(bench.id, 'weight')), findsOneWidget, reason: 'the set table is up');
+      expect(find.text('Previous'), findsNothing);
 
       await editor.logTo!(tester.element(find.byType(WorkoutEditor)), editor.copy);
       await tester.pumpTimes();
@@ -934,6 +940,25 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets("a session of their copy is theirs: no Previous of the coach's own last sets (#591)", (tester) async {
+      withCopy();
+      await openCopy(tester);
+
+      await tester.tapByKey(AppKeys.coachingCopySession('s1'));
+      await tester.pumpTimes();
+      expect(find.byType(TemplateEditor), findsOneWidget);
+      tester.widget<WorkoutDetail>(find.byType(WorkoutDetail)).onAddExercises([bench]);
+      await tester.pumpTimes();
+
+      final weight = find.byKey(WorkoutDetailKeys.fillFor(bench.id, 'weight'));
+      expect(weight, findsOneWidget, reason: 'the set table is up');
+      expect(find.text('Previous'), findsNothing);
+      // its share of the row kept, not handed out: kg is a fifth of what the
+      // set number and the tick leave, as on one's own (padding 8 a side)
+      final row = tester.getSize(find.byType(WorkoutDetail)).width - 16 - 44 - 32;
+      expect(tester.getSize(weight).width, moreOrLessEquals(row / 5));
     });
 
     testWidgets("their own program they see, and can't change: no editing, nothing to put back", (tester) async {
@@ -1162,6 +1187,7 @@ void main() {
       await tester.pumpTimes();
       expect(find.byType(TemplateEditor), findsOneWidget);
       expect(find.text('Edit session'), findsOneWidget);
+      expect(find.text('Previous'), findsNothing, reason: "the coach's own last sets aren't the client's (#591)");
 
       await tester.enterText(
         find.descendant(of: find.byType(AppBar), matching: find.byType(TextField)),
@@ -1177,6 +1203,35 @@ void main() {
       expect(((session['exercises'] as List).single as Map)['exercise'], squat.id);
       expect(find.byType(CoachProgramPage), findsOneWidget);
       expect(find.text('Day A, heavy'), findsOneWidget);
+    });
+
+    testWidgets("the kg header fills nothing from the coach's own last squat (#591)", (tester) async {
+      written();
+      // the coach squatted 140 × 5 last time: their own, not the client's
+      when(db.getPreviousSets(any)).thenAnswer(
+        (_) async => {
+          squat.id: [
+            {'set_id': 'q1', 'weight': 140.0, 'reps': 5, 'duration': null, 'distance': null, 'set_type': 'normal'},
+          ],
+        },
+      );
+      await openPrograms(tester);
+      final previous = PreviousExercises.of(tester.element(find.byType(MaterialApp)));
+      await (previous..userId = 'muffin').init();
+      await tester.tapByKey(AppKeys.coachingLibraryProgram(programId));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Day A'));
+      await tester.pumpTimes();
+
+      final library = CoachLibrary.of(tester.element(find.byType(TemplateEditor)));
+      final session = library.editable!.single;
+      expect(previous.matching(session, 0)?['weight'], 140.0, reason: "the app's own last time has it");
+
+      await tester.tapByKey(WorkoutDetailKeys.fillFor(squat.id, 'weight'));
+      await tester.pumpTimes();
+
+      expect(session.single.weight, isNull, reason: 'nothing of the coach\'s is written into the session');
+      expect(find.textContaining('140'), findsNothing);
     });
 
     testWidgets('sending: who holds it is greyed, and each client answers on its own', (tester) async {

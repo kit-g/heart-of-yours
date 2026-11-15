@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetail, WorkoutDetailKeys;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -333,6 +334,35 @@ void main() {
       expect(find.text('Quit editing?'), findsNothing);
       expect(find.byType(WorkoutEditor), findsNothing);
       verifyNever(db.finishWorkout(any, any));
+    });
+
+    testWidgets("one's own keeps Previous, and on a tablet the set table is a column, not the pane (#591, #592)", (
+      tester,
+    ) async {
+      await launch(tester, on: true, size: tablet);
+      await openTab(tester, AppKeys.historyStack);
+      await tester.tapByKey(AppKeys.logPastWorkout);
+      await tester.pumpTimes();
+      await tester.tap(find.text('Next'));
+      await tester.pumpTimes();
+      await tester.tapByKey(WorkoutDetailKeys.addExercises);
+      await tester.pumpTimes();
+      await tester.tap(find.text('Bench Press').last);
+      await tester.pumpTimes();
+      await tester.tapByKey(WorkoutDetailKeys.addExerciseButton);
+      await tester.pumpTimes();
+
+      expect(find.text('Previous'), findsOneWidget);
+      final pane = tester.getSize(find.byType(WorkoutDetail)).width;
+      expect(pane, greaterThan(setTableWidth), reason: 'room to stretch into, or the cap proves nothing');
+      final row = find.ancestor(
+        of: find.byKey(WorkoutDetailKeys.doneFor(bench.id, 1)),
+        matching: find.byType(Dismissible),
+      );
+      expect(tester.getSize(row).width, lessThanOrEqualTo(setTableWidth));
+      expect(tester.getSize(find.byKey(WorkoutDetailKeys.addExercises)).width, lessThanOrEqualTo(setTableWidth));
+      // centred under the name, which is capped alike
+      expect(tester.getCenter(row).dx, moreOrLessEquals(tester.getCenter(find.byType(WorkoutDetail)).dx));
     });
 
     testWidgets('Save is live the moment a typed set holds something', (tester) async {

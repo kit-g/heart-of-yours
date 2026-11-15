@@ -346,6 +346,7 @@ void main() {
       expect(find.byType(TemplateEditor), findsOneWidget);
       expect(find.text('Edit Template'), findsOneWidget);
       expect(find.byType(AppBarTextField), findsOneWidget);
+      expect(find.text('Previous'), findsOneWidget, reason: "one's own template keeps the column (#591)");
 
       // an existing template already has a name and an exercise, so Save
       // starts enabled — no need to type anything before tapping it

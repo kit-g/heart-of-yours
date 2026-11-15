@@ -13,6 +13,11 @@ mixin TemplateDrafting on ChangeNotifier {
   /// The template the editor is on, or null before its first exercise.
   Template? editable;
 
+  /// Whether the template is written for someone else, a coach's client
+  /// (#591): this account's own last sets say nothing beside it. The user's
+  /// own templates are not.
+  bool get forSomeoneElse => false;
+
   /// A blank template for [add] to put the first exercise in.
   Future<Template> startDraft();
 

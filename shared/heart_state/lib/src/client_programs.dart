@@ -106,6 +106,10 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
   /// The client and copy [editable] belongs to.
   ({String studentId, String programId})? _drafting;
 
+  /// A session is a client's, never the coach's own (#591).
+  @override
+  bool get forSomeoneElse => true;
+
   CoachProgramView? view(String programId) => _views[programId];
 
   CoachingStatus status(String programId) => _status[programId] ?? .idle;
