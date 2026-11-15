@@ -252,7 +252,7 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
       onChanged: (on) {
         // the row as well as the thumb flips it, and neither clicks by itself
         HapticFeedback.selectionClick();
-        preferences.setFeature(feature, on: on);
+        preferences.setFeature(feature, on: on, source: .settings);
         onSwitched?.call();
       },
     );
@@ -283,7 +283,7 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
                       // leaving out the last one turns the feature off
                       onChanged: (checked) {
                         HapticFeedback.selectionClick();
-                        preferences.setOption(option, on: checked ?? false);
+                        preferences.setOption(option, on: checked ?? false, source: .settings);
                       },
                       title: Text(option.title(l)),
                       controlAffinity: ListTileControlAffinity.trailing,

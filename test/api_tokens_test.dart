@@ -70,7 +70,10 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.settings_rounded));
     await tester.pumpTimes();
-    await tester.ensureVisible(find.byKey(AppKeys.developerApi));
+    // dragged rather than ensureVisible: on a wide window that leaves a row
+    // just below the fold where it is, and a tap then misses it
+    await tester.dragUntilVisible(find.byKey(AppKeys.developerApi), find.byType(ListView).first, const Offset(0, -200));
+    await tester.pumpTimes();
     await tester.tapByKey(AppKeys.developerApi);
     await tester.pumpTimes();
     expect(find.byType(ApiTokensPage), findsOneWidget);

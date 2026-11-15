@@ -1307,6 +1307,19 @@ void main() {
         expect(programs.currentBasesOf('p1')['squat'], moved.single);
       });
 
+      test('a program not shown moves nothing, and grows once shown (#593)', () async {
+        await follow(growing({'squat': const AddWeight(step: 5)}), bases: [base(100)]);
+        final workout = loggedBy('whiskers', 'w1', start: DateTime.utc(2026, 10, 5));
+
+        // the user's own program, with Programs off
+        await programs.growLogged([workout], sessionOf: session, shown: (_) => false);
+        expect(programs.basesOf('p1').where((each) => each.workoutId == 'w1'), isEmpty);
+        expect(programs.grownBy('w1'), isNull, reason: 'not remembered as grown');
+
+        await programs.growLogged([workout], sessionOf: session, shown: (_) => true);
+        expect(programs.basesOf('p1').where((each) => each.workoutId == 'w1'), hasLength(1));
+      });
+
       test("one of their own, or one older than the program's last move, moves nothing", () async {
         await follow(
           growing({'squat': const AddWeight(step: 5)}),

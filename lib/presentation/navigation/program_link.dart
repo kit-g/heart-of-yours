@@ -49,7 +49,8 @@ Future<void> runProgramSessionLink(
     final router = HeartRouter.of(context);
     final analytics = Analytics.of(context);
     final program = programs.lookup(link.programId);
-    if (program == null) return;
+    // with Programs off, only a coach's program is there to open (#593)
+    if (program == null || !Preferences.of(context).programShown(program)) return;
 
     final state = await programs.occurrence(
       program,

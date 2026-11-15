@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart' show runningPrograms;
 import 'package:heart_language/heart_language.dart';
@@ -30,9 +31,10 @@ class PastWorkout {
 /// Asks when a past workout was, then hands [open] the workout to fill in
 /// (#530). The date, start and end are picked first, by default the last hour
 /// of today; none of them may be in the future, and the end comes after the
-/// start. [workout] is the one to fill, a new empty one unless given, and
-/// [logTo] is where it goes on Save. Dismissed, nothing opens and nothing is
-/// stored.
+/// start. [on] moves that hour to another day — one tapped in History's
+/// calendar (#618) — keeping the time of day. [workout] is the one to fill, a
+/// new empty one unless given, and [logTo] is where it goes on Save.
+/// Dismissed, nothing opens and nothing is stored.
 ///
 /// A workout in progress is never part of this: logging one that already
 /// happened works the same beside it.
@@ -42,15 +44,23 @@ Future<void> logPastWorkout(
   Workout? workout,
   LogTo logTo = logToHistory,
   String? loggingFor,
+  DateTime? on,
 }) async {
   final L(:whenWasIt, :next) = L.of(context);
-  // to the minute, as the wheels pick it
-  final now = DateTime.now();
-  final end = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+  // to the minute, as the wheels pick it, on the clock the calendar reads
+  final now = clock.now();
+  final day = on ?? now;
+  final end = DateTime(day.year, day.month, day.day, now.hour, now.minute);
+  // a day asked for keeps the whole hour inside it: just after midnight, the
+  // hour before would start on the day before (#618)
+  final start = switch (end.subtract(const Duration(hours: 1))) {
+    final before when on != null && before.isBefore(DateUtils.dateOnly(day)) => DateUtils.dateOnly(day),
+    final before => before,
+  };
   PastWorkout? picked;
   await showAdjustTimesDialog(
     context,
-    start: end.subtract(const Duration(hours: 1)),
+    start: start,
     end: end,
     title: whenWasIt,
     action: next,

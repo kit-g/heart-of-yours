@@ -109,6 +109,11 @@ extension RenamedExercise on Exercise {
   /// `copyWith`, which has no name: the name was the identity when it was
   /// written. The round trip is the one every stored row already makes.
   Exercise renamed(String name) => Exercise.fromJson({...toMap(), 'name': name});
+
+  /// This exercise with [text] as its instructions (#621), or none for null.
+  /// The same round trip as [renamed]: `copyWith` reads a null as "keep", so
+  /// it can set instructions but never clear them.
+  Exercise withInstructions(String? text) => Exercise.fromJson({...toMap(), 'instructions': text});
 }
 
 class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateSentry {

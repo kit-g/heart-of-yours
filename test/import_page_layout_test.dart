@@ -69,6 +69,13 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.settings_rounded));
     await tester.pumpTimes();
+    // below an iPad's fold once Settings lists the screen choices
+    await tester.dragUntilVisible(
+      find.byIcon(Icons.upload_file_rounded),
+      find.byType(ListView).first,
+      const Offset(0, -200),
+    );
+    await tester.pumpTimes();
     await tester.tap(find.byIcon(Icons.upload_file_rounded));
     await tester.pumpTimes();
   }

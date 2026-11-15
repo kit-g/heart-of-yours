@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:heart/presentation/navigation/pushes.dart';
+import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
+import 'package:heart/presentation/widgets/compare_codes.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -11,6 +13,9 @@ import 'package:material_ui/material_ui.dart';
 /// stops it and keeps every key on the device, inert, so turning back on is
 /// the same device as before. Back in front, it publishes what didn't reach
 /// the server, reads what arrived and restocks single-use keys.
+///
+/// Another of the account's devices asking to compare a code with this one
+/// (#555) opens the comparison over whatever is on screen.
 class DeviceKeysPresenter extends StatefulWidget {
   final Widget child;
 
@@ -32,10 +37,18 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
   /// The account keys run for, or null while they don't.
   String? _running;
 
+  DeviceApproval? _approval;
+
+  /// The last comparison asked for that a sheet showed: closed while it
+  /// finishes, it isn't shown again.
+  String? _shown;
+
   @override
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(onResume: _onResume);
+    // a sheet closing may leave a request waiting that came while it was up
+    comparisonSheet.addListener(_asked);
   }
 
   @override
@@ -56,6 +69,11 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
       _upsync?.removeListener(_sync);
       _upsync = upsync..addListener(_sync);
     }
+    final approval = DeviceKeys.of(context).approval;
+    if (!identical(approval, _approval)) {
+      _approval?.removeListener(_asked);
+      _approval = approval..addListener(_asked);
+    }
     _sync();
   }
 
@@ -64,6 +82,8 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
     _preferences?.removeListener(_sync);
     _auth?.removeListener(_sync);
     _upsync?.removeListener(_sync);
+    _approval?.removeListener(_asked);
+    comparisonSheet.removeListener(_asked);
     _lifecycle.dispose();
     super.dispose();
   }
@@ -90,6 +110,26 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
       case (String(), _):
         return;
     }
+  }
+
+  /// Shows a comparison another device asked for, once no sheet is up: one
+  /// asked for while another sheet shows waits for it to close. One this
+  /// device started is shown by the page that started it.
+  ///
+  /// A turn later, never inside a route closing.
+  void _asked() => scheduleMicrotask(_show);
+
+  void _show() {
+    final approval = _approval;
+    if (!mounted || approval == null || comparisonSheet.value != null) return;
+    final asked = switch (approval.value) {
+      CodeComparison(role: .responder, running: true, :final id) => id,
+      _ => null,
+    };
+    final root = HeartRouter.maybeOf(context)?.rootContext;
+    if (asked == null || asked == _shown || root == null || !root.mounted) return;
+    _shown = asked;
+    unawaited(showCodeComparison(root, approval, asked));
   }
 
   void _onResume() {

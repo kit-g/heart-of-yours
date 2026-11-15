@@ -29,8 +29,12 @@ class ProgramFormPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final copy = L.of(context);
+    final editing = switch (programId) {
+      final String id => Programs.watch(context).lookup(id),
+      null => null,
+    };
     final form = switch ((programId, folderId)) {
-      (final String id, _) => switch (Programs.watch(context).lookup(id)) {
+      (final String id, _) => switch (editing) {
         final Program program => ProgramFieldsForm(
           key: ValueKey(id),
           initial: program,
@@ -47,7 +51,12 @@ class ProgramFormPage extends StatelessWidget {
       },
       (null, null) => null,
     };
-    return _ProgramsOnly(child: form ?? Scaffold(appBar: AppBar()));
+    // changing a coach's program is part of running it (#593); making one is
+    // Programs' alone
+    return _ProgramsOnly(
+      program: editing,
+      child: form ?? Scaffold(appBar: AppBar()),
+    );
   }
 
   Widget _fromFolder(BuildContext context, TemplateFolder folder) {

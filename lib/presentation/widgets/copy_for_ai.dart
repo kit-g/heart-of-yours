@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/record_book.dart';
 import 'package:heart/core/utils/records.dart';
+import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/feature_offer.dart';
@@ -28,17 +29,19 @@ const _recordedWorkouts = 40;
 /// feature is offered. Not on yet, this is the offer: yes goes straight on
 /// to the sheet, no earns the one notice.
 Future<void> copyWorkoutForAi(BuildContext context, Workout workout) async {
-  final preferences = Preferences.of(context);
-  if (!preferences.isOn(_feature)) {
-    final yes = await _offer(context);
-    if (!context.mounted) return;
-    preferences.answerOffer(_feature, yes: yes);
-    if (!yes) {
-      snack(context, L.of(context).featureDeclinedNotice);
-      // the snack was the notice: owed once, and now paid
-      preferences.acknowledgeDeclineNotice(_feature);
-      return;
-    }
+  if (!Preferences.of(context).isOn(_feature)) {
+    final L(:copyForAiOfferTitle, :copyForAiOfferBody) = L.of(context);
+    final yes = await askInSheet(
+      context,
+      _feature,
+      icon: _icon,
+      title: copyForAiOfferTitle,
+      body: copyForAiOfferBody,
+      offerKey: AppKeys.copyForAiOffer,
+      acceptKey: AppKeys.copyForAiAccept,
+      declineKey: AppKeys.copyForAiDecline,
+    );
+    if (!yes || !context.mounted) return;
   }
   return _show(context, _Scope.workout(workout));
 }
@@ -49,43 +52,6 @@ Future<void> copyPeriodForAi(BuildContext context) => _show(context, const _Scop
 
 /// Every session of [exercise] — from its history.
 Future<void> copyExerciseForAi(BuildContext context, Exercise exercise) => _show(context, _Scope.exercise(exercise));
-
-/// The one ask, as a sheet over the menu that led to it. Dismissing it is
-/// waving it away, which is a no.
-Future<bool> _offer(BuildContext context) async {
-  final L(:copyForAiOfferTitle, :copyForAiOfferBody) = L.of(context);
-  final preferences = Preferences.of(context);
-  final answer = await showModalBottomSheet<bool>(
-    context: context,
-    useRootNavigator: true,
-    constraints: const BoxConstraints(maxWidth: dialogWidth),
-    builder: (context) {
-      return SafeArea(
-        child: Padding(
-          padding: const .fromLTRB(16, 24, 16, 16),
-          // the offer is laid out for a list, where it gets unbounded height;
-          // in a sheet it would fill the sheet's height without this
-          child: Column(
-            mainAxisSize: .min,
-            children: [
-              FeatureOffer(
-                key: AppKeys.copyForAiOffer,
-                acceptKey: AppKeys.copyForAiAccept,
-                declineKey: AppKeys.copyForAiDecline,
-                icon: _icon,
-                title: copyForAiOfferTitle,
-                body: copyForAiOfferBody,
-                onAnswer: (yes) => Navigator.of(context).pop(yes),
-                onShown: () => preferences.markOffered(_feature),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-  return answer ?? false;
-}
 
 const _icon = Icons.auto_awesome_outlined;
 
@@ -157,9 +123,11 @@ class _Sources {
       preferences: preferences,
       exercises: Exercises.of(context),
       history: Workouts.of(context).history.toList()..sort((a, b) => b.start.compareTo(a.start)),
-      // a program's workouts are a stretch only while Programs is on
-      programs: switch (preferences.isOn(.programs)) {
-        true => Programs.of(context).all,
+      // a program's workouts are a stretch only while it is shown: with
+      // Programs off, a coach's under Your coach (#593); with both off the
+      // programs are never read
+      programs: switch (preferences.programsReach) {
+        true => shownPrograms(context).all.toList(),
         false => const [],
       },
       book: RecordBook.maybeOf(context),

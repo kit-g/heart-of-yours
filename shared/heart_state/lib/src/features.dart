@@ -135,11 +135,11 @@ enum Feature {
 
   /// Logging a workout that already happened (#530): when it was, then what
   /// was done, saved straight to History like any finished workout. No live
-  /// session, so no clock, rest timers, lock screen or watch. Opt-in from
-  /// Settings only, with no in-app offer: nothing in ordinary use marks a
-  /// lifter who logs after the fact, so an offer would be a guess. Off, the
-  /// ways in are gone; a workout logged this way is an ordinary workout and
-  /// stays.
+  /// session, so no clock, rest timers, lock screen or watch. Offered once,
+  /// at the one moment that marks a lifter who logs after the fact: tapping an
+  /// empty past day in History's calendar (#618). Yes goes straight on to
+  /// logging that day; no leaves the tap doing nothing. Off, the ways in are
+  /// gone; a workout logged this way is an ordinary workout and stays.
   pastWorkouts('pastWorkouts'),
 
   /// Coaching from the coach's side (#168, #566): a space of its own with

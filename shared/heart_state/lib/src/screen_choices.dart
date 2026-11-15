@@ -42,7 +42,11 @@ final class ScreenChoiceRecord {
 /// The screen choices there are, by their storage key.
 enum ScreenChoice {
   /// [HistoryView] (#609).
-  historyView('historyView');
+  historyView('historyView'),
+
+  /// How the exercise picker groups the library, a [PickerGrouping] by name
+  /// (#620).
+  pickerGrouping('pickerGrouping');
 
   final String value;
 

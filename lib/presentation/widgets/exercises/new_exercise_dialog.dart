@@ -17,7 +17,41 @@ import 'package:material_ui/material_ui.dart';
 final _formatter = FilteringTextInputFormatter.deny(RegExp(r'\p{Cc}', unicode: true));
 
 // the server's limit on a name, created or renamed (heart-api#429)
-final _length = LengthLimitingTextInputFormatter(200);
+final _length = _CodeUnits(200);
+
+// and on instructions (#621), which keep their line breaks and tabs but no
+// other control character: the database refuses a NUL
+final _instructionsLength = _CodeUnits(10000);
+final _instructionsFormatter = FilteringTextInputFormatter.deny(RegExp(r'[\x00-\x08\x0B-\x1F\x7F]'));
+
+/// A length limit counted the way the server counts it: UTF-16 code units,
+/// not the characters [LengthLimitingTextInputFormatter] counts, so an emoji
+/// can't take a text over the server's limit while it looks under the field's.
+class _CodeUnits extends TextInputFormatter {
+  final int max;
+
+  new(this.max);
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    return newValue.text.length <= max ? newValue : oldValue;
+  }
+}
+
+/// Whether [written] would remove [editable]'s instructions from an account,
+/// which can't be done yet: the server keeps instructions an edit leaves out
+/// and refuses empty ones, so a removal would come back on the next sync.
+/// Until it can (heart-api#443), the dialog says so rather than pretend.
+bool _removesFromAccount(BuildContext context, Exercise? editable, String? written) {
+  // the account last: only a removal needs to know of one
+  return written == null && _written(editable?.instructions) != null && RemoteAccess.of(context).account;
+}
+
+/// Instructions as stored: trimmed, and blank is none (#621).
+String? _written(String? text) {
+  final trimmed = text?.trim() ?? '';
+  return trimmed.isEmpty ? null : trimmed;
+}
 
 /// A name as a library search would hear it: letters and digits only, any
 /// case — "Farmer's walk" and "Farmer's Walk" are one name.
@@ -70,6 +104,9 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
   // the next keystroke
   final refused = ValueNotifier(false);
   nameController.addListener(() => refused.value = false);
+  // the user's own words on how it's done, shown on the About tab as written,
+  // in every language (#621)
+  final instructionsController = TextEditingController(text: editable?.instructions);
   return showDialog<Exercise>(
     barrierDismissible: true,
     context: context,
@@ -110,7 +147,15 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
                           child: ListenableBuilder(
-                            listenable: Listenable.merge([loading, target, category, pattern, roles, nameController]),
+                            listenable: Listenable.merge([
+                              loading,
+                              target,
+                              category,
+                              pattern,
+                              roles,
+                              nameController,
+                              instructionsController,
+                            ]),
                             builder: (_, _) {
                               final (l, t, c, p, r, n) = (
                                 loading.value,
@@ -122,6 +167,7 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                               );
                               final retagged = !sameRoles(r, initialRoles);
                               final typed = n.text.trim();
+                              final written = _written(instructionsController.text);
                               final enough = switch (editable) {
                                 Exercise e =>
                                   t != null &&
@@ -132,6 +178,8 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                                           e.target != t ||
                                           e.category != c ||
                                           e.movement.groups.firstOrNull != p ||
+                                          (written != _written(e.instructions) &&
+                                              !_removesFromAccount(context, e, written)) ||
                                           retagged),
                                 null => t != null && c != null && typed.isNotEmpty,
                               };
@@ -161,6 +209,7 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                                             isMine: true,
                                             movement: movement,
                                             tags: taggingOf(r),
+                                            instructions: written,
                                           );
                                           await Exercises.of(context).makeExercise(exercise);
                                           saved = exercise;
@@ -169,7 +218,9 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                                           final named = typed == editable.name.trim()
                                               ? editable
                                               : editable.renamed(typed);
-                                          final edited = named.copyWith(
+                                          final kept = written == _written(editable.instructions);
+                                          final described = kept ? named : named.withInstructions(written);
+                                          final edited = described.copyWith(
                                             category: c,
                                             target: t,
                                             movement: movement,
@@ -232,6 +283,7 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                                     null => false,
                                   };
                                   return TextField(
+                                    key: AppKeys.newExerciseName,
                                     controller: nameController,
                                     inputFormatters: [_formatter, _length],
                                     selectionControls: context.platformSpecificSelectionControls(),
@@ -366,6 +418,34 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                               },
                             ),
                             MusclePicker(roles: roles),
+                            // the user's words, so only on what is the user's
+                            if (renamable)
+                              ListenableBuilder(
+                                listenable: instructionsController,
+                                builder: (context, _) {
+                                  final kept = _removesFromAccount(
+                                    context,
+                                    editable,
+                                    _written(instructionsController.text),
+                                  );
+                                  return TextField(
+                                    key: AppKeys.newExerciseInstructions,
+                                    controller: instructionsController,
+                                    minLines: 3,
+                                    maxLines: 8,
+                                    keyboardType: .multiline,
+                                    textCapitalization: .sentences,
+                                    inputFormatters: [_instructionsFormatter, _instructionsLength],
+                                    selectionControls: context.platformSpecificSelectionControls(),
+                                    decoration: InputDecoration(
+                                      labelText: L.of(context).exerciseInstructions,
+                                      hintText: L.of(context).exerciseInstructionsHint,
+                                      helperText: kept ? L.of(context).exerciseInstructionsKept : null,
+                                      alignLabelWithHint: true,
+                                    ),
+                                  );
+                                },
+                              ),
                           ],
                         ),
                       ),

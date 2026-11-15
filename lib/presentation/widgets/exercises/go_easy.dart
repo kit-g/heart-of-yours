@@ -1,11 +1,22 @@
 part of 'exercises.dart';
 
 /// What [exercise] is harder on among the things the user goes easy on
-/// (#396): empty unless Programs is on, the map is published and something
-/// listed is harder on it. A mark is never a block.
-List<GoEasyEntry> goEasyMarks(BuildContext context, Exercise exercise) {
-  if (!Preferences.watch(context).isOn(.programs)) return const [];
-  return GoEasy.watch(context).harderOn(exercise);
+/// (#396): empty unless the map is published and something listed is harder
+/// on it. A mark is never a block. A program's page asks it of its own shown
+/// program; a list of the whole library only while [goEasyOn].
+List<GoEasyEntry> goEasyMarks(BuildContext context, Exercise exercise) => GoEasy.watch(context).harderOn(exercise);
+
+/// Whether what the user goes easy on is in play across the app: while any
+/// program is shown — every one with Programs on, and with it off a coach's
+/// under Your coach (#593), stopped ones too, since a stopped program's page
+/// offers the list as a running one's does. Asked once per list, never per
+/// row.
+bool goEasyOn(BuildContext context) {
+  final preferences = Preferences.watch(context);
+  if (preferences.isOn(.programs)) return true;
+  // with both off, the programs are never read
+  if (!preferences.programsReach) return false;
+  return shownPrograms(context, listen: true).isNotEmpty;
 }
 
 /// The listed things' names, joined: "Knee, Jumping and impact".
@@ -219,7 +230,7 @@ class GoEasyRow extends StatelessWidget {
     final copy = L.of(context);
     final easy = GoEasy.watch(context);
     final title = easy.content?.title;
-    if (!Preferences.watch(context).isOn(.programs) || title == null) return const SizedBox.shrink();
+    if (!goEasyOn(context) || title == null) return const SizedBox.shrink();
     final listed = easy.listed;
 
     return ListTile(

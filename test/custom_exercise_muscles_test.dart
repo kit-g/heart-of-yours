@@ -87,7 +87,7 @@ void main() {
 
   testWidgets('a new exercise saves the muscles tagged, both sides and every segment of each', (tester) async {
     await pumpDialog(tester, []);
-    await tester.enterText(find.byType(TextField), 'Muffin Press');
+    await tester.enterText(find.byKey(AppKeys.newExerciseName), 'Muffin Press');
     await tester.tap(find.widgetWithText(InputChip, 'Chest'));
     await tester.ensureVisible(find.widgetWithText(InputChip, 'Machine'));
     await tester.tap(find.widgetWithText(InputChip, 'Machine'));

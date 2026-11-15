@@ -189,17 +189,23 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               ],
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(56),
-                child: Padding(
-                  padding: const .only(left: 8, bottom: 2, right: 8),
-                  child: AppBarTextField(
-                    hint: workoutName,
-                    style: textTheme.titleMedium,
-                    hintStyle: textTheme.bodyLarge,
-                    onChanged: (value) {
-                      _notifier.name = value.trim();
-                    },
-                    focusNode: _focusNode,
-                    controller: _controller,
+                // over the set table, as wide as it is (#592)
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const .new(maxWidth: setTableWidth),
+                    child: Padding(
+                      padding: const .only(left: 8, bottom: 2, right: 8),
+                      child: AppBarTextField(
+                        hint: workoutName,
+                        style: textTheme.titleMedium,
+                        hintStyle: textTheme.bodyLarge,
+                        onChanged: (value) {
+                          _notifier.name = value.trim();
+                        },
+                        focusNode: _focusNode,
+                        controller: _controller,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -221,6 +227,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                     someoneElse: widget.loggingFor != null,
                     child: WorkoutDetail(
                       exercises: workout,
+                      programId: workout.programId,
                       needsCancelWorkoutButton: false,
                       slivers: [
                         const SliverToBoxAdapter(child: RecordCountRow()),

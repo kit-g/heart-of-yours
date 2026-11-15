@@ -306,11 +306,12 @@ final class HeartRouter {
   }
 
   /// Where a [ProgramSessionLink] in [uri] sends the app, having set it going
-  /// — or null: not one. With Programs off there is no program to open, and
-  /// the link is only the workouts tab.
+  /// — or null: not one. With no program shown there is none to open, and
+  /// the link is only the workouts tab; which program is shown is known once
+  /// the programs are read, so the link itself asks again (#593).
   static String? _programSessionLink(BuildContext context, Uri uri) {
     if (ProgramSessionLink.parse(uri) case ProgramSessionLink link) {
-      if (Preferences.of(context).isOn(.programs)) {
+      if (Preferences.of(context).programsReach) {
         unawaited(
           runProgramSessionLink(
             link,

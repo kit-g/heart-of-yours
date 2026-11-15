@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'analytics.dart';
 import 'coaching.dart' show CoachingStatus;
 import 'device_keys.dart';
 import 'remote.dart';
@@ -192,6 +193,13 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   /// [thread], to check their devices against before a key reaches them.
   final String? Function(Thread thread)? fingerprintFor;
 
+  /// Told of a message written and a conversation deleted, by this person.
+  final Analytics? analytics;
+
+  /// This person's side of [thread]'s connection, for [analytics]: null while
+  /// the connections are not read.
+  final ConnectionRole? Function(Thread thread)? roleFor;
+
   new({
     required this._service,
     required this._local,
@@ -199,6 +207,8 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     RemoteAccess? remote,
     this.onError,
     this.fingerprintFor,
+    this.analytics,
+    this.roleFor,
     String Function()? newId,
     DateTime Function()? now,
   }) : _remote = remote ?? RemoteAccess(),
@@ -270,6 +280,13 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   }
 
   Thread? lookup(String threadId) => _threads.where((each) => each.id == threadId).firstOrNull;
+
+  ConnectionRole? _roleOf(String threadId) {
+    return switch (lookup(threadId)) {
+      final Thread thread => roleFor?.call(thread),
+      null => null,
+    };
+  }
 
   Thread? threadOf(String connectionId) => _threads.where((each) => each.connectionId == connectionId).firstOrNull;
 
@@ -390,10 +407,14 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  /// Every deletion goes through here, one conversation at a time, the
+  /// account's own deletion's among them: each is counted once the server
+  /// took it.
   Future<void> _clear(String threadId) async {
     final userId = _userId;
     if (userId == null) throw StateError('no account');
     await _service.clearThread(threadId);
+    analytics?.conversationDeleted(role: _roleOf(threadId));
     if (userId != _userId) return;
     if (lookup(threadId) case final Thread thread) {
       // the server drops the time of the last message with them: so does this
@@ -432,31 +453,34 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// Reports the other person of [thread], with [messages] of theirs this
-  /// device opened, which the server can check they really sent. Throws what
-  /// the server threw.
-  Future<void> report(Thread thread, ReportReason reason, {Iterable<Message> messages = const []}) async {
+  /// device opened, which the server can check they really sent. Answers how
+  /// many went with it: one not theirs, or not opened, is left out. Throws
+  /// what the server threw.
+  Future<int> report(Thread thread, ReportReason reason, {Iterable<Message> messages = const []}) async {
     final (userId, otherId) = (_userId, thread.otherId);
     if (userId == null || otherId == null) throw StateError('nobody to report');
+    final attached = [
+      for (final each in messages)
+        if ((each.opened, each.item.senderId) case (Opened(:final text, :final frankingKey), final String sender)
+            when sender == otherId)
+          (
+            words: text,
+            key: frankingKey,
+            commitment: each.item.commitment,
+            tag: each.item.tag,
+            tagKey: each.item.tagKey,
+            senderId: sender,
+            recipientId: userId,
+            createdAt: each.item.createdAt,
+          ),
+    ];
     await _service.fileReport(
       reportedId: otherId,
       connectionId: thread.connectionId,
       reason: reason.wire,
-      messages: [
-        for (final each in messages)
-          if ((each.opened, each.item.senderId) case (Opened(:final text, :final frankingKey), final String sender)
-              when sender == otherId)
-            (
-              words: text,
-              key: frankingKey,
-              commitment: each.item.commitment,
-              tag: each.item.tag,
-              tagKey: each.item.tagKey,
-              senderId: sender,
-              recipientId: userId,
-              createdAt: each.item.createdAt,
-            ),
-      ],
+      messages: attached,
     );
+    return attached.length;
   }
 
   /// The app came back to the front, where a push may never have reached it:
@@ -631,6 +655,9 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       createdAt: at,
     );
     await _local.storeThreadItems(userId, [(item: item, position: null, pending: true)]);
+    // sealed and kept, on its way: one written offline waits here and still
+    // counts, so this is the intent to send, never held up by the network
+    analytics?.messageSent(role: _roleOf(threadId));
     if (userId != _userId) return;
     // the thread holds a message again, before the server says so
     if (lookup(threadId) case final Thread thread) {

@@ -22,7 +22,7 @@ abstract interface class SettingsAccount implements Listenable {
 
 /// Keeps a signed-in account's settings the same on every device it is used
 /// on: the opt-in answers (#138), the week's first day (#339) and the screen
-/// choices (#609), which travel the way the answers do.
+/// choices (#609, #620), which travel the way the answers do.
 ///
 /// The device's [Preferences] stay the store the app reads; the account's
 /// [Settings] carry a copy. For the answers that is `extra.features` (see
@@ -122,7 +122,10 @@ class SettingsSync {
         if (choicesHere.isNotEmpty) settings = withScreenChoices(settings, choicesHere);
         if (writesDay) settings = settings.copyWith(firstWeekday: mine);
         final saved = await _auth.saveSettings(settings);
-        if (saved != null && owed) _preferences.settleFirstWeekday();
+        // a choice made while the write was out is still owed
+        if (saved != null && owed && _preferences.chosenFirstWeekday == mine) {
+          _preferences.settleFirstWeekday();
+        }
       } else if (owed) {
         _preferences.settleFirstWeekday();
       }

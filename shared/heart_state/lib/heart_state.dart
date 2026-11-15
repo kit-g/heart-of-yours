@@ -38,6 +38,7 @@ export 'src/program_growth.dart';
 export 'src/program_library.dart';
 export 'src/program_plan.dart';
 export 'src/programs.dart';
+export 'src/picker_grouping.dart';
 export 'src/pushes.dart';
 export 'src/recaps.dart';
 export 'src/remote.dart';

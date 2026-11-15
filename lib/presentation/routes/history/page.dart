@@ -14,9 +14,10 @@ class HistoryPage extends StatefulWidget {
   /// feature off, History has no way there.
   final VoidCallback? onEntryReview;
 
-  /// Logs a workout that already happened (#530). Without it, or with the
-  /// feature off, History has no way in.
-  final VoidCallback? onLogPastWorkout;
+  /// Logs a workout that already happened (#530), by default in the last
+  /// hour, or [on] a day tapped in the calendar (#618). Without it, or with
+  /// the feature off, History has no way in.
+  final void Function({DateTime? on})? onLogPastWorkout;
   final VoidCallback onOpenActiveWorkout;
   final Widget? detail;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
@@ -61,13 +62,15 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final L(:myProgression) = L.of(context);
     final workouts = Workouts.watch(context);
     final byMonth = workouts.byMonth;
-    // the days set aside: a program's while Programs is on, a plain day's
-    // while "Not today" is (#312); with both off, History is as it was
+    // the days set aside: a program's while it is shown (Programs on, or a
+    // coach's under Your coach, #593), a plain day's while "Not today" is
+    // (#312); with all off, History is as it was
     final preferences = Preferences.watch(context);
-    final skips = Programs.watch(context).skips.where(
+    final programs = Programs.watch(context);
+    final skips = programs.skips.where(
       (skip) => switch (skip.isDay) {
         true => preferences.isOn(.notToday),
-        false => preferences.isOn(.programs),
+        false => preferences.programShown(programs.programOf(skip)),
       },
     );
     final images = workouts.images;
@@ -85,12 +88,15 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
           ),
         if (widget.onEntryReview case final VoidCallback open) _EntryReviewButton(onPressed: open),
         // a workout that already happened (#530), while it is on
-        if ((widget.onLogPastWorkout, preferences.isOn(.pastWorkouts)) case (final VoidCallback log, true))
+        if ((widget.onLogPastWorkout, preferences.isOn(.pastWorkouts)) case (
+          final void Function({DateTime? on}) log,
+          true,
+        ))
           IconButton(
             key: AppKeys.logPastWorkout,
             tooltip: L.of(context).logPastWorkout,
             icon: const Icon(Icons.more_time_rounded),
-            onPressed: log,
+            onPressed: () => log(),
           ),
         // the switch between the two views (#609), remembered as the
         // view History opens on
@@ -263,6 +269,19 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                     onTapWorkout: widget.onTapWorkout,
                     selectedId: widget.selectedId,
                     controller: Scrolls.of(context).historyCalendarScrollController,
+                    onLogOn: switch (widget.onLogPastWorkout) {
+                      final void Function({DateTime? on}) log => (day) => log(on: day),
+                      null => null,
+                    },
+                    onStartWorkout: () async {
+                      final workouts = Workouts.of(context);
+                      // read at the tap: the day's list may have been up while one started
+                      // somewhere else — the watch, a shortcut — and that one is the way in
+                      if (!workouts.hasActiveWorkout) {
+                        await workouts.startWorkout(source: .blank, name: L.of(context).defaultWorkoutName());
+                      }
+                      if (mounted && workouts.hasActiveWorkout) widget.onNewWorkout();
+                    },
                   ),
                 ),
               );

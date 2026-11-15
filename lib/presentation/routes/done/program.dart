@@ -35,7 +35,8 @@ class _ProgramBlockState extends State<_ProgramBlock> {
       final String id => programs.lookup(id),
       null => null,
     };
-    if (program == null || !Preferences.watch(context).isOn(.programs)) return const SizedBox.shrink();
+    // a coach's program is shown under Your coach alone (#593)
+    if (program == null || !Preferences.watch(context).programShown(program)) return const SizedBox.shrink();
 
     final copy = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);

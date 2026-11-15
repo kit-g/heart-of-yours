@@ -1,8 +1,12 @@
 library;
 
+import 'dart:math' as math;
+
+import 'package:flutter/rendering.dart' show RenderSliverMainAxisGroup, SliverConstraints;
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
@@ -21,3 +25,4 @@ part 'exercise_item.dart';
 part 'exercise_picker.dart';
 part 'go_easy.dart';
 part 'movement_filter_sheet.dart';
+part 'picker_groups.dart';
