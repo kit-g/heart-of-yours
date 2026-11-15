@@ -61,7 +61,7 @@ class _CoachingFrameState extends State<CoachingFrame> {
         ),
         (
           label: l.coachingMessages,
-          icon: (_) => const Icon(Icons.forum_outlined, key: AppKeys.coachingMessagesStack),
+          icon: (_) => const _MessagesIcon(),
         ),
         (
           label: l.coachingPrograms,
@@ -85,6 +85,25 @@ class _CoachingFrameState extends State<CoachingFrame> {
           false => const SizedBox.shrink(),
         },
       ),
+    );
+  }
+}
+
+/// The Messages tab's icon, with how many of the clients' messages wait
+/// unread. Rebuilt for the count alone, not every word from [Messages].
+class _MessagesIcon extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    // as one string: a list or a set built afresh is never equal to the last
+    final clients = context.select<Coaching, String>(
+      (coaching) => coaching.clients.map((each) => each.connectionId).nonNulls.join(' '),
+    );
+    final unread = context.select<Messages, int>((messages) => messages.unreadIn(clients.split(' ')));
+    return UnreadBadge(
+      count: unread,
+      child: const Icon(Icons.forum_outlined, key: AppKeys.coachingMessagesStack),
     );
   }
 }

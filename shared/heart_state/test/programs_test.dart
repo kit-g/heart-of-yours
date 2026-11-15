@@ -1280,6 +1280,95 @@ void main() {
       expect(programs.currentBasesOf('p1')['squat']?.value, 100);
     });
 
+    group('a workout a coach logged (#560)', () {
+      Workout loggedBy(String coach, String id, {required DateTime start}) {
+        return Workout.fromJson({
+          ...done(
+            id,
+            start: start,
+            exercises: [
+              squats([5, 5, 5], weight: 105),
+            ],
+          ).toMap(),
+          'loggedBy': coach,
+          'loggedByName': 'Whiskers',
+        });
+      }
+
+      test('moves the program as a finish of their own would, once', () async {
+        await follow(growing({'squat': const AddWeight(step: 5)}), bases: [base(100)]);
+        final workout = loggedBy('whiskers', 'w1', start: DateTime.utc(2026, 10, 5));
+
+        await programs.growLogged([workout], sessionOf: session);
+        await programs.growLogged([workout], sessionOf: session);
+
+        final moved = programs.basesOf('p1').where((each) => each.workoutId == 'w1');
+        expect(moved, hasLength(1), reason: 'once, however often it is asked');
+        expect(programs.currentBasesOf('p1')['squat'], moved.single);
+      });
+
+      test("one of their own, or one older than the program's last move, moves nothing", () async {
+        await follow(
+          growing({'squat': const AddWeight(step: 5)}),
+          bases: [base(100, at: DateTime.utc(2026, 10, 6))],
+        );
+
+        await programs.growLogged(
+          [
+            loggedBy(uid, 'mine', start: DateTime.utc(2026, 10, 7)),
+            loggedBy('whiskers', 'old', start: DateTime.utc(2026, 10, 5)),
+          ],
+          sessionOf: session,
+        );
+
+        expect(programs.currentBasesOf('p1')['squat']?.value, 100);
+      });
+
+      test("a later session still moves it after an earlier one's growth was written days on", () async {
+        await follow(growing({'squat': const AddWeight(step: 5)}), bases: [base(100)]);
+        final monday = loggedBy('whiskers', 'monday', start: DateTime.utc(2026, 10, 5));
+        final tuesday = loggedBy('whiskers', 'tuesday', start: DateTime.utc(2026, 10, 6));
+
+        // Monday's is grown on Wednesday, this device's clock on the base;
+        // Tuesday's arrives after that
+        await programs.growLogged([monday], sessionOf: session);
+        await programs.growLogged([monday, tuesday], sessionOf: session);
+
+        expect(programs.basesOf('p1').where((each) => each.workoutId == 'tuesday'), hasLength(1));
+      });
+
+      test('coming back, what another device moved since is read first', () async {
+        await follow(growing({'squat': const AddWeight(step: 5)}), bases: [base(100)]);
+        // the user's own edit by hand, on another device, after the session
+        remote.bases['p1'] = [base(100), base(90, slot: 'by hand', at: DateTime.utc(2026, 10, 7))];
+        remote.calls.clear();
+
+        await programs.growLogged(
+          [loggedBy('whiskers', 'w1', start: DateTime.utc(2026, 10, 5))],
+          sessionOf: session,
+          reread: true,
+        );
+
+        expect(remote.calls, contains('getProgramBases p1'));
+        expect(programs.basesOf('p1').where((each) => each.workoutId == 'w1'), isEmpty);
+      });
+
+      test('one logged from a session not read here yet waits for it, and the ones after it too', () async {
+        await follow(growing({'squat': const AddWeight(step: 5)}), bases: [base(100)]);
+        final first = loggedBy('whiskers', 'w1', start: DateTime.utc(2026, 10, 5));
+        final second = loggedBy('whiskers', 'w2', start: DateTime.utc(2026, 10, 6));
+
+        await programs.growLogged([first, second], sessionOf: (_) => null);
+
+        expect(programs.basesOf('p1').where((each) => each.workoutId != null), isEmpty);
+        expect(programs.grownBy('w1'), isNull, reason: 'not remembered as grown');
+
+        await programs.growLogged([first, second], sessionOf: session);
+
+        expect(programs.basesOf('p1').map((each) => each.workoutId).nonNulls, unorderedEquals(['w1', 'w2']));
+      });
+    });
+
     test("a lift's first session sets its first base, when nothing set one before", () async {
       // Full body, three days: no test week, so nothing ever set one, and the
       // rule held every session after (#F34)

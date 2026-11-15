@@ -470,6 +470,7 @@ RouteBase _historyRoute() {
               return WorkoutEditor(
                 copy: past.workout,
                 logTo: past.logTo,
+                loggingFor: past.loggingFor,
                 onClose: switch (LayoutProvider.of(context)) {
                   .compact => null,
                   .wide => context.goToHistory,
@@ -1306,6 +1307,9 @@ RouteBase _coachingRoute() {
               onOpenClient: context.pushCoachingClient,
               onOpenWorkout: context.pushCoachingClientWorkout,
               onOpenProgram: context.pushCoachingClientProgram,
+              onMessage: context.pushCoachingClientThread,
+              onNotes: context.pushCoachingClientNotes,
+              onLog: context.pushCoachingClientLog,
             ),
             routes: [
               GoRoute(
@@ -1318,9 +1322,44 @@ RouteBase _coachingRoute() {
                     connectionId: connectionId,
                     onOpenWorkout: (workoutId) => context.pushCoachingClientWorkout(connectionId, workoutId),
                     onOpenProgram: (programId) => context.pushCoachingClientProgram(connectionId, programId),
+                    onMessage: context.pushCoachingClientThread,
+                    onNotes: context.pushCoachingClientNotes,
+                    onLog: context.pushCoachingClientLog,
                   );
                 },
                 routes: [
+                  GoRoute(
+                    path: 'messages',
+                    name: _coachingClientThreadName,
+                    builder: (context, state) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+                  ),
+                  // a workout the coach logs for them (#560): it lives in what
+                  // it was opened with, so a location without it goes back
+                  GoRoute(
+                    path: 'log',
+                    name: _coachingClientLogName,
+                    redirect: (_, state) => switch (state.extra) {
+                      PastWorkout _ => null,
+                      _ => '$_coachingClientsPath/${state.pathParameters['connectionId']}',
+                    },
+                    builder: (context, state) {
+                      final past = state.extra as PastWorkout;
+                      return WorkoutEditor(copy: past.workout, logTo: past.logTo, loggingFor: past.loggingFor);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'notes',
+                    name: _coachingClientNotesName,
+                    // nowhere to keep the keys that open them, as on the web
+                    redirect: (context, state) => switch (DeviceKeys.of(context).supported) {
+                      true => null,
+                      false => state.namedLocation(
+                        _coachingClientName,
+                        pathParameters: {'connectionId': state.pathParameters['connectionId']!},
+                      ),
+                    },
+                    builder: (context, state) => ClientNotesPage(connectionId: state.pathParameters['connectionId']!),
+                  ),
                   GoRoute(
                     path: 'programs/:programId',
                     name: _coachingClientProgramName,
@@ -1374,7 +1413,24 @@ RouteBase _coachingRoute() {
         ],
       ),
       StatefulShellBranch(
-        routes: [page(_coachingMessagesPath, _coachingMessagesName, (back) => CoachMessagesPage(onYourTraining: back))],
+        routes: [
+          GoRoute(
+            path: _coachingMessagesPath,
+            name: _coachingMessagesName,
+            redirect: off,
+            builder: (context, _) => CoachMessagesPage(
+              onYourTraining: context.leaveCoaching,
+              onOpen: context.pushCoachingThread,
+            ),
+            routes: [
+              GoRoute(
+                path: ':connectionId',
+                name: _coachingThreadName,
+                builder: (context, state) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+              ),
+            ],
+          ),
+        ],
       ),
       StatefulShellBranch(routes: [_coachingProgramsRoute(off)]),
       StatefulShellBranch(
@@ -1493,6 +1549,28 @@ GoRoute _coachingProgramsRoute(GoRouterRedirect off) {
         ],
       ),
     ],
+  );
+}
+
+/// A student's conversation with their coach (#556), over whatever is on
+/// screen. There only while coaching runs: off, a link to it is one the app
+/// has no screen for.
+RouteBase _threadRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _threadPath,
+    name: _threadName,
+    redirect: (context, _) => switch (pushesOn(context)) {
+      true => null,
+      false => _profilePath,
+    },
+    builder: (context, state) {
+      // outside the shell, so the layout is this route's to provide
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+      );
+    },
   );
 }
 

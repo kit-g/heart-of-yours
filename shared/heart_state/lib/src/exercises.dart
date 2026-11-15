@@ -12,6 +12,14 @@ import 'remote.dart';
 /// conditional re-fetch when only the version moved.
 typedef CatalogStamp = ({String version, String locale, String? etag});
 
+/// The cached library's stamp names a locale its rows are not written in, so
+/// the cache was downloaded afresh (#612). Carries the stamped locale file and
+/// the device's language tag, and nothing about the user or the rows.
+class const CatalogLanguageMismatch(final String stamped, final String? device) implements Exception {
+  @override
+  String toString() => 'CatalogLanguageMismatch: library stamped $stamped holds no $stamped names (device $device)';
+}
+
 /// One locale file of the library: its exercises, and the words lifters search
 /// them by — abbreviations and muscle names — in that locale (#135).
 typedef CatalogLibrary = ({Iterable<Exercise> exercises, SearchGlossary glossary});
@@ -313,8 +321,17 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   ///
   /// A change arriving before [init] is just recorded — init resolves under
   /// the new tag anyway.
+  ///
+  /// The new tag is only kept once the library has been fetched under it. A
+  /// failed fetch — offline, or the app backgrounded mid-request — puts the
+  /// old one back, so the next call with this tag (the app calls on every
+  /// resume) tries again instead of answering "already done" to a library
+  /// still in the old language. Before this, the chrome switched and the
+  /// exercise names stayed behind until the process died, which on Android
+  /// can be days.
   Future<void> onLocaleChanged(String locale) async {
     if (locale == _catalogLocale) return;
+    final previous = _catalogLocale;
     _catalogLocale = locale;
     if (!isInitialized) return;
 
@@ -322,8 +339,35 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
       await _syncLibrary();
       notifyListeners();
     } catch (e, s) {
+      _catalogLocale = previous;
       onError?.call(e, stacktrace: s);
     }
+  }
+
+  /// Locales whose names give their language away by alphabet alone. Only a
+  /// file written in a script other than English's can be checked this way;
+  /// Spanish and French share it, and go unchecked.
+  static final _scripts = {'ru': RegExp(r'[Ѐ-ӿ]')};
+
+  /// Whether the cached library rows are written in the language [stamp]
+  /// vouches for. Answers true wherever that cannot be told (see [_scripts])
+  /// or there are no library rows to judge.
+  ///
+  /// One translated name is enough: the check is for a cache whose rows and
+  /// stamp disagree outright (#612), not for an exercise the file itself left
+  /// untranslated.
+  bool _rowsMatch(CatalogStamp stamp) {
+    final script = _scripts[stamp.locale.split('_').first];
+    final library = _exercises.values.where((each) => !each.isMine);
+    return script == null || library.isEmpty || library.any((each) => script.hasMatch(each.name));
+  }
+
+  /// [stamp] if the rows behind it are what it says, else null — reported,
+  /// so the library is downloaded afresh rather than called current.
+  CatalogStamp? _vouched(CatalogStamp? stamp) {
+    if (stamp == null || _rowsMatch(stamp)) return stamp;
+    onError?.call(CatalogLanguageMismatch(stamp.locale, _catalogLocale), stacktrace: StackTrace.current);
+    return null;
   }
 
   /// Brings the library up to what the CDN publishes, downloading only when
@@ -332,12 +376,18 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// The stamp is trusted only when library rows sit behind it. A stamp over
   /// an empty catalog — a wiped table, a first launch that stored the stamp
   /// but not the rows — would have the manifest answer "unchanged" forever.
+  ///
+  /// Nor is it trusted over rows written in another language than it names:
+  /// such a cache passes every stamp comparison and would never be replaced
+  /// (#612). It is downloaded afresh, and reported — the report carries the
+  /// two language codes and nothing else, and is how the cause gets found.
   Future<void> _syncLibrary() async {
     final warm = _exercises.values.any((each) => !each.isMine);
-    final cached = switch (warm) {
+    final stored = switch (warm) {
       true => await _catalogService.getCatalogStamp(),
       false => null,
     };
+    final cached = _vouched(stored);
 
     final (library, stamp) = await _libraryService.getLibrary(cached: cached);
     switch (library) {

@@ -113,7 +113,19 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     required bool replaceExercises,
     Map<String, String> keptTargets = const {},
   }) {
-    final Workout(id: workoutId, :start, :name, :end, :images, :note, :pauses, :templateId, :programId) = workout;
+    final Workout(
+      id: workoutId,
+      :start,
+      :name,
+      :end,
+      :images,
+      :note,
+      :pauses,
+      :templateId,
+      :programId,
+      :loggedBy,
+      :loggedByName,
+    ) = workout;
     // every column, nulls included, so the row ends up exactly as REPLACE
     // used to leave it — only without the delete underneath
     batch.rawInsert(sql.upsertWorkout, [
@@ -131,6 +143,8 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       // only a payload authoritative for the children speaks for what it
       // could not read; a shallow one leaves the stored list alone
       replaceExercises ? _encodeUnread(workout.unread) : null,
+      loggedBy,
+      loggedByName,
       replaceExercises ? 1 : 0,
       replaceExercises ? 1 : 0,
       replaceExercises ? 1 : 0,

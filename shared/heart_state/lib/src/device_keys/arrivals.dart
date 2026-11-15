@@ -206,6 +206,9 @@ extension _Arrivals on DeviceKeys {
         final waiting = await _serial(run, run.inbox);
         final handled = <String>{};
         for (final delivery in waiting) {
+          // another account signed in meanwhile: a handler reads the current
+          // one, and this one's deliveries wait for its next start
+          if (!identical(_run, run)) throw _Stopped();
           final handler = _handlers[delivery.kind];
           if (handler == null) continue;
           try {

@@ -258,6 +258,16 @@ void main() {
     expect(coaching.all.single.status, ConnectionStatus.severed);
   });
 
+  test('blocking ends a connection, kept as blocked', () async {
+    server.connections.add(_connection('alex', .student));
+    await coaching.load();
+
+    await coaching.block(coaching.coaches.single);
+
+    expect(coaching.coaches, isEmpty);
+    expect(coaching.all.single.status, ConnectionStatus.blocked);
+  });
+
   test('hiding and unhiding a workout', () async {
     server.hidden['already'] = DateTime.utc(2026, 11, 1);
     await coaching.load();
