@@ -150,6 +150,7 @@ class WorkoutDetail extends StatefulWidget {
   /// off: this account's own notes, which someone else's workout (#560) has
   /// nothing to do with. Its note in this workout is [onNoteChanged]'s.
   final bool pinsNotes;
+
   final Future<void> Function(WorkoutImage)? onDeleteImage;
 
   const new({
@@ -246,99 +247,110 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
             const SliverToBoxAdapter(
               child: SizedBox(height: 4),
             ),
-          ...?widget.slivers,
-          SliverToBoxAdapter(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SizeTransition(
-                    sizeFactor: animation,
-                    alignment: const Alignment(0, -1),
-                    child: child,
-                  ),
-                );
-              },
-              child: switch (widget.workoutImages) {
-                null => const SizedBox.shrink(),
-                Iterable i when i.isEmpty => const SizedBox.shrink(),
-                Iterable<WorkoutImage> images => Padding(
-                  padding: const .only(top: 8),
-                  child: _Media(
-                    images: images.toList(),
-                    onTapImage: (index) => widget.onTapImage?.call(
-                      images,
-                      startingIndex: index,
-                      workoutId: widget.workoutId,
-                    ),
-                    onDeleteImage: (image) async => await widget.onDeleteImage?.call(image),
-                  ),
-                ),
-              },
-            ),
-          ),
-          switch (exercises.isEmpty) {
-            true => const _EmptyState(size: 320),
-            false => _exerciseList(colorScheme, addSet, setCopy, previous),
-          },
-          SliverToBoxAdapter(
-            child: DragTarget<WorkoutExercise>(
-              onWillAcceptWithDetails: (_) {
-                _currentlyHoveredExercise.value = null;
-                return true;
-              },
-              onLeave: (_) {
-                _currentlyHoveredExercise.value = null;
-              },
-              onAcceptWithDetails: (details) {
-                widget.onDragExercise(details.data);
-              },
-              builder: (_, _, _) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Column(
-                    children: [
-                      PrimaryButton.wide(
-                        onPressed: () {
-                          _showExerciseDialog(context);
-                        },
-                        key: WorkoutDetailKeys.addExercises,
-                        child: Center(
-                          child: Text(addExercises),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      if (widget.needsCancelWorkoutButton) ...[
-                        PrimaryButton.wide(
-                          key: WorkoutDetailKeys.cancelWorkout,
-                          onPressed: () {
-                            showCancelWorkoutDialog(
-                              context,
-                              onFinish: () {
-                                Scrolls.of(context)
-                                  ..resetExerciseStack()
-                                  ..resetHistoryStack();
-                              },
-                            );
-                          },
-                          backgroundColor: colorScheme.errorContainer,
-                          child: Center(
-                            child: Text(
-                              cancelWorkout,
-                              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+          // a column of rows, not the whole pane (#592), inside the scroll view
+          // so the pane still scrolls from either side and its bar sits at the edge
+          SliverLayoutBuilder(
+            builder: (context, constraints) => SliverPadding(
+              padding: .symmetric(horizontal: max(0, (constraints.crossAxisExtent - setTableWidth) / 2)),
+              sliver: SliverMainAxisGroup(
+                slivers: [
+                  ...?widget.slivers,
+                  SliverToBoxAdapter(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SizeTransition(
+                            sizeFactor: animation,
+                            alignment: const Alignment(0, -1),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: switch (widget.workoutImages) {
+                        null => const SizedBox.shrink(),
+                        Iterable i when i.isEmpty => const SizedBox.shrink(),
+                        Iterable<WorkoutImage> images => Padding(
+                          padding: const .only(top: 8),
+                          child: _Media(
+                            images: images.toList(),
+                            onTapImage: (index) => widget.onTapImage?.call(
+                              images,
+                              startingIndex: index,
+                              workoutId: widget.workoutId,
                             ),
+                            onDeleteImage: (image) async => await widget.onDeleteImage?.call(image),
                           ),
                         ),
-                        const SizedBox(height: 60),
-                      ],
-                    ],
+                      },
+                    ),
                   ),
-                );
-              },
+                  switch (exercises.isEmpty) {
+                    true => const _EmptyState(size: 320),
+                    false => _exerciseList(colorScheme, addSet, setCopy, previous),
+                  },
+                  SliverToBoxAdapter(
+                    child: DragTarget<WorkoutExercise>(
+                      onWillAcceptWithDetails: (_) {
+                        _currentlyHoveredExercise.value = null;
+                        return true;
+                      },
+                      onLeave: (_) {
+                        _currentlyHoveredExercise.value = null;
+                      },
+                      onAcceptWithDetails: (details) {
+                        widget.onDragExercise(details.data);
+                      },
+                      builder: (_, _, _) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Column(
+                            children: [
+                              PrimaryButton.wide(
+                                onPressed: () {
+                                  _showExerciseDialog(context);
+                                },
+                                key: WorkoutDetailKeys.addExercises,
+                                child: Center(
+                                  child: Text(addExercises),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              if (widget.needsCancelWorkoutButton) ...[
+                                PrimaryButton.wide(
+                                  key: WorkoutDetailKeys.cancelWorkout,
+                                  onPressed: () {
+                                    showCancelWorkoutDialog(
+                                      context,
+                                      onFinish: () {
+                                        Scrolls.of(context)
+                                          ..resetExerciseStack()
+                                          ..resetHistoryStack();
+                                      },
+                                    );
+                                  },
+                                  backgroundColor: colorScheme.errorContainer,
+                                  child: Center(
+                                    child: Text(
+                                      cancelWorkout,
+                                      style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 60),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  ...?widget.trailingSlivers,
+                ],
+              ),
             ),
           ),
-          ...?widget.trailingSlivers,
         ],
       ),
     );
@@ -482,6 +494,8 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                                 allowCompleting: widget.allowsCompletingSet,
                                 onTapExercise: widget.onTapExercise,
                                 pinsNotes: widget.pinsNotes,
+                                // this account's last time, beside its own sets only (#591)
+                                showsPrevious: !PreviousScope.isSomeoneElses(context),
                               ),
                             ),
                           ),
@@ -606,9 +620,14 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
         // let the close animation finish before the list visibly resets
         Future.delayed(
           const Duration(milliseconds: 100),
-          () => allExercises
-            ..unselectAll()
-            ..clearFilters(),
+          () {
+            allExercises
+              ..unselectAll()
+              ..clearFilters();
+            // the search too: the controller is this State's and outlives the
+            // dialog, so the next Add exercises opened on the last one's text
+            if (mounted) _searchController.clear();
+          },
         );
       },
     );

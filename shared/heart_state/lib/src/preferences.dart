@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show ValueListenable, listEquals;
 import 'package:heart_models/heart_models.dart';
 import 'package:intl/date_symbol_data_local.dart' show dateTimeSymbolMap;
 import 'package:intl/date_symbols.dart' show DateSymbols;
@@ -8,10 +8,13 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'analytics.dart';
 import 'features.dart';
+import 'picker_grouping.dart';
 import 'plates.dart';
 import 'warmups.dart';
 import 'rest_defaults.dart';
+import 'screen_choices.dart';
 
 const _baseColor = 'baseColor';
 const _themeMode = 'themeMode';
@@ -39,6 +42,8 @@ const _barWeight = 'barWeight';
 const _platesWithout = 'platesWithout';
 const _warmupScheme = 'warmupScheme';
 const _defaultRest = 'defaultRest';
+const _openPickerGroups = 'openPickerGroups';
+const _screen = 'screen';
 
 class Preferences with ChangeNotifier {
   /// The key under which [onboardingSeen] is stored. Public so a test can seed
@@ -46,6 +51,14 @@ class Preferences with ChangeNotifier {
   /// widget tests start there far more often than on a fresh install.
   @visibleForTesting
   static const onboardingSeenKey = 'onboardingSeen';
+
+  /// Told when a feature's answer changes: an offer answered, the Settings
+  /// switch given its [FeatureSwitchSource], an offer lapsed. A switch thrown
+  /// with no source is no one's answer (the watch app's first launch, a Siri
+  /// shortcut used) and is not told.
+  final Analytics? analytics;
+
+  new({this.analytics});
 
   SharedPreferences? _prefs;
   bool _isInitialized = false;
@@ -188,6 +201,82 @@ class Preferences with ChangeNotifier {
   /// The account holds this device's choice now.
   void settleFirstWeekday() => _prefs?.remove(_firstWeekdayOwed);
 
+  /// What History opens on (#609): the last view the user switched to, on
+  /// this device or another, or the list until they have.
+  HistoryView get historyView {
+    return HistoryView.fromValue(_prefs?.getString('$_screen-${ScreenChoice.historyView.value}')) ?? .list;
+  }
+
+  void setHistoryView(HistoryView view) {
+    // what is stored, not what it reads as: a newer app's view reads as the
+    // list here, and choosing the list over it is still a choice
+    final stored = _prefs?.getString('$_screen-${ScreenChoice.historyView.value}');
+    if (stored == view.value || (stored == null && view == .list)) return;
+    _storeScreenChoice(.historyView, ScreenChoiceRecord(value: view.value, at: DateTime.timestamp()));
+    notifyListeners();
+  }
+
+  /// How the exercise picker groups the library (#620): the last grouping
+  /// chosen, on this device or another, or [PickerGrouping.none] — the flat
+  /// list — until there is one. A screen choice, so it travels as History's
+  /// view does.
+  PickerGrouping get pickerGrouping {
+    return PickerGrouping.fromString(_prefs?.getString('$_screen-${ScreenChoice.pickerGrouping.value}')) ?? .none;
+  }
+
+  void setPickerGrouping(PickerGrouping grouping) {
+    // what is stored, not what it reads as: a newer app's grouping reads as
+    // none here, and choosing none over it is still a choice
+    final stored = _prefs?.getString('$_screen-${ScreenChoice.pickerGrouping.value}');
+    if (stored == grouping.name || (stored == null && grouping == .none)) return;
+    _storeScreenChoice(.pickerGrouping, ScreenChoiceRecord(value: grouping.name, at: DateTime.timestamp()));
+    notifyListeners();
+  }
+
+  /// The ids ([ExerciseGroup.id]) of the picker's open groups. Groups start
+  /// folded — a screen of headings is the point of grouping 300 exercises —
+  /// and one opened stays open on this device. View state, kept like
+  /// [isFolderCollapsed] and for the same reason; it does not sync.
+  ///
+  /// A listenable of its own rather than [notifyListeners]: a fold changes
+  /// one list, and nothing else that watches the preferences.
+  ValueListenable<Set<String>> get openPickerGroups => _openGroups;
+
+  final _openGroups = ValueNotifier<Set<String>>(const {});
+
+  void togglePickerGroup(String id) {
+    _openGroups.value = _toggleInList(_openPickerGroups, id).ids;
+  }
+
+  void _storeScreenChoice(ScreenChoice choice, ScreenChoiceRecord record) {
+    _prefs?.setString('$_screen-${choice.value}', record.value);
+    _prefs?.setString('$_screen-${choice.value}-at', record.at.toUtc().toIso8601String());
+  }
+
+  /// Every screen choice this device has made or taken, and when. What
+  /// [SettingsSync] compares with the account's. A default is not a choice,
+  /// and does not travel.
+  Map<ScreenChoice, ScreenChoiceRecord> get screenChoices {
+    return {
+      for (final choice in ScreenChoice.values)
+        if ((
+              _prefs?.getString('$_screen-${choice.value}'),
+              DateTime.tryParse(_prefs?.getString('$_screen-${choice.value}-at') ?? ''),
+            )
+            case (String value, DateTime at))
+          choice: ScreenChoiceRecord(value: value, at: at),
+    };
+  }
+
+  /// Takes [records] as this device's choices: made elsewhere, and newer.
+  void adoptScreenChoices(Map<ScreenChoice, ScreenChoiceRecord> records) {
+    if (records.isEmpty) return;
+    for (final MapEntry(key: choice, value: record) in records.entries) {
+      _storeScreenChoice(choice, record);
+    }
+    notifyListeners();
+  }
+
   /// The first day of the week where [locale] lives, from the same CLDR data
   /// Flutter's calendars use: Sunday in the US and Canada, Monday in most of
   /// Europe, Saturday across much of the Middle East.
@@ -238,6 +327,7 @@ class Preferences with ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _openGroups.dispose();
     super.dispose();
   }
 
@@ -250,6 +340,7 @@ class Preferences with ChangeNotifier {
     if (_disposed) return;
 
     _isInitialized = true;
+    _openGroups.value = {...?_prefs?.getStringList(_openPickerGroups)};
     _localeFirstWeekday = localeFirstWeekday(locale);
     final unit = defaultUnit(locale?.countryCode);
     _initMeasurementUnits(
@@ -258,6 +349,7 @@ class Preferences with ChangeNotifier {
     );
     // startup reads this twice (see app.dart); the second read is a no-op here
     if (!_initialized.isCompleted) _initialized.complete();
+    _countLapses();
     notifyListeners();
   }
 
@@ -328,15 +420,19 @@ class Preferences with ChangeNotifier {
   }
 
   Future<bool>? toggleFolderCollapsed(String folderId) {
-    final collapsed = (_prefs?.getStringList(_collapsedFolders) ?? []).toSet();
-    if (!collapsed.remove(folderId)) {
-      collapsed.add(folderId);
-    }
-    // setStringList updates the in-memory cache synchronously, so listeners
-    // rebuilt by this notify already read the new state
-    final write = _prefs?.setStringList(_collapsedFolders, collapsed.toList());
+    final (ids: _, :write) = _toggleInList(_collapsedFolders, folderId);
     notifyListeners();
     return write;
+  }
+
+  /// Adds [id] to the string list stored under [key], or takes it out when it
+  /// is there: the list as it now stands, and the write. setStringList
+  /// updates the in-memory cache synchronously, so whatever this wakes
+  /// already reads the new state.
+  ({Set<String> ids, Future<bool>? write}) _toggleInList(String key, String id) {
+    final ids = {...?_prefs?.getStringList(key)};
+    if (!ids.remove(id)) ids.add(id);
+    return (ids: ids, write: _prefs?.setStringList(key, ids.toList()));
   }
 
   /// Whether the user has waved away the offer to read their health data.
@@ -633,8 +729,27 @@ class Preferences with ChangeNotifier {
   void answerOffer(Feature feature, {required bool yes}) {
     _offeredThisSession.remove(feature);
     if (!yes) _declinedThisSession.add(feature);
-    _setFeature(feature, on: yes);
+    _setFeature(feature, on: yes, source: .ask);
   }
+
+  /// Each offer left unanswered in an earlier session: a no from this launch
+  /// on ([FeatureAnswer.pending]), counted once as the no it became. The
+  /// answer itself stays pending, this device's business: only a real answer
+  /// travels, and a lapse must never outrank another device's.
+  void _countLapses() {
+    bool lapsed(Feature feature) {
+      return featureAnswer(feature) == .pending &&
+          !_offeredThisSession.contains(feature) &&
+          !(_prefs?.getBool(_lapsedKey(feature)) ?? false);
+    }
+
+    for (final feature in Feature.values.where(lapsed)) {
+      _prefs?.setBool(_lapsedKey(feature), true);
+      analytics?.featureSwitched(feature: feature, on: false, source: .lapsed);
+    }
+  }
+
+  String _lapsedKey(Feature feature) => '$_feature-${feature.value}-lapsed';
 
   /// Whether [feature] was declined in this session and its notice is still
   /// owed. Once acknowledged, or once the session ends, never again.
@@ -645,14 +760,19 @@ class Preferences with ChangeNotifier {
   }
 
   /// The Settings switch: always live, both ways. The switch is the answer, so
-  /// it retires any offer or notice still on screen.
-  void setFeature(Feature feature, {required bool on}) {
+  /// it retires any offer or notice still on screen. With a [source] it is
+  /// someone's answer, and reported when it changed the answer.
+  void setFeature(Feature feature, {required bool on, FeatureSwitchSource? source}) {
     _offeredThisSession.remove(feature);
     _declinedThisSession.remove(feature);
-    _setFeature(feature, on: on);
+    _setFeature(feature, on: on, source: source);
   }
 
-  void _setFeature(Feature feature, {required bool on}) {
+  /// Stores the answer, and reports it as [source]'s when it changed what the
+  /// feature reads as: a yes over a yes, as an invitation accepted with Your
+  /// coach already on, answers nothing.
+  void _setFeature(Feature feature, {required bool on, FeatureSwitchSource? source}) {
+    final was = featureAnswer(feature);
     _store(
       feature,
       FeatureRecord(
@@ -665,6 +785,9 @@ class Preferences with ChangeNotifier {
         },
       ),
     );
+    if (source != null && was != featureAnswer(feature)) {
+      analytics?.featureSwitched(feature: feature, on: on, source: source);
+    }
     notifyListeners();
   }
 
@@ -698,8 +821,9 @@ class Preferences with ChangeNotifier {
   /// flipped — and turning it back on selects them all again.
   ///
   /// A change of options is a change of answer: it travels with it, at a new
-  /// time ([FeatureRecord.without]).
-  void setOption(FeatureOption option, {required bool on}) {
+  /// time ([FeatureRecord.without]). The feature turned off by it is reported
+  /// as [setFeature] reports, given a [source].
+  void setOption(FeatureOption option, {required bool on, FeatureSwitchSource? source}) {
     final feature = option.feature;
     if (!isOn(feature)) return;
     final without = {..._without(feature)};
@@ -709,7 +833,7 @@ class Preferences with ChangeNotifier {
       without.add(option);
     }
     final parts = feature.options.where((option) => !option.addOn);
-    if (parts.isNotEmpty && parts.every(without.contains)) return setFeature(feature, on: false);
+    if (parts.isNotEmpty && parts.every(without.contains)) return setFeature(feature, on: false, source: source);
     _store(feature, FeatureRecord(on: true, at: DateTime.timestamp(), without: without));
     notifyListeners();
   }

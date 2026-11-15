@@ -98,6 +98,8 @@ dev_dependencies:
   plugin_platform_interface: any
   # backs the fake share sheet in test/export_flow_test.dart
   share_plus_platform_interface: any
+  # the other device in test/your_devices_test.dart, comparing a code (#555)
+  sealbox:
   firebase_auth_mocks: ^0.16.0
   # backs the fake account details in test/account_management_test.dart and
   # the fake password policy in test/sign_up_test.dart

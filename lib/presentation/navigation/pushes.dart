@@ -49,8 +49,14 @@ bool pushesOn(BuildContext context, {bool listen = false}) {
 /// for coaching and for nothing else.
 bool coachingRuns(Preferences preferences, Auth auth) {
   final account = auth.user != null && !auth.isAnonymous;
-  final space = preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false);
-  return account && (space || preferences.isOn(.yourCoach));
+  return account && (coachingSpaceRuns(preferences, auth) || preferences.isOn(.yourCoach));
+}
+
+/// Whether the Coaching space is there at all: Coach people is on, for an
+/// account that may coach. The one rule the space's ways in, the presenter
+/// and [coachingRuns] all read.
+bool coachingSpaceRuns(Preferences preferences, Auth auth) {
+  return preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false);
 }
 
 /// Whether [coachingRuns]'s answer can be acted on. A coach with only Coach

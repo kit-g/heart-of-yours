@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
+import 'test_utils.dart';
+
 /// Coaching messages (#556): the inbox, a thread in the server's order, and
 /// sending that waits on the device until it can go.
 void main() {
@@ -549,6 +551,83 @@ void main() {
 
       expect(store.items[me] ?? [], isEmpty);
       expect(messages.draft(threadId), 'words');
+    });
+  });
+
+  group('analytics (#568)', () {
+    late ReportedAnalytics reported;
+
+    setUp(() {
+      reported = ReportedAnalytics();
+      messages = Messages(
+        service: server,
+        local: store,
+        cipher: cipher,
+        remote: access,
+        onError: (error, {stacktrace}) => errors.add(error),
+        analytics: Analytics(service: reported),
+        roleFor: (thread) => thread.connectionId == 'c1' ? .student : null,
+        newId: () => 'mine-${ids++}',
+        now: () => DateTime.utc(2026, 11, 12, 9),
+      )..userId = me;
+    });
+
+    test(
+      'a message counts once it is sealed and kept, not when the server has it, and one never kept not at all',
+      () async {
+        await messages.load();
+        access.account = false;
+
+        await messages.send(threadId, 'later');
+        expect(server.posted, isEmpty);
+        expect(reported.events.map((each) => each.$2), [
+          {'role': 'student'},
+        ]);
+
+        cipher.sealFails = StateError('device keys are off');
+        await expectLater(messages.send(threadId, 'never'), throwsStateError);
+        expect(reported.names, ['message_sent'], reason: 'the words never left the caller');
+      },
+    );
+
+    test('each conversation deleted counts once the server took it, the account deletion\'s among them', () async {
+      server.threads = [
+        ...server.threads,
+        Thread(id: 't2', connectionId: 'c2', otherId: 'biscuit', lastAt: DateTime.utc(2026, 11, 11)),
+        Thread(id: 't3', connectionId: 'c3', otherId: 'pickle', lastAt: DateTime.utc(2026, 11, 10)),
+      ];
+      server.failClear = {'t2'};
+      await messages.load();
+
+      await messages.clearAll();
+
+      expect(reported.names, ['conversation_deleted', 'conversation_deleted']);
+      expect(
+        reported.events.map((each) => each.$2),
+        unorderedEquals([
+          {'role': 'student'},
+          isEmpty,
+        ]),
+      );
+    });
+
+    test("a report answers how many messages went with it: the other person's, opened, alone", () async {
+      server.items = [
+        _item('rude', cursor: 'c1'),
+        _item('mine', sender: me, cursor: 'c2'),
+      ];
+      await messages.load();
+      await messages.open(threadId);
+      final thread = messages.lookup(threadId)!;
+
+      final all = await messages.report(thread, .harassment, messages: messages.thread(threadId).messages);
+      final mineAlone = await messages.report(
+        thread,
+        .harassment,
+        messages: messages.thread(threadId).messages.where((each) => each.mine),
+      );
+
+      expect((all, mineAlone), (1, 0));
     });
   });
 

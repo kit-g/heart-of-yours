@@ -476,6 +476,80 @@ void main() {
       expect(sut.owesDeclineNotice(feature), isFalse);
     });
 
+    group('feature_switched (#568)', () {
+      late ReportedAnalytics reported;
+
+      setUp(() {
+        reported = ReportedAnalytics();
+        sut = Preferences(analytics: Analytics(service: reported));
+      });
+
+      List<Map<String, Object>> switched() => [
+        for (final (name, parameters) in reported.events)
+          if (name == 'feature_switched') parameters,
+      ];
+
+      test('an answer to the ask counts once, and the same answer again counts nothing', () async {
+        await sut.init();
+        sut.markOffered(feature);
+
+        sut.answerOffer(feature, yes: true);
+        // an invitation accepted with Your coach already on, say
+        sut.answerOffer(feature, yes: true);
+
+        expect(switched(), [
+          {'feature': 'muscleMap', 'on': 'true', 'source': 'ask'},
+        ]);
+      });
+
+      test('the switch counts as the source it is given, and a switch with none is no one\'s answer', () async {
+        await sut.init();
+
+        sut.setFeature(feature, on: true, source: .settings);
+        sut.setFeature(feature, on: true, source: .settings);
+        sut.setFeature(feature, on: false, source: .settings);
+        // the watch app's first launch, a Siri shortcut used
+        sut.setFeature(feature, on: true);
+
+        expect(switched(), [
+          {'feature': 'muscleMap', 'on': 'true', 'source': 'settings'},
+          {'feature': 'muscleMap', 'on': 'false', 'source': 'settings'},
+        ]);
+      });
+
+      test('leaving out the last part counts as the switch off, and leaving out one of several nothing', () async {
+        await sut.init();
+        sut.setFeature(feature, on: true);
+
+        for (final option in feature.options) {
+          sut.setOption(option, on: false, source: .settings);
+        }
+
+        expect(sut.isOn(feature), isFalse);
+        expect(switched(), [
+          {'feature': 'muscleMap', 'on': 'false', 'source': 'settings'},
+        ]);
+      });
+
+      test('an ask left unanswered is counted as a no at the next launch, and only then', () async {
+        await sut.init();
+        sut.markOffered(feature);
+        expect(switched(), isEmpty, reason: 'still on screen this session');
+
+        final next = Preferences(analytics: Analytics(service: reported));
+        await next.init();
+        // startup reads twice
+        await next.init();
+        final after = Preferences(analytics: Analytics(service: reported));
+        await after.init();
+
+        expect(switched(), [
+          {'feature': 'muscleMap', 'on': 'false', 'source': 'lapsed'},
+        ]);
+        expect(next.featureAnswer(feature), FeatureAnswer.pending, reason: 'still not an answer that travels');
+      });
+    });
+
     test('the notice does not outlive the session it was owed in', () async {
       await sut.init();
       sut.markOffered(feature);

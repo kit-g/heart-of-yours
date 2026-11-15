@@ -57,20 +57,24 @@ class _ExercisesPageState extends State<ExercisesPage> {
           centerTitle: true,
         ),
         actions: [
-          IconButton(
-            tooltip: exerciseOptions,
-            onPressed: () {
-              _onExerciseOptions(
-                context,
-                onShowArchived: widget.onShowArchived,
-                hasArchived: exercises.archived.isNotEmpty,
-              );
-            },
-            icon: Icon(
-              switch (platform) {
-                .iOS || .macOS => Icons.more_horiz_rounded,
-                _ => Icons.more_vert_rounded,
+          // a Builder for the button's own context: the grouping menu, opened
+          // from the options, hangs off the button
+          Builder(
+            builder: (button) => IconButton(
+              tooltip: exerciseOptions,
+              onPressed: () {
+                _onExerciseOptions(
+                  button,
+                  onShowArchived: widget.onShowArchived,
+                  hasArchived: exercises.archived.isNotEmpty,
+                );
               },
+              icon: Icon(
+                switch (platform) {
+                  .iOS || .macOS => Icons.more_horiz_rounded,
+                  _ => Icons.more_vert_rounded,
+                },
+              ),
             ),
           ),
         ],

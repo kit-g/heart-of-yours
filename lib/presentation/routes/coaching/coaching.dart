@@ -45,11 +45,11 @@ part 'notes.dart';
 part 'pages.dart';
 part 'review.dart';
 
-/// Whether the Coaching space is there at all: Coach people is on, for an
-/// account that may coach. Off for either reason, the app looks as if
-/// coaching had never been built.
+/// [coachingSpaceRuns], read off [context]: off for either reason, the app
+/// looks as if coaching had never been built.
 bool coachingSpaceOn(BuildContext context, {bool listen = false}) {
-  final preferences = Provider.of<Preferences>(context, listen: listen);
-  final auth = Provider.of<Auth>(context, listen: listen);
-  return preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false);
+  return coachingSpaceRuns(
+    Provider.of<Preferences>(context, listen: listen),
+    Provider.of<Auth>(context, listen: listen),
+  );
 }

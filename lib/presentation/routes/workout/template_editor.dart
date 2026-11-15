@@ -99,51 +99,62 @@ class _TemplateEditorState extends State<TemplateEditor> {
           ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(56),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: AppBarTextField(
-                hint: hint,
-                style: textTheme.titleMedium,
-                hintStyle: textTheme.bodyLarge,
-                onChanged: (value) {
-                  templates.editable?.name = value.trim();
-                },
-                focusNode: _focusNode,
-                controller: _controller,
+            // over the set table, as wide as it is (#592)
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const .new(maxWidth: setTableWidth),
+                child: Padding(
+                  padding: const .symmetric(horizontal: 8),
+                  child: AppBarTextField(
+                    hint: hint,
+                    style: textTheme.titleMedium,
+                    hintStyle: textTheme.bodyLarge,
+                    onChanged: (value) {
+                      templates.editable?.name = value.trim();
+                    },
+                    focusNode: _focusNode,
+                    controller: _controller,
+                  ),
+                ),
               ),
             ),
           ),
         ),
         body: SafeArea(
-          child: WorkoutDetail(
-            exercises: templates.editable ?? [],
-            programId: templates.editable?.programId,
-            // what the plan works, as it grows (#263)
-            slivers: [
-              SliverToBoxAdapter(
-                child: TemplateMuscles(
-                  exercises: templates.editable ?? [],
-                  padding: const .symmetric(horizontal: 8),
+          // a session a coach writes is a client's: no Previous column of the
+          // coach's own last sets, and no header fill from them (#591)
+          child: PreviousScope(
+            someoneElse: templates.forSomeoneElse,
+            child: WorkoutDetail(
+              exercises: templates.editable ?? [],
+              programId: templates.editable?.programId,
+              // what the plan works, as it grows (#263)
+              slivers: [
+                SliverToBoxAdapter(
+                  child: TemplateMuscles(
+                    exercises: templates.editable ?? [],
+                    padding: const .symmetric(horizontal: 8),
+                  ),
                 ),
-              ),
-            ],
-            onDragExercise: templates.append,
-            onRemoveSet: templates.removeSet,
-            onSetType: templates.setSetType,
-            onSetTarget: templates.setSetTarget,
-            onAddSet: templates.addSet,
-            onRemoveExercise: templates.removeExercise,
-            onGroup: templates.group,
-            onLeaveGroup: templates.leaveGroup,
-            needsCancelWorkoutButton: false,
-            onAddExercises: (exercises) async {
-              for (final each in exercises) {
-                await templates.add(each);
-              }
-            },
-            allowsCompletingSet: false,
-            onSwapExercise: templates.swap,
-            onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
+              ],
+              onDragExercise: templates.append,
+              onRemoveSet: templates.removeSet,
+              onSetType: templates.setSetType,
+              onSetTarget: templates.setSetTarget,
+              onAddSet: templates.addSet,
+              onRemoveExercise: templates.removeExercise,
+              onGroup: templates.group,
+              onLeaveGroup: templates.leaveGroup,
+              needsCancelWorkoutButton: false,
+              onAddExercises: (exercises) async {
+                for (final each in exercises) {
+                  await templates.add(each);
+                }
+              },
+              allowsCompletingSet: false,
+              onSwapExercise: templates.swap,
+              onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
+            ),
           ),
         ),
       ),

@@ -138,6 +138,7 @@ class HeartApp extends StatelessWidget {
               libraryService: CdnExerciseLibrary(cdn),
               catalogService: LocalCatalog(db),
               preferenceService: RemoteExercisePreferences(api),
+              renameService: RemoteExerciseRenames(api),
               noteService: ExerciseNotes(db, api),
               moveService: ExerciseMoves(db, api),
               remote: RemoteAccess.of(context),
@@ -264,7 +265,7 @@ class HeartApp extends StatelessWidget {
           // waits on `Preferences.initialized`, and the sooner that is read
           // the shorter the wait. `_initApp` reads it again with the rest;
           // the second read is harmless.
-          create: (_) => Preferences()..init(locale: PlatformDispatcher.instance.locale),
+          create: (_) => Preferences(analytics: analytics)..init(locale: PlatformDispatcher.instance.locale),
         ),
         ChangeNotifierProvider<AppInfo>(
           create: (_) => AppInfo(
@@ -339,6 +340,7 @@ class HeartApp extends StatelessWidget {
             service: RemoteCoaching(api),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            analytics: analytics,
           ),
         ),
         // The push client's registration and settings (#567, #554):
@@ -382,6 +384,11 @@ class HeartApp extends StatelessWidget {
                 Preferences.of(context).coachFingerprint(id),
               _ => null,
             },
+            analytics: analytics,
+            roleFor: (thread) {
+              final connections = Coaching.of(context).all;
+              return connections.where((each) => each.connectionId == thread.connectionId).firstOrNull?.role;
+            },
           ),
         ),
         // A coach's notes on their clients (#556): sealed for the coach's
@@ -394,6 +401,7 @@ class HeartApp extends StatelessWidget {
             cipher: DeviceKeys.of(context),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            analytics: analytics,
           ),
         ),
         // A coach's roster and feed (#559): server-only, read when the
@@ -403,6 +411,7 @@ class HeartApp extends StatelessWidget {
             service: RemoteRoster(api),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            analytics: analytics,
           ),
         ),
         // A coach's work on a client's copy (#558): server-only, read when
@@ -412,6 +421,7 @@ class HeartApp extends StatelessWidget {
             service: RemoteClientPrograms(api),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            analytics: analytics,
           ),
         ),
         // A coach's library (#557): server-only, read when the Programs tab
@@ -423,6 +433,7 @@ class HeartApp extends StatelessWidget {
             exerciseOf: (id) => Exercises.of(context).lookup(id),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+            analytics: analytics,
           ),
         ),
         ChangeNotifierProvider<Health>(

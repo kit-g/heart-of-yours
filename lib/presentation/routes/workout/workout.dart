@@ -32,6 +32,7 @@ import 'package:heart/presentation/widgets/setting_picker.dart';
 import 'package:heart/presentation/widgets/shared_program.dart';
 import 'package:heart/presentation/widgets/skip_sheet.dart';
 import 'package:heart/presentation/widgets/workout/growth_measure.dart';
+import 'package:heart/presentation/widgets/workout/previous_scope.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';

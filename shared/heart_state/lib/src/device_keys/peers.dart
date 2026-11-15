@@ -2,8 +2,9 @@ part of '../device_keys.dart';
 
 /// How far a device of someone else's can be trusted to be theirs.
 enum DeviceTrust {
-  /// Its keys match the fingerprint the person's invitation link carried, or
-  /// it is this device.
+  /// Its keys match the fingerprint the person's invitation link carried, it
+  /// is this device, or it is one of the account's that this device compared
+  /// a code with.
   pinned,
 
   /// A device that is [pinned], or vouched for in turn, signed its keys.
@@ -46,6 +47,9 @@ class PeerDevice {
   String get id => device.id;
 
   bool get vouched => device.vouchedBy != null;
+
+  /// Whether this device trusts it at all, pinned or vouched for.
+  bool get trusted => trust != .unverified;
 }
 
 /// A person's devices as last read.
@@ -93,9 +97,18 @@ extension _Checking on DeviceKeys {
     };
     await run.saveSeen(userId, remembered);
 
+    final compared = switch (own) {
+      true => await run.compared(),
+      false => const <String, String>{},
+    };
     final anchors = switch (own) {
-      // the account's own: checked against this device
-      true => {?run.device?.id},
+      // the account's own: checked against this device, and the ones it
+      // compared a code with, as long as their keys are the ones compared
+      true => {
+        ?run.device?.id,
+        for (final each in devices)
+          if (compared[each.id] == _keysOf(each)) each.id,
+      },
       false => {
         if (fingerprint case final String expected)
           for (final each in devices)
@@ -158,6 +171,14 @@ bool _signed(CryptoDevice voucher, CryptoDevice device, String signature) {
     return false;
   }
 }
+
+/// A device's two public keys, as a comparison proves them and this device
+/// remembers them.
+String _keysOf(CryptoDevice device) => _keyPair(device.identityKey, device.signingKey);
+
+/// The one spelling of a device's two public keys: what a comparison's proof
+/// covers, and what [_Run.compared] keeps. Any other would never match.
+String _keyPair(String identityKey, String signingKey) => '$identityKey|$signingKey';
 
 String? _fingerprintOf(CryptoDevice device) {
   try {
