@@ -3,7 +3,7 @@ part of '../api.dart';
 /// A coach's view of everyone they coach (#559): the roster, sorted by who
 /// may need a word, marking a client looked at, and the feed of what they all
 /// did.
-mixin _RosterRoutes on Requests {
+mixin _RosterRoutes on Requests, _ExerciseNaming {
   /// One row per coaching connection, those with `reasons` first. [reason]
   /// keeps only the clients with that one, and [former] lists the ended
   /// connections instead. A row this build can't read is dropped, not fatal.
@@ -39,7 +39,10 @@ mixin _RosterRoutes on Requests {
   Future<({List<CoachFeedItem> items, String? cursor})> getCoachFeed({String? cursor}) async {
     final (json, code) = await get(Router.coachFeed, query: _cursor(cursor));
     return switch ((code, json)) {
-      (200, {'items': List l}) => (items: _readable(l, CoachFeedItem.fromJson), cursor: json['cursor'] as String?),
+      (200, {'items': List l}) => (
+        items: _readable(_namedAll(l), CoachFeedItem.fromJson),
+        cursor: json['cursor'] as String?,
+      ),
       _ => throw json,
     };
   }
@@ -51,7 +54,10 @@ mixin _RosterRoutes on Requests {
   Future<({List<Workout> items, String? cursor})> getClientWorkouts(String studentId, {String? cursor}) async {
     final (json, code) = await get(Router.clientWorkouts(studentId), query: _cursor(cursor));
     return switch ((code, json)) {
-      (200, {'workouts': List l}) => (items: _readable(l, Workout.fromJson), cursor: json['cursor'] as String?),
+      (200, {'workouts': List l}) => (
+        items: _readable(_namedAll(l), Workout.fromJson),
+        cursor: json['cursor'] as String?,
+      ),
       _ => throw json,
     };
   }
@@ -70,7 +76,7 @@ mixin _RosterRoutes on Requests {
   Future<WorkoutPlan?> getClientWorkoutPlan(String studentId, String workoutId) async {
     final (json, code) = await get(Router.clientWorkoutPlan(studentId, workoutId));
     return switch ((code, json)) {
-      (200, Map json) => WorkoutPlan.fromJson(json),
+      (200, Map json) => WorkoutPlan.fromJson(_named(json)),
       (404, _) => null,
       _ => throw json,
     };
@@ -83,14 +89,14 @@ mixin _RosterRoutes on Requests {
   /// longer coaches (`forbidden`), both thrown whole.
   Future<Workout> logClientWorkout(String studentId, Workout workout) async {
     final (json, _) = _created(await post(Router.clientWorkouts(studentId), body: workout.toMap()));
-    return Workout.fromJson(json);
+    return Workout.fromJson(_named(json));
   }
 
   /// The copies the coach manages for a client.
   Future<List<Program>> getClientPrograms(String studentId) async {
     final (json, code) = await get(Router.clientPrograms(studentId));
     return switch ((code, json)) {
-      (200, {'programs': List l}) => _readable(l, Program.fromJson),
+      (200, {'programs': List l}) => _readable(_namedAll(l), Program.fromJson),
       _ => throw json,
     };
   }
@@ -100,7 +106,7 @@ mixin _RosterRoutes on Requests {
   Future<CoachProgramView> getClientProgram(String studentId, String programId) async {
     final (json, code) = await get(Router.clientProgram(studentId, programId));
     return switch ((code, json)) {
-      (200, Map json) => CoachProgramView.fromJson(json),
+      (200, Map json) => CoachProgramView.fromJson(_named(json)),
       _ => throw json,
     };
   }
@@ -127,7 +133,7 @@ mixin _RosterRoutes on Requests {
       },
     );
     return switch ((code, json)) {
-      (200, Map json) => Program.fromJson(json),
+      (200, Map json) => Program.fromJson(_named(json)),
       _ => throw json,
     };
   }
@@ -161,7 +167,7 @@ mixin _RosterRoutes on Requests {
       query: {'since': ?since},
     );
     return switch ((code, json)) {
-      (200, Map json) => ProgramChanges.fromJson(json).changes,
+      (200, Map json) => ProgramChanges.fromJson(_named(json)).changes,
       _ => throw json,
     };
   }

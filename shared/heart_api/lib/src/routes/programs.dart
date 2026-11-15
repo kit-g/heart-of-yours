@@ -2,14 +2,14 @@ part of '../api.dart';
 
 /// Programs (heart-api#86): programs, their actions and bases, sessions filed
 /// under them, and skips (#312).
-mixin _ProgramRoutes on Requests {
+mixin _ProgramRoutes on Requests, _ExerciseNaming {
   /// The account's programs, archived ones included, each naming its session
   /// templates in order. Read whole or not at all: the caller replaces its
   /// programs with these, and one skipped would delete its local copy.
   Future<List<Program>> getPrograms() async {
     final (json, code) = await get(Router.programs);
     return switch ((code, json)) {
-      (200, {'programs': List l}) => [for (final each in l) Program.fromJson(each as Map)],
+      (200, {'programs': List l}) => [for (final each in _namedAll(l)) Program.fromJson(each as Map)],
       _ => throw _programError(json),
     };
   }
@@ -19,7 +19,7 @@ mixin _ProgramRoutes on Requests {
   Future<Program> getProgram(String programId) async {
     final (json, code) = await get(Router.program(programId));
     return switch ((code, json)) {
-      (200, Map json) => Program.fromJson(json),
+      (200, Map json) => Program.fromJson(_named(json)),
       _ => throw _programError(json),
     };
   }
@@ -29,7 +29,7 @@ mixin _ProgramRoutes on Requests {
   Future<({List<ProgramChange> items, String? cursor})> getProgramChanges(String programId, {String? since}) async {
     final (json, code) = await get(Router.programChanges(programId), query: {'since': ?since});
     return switch ((code, json)) {
-      (200, Map json) => (items: ProgramChanges.fromJson(json).changes, cursor: json['cursor'] as String?),
+      (200, Map json) => (items: ProgramChanges.fromJson(_named(json)).changes, cursor: json['cursor'] as String?),
       _ => throw _programError(json),
     };
   }
@@ -51,7 +51,7 @@ mixin _ProgramRoutes on Requests {
       (Map json, 200) => (json, false),
       (final json, _) => throw _programError(json),
     };
-    return (row: Program.fromJson(json), created: created);
+    return (row: Program.fromJson(_named(json)), created: created);
   }
 
   /// A full replace of [program]'s own fields and rules. Sessions change
@@ -67,7 +67,7 @@ mixin _ProgramRoutes on Requests {
       body: {...program.toMap(), 'baseRevision': ?baseRevision, 'changeId': ?changeId},
     );
     return switch ((code, json)) {
-      (200, Map json) => Program.fromJson(json),
+      (200, Map json) => Program.fromJson(_named(json)),
       _ => throw _programError(json),
     };
   }
@@ -91,7 +91,7 @@ mixin _ProgramRoutes on Requests {
       body: {...template.toMap(), 'programId': programId},
     );
     return switch ((code, json)) {
-      (200, Map json) => Template.fromJson(json),
+      (200, Map json) => Template.fromJson(_named(json)),
       _ => throw _programError(json),
     };
   }

@@ -25,11 +25,13 @@ part 'routes/push.dart';
 part 'routes/keys.dart';
 part 'routes/threads.dart';
 part 'routes/notes.dart';
+part 'routes/naming.dart';
 part 'router.dart';
 
 class Api
     with
         Requests,
+        _ExerciseNaming,
         _AccountRoutes,
         _WorkoutRoutes,
         _ExerciseRoutes,
