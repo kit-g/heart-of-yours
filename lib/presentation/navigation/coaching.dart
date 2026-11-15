@@ -26,6 +26,11 @@ class CoachingPresenter extends StatefulWidget {
 class _CoachingPresenterState extends State<CoachingPresenter> {
   Preferences? _preferences;
   Auth? _auth;
+  Coaching? _coaching;
+
+  /// The `coaching_role` last told to analytics, so a sync that changes
+  /// nothing sends nothing: a record, because null is an answer too.
+  (CoachingRole?,)? _role;
 
   /// Who was last read for, with which switches: null while nothing is on.
   (String, bool, bool)? _read;
@@ -51,6 +56,11 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
       _auth?.removeListener(_sync);
       _auth = auth..addListener(_sync);
     }
+    final coaching = Coaching.of(context);
+    if (!identical(coaching, _coaching)) {
+      _coaching?.removeListener(_reportRole);
+      _coaching = coaching..addListener(_reportRole);
+    }
     _sync();
   }
 
@@ -58,12 +68,14 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
   void dispose() {
     _preferences?.removeListener(_sync);
     _auth?.removeListener(_sync);
+    _coaching?.removeListener(_reportRole);
     super.dispose();
   }
 
   void _sync() {
     final (preferences, auth) = (_preferences, _auth);
     if (preferences == null || auth == null || !preferences.isInitialized) return;
+    _reportRole();
     // a link kept while the person made an account: before the switches,
     // since following a first invitation is how Your coach gets turned on
     // an account, settled: before Firebase's first answer there is no user at
@@ -113,6 +125,29 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) Messages.of(context).load();
     });
+  }
+
+  /// Which sides of coaching this account is on, as the `coaching_role` user
+  /// property: it coaches with Coach people on and the entitlement to, and is
+  /// coached with Your coach on and a coach live or paused. Null with no
+  /// account. Waits for the connections before saying anything about a coach,
+  /// so a launch never reports one away and back.
+  void _reportRole() {
+    final (preferences, auth, coaching) = (_preferences, _auth, _coaching);
+    if (preferences == null || auth == null || coaching == null || !preferences.isInitialized) return;
+    final account = auth.user != null && !auth.isAnonymous;
+    final yourCoach = preferences.isOn(.yourCoach);
+    if (account && yourCoach && coaching.status != .loaded) return;
+    final role = switch (account) {
+      true => CoachingRole.of(
+        coaches: preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false),
+        coached: yourCoach && coaching.hasCoach,
+      ),
+      false => null,
+    };
+    if (_role case (final reported,) when reported == role) return;
+    _role = (role,);
+    Analytics.of(context).setCoachingRole(role);
   }
 
   /// Your coach off pauses every coach: the coach stops seeing new workouts

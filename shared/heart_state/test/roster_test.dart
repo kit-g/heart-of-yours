@@ -162,6 +162,22 @@ void main() {
     ]);
   });
 
+  test('a look is counted once the server took it, and a refused one is not (#568)', () async {
+    final reported = ReportedAnalytics();
+    roster = Roster(
+      service: server,
+      analytics: Analytics(service: reported),
+    );
+    server.clients.add(_client('muffin', reasons: ['note']));
+    await roster.load();
+
+    await roster.markReviewed(roster.clients.single);
+    server.refuse = {'code': 'not_found'};
+    await expectLater(roster.markReviewed(roster.clients.single), throwsA(isA<Map>()));
+
+    expect(reported.names, ['client_reviewed']);
+  });
+
   test('a refused look changes nothing here', () async {
     server.clients.add(_client('muffin', reasons: ['note']));
     await roster.load();
@@ -305,6 +321,26 @@ void main() {
       await roster.logFor('muffin', workout);
 
       expect(roster.workoutsOf('muffin').map((each) => each.id), [workout.id, 'w1']);
+    });
+
+    test('a workout logged for them is counted after the server took it, as what was sent (#568)', () async {
+      final reported = ReportedAnalytics();
+      roster = Roster(
+        service: server,
+        analytics: Analytics(service: reported),
+      );
+      final bench = ex('Bench Press');
+      final workout = Workout(name: 'Push')..start = DateTime.utc(2026, 11, 9);
+      workout.add(bench).first
+        ..setMeasurements(reps: 8)
+        ..isCompleted = true;
+      // typed but never ticked: not sent, so not counted
+      workout.first.add(ExerciseSet(bench)..setMeasurements(reps: 5));
+      workout.add(ex('Squat'));
+
+      await roster.logFor('muffin', workout);
+
+      expect(reported.parametersOf('workout_logged_for'), {'exercise_count': 1, 'set_count': 1});
     });
 
     test('a log refused is thrown, and changes nothing here', () async {

@@ -67,6 +67,8 @@ class ThreadMenu extends StatelessWidget {
     final l = L.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final messages = Messages.of(context);
+    final analytics = Analytics.of(context);
+    final role = _connectionOf(context, thread.connectionId)?.role;
     final sure = await confirmDestructive(
       context,
       title: l.messagesDeleteTitle,
@@ -78,6 +80,7 @@ class ThreadMenu extends StatelessWidget {
     if (!sure) return;
     try {
       await messages.clear(thread.id);
+      analytics.conversationDeleted(role: role);
     } catch (_) {
       messenger.snack(l.messagesDeleteFailed);
     }
@@ -182,6 +185,7 @@ Future<void> showReportSheet(BuildContext context, Thread thread, {required Stri
       connection: _blockable(connection) ? connection : null,
       messages: messages,
       coaching: Coaching.of(context),
+      analytics: Analytics.of(context),
       messenger: ScaffoldMessenger.of(context),
     ),
   );
@@ -203,6 +207,7 @@ class _ReportSheet extends StatefulWidget {
   /// Passed in: the sheet is a route of its own.
   final Messages messages;
   final Coaching coaching;
+  final Analytics analytics;
   final ScaffoldMessengerState messenger;
 
   const new({
@@ -213,6 +218,7 @@ class _ReportSheet extends StatefulWidget {
     this.connection,
     required this.messages,
     required this.coaching,
+    required this.analytics,
     required this.messenger,
   });
 
@@ -249,8 +255,9 @@ class _ReportSheetState extends State<_ReportSheet> {
     final _ReportSheet(:thread, :theirs, :connection, :messenger, :name) = widget;
     _sending.value = true;
     _failed.value = false;
+    final sent = _include.value ? theirs : const <Message>[];
     try {
-      await widget.messages.report(thread, reason, messages: _include.value ? theirs : const []);
+      await widget.messages.report(thread, reason, messages: sent);
     } catch (_) {
       if (!mounted) {
         messenger.snack(l.reportFailed);
@@ -262,10 +269,13 @@ class _ReportSheetState extends State<_ReportSheet> {
     }
     // closed meanwhile by the person: popping now would close what is under it
     if (mounted && (route?.isCurrent ?? false)) navigator.pop();
+    // a block that failed is no block
+    var blocked = false;
     switch ((_block.value, connection)) {
       case (true, final Connection connection):
         try {
           await widget.coaching.block(connection);
+          blocked = true;
           messenger.snack(l.reportSentBlocked(name));
         } catch (_) {
           messenger.snack(l.messagesBlockFailed(name));
@@ -273,6 +283,8 @@ class _ReportSheetState extends State<_ReportSheet> {
       case _:
         messenger.snack(l.reportSent);
     }
+    // counted once the block, if one was asked for, is settled
+    widget.analytics.personReported(reason: reason, withMessages: sent.isNotEmpty, alsoBlocked: blocked);
   }
 
   @override

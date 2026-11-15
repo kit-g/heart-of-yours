@@ -427,6 +427,20 @@ void main() {
       expect(sut.owesDeclineNotice(feature), isFalse);
     });
 
+    test('an answer to the ask is counted as one, and the Settings switch is not counted here (#568)', () async {
+      final reported = ReportedAnalytics();
+      sut = Preferences(analytics: Analytics(service: reported));
+      await sut.init();
+      sut.markOffered(feature);
+
+      sut.answerOffer(feature, yes: false);
+      // the page counts its own switch: setFeature has callers that are no one's answer
+      sut.setFeature(feature, on: true);
+
+      expect(reported.names, ['feature_switched']);
+      expect(reported.parametersOf('feature_switched'), {'feature': 'muscleMap', 'on': 'false', 'source': 'ask'});
+    });
+
     test('the notice does not outlive the session it was owed in', () async {
       await sut.init();
       sut.markOffered(feature);

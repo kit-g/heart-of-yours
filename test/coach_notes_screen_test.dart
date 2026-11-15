@@ -9,6 +9,8 @@ import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'support/harness.dart';
+
 /// A coach's notes on a client, on screen (#556): written, edited and
 /// deleted on the device, and what a note that won't open says instead.
 void main() {
@@ -17,6 +19,7 @@ void main() {
   late _Cipher cipher;
   late CoachNotes notes;
   late Roster roster;
+  late RecordedAnalytics recorded;
 
   const client = 'c-muffin';
 
@@ -31,6 +34,7 @@ void main() {
       remote: RemoteAccess(hasToken: () => true)..account = true,
     )..userId = 'whiskers';
     roster = Roster(service: _NoRoster());
+    recorded = RecordedAnalytics();
   });
 
   tearDown(() => cipher.dispose());
@@ -45,6 +49,7 @@ void main() {
         providers: [
           ChangeNotifierProvider<CoachNotes>.value(value: notes),
           ChangeNotifierProvider<Roster>.value(value: roster),
+          Provider<Analytics>.value(value: Analytics(service: recorded)),
         ],
         child: MaterialApp(
           localizationsDelegates: localizationsDelegates,
@@ -118,6 +123,12 @@ void main() {
     expect(find.text('Shoulder, better now'), findsNothing);
     expect(find.text('No notes yet'), findsOneWidget);
     expect(server.notes, isEmpty);
+    // counted as new, then edited, then gone: never the words
+    expect(recorded.events.map((each) => each.$1), ['coach_note_saved', 'coach_note_saved', 'coach_note_deleted']);
+    expect(recorded.of('coach_note_saved'), [
+      {'edited': 'false'},
+      {'edited': 'true'},
+    ]);
   });
 
   testWidgets("one whose key hasn't arrived says so, and isn't opened to edit", (tester) async {

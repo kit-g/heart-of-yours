@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'analytics.dart';
 import 'coaching.dart' show CoachingStatus;
 import 'remote.dart';
 import 'template_drafting.dart';
@@ -204,6 +205,7 @@ class CoachLibrary with ChangeNotifier, TemplateDrafting implements SignOutState
   final RemoteAccess _remote;
   final Exercise? Function(String id) _exerciseOf;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
+  final Analytics? analytics;
 
   final _programs = <CoachProgram>[];
   final _open = <String, CoachLibraryProgram>{};
@@ -219,6 +221,7 @@ class CoachLibrary with ChangeNotifier, TemplateDrafting implements SignOutState
     required this._exerciseOf,
     RemoteAccess? remote,
     this.onError,
+    this.analytics,
   }) : _remote = remote ?? RemoteAccess();
 
   static CoachLibrary of(BuildContext context) => Provider.of<CoachLibrary>(context, listen: false);
@@ -365,8 +368,12 @@ class CoachLibrary with ChangeNotifier, TemplateDrafting implements SignOutState
   Future<List<CoachProgramHolder>> holders(String id) => _service.getLibraryHolders(id);
 
   /// Sends [id] to each of [connectionIds]. Throws what the service threw.
-  Future<List<ProgramDelivery>> send(String id, Iterable<String> connectionIds) {
-    return _service.sendLibraryProgram(id, connectionIds);
+  Future<List<ProgramDelivery>> send(String id, Iterable<String> connectionIds) async {
+    final deliveries = await _service.sendLibraryProgram(id, connectionIds);
+    // the clients it reached: one the server refused got nothing
+    final reached = deliveries.where((each) => each.delivered).length;
+    if (reached > 0) analytics?.programSent(clients: reached);
+    return deliveries;
   }
 
   /// Brings the copies of [id] that [connectionIds] hold up to its current

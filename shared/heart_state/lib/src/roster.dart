@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'analytics.dart';
 import 'coaching.dart' show CoachingStatus;
 import 'remote.dart';
 import 'workout_review.dart';
@@ -106,6 +107,7 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
   final RosterService _service;
   final RemoteAccess _remote;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
+  final Analytics? analytics;
 
   final _clients = <ClientSummary>[];
   final _former = <ClientSummary>[];
@@ -122,6 +124,7 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
     required this._service,
     RemoteAccess? remote,
     this.onError,
+    this.analytics,
   }) : _remote = remote ?? RemoteAccess();
 
   static Roster of(BuildContext context) => Provider.of<Roster>(context, listen: false);
@@ -232,6 +235,12 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
   Future<Workout> logFor(String studentId, Workout workout) async {
     workout.keepDone();
     final logged = await _service.logClientWorkout(studentId, workout);
+    // what was sent, after keepDone dropped what wasn't done: the server's
+    // answer is the same workout, and the client's history is what it holds
+    analytics?.workoutLoggedFor(
+      exerciseCount: workout.length,
+      setCount: workout.expand((exercise) => exercise).length,
+    );
     if (_records[studentId] case final _Record record) {
       record.workouts
         ..removeWhere((each) => each.id == logged.id)
@@ -321,6 +330,7 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
   /// to the server too. The client moves down among those without reasons.
   Future<void> markReviewed(ClientSummary client) async {
     await _service.markReviewed(client.connectionId, at: DateTime.timestamp());
+    analytics?.clientReviewed();
     final index = _clients.indexWhere((each) => each.connectionId == client.connectionId);
     if (index == -1) return;
     final reasons = [

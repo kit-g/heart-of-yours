@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'analytics.dart';
 import 'features.dart';
 import 'plates.dart';
 import 'warmups.dart';
@@ -46,6 +47,12 @@ class Preferences with ChangeNotifier {
   /// widget tests start there far more often than on a fresh install.
   @visibleForTesting
   static const onboardingSeenKey = 'onboardingSeen';
+
+  /// Told when an offer is answered. The Settings switch reports from the
+  /// page itself: [setFeature] has other callers that are no one's answer.
+  final Analytics? analytics;
+
+  new({this.analytics});
 
   SharedPreferences? _prefs;
   bool _isInitialized = false;
@@ -615,6 +622,7 @@ class Preferences with ChangeNotifier {
     _offeredThisSession.remove(feature);
     if (!yes) _declinedThisSession.add(feature);
     _setFeature(feature, on: yes);
+    analytics?.featureSwitched(feature: feature, on: yes, source: .ask);
   }
 
   /// Whether [feature] was declined in this session and its notice is still
