@@ -1,5 +1,5 @@
 id,description,en,en_CA,ru,es,fr
-calendar,History calendar action and dialog title,Calendar,Calendar,Календарь,Calendario,Calendrier
+calendar,Name of History's calendar view and the Settings choice of it beside List (#609),Calendar,Calendar,Календарь,Calendario,Calendrier
 appearance,Label,Appearance,Appearance,Внешний вид,Apariencia,Apparence
 units,Label,Units,Units,Единицы измерения,Unidades,Unités
 motto,"App's motto. A tagline, not copy — it stays in English in every locale, the way 'Just do it' does. Do not translate.",Every beat counts.,Every beat counts.,Every beat counts.,Every beat counts.,Every beat counts.
@@ -1629,6 +1629,12 @@ coachingReviewShorter,A timed or distance set done shorter than planned (#559),S
 coachingCopyRefused,The coach's edit was refused: the connection with {name} is paused or ended (#558),You can't change this program now: coaching {name} is paused or over. Yours isn't saved.,You can't change this program now: coaching {name} is paused or over. Yours isn't saved.,Сейчас нельзя менять эту программу: занятия с {name} приостановлены или завершены. Ваши правки не сохранены.,Ahora no puedes cambiar este programa: el entrenamiento con {name} está en pausa o terminó. Lo tuyo no se guardó.,Vous ne pouvez plus modifier ce programme : le coaching de {name} est en pause ou terminé. Vos changements ne sont pas enregistrés.
 programCoachChangesMore,"The latest change a coach made to the student's copy, and how many more since the student last looked (#558)",{change} · +{count},{change} · +{count},{change} · ещё {count},{change} · +{count},{change} · +{count}
 programCoachChangesSeen,"Tooltip: dismisses the line saying what the coach changed in a program (#558)",Mark as seen,Mark as seen,Отметить как просмотренное,Marcar como visto,Marquer comme vu
+historyView,"Settings row title: which view History opens on, a list or a calendar (#609)",History opens on,History opens on,Вид истории,El historial se abre en,L'historique s'ouvre sur
+historyAsList,Settings choice: History opens on the list of workouts (#609); the other choice is the existing 'calendar' string,List,List,Список,Lista,Liste
+showAsList,Tooltip on History's app-bar button that switches from the calendar to the list of workouts (#609),Show as list,Show as list,Показать списком,Ver como lista,Afficher en liste
+showAsCalendar,Tooltip on History's app-bar button that switches from the list of workouts to the calendar (#609),Show as calendar,Show as calendar,Показать календарём,Ver como calendario,Afficher en calendrier
+screens,"Settings section header: how the app's screens show themselves, e.g. what History opens on (#609)",Screens,Screens,Экраны,Pantallas,Écrans
+calendarWorkouts,"History calendar: how many workouts a day holds, read out after the date on a day with more than one (#619)","{count, plural, =1{1 workout} other{{count} workouts}}","{count, plural, =1{1 workout} other{{count} workouts}}","{count, plural, one{{count} тренировка} few{{count} тренировки} many{{count} тренировок} other{{count} тренировки}}","{count, plural, =1{1 entrenamiento} other{{count} entrenamientos}}","{count, plural, one{{count} séance} other{{count} séances}}"
 messagesHint,Placeholder of the box a message is written in (#556),Message,Message,Сообщение,Mensaje,Message
 messagesSend,Tooltip of the button that sends a message (#556),Send,Send,Отправить,Enviar,Envoyer
 messagesEmpty,A conversation with nothing in it yet (#556),No messages yet,No messages yet,Сообщений пока нет,Aún no hay mensajes,Pas encore de messages
