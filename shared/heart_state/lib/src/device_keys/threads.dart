@@ -9,6 +9,16 @@ typedef SealedMessage = ({String content, String commitment});
 /// under.
 typedef ThreadCiphertext = ({String id, String? senderId, String content, String commitment});
 
+/// A device asked this one for keys it made for [threadId]: [deviceId] is
+/// the device that asked and [userId] whose it is, already known to be one
+/// whom this device's keys for the thread reached; [sessions] the keys it
+/// lacks, of those this device made.
+typedef KeyRequest = ({String threadId, String userId, String deviceId, Set<String> sessions});
+
+/// Answers whether [KeyRequest] was dealt with, answered or turned down for
+/// good; false keeps it on the device to be handed over again later.
+typedef KeyRequestHandler = Future<bool> Function(KeyRequest request);
+
 /// What became of opening one thread item.
 sealed class OpenedMessage {
   const new();
@@ -62,6 +72,22 @@ abstract interface class ThreadCipher {
 
   /// The thread whose key just arrived, so what was [Locked] can open.
   Stream<String> get threadKeys;
+
+  /// Asks whoever sealed [items] for the keys this device lacks to open them,
+  /// once in a while per key, however often it is called. The other person's
+  /// devices are checked against [fingerprint]. Never throws: what fails is
+  /// reported, and asked again later.
+  Future<void> ask(String threadId, List<ThreadCiphertext> items, {String? fingerprint});
+
+  /// Who decides whether a request for keys is answered: what reads the
+  /// threads. Until there is one, requests wait on the device.
+  set onKeyRequest(KeyRequestHandler? handler);
+
+  /// Hands the keys [request] names to the device that asked, when it is one
+  /// this device shares with: the other person's checked against
+  /// [fingerprint], the account's own once trusted. Refuses with [KeyMismatch]
+  /// as [share] does.
+  Future<void> answer(KeyRequest request, {String? fingerprint});
 }
 
 /// Stored threads (Megolm) for messages (#556), in the vault beside the
@@ -83,6 +109,12 @@ extension _Threads on DeviceKeys {
   /// How long a share that reached everyone holds before devices are read
   /// again, unless one of them changed meanwhile.
   static const _shareLife = Duration(minutes: 10);
+
+  /// How long before a key asked for and still missing is asked for again.
+  static const _askAgain = Duration(minutes: 15);
+
+  /// The most keys one request names: it travels in a single queue item.
+  static const _keysPerAsk = 4;
 
   Future<SealedMessage> _seal(String threadId, String text) async {
     final run = _run;
@@ -149,25 +181,48 @@ extension _Threads on DeviceKeys {
     final record = await _serial(run, () => _ThreadRecord.read(run, threadId));
     if (fresh && record.own.every((key) => readers.every((reader) => _covers(run, key, reader)))) return;
 
-    for (final reader in readers) {
-      // only the other person's devices answer to the link's fingerprint
-      final checked = switch (reader == userId) {
-        true => fingerprint,
-        false => null,
-      };
-      final peer = await devicesOf(reader, fingerprint: checked);
-      if (peer.check == .mismatch) throw KeyMismatch(reader);
-      // the other person with no device to read it on: nothing is sent yet
-      if (reader == userId && peer.devices.isEmpty) throw const KeyFailure('no_devices');
-      await _shareWith(run, threadId, peer, fingerprint: checked, other: reader == userId);
-    }
+    await _sharing(run, threadId, () async {
+      for (final reader in readers) {
+        // only the other person's devices answer to the link's fingerprint
+        final checked = switch (reader == userId) {
+          true => fingerprint,
+          false => null,
+        };
+        final peer = await devicesOf(reader, fingerprint: checked);
+        if (peer.check == .mismatch) throw KeyMismatch(reader);
+        // the other person with no device to read it on: nothing is sent yet
+        if (reader == userId && peer.devices.isEmpty) throw const KeyFailure('no_devices');
+        await _shareWith(run, threadId, peer, fingerprint: checked, other: reader == userId);
+      }
+    });
     run.sharedAt[threadId] = _now();
+  }
+
+  /// Runs [step], one of [threadId]'s shares, after any other under way: each
+  /// reads whom the keys reached, and two at once would both send them.
+  Future<void> _sharing(_Run run, String threadId, Future<void> Function() step) {
+    final done = (run.sharing[threadId] ?? Future<void>.value()).then((_) {
+      run.check();
+      return step();
+    });
+    run.sharing[threadId] = done.then<void>((_) {}, onError: (_) {});
+    return done;
   }
 
   /// Hands every key this device made for [threadId] to [peer]'s devices
   /// that get them and don't hold them yet. A key that reached none of the
   /// [other] person's devices throws: what it seals would wait.
-  Future<void> _shareWith(_Run run, String threadId, Peer peer, {String? fingerprint, required bool other}) async {
+  ///
+  /// [resend] names keys a device asked for, which it gets again even when
+  /// they reached it before: they never opened there.
+  Future<void> _shareWith(
+    _Run run,
+    String threadId,
+    Peer peer, {
+    String? fingerprint,
+    required bool other,
+    ({String deviceId, Set<String> sessions})? resend,
+  }) async {
     final reader = peer.userId;
     final listed = {for (final each in peer.devices) each.id};
     final receiving = {
@@ -188,7 +243,13 @@ extension _Threads on DeviceKeys {
       }
     }
     for (final key in record.own) {
-      final missing = receiving.where((id) => id != run.device?.id && !key.shared.containsKey(id)).toSet();
+      final again = switch (resend) {
+        (:final deviceId, :final sessions) when sessions.contains(key.sessionId) => deviceId,
+        _ => null,
+      };
+      final missing = receiving
+          .where((id) => id != run.device?.id && (!key.shared.containsKey(id) || id == again))
+          .toSet();
       if (missing.isEmpty) continue;
       final reached = await deliver(
         userId: reader,
@@ -222,7 +283,7 @@ extension _Threads on DeviceKeys {
     if (threads.isEmpty) return;
     final own = run.peers[run.userId] ?? await devicesOf(run.userId);
     for (final threadId in threads) {
-      await _shareWith(run, threadId, own, other: false);
+      await _sharing(run, threadId, () => _shareWith(run, threadId, own, other: false));
     }
   }
 
@@ -283,6 +344,145 @@ extension _Threads on DeviceKeys {
         _ => const Refused(),
       };
     }
+  }
+
+  /// Asks the senders of [items] for the keys this device lacks, one request
+  /// to each sender's devices: only the device that made a key answers it.
+  /// Each key is asked for once in [_askAgain], kept across launches, whether
+  /// the request went or failed.
+  Future<void> _ask(String threadId, List<ThreadCiphertext> items, String? fingerprint) async {
+    final run = _run;
+    if (run == null || !_remote.allowed || !(run.device?.published ?? false)) return;
+    final (inbound, asked) = await _serial(run, () async {
+      return (await _InboundKeys.read(run, threadId), await _Asked.read(run, threadId));
+    });
+    final now = _now();
+    bool wants(String sessionId) {
+      if (inbound.keys.containsKey(sessionId)) return false;
+      return switch (asked.at[sessionId]) {
+        final DateTime at => now.difference(at) >= _askAgain,
+        null => true,
+      };
+    }
+
+    // sender → the keys of theirs this device lacks and hasn't asked for lately
+    final wanted = {
+      for (final sender in items.map((item) => item.senderId).nonNulls.toSet())
+        sender: {
+          for (final item in items)
+            if ((item.senderId, _ThreadEnvelope.decode(item.content))
+                case (
+                  final String from,
+                  _ThreadEnvelope(:final sessionId),
+                )
+                when from == sender && wants(sessionId))
+              sessionId,
+        },
+    }..removeWhere((_, sessions) => sessions.isEmpty);
+    for (final MapEntry(key: sender, value: sessions) in wanted.entries) {
+      final own = sender == run.userId;
+      for (final batch in _batches(sessions.toList(), _keysPerAsk)) {
+        final asked = await _askOnce(run, sender, threadId, batch, own ? null : fingerprint, own: own);
+        // a request that reached no device, as when none of the account's own
+        // is trusted yet, is asked again as soon as one could answer it
+        if (!asked) continue;
+        await _serial(run, () async {
+          final latest = await _Asked.read(run, threadId);
+          latest.at.removeWhere((_, at) => now.difference(at) >= _askAgain);
+          latest.at.addAll({for (final session in batch) session: now});
+          await latest.save(run);
+        });
+      }
+    }
+  }
+
+  /// Sends one request for [sessions] to [sender]'s devices: answers whether it
+  /// counts as asked, which is when it reached a device or failed. A failure is
+  /// reported, unless [sender] can no longer be reached at all.
+  Future<bool> _askOnce(
+    _Run run,
+    String sender,
+    String threadId,
+    List<String> sessions,
+    String? fingerprint, {
+    required bool own,
+  }) async {
+    try {
+      final reached = await deliver(
+        userId: sender,
+        kind: DeviceKeys.threadKeyRequestKind,
+        payload: jsonEncode({'t': threadId, 's': sessions}),
+        fingerprint: fingerprint,
+        // only a device whose keys this one would take could have made them:
+        // the account's own once trusted, the other person's once the
+        // fingerprint anchored them, and any of theirs without one
+        to: (device) => device.trusted || (!own && fingerprint == null),
+      );
+      return reached.isNotEmpty;
+    } on Map catch (refusal, stacktrace) {
+      switch (refusal) {
+        // someone this account can no longer reach, as under a block or after
+        // their account went: nothing to report
+        case {'code': 'forbidden' || 'not_found' || 'bad_request'}:
+          break;
+        default:
+          _report(refusal, stacktrace);
+      }
+      return true;
+    } on _Stopped {
+      rethrow;
+    } catch (error, stacktrace) {
+      _report(error, stacktrace);
+      return true;
+    }
+  }
+
+  /// Takes a request for keys: handed to [DeviceKeys.onKeyRequest] when this
+  /// device made one of them and whoever asked is one its keys for the thread
+  /// reached, or the account itself; dropped otherwise. Kept on the device
+  /// until it is dealt with.
+  Future<void> _takeKeyRequest(KeyDelivery delivery) async {
+    final run = _run;
+    if (run == null) throw StateError('device keys are off');
+    final (threadId, sessions) = switch (_decodeMap(delivery.payload)) {
+      {'t': final String threadId, 's': final List sessions} => (threadId, sessions.whereType<String>().toSet()),
+      _ => (null, const <String>{}),
+    };
+    if (threadId == null) {
+      _report(const KeyFailure('unreadable_key_request'));
+      return;
+    }
+    final record = await _serial(run, () => _ThreadRecord.read(run, threadId));
+    final made = {for (final key in record.own) key.sessionId}.intersection(sessions);
+    if (made.isEmpty) return;
+    final readers = {run.userId, for (final key in record.own) ...key.shared.values};
+    if (!readers.contains(delivery.fromUserId)) return;
+    final handler = _onKeyRequest;
+    if (handler == null) throw const _Held();
+    final request = (threadId: threadId, userId: delivery.fromUserId, deviceId: delivery.fromDeviceId, sessions: made);
+    if (!await handler(request)) throw const _Held();
+  }
+
+  Future<void> _answer(KeyRequest request, String? fingerprint) async {
+    final run = _run;
+    if (run == null) throw StateError('device keys are off');
+    final own = request.userId == run.userId;
+    final checked = switch (own) {
+      true => null,
+      false => fingerprint,
+    };
+    await _sharing(run, request.threadId, () async {
+      final peer = await devicesOf(request.userId, fingerprint: checked);
+      if (peer.check == .mismatch) throw KeyMismatch(request.userId);
+      await _shareWith(
+        run,
+        request.threadId,
+        peer,
+        fingerprint: checked,
+        other: false,
+        resend: (deviceId: request.deviceId, sessions: request.sessions),
+      );
+    });
   }
 
   /// Takes a thread key another device shared.
@@ -477,6 +677,33 @@ class _InboundKeys {
       jsonEncode({
         for (final MapEntry(:key, :value) in keys.entries) key: {'inbound': value.inbound, 'from': value.from},
       }),
+    );
+  }
+}
+
+/// When each key of a thread this device lacks was last asked for, by
+/// session: kept in the vault, so a relaunch doesn't ask again at once.
+class _Asked {
+  final String threadId;
+  final Map<String, DateTime> at;
+
+  const new(this.threadId, this.at);
+
+  static Future<_Asked> read(_Run run, String threadId) async {
+    return switch (_Run._decode(await run.read('thread.$threadId.asked'))) {
+      final Map map => _Asked(threadId, {
+        for (final MapEntry(:key, :value) in map.entries)
+          if (value case final String value)
+            if (DateTime.tryParse(value) case final DateTime at) '$key': at,
+      }),
+      null => _Asked(threadId, {}),
+    };
+  }
+
+  Future<void> save(_Run run) {
+    return run.write(
+      'thread.$threadId.asked',
+      jsonEncode({for (final MapEntry(:key, :value) in at.entries) key: value.toUtc().toIso8601String()}),
     );
   }
 }

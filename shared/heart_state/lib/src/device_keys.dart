@@ -114,6 +114,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
        _newId = newId ?? uuidV7,
        _now = now ?? DateTime.now {
     _handlers[threadKeyKind] = _takeThreadKey;
+    _handlers[threadKeyRequestKind] = _takeKeyRequest;
     _handlers[noteKeyKind] = _takeNoteKey;
     for (final kind in DeviceApproval._kinds) {
       _handlers[kind] = approval._take;
@@ -148,10 +149,37 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
   /// What a thread's key travels as between devices (#556).
   static const threadKeyKind = 'thread_key';
 
+  /// What a request for thread keys travels as, to the devices that made
+  /// them (#556).
+  static const threadKeyRequestKind = 'thread_key_request';
+
   final _threadKeys = StreamController<String>.broadcast();
 
   @override
   Stream<String> get threadKeys => _threadKeys.stream;
+
+  KeyRequestHandler? _onKeyRequest;
+
+  @override
+  set onKeyRequest(KeyRequestHandler? handler) {
+    _onKeyRequest = handler;
+    // what waited for someone to decide may be decided now
+    if ((handler, _run) case (_?, final _Run run)) _redispatch(run);
+  }
+
+  @override
+  Future<void> ask(String threadId, List<ThreadCiphertext> items, {String? fingerprint}) async {
+    try {
+      await _ask(threadId, items, fingerprint);
+    } on _Stopped {
+      // stopped on the way: asked again when the thread is next read
+    } catch (error, stacktrace) {
+      _report(error, stacktrace);
+    }
+  }
+
+  @override
+  Future<void> answer(KeyRequest request, {String? fingerprint}) => _answer(request, fingerprint);
 
   @override
   Future<SealedMessage> seal(String threadId, String text) => _seal(threadId, text);
