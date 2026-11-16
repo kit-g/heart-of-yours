@@ -2,7 +2,7 @@ part of '../api.dart';
 
 /// Workouts: saving, replaying, editing and reading them, their images and the
 /// gallery, imports from other apps, and a program workout's plan (#566).
-mixin _WorkoutRoutes on Requests implements RemoteWorkoutService {
+mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutService {
   @override
   Future<bool> deleteWorkout(String workoutId) async {
     final (_, code) = await delete('${Router.workouts}/$workoutId');
@@ -51,7 +51,7 @@ mixin _WorkoutRoutes on Requests implements RemoteWorkoutService {
   /// row and read it off this.
   Future<({Workout row, bool created})> replayWorkout(Workout workout) async {
     final (json, created) = _created(await post(Router.workouts, body: workout.toMap()));
-    return (row: Workout.fromJson(json), created: created);
+    return (row: Workout.fromJson(_named(json)), created: created);
   }
 
   @override
@@ -75,9 +75,9 @@ mixin _WorkoutRoutes on Requests implements RemoteWorkoutService {
 
   /// A refusal with a JSON body comes back from `put` and `patch` as a result,
   /// not an exception, and parsed as a workout it dies on a null `start`.
-  static Workout _workoutOr(Map<String, dynamic> json, int code) {
+  Workout _workoutOr(Map<String, dynamic> json, int code) {
     return switch (code) {
-      >= 200 && < 300 => Workout.fromJson(json),
+      >= 200 && < 300 => Workout.fromJson(_named(json)),
       _ => throw NetworkException(statusCode: code, body: json),
     };
   }
@@ -90,7 +90,7 @@ mixin _WorkoutRoutes on Requests implements RemoteWorkoutService {
   }) async {
     final (json, code) = await get(Router.userWorkout(targetUserId, workoutId));
     return switch ((code, json)) {
-      (200, Map json) => Workout.fromJson(json),
+      (200, Map json) => Workout.fromJson(_named(json)),
       // thrown whole: the body carries a stable `code`, which is how the caller
       // tells "no such workout" apart from "not yours to see" — and both apart
       // from an outage, where nothing named comes back at all
@@ -110,7 +110,7 @@ mixin _WorkoutRoutes on Requests implements RemoteWorkoutService {
     );
     return switch (json) {
       {'workouts': List l} => Page<Workout>(
-        items: _readable(l, Workout.fromJson),
+        items: _readable(_namedAll(l, counts: true), Workout.fromJson),
         hasMore: json['cursor'] != null,
       ),
       _ => null,

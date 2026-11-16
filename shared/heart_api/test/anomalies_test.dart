@@ -68,5 +68,31 @@ void main() {
       );
       expect(await api.resolveAnomaly(userId: 'muffin', anomalyId: 'a2', status: .valid), isNull);
     });
+
+    test('a library exercise is named as the device names it, an own one as the server does (#612)', () async {
+      addTearDown(() => api.exerciseOnDevice = null);
+      api.exerciseOnDevice = (id) => switch (id) {
+        'bench' => (name: 'Жим лёжа', own: false),
+        'mine' => (name: 'Old Name', own: true),
+        _ => null,
+      };
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.anomalies,
+        query: {'limit': 100},
+        statusCode: 200,
+        body: {
+          'anomalies': [
+            anomaly('a1'),
+            {...anomaly('a2'), 'exerciseId': 'mine', 'exerciseName': 'New Name'},
+          ],
+        },
+      );
+
+      final page = await api.getAnomalies(userId: 'muffin');
+
+      expect(page.map((each) => each.exerciseName), ['Жим лёжа', 'New Name']);
+    });
   });
 }

@@ -2,7 +2,7 @@ part of '../api.dart';
 
 /// Programs (heart-api#86): programs, their actions and bases, sessions filed
 /// under them, and skips (#312).
-mixin _ProgramRoutes on Requests {
+mixin _ProgramRoutes on Requests, _ExerciseNaming {
   /// The account's programs, archived ones included, each naming its session
   /// templates in order. Read whole or not at all: the caller replaces its
   /// programs with these, and one skipped would delete its local copy.
@@ -91,7 +91,7 @@ mixin _ProgramRoutes on Requests {
       body: {...template.toMap(), 'programId': programId},
     );
     return switch ((code, json)) {
-      (200, Map json) => Template.fromJson(json),
+      (200, Map json) => Template.fromJson(_named(json)),
       _ => throw _programError(json),
     };
   }

@@ -152,6 +152,18 @@ class HeartApp extends StatelessWidget {
             // behind the catalog's) and picks names by the device language
             cdn.resolveExercise = exercises.lookupByKey;
             cdn.languageTag = languageTag;
+            // the server names a library exercise inside a workout or a
+            // template from its untranslated row, so it is named here by the
+            // catalog instead, in the user's language (#612)
+            api
+              ..exerciseOnDevice = ((id) => switch (exercises.lookup(id)) {
+                final exercise? => (name: exercise.name, own: exercise.isMine),
+                null => null,
+              })
+              // before the catalog is in, every exercise is a miss
+              ..onUnnamedExercises = (unnamed, of) {
+                if (exercises.isInitialized) reportUnnamedExercises(unnamed, of);
+              };
             return exercises;
           },
         ),

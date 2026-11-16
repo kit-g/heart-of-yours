@@ -1,7 +1,7 @@
 part of '../api.dart';
 
 /// Suspicious entries (#428, heart-api#42).
-mixin _AnomalyRoutes on Requests implements AnomalyService {
+mixin _AnomalyRoutes on Requests, _ExerciseNaming implements AnomalyService {
   /// One page of the account's suspicious entries (#428, heart-api#42),
   /// newest found first. [userId] is the token's: the route reads no other.
   /// An anomaly this build cannot read is left out of the page rather than
@@ -19,7 +19,7 @@ mixin _AnomalyRoutes on Requests implements AnomalyService {
     );
     return switch ((code, json)) {
       (200, {'anomalies': final List l}) => Page(
-        items: _readable(l, Anomaly.fromJson),
+        items: _readable(l, (each) => Anomaly.fromJson(_namedAnomaly(each))),
         hasMore: json['cursor'] != null,
       ),
       _ => throw NetworkException(statusCode: code, body: json),
@@ -36,7 +36,7 @@ mixin _AnomalyRoutes on Requests implements AnomalyService {
   }) async {
     final (json, code) = await put(Router.anomaly(anomalyId), body: {'status': status.value});
     return switch ((code, json)) {
-      (200, Map json) => Anomaly.fromJson(json),
+      (200, Map json) => Anomaly.fromJson(_namedAnomaly(json)),
       (404, _) => null,
       _ => throw NetworkException(statusCode: code, body: json),
     };
