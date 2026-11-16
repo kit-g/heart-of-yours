@@ -245,6 +245,41 @@ class Charts with ChangeNotifier, Iterable<DashboardChart> implements SignOutSta
 
   Future<void> addPreference(ChartPreference preference) => add(ExerciseMetricChart(preference));
 
+  /// The dashboard's card for [exerciseId]'s [type] chart, if it has one.
+  /// One per exercise and metric is what the charts' own buttons keep to.
+  ChartPreference? exerciseChartOf(String exerciseId, ChartPreferenceType type) {
+    // the preference's getter keeps its stale name: the value is the
+    // exercise id, the identity that survives localization
+    return exerciseCharts.where((each) => each.exerciseName == exerciseId && each.type == type).firstOrNull;
+  }
+
+  final _adding = <(String, ChartPreferenceType)>{};
+
+  /// Puts [exerciseId]'s [type] chart on the dashboard unless it is there, or
+  /// on its way there: a second tap while the first is still being saved adds
+  /// nothing. True when this call added it.
+  Future<bool> addExerciseChart(String exerciseId, ChartPreferenceType type) async {
+    final key = (exerciseId, type);
+    if (userId == null || exerciseChartOf(exerciseId, type) != null || !_adding.add(key)) return false;
+    try {
+      await addPreference(.exercise(exerciseId, type));
+      return true;
+    } finally {
+      _adding.remove(key);
+    }
+  }
+
+  /// Takes [exerciseId]'s [type] chart off the dashboard: every card of it,
+  /// should another place have added a second.
+  Future<void> removeExerciseChart(String exerciseId, ChartPreferenceType type) async {
+    final cards = [
+      ...exerciseCharts.where((each) => each.exerciseName == exerciseId && each.type == type),
+    ];
+    for (final each in cards) {
+      await removePreference(each);
+    }
+  }
+
   /// Puts [chart] in the place of the stored chart with its id.
   Future<void> update(DashboardChart chart) async {
     final index = _charts.indexWhere((each) => each.id == chart.id);
