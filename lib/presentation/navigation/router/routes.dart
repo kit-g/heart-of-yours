@@ -1313,7 +1313,16 @@ RouteBase _coachingRoute() {
                   GoRoute(
                     path: 'messages',
                     name: _coachingClientThreadName,
-                    builder: (context, state) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+                    builder: (context, state) {
+                      final connectionId = state.pathParameters['connectionId']!;
+                      return ThreadPage(
+                        connectionId: connectionId,
+                        onOpenWorkout: (
+                          client: (id) => context.pushCoachingClientWorkout(connectionId, id, fromThread: true),
+                          own: context.pushWorkoutOver,
+                        ),
+                      );
+                    },
                   ),
                   // a workout the coach logs for them (#560): it lives in what
                   // it was opened with, so a location without it goes back
@@ -1386,6 +1395,11 @@ RouteBase _coachingRoute() {
                       key: ValueKey(state.pathParameters['workoutId']),
                       connectionId: state.pathParameters['connectionId']!,
                       workoutId: state.pathParameters['workoutId']!,
+                      // from the conversation: back to it, where the message goes
+                      onMessage: switch (state.extra) {
+                        true => context.pop,
+                        _ => () => context.pushCoachingClientThread(state.pathParameters['connectionId']!),
+                      },
                     ),
                   ),
                 ],
@@ -1403,12 +1417,24 @@ RouteBase _coachingRoute() {
             builder: (context, _) => CoachMessagesPage(
               onYourTraining: context.leaveCoaching,
               onOpen: context.pushCoachingThread,
+              onOpenWorkout: (connectionId, workoutId) =>
+                  context.pushCoachingClientWorkout(connectionId, workoutId, fromThread: true),
+              onOpenOwnWorkout: context.pushWorkoutOver,
             ),
             routes: [
               GoRoute(
                 path: ':connectionId',
                 name: _coachingThreadName,
-                builder: (context, state) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+                builder: (context, state) {
+                  final connectionId = state.pathParameters['connectionId']!;
+                  return ThreadPage(
+                    connectionId: connectionId,
+                    onOpenWorkout: (
+                      client: (id) => context.pushCoachingClientWorkout(connectionId, id, fromThread: true),
+                      own: context.pushWorkoutOver,
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -1550,7 +1576,12 @@ RouteBase _threadRoute() {
       // outside the shell, so the layout is this route's to provide
       return LayoutProvider(
         currentStack: -1,
-        builder: (context, _, _) => ThreadPage(connectionId: state.pathParameters['connectionId']!),
+        // a workout of one's own a message is about, over the conversation;
+        // a client's opens only in Coaching
+        builder: (context, _, _) => ThreadPage(
+          connectionId: state.pathParameters['connectionId']!,
+          onOpenWorkout: (client: null, own: context.pushWorkoutOver),
+        ),
       );
     },
   );

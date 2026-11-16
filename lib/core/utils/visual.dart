@@ -306,6 +306,14 @@ extension SectionHeaderStyle on ThemeData {
 }
 
 /// Where a menu opens under whatever [context] belongs to, as wide as it.
+/// Where a menu opens at a point, as a long press's: [at] in global terms,
+/// against the overlay the menu is laid out in.
+RelativeRect menuAt(BuildContext context, Offset at) {
+  final overlay = Overlay.of(context).context.findRenderObject();
+  if (overlay is! RenderBox) return RelativeRect.fill;
+  return RelativeRect.fromRect(at & const Size(1, 1), Offset.zero & overlay.size);
+}
+
 /// Measured against the navigator's overlay, as [menuUnderValue] is.
 RelativeRect menuUnder(BuildContext context) {
   final box = context.findRenderObject();

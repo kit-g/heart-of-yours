@@ -115,6 +115,10 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
   final _records = <String, _Record>{};
   final _reviews = <String, WorkoutReview>{};
 
+  /// Workouts read one at a time, by student, beside the pages of a record:
+  /// one a message is about may be older than the first page.
+  final _single = <String, Map<String, Workout>>{};
+
   CoachingStatus _status = .idle;
   CoachingStatus _feedStatus = .idle;
   String? _feedCursor;
@@ -177,6 +181,7 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
     _formerStatus = .idle;
     _records.clear();
     _reviews.clear();
+    _single.clear();
     notifyListeners();
   }
 
@@ -190,6 +195,28 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
 
   /// [studentId]'s workouts read so far, newest first.
   List<Workout> workoutsOf(String studentId) => UnmodifiableListView(_records[studentId]?.workouts ?? const []);
+
+  /// Every workout of [studentId]'s this device holds: the record's pages,
+  /// then any read one at a time, by [loadWorkout] or a review.
+  Iterable<Workout> heldOf(String studentId) {
+    final paged = workoutsOf(studentId);
+    final ids = {for (final each in paged) each.id};
+    return [...paged, ...?_single[studentId]?.values.where((each) => ids.add(each.id))];
+  }
+
+  /// Reads [studentId]'s workout [workoutId] by itself, once, for what a
+  /// message about it says. Reported, not thrown: the message reads as about
+  /// "a workout" meanwhile.
+  Future<void> loadWorkout(String studentId, String workoutId) async {
+    if (!_remote.allowed || heldOf(studentId).any((each) => each.id == workoutId)) return;
+    try {
+      final workout = await _service.getClientWorkout(studentId, workoutId);
+      (_single[studentId] ??= {})[workoutId] = workout;
+      notifyListeners();
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+    }
+  }
 
   /// [studentId]'s skips, newest first.
   List<TrainingSkip> skipsOf(String studentId) => UnmodifiableListView(_records[studentId]?.skips ?? const []);
@@ -281,6 +308,8 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
       },
       _service.getClientWorkoutPlan(studentId, workoutId),
     ).wait;
+    // held for what messages about it say, as one read by itself is
+    if (known == null) (_single[studentId] ??= {})[workoutId] = workout;
     return _reviews[workoutId] = WorkoutReview.of(workout, plan);
   }
 

@@ -3,12 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/history/history.dart' show WorkoutEditor;
+import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage;
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show TemplateEditor;
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetail, WorkoutDetailKeys;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -740,6 +742,150 @@ void main() {
       expect(find.descendant(of: squat, matching: find.text('Skipped')), findsOneWidget);
       // the coach's own unit: these tests run in pounds
       expect(find.descendant(of: squat, matching: find.text('198.4 lbs x 5')), findsOneWidget);
+    });
+
+    testWidgets('from a workout, a message about it, or about one set of it, in words the coach knows', (tester) async {
+      withSam();
+      final thread = Thread(id: 't-sam', connectionId: 'c-sam', otherId: 'sam', otherName: 'Sam');
+      when(api.openThread('c-sam')).thenAnswer((_) async => thread);
+      when(api.getThreads()).thenAnswer((_) async => [thread]);
+      when(api.getThreadItems('t-sam', limit: anyNamed('limit')))
+          .thenAnswer((_) async => (items: <ThreadItem>[], cursor: null));
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClientWorkout('w1'));
+      await tester.pumpTimes();
+      final context = tester.element(find.byKey(AppKeys.coachingReview));
+      final messages = Messages.of(context);
+
+      // a set: a long press on its row, and the one thing the menu offers
+      await tester.longPress(find.byKey(AppKeys.reviewSet('s1')));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.reviewSetMessage);
+      await tester.pumpTimes();
+
+      expect(find.byType(ThreadPage), findsOneWidget);
+      expect(messages.about('c-sam'), const MessageSubject(.exerciseSet, 's1'));
+      // a set by what was done in it, never its place: these tests run in pounds
+      expect(find.text('About Squat, 220.5 lbs x 5'), findsOneWidget, reason: 'over the box, in words');
+
+      await tester.pageBack();
+      await tester.pumpTimes();
+      // the whole workout: the page's own action
+      await tester.tapByKey(AppKeys.reviewMessage);
+      await tester.pumpTimes();
+
+      expect(messages.about('c-sam'), const MessageSubject(.workout, 'w1'));
+      final day = DateFormat.MMMEd('en').format(dayA.start.toLocal());
+      expect(find.text('About Day A, $day'), findsOneWidget);
+    });
+
+    ThreadItem about(String id, String type, String subjectId) {
+      return ThreadItem(
+        id: id,
+        threadId: 't-sam',
+        senderId: 'sam',
+        kind: 'message',
+        subjectType: type,
+        subjectId: subjectId,
+        content: 'm1.session.ciphertext',
+        commitment: 'c',
+        tag: 't',
+        tagKey: 'k',
+        at: DateTime.utc(2026, 11, 8, 9),
+        createdAt: DateTime.utc(2026, 11, 8, 9),
+        cursor: 'c-$id',
+      );
+    }
+
+    /// Sam coached, and a conversation holding [items].
+    void withThread(List<ThreadItem> items) {
+      withSam();
+      final thread = Thread(id: 't-sam', connectionId: 'c-sam', otherId: 'sam', otherName: 'Sam');
+      when(api.openThread('c-sam')).thenAnswer((_) async => thread);
+      when(api.getThreads()).thenAnswer((_) async => [thread]);
+      when(api.getThreadItems('t-sam', limit: anyNamed('limit'))).thenAnswer((_) async => (items: items, cursor: null));
+      // the device's own copy, kept as the store would keep it
+      final stored = <String, StoredItem>{};
+      when(db.getThreads(any)).thenAnswer((_) async => []);
+      when(db.storeThreads(any, any)).thenAnswer((_) async {});
+      when(db.storeThread(any, any)).thenAnswer((_) async {});
+      when(db.storeThreadItems(any, any)).thenAnswer((invocation) async {
+        for (final each in invocation.positionalArguments[1] as Iterable<StoredItem>) {
+          stored[each.item.id] = each;
+        }
+      });
+      when(db.getThreadItems(any, any)).thenAnswer(
+        (_) async => stored.values.toList()..sort((a, b) => (a.position ?? 1 << 30).compareTo(b.position ?? 1 << 30)),
+      );
+    }
+
+    testWidgets("opened straight from Messages, a client's subjects are read, a workout further back by itself", (
+      tester,
+    ) async {
+      withThread([about('i1', 'workout', 'w1'), about('i2', 'workout', 'w9')]);
+      final older = Workout.fromJson({
+        'id': 'w9',
+        'name': 'Day B',
+        'start': '2026-10-01T19:05:00Z',
+        'end': '2026-10-01T20:05:00Z',
+        'exercises': <Object>[],
+      });
+      when(api.getTargetWorkout(requesterId: anyNamed('requesterId'), targetUserId: 'sam', workoutId: 'w9'))
+          .thenAnswer((_) async => older);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault());
+      await tester.tapByKey(AppKeys.coachingMessagesStack);
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.inboxThread('t-sam'));
+      await tester.pumpTimes();
+
+      final day = DateFormat.MMMEd('en');
+      expect(find.text('About Day A, ${day.format(dayA.start.toLocal())}'), findsOneWidget);
+      expect(find.text('About Day B, ${day.format(older.start.toLocal())}'), findsOneWidget);
+    });
+
+    testWidgets("a workout opened from the conversation's subject sends its message back there, not over it", (
+      tester,
+    ) async {
+      withThread([about('i1', 'workout', 'w1')]);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault());
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClientMessages);
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.messageSubject);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.coachingReview), findsOneWidget);
+      await tester.tapByKey(AppKeys.reviewMessage);
+      await tester.pumpTimes();
+
+      expect(find.byType(ThreadPage), findsOneWidget, reason: 'the same conversation, not a second over it');
+      expect(find.byKey(AppKeys.coachingReview), findsNothing);
+      expect(find.byKey(AppKeys.messageAbout), findsOneWidget);
+    });
+
+    testWidgets('someone no longer coached: their workout offers no message, by action or by set', (tester) async {
+      withSam();
+      when(api.getClients(former: false, cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          items: [ClientSummary(connectionId: 'c-sam', studentId: 'sam', name: 'Sam', status: 'severed')],
+          cursor: null,
+        ),
+      );
+      when(api.getTargetWorkout(requesterId: anyNamed('requesterId'), targetUserId: 'sam', workoutId: 'w1'))
+          .thenAnswer((_) async => dayA);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      GoRouter.of(tester.element(find.byType(Navigator).first)).push('/coaching/clients/c-sam/workouts/w1');
+      await tester.pumpTimes();
+
+      expect(find.text('Squat'), findsOneWidget, reason: 'their workout is open');
+      expect(find.byKey(AppKeys.reviewMessage), findsNothing);
+      await tester.longPress(find.byKey(AppKeys.reviewSet('s1')));
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.reviewSetMessage), findsNothing);
     });
 
     testWidgets('a workout with no plan lists what was done and compares nothing', (tester) async {
