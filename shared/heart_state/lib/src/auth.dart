@@ -162,49 +162,96 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     }
 
     _users = _firebase.userChanges().listen(
-      (user) async {
-        // the account an anonymous session just became: its store moves and
-        // its replay is owed before the uid is keyed in anywhere
-        if (_linking case String from when user != null && !user.isAnonymous) {
-          _linking = null;
-          await onLink?.call(from, user.uid);
-          if (_disposed) return;
-        }
-        _adopt(user);
-        onUserChange?.call(_user);
-        notifyListeners();
-        switch (user) {
-          case fb.User(isAnonymous: true, :final uid):
-            // no token handed over — the anonymous leg never reaches the
-            // server, and registering an account is what an account is for
-            await onEnter?.call(null, uid);
-          case fb.User user:
-            await onEnter?.call(await user.getIdToken(), user.uid);
-            if (_disposed) return;
-            try {
-              _user = await _registerUser(_user);
-              // what the server holds for the account — its settings among it
-              // — has only now arrived; listeners reading those need telling
-              notifyListeners();
-            } on AccountDeleted {
-              _logout();
-            }
-          case null:
-            await ensureSession();
-            // the gate is decided on this answer (see the router), and the
-            // router re-reads it on a user change — which this is: there is
-            // still no user, and now that is settled rather than pending
-            if (_sessionUnavailable) onUserChange?.call(null);
-        }
-        // app startup is awaited above and can outlive a torn-down tree (a
-        // test's, mid-session); there is nobody left to tell
-        if (_disposed) return;
-        isInitialized = true;
-      },
+      // An async listener's throw is nobody's to catch: it lands as an
+      // unhandled, fatal error. So every failure of a run is caught here, in
+      // one place, and the subscription's own onError below only ever sees the
+      // stream's.
+      (user) => _onUserChanged(user).catchError(_userChangeFailed),
       onError: (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
       },
     );
+  }
+
+  Future<void> _onUserChanged(fb.User? user) async {
+    // the account an anonymous session just became: its store moves and
+    // its replay is owed before the uid is keyed in anywhere
+    if (_linking case String from when user != null && !user.isAnonymous) {
+      _linking = null;
+      await onLink?.call(from, user.uid);
+      if (_disposed) return;
+    }
+    _adopt(user);
+    onUserChange?.call(_user);
+    notifyListeners();
+    switch (user) {
+      case fb.User(isAnonymous: true, :final uid):
+        // no token handed over — the anonymous leg never reaches the
+        // server, and registering an account is what an account is for
+        await onEnter?.call(null, uid);
+      case fb.User user:
+        await onEnter?.call(await user.getIdToken(), user.uid);
+        if (_disposed) return;
+        await _register(user.uid);
+      case null:
+        await ensureSession();
+        // the gate is decided on this answer (see the router), and the
+        // router re-reads it on a user change — which this is: there is
+        // still no user, and now that is settled rather than pending
+        if (_sessionUnavailable) onUserChange?.call(null);
+    }
+    // app startup is awaited above and can outlive a torn-down tree (a
+    // test's, mid-session); there is nobody left to tell
+    if (_disposed) return;
+    isInitialized = true;
+  }
+
+  /// A run of [_onUserChanged] that failed: a request that never reached the
+  /// server (offline, or a socket iOS closed under a backgrounded app,
+  /// HEART-OF-YOURS-2S), a token that could not refresh. None of it is a
+  /// crash. The error handler decides what deserves reporting, and the app is
+  /// still told the session is settled. Without a handler (a test) the error
+  /// is thrown on, as loudly as it always was.
+  void _userChangeFailed(Object error, StackTrace stacktrace) {
+    if (!_disposed) isInitialized = true;
+    switch (onError) {
+      case final report?:
+        report(error, stacktrace: stacktrace);
+      case null:
+        Error.throwWithStackTrace(error, stacktrace);
+    }
+  }
+
+  /// Registers the signed-in account [uid] with the server and keeps its
+  /// answer — the account's settings and entitlements — unless the session
+  /// changed hands while the request was out: a late answer for an account
+  /// signed out of must not bring it back.
+  Future<void> _register(String uid) async {
+    try {
+      final registered = await _registerUser(_user);
+      if (_disposed || _user?.id != uid) return;
+      _user = registered;
+      // what the server holds for the account — its settings among it
+      // — has only now arrived; listeners reading those need telling
+      notifyListeners();
+    } on AccountDeleted {
+      await _logout();
+    }
+  }
+
+  /// Coming back to the app: an account whose registration never reached the
+  /// server — the launch was offline — tries again, rather than wait for
+  /// Firebase's next word about the user, up to an hour away. Its entitlements
+  /// (coaching among them) are unknown until it does.
+  Future<void> registerAgain() async {
+    if (_isAnonymous || entitlementsKnown || !_service.isAuthenticated) return;
+    if (_user?.id case final String uid) {
+      try {
+        await _register(uid);
+      } catch (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+      }
+    }
   }
 
   /// The Firebase subscription, held so [dispose] can end it.
