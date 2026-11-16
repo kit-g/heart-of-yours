@@ -115,7 +115,10 @@ Future<ExerciseDetailState> buildExerciseDetailState({String? userId = 'u1'}) as
   await preferences.init();
 
   final chartService = MockLocalChartService();
-  final charts = Charts(service: chartService)..userId = userId;
+  // as once the dashboard has loaded: before then the toggle is absent
+  final charts = Charts(service: chartService)
+    ..userId = userId
+    ..initialized = true;
 
   final goals = Goals(
     service: FakeGoalService(),

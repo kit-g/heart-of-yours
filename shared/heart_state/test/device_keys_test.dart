@@ -1022,6 +1022,218 @@ void main() {
       expect(arrived, isEmpty);
     });
 
+    /// Makes [keys] answer every request it is handed, checked by nothing
+    /// more than the cipher's own rules, and records them.
+    List<KeyRequest> answering(DeviceKeys keys) {
+      final requests = <KeyRequest>[];
+      keys.onKeyRequest = (request) async {
+        requests.add(request);
+        await keys.answer(request);
+        return true;
+      };
+      return requests;
+    }
+
+    test('a device that came after the last message asks for the key, and the one that made it answers', () async {
+      final coach = device('dana');
+      final phone = device('sam');
+      await coach.start('dana');
+      await phone.start('sam');
+      final sealed = await coach.seal(thread, 'squats today');
+      await coach.share(thread, userId: 'sam');
+      final requests = answering(coach);
+
+      // the student's new tablet, and a coach who doesn't write again
+      final tablet = device('sam');
+      await tablet.start('sam');
+      final items = [item('m1', sealed, 'dana')];
+      expect((await tablet.open(thread, items)).single, isA<Locked>());
+
+      await tablet.ask(thread, items);
+      await coach.receive();
+      await tablet.receive();
+
+      expect(requests.map((each) => (each.userId, each.deviceId)), [('sam', tablet.deviceId)]);
+      expect(((await tablet.open(thread, items)).single as Opened).text, 'squats today');
+      expect(errors, isEmpty);
+    });
+
+    test('a key that reached a device and never opened there is sent to it again when it asks', () async {
+      final coach = device('dana');
+      final student = device('sam');
+      await coach.start('dana');
+      await student.start('sam');
+      final sealed = await coach.seal(thread, 'hello');
+      await coach.share(thread, userId: 'sam');
+      // lost on the way: the coach's device counts it as delivered
+      server.queue.clear();
+      answering(coach);
+      final items = [item('m1', sealed, 'dana')];
+
+      await student.ask(thread, items);
+      await coach.receive();
+      await student.receive();
+
+      expect(((await student.open(thread, items)).single as Opened).text, 'hello');
+    });
+
+    test('a request waits on the device until something decides on it', () async {
+      final coach = device('dana');
+      final student = device('sam');
+      await coach.start('dana');
+      await student.start('sam');
+      final sealed = await coach.seal(thread, 'hello');
+      await coach.share(thread, userId: 'sam');
+      server.queue.clear();
+      final items = [item('m1', sealed, 'dana')];
+      await student.ask(thread, items);
+
+      await coach.receive();
+      final requests = answering(coach);
+      await pumpEventQueue();
+      await student.receive();
+
+      expect(requests, hasLength(1));
+      expect((await student.open(thread, items)).single, isA<Opened>());
+    });
+
+    test('a request a device turns down for now is handed to it again', () async {
+      final coach = device('dana');
+      final student = device('sam');
+      await coach.start('dana');
+      await student.start('sam');
+      final sealed = await coach.seal(thread, 'hello');
+      await coach.share(thread, userId: 'sam');
+      var handed = 0;
+      coach.onKeyRequest = (_) async {
+        handed++;
+        return false;
+      };
+
+      await student.ask(thread, [item('m1', sealed, 'dana')]);
+      await coach.receive();
+      await coach.receive();
+
+      expect(handed, 2);
+    });
+
+    test('a key asked for is not asked for again for a while, nor one already here', () async {
+      var now = DateTime.utc(2026, 11, 15, 9);
+      final coach = device('dana');
+      final tablet = device('sam', now: () => now);
+      await coach.start('dana');
+      await tablet.start('sam');
+      final sealed = await coach.seal(thread, 'hello');
+      final items = [item('m1', sealed, 'dana')];
+      int asks() => server.calls.where((each) => each.startsWith('enqueue')).length;
+
+      await tablet.ask(thread, items);
+      final first = asks();
+      await tablet.ask(thread, items);
+      expect(asks(), first, reason: 'asked a moment ago');
+
+      now = now.add(const Duration(minutes: 20));
+      await tablet.ask(thread, items);
+      expect(asks(), greaterThan(first));
+
+      await coach.share(thread, userId: 'sam');
+      await tablet.receive();
+      final before = asks();
+      now = now.add(const Duration(hours: 1));
+      await tablet.ask(thread, items);
+      expect(asks(), before, reason: 'the key is here');
+    });
+
+    test("one's own device asks again as soon as one of the account's could answer it", () async {
+      final phone = device('dana');
+      final student = device('sam');
+      await phone.start('dana');
+      await student.start('sam');
+      final sealed = await phone.seal(thread, 'from the phone');
+      await phone.share(thread, userId: 'sam');
+      answering(phone);
+      final tablet = device('dana');
+      await tablet.start('dana');
+      final items = [item('m1', sealed, 'dana')];
+
+      // nothing of the account's is trusted yet: no request goes, and none
+      // is counted as asked
+      await tablet.ask(thread, items);
+      await approve(phone, tablet);
+      await tablet.ask(thread, items);
+      await phone.receive();
+      await tablet.receive();
+
+      expect(((await tablet.open(thread, items)).single as Opened).text, 'from the phone');
+      expect(errors, isEmpty);
+    });
+
+    test('a key asked for stays asked for across a relaunch', () async {
+      final vault = _Vault();
+      final coach = device('dana');
+      final tablet = device('sam', vault: vault);
+      await coach.start('dana');
+      await tablet.start('sam');
+      final items = [item('m1', await coach.seal(thread, 'hello'), 'dana')];
+      await tablet.ask(thread, items);
+      server.calls.clear();
+
+      final again = device('sam', vault: vault);
+      await again.start('sam');
+      server.calls.clear();
+      await again.ask(thread, items);
+
+      expect(server.calls.where((each) => each.startsWith('enqueue')), isEmpty);
+    });
+
+    test('someone who can no longer be reached is asked nothing more for a while, and nothing is reported', () async {
+      final coach = device('dana');
+      final tablet = device('sam');
+      await coach.start('dana');
+      await tablet.start('sam');
+      final items = [item('m1', await coach.seal(thread, 'hello'), 'dana')];
+      server.refuseNext['devices'] = {'error': 'forbidden', 'code': 'forbidden'};
+
+      await tablet.ask(thread, items);
+      server.calls.clear();
+      await tablet.ask(thread, items);
+
+      expect(errors, isEmpty);
+      expect(server.calls, isEmpty);
+    });
+
+    test("a request for a key this device didn't make goes nowhere", () async {
+      final coach = device('dana');
+      final student = device('sam');
+      await coach.start('dana');
+      await student.start('sam');
+      final mine = await coach.seal(thread, 'mine');
+      await coach.share(thread, userId: 'sam');
+      await student.receive();
+      final requests = answering(coach);
+
+      await student.deliver(
+        userId: 'dana',
+        kind: DeviceKeys.threadKeyRequestKind,
+        payload: jsonEncode({
+          't': thread,
+          's': ['someone-elses'],
+        }),
+      );
+      await student.deliver(
+        userId: 'dana',
+        kind: DeviceKeys.threadKeyRequestKind,
+        payload: jsonEncode({
+          't': 'other-thread',
+          's': [sessionOf(mine)],
+        }),
+      );
+      await coach.receive();
+      await pumpEventQueue();
+
+      expect(requests, isEmpty);
+    });
+
     test('a mismatched fingerprint shares nothing', () async {
       final coach = device('dana');
       final student = device('sam');

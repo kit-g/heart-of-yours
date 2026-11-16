@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show PageStorageKey;
 
 abstract final class AppKeys {
   const new _();
@@ -396,7 +397,10 @@ abstract final class AppKeys {
   /// client's row and its "looked at", and the former ones.
   static const coachingRosterView = Key('Coaching.rosterView');
   static const coachingActivityView = Key('Coaching.activityView');
-  static const coachingFormerClients = Key('Coaching.formerClients');
+
+  /// Kept open as a client opens beside the roster.
+  static const coachingFormerClients = PageStorageKey('Coaching.formerClients');
+  static const coachingClientFormer = Key('Coaching.client.former');
 
   static Key coachingReasonFilter(String? reason) => Key('Coaching.reason.${reason ?? 'all'}');
 

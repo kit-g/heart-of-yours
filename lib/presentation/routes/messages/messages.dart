@@ -419,7 +419,15 @@ class _Bubble extends StatelessWidget {
     final words = textTheme.bodyLarge?.copyWith(color: foreground) ?? TextStyle(color: foreground);
     final (text, style, leading) = switch (message.opened) {
       Opened(:final text) => (text, words, null),
-      Locked() => (l.messagesLocked, words.copyWith(fontStyle: .italic), Icons.key_rounded),
+      // says what opens it: the device has already asked for its key
+      Locked() => (
+        switch (mine) {
+          true => l.messagesLockedYours,
+          false => l.messagesLocked,
+        },
+        words.copyWith(fontStyle: .italic),
+        Icons.key_rounded,
+      ),
       Refused() => (l.messagesRefused, words.copyWith(fontStyle: .italic), Icons.block_rounded),
     };
     final (status, said) = switch ((mine, message.delivery)) {
