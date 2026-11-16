@@ -618,6 +618,99 @@ void main() {
       verify(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor'))).called(greaterThan(0));
     });
 
+    final pepper = ClientSummary(connectionId: 'c-old', studentId: 'old', name: 'Pepper', status: 'severed');
+
+    /// Sam coached, Pepper gone, and notes that read as none.
+    void withPepper({List<ClientSummary>? current}) {
+      withSam();
+      if (current != null) {
+        when(api.getClients(former: false, cursor: anyNamed('cursor')))
+            .thenAnswer((_) async => (items: current, cursor: null));
+      }
+      when(api.getClients(former: true, cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: [pepper], cursor: null));
+      when(db.getCoachNotes(any)).thenAnswer((_) async => []);
+      when(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (notes: <CoachNote>[], cursor: null));
+      when(db.replaceCoachNotes(any, any, keep: anyNamed('keep'))).thenAnswer((_) async {});
+    }
+
+    Future<void> openFormer(WidgetTester tester) async {
+      await tester.scrollUntilVisible(
+        find.byKey(AppKeys.coachingFormerClients),
+        200,
+        scrollable: find.descendant(of: find.byType(ClientsPage), matching: find.byType(Scrollable)).first,
+      );
+      await tester.tapByKey(AppKeys.coachingFormerClients);
+      await tester.pumpTimes();
+    }
+
+    testWidgets("a former client opens to the coach's notes on them, and nothing of their training", (tester) async {
+      withPepper();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault());
+      await openFormer(tester);
+
+      await tester.tapByKey(AppKeys.coachingClient('c-old'));
+      await tester.pumpTimes();
+
+      expect(find.byType(ClientPage), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientFormer), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientMessages), findsNothing, reason: 'no conversation to read back');
+      expect(find.text('Workouts'), findsNothing);
+
+      // pulled down: the notes and the conversation again, never their training
+      await tester.fling(find.byType(ListView).last, const Offset(0, 400), 1000);
+      await tester.pumpTimes();
+      verifyNever(api.getClientWorkouts('old', cursor: anyNamed('cursor')));
+      verifyNever(api.getClientSkips('old'));
+      verifyNever(api.getClientPrograms('old'));
+
+      await tester.tapByKey(AppKeys.coachingClientNotes);
+      await tester.pumpTimes();
+
+      expect(find.byType(ClientNotesPage), findsOneWidget);
+      expect(find.text('Notes on Pepper'), findsOneWidget);
+    });
+
+    testWidgets('on a tablet a former client opens beside the roster, which stays as it was', (tester) async {
+      withPepper();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault(), wide: true);
+      await openFormer(tester);
+
+      await tester.tapByKey(AppKeys.coachingClient('c-old'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingClientPane), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientFormer), findsOneWidget);
+      final row = tester.widget<ListTile>(find.byKey(AppKeys.coachingClient('c-old')));
+      expect(row.selected, isTrue, reason: 'Former clients stayed open, with Pepper picked');
+      verifyNever(api.getClientWorkouts('old', cursor: anyNamed('cursor')));
+    });
+
+    testWidgets('a coach whose clients have all left still reaches them', (tester) async {
+      withPepper(current: <ClientSummary>[]);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault());
+
+      expect(find.byKey(AppKeys.coachingFormerClients), findsOneWidget);
+      await tester.tapByKey(AppKeys.coachingFormerClients);
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClient('c-old'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingClientFormer), findsOneWidget);
+    });
+
+    testWidgets('with nothing kept of a former client here, their name leads nowhere', (tester) async {
+      withPepper();
+      // no vault, as on the web, and no conversation
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await openFormer(tester);
+
+      final row = tester.widget<ListTile>(find.byKey(AppKeys.coachingClient('c-old')));
+      expect(row.onTap, isNull);
+      expect(row.trailing, isNull);
+    });
+
     testWidgets('where keys have nowhere to be kept, as on the web, there are no notes to lead to', (tester) async {
       withSam();
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
@@ -893,7 +986,7 @@ void main() {
       await tester.tapByKey(AppKeys.coachingClient('c-sam'));
       await tester.pumpTimes();
 
-      expect(find.byKey(AppKeys.coachingClientMessages), findsOneWidget, reason: 'their page is open');
+      expect(find.byKey(AppKeys.coachingClientFormer), findsOneWidget, reason: 'their page is open');
       expect(find.byKey(AppKeys.coachingLogFor), findsNothing);
     });
 
