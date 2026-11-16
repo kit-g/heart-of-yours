@@ -70,6 +70,20 @@ class WorkoutGroups {
     return {for (final each in done(workout)) ...ofExercise(each.exercise)};
   }
 
+  /// The working sets [workouts] gave each [MuscleFamily] they trained, by
+  /// the same rule: what orders a calendar day's colours, busiest first
+  /// (#617). A set counts once toward each family its exercise reaches.
+  Map<MuscleFamily, int> setsByFamily(Iterable<Workout> workouts) {
+    final sets = <MuscleFamily, int>{};
+    for (final each in workouts.expand(done)) {
+      final count = each.where(_counts).length;
+      for (final family in {for (final group in ofExercise(each.exercise)) MuscleFamily.of(group)}) {
+        sets.update(family, (sum) => sum + count, ifAbsent: () => count);
+      }
+    }
+    return sets;
+  }
+
   /// The exercises of [workout] that count: those with a working set done.
   static Iterable<WorkoutExercise> done(Workout workout) => workout.where((each) => each.any(_counts));
 
@@ -88,4 +102,30 @@ class WorkoutGroups {
   }
 
   static bool _counts(ExerciseSet set) => set.isCompleted && set.setType != .warmup;
+}
+
+/// The muscle groups by family (#617): the coarser grouping History colours
+/// by. Ten hues are too many to tell apart on a small dot, for every eye and
+/// across every preset; six are not. A family always comes with its name —
+/// colour is never the only carrier.
+enum MuscleFamily {
+  chest,
+  back,
+  shoulders,
+  arms,
+  core,
+  lowerBody;
+
+  /// The family [group] belongs to. Every group named, so one heart_models
+  /// adds has to be placed here.
+  static MuscleFamily of(MuscleGroupKey group) {
+    return switch (group) {
+      .chest => chest,
+      .back => back,
+      .shoulders || .neck => shoulders,
+      .arms => arms,
+      .core => core,
+      .legs || .glutes || .hamstrings || .adductors => lowerBody,
+    };
+  }
 }
