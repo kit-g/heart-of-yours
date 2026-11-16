@@ -601,7 +601,7 @@ RouteBase _exercisesRoute() {
         },
         routes: [
           GoRoute(
-            path: 'archived',
+            path: _exerciseArchivedSegment,
             builder: (context, _) {
               return ExerciseArchive(
                 onExercise: (exercise, _) {
@@ -692,7 +692,7 @@ RouteBase _exercisesRoute() {
               // history stack builds, hosted here so the reader never leaves
               // the exercises stack (or, on a tablet, its pane).
               GoRoute(
-                path: 'workout/:workoutId',
+                path: '$_exerciseWorkoutSegment/:workoutId',
                 name: _exerciseWorkoutName,
                 builder: (context, state) {
                   try {
@@ -1151,7 +1151,9 @@ RouteBase _filteredExercisesRoute() {
         builder: (context, _, _) => ExercisesPage(
           leading: const BackButton(),
           onExercise: (exercise, _) => context.pushExerciseOver(exercise.id),
-          onShowArchived: context.goToExerciseArchive,
+          // over this page, Back returns to it: the tab's archive would take
+          // the reader away, and is not there at all with the tab left out
+          onShowArchived: () => context.pushNamed(_exerciseArchiveOverName),
           onOpenActiveWorkout: () {
             HapticFeedback.mediumImpact();
             context.goToActiveWorkout();
@@ -1173,8 +1175,18 @@ RouteBase _exerciseArchiveOverRoute() {
     builder: (context, _) {
       return LayoutProvider(
         currentStack: -1,
-        builder: (context, _, _) => ExerciseArchive(
-          onExercise: (exercise, _) => context.pushExerciseOver(exercise.id),
+        // the whole window, so capped as a reading column: a row of an
+        // archived exercise across an iPad says nothing more
+        builder: (context, _, _) => LayoutBuilder(
+          builder: (context, constraints) => Align(
+            alignment: .topCenter,
+            child: SizedBox(
+              width: math.min(constraints.maxWidth, readableWidth),
+              child: ExerciseArchive(
+                onExercise: (exercise, _) => context.pushExerciseOver(exercise.id),
+              ),
+            ),
+          ),
         ),
       );
     },
@@ -1224,6 +1236,11 @@ RouteBase _exerciseOverRoute() {
           },
           onShareExercise: (exercise, {tab}) => _onShareExercise(context, exercise, tab),
           onFilter: (filter) => HeartRouter.of(context).goToFilteredExercises(Exercises.of(context), filter),
+          // its history moved onto [target], this one may be gone (#338)
+          onHistoryMoved: (target) => context.pushReplacementNamed(
+            _exerciseOverName,
+            pathParameters: {'exerciseId': target.id},
+          ),
           onTapAlternative: (alternative) => context.pushExerciseOver(alternative.id),
           onAddToWorkout: (exercise) => _onAddToWorkout(context, exercise),
         ),

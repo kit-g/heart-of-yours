@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
+import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/tab_frame.dart';
@@ -32,14 +33,22 @@ class AppFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final L(:profile, :workout, :history, :exercises, :keepAwakeBadge) = L.of(context);
-    final showsExercises = context.select<Preferences, bool>((preferences) => preferences.isOn(.exercisesTab));
-    // left out while it was the tab on screen: the app moves to the first tab
-    // rather than keep a screen the bar no longer names
-    if (!showsExercises && shell.currentIndex == _exercises) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (shell.currentIndex == _exercises) shell.goBranch(_profile);
-      });
-    }
+    // turned off, not merely unread: before the preferences load the tab is
+    // there, as it is for everyone who never touched the switch
+    final showsExercises = context.select<Preferences, bool>(
+      (preferences) => preferences.featureAnswer(.exercisesTab) != .off,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
+      // left out while it was the tab on screen: the app moves to the first
+      // tab rather than keep a screen the bar no longer names. Asked of the
+      // router now, not of [shell], which is the frame's as it was built
+      if (!showsExercises && HeartRouter.onExercisesTab(context)) {
+        shell.goBranch(_profile);
+      }
+      // a link into the tab that came before the tabs did
+      HeartRouter.takeLinkOverTheTab(context);
+    });
 
     final destinations = <TabDestination>[
       (

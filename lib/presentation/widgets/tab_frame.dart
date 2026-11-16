@@ -132,6 +132,7 @@ class TabFrame extends StatelessWidget {
             return _KeyMap(
               shell: shell,
               branches: [for (final each in destinations) each.branch],
+              selected: _selected,
               onReselect: onReselect,
               child: Scaffold(
                 body: AnnotatedRegion<SystemUiOverlayStyle>(
@@ -173,6 +174,7 @@ class TabFrame extends StatelessWidget {
             return _KeyMap(
               shell: shell,
               branches: [for (final each in destinations) each.branch],
+              selected: _selected,
               onReselect: onReselect,
               child: Scaffold(
                 body: AnnotatedRegion<SystemUiOverlayStyle>(
@@ -222,12 +224,16 @@ class _KeyMap extends StatelessWidget {
   final Widget child;
   final StatefulNavigationShell shell;
   final List<int> branches;
+
+  /// The place in the bar of the tab on screen, as the bar shows it.
+  final int selected;
   final void Function(BuildContext context, int branch) onReselect;
 
   const new({
     required this.child,
     required this.shell,
     required this.branches,
+    required this.selected,
     required this.onReselect,
   });
 
@@ -251,10 +257,10 @@ class _KeyMap extends StatelessWidget {
       child: Actions(
         actions: <Type, Action<Intent>>{
           _NextTabIntent: CallbackAction<_NextTabIntent>(
-            onInvoke: (_) => _changeTab(context, (_selected + 1) % branches.length),
+            onInvoke: (_) => _changeTab(context, (selected + 1) % branches.length),
           ),
           _PreviousTabIntent: CallbackAction<_PreviousTabIntent>(
-            onInvoke: (_) => _changeTab(context, (_selected - 1 + branches.length) % branches.length),
+            onInvoke: (_) => _changeTab(context, (selected - 1 + branches.length) % branches.length),
           ),
           _TabIntent: CallbackAction<_TabIntent>(
             onInvoke: (intent) => _changeTab(context, intent.position),
@@ -263,14 +269,6 @@ class _KeyMap extends StatelessWidget {
         child: child,
       ),
     );
-  }
-
-  /// The place in the bar of the branch on screen; the first when it has none.
-  int get _selected {
-    return switch (branches.indexOf(shell.currentIndex)) {
-      -1 => 0,
-      final position => position,
-    };
   }
 
   void _changeTab(BuildContext context, int position) {

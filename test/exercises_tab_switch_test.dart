@@ -32,7 +32,8 @@ void main() {
     when(db.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
   });
 
-  Future<HeartRouter> launch(WidgetTester tester, Size size) async {
+  Future<HeartRouter> launch(WidgetTester tester, Size size, {bool loadCatalog = true, bool off = false}) async {
+    if (off) SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-exercisesTab': 'off'});
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -48,7 +49,7 @@ void main() {
     );
     await tester.pumpTimes();
     // the startup chain never resolves under a widget test's clock
-    await Exercises.of(tester.element(find.byType(MaterialApp))).init();
+    if (loadCatalog) await Exercises.of(tester.element(find.byType(MaterialApp))).init();
     await tester.pumpTimes();
     return router;
   }
@@ -137,5 +138,43 @@ void main() {
     await tester.pumpTimes();
     expect(find.byType(ExerciseDetailPage), findsOneWidget);
     expect(router.config.state.uri.path, '/exercises/${bench.id}');
+  });
+
+  testWidgets('off, a link that comes before the catalog waits for it, rather than open a blank page', (tester) async {
+    final router = await launch(tester, const Size(390, 844), loadCatalog: false, off: true);
+    expect(find.byKey(AppKeys.exercisesStack), findsNothing);
+
+    router.config.go('/exercises/${bench.id}');
+    await tester.pumpTimes();
+    expect(find.byType(ExerciseDetailPage), findsNothing);
+
+    await Exercises.of(tester.element(find.byType(MaterialApp))).init();
+    await tester.pumpTimes();
+    expect(find.byType(ExerciseDetailPage), findsOneWidget);
+    expect(find.text(bench.name), findsWidgets);
+  });
+
+  testWidgets('off, a link to an exercise this device does not have opens the library', (tester) async {
+    final router = await launch(tester, const Size(390, 844), off: true);
+
+    router.config.go('/exercises/someone-elses-lift');
+    await tester.pumpTimes();
+    expect(find.byType(ExerciseDetailPage), findsNothing);
+    expect(find.byType(ExercisesPage), findsOneWidget);
+    expect(router.config.state.uri.path, '/filtered-exercises');
+  });
+
+  testWidgets('off, the same link twice opens one page', (tester) async {
+    final router = await launch(tester, const Size(390, 844), off: true);
+
+    router.config.go('/exercises/${bench.id}');
+    await tester.pumpTimes();
+    router.config.go('/exercises/${bench.id}');
+    await tester.pumpTimes();
+    expect(find.byType(ExerciseDetailPage), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpTimes();
+    expect(find.byType(ProfilePage), findsOneWidget);
   });
 }
