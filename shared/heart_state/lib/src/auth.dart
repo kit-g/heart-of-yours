@@ -70,6 +70,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// keeps what the server granted (see [_adopt]).
   bool get entitlementsKnown => _known != null && _user?.id == _known;
 
+  @override
+  bool get settingsKnown => entitlementsKnown;
+
   /// True for an anonymous session too: the rest of the app keys everything on
   /// a uid and an anonymous one is a uid like any other.
   bool get isLoggedIn => _user != null;
@@ -184,6 +187,16 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     _adopt(user);
     onUserChange?.call(_user);
     notifyListeners();
+    // The same session re-reported: a token refresh — which the token read
+    // below sets off on most cold starts — a new name, a reload. It has been
+    // started up and registered already; doing it again is every launch
+    // read and the account's write twice over (#676).
+    final session = switch (user) {
+      fb.User(:final uid, :final isAnonymous) => (uid: uid, anonymous: isAnonymous),
+      null => null,
+    };
+    if (session != null && session == _entered) return;
+    _entered = session;
     switch (user) {
       case fb.User(isAnonymous: true, :final uid):
         // no token handed over — the anonymous leg never reaches the
@@ -213,6 +226,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// still told the session is settled. Without a handler (a test) the error
   /// is thrown on, as loudly as it always was.
   void _userChangeFailed(Object error, StackTrace stacktrace) {
+    // a run that did not finish is tried again on Firebase's next word
+    _entered = null;
     if (!_disposed) isInitialized = true;
     switch (onError) {
       case final report?:
@@ -253,6 +268,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
       }
     }
   }
+
+  /// The session [_onUserChanged] last started up: a uid, and whether it was
+  /// still anonymous — the same uid as an account is a sign-in to start.
+  ({String uid, bool anonymous})? _entered;
 
   /// The Firebase subscription, held so [dispose] can end it.
   StreamSubscription<fb.User?>? _users;
@@ -316,19 +335,22 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   ///
   /// Firebase knows nothing of what the server granted, and reports every
   /// change to the account (a new name, a new photo, a token refresh): the
-  /// same account keeps its entitlements through those, or a coach would
-  /// read as one who may not coach until the server answered again.
+  /// same account keeps its entitlements and settings through those, or a
+  /// coach would read as one who may not coach until the server answered
+  /// again, and every opt-in answer as newer than the account's.
   void _adopt(fb.User? user) {
     final previous = _user;
     // another account, or none: what the server said was about the last one
     if (previous?.id != user?.uid) _known = null;
-    _user = _cast(
-      user,
-      entitlements: switch (previous) {
-        User(:final id, :final entitlements) when id == user?.uid => entitlements,
-        _ => const [],
-      },
-    );
+    _user = switch (previous) {
+      // the same account re-reported — a token refresh, a profile edit:
+      // what the server said of it still holds
+      User(:final id, :final entitlements, :final settings) when id == user?.uid => _cast(
+        user,
+        entitlements: entitlements,
+      )?.copyWith(settings: settings),
+      _ => _cast(user),
+    };
     _isAnonymous = user?.isAnonymous ?? false;
     remote.account = user != null && !_isAnonymous;
     if (user != null) _sessionUnavailable = false;

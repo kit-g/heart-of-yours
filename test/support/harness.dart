@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -159,6 +161,14 @@ class TestAppHarness {
         keyVault: keyVault,
       ),
     );
+
+    // Startup runs in the root zone, which a widget test's pumps never get
+    // to, so the registration that follows it never comes: the account is
+    // registered here instead, as coming back to the app would (#676)
+    await tester.pump();
+    if (find.byType(Navigator).evaluate().firstOrNull case final Element element) {
+      unawaited(Auth.of(element).registerAgain());
+    }
 
     switch (settle) {
       case true:

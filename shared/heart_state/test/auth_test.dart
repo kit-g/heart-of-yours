@@ -8,7 +8,7 @@ import 'package:firebase_auth_platform_interface/firebase_auth_platform_interfac
     show InternalUserInfo, PasswordPolicy;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:heart_models/heart_models.dart' show User;
+import 'package:heart_models/heart_models.dart' show Settings, User;
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
@@ -344,6 +344,54 @@ void main() {
 
       expect(sut.entitlementsKnown, isTrue);
       expect(sut.user?.mayCoach, isTrue, reason: 'a coach never reads as one who may not coach in between');
+      sut.dispose();
+    });
+
+    test(
+      'the same account re-reported is neither started up nor registered again, and keeps its settings (#676)',
+      () async {
+        final firebase = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+        );
+        const settings = Settings(firstWeekday: 1);
+        when(account.isAuthenticated).thenReturn(true);
+        when(account.registerAccount(any)).thenAnswer(
+          (inv) async => User(id: (inv.positionalArguments.first as User).id, settings: settings),
+        );
+        var entered = 0;
+        final sut = Auth(service: account, firebase: firebase, onEnter: (_, _) async => entered++);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect((entered, sut.settingsKnown), (1, true));
+
+        // the token read at start-up refreshes it, and Firebase says so
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+
+        expect(entered, 1);
+        verify(account.registerAccount(any)).called(1);
+        expect(sut.user?.settings, settings, reason: 'or every answer on the device reads as newer than the account');
+        sut.dispose();
+      },
+    );
+
+    test('a run that failed is run again on the next report', () async {
+      final firebase = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+      );
+      when(account.isAuthenticated).thenReturn(true);
+      when(account.registerAccount(any)).thenThrow(const SocketException('offline'));
+      final sut = Auth(service: account, firebase: firebase, onError: (_, {stacktrace}) {});
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      when(account.registerAccount(any)).thenAnswer(
+        (inv) async => User(id: (inv.positionalArguments.first as User).id),
+      );
+      firebase.userChangedStreamController.add(firebase.currentUser);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.entitlementsKnown, isTrue);
       sut.dispose();
     });
 
