@@ -346,6 +346,29 @@ void main() {
       sut.dispose();
     });
 
+    test('a registration that never reaches the server is handed to onError, not thrown (HEART-OF-YOURS-2S)', () async {
+      final firebase = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+      );
+      when(account.isAuthenticated).thenReturn(true);
+      // a socket closed under a backgrounded app
+      when(account.registerAccount(any)).thenAnswer((_) async => throw Exception('Bad file descriptor'));
+      final reported = <Object?>[];
+      final sut = Auth(
+        service: account,
+        firebase: firebase,
+        onError: (error, {stacktrace}) => reported.add(error),
+      );
+      // an unhandled error would fail this test from the zone
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(reported, [isA<Exception>()]);
+      expect(sut.user?.id, 'muffin');
+      expect(sut.entitlementsKnown, isFalse);
+      sut.dispose();
+    });
+
     test('a sign-out forgets them, and the next sign-in waits for the server again', () async {
       final firebase = MockFirebaseAuth(
         signedIn: true,

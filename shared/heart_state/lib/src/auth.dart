@@ -188,6 +188,15 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
               notifyListeners();
             } on AccountDeleted {
               _logout();
+            } catch (error, stacktrace) {
+              // This runs inside a stream listener, where a throw is nobody's
+              // to catch and lands as an unhandled, fatal error. One that never
+              // reached the server — offline, or a socket iOS closed under a
+              // backgrounded app (HEART-OF-YOURS-2S) — is no fault: the account
+              // registers again on Firebase's next word about the user and on
+              // the next launch. It goes to the error handler, which decides
+              // what deserves reporting.
+              onError?.call(error, stacktrace: stacktrace);
             }
           case null:
             await ensureSession();
