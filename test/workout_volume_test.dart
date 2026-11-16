@@ -136,7 +136,8 @@ void main() {
       WorkoutExercise(starter: done(40, 10, .warmup))
         ..add(done(100, 8))
         ..add(done(80, 6, .drop))
-        ..add(done(60, 6, .drop))
+        // the most volume of any set, and a drop's: never the card's best
+        ..add(done(60, 20, .drop))
         ..add(done(100, 6)),
     ])..finish(DateTime.now());
 
@@ -158,6 +159,7 @@ void main() {
 
     // the warm-up, then two efforts: the first of them three sets ticked
     expect(find.text('Bench Press ×3'), findsOneWidget);
-    expect(find.text('${100 * 8 + 80 * 6 + 60 * 6 + 100 * 6} kg'), findsOneWidget);
+    expect(find.text('${100 * 8 + 80 * 6 + 60 * 20 + 100 * 6} kg'), findsOneWidget);
+    expect(find.text('100 kg x 8'), findsOneWidget);
   });
 }

@@ -192,6 +192,7 @@ void main() {
     expect(dropped.sets, 1);
     expect(dropped.exercises.single.sets, 1);
     expect(dropped.exercises.single.volume, 100 * 8 + 90 * 30);
+    expect(dropped.records, isNotEmpty);
     expect(dropped.records.map((each) => each.value['weight']), everyElement(100));
   });
 

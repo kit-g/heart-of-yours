@@ -79,7 +79,7 @@ class WorkoutGroups {
   Map<MuscleFamily, int> setsByFamily(Iterable<Workout> workouts) {
     return workouts.expand(done).fold(<MuscleFamily, int>{}, (sets, each) {
       // a drop set is one set however many drops it has (#614)
-      final count = each.countEfforts(_counts);
+      final count = each.countEfforts();
       final families = {for (final group in ofExercise(each.exercise)) MuscleFamily.of(group)};
       return {
         ...sets,

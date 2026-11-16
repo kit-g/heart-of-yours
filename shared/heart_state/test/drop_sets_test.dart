@@ -33,4 +33,9 @@ void main() {
     expect(sets.countEfforts(), 1);
     expect(sets.countEfforts((each) => each.setType != .warmup), 2);
   });
+
+  test('a drop after a set never ticked starts an effort, as once finishing drops that set', () {
+    expect([set(.normal, done: false), set(.drop)].countEfforts(), 1);
+    expect([set(.normal), set(.drop, done: false), set(.drop)].countEfforts(), 2);
+  });
 }

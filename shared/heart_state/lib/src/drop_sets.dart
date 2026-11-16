@@ -10,7 +10,7 @@ import 'package:heart_models/heart_models.dart';
 /// load of every drop; and no drop can hold a record (the decisions on #614).
 extension DropEfforts on Iterable<ExerciseSet> {
   /// Each set, and whether it continues the effort before it: a drop after a
-  /// set that is not a warm-up.
+  /// set that is not a warm-up. How a workout shows its sets, ticked or not.
   Iterable<(ExerciseSet, {bool continues})> get efforts sync* {
     ExerciseSet? before;
     for (final set in this) {
@@ -19,13 +19,24 @@ extension DropEfforts on Iterable<ExerciseSet> {
     }
   }
 
-  /// The sets [counts] keeps, counted by effort: a drop that continues one
-  /// adds nothing. By default the ticked working sets, the count History, the
-  /// muscle map, the lenses, goals and recaps show; a template's "3×5" counts
-  /// every working set it plans.
-  int countEfforts([bool Function(ExerciseSet set) counts = _ticked]) {
-    return efforts.where((each) => !each.continues && counts(each.$1)).length;
+  /// The sets [counts] keeps (by default the ticked working sets: the count
+  /// History, the muscle map, the lenses, goals and recaps show), counted by
+  /// effort. A drop right after a set [counts] keeps adds nothing; one after a
+  /// set it leaves out, one never ticked or a discarded entry, starts an
+  /// effort of its own. That is also what the finished workout says once the
+  /// unticked set is gone, and what the stored counts read.
+  int countEfforts([bool Function(ExerciseSet set) counts = isTickedWorkingSet]) {
+    var count = 0;
+    var keptBefore = false;
+    for (final set in this) {
+      final kept = counts(set);
+      if (kept && !(set.setType == .drop && keptBefore)) count++;
+      keptBefore = kept && set.setType != .warmup;
+    }
+    return count;
   }
-
-  static bool _ticked(ExerciseSet set) => set.isCompleted && set.setType != .warmup;
 }
+
+/// Ticked and not a warm-up: the sets every record, chart, lens count and
+/// goal counts (#151).
+bool isTickedWorkingSet(ExerciseSet set) => set.isCompleted && set.setType != .warmup;

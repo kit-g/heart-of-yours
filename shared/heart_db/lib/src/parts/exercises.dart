@@ -493,6 +493,20 @@ mixin _Exercises on _LocalDatabase
 /// The fold itself is heart_models' [PersonalRecords.toPersonalRecords] (#291),
 /// the one definition of a record that `/me/records` and MCP compute too, so
 /// the app shows what an assistant reports.
+///
+/// A drop holds no record (#614): the records are folded from the other sets,
+/// while what adds up a lifetime (the totals, the sessions, the first time)
+/// is folded from every set, drops included.
 Map? _foldRecords(Category category, List<Map<String, dynamic>> rows) {
-  return _readable(rows, RecordSet.fromRow, what: 'record set').toPersonalRecords(category);
+  final all = _readable(rows, RecordSet.fromRow, what: 'record set').toPersonalRecords(category);
+  if (all == null || !rows.any((row) => row['is_drop'] == 1)) return all;
+  final undropped = rows.where((row) => row['is_drop'] != 1).toList();
+  return {
+    ...?_readable(undropped, RecordSet.fromRow, what: 'record set').toPersonalRecords(category),
+    for (final key in _lifetime)
+      if (all[key] case final Object value) key: value,
+  };
 }
+
+/// What [_foldRecords] reads over every set: what a lifetime adds up to.
+const _lifetime = ['totalVolume', 'totalReps', 'totalDuration', 'totalDistance', 'sessions', 'firstAt'];
