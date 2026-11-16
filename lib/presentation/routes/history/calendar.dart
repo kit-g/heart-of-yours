@@ -187,11 +187,11 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
         constraints: const BoxConstraints(maxWidth: calendarWidth),
         child: Column(
           children: [
-            if (widget.trained != null)
-              const Padding(
-                padding: .fromLTRB(12, 8, 12, 0),
-                child: FamilyLegend(),
-              ),
+            // always there, so nothing below it moves when the colours arrive
+            const Padding(
+              padding: .fromLTRB(12, 8, 12, 0),
+              child: FamilyLegend(),
+            ),
             Padding(
               padding: const .symmetric(horizontal: 4, vertical: 12),
               child: Row(
@@ -245,7 +245,7 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
                     families: switch (widget.trained) {
                       final WorkoutGroups trained => {
                         for (final MapEntry(key: day, value: workouts) in days.entries)
-                          day: _busiest(trained.setsByFamily(workouts)),
+                          day: _ranked(trained.setsByFamily(workouts)),
                       },
                       null => const {},
                     },
@@ -350,19 +350,19 @@ class _CalendarMonth extends StatelessWidget {
 /// user's clock — a start is UTC.
 int _dayOf(Workout workout) => workout.start.toLocal().day;
 
-/// The families a day wears, from its sets per family: the busiest first,
-/// ties in [MuscleFamily] order, three at most — more would not fit under
-/// the day's number, and the day's workouts say the rest.
-List<MuscleFamily> _busiest(Map<MuscleFamily, int> sets) {
-  final ranked = sets.keys.toList()
-    ..sort(
-      (one, two) => switch (sets[two]!.compareTo(sets[one]!)) {
-        0 => one.index.compareTo(two.index),
-        final bySets => bySets,
-      },
-    );
-  return ranked.take(3).toList();
+/// The families a day trained, from its sets per family: the busiest first,
+/// ties in [MuscleFamily] order. All of them are read out; three are drawn.
+List<MuscleFamily> _ranked(Map<MuscleFamily, int> sets) {
+  return sets.keys.toList()..sort(
+    (one, two) => switch (sets[two]!.compareTo(sets[one]!)) {
+      0 => one.index.compareTo(two.index),
+      final bySets => bySets,
+    },
+  );
 }
+
+/// As many dots as fit under a day's number.
+const _dotsADay = 3;
 
 /// What a day can do besides show what it holds (#618), the same for every
 /// day of the calendar:
@@ -413,8 +413,8 @@ class _CalendarDay extends StatelessWidget {
   /// Whether the day holds workouts the filter all leaves out (#610).
   final bool filteredOut;
 
-  /// The muscle families the day trained, busiest first, at most three: its
-  /// colours (#617), and read out by name after the day.
+  /// The muscle families the day trained, busiest first (#617): every one
+  /// read out by name after the day, the first [_dotsADay] drawn.
   final List<MuscleFamily> families;
   final _When when;
 
@@ -601,8 +601,6 @@ class _CalendarDay extends StatelessWidget {
                     shape: .circle,
                     border: selected ? .all(color: primary, width: 2) : null,
                   ),
-                  // lifted clear of the colours under it
-                  padding: families.isEmpty ? null : const .only(bottom: 6),
                   child: child,
                 ),
                 // what it trained, by colour, under the number (#617)
@@ -610,11 +608,11 @@ class _CalendarDay extends StatelessWidget {
                   Positioned(
                     left: 0,
                     right: 0,
-                    bottom: 5,
+                    bottom: 3,
                     child: Row(
                       mainAxisAlignment: .center,
                       spacing: 2,
-                      children: [for (final family in families) FamilyDot(family, size: 5)],
+                      children: [for (final family in families.take(_dotsADay)) FamilyDot(family, size: 5)],
                     ),
                   ),
                 Positioned(

@@ -259,6 +259,14 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                             right: (index == exercises.filters.length - 1) ? 8.0 : 0.0,
                           ),
                           child: RemovableChip(
+                            // a target that is a muscle group wears its family's
+                            // colour, as History's chips do (#617)
+                            avatar: switch (filter) {
+                              Target(:final MuscleGroupKey muscleGroup) => Center(
+                                child: FamilyDot(MuscleFamily.of(muscleGroup)),
+                              ),
+                              _ => null,
+                            },
                             // every filter carries an identifier; the
                             // presentation layer words them
                             label: switch (filter) {

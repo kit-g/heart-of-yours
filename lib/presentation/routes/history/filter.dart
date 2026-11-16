@@ -61,7 +61,8 @@ class _FilterButton extends StatelessWidget {
               spacing: 8,
               children: [
                 FamilyDot(MuscleFamily.of(group), enabled: open(group)),
-                Text(group.label(l)),
+                // wraps at large text rather than overflow the menu's width
+                Flexible(child: Text(group.label(l))),
               ],
             ),
           ),

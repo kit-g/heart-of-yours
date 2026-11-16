@@ -215,10 +215,11 @@ enum Preset {
 /// the preset's accent.
 ///
 /// Chosen, not derived. Each holds 3:1 against every preset's ground,
-/// surface and fill in its brightness (WCAG 1.4.11), and every pair stays
-/// apart: CIELAB ΔE ≥ 34 for typical vision in both brightnesses, and under
-/// simulated protanopia, deuteranopia and tritanopia (Machado 2009) ≥ 14 in
-/// light and ≥ 36 in dark. Light has less room — every colour must stay dark
+/// surface, fill and border in its brightness (WCAG 1.4.11) — border is a
+/// selected card's fill — and every pair stays apart: CIELAB ΔE ≥ 30 for
+/// typical vision in both brightnesses, and under simulated protanopia,
+/// deuteranopia and tritanopia (Machado 2009) ≥ 14 in light and ≥ 31 in
+/// dark. Light has less room — every colour must stay dark
 /// enough for a white ground — and its closest pair under colour blindness is
 /// back and arms. The hues keep their identity across brightness (chest red,
 /// back blue, shoulders amber, arms magenta, core teal, lower body violet);
@@ -227,12 +228,12 @@ Color muscleFamilyColor(MuscleFamily family, Brightness brightness) {
   return switch ((family, brightness)) {
     (.chest, .light) => const Color(0xFF990300),
     (.back, .light) => const Color(0xFF15517A),
-    (.shoulders, .light) => const Color(0xFFDA6C19),
+    (.shoulders, .light) => const Color(0xFFC36116),
     (.arms, .light) => const Color(0xFFA8329C),
-    (.core, .light) => const Color(0xFF109D80),
+    (.core, .light) => const Color(0xFF0F8F75),
     (.lowerBody, .light) => const Color(0xFF6D16E9),
     (.chest, .dark) => const Color(0xFFEF2938),
-    (.back, .dark) => const Color(0xFF1F67F9),
+    (.back, .dark) => const Color(0xFF2E71F9),
     (.shoulders, .dark) => const Color(0xFFFFB91A),
     (.arms, .dark) => const Color(0xFFD45487),
     (.core, .dark) => const Color(0xFF8FFFF8),

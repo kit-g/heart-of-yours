@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:clock/clock.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +12,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'support/contrast.dart';
 import 'support/harness.dart';
 
 /// Muscle families by colour (#617): the day's colours in the calendar, with
@@ -45,16 +44,17 @@ void main() {
     final workout = Workout(name: 'Session')..start = start;
     for (final (exercise, sets) in exercises) {
       workout.add(exercise);
-      for (var i = 1; i < sets; i++) {
-        workout.last.add(workout.last.first.copy());
-      }
+      final first = workout.last.first;
+      Iterable.generate(sets - 1, (_) => first.copy()).forEach(workout.last.add);
     }
     workout.completeAllSets();
     return workout..finish(start.add(const Duration(hours: 1)));
   }
 
-  // more lower-body sets than chest, a little arms
-  final session = finished([(bench, 2), (squat, 4), (curl, 1)], DateTime(2026, 11, 5, 9));
+  final row = exercise('row', 'Back', ['back']);
+
+  // more lower-body sets than chest, a little arms, and a back set besides
+  final session = finished([(bench, 2), (squat, 4), (curl, 1), (row, 1)], DateTime(2026, 11, 5, 9));
 
   Future<void> pumpApp(WidgetTester tester, {Map<String, Object> stored = const {}}) async {
     tester.view.physicalSize = const Size(1194, 834);
@@ -65,7 +65,7 @@ void main() {
     stubStartup(db, api);
     SharedPreferences.setMockInitialValues({...pastOnboarding(), ...stored});
     when(db.getWorkoutHistory(any)).thenAnswer((_) async => [session]);
-    when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench, squat, curl]));
+    when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench, squat, curl, row]));
     await const TestAppHarness().pumpHeartApp(
       tester,
       db: db,
@@ -89,19 +89,23 @@ void main() {
 
   testColours('a day wears its families busiest first, and says them by name (#617)', (tester) async {
     final semantics = tester.ensureSemantics();
-    await pumpApp(tester);
-    Preferences.of(tester.element(find.byType(HistoryPage))).setHistoryView(.calendar);
-    await tester.pumpTimes();
+    try {
+      await pumpApp(tester);
+      Preferences.of(tester.element(find.byType(HistoryPage))).setHistoryView(.calendar);
+      await tester.pumpTimes();
 
-    final label = '${DateFormat.yMMMMEEEEd('en').format(session.start)}, edit workout';
-    final day = find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.label == label);
-    expect(dotsIn(tester, day), [MuscleFamily.lowerBody, MuscleFamily.chest, MuscleFamily.arms]);
-    expect(tester.widget<Semantics>(day).properties.value, 'Lower body, Chest, Arms');
-    // and the key to the colours, every family by name
-    expect(find.byType(FamilyLegend), findsOneWidget);
-    expect(find.text('Lower body'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    semantics.dispose();
+      final label = '${DateFormat.yMMMMEEEEd('en').format(session.start)}, edit workout';
+      final day = find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.label == label);
+      // three drawn, busiest first, ties in family order; all four said
+      expect(dotsIn(tester, day), [MuscleFamily.lowerBody, MuscleFamily.chest, MuscleFamily.back]);
+      expect(tester.widget<Semantics>(day).properties.value, 'Lower body, Chest, Back, Arms');
+      // and the key to the colours, every family by name
+      expect(find.byType(FamilyLegend), findsOneWidget);
+      expect(find.text('Lower body'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    } finally {
+      semantics.dispose();
+    }
   });
 
   testColours('the filter\'s chips and the compact card wear the same colours (#617)', (tester) async {
@@ -117,26 +121,23 @@ void main() {
     final line = find.byKey(AppKeys.compactWorkoutGroups(session.id));
     expect(dotsIn(tester, line), [
       MuscleFamily.chest,
+      MuscleFamily.back,
       MuscleFamily.arms,
       MuscleFamily.lowerBody,
       MuscleFamily.lowerBody,
     ]);
     // read out as names, the dots left out
-    expect(tester.widget<Text>(line).semanticsLabel, 'Chest, Arms, Glutes, Legs');
+    expect(tester.widget<Text>(line).semanticsLabel, 'Chest, Back, Arms, Glutes, Legs');
     expect(tester.takeException(), isNull);
   });
 
-  test('every family holds 3:1 against every preset\'s ground, surface and fill (#617)', () {
-    double contrast(Color one, Color two) {
-      final (a, b) = (one.computeLuminance(), two.computeLuminance());
-      return (max(a, b) + 0.05) / (min(a, b) + 0.05);
-    }
-
+  test('every family holds 3:1 against every preset\'s ground, surface, fill and border (#617)', () {
     for (final preset in Preset.values) {
       for (final tokens in [preset.light, preset.dark]) {
         for (final family in MuscleFamily.values) {
           final color = muscleFamilyColor(family, tokens.brightness);
-          for (final ground in [tokens.ground, tokens.surface, tokens.fill]) {
+          // border is a selected card's fill
+          for (final ground in [tokens.ground, tokens.surface, tokens.fill, tokens.border]) {
             expect(
               contrast(color, ground),
               greaterThanOrEqualTo(3.0),

@@ -52,11 +52,34 @@ const _imageSize = 120.0;
 /// cards' own 16pt margins either side.
 const _rowWidth = readableWidth + 32;
 
-/// The weekday row and one six-week month: less than this, and the calendar
-/// is not worth showing beside its header.
-const _calendarMinHeight = 420.0;
+/// The colour key, the weekday row and one six-week month: less than this,
+/// and the calendar is not worth showing beside its header.
+const _calendarMinHeight = 460.0;
 
 class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage>, HasHaptic {
+  late final Exercises _exercises;
+
+  /// What workouts trained (#610, #617), kept across builds — the page
+  /// rebuilds every second of an active workout — and read afresh whenever
+  /// the library changes under it.
+  WorkoutGroups? _trained;
+
+  WorkoutGroups get _workoutGroups => _trained ??= WorkoutGroups(_exercises.lookup);
+
+  void _forgetGroups() => _trained = null;
+
+  @override
+  void initState() {
+    super.initState();
+    _exercises = Exercises.of(context)..addListener(_forgetGroups);
+  }
+
+  @override
+  void dispose() {
+    _exercises.removeListener(_forgetGroups);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData(scaffoldBackgroundColor: backgroundColor, :textTheme, :colorScheme, :sectionHeader) = Theme.of(
@@ -70,7 +93,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     // read off the library, so the page hears when it loads or changes.
     final filter = HistoryFilter.watch(context);
     final exercises = Exercises.watch(context);
-    final trained = WorkoutGroups(exercises.lookup);
+    final trained = _workoutGroups;
     final bool Function(Workout)? shows = switch (filter.isOn) {
       true => (workout) => filter.shows(workout, trained),
       false => null,

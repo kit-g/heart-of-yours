@@ -97,8 +97,14 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  /// The line as drawn — its dots dropped — checked against what it says.
   String groupsOf(WidgetTester tester, Workout workout) {
-    return tester.widget<Text>(find.byKey(AppKeys.compactWorkoutGroups(workout.id))).semanticsLabel!;
+    final text = tester.widget<Text>(find.byKey(AppKeys.compactWorkoutGroups(workout.id)));
+    final drawn = text.textSpan!
+        .toPlainText(includePlaceholders: false)
+        .replaceAllMapped(RegExp(r'(^|, ) '), (match) => match[1]!);
+    expect(drawn, text.semanticsLabel);
+    return drawn;
   }
 
   testDensity('until the library is read, the line waits rather than guess (#611)', (tester) async {
