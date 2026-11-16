@@ -715,7 +715,10 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
   void _onResume() {
     if (!mounted) return;
     Health.of(context).onResume();
-    Auth.of(context).ensureSession();
+    final auth = Auth.of(context);
+    auth.ensureSession();
+    // an account whose launch could not reach the server, now perhaps online
+    auth.registerAgain();
     // the sweep that flags entries runs nightly: a phone left open overnight
     // learns of the morning's flags when it comes back
     Anomalies.of(context).pull();
@@ -739,7 +742,6 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
       );
     }
     // messages whose push may never have come (#556)
-    final auth = Auth.of(context);
     if (coachingRuns(preferences, auth)) Messages.of(context).resume();
     // a coach's notes, only where the Coaching space is there and keys run
     if (preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false) && DeviceKeys.of(context).supported) {

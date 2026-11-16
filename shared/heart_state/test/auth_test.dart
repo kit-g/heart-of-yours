@@ -1,3 +1,4 @@
+import 'dart:io' show SocketException;
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -353,18 +354,75 @@ void main() {
       );
       when(account.isAuthenticated).thenReturn(true);
       // a socket closed under a backgrounded app
-      when(account.registerAccount(any)).thenAnswer((_) async => throw Exception('Bad file descriptor'));
-      final reported = <Object?>[];
+      when(account.registerAccount(any)).thenAnswer((_) async => throw const SocketException('Bad file descriptor'));
+      final reported = <(Object?, Object?)>[];
       final sut = Auth(
         service: account,
         firebase: firebase,
-        onError: (error, {stacktrace}) => reported.add(error),
+        onError: (error, {stacktrace}) => reported.add((error, stacktrace)),
       );
       // an unhandled error would fail this test from the zone
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      expect(reported, [isA<Exception>()]);
+      expect(reported.single.$1, isA<SocketException>());
+      expect(reported.single.$2, isNotNull);
+      expect(sut.isInitialized, isTrue, reason: 'the session is settled all the same');
       expect(sut.user?.id, 'muffin');
+      expect(sut.entitlementsKnown, isFalse);
+
+      // back online: coming back to the app registers it after all
+      when(account.registerAccount(any)).thenAnswer(
+        (inv) async => User(id: (inv.positionalArguments.first as User).id, entitlements: ['coach']),
+      );
+      await sut.registerAgain();
+      expect(sut.entitlementsKnown, isTrue);
+      expect(sut.user?.mayCoach, isTrue);
+      // and once it is known, coming back asks nothing more
+      clearInteractions(account);
+      await sut.registerAgain();
+      verifyNever(account.registerAccount(any));
+      sut.dispose();
+    });
+
+    test('any other failure of a user change is reported too, and settles the session', () async {
+      final firebase = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+      );
+      when(account.isAuthenticated).thenReturn(true);
+      final reported = <Object?>[];
+      final sut = Auth(
+        service: account,
+        firebase: firebase,
+        // the app's startup failing, as an offline token refresh would
+        onEnter: (_, _) async => throw StateError('startup'),
+        onError: (error, {stacktrace}) => reported.add(error),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(reported.single, isA<StateError>());
+      expect(sut.isInitialized, isTrue);
+      sut.dispose();
+    });
+
+    test('a registration answered after the session changed hands is not kept', () async {
+      final firebase = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+      );
+      when(account.isAuthenticated).thenReturn(true);
+      final slow = Completer<User>();
+      when(account.registerAccount(any)).thenAnswer((_) => slow.future);
+      final sut = Auth(service: account, firebase: firebase, isWeb: true);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      // signed out while the request was out
+      firebase.userChangedStreamController.add(null);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      slow.complete(User(id: 'muffin', entitlements: ['coach']));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.user, isNull);
       expect(sut.entitlementsKnown, isFalse);
       sut.dispose();
     });
