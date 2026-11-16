@@ -5,6 +5,7 @@
 // workout in progress is never touched, and leaving stores nothing.
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
@@ -255,7 +256,10 @@ void main() {
     testWidgets('the times default to the last hour, and Next with them opens the editor', (tester) async {
       await launch(tester, on: true);
       await openTab(tester, AppKeys.historyStack);
-      final before = minutes(DateTime.now());
+      // the app's clock, which a widget test fakes: it starts at the real time
+      // and moves only as far as the test pumps, so the wall clock can be
+      // ahead of it or behind it by the minute this compares
+      final before = minutes(clock.now());
 
       await tester.tapByKey(AppKeys.logPastWorkout);
       await tester.pumpTimes();
@@ -266,7 +270,7 @@ void main() {
       final editor = tester.widget<WorkoutEditor>(find.byType(WorkoutEditor));
       final logged = editor.copy;
       final at = logged.end!.toLocal();
-      expect(at.isBefore(before) || at.isAfter(DateTime.now()), isFalse, reason: 'ends now, to the minute');
+      expect(at.isBefore(before) || at.isAfter(clock.now()), isFalse, reason: 'ends now, to the minute');
       expect(logged.end!.difference(logged.start), const Duration(hours: 1));
       expect(logged, isEmpty);
     });
