@@ -28,6 +28,7 @@ export 'src/import.dart';
 export 'src/balance.dart';
 export 'src/lens.dart';
 export 'src/messages.dart';
+export 'src/muscle_family.dart';
 export 'src/package.dart';
 export 'src/plates.dart';
 export 'src/password.dart';

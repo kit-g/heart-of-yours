@@ -216,6 +216,21 @@ class Preferences with ChangeNotifier {
     notifyListeners();
   }
 
+  /// How History's list draws a workout (#611): the last density chosen, on
+  /// this device or another, or the full card until there is one.
+  HistoryDensity get historyDensity {
+    return HistoryDensity.fromValue(_prefs?.getString('$_screen-${ScreenChoice.historyDensity.value}')) ?? .full;
+  }
+
+  void setHistoryDensity(HistoryDensity density) {
+    // what is stored, not what it reads as: a newer app's density reads as
+    // full here, and choosing full over it is still a choice
+    final stored = _prefs?.getString('$_screen-${ScreenChoice.historyDensity.value}');
+    if (stored == density.value || (stored == null && density == .full)) return;
+    _storeScreenChoice(.historyDensity, ScreenChoiceRecord(value: density.value, at: DateTime.timestamp()));
+    notifyListeners();
+  }
+
   /// How the exercise picker groups the library (#620): the last grouping
   /// chosen, on this device or another, or [PickerGrouping.none] — the flat
   /// list — until there is one. A screen choice, so it travels as History's

@@ -9,13 +9,17 @@ class RemovableChip extends StatelessWidget with HasHaptic<RemovableChip> {
   final String label;
   final VoidCallback onDeleted;
 
-  const new({super.key, required this.label, required this.onDeleted});
+  /// Before the label: a muscle family's dot, on History's chips (#617).
+  final Widget? avatar;
+
+  const new({super.key, required this.label, required this.onDeleted, this.avatar});
 
   @override
   Widget build(BuildContext context) {
     return Chip(
       deleteButtonTooltipMessage: L.of(context).removeFilter,
       labelPadding: .zero,
+      avatar: avatar,
       label: Padding(
         padding: const .symmetric(horizontal: 4),
         child: Text(label, style: Theme.of(context).textTheme.bodyMedium),

@@ -1,3 +1,5 @@
+import 'package:heart/core/env/sentry.dart';
+import 'package:heart/core/utils/headers.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:heart_models/heart_models.dart';
@@ -119,4 +121,25 @@ class LocalCatalog implements LocalCatalogService {
       null => null,
     };
   }
+}
+
+/// Exercises in the account's own History or templates that the device's
+/// catalog has no copy of, so they show the server's name, which for a
+/// library exercise is English (#612). Counts and the language only: nothing
+/// about which exercises, or whose.
+class const UnnamedExercises(final int unnamed, final int of, final String locale) implements Exception {
+  @override
+  String toString() => 'UnnamedExercises: $unnamed of $of exercises left with the server\'s name ($locale)';
+}
+
+bool _unnamedReported = false;
+
+/// Reports [UnnamedExercises] once per run: every page of History would
+/// otherwise report the same gap again. Once is enough to say the catalog
+/// and the server disagree on this device; how often is Sentry's count of
+/// devices, not of pages.
+void reportUnnamedExercises(int unnamed, int of) {
+  if (_unnamedReported) return;
+  _unnamedReported = true;
+  reportToSentry(UnnamedExercises(unnamed, of, languageTag()), stacktrace: StackTrace.current);
 }

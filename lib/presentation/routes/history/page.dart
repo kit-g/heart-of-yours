@@ -48,11 +48,38 @@ class HistoryPage extends StatefulWidget {
 
 const _imageSize = 120.0;
 
-/// The weekday row and one six-week month: less than this, and the calendar
-/// is not worth showing beside its header.
-const _calendarMinHeight = 420.0;
+/// The widest a row of History's list gets (#611): a readable line, plus the
+/// cards' own 16pt margins either side.
+const _rowWidth = readableWidth + 32;
+
+/// The colour key, the weekday row and one six-week month: less than this,
+/// and the calendar is not worth showing beside its header.
+const _calendarMinHeight = 460.0;
 
 class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage>, HasHaptic {
+  late final Exercises _exercises;
+
+  /// What workouts trained (#610, #617), kept across builds — the page
+  /// rebuilds every second of an active workout — and read afresh whenever
+  /// the library changes under it.
+  WorkoutGroups? _trained;
+
+  WorkoutGroups get _workoutGroups => _trained ??= WorkoutGroups(_exercises.lookup);
+
+  void _forgetGroups() => _trained = null;
+
+  @override
+  void initState() {
+    super.initState();
+    _exercises = Exercises.of(context)..addListener(_forgetGroups);
+  }
+
+  @override
+  void dispose() {
+    _exercises.removeListener(_forgetGroups);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData(scaffoldBackgroundColor: backgroundColor, :textTheme, :colorScheme, :sectionHeader) = Theme.of(
@@ -66,7 +93,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     // read off the library, so the page hears when it loads or changes.
     final filter = HistoryFilter.watch(context);
     final exercises = Exercises.watch(context);
-    final trained = WorkoutGroups(exercises.lookup);
+    final trained = _workoutGroups;
     final bool Function(Workout)? shows = switch (filter.isOn) {
       true => (workout) => filter.shows(workout, trained),
       false => null,
@@ -96,6 +123,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final images = filter.isOn ? const <WorkoutImage>[] : workouts.images;
     final layout = LayoutProvider.of(context);
     final view = preferences.historyView;
+    final compact = preferences.historyDensity == .compact;
     final appBar = SliverAppBar(
       // Narrows both views to some muscle groups (#610). On the leading side,
       // which the centred title leaves free: the actions already reach the
@@ -278,7 +306,10 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                   );
                 }
                 final item = items[index];
-                return switch (item) {
+                // Measured and capped, every row alike (#611): a compact card's
+                // three lines must not stretch into a bar across a wide pane,
+                // and the rows beside it keep the same width.
+                final row = switch (item) {
                   String key => _MonthHeader(monthKey: key),
                   Workout workout => WorkoutItem(
                     workout: workout,
@@ -289,10 +320,19 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                     onDeleteWorkout: widget.onDeleteWorkout,
                     onTapImageIcon: widget.onTapImage,
                     highlighted: workout.id == widget.selectedId,
+                    compact: compact,
+                    trained: trained,
                   ),
                   TrainingSkip skip => _SkipItem(skip: skip, onTap: widget.onTapSkip),
                   _ => const SizedBox.shrink(),
                 };
+                return Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: _rowWidth),
+                    child: row,
+                  ),
+                );
               },
             ),
           if (items.isNotEmpty)
@@ -342,6 +382,8 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                     key: AppKeys.historyCalendar,
                     byMonth: byMonth,
                     shows: shows,
+                    // coloured once the library's tags are read (#617)
+                    trained: exercises.isInitialized ? trained : null,
                     onTapWorkout: widget.onTapWorkout,
                     selectedId: widget.selectedId,
                     controller: Scrolls.of(context).historyCalendarScrollController,

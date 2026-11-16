@@ -4,6 +4,8 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'muscle_family.dart';
+
 /// The muscle groups History is narrowed to (#610): a workout shows while it
 /// trained any of them, by [WorkoutGroups]. Empty is no filter, and History
 /// as it always was.
@@ -67,10 +69,29 @@ class WorkoutGroups {
   new(this._lookup);
 
   Set<MuscleGroupKey> of(Workout workout) {
-    return {
-      for (final each in workout.where((each) => each.any(_counts)))
-        ...(_byExercise[each.exercise.id] ??= _groupsOf(each.exercise)),
-    };
+    return {for (final each in done(workout)) ...ofExercise(each.exercise)};
+  }
+
+  /// The working sets [workouts] gave each [MuscleFamily] they trained, by
+  /// the same rule: what orders a calendar day's colours, busiest first
+  /// (#617). A set counts once toward each family its exercise reaches.
+  Map<MuscleFamily, int> setsByFamily(Iterable<Workout> workouts) {
+    return workouts.expand(done).fold(<MuscleFamily, int>{}, (sets, each) {
+      final count = each.where(_counts).length;
+      final families = {for (final group in ofExercise(each.exercise)) MuscleFamily.of(group)};
+      return {
+        ...sets,
+        for (final family in families) family: (sets[family] ?? 0) + count,
+      };
+    });
+  }
+
+  /// The exercises of [workout] that count: those with a working set done.
+  static Iterable<WorkoutExercise> done(Workout workout) => workout.where((each) => each.any(_counts));
+
+  /// The groups one exercise counts toward, by the rule above.
+  Set<MuscleGroupKey> ofExercise(Exercise exercise) {
+    return _byExercise[exercise.id] ??= _groupsOf(exercise);
   }
 
   Set<MuscleGroupKey> _groupsOf(Exercise copy) {

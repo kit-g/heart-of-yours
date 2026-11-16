@@ -135,4 +135,21 @@ void main() {
       expect(filter.isOn, isFalse);
     });
   });
+
+  group('MuscleFamily (#617)', () {
+    test('every group has a family, the lower body\'s four in one', () {
+      expect(MuscleFamily.of(.legs), MuscleFamily.lowerBody);
+      expect(MuscleFamily.of(.glutes), MuscleFamily.lowerBody);
+      expect(MuscleFamily.of(.hamstrings), MuscleFamily.lowerBody);
+      expect(MuscleFamily.of(.adductors), MuscleFamily.lowerBody);
+      expect(MuscleFamily.of(.neck), MuscleFamily.shoulders);
+      expect(MuscleFamily.of(.chest), MuscleFamily.chest);
+    });
+
+    test('sets by family count working sets, once per family an exercise reaches', () {
+      final session = Workout.fromExercises([wEx(bench, sets: 3), wEx(squat, sets: 2)])..completeAllSets();
+      // squat reaches legs and glutes, both the lower body: its two sets count once
+      expect(none.setsByFamily([session]), {MuscleFamily.chest: 3, MuscleFamily.lowerBody: 2});
+    });
+  });
 }

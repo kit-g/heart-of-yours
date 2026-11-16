@@ -1,7 +1,7 @@
 part of '../api.dart';
 
 /// Templates and their folders, and sharing a folder.
-mixin _TemplateRoutes on Requests implements ApiTemplateFolderService, RemoteTemplateService {
+mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderService, RemoteTemplateService {
   @override
   Future<bool> deleteTemplate(String templateId) async {
     final (_, code) = await delete('${Router.templates}/$templateId');
@@ -12,7 +12,7 @@ mixin _TemplateRoutes on Requests implements ApiTemplateFolderService, RemoteTem
   Future<Iterable<Template>?> getTemplates() async {
     final (json, _) = await get(Router.templates);
     return switch (json) {
-      {'templates': List l} => _readable(l, Template.fromJson),
+      {'templates': List l} => _readable(_namedAll(l, counts: true), Template.fromJson),
       _ => null,
     };
   }
@@ -22,7 +22,7 @@ mixin _TemplateRoutes on Requests implements ApiTemplateFolderService, RemoteTem
   Future<Template> getTemplate(String templateId) async {
     final (json, code) = await get(Router.template(templateId));
     return switch ((code, json)) {
-      (200, Map json) => Template.fromJson(json),
+      (200, Map json) => Template.fromJson(_named(json)),
       _ => throw json,
     };
   }
@@ -40,7 +40,7 @@ mixin _TemplateRoutes on Requests implements ApiTemplateFolderService, RemoteTem
   Future<({Template row, bool created})> replayTemplate(Template template) async {
     final body = <String, dynamic>{...template.toMap(), 'folderId': ?template.folderId};
     final (json, created) = _created(await post(Router.templates, body: _withClientId(body)));
-    return (row: Template.fromJson(json), created: created);
+    return (row: Template.fromJson(_named(json)), created: created);
   }
 
   /// A session of a coach's copy says which revision the edit started from
@@ -54,7 +54,7 @@ mixin _TemplateRoutes on Requests implements ApiTemplateFolderService, RemoteTem
       body: {...template.toMap(), 'baseRevision': ?baseRevision, 'changeId': ?changeId},
     );
     return switch ((code, json)) {
-      (200, Map json) => Template.fromJson(json),
+      (200, Map json) => Template.fromJson(_named(json)),
       _ => throw json,
     };
   }
@@ -74,7 +74,7 @@ mixin _TemplateRoutes on Requests implements ApiTemplateFolderService, RemoteTem
       },
     );
     return switch ((code, json)) {
-      (200, Map json) => Template.fromJson(json),
+      (200, Map json) => Template.fromJson(_named(json)),
       _ => throw json,
     };
   }

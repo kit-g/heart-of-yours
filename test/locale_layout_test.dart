@@ -201,6 +201,13 @@ void main() {
       case _Screen.importData:
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
+        // below the fold since Settings › Screens grew a row (#611)
+        await tester.scrollUntilVisible(
+          find.byIcon(Icons.upload_file_rounded),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpTimes();
         await tester.tap(find.byIcon(Icons.upload_file_rounded));
       case _Screen.invitation:
         GoRouter.of(tester.element(find.byType(Navigator).first)).go('/invite.html?t=t1');
