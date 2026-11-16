@@ -578,7 +578,7 @@ class _SendPickerState extends State<_SendPicker> {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final roster = Roster.watch(context);
-    final clients = roster.clients.where((each) => each.status != 'severed').toList();
+    final clients = roster.clients.where((each) => !_former(each)).toList();
     final held = {for (final holder in widget.holders) holder.connectionId: holder.version};
     return switch ((roster.status, clients)) {
       (.idle || .loading, []) => const Padding(

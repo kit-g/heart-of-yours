@@ -105,6 +105,7 @@ enum _Screen {
   coachingClients,
   coachingActivity,
   coachingClient,
+  coachingFormerClient,
   coachingReview,
   coachingClientCopy,
   coachingMessages,
@@ -1002,6 +1003,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingClient, _Guideline.textContrastDark, null),
   (_Screen.coachingClient, _Guideline.androidTapTarget, null),
   (_Screen.coachingClient, _Guideline.iosTapTarget, null),
+  // someone no longer coached (#556): who they were, and the coach's notes
+  (_Screen.coachingFormerClient, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingFormerClient, _Guideline.textContrastLight, null),
+  (_Screen.coachingFormerClient, _Guideline.textContrastDark, null),
+  (_Screen.coachingFormerClient, _Guideline.androidTapTarget, null),
+  (_Screen.coachingFormerClient, _Guideline.iosTapTarget, null),
   (_Screen.coachingReview, _Guideline.labeledTapTarget, null),
   (_Screen.coachingReview, _Guideline.textContrastLight, null),
   (_Screen.coachingReview, _Guideline.textContrastDark, null),
@@ -1421,6 +1428,7 @@ void main() {
       _Screen.coachingClients: AppKeys.coachingClientsStack,
       _Screen.coachingActivity: AppKeys.coachingClientsStack,
       _Screen.coachingClient: AppKeys.coachingClientsStack,
+      _Screen.coachingFormerClient: AppKeys.coachingClientsStack,
       _Screen.coachingReview: AppKeys.coachingClientsStack,
       _Screen.coachingClientCopy: AppKeys.coachingClientsStack,
       _Screen.coachingMessages: AppKeys.coachingMessagesStack,
@@ -1527,6 +1535,7 @@ void main() {
         _Screen.coachingClients ||
         _Screen.coachingActivity ||
         _Screen.coachingClient ||
+        _Screen.coachingFormerClient ||
         _Screen.coachingNotes ||
         _Screen.coachingReview ||
         _Screen.coachingClientCopy => [
@@ -1548,6 +1557,15 @@ void main() {
       };
       when(api.getClients(former: anyNamed('former'), cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: clients, cursor: null));
+      when(api.getClients(former: true, cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          items: [
+            if (screen == _Screen.coachingFormerClient)
+              ClientSummary(connectionId: 'c-old', studentId: 'old', name: 'Pepper', status: 'severed'),
+          ],
+          cursor: null,
+        ),
+      );
       // a library of one program (#557), of one session, which Sam holds
       final library = CoachProgram(
         id: 'p1',
@@ -2115,7 +2133,10 @@ void main() {
       firebaseAuth: firebase,
       hasLocalNotifications: false,
       // notes are there only where keys can be kept
-      keyVault: screen == _Screen.coachingNotes || screen == _Screen.yourDevices ? MemoryKeyVault() : null,
+      keyVault: switch (screen) {
+        _Screen.coachingNotes || _Screen.coachingFormerClient || _Screen.yourDevices => MemoryKeyVault(),
+        _ => null,
+      },
       // the dashboard animates indefinitely — settle would hang on it
       settle: false,
     );
@@ -2658,6 +2679,7 @@ void main() {
       case _Screen.coachingClients ||
           _Screen.coachingActivity ||
           _Screen.coachingClient ||
+          _Screen.coachingFormerClient ||
           _Screen.coachingReview ||
           _Screen.coachingClientCopy ||
           _Screen.coachingMessages ||
@@ -2681,6 +2703,13 @@ void main() {
             screen == _Screen.coachingReview ||
             screen == _Screen.coachingClientCopy) {
           await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+          await tester.pumpTimes();
+        }
+        if (screen == _Screen.coachingFormerClient) {
+          await tester.ensureVisible(find.byKey(AppKeys.coachingFormerClients));
+          await tester.tapByKey(AppKeys.coachingFormerClients);
+          await tester.pumpTimes();
+          await tester.tapByKey(AppKeys.coachingClient('c-old'));
           await tester.pumpTimes();
         }
         if (screen == _Screen.coachingNotes) {

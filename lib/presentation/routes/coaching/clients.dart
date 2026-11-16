@@ -49,12 +49,17 @@ class ClientsPage extends StatefulWidget {
   State<ClientsPage> createState() => _ClientsPageState();
 }
 
-/// The roster and the invitations, read again from the server.
-Future<void> _reloadClients(BuildContext context) {
-  return Future.wait([
-    Roster.of(context).load(),
+/// The roster and the invitations, read again from the server, and the
+/// former clients once anything read them: someone who left since joins
+/// them. A coach left with nobody coached reads them too, since they're
+/// then the only way to the notes kept on anyone.
+Future<void> _reloadClients(BuildContext context) async {
+  final roster = Roster.of(context);
+  await Future.wait([
+    roster.load(),
     Coaching.of(context).loadInvitations().catchError((_) {}),
   ]);
+  if (roster.formerStatus != .idle || (roster.status == .loaded && roster.clients.isEmpty)) await roster.loadFormer();
 }
 
 /// Where a client opens beside the roster rather than over it: room for a
@@ -140,7 +145,8 @@ class _ClientsPageState extends State<ClientsPage> {
           title: l.coachingRosterFailed,
           action: OutlinedButton(onPressed: roster.load, child: Text(l.retry)),
         ),
-        (_, [], []) => _Empty(
+        // nobody coached and nobody who was: the first invitation
+        (_, [], []) when roster.former.isEmpty => _Empty(
           icon: Icons.groups_rounded,
           title: l.coachingNoClients,
           body: l.coachingNoClientsBody,
@@ -151,8 +157,6 @@ class _ClientsPageState extends State<ClientsPage> {
             label: Text(l.coachingInvite),
           ),
         ),
-        // invitations out, nobody accepted yet: nothing to have done
-        (_, [], _) => _RosterView(waiting: waiting),
         _ => LayoutBuilder(
           builder: (context, constraints) {
             final beside = constraints.maxWidth >= _besideWidth;
@@ -171,7 +175,12 @@ class _ClientsPageState extends State<ClientsPage> {
                     false => widget.onOpenClient(id),
                   },
                   onOpenWorkout: widget.onOpenWorkout,
-                  child: _rosterOrActivity(l, waiting),
+                  // nobody coached: no activity, only invitations out and
+                  // the people who were
+                  child: switch (roster.clients.isEmpty) {
+                    true => _RosterView(waiting: waiting),
+                    false => _rosterOrActivity(l, waiting),
+                  },
                 );
                 if (shown == null) return list;
                 return Row(
@@ -306,6 +315,9 @@ class _RosterViewState extends State<_RosterView> {
             return RefreshIndicator.adaptive(
               onRefresh: () => _reloadClients(context),
               child: ListView(
+                // keeps its place, and the former ones open, as a client
+                // opens beside it
+                key: const PageStorageKey('Coaching.roster'),
                 padding: const .only(bottom: 24),
                 children: [
                   if (reasons.isNotEmpty)
@@ -318,7 +330,7 @@ class _RosterViewState extends State<_RosterView> {
                     },
                   if (reason == null) ...[
                     if (widget.waiting.isNotEmpty) _WaitingInvitations(invitations: widget.waiting),
-                    if (roster.clients.isNotEmpty) const _FormerClients(),
+                    if (roster.clients.isNotEmpty || roster.former.isNotEmpty) const _FormerClients(),
                   ],
                 ],
               ),
@@ -618,17 +630,23 @@ class _FormerClients extends StatelessWidget {
         // the two of them wrote
         (.loaded, final former) => [
           for (final client in former)
-            ListTile(
-              key: AppKeys.coachingClient(client.connectionId),
-              leading: Avatar(remote: client.avatar, radius: 20),
-              title: Text(_clientName(l, client)),
-              selected: opener?.selected == client.connectionId,
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: switch (opener) {
-                final opener? => () => opener.onOpenClient(client.connectionId),
-                null => null,
-              },
-            ),
+            switch ((opener, _formerOpens(context, client.connectionId))) {
+              // nothing kept of them here, as on the web with no
+              // conversation left: a name, and nowhere to go
+              (null, _) || (_, false) => ListTile(
+                key: AppKeys.coachingClient(client.connectionId),
+                leading: Avatar(remote: client.avatar, radius: 20),
+                title: Text(_clientName(l, client)),
+              ),
+              (final opener?, true) => ListTile(
+                key: AppKeys.coachingClient(client.connectionId),
+                leading: Avatar(remote: client.avatar, radius: 20),
+                title: Text(_clientName(l, client)),
+                selected: opener.selected == client.connectionId,
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => opener.onOpenClient(client.connectionId),
+              ),
+            },
         ],
       },
     );
