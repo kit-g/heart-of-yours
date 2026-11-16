@@ -1317,7 +1317,10 @@ RouteBase _coachingRoute() {
                       final connectionId = state.pathParameters['connectionId']!;
                       return ThreadPage(
                         connectionId: connectionId,
-                        onOpenWorkout: (workoutId) => context.pushCoachingClientWorkout(connectionId, workoutId),
+                        onOpenWorkout: (
+                          client: (id) => context.pushCoachingClientWorkout(connectionId, id, fromThread: true),
+                          own: context.pushWorkoutOver,
+                        ),
                       );
                     },
                   ),
@@ -1392,7 +1395,11 @@ RouteBase _coachingRoute() {
                       key: ValueKey(state.pathParameters['workoutId']),
                       connectionId: state.pathParameters['connectionId']!,
                       workoutId: state.pathParameters['workoutId']!,
-                      onMessage: () => context.pushCoachingClientThread(state.pathParameters['connectionId']!),
+                      // from the conversation: back to it, where the message goes
+                      onMessage: switch (state.extra) {
+                        true => context.pop,
+                        _ => () => context.pushCoachingClientThread(state.pathParameters['connectionId']!),
+                      },
                     ),
                   ),
                 ],
@@ -1410,7 +1417,9 @@ RouteBase _coachingRoute() {
             builder: (context, _) => CoachMessagesPage(
               onYourTraining: context.leaveCoaching,
               onOpen: context.pushCoachingThread,
-              onOpenWorkout: context.pushCoachingClientWorkout,
+              onOpenWorkout: (connectionId, workoutId) =>
+                  context.pushCoachingClientWorkout(connectionId, workoutId, fromThread: true),
+              onOpenOwnWorkout: context.pushWorkoutOver,
             ),
             routes: [
               GoRoute(
@@ -1420,7 +1429,10 @@ RouteBase _coachingRoute() {
                   final connectionId = state.pathParameters['connectionId']!;
                   return ThreadPage(
                     connectionId: connectionId,
-                    onOpenWorkout: (workoutId) => context.pushCoachingClientWorkout(connectionId, workoutId),
+                    onOpenWorkout: (
+                      client: (id) => context.pushCoachingClientWorkout(connectionId, id, fromThread: true),
+                      own: context.pushWorkoutOver,
+                    ),
                   );
                 },
               ),
@@ -1564,10 +1576,11 @@ RouteBase _threadRoute() {
       // outside the shell, so the layout is this route's to provide
       return LayoutProvider(
         currentStack: -1,
-        // a workout of one's own a message is about, in History
+        // a workout of one's own a message is about, over the conversation;
+        // a client's opens only in Coaching
         builder: (context, _, _) => ThreadPage(
           connectionId: state.pathParameters['connectionId']!,
-          onOpenWorkout: context.goToWorkoutEditor,
+          onOpenWorkout: (client: null, own: context.pushWorkoutOver),
         ),
       );
     },

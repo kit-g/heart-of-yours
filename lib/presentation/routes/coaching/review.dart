@@ -48,9 +48,14 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
   }
 
   /// The conversation, with the next message about [subject] (#556).
+  /// None for someone no longer coached: their conversation takes nothing.
   void Function(MessageSubject subject)? get _messageAbout {
     final open = widget.onMessage;
-    if (open == null) return null;
+    final coached = switch (Roster.watch(context).client(widget.connectionId)?.status) {
+      'active' || 'paused' => true,
+      _ => false,
+    };
+    if (open == null || !coached) return null;
     return (subject) {
       Messages.of(context).writeAbout(widget.connectionId, subject);
       open();
@@ -69,7 +74,7 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
             key: AppKeys.coachingReview,
             appBar: AppBar(
               title: Text(switch (snapshot.data) {
-                final WorkoutReview review => _workoutTitle(l, review.workout),
+                final WorkoutReview review => workoutTitle(l, review.workout),
                 null => '',
               }),
               actions: [
@@ -244,13 +249,13 @@ class _ReviewedExerciseCard extends StatelessWidget {
                       if (compare)
                         Expanded(
                           child: Text(switch (set.planned) {
-                            final PlannedNumbers asked => _numbers(l, formats, asked),
+                            final PlannedNumbers asked => setInWords(l, formats, asked),
                             null => '—',
                           }),
                         ),
                       Expanded(
                         child: Text(switch (set.done) {
-                          final ExerciseSet done => _numbers(
+                          final ExerciseSet done => setInWords(
                             l,
                             formats,
                             (weight: done.weight, reps: done.reps, duration: done.duration, distance: done.distance),
@@ -289,7 +294,7 @@ class _MessageableSet extends StatelessWidget {
   final VoidCallback? onMessage;
   final Widget child;
 
-  const new({super.key, required this.onMessage, required this.child});
+  const new({super.key, this.onMessage, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -307,42 +312,11 @@ class _MessageableSet extends StatelessWidget {
   }
 
   static Future<void> _menu(BuildContext context, Offset at, String label, VoidCallback message) async {
-    final overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
     final picked = await showMenu<bool>(
       context: context,
-      position: RelativeRect.fromRect(at & const Size(1, 1), Offset.zero & overlay.size),
+      position: menuAt(context, at),
       items: [PopupMenuItem(key: AppKeys.reviewSetMessage, value: true, child: Text(label))],
     );
     if (picked ?? false) message();
   }
-}
-
-/// A set's numbers as the app writes them elsewhere: "60 kg x 5", a weight
-/// alone, reps alone, or a distance and a time.
-String _numbers(L l, RecordFormats formats, PlannedNumbers numbers) {
-  final weight = switch (numbers.weight) {
-    final num weight when weight > 0 => formats.weight(weight),
-    _ => null,
-  };
-  final reps = switch (numbers.reps) {
-    final num reps when reps > 0 => reps.toInt(),
-    _ => null,
-  };
-  final distance = switch (numbers.distance) {
-    final num distance when distance > 0 => formats.distance(distance),
-    _ => null,
-  };
-  final duration = switch (numbers.duration) {
-    final num seconds when seconds > 0 => formats.time(seconds),
-    _ => null,
-  };
-  return switch ((weight, reps, distance, duration)) {
-    (final String weight, final int reps, _, _) => l.weightedSetRepresentation(weight, reps),
-    (final String weight, null, _, _) => weight,
-    (null, final int reps, _, _) => '× $reps',
-    (null, null, final String distance, final String duration) => '$distance · $duration',
-    (null, null, final String distance, null) => distance,
-    (null, null, null, final String duration) => duration,
-    _ => '—',
-  };
 }

@@ -692,13 +692,32 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  /// Writes [text] to [threadId]: sealed and kept here at once, then sent.
-  /// Throws when it can't be sealed, as with keys not running: nothing is
-  /// kept then, and the words stay with the caller.
-  Future<void> send(String threadId, String text, {MessageSubject? about}) async {
+  /// Writes [text] to [threadId]: sealed and kept here at once, then sent,
+  /// about what [about] holds for its person, which it takes: the next one
+  /// is about nothing in particular. Throws when it can't be sealed, as with
+  /// keys not running: nothing is kept then, and the words and what they
+  /// were about stay.
+  Future<void> send(String threadId, String text) async {
     final userId = _userId;
     if (userId == null) throw StateError('no account');
-    final sealed = await _cipher.seal(threadId, text);
+    // taken before anything waits: a second message sent meanwhile is
+    // about nothing in particular
+    final connectionId = lookup(threadId)?.connectionId;
+    final about = switch (connectionId) {
+      final String id => _about.remove(id),
+      null => null,
+    };
+    if (about != null) notifyListeners();
+    final SealedMessage sealed;
+    try {
+      sealed = await _cipher.seal(threadId, text);
+    } catch (_) {
+      if ((connectionId, about) case (final String id, final MessageSubject about) when userId == _userId) {
+        _about.putIfAbsent(id, () => about);
+        notifyListeners();
+      }
+      rethrow;
+    }
     final at = _now().toUtc();
     final item = ThreadItem(
       id: _newId(),
@@ -727,8 +746,6 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       notifyListeners();
     }
     _drafts.remove(threadId);
-    // said: the next message is about nothing in particular until asked
-    if (lookup(threadId)?.connectionId case final String connectionId) _about.remove(connectionId);
     await _show(threadId);
     await flush(threadId);
   }

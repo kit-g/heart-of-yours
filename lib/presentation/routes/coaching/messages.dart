@@ -10,7 +10,17 @@ class CoachMessagesPage extends StatefulWidget {
   /// Opens a client's workout a message is about.
   final void Function(String connectionId, String workoutId)? onOpenWorkout;
 
-  const new({super.key, required this.onYourTraining, required this.onOpen, this.onOpenWorkout});
+  /// Opens a workout of the coach's own a message is about: one their own
+  /// coach wrote about.
+  final ValueChanged<String>? onOpenOwnWorkout;
+
+  const new({
+    super.key,
+    required this.onYourTraining,
+    required this.onOpen,
+    this.onOpenWorkout,
+    this.onOpenOwnWorkout,
+  });
 
   @override
   State<CoachMessagesPage> createState() => _CoachMessagesPageState();
@@ -88,10 +98,13 @@ class _CoachMessagesPageState extends State<CoachMessagesPage> {
                                 child: ThreadView(
                                   key: ValueKey(id),
                                   connectionId: id,
-                                  onOpenWorkout: switch (widget.onOpenWorkout) {
-                                    final open? => (workoutId) => open(id, workoutId),
-                                    null => null,
-                                  },
+                                  onOpenWorkout: (
+                                    client: switch (widget.onOpenWorkout) {
+                                      final open? => (workoutId) => open(id, workoutId),
+                                      null => null,
+                                    },
+                                    own: widget.onOpenOwnWorkout,
+                                  ),
                                 ),
                               ),
                             ],

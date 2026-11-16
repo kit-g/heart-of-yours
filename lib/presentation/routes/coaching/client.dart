@@ -343,7 +343,7 @@ class _WorkoutTile extends StatelessWidget {
       key: AppKeys.coachingClientWorkout(workout.id),
       onTap: onTap,
       leading: const Icon(Icons.check_circle_outline_rounded),
-      title: Text(_workoutTitle(l, workout), maxLines: 1, overflow: .ellipsis),
+      title: Text(workoutTitle(l, workout), maxLines: 1, overflow: .ellipsis),
       subtitle: Column(
         crossAxisAlignment: .start,
         children: [
@@ -360,13 +360,6 @@ class _WorkoutTile extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right_rounded),
     );
   }
-}
-
-String _workoutTitle(L l, Workout workout) {
-  return switch (workout.name?.trim()) {
-    final String name when name.isNotEmpty => name,
-    _ => l.coachingReviewUntitled,
-  };
 }
 
 /// The program [client] follows, then the coach's other copies of theirs,

@@ -431,7 +431,8 @@ void main() {
     test('shares the key first, then sends, under the id it was written with', () async {
       await messages.load();
 
-      await messages.send(threadId, 'my knee', about: const MessageSubject(.workout, 'w1'));
+      messages.writeAbout('c1', const MessageSubject(.workout, 'w1'));
+      await messages.send(threadId, 'my knee');
 
       expect(cipher.shares, ['t1 $coach print-c1']);
       expect(server.posted.single, (id: 'mine-0', content: 'sealed:my knee', subjectId: 'w1'));
@@ -444,11 +445,24 @@ void main() {
       messages.writeAbout('c1', const MessageSubject(.exerciseSet, 's3'));
       expect(messages.about('c1'), const MessageSubject(.exerciseSet, 's3'));
 
-      await messages.send(threadId, 'that third set', about: messages.about('c1'));
+      final first = messages.send(threadId, 'that third set');
+      // a second, sent while the first is still on its way, is about nothing
+      final second = messages.send(threadId, 'and the rest');
+      await (first, second).wait;
 
-      expect(server.posted.single.subjectId, 's3');
-      expect(messages.thread(threadId).messages.single.subject, const MessageSubject(.exerciseSet, 's3'));
+      expect(server.posted.map((each) => each.subjectId), ['s3', null]);
+      expect(messages.thread(threadId).messages.first.subject, const MessageSubject(.exerciseSet, 's3'));
       expect(messages.about('c1'), isNull, reason: 'said: the next one is about nothing in particular');
+    });
+
+    test('a message that could not be sealed keeps what it was about', () async {
+      await messages.load();
+      messages.writeAbout('c1', const MessageSubject(.workout, 'w1'));
+      cipher.sealFails = StateError('device keys are off');
+
+      await expectLater(messages.send(threadId, 'my knee'), throwsStateError);
+
+      expect(messages.about('c1'), const MessageSubject(.workout, 'w1'));
     });
 
     test("a subject this build doesn't know reads as none", () {

@@ -524,11 +524,28 @@ class WorkoutItem extends StatelessWidget {
         return copyWorkoutForAi(context, workout);
       case _WorkoutOption.messageCoach:
         // the conversation with the coach, its next message about this
-        // workout (#556); one relationship per domain makes it one coach
-        if (Coaching.of(context).coaches.firstOrNull?.connectionId case final String connectionId) {
-          Messages.of(context).writeAbout(connectionId, MessageSubject(.workout, workout.id));
-          HeartRouter.of(context).openThread(connectionId);
-        }
+        // workout (#556): one coach per domain, so one is picked from several
+        final messages = Messages.of(context);
+        final router = HeartRouter.of(context);
+        final picked = switch (coachesToWrite(Coaching.of(context))) {
+          [] => null,
+          [final coach] => coach.connectionId,
+          final coaches => await showMenu<String>(
+            context: context,
+            position: menuUnder(context),
+            items: [
+              for (final coach in coaches)
+                PopupMenuItem(
+                  key: AppKeys.messageCoachPick(coach.connectionId!),
+                  value: coach.connectionId,
+                  child: Text(coachName(context, coach)),
+                ),
+            ],
+          ),
+        };
+        if (picked == null) return;
+        messages.writeAbout(picked, MessageSubject(.workout, workout.id));
+        router.openThread(picked);
     }
   }
 
@@ -541,7 +558,9 @@ class WorkoutItem extends StatelessWidget {
     if (copies) preferences.markOffered(.copyForAi);
     // a coach to write to, with Your coach on, where messages can be sealed
     final coached =
-        preferences.isOn(.yourCoach) && Coaching.of(context).coaches.isNotEmpty && DeviceKeys.of(context).supported;
+        preferences.isOn(.yourCoach) &&
+        coachesToWrite(Coaching.of(context)).isNotEmpty &&
+        DeviceKeys.of(context).supported;
     return _WorkoutOption.values.where(
       (option) => switch (option) {
         .copyForAi => copies,

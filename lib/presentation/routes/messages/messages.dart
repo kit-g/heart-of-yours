@@ -9,6 +9,7 @@ import 'dart:math' as math;
 import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/message_runs.dart';
+import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -30,7 +31,7 @@ class ThreadPage extends StatelessWidget {
   final String? name;
 
   /// Opens a workout a message is about, where there's somewhere to open it.
-  final ValueChanged<String>? onOpenWorkout;
+  final WorkoutOpeners? onOpenWorkout;
 
   const new({super.key, required this.connectionId, this.name, this.onOpenWorkout});
 
@@ -103,6 +104,25 @@ String threadName(BuildContext context, Thread? thread, {String? connectionId, S
   };
 }
 
+/// The coaches a student can write to: live or paused, with a connection to
+/// write in.
+List<Connection> coachesToWrite(Coaching coaching) {
+  return [
+    for (final coach in coaching.coaches)
+      if ((coach.connectionId, coach.status) case (String(), ConnectionStatus.active || ConnectionStatus.paused)) coach,
+  ];
+}
+
+/// A coach as their student names them: as their profile does now, else as
+/// their invitation did on this device.
+String coachName(BuildContext context, Connection coach) {
+  return switch ((coach.name?.trim(), coach.connectionId)) {
+    (final String name, _) when name.isNotEmpty => name,
+    (_, final String id) => Preferences.of(context).coachName(id) ?? L.of(context).yourCoach,
+    _ => L.of(context).yourCoach,
+  };
+}
+
 /// Where opening a conversation stands.
 enum _Opening { opening, open, failed }
 
@@ -112,7 +132,7 @@ class ThreadView extends StatefulWidget {
   final String connectionId;
 
   /// Opens a workout a message is about, where there's somewhere to open it.
-  final ValueChanged<String>? onOpenWorkout;
+  final WorkoutOpeners? onOpenWorkout;
 
   const new({super.key, required this.connectionId, this.onOpenWorkout});
 
@@ -159,23 +179,37 @@ class _ThreadViewState extends State<ThreadView> {
       _text.text = _messages.draft(thread.id);
       _opening.value = .open;
       await _messages.open(thread.id);
-      if (mounted) _readSubjects(thread.id);
+      if (mounted) unawaited(_readSubjects(thread.id));
     } catch (_) {
       if (mounted) _opening.value = .failed;
     }
   }
 
   /// A coach's device names what a client's message is about from that
-  /// client's workouts, which nothing may have read yet: read once, when
-  /// a message here is about one.
-  void _readSubjects(String threadId) {
+  /// client's workouts, which nothing may have read yet, or not as far back:
+  /// read when a message here, or the one being written, is about one this
+  /// device doesn't hold.
+  Future<void> _readSubjects(String threadId) async {
     final roster = Provider.of<Roster?>(context, listen: false);
-    final client = roster?.client(widget.connectionId);
-    if (roster == null || client == null || roster.recordStatus(client.studentId) != .idle) return;
-    final about = _messages.about(widget.connectionId) != null;
-    if (about || _messages.thread(threadId).messages.any((each) => each.subject != null)) {
-      unawaited(roster.loadRecord(client.studentId));
-    }
+    final subjects = {
+      ..._messages.thread(threadId).messages.map((each) => each.subject).nonNulls,
+      ?_messages.about(widget.connectionId),
+    };
+    if (roster == null || subjects.isEmpty) return;
+    // opened from a push, before anything read the roster
+    if (roster.client(widget.connectionId) == null && roster.status == .idle) await roster.load();
+    final client = roster.client(widget.connectionId);
+    if (client == null) return;
+    final id = client.studentId;
+    bool missing(MessageSubject subject) => _find(subject, roster.heldOf(id), own: false) == null;
+    if (!subjects.any(missing)) return;
+    // the record may predate them, or have failed
+    if (roster.recordStatus(id) != .loading) await roster.loadRecord(id);
+    // a workout further back is read by itself
+    await Future.wait([
+      for (final subject in subjects.where(missing))
+        if (subject.type == .workout) roster.loadWorkout(id, subject.id),
+    ]);
   }
 
   Future<void> _send() async {
@@ -186,7 +220,7 @@ class _ThreadViewState extends State<ThreadView> {
     final failed = L.of(context).messagesSendFailed;
     _text.clear();
     try {
-      await _messages.send(threadId, text, about: _messages.about(widget.connectionId));
+      await _messages.send(threadId, text);
     } catch (_) {
       // nothing was kept: the words go back where they were written
       if (_text.text.isEmpty) _text.text = text;
@@ -225,7 +259,7 @@ class _Conversation extends StatelessWidget {
   final String connectionId;
   final TextEditingController text;
   final VoidCallback onSend;
-  final ValueChanged<String>? onOpenWorkout;
+  final WorkoutOpeners? onOpenWorkout;
 
   const new({
     required this.threadId,
@@ -357,7 +391,7 @@ class _Bubble extends StatelessWidget {
   final Message message;
   final MessagePlace place;
   final String connectionId;
-  final ValueChanged<String>? onOpenWorkout;
+  final WorkoutOpeners? onOpenWorkout;
 
   const new({required this.message, required this.place, required this.connectionId, this.onOpenWorkout});
 
@@ -478,10 +512,9 @@ class _Bubble extends StatelessWidget {
   Future<void> _menu(BuildContext context, Offset at, String text) async {
     final l = L.of(context);
     final messenger = ScaffoldMessenger.maybeOf(context);
-    final overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
     final picked = await showMenu<_MessageAction>(
       context: context,
-      position: RelativeRect.fromRect(at & const Size(1, 1), Offset.zero & overlay.size),
+      position: menuAt(context, at),
       items: [
         PopupMenuItem(value: .copy, child: Text(l.messagesCopy)),
         // only what the other person wrote is theirs to answer for
@@ -532,7 +565,7 @@ class _Composer extends StatelessWidget {
                 key: AppKeys.messageAbout,
                 avatar: Icon(_subjectIcon(subject), size: 18),
                 label: Text(
-                  l.messagesAbout(subjectLabel(context, subject, connectionId: connectionId)),
+                  l.messagesAbout(_subjectLabel(context, subject, _placeOf(context, subject, connectionId))),
                   maxLines: 1,
                   overflow: .ellipsis,
                 ),
@@ -581,12 +614,17 @@ class _Composer extends StatelessWidget {
   }
 }
 
+/// Where a conversation's subjects open: a client's workout, for the coach
+/// (the connection is known), and one of the reader's own. Either may be
+/// absent where there's nowhere to open it.
+typedef WorkoutOpeners = ({ValueChanged<String>? client, ValueChanged<String>? own});
+
 /// What a message is about, above it: tapped, the workout opens, where it
 /// is one this device holds and there's somewhere to open it.
 class _SubjectLine extends StatelessWidget {
   final MessageSubject subject;
   final String connectionId;
-  final ValueChanged<String>? onOpenWorkout;
+  final WorkoutOpeners? onOpenWorkout;
 
   const new({required this.subject, required this.connectionId, this.onOpenWorkout});
 
@@ -594,10 +632,12 @@ class _SubjectLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    final where = subjectPlace(context, subject, connectionId: connectionId);
-    final words = l.messagesAbout(subjectLabel(context, subject, connectionId: connectionId));
-    final open = switch ((where, onOpenWorkout)) {
-      ((:final workout, set: _, exercise: _), final open?) => () => open(workout.id),
+    final place = _placeOf(context, subject, connectionId);
+    final words = l.messagesAbout(_subjectLabel(context, subject, place));
+    // a client's opens as the coach reads it, one's own as History does
+    final open = switch ((place, onOpenWorkout)) {
+      ((:final workout, own: false, exercise: _, set: _), (client: final open?, own: _)) => () => open(workout.id),
+      ((:final workout, own: true, exercise: _, set: _), (own: final open?, client: _)) => () => open(workout.id),
       _ => null,
     };
     final style = textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant);
@@ -643,52 +683,72 @@ IconData _subjectIcon(MessageSubject subject) {
 }
 
 /// Where a message's subject is among the workouts this device holds: the
-/// workout, and for a set its exercise and its place there, from one.
-typedef SubjectPlace = ({Workout workout, WorkoutExercise? exercise, int? set});
+/// workout, and for a set its exercise and the set; own for one of the
+/// reader's own.
+typedef _Place = ({Workout workout, WorkoutExercise? exercise, ExerciseSet? set, bool own});
 
-/// Where [subject] is, among the workouts of the person the conversation
-/// with [connectionId] is with: a client's, as the roster read them, on a
-/// coach's device; one's own on anyone else's. Null where it isn't held.
-SubjectPlace? subjectPlace(BuildContext context, MessageSubject subject, {required String connectionId}) {
+/// Where [subject] is: among a client's workouts, as the roster holds them,
+/// in a conversation with a client; among the reader's own otherwise. Null
+/// where this device doesn't hold it.
+_Place? _placeOf(BuildContext context, MessageSubject subject, String connectionId) {
   final roster = Provider.of<Roster?>(context);
-  final workouts = switch (roster?.client(connectionId)) {
-    final ClientSummary client => roster!.workoutsOf(client.studentId),
-    null => Provider.of<Workouts?>(context)?.history ?? const <Workout>[],
+  if (roster?.client(connectionId) case final ClientSummary client) {
+    return _find(subject, roster!.heldOf(client.studentId), own: false);
+  }
+  final workouts = Provider.of<Workouts?>(context);
+  return switch ((subject.type, workouts)) {
+    (_, null) => null,
+    (.workout, final workouts?) => switch (workouts.lookup(subject.id)) {
+      final Workout workout when workout.isCompleted => (workout: workout, exercise: null, set: null, own: true),
+      _ => null,
+    },
+    (.exerciseSet, final workouts?) => _find(subject, workouts.history, own: true),
   };
+}
+
+_Place? _find(MessageSubject subject, Iterable<Workout> workouts, {required bool own}) {
   return switch (subject.type) {
     .workout =>
       workouts
           .where((workout) => workout.id == subject.id)
-          .map<SubjectPlace>((workout) => (workout: workout, exercise: null, set: null))
+          .map<_Place>((workout) => (workout: workout, exercise: null, set: null, own: own))
           .firstOrNull,
     .exerciseSet =>
       workouts
           .expand(
             (workout) => workout.expand(
-              (exercise) => exercise.indexed.map<SubjectPlace>(
-                (each) => (workout: workout, exercise: exercise, set: each.$2.id == subject.id ? each.$1 + 1 : null),
-              ),
+              (exercise) => exercise
+                  .where((set) => set.id == subject.id)
+                  .map<_Place>((set) => (workout: workout, exercise: exercise, set: set, own: own)),
             ),
           )
-          .where((place) => place.set != null)
           .firstOrNull,
   };
 }
 
-/// What [subject] is, in words: "Squat (Barbell), set 3", "Day A, Tue
+/// What [subject] is, in words: "Squat (Barbell), 60 kg x 5", "Day A, Tue
 /// 12 Nov", or only a workout or a set where this device doesn't hold it.
-String subjectLabel(BuildContext context, MessageSubject subject, {required String connectionId}) {
+/// A set by what was done in it, never its place: the two devices may hold
+/// different sets around it.
+String _subjectLabel(BuildContext context, MessageSubject subject, _Place? place) {
   final l = L.of(context);
-  return switch ((subject.type, subjectPlace(context, subject, connectionId: connectionId))) {
-    (_, (workout: _, exercise: final WorkoutExercise exercise, set: final int set)) => l.messagesSubjectSet(
-      exercise.exercise.name,
-      set,
-    ),
-    (_, (:final workout, exercise: _, set: _)) => l.messagesSubjectWorkout(
-      switch (workout.name?.trim()) {
-        final String name when name.isNotEmpty => name,
-        _ => l.coachingReviewUntitled,
-      },
+  return switch ((subject.type, place)) {
+    (_, (workout: _, exercise: final WorkoutExercise exercise, set: final ExerciseSet set, own: _)) =>
+      l.messagesSubjectSet(
+        exercise.exercise.name,
+        setInWords(
+          l,
+          RecordFormats(
+            l: l,
+            prefs: Preferences.of(context),
+            unit: Exercises.of(context).unitFor(exercise.exercise.id),
+            category: exercise.exercise.category,
+          ),
+          (weight: set.weight, reps: set.reps, duration: set.duration, distance: set.distance),
+        ),
+      ),
+    (_, (:final workout, exercise: _, set: _, own: _)) => l.messagesSubjectWorkout(
+      workoutTitle(l, workout),
       DateFormat.MMMEd(l.localeName).format(workout.start.toLocal()),
     ),
     (.workout, null) => l.messagesSubjectSomeWorkout,

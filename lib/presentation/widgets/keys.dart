@@ -513,6 +513,7 @@ abstract final class AppKeys {
   static Key reviewSet(String setId) => Key('Review.set.$setId');
   static const reviewSetMessage = Key('Review.set.message');
   static const messageCoachAbout = Key('Workout.messageCoach');
+  static Key messageCoachPick(String connectionId) => Key('Workout.messageCoach.$connectionId');
   static const messageReport = Key('Messages.messageReport');
   static const reportSheet = Key('Report.sheet');
   static const reportInclude = Key('Report.include');

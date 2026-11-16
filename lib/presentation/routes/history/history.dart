@@ -11,6 +11,7 @@ import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/muscle_volume.dart' show muscleGroupsOf;
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/routes/messages/messages.dart' show coachName, coachesToWrite;
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/appbar_textfield.dart';
 import 'package:heart/presentation/widgets/buttons.dart';

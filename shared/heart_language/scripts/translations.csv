@@ -1773,7 +1773,7 @@ historyDensityCompact,"Settings choice: History's workout cards in three lines, 
 muscleFamilyLowerBody,"The muscle family of legs, glutes, hamstrings and adductors: a colour key on History's calendar and the name beside its dot (#617)",Lower body,Lower body,Низ тела,Tren inferior,Bas du corps
 messagesAbout,"Above a message, and above the box while writing one, naming the workout or set it is about, e.g. 'About Squat, set 3' (#556)",About {subject},About {subject},Про {subject},Sobre {subject},À propos de {subject}
 messagesSubjectWorkout,"A workout a message is about: its name and day, e.g. 'Day A, Tue 12 Nov' (#556)","{workout}, {day}","{workout}, {day}","{workout}, {day}","{workout}, {day}","{workout}, {day}"
-messagesSubjectSet,"One set a message is about: the exercise and the set's place in it, e.g. 'Squat (Barbell), set 3' (#556)","{exercise}, set {number}","{exercise}, set {number}","{exercise}, подход {number}","{exercise}, serie {number}","{exercise}, série {number}"
+messagesSubjectSet,"One set a message is about: the exercise and what was done in it, e.g. 'Squat (Barbell), 60 kg x 5' (#556)","{exercise}, {set}","{exercise}, {set}","{exercise}, {set}","{exercise}, {set}","{exercise}, {set}"
 messagesSubjectSomeWorkout,"A workout a message is about that this device doesn't hold, used inside 'About {subject}' (#556)",a workout,a workout,тренировку,un entrenamiento,un entraînement
 messagesSubjectSomeSet,"A set a message is about that this device doesn't hold, used inside 'About {subject}' (#556)",a set,a set,подход,una serie,une série
 messagesAboutNothing,"Tooltip on the x beside 'About …' above the message box: the message will be about nothing in particular (#556)",Not about this,Not about this,Не об этом,No sobre esto,Pas à ce sujet

@@ -40,8 +40,15 @@ extension on BuildContext {
   }
 
   /// A client's workout, target beside done (#559).
-  void pushCoachingClientWorkout(String connectionId, String workoutId) {
-    pushNamed(_coachingClientWorkoutName, pathParameters: {'connectionId': connectionId, 'workoutId': workoutId});
+  ///
+  /// [fromThread] for one opened from the conversation with the client: its
+  /// message action goes back there rather than open another over it.
+  void pushCoachingClientWorkout(String connectionId, String workoutId, {bool fromThread = false}) {
+    pushNamed(
+      _coachingClientWorkoutName,
+      pathParameters: {'connectionId': connectionId, 'workoutId': workoutId},
+      extra: fromThread,
+    );
   }
 
   /// A client's copy of their program (#558).

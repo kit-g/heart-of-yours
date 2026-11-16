@@ -82,7 +82,10 @@ void main() {
     ];
     var opened = 0;
 
-    await pump(tester, ThreadPage(connectionId: 'c-muffin', onOpenWorkout: (_) => opened++));
+    await pump(
+      tester,
+      ThreadPage(connectionId: 'c-muffin', onOpenWorkout: (client: (_) => opened++, own: (_) => opened++)),
+    );
 
     expect(find.text('About a set'), findsOneWidget);
     expect(find.text('About a workout'), findsOneWidget);

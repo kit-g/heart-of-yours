@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/routes/history/history.dart';
+import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage;
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
@@ -53,11 +54,27 @@ void main() {
         .thenAnswer((_) async => (items: <ThreadItem>[], cursor: null));
   });
 
-  Future<void> pump(WidgetTester tester, {required bool coached, KeyVault? keyVault}) async {
+  final strength = Connection(
+    targetId: 'sam',
+    role: .student,
+    domain: .running,
+    status: .active,
+    createdAt: DateTime.utc(2026, 11, 9),
+    connectionId: 'c2',
+    acceptedAt: DateTime.utc(2026, 11, 9),
+    name: 'Sam',
+  );
+
+  Future<void> pump(
+    WidgetTester tester, {
+    required bool coached,
+    KeyVault? keyVault,
+    List<Connection>? coaches,
+  }) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    when(api.getConnections()).thenAnswer((_) async => coached ? [coach] : <Connection>[]);
+    when(api.getConnections()).thenAnswer((_) async => coaches ?? (coached ? [coach] : <Connection>[]));
     SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-yourCoach': 'on'});
     await const TestAppHarness().pumpHeartApp(
       tester,
@@ -108,6 +125,73 @@ void main() {
       await pump(tester, coached: true);
       await openMenu(tester);
       expect(find.byKey(AppKeys.messageCoachAbout), findsNothing);
+    });
+  });
+
+  testWidgets('with a coach in each of two domains, the one to write to is picked', (tester) async {
+    await withClock(Clock.fixed(now), () async {
+      final second = Thread(id: 't2', connectionId: 'c2', otherId: 'sam', otherName: 'Sam');
+      when(api.openThread('c2')).thenAnswer((_) async => second);
+      when(api.getThreads()).thenAnswer((_) async => [thread, second]);
+      when(api.getThreadItems('t2', limit: anyNamed('limit')))
+          .thenAnswer((_) async => (items: <ThreadItem>[], cursor: null));
+      await pump(tester, coached: true, keyVault: MemoryKeyVault(), coaches: [coach, strength]);
+      await openMenu(tester);
+
+      await tester.tapByKey(AppKeys.messageCoachAbout);
+      await tester.pumpTimes();
+      expect(find.text('Alex'), findsOneWidget);
+      await tester.tapByKey(AppKeys.messageCoachPick('c2'));
+      await tester.pumpTimes();
+
+      final messages = Messages.of(tester.element(find.byType(ThreadPage)));
+      expect(messages.about('c2'), MessageSubject(.workout, dayA.id));
+      expect(messages.about('c1'), isNull);
+    });
+  });
+
+  testWidgets("a message about one's own workout opens it over the conversation, and Back returns there", (
+    tester,
+  ) async {
+    await withClock(Clock.fixed(now), () async {
+      final item = ThreadItem(
+        id: 'i1',
+        threadId: 't1',
+        senderId: 'alex',
+        kind: 'message',
+        subjectType: 'workout',
+        subjectId: dayA.id,
+        content: 'm1.session.ciphertext',
+        commitment: 'c',
+        tag: 't',
+        tagKey: 'k',
+        at: DateTime.utc(2026, 11, 19, 9),
+        createdAt: DateTime.utc(2026, 11, 19, 9),
+        cursor: 'c1',
+      );
+      when(api.getThreadItems('t1', limit: anyNamed('limit'))).thenAnswer((_) async => (items: [item], cursor: null));
+      final stored = <String, StoredItem>{};
+      when(db.getThreads(any)).thenAnswer((_) async => []);
+      when(db.storeThreads(any, any)).thenAnswer((_) async {});
+      when(db.storeThread(any, any)).thenAnswer((_) async {});
+      when(db.storeThreadItems(any, any)).thenAnswer((invocation) async {
+        for (final each in invocation.positionalArguments[1] as Iterable<StoredItem>) {
+          stored[each.item.id] = each;
+        }
+      });
+      when(db.getThreadItems(any, any)).thenAnswer((_) async => stored.values.toList());
+      await pump(tester, coached: true, keyVault: MemoryKeyVault());
+      HeartRouter.of(tester.element(find.byType(HistoryPage))).openThread('c1');
+      await tester.pumpTimes();
+
+      expect(find.textContaining('About Day A'), findsOneWidget);
+      await tester.tapByKey(AppKeys.messageSubject);
+      await tester.pumpTimes();
+      expect(find.byType(WorkoutEditor), findsOneWidget);
+
+      await tester.pageBack();
+      await tester.pumpTimes();
+      expect(find.byType(ThreadPage), findsOneWidget);
     });
   });
 }
