@@ -39,10 +39,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
   Future<({List<CoachFeedItem> items, String? cursor})> getCoachFeed({String? cursor}) async {
     final (json, code) = await get(Router.coachFeed, query: _cursor(cursor));
     return switch ((code, json)) {
-      (200, {'items': List l}) => (
-        items: _readable(_namedAll(l), CoachFeedItem.fromJson),
-        cursor: json['cursor'] as String?,
-      ),
+      (200, {'items': List l}) => (items: _readable(l, CoachFeedItem.fromJson), cursor: json['cursor'] as String?),
       _ => throw json,
     };
   }
@@ -76,7 +73,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
   Future<WorkoutPlan?> getClientWorkoutPlan(String studentId, String workoutId) async {
     final (json, code) = await get(Router.clientWorkoutPlan(studentId, workoutId));
     return switch ((code, json)) {
-      (200, Map json) => WorkoutPlan.fromJson(_named(json)),
+      (200, Map json) => WorkoutPlan.fromJson(json),
       (404, _) => null,
       _ => throw json,
     };
@@ -96,7 +93,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
   Future<List<Program>> getClientPrograms(String studentId) async {
     final (json, code) = await get(Router.clientPrograms(studentId));
     return switch ((code, json)) {
-      (200, {'programs': List l}) => _readable(_namedAll(l), Program.fromJson),
+      (200, {'programs': List l}) => _readable(l, Program.fromJson),
       _ => throw json,
     };
   }
@@ -106,7 +103,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
   Future<CoachProgramView> getClientProgram(String studentId, String programId) async {
     final (json, code) = await get(Router.clientProgram(studentId, programId));
     return switch ((code, json)) {
-      (200, Map json) => CoachProgramView.fromJson(_named(json)),
+      (200, Map json) => CoachProgramView.fromJson(_namedSessions(json)),
       _ => throw json,
     };
   }
@@ -133,7 +130,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
       },
     );
     return switch ((code, json)) {
-      (200, Map json) => Program.fromJson(_named(json)),
+      (200, Map json) => Program.fromJson(json),
       _ => throw json,
     };
   }
@@ -167,7 +164,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
       query: {'since': ?since},
     );
     return switch ((code, json)) {
-      (200, Map json) => ProgramChanges.fromJson(_named(json)).changes,
+      (200, Map json) => ProgramChanges.fromJson(json).changes,
       _ => throw json,
     };
   }

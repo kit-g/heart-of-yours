@@ -72,12 +72,22 @@ void main() {
     });
 
     group('exercise names (#612)', () {
-      // the Api is a singleton: a namer left set would rename every later test
+      // the Api is a singleton: a lookup left set would rename every later test
       tearDown(
         () => api
-          ..exerciseName = null
+          ..exerciseOnDevice = null
           ..onUnnamedExercises = null,
       );
+
+      // the library's squat, in Russian here; an own lift the device has an
+      // older name for; nothing else
+      DeviceExercise? onDevice(String id) {
+        return switch (id) {
+          'squat' => (name: 'Приседания со штангой', own: false),
+          'mine' => (name: 'My Old Name', own: true),
+          _ => null,
+        };
+      }
 
       Map<String, dynamic> workout(String id, List<(String, String)> exercises) {
         return {
@@ -96,36 +106,76 @@ void main() {
         };
       }
 
-      test('the catalog names what the server named in English, and counts what it could not', () async {
+      test(
+        'a library exercise gets the device\'s name, an own one keeps the server\'s, and a miss is counted',
+        () async {
+          final counted = <(int, int)>[];
+          api
+            ..exerciseOnDevice = onDevice
+            ..onUnnamedExercises = (unnamed, of) => counted.add((unnamed, of));
+          respond(
+            client: client,
+            method: 'GET',
+            path: '${Router.accounts}/u1/workouts',
+            statusCode: 200,
+            query: {},
+            body: {
+              'workouts': [
+                workout('w1', [('squat', 'Squat (Barbell)'), ('mystery', 'Mystery Lift'), ('mine', 'My New Name')]),
+                workout('w2', [('squat', 'Squat (Barbell)')]),
+              ],
+            },
+          );
+
+          final [first, second] = (await api.getWorkouts('u1'))!.toList();
+
+          expect(first.map((each) => each.exercise.name), ['Приседания со штангой', 'Mystery Lift', 'My New Name']);
+          expect(second.single.exercise.name, 'Приседания со штангой');
+          expect(counted, [(1, 3)], reason: 'one report per response, distinct exercises');
+        },
+      );
+
+      test('templates are named and counted the same way', () async {
         final counted = <(int, int)>[];
         api
-          ..exerciseName = ((id) => {'squat': 'Приседания со штангой'}[id])
+          ..exerciseOnDevice = onDevice
           ..onUnnamedExercises = (unnamed, of) => counted.add((unnamed, of));
         respond(
           client: client,
           method: 'GET',
-          path: '${Router.accounts}/u1/workouts',
+          path: Router.templates,
           statusCode: 200,
-          query: {},
           body: {
-            'workouts': [
-              workout('w1', [('squat', 'Squat (Barbell)'), ('mystery', 'Mystery Lift')]),
-              workout('w2', [('squat', 'Squat (Barbell)')]),
+            'templates': [
+              {
+                ...workout('t1', [('squat', 'Squat (Barbell)'), ('mystery', 'Mystery Lift')]),
+                'order': 0,
+              },
             ],
           },
         );
 
-        final [first, second] = (await api.getWorkouts('u1'))!.toList();
+        final [template] = (await api.getTemplates())!.toList();
 
-        expect(first.map((each) => each.exercise.name), ['Приседания со штангой', 'Mystery Lift']);
-        expect(second.single.exercise.name, 'Приседания со штангой');
-        expect(counted, [(1, 2)], reason: 'one report per response, distinct exercises');
+        expect(template.map((each) => each.exercise.name), ['Приседания со штангой', 'Mystery Lift']);
+        expect(counted, [(1, 2)]);
+      });
+
+      test('an edit\'s answer is named too, and only what is shown changes', () async {
+        api.exerciseOnDevice = onDevice;
+        final body = workout('w1', [('squat', 'Squat (Barbell)')]);
+        respond(client: client, method: 'PUT', path: Router.workout('w1'), statusCode: 200, body: body);
+
+        final edited = await api.editWorkout(Workout.fromJson(workout('w1', [('squat', 'Squat (Barbell)')])));
+
+        expect(edited.single.exercise.name, 'Приседания со штангой');
+        expect(edited.single.exercise.category, Category.barbell);
       });
 
       test('a client\'s workouts, read by their coach, are named but not counted', () async {
         final counted = <(int, int)>[];
         api
-          ..exerciseName = ((id) => {'squat': 'Приседания со штангой'}[id])
+          ..exerciseOnDevice = onDevice
           ..onUnnamedExercises = (unnamed, of) => counted.add((unnamed, of));
         respond(
           client: client,
@@ -145,7 +195,7 @@ void main() {
         expect(counted, isEmpty);
       });
 
-      test('without a namer the server names stand, and nothing is counted', () async {
+      test('without a lookup the server names stand, and nothing is counted', () async {
         respond(
           client: client,
           method: 'GET',

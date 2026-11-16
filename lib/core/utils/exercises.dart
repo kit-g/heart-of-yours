@@ -123,10 +123,10 @@ class LocalCatalog implements LocalCatalogService {
   }
 }
 
-/// Exercises in the account's own history, templates or programs that the
-/// device's catalog could not name, so they show the server's English name
-/// (#612). Counts and the language only: nothing about which exercises, or
-/// whose.
+/// Exercises in the account's own History or templates that the device's
+/// catalog has no copy of, so they show the server's name, which for a
+/// library exercise is English (#612). Counts and the language only: nothing
+/// about which exercises, or whose.
 class const UnnamedExercises(final int unnamed, final int of, final String locale) implements Exception {
   @override
   String toString() => 'UnnamedExercises: $unnamed of $of exercises left with the server\'s name ($locale)';
@@ -135,7 +135,9 @@ class const UnnamedExercises(final int unnamed, final int of, final String local
 bool _unnamedReported = false;
 
 /// Reports [UnnamedExercises] once per run: every page of History would
-/// otherwise report the same gap again.
+/// otherwise report the same gap again. Once is enough to say the catalog
+/// and the server disagree on this device; how often is Sentry's count of
+/// devices, not of pages.
 void reportUnnamedExercises(int unnamed, int of) {
   if (_unnamedReported) return;
   _unnamedReported = true;

@@ -2,15 +2,12 @@ part of '../api.dart';
 
 /// A coach's library (#557): programs kept apart from their own training,
 /// saved as versioned documents, and sent to clients as copies of their own.
-mixin _LibraryRoutes on Requests, _ExerciseNaming {
+mixin _LibraryRoutes on Requests {
   /// The library, a page at a time, without bodies.
   Future<({List<CoachProgram> items, String? cursor})> getLibraryPrograms({String? cursor}) async {
     final (json, code) = await get(Router.libraryPrograms, query: _cursor(cursor));
     return switch ((code, json)) {
-      (200, {'programs': List l}) => (
-        items: _readable(_namedAll(l), CoachProgram.fromJson),
-        cursor: json['cursor'] as String?,
-      ),
+      (200, {'programs': List l}) => (items: _readable(l, CoachProgram.fromJson), cursor: json['cursor'] as String?),
       _ => throw json,
     };
   }
@@ -19,7 +16,7 @@ mixin _LibraryRoutes on Requests, _ExerciseNaming {
   Future<CoachProgram> getLibraryProgram(String programId) async {
     final (json, code) = await get(Router.libraryProgram(programId));
     return switch ((code, json)) {
-      (200, Map json) => CoachProgram.fromJson(_named(json)),
+      (200, Map json) => CoachProgram.fromJson(json),
       _ => throw json,
     };
   }
@@ -31,7 +28,7 @@ mixin _LibraryRoutes on Requests, _ExerciseNaming {
   Future<CoachProgram> saveLibraryProgram(String programId, Map<String, dynamic> body) async {
     final (json, code) = await put(Router.libraryProgram(programId), body: body);
     return switch ((code, json)) {
-      (200, Map json) => CoachProgram.fromJson(_named(json)),
+      (200, Map json) => CoachProgram.fromJson(json),
       _ => throw json,
     };
   }

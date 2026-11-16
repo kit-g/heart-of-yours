@@ -1,67 +1,91 @@
 part of '../api.dart';
 
+/// What the device knows of an exercise: its name here, and whether it is
+/// the account's own.
+typedef DeviceExercise = ({String name, bool own});
+
 /// Exercise names in what the server sends back (heart-of-yours#612).
 ///
-/// The server names the exercises inside a workout, a template or a program
-/// from its base rows, which are English and never translated
-/// (heart-api#447), so a Russian phone's History and templates read in
-/// English while its library reads in Russian. Every payload that nests
-/// exercises is renamed through [exerciseName] before it is read.
+/// The server names the exercises inside a workout or a template from its
+/// base rows, and a library exercise's row is English, never translated
+/// (heart-api#447). History takes the server's copies over the device's, so
+/// a Russian phone's History and templates read in English while its library
+/// reads in Russian. Those payloads get the library's names from the device
+/// before they are read.
+///
+/// Only where an exercise is shown: a workout's or a template's exercises
+/// (and a coach's view of a program's sessions, which are templates), and an
+/// anomaly's. Never content a model keeps as it came and writes back.
 mixin _ExerciseNaming on Requests {
-  /// The device's own name for an exercise, by id: the library's in the
-  /// user's language, or an own exercise's latest (#616). Null, or a null
-  /// answer, keeps the server's name.
-  String? Function(String exerciseId)? exerciseName;
+  /// The device's exercise by id, or null when it has none. A library
+  /// exercise is renamed to the device's name, in the user's language. An own
+  /// exercise keeps the server's name, which is its latest: the device's
+  /// copy can be the older one, when its sync has not landed.
+  DeviceExercise? Function(String exerciseId)? exerciseOnDevice;
 
-  /// Told how many exercises in the account's own history or templates
-  /// [exerciseName] could not name, out of how many. Every one of the
-  /// account's exercises is in the device's catalog, the library's and its
-  /// own, so a miss is a server name in English reaching the screen: the
-  /// catalog lacks it, or is not loaded yet. Other people's workouts (a
-  /// coach's view of a client's) are renamed but not counted: their own
-  /// exercises are never on this device.
+  /// Told how many exercises in the account's own History or templates the
+  /// device has no copy of, out of how many. The library and the account's
+  /// own exercises are all on the device once it has synced, so a miss is a
+  /// server name in English on screen, or an exercise someone else made (a
+  /// coach's, in a session they logged or a template they shared). A coach's
+  /// view of a client is renamed but not counted: the client's own exercises
+  /// are never on the coach's device.
   void Function(int unnamed, int of)? onUnnamedExercises;
 
-  /// [json] with every exercise in it named by [exerciseName]: any map under
-  /// an `exercise` key that carries an `id`, however deep, which is how
-  /// workouts, templates and programs (whose sessions are templates) all hold
-  /// theirs. Without a namer the payload is returned as it came.
-  Map _named(Map json) => _namedAll([json]).single as Map;
+  /// [workout] (or a template: the same shape) with its exercises named.
+  /// Changed in place: the decoded body is the caller's, and a copy would
+  /// cost a second allocation of every set.
+  Map _named(Map workout) {
+    _nameExercises(workout, _Tally());
+    return workout;
+  }
 
-  /// [_named] over a whole response list, counting what it could not name
-  /// when [counts]: the account's own payloads, see [onUnnamedExercises].
-  List _namedAll(List payloads, {bool counts = false}) {
-    final name = exerciseName;
-    if (name == null) return payloads;
-    final tally = (unnamed: <String>{}, of: <String>{});
-    final renamed = [for (final each in payloads) _renamed(each, name, tally)];
+  /// [_named] over a list of workouts or templates, counting what the device
+  /// could not name when [counts]: the account's own, see
+  /// [onUnnamedExercises].
+  List _namedAll(List workouts, {bool counts = false}) {
+    final tally = _Tally();
+    for (final each in workouts.whereType<Map>()) {
+      _nameExercises(each, tally);
+    }
     if (counts && tally.unnamed.isNotEmpty) onUnnamedExercises?.call(tally.unnamed.length, tally.of.length);
-    return renamed;
+    return workouts;
   }
 
-  static Object? _renamed(Object? json, String? Function(String id) name, _Tally tally) {
-    return switch (json) {
-      Map map => {
-        for (final MapEntry(:key, :value) in map.entries)
-          key: switch ((key, value)) {
-            ('exercise', {'id': String id} && Map exercise) => {
-              ...exercise,
-              'name': _nameOf(exercise, id, name, tally),
-            },
-            _ => _renamed(value, name, tally),
-          },
-      },
-      List list => [for (final each in list) _renamed(each, name, tally)],
-      _ => json,
-    };
+  /// A coach's view of a client's program: its sessions are templates.
+  Map _namedSessions(Map view) {
+    if (view['sessions'] case final List sessions) _namedAll(sessions);
+    return view;
   }
 
-  static Object? _nameOf(Map exercise, String id, String? Function(String id) name, _Tally tally) {
-    tally.of.add(id);
-    if (name(id) case String named) return named;
-    tally.unnamed.add(id);
-    return exercise['name'];
+  /// An anomaly names its exercise flat, beside its id.
+  Map _namedAnomaly(Map anomaly) {
+    if ((anomaly['exerciseId'], exerciseOnDevice) case (final String id, final device?)) {
+      if (device(id) case (:final name, own: false)) anomaly['exerciseName'] = name;
+    }
+    return anomaly;
+  }
+
+  void _nameExercises(Map workout, _Tally tally) {
+    final device = exerciseOnDevice;
+    if (device == null) return;
+    for (final entry in [...?(workout['exercises'] as List?)?.whereType<Map>()]) {
+      if (entry['exercise'] case {'id': final String id} && final Map exercise) {
+        tally.of.add(id);
+        switch (device(id)) {
+          case null:
+            tally.unnamed.add(id);
+          case (:final name, own: false):
+            exercise['name'] = name;
+          case (name: _, own: true):
+            break;
+        }
+      }
+    }
   }
 }
 
-typedef _Tally = ({Set<String> unnamed, Set<String> of});
+final class _Tally {
+  final unnamed = <String>{};
+  final of = <String>{};
+}
