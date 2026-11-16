@@ -359,6 +359,8 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                     key: AppKeys.historyCalendar,
                     byMonth: byMonth,
                     shows: shows,
+                    // coloured once the library's tags are read (#617)
+                    trained: exercises.isInitialized ? trained : null,
                     onTapWorkout: widget.onTapWorkout,
                     selectedId: widget.selectedId,
                     controller: Scrolls.of(context).historyCalendarScrollController,

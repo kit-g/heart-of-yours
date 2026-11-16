@@ -98,7 +98,7 @@ void main() {
   });
 
   String groupsOf(WidgetTester tester, Workout workout) {
-    return tester.widget<Text>(find.byKey(AppKeys.compactWorkoutGroups(workout.id))).data!;
+    return tester.widget<Text>(find.byKey(AppKeys.compactWorkoutGroups(workout.id))).semanticsLabel!;
   }
 
   testDensity('until the library is read, the line waits rather than guess (#611)', (tester) async {

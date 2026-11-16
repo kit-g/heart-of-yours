@@ -46,6 +46,7 @@ class _FilterButton extends StatelessWidget {
       true => {for (final workout in Workouts.of(context).history) ...trained.of(workout)},
       false => null,
     };
+    bool open(MuscleGroupKey group) => filter.groups.contains(group) || (reached?.contains(group) ?? true);
     final picked = await showMenu<MuscleGroupKey>(
       context: context,
       position: menuOver(context, context.findRenderObject()! as RenderBox),
@@ -55,8 +56,14 @@ class _FilterButton extends StatelessWidget {
             key: AppKeys.historyFilterGroup(group.value),
             value: group,
             checked: filter.groups.contains(group),
-            enabled: filter.groups.contains(group) || (reached?.contains(group) ?? true),
-            child: Text(group.label(l)),
+            enabled: open(group),
+            child: Row(
+              spacing: 8,
+              children: [
+                FamilyDot(MuscleFamily.of(group), enabled: open(group)),
+                Text(group.label(l)),
+              ],
+            ),
           ),
       ],
     );
@@ -97,6 +104,7 @@ class _FilterChips extends StatelessWidget {
         children: [
           for (final group in _groupOrder.where(filter.groups.contains))
             RemovableChip(
+              avatar: Center(child: FamilyDot(MuscleFamily.of(group))),
               label: group.label(l),
               onDeleted: () => filter.remove(group),
             ),

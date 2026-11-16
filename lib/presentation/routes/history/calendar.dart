@@ -24,6 +24,12 @@ class HistoryCalendar extends StatefulWidget {
   /// Which workouts mark their day, under History's filter (#610); null, all.
   final bool Function(Workout)? shows;
 
+  /// What workouts trained (#610), for the colours a day wears (#617): its
+  /// muscle families, busiest first, up to three, with a key above the
+  /// weekdays. Null — the library not read yet, or a caller with none — and
+  /// days are marked without colour.
+  final WorkoutGroups? trained;
+
   final void Function(Workout)? onTapWorkout;
 
   /// Id of the workout open in the detail pane; null in compact.
@@ -43,6 +49,7 @@ class HistoryCalendar extends StatefulWidget {
     super.key,
     required this.byMonth,
     this.shows,
+    this.trained,
     this.onTapWorkout,
     this.selectedId,
     this.controller,
@@ -180,6 +187,11 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
         constraints: const BoxConstraints(maxWidth: calendarWidth),
         child: Column(
           children: [
+            if (widget.trained != null)
+              const Padding(
+                padding: .fromLTRB(12, 8, 12, 0),
+                child: FamilyLegend(),
+              ),
             Padding(
               padding: const .symmetric(horizontal: 4, vertical: 12),
               child: Row(
@@ -230,6 +242,13 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
                     key: ValueKey(key),
                     month: month,
                     days: days,
+                    families: switch (widget.trained) {
+                      final WorkoutGroups trained => {
+                        for (final MapEntry(key: day, value: workouts) in days.entries)
+                          day: _busiest(trained.setsByFamily(workouts)),
+                      },
+                      null => const {},
+                    },
                     // trained, but none of it under the filter
                     hidden: sessions.map(_dayOf).toSet().difference(days.keys.toSet()),
                     firstWeekday: firstWeekday,
@@ -251,6 +270,9 @@ class _CalendarMonth extends StatelessWidget {
   final DateTime month;
   final Map<int, List<Workout>> days;
 
+  /// The muscle families each day trained, busiest first (#617).
+  final Map<int, List<MuscleFamily>> families;
+
   /// Days trained whose workouts the filter all leaves out (#610).
   final Set<int> hidden;
   final int firstWeekday;
@@ -262,6 +284,7 @@ class _CalendarMonth extends StatelessWidget {
     super.key,
     required this.month,
     required this.days,
+    this.families = const {},
     this.hidden = const {},
     required this.firstWeekday,
     required this.actions,
@@ -301,6 +324,7 @@ class _CalendarMonth extends StatelessWidget {
                       date: date,
                       label: label,
                       sessions: days[day] ?? const [],
+                      families: families[day] ?? const [],
                       filteredOut: hidden.contains(day),
                       when: switch (date.compareTo(today)) {
                         < 0 => .past,
@@ -325,6 +349,20 @@ class _CalendarMonth extends StatelessWidget {
 /// The day of the month a workout counts on: the one it started, on the
 /// user's clock — a start is UTC.
 int _dayOf(Workout workout) => workout.start.toLocal().day;
+
+/// The families a day wears, from its sets per family: the busiest first,
+/// ties in [MuscleFamily] order, three at most — more would not fit under
+/// the day's number, and the day's workouts say the rest.
+List<MuscleFamily> _busiest(Map<MuscleFamily, int> sets) {
+  final ranked = sets.keys.toList()
+    ..sort(
+      (one, two) => switch (sets[two]!.compareTo(sets[one]!)) {
+        0 => one.index.compareTo(two.index),
+        final bySets => bySets,
+      },
+    );
+  return ranked.take(3).toList();
+}
 
 /// What a day can do besides show what it holds (#618), the same for every
 /// day of the calendar:
@@ -374,6 +412,10 @@ class _CalendarDay extends StatelessWidget {
 
   /// Whether the day holds workouts the filter all leaves out (#610).
   final bool filteredOut;
+
+  /// The muscle families the day trained, busiest first, at most three: its
+  /// colours (#617), and read out by name after the day.
+  final List<MuscleFamily> families;
   final _When when;
 
   /// The workout open in the detail pane, if any.
@@ -386,6 +428,7 @@ class _CalendarDay extends StatelessWidget {
     required this.label,
     required this.sessions,
     this.filteredOut = false,
+    this.families = const [],
     required this.when,
     required this.actions,
     required this.child,
@@ -533,6 +576,11 @@ class _CalendarDay extends StatelessWidget {
       button: onTap != null,
       selected: selected,
       label: spoken,
+      // what the day trained, by name: its colours are not read out (#617)
+      value: switch (families) {
+        [] => null,
+        _ => families.map((family) => family.label(l)).join(', '),
+      },
       onTap: onTap,
       excludeSemantics: true,
       child: InkWell(
@@ -553,8 +601,22 @@ class _CalendarDay extends StatelessWidget {
                     shape: .circle,
                     border: selected ? .all(color: primary, width: 2) : null,
                   ),
+                  // lifted clear of the colours under it
+                  padding: families.isEmpty ? null : const .only(bottom: 6),
                   child: child,
                 ),
+                // what it trained, by colour, under the number (#617)
+                if (families.isNotEmpty)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 5,
+                    child: Row(
+                      mainAxisAlignment: .center,
+                      spacing: 2,
+                      children: [for (final family in families) FamilyDot(family, size: 5)],
+                    ),
+                  ),
                 Positioned(
                   right: -2,
                   top: -2,

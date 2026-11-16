@@ -219,16 +219,19 @@ class WorkoutItem extends StatelessWidget {
     final exercises = Exercises.of(context);
     final groups = trained ?? WorkoutGroups(exercises.lookup);
     final done = WorkoutGroups.done(workout).map((each) => each.exercise);
+    // each group with its family's colour (#617); an exercise no group
+    // answers to has no colour to wear
     final what = switch (exercises.isInitialized) {
-      false => const <String>[],
+      false => const <(MuscleFamily?, String)>[],
       true => [
-        for (final group in _inBodyOrder(groups.of(workout))) group.label(l),
+        for (final group in _inBodyOrder(groups.of(workout))) (MuscleFamily.of(group), group.label(l)),
         ...{
           for (final exercise in done.where((each) => groups.ofExercise(each).isEmpty))
-            exercises.lookup(exercise.id)?.name ?? exercise.name,
+            (null, exercises.lookup(exercise.id)?.name ?? exercise.name),
         },
       ],
     };
+    final said = what.map((each) => each.$2).join(', ');
     final numbers = [
       DateFormat.MMMEd(l.localeName).format(workout.start.toLocal()),
       ?workout.duration?.formatted(context),
@@ -281,9 +284,22 @@ class WorkoutItem extends StatelessWidget {
               if (workout.note case final String note)
                 Text(note, style: textTheme.bodyMedium, maxLines: 1, overflow: .ellipsis),
               // held at its height while blank, so nothing moves when it fills
-              Text(
+              Text.rich(
                 key: AppKeys.compactWorkoutGroups(workout.id),
-                what.join(', '),
+                TextSpan(
+                  children: [
+                    for (final (index, (family, name)) in what.indexed) ...[
+                      if (index > 0) const TextSpan(text: ', '),
+                      if (family != null) ...[
+                        WidgetSpan(alignment: .middle, child: FamilyDot(family, size: 7)),
+                        const TextSpan(text: ' '),
+                      ],
+                      TextSpan(text: name),
+                    ],
+                  ],
+                ),
+                // the names alone: the dots are their colour, not more words
+                semanticsLabel: said,
                 style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                 maxLines: 1,
                 overflow: .ellipsis,
