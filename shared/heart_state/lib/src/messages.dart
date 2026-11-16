@@ -119,6 +119,43 @@ enum MessageDelivery {
   closed,
 }
 
+/// What a message can be about (#556): the server keeps these beside the
+/// sealed words, in the clear, and checks neither.
+enum MessageSubjectType {
+  workout('workout'),
+  exerciseSet('exercise_set');
+
+  /// The server's word for it.
+  final String wire;
+
+  new(this.wire);
+
+  static MessageSubjectType? of(String? wire) => values.where((each) => each.wire == wire).firstOrNull;
+}
+
+/// What one message is about: a workout, or one set of one. A reference,
+/// never content: what's said about it is in the sealed words alone.
+final class MessageSubject {
+  final MessageSubjectType type;
+  final String id;
+
+  const new(this.type, this.id);
+
+  /// One the server holds, when this build knows its kind.
+  static MessageSubject? of(String? type, String? id) {
+    return switch ((MessageSubjectType.of(type), id)) {
+      (final MessageSubjectType type, final String id) when id.isNotEmpty => MessageSubject(type, id),
+      _ => null,
+    };
+  }
+
+  @override
+  bool operator ==(Object other) => other is MessageSubject && other.type == type && other.id == id;
+
+  @override
+  int get hashCode => Object.hash(type, id);
+}
+
 /// One message as the app shows it.
 class Message {
   final ThreadItem item;
@@ -142,6 +179,9 @@ class Message {
     Opened(:final text) => text,
     Locked() || Refused() => null,
   };
+
+  /// What it's about, when it's about something this build knows.
+  MessageSubject? get subject => MessageSubject.of(item.subjectType, item.subjectId);
 }
 
 /// One thread as this device has read it.
@@ -239,6 +279,10 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   final _threads = <Thread>[];
   final _views = <String, MessageThread>{};
   final _drafts = <String, String>{};
+
+  /// What the next message to each connection's person is about, by
+  /// connection: set where the conversation is opened from.
+  final _about = <String, MessageSubject>{};
   final _pulls = _OneAtATime();
   final _flushes = _OneAtATime();
   final _writes = _InTurn();
@@ -303,6 +347,22 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       case false:
         _drafts[threadId] = text;
     }
+  }
+
+  /// What the next message written to [connectionId]'s person is about.
+  MessageSubject? about(String connectionId) => _about[connectionId];
+
+  /// Makes the next message to [connectionId]'s person about [subject], or
+  /// about nothing in particular.
+  void writeAbout(String connectionId, MessageSubject? subject) {
+    if (_about[connectionId] == subject) return;
+    switch (subject) {
+      case final MessageSubject subject:
+        _about[connectionId] = subject;
+      case null:
+        _about.remove(connectionId);
+    }
+    notifyListeners();
   }
 
   /// Reads the inbox: what this device holds first, then the server's.
@@ -635,7 +695,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   /// Writes [text] to [threadId]: sealed and kept here at once, then sent.
   /// Throws when it can't be sealed, as with keys not running: nothing is
   /// kept then, and the words stay with the caller.
-  Future<void> send(String threadId, String text, {String? subjectType, String? subjectId}) async {
+  Future<void> send(String threadId, String text, {MessageSubject? about}) async {
     final userId = _userId;
     if (userId == null) throw StateError('no account');
     final sealed = await _cipher.seal(threadId, text);
@@ -645,8 +705,8 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       threadId: threadId,
       senderId: userId,
       kind: 'message',
-      subjectType: subjectType,
-      subjectId: subjectId,
+      subjectType: about?.type.wire,
+      subjectId: about?.id,
       content: sealed.content,
       commitment: sealed.commitment,
       tag: '',
@@ -667,6 +727,8 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       notifyListeners();
     }
     _drafts.remove(threadId);
+    // said: the next message is about nothing in particular until asked
+    if (lookup(threadId)?.connectionId case final String connectionId) _about.remove(connectionId);
     await _show(threadId);
     await flush(threadId);
   }
@@ -857,6 +919,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     _older.clear();
     _forgotten.clear();
     _drafts.clear();
+    _about.clear();
     _marked.clear();
     _status = .idle;
   }

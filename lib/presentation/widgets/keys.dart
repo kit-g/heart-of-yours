@@ -507,6 +507,12 @@ abstract final class AppKeys {
   static const threadBlock = Key('Messages.block');
   static const threadBlockConfirm = Key('Messages.blockConfirm');
   static const threadCleared = Key('Messages.cleared');
+  static const messageAbout = Key('Messages.about');
+  static const messageSubject = Key('Messages.subject');
+  static const reviewMessage = Key('Review.message');
+  static Key reviewSet(String setId) => Key('Review.set.$setId');
+  static const reviewSetMessage = Key('Review.set.message');
+  static const messageCoachAbout = Key('Workout.messageCoach');
   static const messageReport = Key('Messages.messageReport');
   static const reportSheet = Key('Report.sheet');
   static const reportInclude = Key('Report.include');

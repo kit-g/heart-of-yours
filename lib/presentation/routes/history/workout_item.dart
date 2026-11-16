@@ -364,6 +364,7 @@ class WorkoutItem extends StatelessWidget {
                   return PopupMenuItem<_WorkoutOption>(
                     key: switch (option) {
                       .copyForAi => AppKeys.copyForAiWorkout(workout.id),
+                      .messageCoach => AppKeys.messageCoachAbout,
                       .edit || .saveAsTemplate || .repeat || .delete => null,
                     },
                     height: 40,
@@ -372,9 +373,12 @@ class WorkoutItem extends StatelessWidget {
                       spacing: 4,
                       children: [
                         icon,
-                        Text(
-                          copy,
-                          style: style,
+                        // a longer item wraps in a menu's width, never past it
+                        Flexible(
+                          child: Text(
+                            copy,
+                            style: style,
+                          ),
                         ),
                       ],
                     ),
@@ -518,6 +522,13 @@ class WorkoutItem extends StatelessWidget {
         return onEditWorkout?.call(workout);
       case _WorkoutOption.copyForAi:
         return copyWorkoutForAi(context, workout);
+      case _WorkoutOption.messageCoach:
+        // the conversation with the coach, its next message about this
+        // workout (#556); one relationship per domain makes it one coach
+        if (Coaching.of(context).coaches.firstOrNull?.connectionId case final String connectionId) {
+          Messages.of(context).writeAbout(connectionId, MessageSubject(.workout, workout.id));
+          HeartRouter.of(context).openThread(connectionId);
+        }
     }
   }
 
@@ -528,7 +539,16 @@ class WorkoutItem extends StatelessWidget {
     final preferences = Preferences.of(context);
     final copies = preferences.isOn(.copyForAi) || preferences.shouldOffer(.copyForAi);
     if (copies) preferences.markOffered(.copyForAi);
-    return _WorkoutOption.values.where((option) => option != .copyForAi || copies);
+    // a coach to write to, with Your coach on, where messages can be sealed
+    final coached =
+        preferences.isOn(.yourCoach) && Coaching.of(context).coaches.isNotEmpty && DeviceKeys.of(context).supported;
+    return _WorkoutOption.values.where(
+      (option) => switch (option) {
+        .copyForAi => copies,
+        .messageCoach => coached,
+        .edit || .saveAsTemplate || .repeat || .delete => true,
+      },
+    );
   }
 
   _WorkoutOptionBundle _item(BuildContext context, _WorkoutOption option) {
@@ -554,6 +574,11 @@ class WorkoutItem extends StatelessWidget {
         copy: L.of(context).copyForAi,
         style: textTheme.titleSmall,
         icon: const Icon(Icons.auto_awesome_outlined, size: 16),
+      ),
+      .messageCoach => (
+        copy: L.of(context).messagesCoachAboutWorkout,
+        style: textTheme.titleSmall,
+        icon: const Icon(Icons.add_comment_outlined, size: 16),
       ),
       .delete => (
         copy: L.of(context).delete,
@@ -719,6 +744,7 @@ enum _WorkoutOption {
   saveAsTemplate,
   repeat,
   copyForAi,
+  messageCoach,
   delete,
 }
 

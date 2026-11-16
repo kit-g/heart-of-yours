@@ -3,6 +3,7 @@
 /// coach reads theirs in Coaching, beside the inbox on a wide window.
 library;
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
@@ -28,7 +29,10 @@ class ThreadPage extends StatelessWidget {
   /// Who it is with, when the caller knows better than the server.
   final String? name;
 
-  const new({super.key, required this.connectionId, this.name});
+  /// Opens a workout a message is about, where there's somewhere to open it.
+  final ValueChanged<String>? onOpenWorkout;
+
+  const new({super.key, required this.connectionId, this.name, this.onOpenWorkout});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +48,7 @@ class ThreadPage extends StatelessWidget {
           alignment: .topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: threadWidth),
-            child: ThreadView(key: ValueKey(connectionId), connectionId: connectionId),
+            child: ThreadView(key: ValueKey(connectionId), connectionId: connectionId, onOpenWorkout: onOpenWorkout),
           ),
         ),
       ),
@@ -107,7 +111,10 @@ enum _Opening { opening, open, failed }
 class ThreadView extends StatefulWidget {
   final String connectionId;
 
-  const new({super.key, required this.connectionId});
+  /// Opens a workout a message is about, where there's somewhere to open it.
+  final ValueChanged<String>? onOpenWorkout;
+
+  const new({super.key, required this.connectionId, this.onOpenWorkout});
 
   @override
   State<ThreadView> createState() => _ThreadViewState();
@@ -152,8 +159,22 @@ class _ThreadViewState extends State<ThreadView> {
       _text.text = _messages.draft(thread.id);
       _opening.value = .open;
       await _messages.open(thread.id);
+      if (mounted) _readSubjects(thread.id);
     } catch (_) {
       if (mounted) _opening.value = .failed;
+    }
+  }
+
+  /// A coach's device names what a client's message is about from that
+  /// client's workouts, which nothing may have read yet: read once, when
+  /// a message here is about one.
+  void _readSubjects(String threadId) {
+    final roster = Provider.of<Roster?>(context, listen: false);
+    final client = roster?.client(widget.connectionId);
+    if (roster == null || client == null || roster.recordStatus(client.studentId) != .idle) return;
+    final about = _messages.about(widget.connectionId) != null;
+    if (about || _messages.thread(threadId).messages.any((each) => each.subject != null)) {
+      unawaited(roster.loadRecord(client.studentId));
     }
   }
 
@@ -165,7 +186,7 @@ class _ThreadViewState extends State<ThreadView> {
     final failed = L.of(context).messagesSendFailed;
     _text.clear();
     try {
-      await _messages.send(threadId, text);
+      await _messages.send(threadId, text, about: _messages.about(widget.connectionId));
     } catch (_) {
       // nothing was kept: the words go back where they were written
       if (_text.text.isEmpty) _text.text = text;
@@ -185,6 +206,7 @@ class _ThreadViewState extends State<ThreadView> {
             connectionId: widget.connectionId,
             text: _text,
             onSend: _send,
+            onOpenWorkout: widget.onOpenWorkout,
           ),
           (.failed, _) => _Note(
             icon: Icons.cloud_off_rounded,
@@ -203,8 +225,15 @@ class _Conversation extends StatelessWidget {
   final String connectionId;
   final TextEditingController text;
   final VoidCallback onSend;
+  final ValueChanged<String>? onOpenWorkout;
 
-  const new({required this.threadId, required this.connectionId, required this.text, required this.onSend});
+  const new({
+    required this.threadId,
+    required this.connectionId,
+    required this.text,
+    required this.onSend,
+    this.onOpenWorkout,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -248,7 +277,12 @@ class _Conversation extends StatelessWidget {
                     crossAxisAlignment: .stretch,
                     children: [
                       if (places[shown.length - 1 - index].newDay) _Day(at: shown[index].at),
-                      _Bubble(message: shown[index], place: places[shown.length - 1 - index]),
+                      _Bubble(
+                        message: shown[index],
+                        place: places[shown.length - 1 - index],
+                        connectionId: connectionId,
+                        onOpenWorkout: onOpenWorkout,
+                      ),
                     ],
                   ),
                   false => switch (thread.hasOlder) {
@@ -279,7 +313,7 @@ class _Conversation extends StatelessWidget {
         ),
         switch (closed) {
           true => _Closed(),
-          false => _Composer(text: text, onSend: onSend),
+          false => _Composer(connectionId: connectionId, text: text, onSend: onSend),
         },
       ],
     );
@@ -322,8 +356,10 @@ class _Day extends StatelessWidget {
 class _Bubble extends StatelessWidget {
   final Message message;
   final MessagePlace place;
+  final String connectionId;
+  final ValueChanged<String>? onOpenWorkout;
 
-  const new({required this.message, required this.place});
+  const new({required this.message, required this.place, required this.connectionId, this.onOpenWorkout});
 
   @override
   Widget build(BuildContext context) {
@@ -382,6 +418,9 @@ class _Bubble extends StatelessWidget {
           false => .start,
         },
         children: [
+          // what it's about, above it: a workout or one set, opened from here
+          if (message.subject case final MessageSubject subject)
+            _SubjectLine(subject: subject, connectionId: connectionId, onOpenWorkout: onOpenWorkout),
           LayoutBuilder(
             builder: (context, constraints) => ConstrainedBox(
               // a bubble a hand can follow: never across the whole pane
@@ -469,14 +508,45 @@ class _Bubble extends StatelessWidget {
 enum _MessageAction { copy, report }
 
 class _Composer extends StatelessWidget {
+  final String connectionId;
   final TextEditingController text;
   final VoidCallback onSend;
 
-  const new({required this.text, required this.onSend});
+  const new({required this.connectionId, required this.text, required this.onSend});
 
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
+    final messages = Messages.watch(context);
+    return Column(
+      mainAxisSize: .min,
+      crossAxisAlignment: .stretch,
+      children: [
+        // what the next message is about, until it's said or let go
+        if (messages.about(connectionId) case final MessageSubject subject)
+          Padding(
+            padding: const .fromLTRB(12, 4, 12, 0),
+            child: Align(
+              alignment: .centerLeft,
+              child: InputChip(
+                key: AppKeys.messageAbout,
+                avatar: Icon(_subjectIcon(subject), size: 18),
+                label: Text(
+                  l.messagesAbout(subjectLabel(context, subject, connectionId: connectionId)),
+                  maxLines: 1,
+                  overflow: .ellipsis,
+                ),
+                deleteButtonTooltipMessage: l.messagesAboutNothing,
+                onDeleted: () => messages.writeAbout(connectionId, null),
+              ),
+            ),
+          ),
+        _box(l),
+      ],
+    );
+  }
+
+  Widget _box(L l) {
     return Padding(
       padding: const .fromLTRB(12, 4, 8, 12),
       child: Row(
@@ -509,6 +579,121 @@ class _Composer extends StatelessWidget {
       ),
     );
   }
+}
+
+/// What a message is about, above it: tapped, the workout opens, where it
+/// is one this device holds and there's somewhere to open it.
+class _SubjectLine extends StatelessWidget {
+  final MessageSubject subject;
+  final String connectionId;
+  final ValueChanged<String>? onOpenWorkout;
+
+  const new({required this.subject, required this.connectionId, this.onOpenWorkout});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final where = subjectPlace(context, subject, connectionId: connectionId);
+    final words = l.messagesAbout(subjectLabel(context, subject, connectionId: connectionId));
+    final open = switch ((where, onOpenWorkout)) {
+      ((:final workout, set: _, exercise: _), final open?) => () => open(workout.id),
+      _ => null,
+    };
+    final style = textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant);
+    return Padding(
+      padding: const .only(top: 4),
+      child: switch (open) {
+        final VoidCallback open => TextButton.icon(
+          key: AppKeys.messageSubject,
+          style: TextButton.styleFrom(
+            minimumSize: const Size(0, kMinInteractiveDimension),
+            padding: const .symmetric(horizontal: 8),
+            foregroundColor: colorScheme.onSurfaceVariant,
+            textStyle: style,
+          ),
+          onPressed: open,
+          icon: Icon(_subjectIcon(subject), size: 16),
+          label: Text(words, maxLines: 1, overflow: .ellipsis),
+        ),
+        null => Padding(
+          key: AppKeys.messageSubject,
+          padding: const .symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            mainAxisSize: .min,
+            spacing: 6,
+            children: [
+              Icon(_subjectIcon(subject), size: 16, color: colorScheme.onSurfaceVariant),
+              Flexible(
+                child: Text(words, style: style, maxLines: 1, overflow: .ellipsis),
+              ),
+            ],
+          ),
+        ),
+      },
+    );
+  }
+}
+
+IconData _subjectIcon(MessageSubject subject) {
+  return switch (subject.type) {
+    .workout => Icons.fitness_center_rounded,
+    .exerciseSet => Icons.format_list_numbered_rounded,
+  };
+}
+
+/// Where a message's subject is among the workouts this device holds: the
+/// workout, and for a set its exercise and its place there, from one.
+typedef SubjectPlace = ({Workout workout, WorkoutExercise? exercise, int? set});
+
+/// Where [subject] is, among the workouts of the person the conversation
+/// with [connectionId] is with: a client's, as the roster read them, on a
+/// coach's device; one's own on anyone else's. Null where it isn't held.
+SubjectPlace? subjectPlace(BuildContext context, MessageSubject subject, {required String connectionId}) {
+  final roster = Provider.of<Roster?>(context);
+  final workouts = switch (roster?.client(connectionId)) {
+    final ClientSummary client => roster!.workoutsOf(client.studentId),
+    null => Provider.of<Workouts?>(context)?.history ?? const <Workout>[],
+  };
+  return switch (subject.type) {
+    .workout =>
+      workouts
+          .where((workout) => workout.id == subject.id)
+          .map<SubjectPlace>((workout) => (workout: workout, exercise: null, set: null))
+          .firstOrNull,
+    .exerciseSet =>
+      workouts
+          .expand(
+            (workout) => workout.expand(
+              (exercise) => exercise.indexed.map<SubjectPlace>(
+                (each) => (workout: workout, exercise: exercise, set: each.$2.id == subject.id ? each.$1 + 1 : null),
+              ),
+            ),
+          )
+          .where((place) => place.set != null)
+          .firstOrNull,
+  };
+}
+
+/// What [subject] is, in words: "Squat (Barbell), set 3", "Day A, Tue
+/// 12 Nov", or only a workout or a set where this device doesn't hold it.
+String subjectLabel(BuildContext context, MessageSubject subject, {required String connectionId}) {
+  final l = L.of(context);
+  return switch ((subject.type, subjectPlace(context, subject, connectionId: connectionId))) {
+    (_, (workout: _, exercise: final WorkoutExercise exercise, set: final int set)) => l.messagesSubjectSet(
+      exercise.exercise.name,
+      set,
+    ),
+    (_, (:final workout, exercise: _, set: _)) => l.messagesSubjectWorkout(
+      switch (workout.name?.trim()) {
+        final String name when name.isNotEmpty => name,
+        _ => l.coachingReviewUntitled,
+      },
+      DateFormat.MMMEd(l.localeName).format(workout.start.toLocal()),
+    ),
+    (.workout, null) => l.messagesSubjectSomeWorkout,
+    (.exerciseSet, null) => l.messagesSubjectSomeSet,
+  };
 }
 
 class _Closed extends StatelessWidget {

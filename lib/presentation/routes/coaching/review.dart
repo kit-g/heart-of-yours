@@ -7,7 +7,11 @@ class WorkoutReviewPage extends StatefulWidget {
   final String connectionId;
   final String workoutId;
 
-  const new({super.key, required this.connectionId, required this.workoutId});
+  /// Opens the conversation with the client, where the next message is
+  /// about what was picked here.
+  final VoidCallback? onMessage;
+
+  const new({super.key, required this.connectionId, required this.workoutId, this.onMessage});
 
   @override
   State<WorkoutReviewPage> createState() => _WorkoutReviewPageState();
@@ -43,6 +47,16 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
     super.dispose();
   }
 
+  /// The conversation, with the next message about [subject] (#556).
+  void Function(MessageSubject subject)? get _messageAbout {
+    final open = widget.onMessage;
+    if (open == null) return null;
+    return (subject) {
+      Messages.of(context).writeAbout(widget.connectionId, subject);
+      open();
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
@@ -58,13 +72,26 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
                 final WorkoutReview review => _workoutTitle(l, review.workout),
                 null => '',
               }),
+              actions: [
+                if ((snapshot.data, _messageAbout) case (final WorkoutReview review, final message?))
+                  IconButton(
+                    key: AppKeys.reviewMessage,
+                    tooltip: l.messagesAboutThisWorkout,
+                    onPressed: () => message(MessageSubject(.workout, review.workout.id)),
+                    icon: const Icon(Icons.add_comment_outlined),
+                  ),
+                const SizedBox(width: 8),
+              ],
             ),
             body: Align(
               alignment: .topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: readableWidth),
                 child: switch (snapshot) {
-                  AsyncSnapshot(hasData: true, :final data?) => _ReviewView(review: data),
+                  AsyncSnapshot(hasData: true, :final data?) => _ReviewView(
+                    review: data,
+                    onMessageAbout: _messageAbout,
+                  ),
                   AsyncSnapshot(hasError: true) => _Empty(
                     icon: Icons.cloud_off_rounded,
                     title: l.coachingReviewFailed,
@@ -89,8 +116,9 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
 
 class _ReviewView extends StatelessWidget {
   final WorkoutReview review;
+  final void Function(MessageSubject subject)? onMessageAbout;
 
-  const new({required this.review});
+  const new({required this.review, this.onMessageAbout});
 
   @override
   Widget build(BuildContext context) {
@@ -137,6 +165,7 @@ class _ReviewView extends StatelessWidget {
             key: AppKeys.coachingReviewExercise(index),
             exercise: exercise,
             compare: review.hasPlan,
+            onMessageAbout: onMessageAbout,
           ),
       ],
     );
@@ -149,7 +178,10 @@ class _ReviewedExerciseCard extends StatelessWidget {
   /// Whether there's a plan to put beside what was done.
   final bool compare;
 
-  const new({super.key, required this.exercise, required this.compare});
+  /// A message about one set of it: a long press on the set.
+  final void Function(MessageSubject subject)? onMessageAbout;
+
+  const new({super.key, required this.exercise, required this.compare, this.onMessageAbout});
 
   @override
   Widget build(BuildContext context) {
@@ -196,48 +228,92 @@ class _ReviewedExerciseCard extends StatelessWidget {
               ),
             if (!exercise.skipped)
               for (final (index, set) in exercise.sets.indexed)
-                Row(
-                  crossAxisAlignment: .start,
-                  children: [
-                    SizedBox(width: 28, child: Text('${index + 1}', style: label)),
-                    if (compare)
+                _MessageableSet(
+                  key: switch (set.done) {
+                    final ExerciseSet done => AppKeys.reviewSet(done.id),
+                    null => null,
+                  },
+                  onMessage: switch ((set.done, onMessageAbout)) {
+                    (final ExerciseSet done, final message?) => () => message(MessageSubject(.exerciseSet, done.id)),
+                    _ => null,
+                  },
+                  child: Row(
+                    crossAxisAlignment: .start,
+                    children: [
+                      SizedBox(width: 28, child: Text('${index + 1}', style: label)),
+                      if (compare)
+                        Expanded(
+                          child: Text(switch (set.planned) {
+                            final PlannedNumbers asked => _numbers(l, formats, asked),
+                            null => '—',
+                          }),
+                        ),
                       Expanded(
-                        child: Text(switch (set.planned) {
-                          final PlannedNumbers asked => _numbers(l, formats, asked),
+                        child: Text(switch (set.done) {
+                          final ExerciseSet done => _numbers(
+                            l,
+                            formats,
+                            (weight: done.weight, reps: done.reps, duration: done.duration, distance: done.distance),
+                          ),
                           null => '—',
                         }),
                       ),
-                    Expanded(
-                      child: Text(switch (set.done) {
-                        final ExerciseSet done => _numbers(
-                          l,
-                          formats,
-                          (weight: done.weight, reps: done.reps, duration: done.duration, distance: done.distance),
+                      if (compare)
+                        Expanded(
+                          child: Text(
+                            switch (set.outcome) {
+                              .lighter => l.coachingReviewLighter,
+                              .fewer => l.coachingReviewFewer,
+                              .shorter => l.coachingReviewShorter,
+                              .skipped => l.coachingReviewSkipped,
+                              .added => l.coachingReviewAdded,
+                              .asked || null => '',
+                            },
+                            style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary),
+                            textAlign: .end,
+                          ),
                         ),
-                        null => '—',
-                      }),
-                    ),
-                    if (compare)
-                      Expanded(
-                        child: Text(
-                          switch (set.outcome) {
-                            .lighter => l.coachingReviewLighter,
-                            .fewer => l.coachingReviewFewer,
-                            .shorter => l.coachingReviewShorter,
-                            .skipped => l.coachingReviewSkipped,
-                            .added => l.coachingReviewAdded,
-                            .asked || null => '',
-                          },
-                          style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary),
-                          textAlign: .end,
-                        ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
           ],
         ),
       ),
     );
+  }
+}
+
+/// A set's row, which a long press, or a screen reader's action, turns into
+/// a message about it (#556). Just the row where there's nobody to write to.
+class _MessageableSet extends StatelessWidget {
+  final VoidCallback? onMessage;
+  final Widget child;
+
+  const new({super.key, required this.onMessage, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final message = onMessage;
+    if (message == null) return child;
+    final label = L.of(context).messagesAboutThisSet;
+    return Semantics(
+      customSemanticsActions: {CustomSemanticsAction(label: label): message},
+      child: GestureDetector(
+        behavior: .opaque,
+        onLongPressStart: (details) => _menu(context, details.globalPosition, label, message),
+        child: child,
+      ),
+    );
+  }
+
+  static Future<void> _menu(BuildContext context, Offset at, String label, VoidCallback message) async {
+    final overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final picked = await showMenu<bool>(
+      context: context,
+      position: RelativeRect.fromRect(at & const Size(1, 1), Offset.zero & overlay.size),
+      items: [PopupMenuItem(key: AppKeys.reviewSetMessage, value: true, child: Text(label))],
+    );
+    if (picked ?? false) message();
   }
 }
 

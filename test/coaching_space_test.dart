@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/history/history.dart' show WorkoutEditor;
+import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage;
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show TemplateEditor;
 import 'package:heart/presentation/widgets/keys.dart';
@@ -647,6 +648,41 @@ void main() {
       expect(find.descendant(of: squat, matching: find.text('Skipped')), findsOneWidget);
       // the coach's own unit: these tests run in pounds
       expect(find.descendant(of: squat, matching: find.text('198.4 lbs x 5')), findsOneWidget);
+    });
+
+    testWidgets('from a workout, a message about it, or about one set of it, in words the coach knows', (tester) async {
+      withSam();
+      final thread = Thread(id: 't-sam', connectionId: 'c-sam', otherId: 'sam', otherName: 'Sam');
+      when(api.openThread('c-sam')).thenAnswer((_) async => thread);
+      when(api.getThreads()).thenAnswer((_) async => [thread]);
+      when(api.getThreadItems('t-sam', limit: anyNamed('limit')))
+          .thenAnswer((_) async => (items: <ThreadItem>[], cursor: null));
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClientWorkout('w1'));
+      await tester.pumpTimes();
+      final context = tester.element(find.byKey(AppKeys.coachingReview));
+      final messages = Messages.of(context);
+
+      // a set: a long press on its row, and the one thing the menu offers
+      await tester.longPress(find.byKey(AppKeys.reviewSet('s1')));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.reviewSetMessage);
+      await tester.pumpTimes();
+
+      expect(find.byType(ThreadPage), findsOneWidget);
+      expect(messages.about('c-sam'), const MessageSubject(.exerciseSet, 's1'));
+      expect(find.text('About Squat, set 1'), findsOneWidget, reason: 'over the box, in words');
+
+      await tester.pageBack();
+      await tester.pumpTimes();
+      // the whole workout: the page's own action
+      await tester.tapByKey(AppKeys.reviewMessage);
+      await tester.pumpTimes();
+
+      expect(messages.about('c-sam'), const MessageSubject(.workout, 'w1'));
+      expect(find.text('About Day A, Sat, Nov 7'), findsOneWidget);
     });
 
     testWidgets('a workout with no plan lists what was done and compares nothing', (tester) async {
