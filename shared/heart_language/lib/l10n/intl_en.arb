@@ -6206,5 +6206,7 @@
   "historyDensityFull": "Full",
   "@historyDensityFull": {"description": "Settings choice: History's workout cards list every exercise with its best set (#611)", "type": "text", "placeholders": {}},
   "historyDensityCompact": "Compact",
-  "@historyDensityCompact": {"description": "Settings choice: History's workout cards in three lines, with the muscle groups trained instead of the exercises (#611)", "type": "text", "placeholders": {}}
+  "@historyDensityCompact": {"description": "Settings choice: History's workout cards in three lines, with the muscle groups trained instead of the exercises (#611)", "type": "text", "placeholders": {}},
+  "muscleFamilyLowerBody": "Lower body",
+  "@muscleFamilyLowerBody": {"description": "The muscle family of legs, glutes, hamstrings and adductors: a colour key on History's calendar and the name beside its dot (#617)", "type": "text", "placeholders": {}}
 }

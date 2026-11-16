@@ -1770,3 +1770,4 @@ historyFilterSearching,Shown on History while the muscle-group filter loads olde
 historyDensity,"Settings row title: how History's list draws a workout, full (every exercise) or compact (#611)",History cards,History cards,Карточки истории,Tarjetas del historial,Cartes de l'historique
 historyDensityFull,Settings choice: History's workout cards list every exercise with its best set (#611),Full,Full,Полные,Completas,Complètes
 historyDensityCompact,"Settings choice: History's workout cards in three lines, with the muscle groups trained instead of the exercises (#611)",Compact,Compact,Компактные,Compactas,Compactes
+muscleFamilyLowerBody,"The muscle family of legs, glutes, hamstrings and adductors: a colour key on History's calendar and the name beside its dot (#617)",Lower body,Lower body,Низ тела,Tren inferior,Bas du corps
