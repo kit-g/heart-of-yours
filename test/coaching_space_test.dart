@@ -618,6 +618,43 @@ void main() {
       verify(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor'))).called(greaterThan(0));
     });
 
+    testWidgets("a former client opens to the coach's notes on them, and nothing of their training", (tester) async {
+      withSam();
+      when(api.getClients(former: true, cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          items: [ClientSummary(connectionId: 'c-old', studentId: 'old', name: 'Pepper', status: 'severed')],
+          cursor: null,
+        ),
+      );
+      when(db.getCoachNotes(any)).thenAnswer((_) async => []);
+      when(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (notes: <CoachNote>[], cursor: null));
+      when(db.replaceCoachNotes(any, any, keep: anyNamed('keep'))).thenAnswer((_) async {});
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault());
+      await tester.scrollUntilVisible(
+        find.byKey(AppKeys.coachingFormerClients),
+        200,
+        scrollable: find.descendant(of: find.byType(ClientsPage), matching: find.byType(Scrollable)).first,
+      );
+      await tester.tapByKey(AppKeys.coachingFormerClients);
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.coachingClient('c-old'));
+      await tester.pumpTimes();
+
+      expect(find.byType(ClientPage), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientFormer), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientMessages), findsNothing, reason: 'no conversation to read back');
+      expect(find.text('Workouts'), findsNothing);
+      verifyNever(api.getClientWorkouts('old', cursor: anyNamed('cursor')));
+
+      await tester.tapByKey(AppKeys.coachingClientNotes);
+      await tester.pumpTimes();
+
+      expect(find.byType(ClientNotesPage), findsOneWidget);
+      expect(find.text('Notes on Pepper'), findsOneWidget);
+    });
+
     testWidgets('where keys have nowhere to be kept, as on the web, there are no notes to lead to', (tester) async {
       withSam();
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
@@ -893,7 +930,7 @@ void main() {
       await tester.tapByKey(AppKeys.coachingClient('c-sam'));
       await tester.pumpTimes();
 
-      expect(find.byKey(AppKeys.coachingClientMessages), findsOneWidget, reason: 'their page is open');
+      expect(find.byKey(AppKeys.coachingClientFormer), findsOneWidget, reason: 'their page is open');
       expect(find.byKey(AppKeys.coachingLogFor), findsNothing);
     });
 

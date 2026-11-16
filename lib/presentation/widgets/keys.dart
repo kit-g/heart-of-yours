@@ -391,6 +391,7 @@ abstract final class AppKeys {
   static const coachingRosterView = Key('Coaching.rosterView');
   static const coachingActivityView = Key('Coaching.activityView');
   static const coachingFormerClients = Key('Coaching.formerClients');
+  static const coachingClientFormer = Key('Coaching.client.former');
 
   static Key coachingReasonFilter(String? reason) => Key('Coaching.reason.${reason ?? 'all'}');
 

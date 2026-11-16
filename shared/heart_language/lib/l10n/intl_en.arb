@@ -5699,6 +5699,8 @@
   "@coachingColumnWeek": {"description": "Column heading of the roster as a table: seven dots for the days they trained (#559)", "type": "text", "placeholders": {}},
   "coachingColumnReasons": "Needs a word",
   "@coachingColumnReasons": {"description": "Column heading of the roster as a table: why a client may need a word (#559)", "type": "text", "placeholders": {}},
+  "coachingClientFormer": "You no longer coach them. Your notes on them stay with you.",
+  "@coachingClientFormer": {"description": "On a former client's page, under their photo: the connection ended; the coach keeps their own private notes (#556)", "type": "text", "placeholders": {}},
   "coachingFormerClients": "Former clients",
   "@coachingFormerClients": {"description": "Heading of the people the coach no longer coaches, at the end of the roster (#559)", "type": "text", "placeholders": {}},
   "coachingNoFormerClients": "Nobody has left.",

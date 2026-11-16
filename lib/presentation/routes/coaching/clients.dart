@@ -598,6 +598,7 @@ class _FormerClients extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final roster = Roster.watch(context);
+    final opener = _ClientOpener.of(context);
     return ExpansionTile(
       key: AppKeys.coachingFormerClients,
       title: Text(l.coachingFormerClients),
@@ -613,12 +614,20 @@ class _FormerClients extends StatelessWidget {
           ),
         ],
         (.loaded, []) => [ListTile(title: Text(l.coachingNoFormerClients))],
+        // opened as a client is, for the coach's notes on them and what
+        // the two of them wrote
         (.loaded, final former) => [
           for (final client in former)
             ListTile(
               key: AppKeys.coachingClient(client.connectionId),
               leading: Avatar(remote: client.avatar, radius: 20),
               title: Text(_clientName(l, client)),
+              selected: opener?.selected == client.connectionId,
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: switch (opener) {
+                final opener? => () => opener.onOpenClient(client.connectionId),
+                null => null,
+              },
             ),
         ],
       },
@@ -632,6 +641,9 @@ class _FormerClients extends StatelessWidget {
 bool _lookClears(ClientSummary client) {
   return client.reasons.any((reason) => ClientReason.of(reason)?.clearsOnReview ?? true);
 }
+
+/// Whether [client] is no longer coached: the connection was severed.
+bool _former(ClientSummary client) => client.status == 'severed';
 
 String _clientName(L l, ClientSummary client) {
   return switch (client.name?.trim()) {

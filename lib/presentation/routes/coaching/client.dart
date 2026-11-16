@@ -135,6 +135,10 @@ class _ClientViewState extends State<_ClientView> {
     final notes = CoachNotes.of(context);
     if (DeviceKeys.of(context).supported && notes.status == .idle) unawaited(notes.load());
     if (roster.client(widget.connectionId) case final ClientSummary client) {
+      // someone no longer coached: their workouts and programs aren't the
+      // coach's to read any more, only the coach's own notes and the
+      // conversation are
+      if (_former(client)) return;
       await (roster.load(), roster.loadRecord(client.studentId), programs.loadManaged(client.studentId)).wait;
     } else {
       await roster.load();
@@ -172,6 +176,8 @@ class _ClientViewState extends State<_ClientView> {
           .map(_Skipped.new),
     ]..sort((a, b) => b.at.compareTo(a.at));
     final status = roster.recordStatus(id);
+    final former = _former(client);
+    final thread = Messages.watch(context).threadOf(client.connectionId);
 
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
@@ -185,25 +191,31 @@ class _ClientViewState extends State<_ClientView> {
           children: [
             ?widget.leading,
             // a page names them in its title
-            _ClientHeader(client: client, named: widget.leading != null),
-            // their one conversation with the coach (#556), in Messages
-            ListTile(
-              key: AppKeys.coachingClientMessages,
-              leading: const Icon(Icons.forum_outlined),
-              title: Text(
-                switch (client.name?.trim()) {
-                  final String name when name.isNotEmpty => l.messagesWith(name),
-                  _ => l.coachingMessages,
+            switch (former) {
+              true => _FormerHeader(client: client, named: widget.leading != null),
+              false => _ClientHeader(client: client, named: widget.leading != null),
+            },
+            // their one conversation with the coach (#556), in Messages: a
+            // former client's only when there is one to read back, since an
+            // ended connection opens none
+            if (!former || thread != null)
+              ListTile(
+                key: AppKeys.coachingClientMessages,
+                leading: const Icon(Icons.forum_outlined),
+                title: Text(
+                  switch (client.name?.trim()) {
+                    final String name when name.isNotEmpty => l.messagesWith(name),
+                    _ => l.coachingMessages,
+                  },
+                  maxLines: 1,
+                  overflow: .ellipsis,
+                ),
+                trailing: switch (thread?.unread ?? 0) {
+                  0 => const Icon(Icons.chevron_right_rounded),
+                  final int count => Badge(label: Text('$count', semanticsLabel: l.messagesUnread(count))),
                 },
-                maxLines: 1,
-                overflow: .ellipsis,
+                onTap: () => widget.onMessage(client.connectionId),
               ),
-              trailing: switch (Messages.watch(context).threadOf(client.connectionId)?.unread ?? 0) {
-                0 => const Icon(Icons.chevron_right_rounded),
-                final int count => Badge(label: Text('$count', semanticsLabel: l.messagesUnread(count))),
-              },
-              onTap: () => widget.onMessage(client.connectionId),
-            ),
             // the coach's own notes on them, which they never see (#556):
             // not where this device has nowhere to keep the keys
             if (DeviceKeys.of(context).supported)
@@ -213,68 +225,72 @@ class _ClientViewState extends State<_ClientView> {
             if (client.status case 'active' || 'paused')
               _LogForTile(client: client, onLog: (past) => widget.onLog(client.connectionId, past)),
             // what they follow, and every copy the coach sent them, waiting
-            // or not: the ones both of them edit (#558)
-            for (final (id, name, waiting) in _programsOf(client, ClientPrograms.watch(context).managed(id)))
-              ListTile(
-                key: switch (id == client.programId) {
-                  true => AppKeys.coachingClientProgram,
-                  false => AppKeys.coachingClientCopy(id),
-                },
-                leading: const Icon(Icons.event_repeat_rounded),
-                title: Text(name, maxLines: 1, overflow: .ellipsis),
-                subtitle: switch (waiting) {
-                  true => Text(l.coachingCopyWaiting),
-                  false => null,
-                },
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => widget.onOpenProgram(id),
-              ),
-            Padding(
-              padding: const .fromLTRB(16, 16, 16, 4),
-              child: Text(l.coachingClientWorkouts, style: Theme.of(context).textTheme.titleMedium),
-            ),
-            ...switch ((status, entries)) {
-              (.idle || .loading, []) => [
-                const Padding(
-                  padding: .all(24),
-                  child: Center(child: CircularProgressIndicator.adaptive()),
-                ),
-              ],
-              (.failed, []) => [
-                _Empty(
-                  icon: Icons.cloud_off_rounded,
-                  title: l.coachingClientRecordFailed,
-                  action: OutlinedButton(onPressed: () => roster.loadRecord(id), child: Text(l.retry)),
-                ),
-              ],
-              (_, []) => [
-                _Empty(
-                  icon: Icons.event_note_outlined,
-                  title: l.coachingClientNothingYet,
-                  body: l.coachingClientNothingYetBody,
-                ),
-              ],
-              _ => [
-                for (final entry in entries)
-                  switch (entry) {
-                    _Trained(:final workout) => _WorkoutTile(
-                      workout: workout,
-                      onTap: () => widget.onOpenWorkout(workout.id),
-                    ),
-                    _Skipped(:final skip) => ListTile(
-                      key: AppKeys.coachingClientSkip,
-                      leading: const Icon(Icons.redo_rounded),
-                      title: Text(l.coachingClientSkipped),
-                      subtitle: Text(DateFormat.MMMEd(l.localeName).format(skip.at.toLocal())),
-                    ),
+            // or not: the ones both of them edit (#558). A former client's
+            // are theirs alone now.
+            if (!former)
+              for (final (id, name, waiting) in _programsOf(client, ClientPrograms.watch(context).managed(id)))
+                ListTile(
+                  key: switch (id == client.programId) {
+                    true => AppKeys.coachingClientProgram,
+                    false => AppKeys.coachingClientCopy(id),
                   },
-                if (more)
+                  leading: const Icon(Icons.event_repeat_rounded),
+                  title: Text(name, maxLines: 1, overflow: .ellipsis),
+                  subtitle: switch (waiting) {
+                    true => Text(l.coachingCopyWaiting),
+                    false => null,
+                  },
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => widget.onOpenProgram(id),
+                ),
+            if (!former) ...[
+              Padding(
+                padding: const .fromLTRB(16, 16, 16, 4),
+                child: Text(l.coachingClientWorkouts, style: Theme.of(context).textTheme.titleMedium),
+              ),
+              ...switch ((status, entries)) {
+                (.idle || .loading, []) => [
                   const Padding(
-                    padding: .all(16),
+                    padding: .all(24),
                     child: Center(child: CircularProgressIndicator.adaptive()),
                   ),
-              ],
-            },
+                ],
+                (.failed, []) => [
+                  _Empty(
+                    icon: Icons.cloud_off_rounded,
+                    title: l.coachingClientRecordFailed,
+                    action: OutlinedButton(onPressed: () => roster.loadRecord(id), child: Text(l.retry)),
+                  ),
+                ],
+                (_, []) => [
+                  _Empty(
+                    icon: Icons.event_note_outlined,
+                    title: l.coachingClientNothingYet,
+                    body: l.coachingClientNothingYetBody,
+                  ),
+                ],
+                _ => [
+                  for (final entry in entries)
+                    switch (entry) {
+                      _Trained(:final workout) => _WorkoutTile(
+                        workout: workout,
+                        onTap: () => widget.onOpenWorkout(workout.id),
+                      ),
+                      _Skipped(:final skip) => ListTile(
+                        key: AppKeys.coachingClientSkip,
+                        leading: const Icon(Icons.redo_rounded),
+                        title: Text(l.coachingClientSkipped),
+                        subtitle: Text(DateFormat.MMMEd(l.localeName).format(skip.at.toLocal())),
+                      ),
+                    },
+                  if (more)
+                    const Padding(
+                      padding: .all(16),
+                      child: Center(child: CircularProgressIndicator.adaptive()),
+                    ),
+                ],
+              },
+            ],
           ],
         ),
       ),
@@ -318,6 +334,47 @@ class _ClientHeader extends StatelessWidget {
             ),
           ),
           if (_lookClears(client)) _MarkReviewed(client: client),
+        ],
+      ),
+    );
+  }
+}
+
+/// Someone the coach no longer coaches: who they were, and that they've
+/// gone. Nothing of their training since is the coach's to see.
+class _FormerHeader extends StatelessWidget {
+  final ClientSummary client;
+
+  /// Whether to say who they are, where nothing above does.
+  final bool named;
+
+  const new({required this.client, this.named = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return Padding(
+      padding: const .fromLTRB(16, 16, 16, 8),
+      child: Row(
+        crossAxisAlignment: .start,
+        spacing: 16,
+        children: [
+          Avatar(remote: client.avatar, radius: 28),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: .start,
+              spacing: 6,
+              children: [
+                if (named) Text(_clientName(l, client), style: textTheme.titleLarge),
+                Text(
+                  l.coachingClientFormer,
+                  key: AppKeys.coachingClientFormer,
+                  style: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
