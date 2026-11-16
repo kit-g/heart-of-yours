@@ -56,14 +56,7 @@ class _Charts extends StatelessWidget {
           // the string still travels as [label] — it feeds the chart's
           // spoken summary — while the row adds the dashboard toggle
           label: title,
-          customLabel: Row(
-            children: [
-              Expanded(
-                child: Text(title, style: textTheme.titleMedium, maxLines: 1, overflow: .ellipsis),
-              ),
-              DashboardToggle(exercise: exercise, type: type),
-            ],
-          ),
+          customLabel: DashboardChartTitle(title: title, exercise: exercise, type: type),
           converter: type.converter(prefs, unit: unit, category: exercise.category),
           getLeftLabel: type.leftLabel(style),
           getTooltip: type.tooltip,

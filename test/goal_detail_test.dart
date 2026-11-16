@@ -65,16 +65,16 @@ void main() {
     remote = _FakeRemote();
     goals = Goals(service: local, remoteService: remote)..userId = userId;
 
-    final service = exerciseService = MockExerciseService();
+    exerciseService = MockExerciseService();
     final remoteExercise = MockRemoteExerciseService();
-    when(service.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [press]));
-    when(service.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
-    when(service.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
+    when(exerciseService.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [press]));
+    when(exerciseService.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
+    when(exerciseService.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
     when(remoteExercise.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
 
     exercises = Exercises(
       remoteService: remoteExercise,
-      service: service,
+      service: exerciseService,
       libraryService: MockExerciseLibraryService(),
       catalogService: MockLocalCatalogService(),
       preferenceService: MockRemoteExercisePreferenceService(),
@@ -88,7 +88,10 @@ void main() {
     await preferences.init();
 
     chartService = MockLocalChartService();
-    charts = Charts(service: chartService)..userId = userId;
+    charts = Charts(service: chartService)
+      ..userId = userId
+      // as once the dashboard has loaded: before then the toggle is absent
+      ..initialized = true;
   });
 
   Future<void> pump(

@@ -309,11 +309,19 @@ class _GoalsCardState extends State<GoalsCard> {
           initialChildSize: .7,
           maxChildSize: .95,
           builder: (context, controller) {
-            return GoalDetail(
-              goal: goal,
-              workouts: widget.workouts,
-              scrollController: controller,
-              onClose: () => Navigator.of(context).pop(),
+            // a messenger of its own: a snack raised in the sheet (a chart
+            // added to the profile, a rung the server refused) would
+            // otherwise be drawn on the page under it, out of sight
+            return ScaffoldMessenger(
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                body: GoalDetail(
+                  goal: goal,
+                  workouts: widget.workouts,
+                  scrollController: controller,
+                  onClose: () => Navigator.of(context).pop(),
+                ),
+              ),
             );
           },
         );

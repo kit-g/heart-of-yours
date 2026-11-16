@@ -120,6 +120,23 @@ void main() {
     expect(find.byType(GoalRow), findsNWidgets(2));
   });
 
+  testWidgets('a goal opens in a sheet with a messenger of its own, so its snacks show over it', (tester) async {
+    await seed([workoutsGoal()]);
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(GoalRow));
+    await tester.pumpAndSettle();
+
+    final detail = find.byType(GoalDetail);
+    expect(detail, findsOneWidget);
+    // the sheet's, nearest the detail; the app's root one is further out
+    final messengers = find.ancestor(of: detail, matching: find.byType(ScaffoldMessenger));
+    expect(messengers, findsNWidgets(2));
+    final sheet = tester.state<ScaffoldMessengerState>(messengers.first);
+    expect(ScaffoldMessenger.of(tester.element(detail)), same(sheet));
+  });
+
   testWidgets('states a recurring target with its period', (tester) async {
     await seed([workoutsGoal(target: 4)]);
 
