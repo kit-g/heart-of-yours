@@ -90,6 +90,7 @@ enum _Screen {
   pastWorkoutsOffer,
   historyFilterMenu,
   historyFiltered,
+  historyCompact,
   exercises,
   exercisesGrouped,
   settings,
@@ -710,6 +711,21 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.historyFiltered, _Guideline.textContrastDark, null),
   (_Screen.historyFiltered, _Guideline.androidTapTarget, null),
   (_Screen.historyFiltered, _Guideline.iosTapTarget, null),
+
+  // History's compact cards (#611)
+  (_Screen.historyCompact, _Guideline.labeledTapTarget, null),
+  (_Screen.historyCompact, _Guideline.textContrastLight, null),
+  (_Screen.historyCompact, _Guideline.textContrastDark, null),
+  (
+    _Screen.historyCompact,
+    _Guideline.androidTapTarget,
+    'the card\'s ⋯ menu at 36x36 (VisualDensity -3, lib/presentation/routes/history/workout_item.dart:323), as on the full card, and the bottom nav bar items are below 48x48 — visual-density change, out of scope',
+  ),
+  (
+    _Screen.historyCompact,
+    _Guideline.iosTapTarget,
+    'the card\'s ⋯ menu at 36x36 (VisualDensity -3, lib/presentation/routes/history/workout_item.dart:323), as on the full card, and the bottom nav bar items are below 44x44 — visual-density change, out of scope',
+  ),
 
   (_Screen.history, _Guideline.labeledTapTarget, null),
   (_Screen.history, _Guideline.textContrastLight, null),
@@ -2490,6 +2506,15 @@ void main() {
         // workouts, and starting another (#618)
         expect(find.byType(PopupMenuItem<Object>), findsNWidgets(3));
         expect(find.byKey(AppKeys.calendarStart), findsOneWidget);
+      case _Screen.historyCompact:
+        final completed = Workout.fromJson(_unsynced().toMap());
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
+        when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
+            .thenAnswer((_) async => [completed]);
+        Preferences.of(tester.element(find.byType(MaterialApp))).setHistoryDensity(.compact);
+        await tester.tapByKey(AppKeys.historyStack);
+        await tester.pumpTimes();
+        expect(find.byKey(AppKeys.compactWorkout(completed.id)), findsOneWidget);
       case _Screen.historyFilterMenu || _Screen.historyFiltered:
         final completed = Workout.fromJson(_unsynced().toMap());
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);

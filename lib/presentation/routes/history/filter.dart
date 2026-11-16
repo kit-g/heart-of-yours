@@ -1,19 +1,30 @@
 part of 'history.dart';
 
-/// The groups History filters by (#610), head to foot: the order of the menu
-/// and of the chips, whatever order they were picked in.
-const _filterGroups = <MuscleGroupKey>[
-  .chest,
-  .back,
-  .shoulders,
-  .arms,
-  .core,
-  .legs,
-  .glutes,
-  .hamstrings,
-  .adductors,
-  .neck,
-];
+/// Where [group] sits head to foot: the order of the filter's menu and chips
+/// (#610), whatever order they were picked in, and of a compact card's line
+/// (#611). A switch, so a group heart_models adds cannot go unplaced.
+int _headToFoot(MuscleGroupKey group) {
+  return switch (group) {
+    .neck => 0,
+    .chest => 1,
+    .back => 2,
+    .shoulders => 3,
+    .arms => 4,
+    .core => 5,
+    .glutes => 6,
+    .legs => 7,
+    .hamstrings => 8,
+    .adductors => 9,
+  };
+}
+
+/// [groups] head to foot.
+List<MuscleGroupKey> _inBodyOrder(Iterable<MuscleGroupKey> groups) {
+  return [...groups]..sort((one, two) => _headToFoot(one).compareTo(_headToFoot(two)));
+}
+
+/// Every group, head to foot.
+final _groupOrder = _inBodyOrder(MuscleGroupKey.values);
 
 /// Narrows History to workouts that trained some muscle groups (#610): a menu
 /// of the groups, each one ticked while it is in the filter. Filled while any
@@ -35,17 +46,25 @@ class _FilterButton extends StatelessWidget {
       true => {for (final workout in Workouts.of(context).history) ...trained.of(workout)},
       false => null,
     };
+    bool open(MuscleGroupKey group) => filter.groups.contains(group) || (reached?.contains(group) ?? true);
     final picked = await showMenu<MuscleGroupKey>(
       context: context,
       position: menuOver(context, context.findRenderObject()! as RenderBox),
       items: [
-        for (final group in _filterGroups)
+        for (final group in _groupOrder)
           CheckedPopupMenuItem<MuscleGroupKey>(
             key: AppKeys.historyFilterGroup(group.value),
             value: group,
             checked: filter.groups.contains(group),
-            enabled: filter.groups.contains(group) || (reached?.contains(group) ?? true),
-            child: Text(group.label(l)),
+            enabled: open(group),
+            child: Row(
+              spacing: 8,
+              children: [
+                FamilyDot(MuscleFamily.of(group), enabled: open(group)),
+                // wraps at large text rather than overflow the menu's width
+                Flexible(child: Text(group.label(l))),
+              ],
+            ),
           ),
       ],
     );
@@ -84,8 +103,9 @@ class _FilterChips extends StatelessWidget {
       child: Row(
         spacing: 8,
         children: [
-          for (final group in _filterGroups.where(filter.groups.contains))
+          for (final group in _groupOrder.where(filter.groups.contains))
             RemovableChip(
+              avatar: Center(child: FamilyDot(MuscleFamily.of(group))),
               label: group.label(l),
               onDeleted: () => filter.remove(group),
             ),

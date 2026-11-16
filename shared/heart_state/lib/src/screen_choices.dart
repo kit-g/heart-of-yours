@@ -16,6 +16,24 @@ enum HistoryView {
   static HistoryView? fromValue(String? value) => values.where((view) => view.value == value).firstOrNull;
 }
 
+/// How History's list draws a workout (#611): the full card, every exercise
+/// with its best set, or a compact one — name, date, the numbers and the
+/// muscle groups trained, in three lines. Full is what History always was,
+/// and stays the default.
+///
+/// [value] is the storage key, on the device and in the account, and never
+/// changes once shipped.
+enum HistoryDensity {
+  full('full'),
+  compact('compact');
+
+  final String value;
+
+  new(this.value);
+
+  static HistoryDensity? fromValue(String? value) => values.where((density) => density.value == value).firstOrNull;
+}
+
 /// A choice of how one of the app's screens shows itself, kept with when it
 /// was made: what travels between devices. Like an opt-in answer
 /// ([FeatureRecord]), the time settles two devices that disagree, and the
@@ -43,6 +61,9 @@ final class ScreenChoiceRecord {
 enum ScreenChoice {
   /// [HistoryView] (#609).
   historyView('historyView'),
+
+  /// [HistoryDensity] (#611).
+  historyDensity('historyDensity'),
 
   /// How the exercise picker groups the library, a [PickerGrouping] by name
   /// (#620).

@@ -6200,5 +6200,13 @@
   "historyFilterClear": "Clear filter",
   "@historyFilterClear": {"description": "Button that removes every muscle group from History's filter (#610)", "type": "text", "placeholders": {}},
   "historyFilterSearching": "Looking through older workouts…",
-  "@historyFilterSearching": {"description": "Shown on History while the muscle-group filter loads older workouts to search (#610)", "type": "text", "placeholders": {}}
+  "@historyFilterSearching": {"description": "Shown on History while the muscle-group filter loads older workouts to search (#610)", "type": "text", "placeholders": {}},
+  "historyDensity": "History cards",
+  "@historyDensity": {"description": "Settings row title: how History's list draws a workout, full (every exercise) or compact (#611)", "type": "text", "placeholders": {}},
+  "historyDensityFull": "Full",
+  "@historyDensityFull": {"description": "Settings choice: History's workout cards list every exercise with its best set (#611)", "type": "text", "placeholders": {}},
+  "historyDensityCompact": "Compact",
+  "@historyDensityCompact": {"description": "Settings choice: History's workout cards in three lines, with the muscle groups trained instead of the exercises (#611)", "type": "text", "placeholders": {}},
+  "muscleFamilyLowerBody": "Lower body",
+  "@muscleFamilyLowerBody": {"description": "The muscle family of legs, glutes, hamstrings and adductors: a colour key on History's calendar and the name beside its dot (#617)", "type": "text", "placeholders": {}}
 }

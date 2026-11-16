@@ -17,6 +17,16 @@ class WorkoutItem extends StatelessWidget {
   /// line, as of this workout.
   final bool showsRecords;
 
+  /// History's compact card (#611): three lines — the name and its badges;
+  /// the date and the numbers; the muscle groups trained — in place of the
+  /// exercise list. A choice in Settings; the Done page never asks for it.
+  final bool compact;
+
+  /// What workouts trained, read once for the whole list (#610): the page's
+  /// own, so a compact card does not resolve its exercises again. Absent, the
+  /// card reads its own.
+  final WorkoutGroups? trained;
+
   const new({
     super.key,
     required this.workout,
@@ -29,6 +39,8 @@ class WorkoutItem extends StatelessWidget {
     this.onTapImageIcon,
     this.highlighted = false,
     this.showsRecords = false,
+    this.compact = false,
+    this.trained,
   });
 
   @override
@@ -44,10 +56,17 @@ class WorkoutItem extends StatelessWidget {
     // set of 13 lbs × 7 showed "Best set volume 91 lbs" beside "TOTAL VOLUME
     // 90 lbs". 7 × 5.8967 kg is 41.277, truncated to 41, converted to 90.38,
     // truncated to 90; the honest answer is 91.
-    final (String heroValue, String heroLabel) = switch ((_volume(workout), prefs.weightUnit)) {
-      (double total, .imperial) when total > 0 => (l.lb(total.asPounds.round()), l.totalVolume),
-      (double total, .metric) when total > 0 => ('${total.round()} ${l.kg}', l.totalVolume),
-      _ => switch (workout.firstOrNull) {
+    final String? volume = switch ((_volume(workout), prefs.weightUnit)) {
+      (double total, .imperial) when total > 0 => l.lb(total.asPounds.round()),
+      (double total, .metric) when total > 0 => '${total.round()} ${l.kg}',
+      _ => null,
+    };
+    // the compact card names the volume or nothing: a best set on its line
+    // would read as the whole session (#611)
+    if (compact) return _compactCard(context, volume);
+    final (String heroValue, String heroLabel) = switch (volume) {
+      final String total => (total, l.totalVolume),
+      null => switch (workout.firstOrNull) {
         null => ('-', l.totalVolume),
         var exercise => (
           _formatSet(
@@ -86,67 +105,7 @@ class WorkoutItem extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Row(
-                    children: [
-                      // a day records fell: how many, as of that workout
-                      _RecordCount(workout: workout),
-                      // something in it looks off, and is not decided (#428)
-                      _ToReview(workout: workout),
-                      // a program's session: the program, in the Workout tab
-                      PartOfProgram(
-                        programId: workout.programId,
-                        size: 18,
-                        onOpen: (program) => HeartRouter.of(context).pushProgramOver(program.id!),
-                      ),
-                      if (workout case Workout(:Map images) when images.isNotEmpty)
-                        FeedbackButton(
-                          tooltip: l.viewProgressPhotos,
-                          onPressed: () {
-                            onTapImageIcon?.call(
-                              [...images.values],
-                              startingIndex: 0,
-                              workoutId: workout.id,
-                            );
-                          },
-                          child: const Icon(Icons.image_rounded),
-                        ),
-                      if (showsMenuButton)
-                        PopupMenuButton<_WorkoutOption>(
-                          tooltip: l.moreOptions,
-                          style: const ButtonStyle(
-                            visualDensity: VisualDensity(vertical: -3, horizontal: -3),
-                          ),
-                          padding: EdgeInsets.zero,
-                          icon: const Icon(Icons.more_horiz),
-                          onSelected: (option) => _onTapOption(context, option, workout),
-                          itemBuilder: (context) {
-                            return _options(context).map(
-                              (option) {
-                                final (:copy, :style, :icon) = _item(context, option);
-                                return PopupMenuItem<_WorkoutOption>(
-                                  key: switch (option) {
-                                    .copyForAi => AppKeys.copyForAiWorkout(workout.id),
-                                    .edit || .saveAsTemplate || .repeat || .delete => null,
-                                  },
-                                  height: 40,
-                                  value: option,
-                                  child: Row(
-                                    spacing: 4,
-                                    children: [
-                                      icon,
-                                      Text(
-                                        copy,
-                                        style: style,
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ).toList();
-                          },
-                        ),
-                    ],
-                  ),
+                  _badges(context),
                 ],
               ),
               Text(
@@ -155,8 +114,7 @@ class WorkoutItem extends StatelessWidget {
               ),
               // a session their coach logged for them (#560), while Your coach
               // is on: off, it is a workout like any other
-              if (workout.loggedByName?.trim() case final String coach
-                  when coach.isNotEmpty && Preferences.watch(context).isOn(.yourCoach))
+              if (_coach(context) case final String coach)
                 Padding(
                   key: AppKeys.loggedBy(workout.id),
                   padding: const .only(top: 4),
@@ -243,6 +201,189 @@ class WorkoutItem extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  /// The compact card (#611). Its own layout, not the full one cut short:
+  /// - the name, with the badges and the menu, as on the full card;
+  /// - the day, the duration and the [volume], on one line;
+  /// - a note, when there is one, in a line of its own;
+  /// - what the session was, without opening it: the muscle groups it
+  ///   trained, by the History filter's rule (#610), head to foot, then any
+  ///   exercise no group answers to (a run, a swim) by its name. Until the
+  ///   library is read the line stays blank rather than guess from the
+  ///   workout's own copies and change under the reader.
+  Widget _compactCard(BuildContext context, String? volume) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final l = L.of(context);
+    final exercises = Exercises.of(context);
+    final groups = trained ?? WorkoutGroups(exercises.lookup);
+    final done = WorkoutGroups.done(workout).map((each) => each.exercise);
+    // each group with its family's colour (#617); an exercise no group
+    // answers to has no colour to wear
+    final what = switch (exercises.isInitialized) {
+      false => const <(MuscleFamily?, String)>[],
+      true => [
+        for (final group in _inBodyOrder(groups.of(workout))) (MuscleFamily.of(group), group.label(l)),
+        ...{
+          for (final exercise in done.where((each) => groups.ofExercise(each).isEmpty))
+            (null, exercises.lookup(exercise.id)?.name ?? exercise.name),
+        },
+      ],
+    };
+    final said = what.map((each) => each.$2).join(', ');
+    final numbers = [
+      DateFormat.MMMEd(l.localeName).format(workout.start.toLocal()),
+      ?workout.duration?.formatted(context),
+      ?volume,
+    ];
+
+    return Card(
+      key: AppKeys.compactWorkout(workout.id),
+      color: highlighted ? colorScheme.secondaryContainer : null,
+      margin: const .symmetric(horizontal: 16, vertical: 4),
+      child: InkWell(
+        // matches the card theme's corner
+        borderRadius: const .all(.circular(12)),
+        onTap: () => onTap?.call(workout),
+        child: Padding(
+          padding: const .fromLTRB(16, 6, 10, 10),
+          child: Column(
+            crossAxisAlignment: .start,
+            spacing: 2,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      workout.name ?? '?',
+                      style: textTheme.titleLarge?.copyWith(fontSize: 16),
+                      maxLines: 1,
+                      overflow: .ellipsis,
+                    ),
+                  ),
+                  _badges(context),
+                ],
+              ),
+              Text(
+                numbers.join(' · '),
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.tertiary,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+                maxLines: 1,
+                overflow: .ellipsis,
+              ),
+              if (_coach(context) case final String coach)
+                Text(
+                  key: AppKeys.loggedBy(workout.id),
+                  l.loggedBy(coach),
+                  style: textTheme.bodySmall?.copyWith(color: colorScheme.primary),
+                ),
+              // the user's own words about it, if any: one line of them
+              if (workout.note case final String note)
+                Text(note, style: textTheme.bodyMedium, maxLines: 1, overflow: .ellipsis),
+              // held at its height while blank, so nothing moves when it fills
+              Text.rich(
+                key: AppKeys.compactWorkoutGroups(workout.id),
+                TextSpan(
+                  children: [
+                    for (final (index, (family, name)) in what.indexed) ...[
+                      if (index > 0) const TextSpan(text: ', '),
+                      if (family != null) ...[
+                        WidgetSpan(alignment: .middle, child: FamilyDot(family, size: 7)),
+                        const TextSpan(text: ' '),
+                      ],
+                      TextSpan(text: name),
+                    ],
+                  ],
+                ),
+                // the names alone: the dots are their colour, not more words
+                semanticsLabel: said,
+                style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                maxLines: 1,
+                overflow: .ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Who logged this session for the user, by name (#560): only while Your
+  /// coach is on — off, it is a workout like any other.
+  String? _coach(BuildContext context) {
+    return switch (workout.loggedByName?.trim()) {
+      final String coach when coach.isNotEmpty && Preferences.watch(context).isOn(.yourCoach) => coach,
+      _ => null,
+    };
+  }
+
+  /// The card's badges and its menu, at the end of its first line: the same
+  /// on the full card and the compact one.
+  Widget _badges(BuildContext context) {
+    final l = L.of(context);
+    return Row(
+      children: [
+        // a day records fell: how many, as of that workout
+        _RecordCount(workout: workout),
+        // something in it looks off, and is not decided (#428)
+        _ToReview(workout: workout),
+        // a program's session: the program, in the Workout tab
+        PartOfProgram(
+          programId: workout.programId,
+          size: 18,
+          onOpen: (program) => HeartRouter.of(context).pushProgramOver(program.id!),
+        ),
+        if (workout case Workout(:Map images) when images.isNotEmpty)
+          FeedbackButton(
+            tooltip: l.viewProgressPhotos,
+            onPressed: () {
+              onTapImageIcon?.call(
+                [...images.values],
+                startingIndex: 0,
+                workoutId: workout.id,
+              );
+            },
+            child: const Icon(Icons.image_rounded),
+          ),
+        if (showsMenuButton)
+          PopupMenuButton<_WorkoutOption>(
+            tooltip: l.moreOptions,
+            style: const ButtonStyle(
+              visualDensity: VisualDensity(vertical: -3, horizontal: -3),
+            ),
+            padding: EdgeInsets.zero,
+            icon: const Icon(Icons.more_horiz),
+            onSelected: (option) => _onTapOption(context, option, workout),
+            itemBuilder: (context) {
+              return _options(context).map(
+                (option) {
+                  final (:copy, :style, :icon) = _item(context, option);
+                  return PopupMenuItem<_WorkoutOption>(
+                    key: switch (option) {
+                      .copyForAi => AppKeys.copyForAiWorkout(workout.id),
+                      .edit || .saveAsTemplate || .repeat || .delete => null,
+                    },
+                    height: 40,
+                    value: option,
+                    child: Row(
+                      spacing: 4,
+                      children: [
+                        icon,
+                        Text(
+                          copy,
+                          style: style,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ).toList();
+            },
+          ),
+      ],
     );
   }
 

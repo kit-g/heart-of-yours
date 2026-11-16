@@ -66,6 +66,9 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :screens,
       :historyView,
       :historyAsList,
+      :historyDensity,
+      :historyDensityFull,
+      :historyDensityCompact,
       :calendar,
     ) = L.of(
       context,
@@ -154,32 +157,26 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                 _Section(
                   title: screens,
                   children: [
-                    Padding(
-                      padding: const .symmetric(horizontal: 16.0),
-                      child: Selector<Preferences, HistoryView?>(
-                        selector: (_, provider) => switch (provider.isInitialized) {
-                          true => provider.historyView,
-                          false => null,
-                        },
-                        builder: (context, view, _) {
-                          return switch (view) {
-                            null => const SizedBox.shrink(),
-                            HistoryView value => FixedLengthSettingPicker<HistoryView>(
-                              key: AppKeys.historyViewSetting,
-                              title: historyView,
-                              value: value,
-                              onValueChanged: (view) {
-                                buzz();
-                                if (view != null) Preferences.of(context).setHistoryView(view);
-                              },
-                              children: {
-                                .list: Text(historyAsList),
-                                .calendar: Text(calendar),
-                              },
-                            ),
-                          };
-                        },
-                      ),
+                    _ScreenChoiceRow<HistoryView>(
+                      key: AppKeys.historyViewSetting,
+                      title: historyView,
+                      read: (preferences) => preferences.historyView,
+                      write: (preferences, view) => preferences.setHistoryView(view),
+                      children: {
+                        .list: Text(historyAsList),
+                        .calendar: Text(calendar),
+                      },
+                    ),
+                    // how History's list draws a workout (#611)
+                    _ScreenChoiceRow<HistoryDensity>(
+                      key: AppKeys.historyDensitySetting,
+                      title: historyDensity,
+                      read: (preferences) => preferences.historyDensity,
+                      write: (preferences, density) => preferences.setHistoryDensity(density),
+                      children: {
+                        .full: Text(historyDensityFull),
+                        .compact: Text(historyDensityCompact),
+                      },
                     ),
                     const _PickerGroupingPicker(),
                   ],
@@ -758,6 +755,50 @@ class const _Weekday(final int weekday) extends StatelessWidget {
       label: DateFormat.EEEE(locale).format(day),
       excludeSemantics: true,
       child: Text(DateFormat.E(locale).format(day)),
+    );
+  }
+}
+
+/// One screen choice as a settings row (#609, #611): the stored choice in a
+/// segmented control, nothing until the preferences are read.
+class _ScreenChoiceRow<T extends Object> extends StatelessWidget with HasHaptic {
+  final String title;
+  final T Function(Preferences) read;
+  final void Function(Preferences, T) write;
+  final Map<T, Widget> children;
+
+  const new({
+    super.key,
+    required this.title,
+    required this.read,
+    required this.write,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const .symmetric(horizontal: 16.0),
+      child: Selector<Preferences, T?>(
+        selector: (_, provider) => switch (provider.isInitialized) {
+          true => read(provider),
+          false => null,
+        },
+        builder: (context, value, _) {
+          return switch (value) {
+            null => const SizedBox.shrink(),
+            final T value => FixedLengthSettingPicker<T>(
+              title: title,
+              value: value,
+              onValueChanged: (picked) {
+                buzz();
+                if (picked != null) write(Preferences.of(context), picked);
+              },
+              children: children,
+            ),
+          };
+        },
+      ),
     );
   }
 }

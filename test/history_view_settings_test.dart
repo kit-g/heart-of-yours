@@ -51,5 +51,14 @@ void main() {
     await tester.tap(find.descendant(of: row, matching: find.text(l.historyAsList)));
     await tester.pumpTimes();
     expect(preferences.historyView, HistoryView.list);
+
+    // and beside it, how History's list draws a workout (#611)
+    final density = find.byKey(AppKeys.historyDensitySetting);
+    await tester.ensureVisible(density);
+    expect(find.descendant(of: density, matching: find.text(l.historyDensity)), findsOneWidget);
+    expect(preferences.historyDensity, HistoryDensity.full);
+    await tester.tap(find.descendant(of: density, matching: find.text(l.historyDensityCompact)));
+    await tester.pumpTimes();
+    expect(preferences.historyDensity, HistoryDensity.compact);
   });
 }
