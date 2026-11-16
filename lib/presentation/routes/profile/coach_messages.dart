@@ -10,17 +10,13 @@ class _CoachMessages extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     if (!Preferences.watch(context).isOn(.yourCoach)) return const SizedBox.shrink();
-    final coaches = [
-      for (final coach in Coaching.watch(context).coaches)
-        if ((coach.connectionId, coach.status) case (String(), ConnectionStatus.active || ConnectionStatus.paused))
-          coach,
-    ];
+    final coaches = coachesToWrite(Coaching.watch(context));
     if (coaches.isEmpty) return const SizedBox.shrink();
     final unread = context.select<Messages, int>(
       (messages) => messages.unreadIn(coaches.map((each) => each.connectionId)),
     );
     final tooltip = switch (coaches) {
-      [final coach] => l.messagesWith(_coachName(context, coach)),
+      [final coach] => l.messagesWith(coachName(context, coach)),
       _ => l.coachingMessages,
     };
     return IconButton(
@@ -39,20 +35,10 @@ class _CoachMessages extends StatelessWidget {
         context: context,
         position: menuUnder(context),
         items: [
-          for (final coach in coaches)
-            PopupMenuItem(value: coach.connectionId, child: Text(_coachName(context, coach))),
+          for (final coach in coaches) PopupMenuItem(value: coach.connectionId, child: Text(coachName(context, coach))),
         ],
       ),
     };
     if (picked != null) router.openThread(picked);
-  }
-
-  /// As their profile names them now, else as their invitation did here.
-  static String _coachName(BuildContext context, Connection coach) {
-    return switch ((coach.name?.trim(), coach.connectionId)) {
-      (final String name, _) when name.isNotEmpty => name,
-      (_, final String id) => Preferences.of(context).coachName(id) ?? L.of(context).yourCoach,
-      _ => L.of(context).yourCoach,
-    };
   }
 }

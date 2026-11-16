@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show PageStorageKey;
 
 abstract final class AppKeys {
   const new _();
@@ -396,7 +397,10 @@ abstract final class AppKeys {
   /// client's row and its "looked at", and the former ones.
   static const coachingRosterView = Key('Coaching.rosterView');
   static const coachingActivityView = Key('Coaching.activityView');
-  static const coachingFormerClients = Key('Coaching.formerClients');
+
+  /// Kept open as a client opens beside the roster.
+  static const coachingFormerClients = PageStorageKey('Coaching.formerClients');
+  static const coachingClientFormer = Key('Coaching.client.former');
 
   static Key coachingReasonFilter(String? reason) => Key('Coaching.reason.${reason ?? 'all'}');
 
@@ -507,6 +511,13 @@ abstract final class AppKeys {
   static const threadBlock = Key('Messages.block');
   static const threadBlockConfirm = Key('Messages.blockConfirm');
   static const threadCleared = Key('Messages.cleared');
+  static const messageAbout = Key('Messages.about');
+  static const messageSubject = Key('Messages.subject');
+  static const reviewMessage = Key('Review.message');
+  static Key reviewSet(String setId) => Key('Review.set.$setId');
+  static const reviewSetMessage = Key('Review.set.message');
+  static const messageCoachAbout = Key('Workout.messageCoach');
+  static Key messageCoachPick(String connectionId) => Key('Workout.messageCoach.$connectionId');
   static const messageReport = Key('Messages.messageReport');
   static const reportSheet = Key('Report.sheet');
   static const reportInclude = Key('Report.include');

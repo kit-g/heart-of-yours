@@ -134,13 +134,26 @@ class _ClientViewState extends State<_ClientView> {
     // notes can be sealed at all
     final notes = CoachNotes.of(context);
     if (DeviceKeys.of(context).supported && notes.status == .idle) unawaited(notes.load());
-    if (roster.client(widget.connectionId) case final ClientSummary client) {
-      await (roster.load(), roster.loadRecord(client.studentId), programs.loadManaged(client.studentId)).wait;
-    } else {
+    final messages = Messages.of(context);
+    var client = roster.client(widget.connectionId);
+    if (client == null) {
       await roster.load();
-      if (roster.client(widget.connectionId) case final ClientSummary client) {
-        await (roster.loadRecord(client.studentId), programs.loadManaged(client.studentId)).wait;
-      }
+      client = roster.client(widget.connectionId);
+    }
+    // opened from a link, someone no longer coached is only on the other list
+    if (client == null && roster.formerStatus == .idle) {
+      await roster.loadFormer();
+      client = roster.client(widget.connectionId);
+    }
+    switch (client) {
+      // no longer coached: their training isn't the coach's to read, only
+      // the coach's own notes and what the two of them wrote
+      case final ClientSummary client when _former(client):
+        if (messages.status == .idle) await messages.load();
+      case final ClientSummary client:
+        await (roster.load(), roster.loadRecord(client.studentId), programs.loadManaged(client.studentId)).wait;
+      case null:
+        break;
     }
   }
 
@@ -159,6 +172,14 @@ class _ClientViewState extends State<_ClientView> {
         ),
         .loaded => _Empty(icon: Icons.person_off_outlined, title: l.coachingClientGone),
       };
+    }
+    if (_former(client)) {
+      return _FormerView(
+        client: client,
+        leading: widget.leading,
+        onMessage: widget.onMessage,
+        onNotes: widget.onNotes,
+      );
     }
     final id = client.studentId;
     final workouts = roster.workoutsOf(id);
@@ -187,31 +208,15 @@ class _ClientViewState extends State<_ClientView> {
             // a page names them in its title
             _ClientHeader(client: client, named: widget.leading != null),
             // their one conversation with the coach (#556), in Messages
-            ListTile(
-              key: AppKeys.coachingClientMessages,
-              leading: const Icon(Icons.forum_outlined),
-              title: Text(
-                switch (client.name?.trim()) {
-                  final String name when name.isNotEmpty => l.messagesWith(name),
-                  _ => l.coachingMessages,
-                },
-                maxLines: 1,
-                overflow: .ellipsis,
-              ),
-              trailing: switch (Messages.watch(context).threadOf(client.connectionId)?.unread ?? 0) {
-                0 => const Icon(Icons.chevron_right_rounded),
-                final int count => Badge(label: Text('$count', semanticsLabel: l.messagesUnread(count))),
-              },
-              onTap: () => widget.onMessage(client.connectionId),
-            ),
+            _MessagesTile(client: client, onTap: () => widget.onMessage(client.connectionId)),
             // the coach's own notes on them, which they never see (#556):
             // not where this device has nowhere to keep the keys
             if (DeviceKeys.of(context).supported)
               _NotesTile(connectionId: client.connectionId, onTap: () => widget.onNotes(client.connectionId)),
             // a session they trained together, logged as theirs (#560): while
-            // they are a client, which a former one is not
-            if (client.status case 'active' || 'paused')
-              _LogForTile(client: client, onLog: (past) => widget.onLog(client.connectionId, past)),
+            // they are a client, which a former one, on a page of their own,
+            // is not
+            _LogForTile(client: client, onLog: (past) => widget.onLog(client.connectionId, past)),
             // what they follow, and every copy the coach sent them, waiting
             // or not: the ones both of them edit (#558)
             for (final (id, name, waiting) in _programsOf(client, ClientPrograms.watch(context).managed(id)))
@@ -290,7 +295,10 @@ class _ClientHeader extends StatelessWidget {
   /// Whether to say who they are, where nothing above does.
   final bool named;
 
-  const new({required this.client, this.named = false});
+  /// No longer coached: said in place of their program, week and reasons.
+  final bool former;
+
+  const new({required this.client, this.named = false, this.former = false});
 
   @override
   Widget build(BuildContext context) {
@@ -298,7 +306,8 @@ class _ClientHeader extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final reasons = _reasonsInWords(l, client);
     return Padding(
-      padding: const .fromLTRB(16, 16, 8, 0),
+      // the right edge is the look button's, which someone gone has none of
+      padding: .fromLTRB(16, 16, former ? 16 : 8, 0),
       child: Row(
         crossAxisAlignment: .start,
         spacing: 16,
@@ -310,16 +319,104 @@ class _ClientHeader extends StatelessWidget {
               spacing: 6,
               children: [
                 if (named) Text(_clientName(l, client), style: textTheme.titleLarge),
-                Text(_programLine(l, client), style: textTheme.bodyLarge),
-                _WeekDots(client: client),
-                if (reasons.isNotEmpty)
-                  Text(reasons.join(' · '), style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary)),
+                ...switch (former) {
+                  true => [
+                    Text(
+                      l.coachingClientFormer,
+                      key: AppKeys.coachingClientFormer,
+                      style: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                  false => [
+                    Text(_programLine(l, client), style: textTheme.bodyLarge),
+                    _WeekDots(client: client),
+                    if (reasons.isNotEmpty)
+                      Text(reasons.join(' · '), style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary)),
+                  ],
+                },
               ],
             ),
           ),
-          if (_lookClears(client)) _MarkReviewed(client: client),
+          if (!former && _lookClears(client)) _MarkReviewed(client: client),
         ],
       ),
+    );
+  }
+}
+
+/// Someone the coach no longer coaches (#556): who they were, that they've
+/// gone, and the way to what the coach still holds of them, their own notes
+/// and the conversation. Nothing of their training is read: it's no longer
+/// the coach's to see.
+class _FormerView extends StatelessWidget {
+  final ClientSummary client;
+  final Widget? leading;
+  final ValueChanged<String> onMessage;
+  final ValueChanged<String> onNotes;
+
+  const new({required this.client, required this.leading, required this.onMessage, required this.onNotes});
+
+  @override
+  Widget build(BuildContext context) {
+    final notes = DeviceKeys.of(context).supported;
+    return RefreshIndicator.adaptive(
+      onRefresh: () => Future.wait([
+        if (notes) CoachNotes.of(context).load(),
+        Messages.of(context).load(),
+      ]),
+      child: ListView(
+        padding: const .only(bottom: 24),
+        children: [
+          ?leading,
+          _ClientHeader(client: client, named: leading != null, former: true),
+          // an ended connection takes no new message: only one to read back
+          if (_holdsConversation(context, client.connectionId))
+            _MessagesTile(client: client, onTap: () => onMessage(client.connectionId)),
+          if (notes) _NotesTile(connectionId: client.connectionId, onTap: () => onNotes(client.connectionId)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Whether the conversation with [connectionId]'s person still holds a
+/// message to read.
+bool _holdsConversation(BuildContext context, String connectionId) {
+  return Messages.watch(context).threadOf(connectionId)?.lastAt != null;
+}
+
+/// Whether a former client's page has anything to open: the coach's notes,
+/// where keys can be kept, or a conversation to read back.
+bool _formerOpens(BuildContext context, String connectionId) {
+  return DeviceKeys.of(context).supported || _holdsConversation(context, connectionId);
+}
+
+/// The client's one conversation with the coach (#556), in Messages.
+class _MessagesTile extends StatelessWidget {
+  final ClientSummary client;
+  final VoidCallback onTap;
+
+  const new({required this.client, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    return ListTile(
+      key: AppKeys.coachingClientMessages,
+      leading: const Icon(Icons.forum_outlined),
+      title: Text(
+        switch (client.name?.trim()) {
+          final String name when name.isNotEmpty => l.messagesWith(name),
+          _ => l.coachingMessages,
+        },
+        maxLines: 1,
+        overflow: .ellipsis,
+      ),
+      trailing: switch (Messages.watch(context).threadOf(client.connectionId)?.unread ?? 0) {
+        0 => const Icon(Icons.chevron_right_rounded),
+        final int count => Badge(label: Text('$count', semanticsLabel: l.messagesUnread(count))),
+      },
+      onTap: onTap,
     );
   }
 }
@@ -343,7 +440,7 @@ class _WorkoutTile extends StatelessWidget {
       key: AppKeys.coachingClientWorkout(workout.id),
       onTap: onTap,
       leading: const Icon(Icons.check_circle_outline_rounded),
-      title: Text(_workoutTitle(l, workout), maxLines: 1, overflow: .ellipsis),
+      title: Text(workoutTitle(l, workout), maxLines: 1, overflow: .ellipsis),
       subtitle: Column(
         crossAxisAlignment: .start,
         children: [
@@ -360,13 +457,6 @@ class _WorkoutTile extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right_rounded),
     );
   }
-}
-
-String _workoutTitle(L l, Workout workout) {
-  return switch (workout.name?.trim()) {
-    final String name when name.isNotEmpty => name,
-    _ => l.coachingReviewUntitled,
-  };
 }
 
 /// The program [client] follows, then the coach's other copies of theirs,

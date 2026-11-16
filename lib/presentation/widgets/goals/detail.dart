@@ -78,7 +78,7 @@ class _GoalDetailState extends State<GoalDetail> {
               if (!goal.metric.isWholeWorkout && exercise != null)
                 Padding(
                   padding: const .symmetric(horizontal: 16),
-                  child: _chart(context, goal, exercise, scale, settings, colorScheme),
+                  child: _chart(context, goal, exercise, scale, settings, textTheme),
                 ),
               const SizedBox(height: 8),
               GoalLadder(goal: goal, settings: settings, scale: scale),
@@ -149,7 +149,7 @@ class _GoalDetailState extends State<GoalDetail> {
     Exercise exercise,
     ChartScale scale,
     Preferences settings,
-    ColorScheme colorScheme,
+    TextTheme textTheme,
   ) {
     final metric = goal.metric.chart;
     if (metric == null) return const SizedBox.shrink();
@@ -157,9 +157,14 @@ class _GoalDetailState extends State<GoalDetail> {
     final (:unit, :category) = scale;
     final convert = metric.converter(settings, unit: unit, category: category);
 
+    final title = metric.title(context, settings, unit: unit, category: category);
     return SizedBox(
       height: 300,
       child: ExerciseChart(
+        // titled as About titles the same chart, with the same toggle: the
+        // goal's chart is one worth keeping on the profile (#626)
+        label: title,
+        customLabel: DashboardChartTitle(title: title, exercise: exercise, type: metric),
         // the whole ladder: there is room for it here, unlike on a dashboard card
         thresholds: goalThresholds(
           context,
@@ -172,7 +177,7 @@ class _GoalDetailState extends State<GoalDetail> {
         callback: () => Exercises.of(context).getChartExerciseMetics(metric, exercise.id),
         refreshKey: (exercise.id, metric, goal.stages.length),
         converter: convert,
-        getLeftLabel: metric.leftLabel(Theme.of(context).textTheme.bodySmall),
+        getLeftLabel: metric.leftLabel(textTheme.bodySmall),
         getTooltip: metric.tooltip,
         yStepCandidates: metric.yStepCandidates,
         color: metric.color(context),

@@ -74,6 +74,52 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('a message about something this device doesn\'t hold says what kind, and opens nothing', (tester) async {
+    server.items = [
+      _item('i1', 'That third set?', sender: 'whiskers', cursor: 'c1', subjectType: 'exercise_set', subjectId: 's3'),
+      _item('i2', 'And the day', sender: 'muffin', cursor: 'c2', subjectType: 'workout', subjectId: 'w9'),
+      _item('i3', 'Later kinds', sender: 'muffin', cursor: 'c3', subjectType: 'skip', subjectId: 'k1'),
+    ];
+    var opened = 0;
+
+    await pump(
+      tester,
+      ThreadPage(connectionId: 'c-muffin', onOpenWorkout: (client: (_) => opened++, own: (_) => opened++)),
+    );
+
+    expect(find.text('About a set'), findsOneWidget);
+    expect(find.text('About a workout'), findsOneWidget);
+    expect(find.byKey(AppKeys.messageSubject), findsNWidgets(2), reason: "a kind this build doesn't know shows none");
+    expect(find.descendant(of: find.byKey(AppKeys.messageSubject), matching: find.byType(TextButton)), findsNothing);
+    expect(opened, 0);
+  });
+
+  testWidgets('what the next message is about sits over the box, goes with it, and can be let go', (tester) async {
+    messages.writeAbout('c-muffin', const MessageSubject(.workout, 'w1'));
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+    expect(find.byKey(AppKeys.messageAbout), findsOneWidget);
+    expect(find.text('About a workout'), findsOneWidget);
+    await tester.enterText(find.byKey(AppKeys.messageBox), 'Felt heavy');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(AppKeys.messageSend));
+    await tester.pumpAndSettle();
+
+    expect(server.subjects, ['workout w1']);
+    expect(find.byKey(AppKeys.messageAbout), findsNothing, reason: 'said: the next is about nothing in particular');
+
+    messages.writeAbout('c-muffin', const MessageSubject(.exerciseSet, 's1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Not about this'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(AppKeys.messageBox), 'Anyway');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(AppKeys.messageSend));
+    await tester.pumpAndSettle();
+
+    expect(server.subjects, ['workout w1'], reason: 'let go before it was said');
+  });
+
   testWidgets("a conversation reads oldest to newest, and says what couldn't be opened", (tester) async {
     server.items = [
       _item('i1', 'Squats?', sender: 'whiskers', cursor: 'c1'),
@@ -89,8 +135,16 @@ void main() {
     expect(first.dy, lessThan(second.dy));
     // under the test font each letter is as wide as it is tall: short words keep the bubbles apart
     expect(second.dx, lessThan(first.dx), reason: "theirs sit left, the coach's own right");
-    expect(_message("Waiting for this message's key"), findsOneWidget);
+    expect(_message("Locked until the sender's device has been online"), findsOneWidget);
     expect(server.calls, contains('read t1 c3'));
+  });
+
+  testWidgets("one's own message from another device says what lets it open", (tester) async {
+    server.items = [_item('i1', 'locked', sender: 'whiskers', cursor: 'c1')];
+
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+    expect(_message('Written on another device. Opens once that device lets this one in'), findsOneWidget);
   });
 
   testWidgets('a long press copies what was said; one that never opened offers nothing', (tester) async {
@@ -106,7 +160,7 @@ void main() {
     addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
     await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
 
-    await tester.longPress(_message("Waiting for this message's key"));
+    await tester.longPress(_message("Locked until the sender's device has been online"));
     await tester.pumpAndSettle();
     expect(find.text('Copy'), findsNothing);
 
@@ -386,13 +440,23 @@ void main() {
   });
 }
 
-ThreadItem _item(String id, String text, {required String sender, String? cursor, DateTime? at}) {
+ThreadItem _item(
+  String id,
+  String text, {
+  required String sender,
+  String? cursor,
+  DateTime? at,
+  String? subjectType,
+  String? subjectId,
+}) {
   at ??= DateTime.utc(2026, 11, 12, 8);
   return ThreadItem(
     id: id,
     threadId: 't1',
     senderId: sender,
     kind: 'message',
+    subjectType: subjectType,
+    subjectId: subjectId,
     content: 'sealed:$text',
     commitment: 'c',
     tag: 't',
@@ -441,6 +505,9 @@ class _Server implements RemoteThreadService {
   final calls = <String>[];
   List<ThreadItem> items = [];
   final posted = <String>[];
+
+  /// What each message posted was about: `<type> <id>`.
+  final subjects = <String>[];
   bool closed = false;
 
   final _thread = Thread(
@@ -481,12 +548,15 @@ class _Server implements RemoteThreadService {
     String? subjectId,
   }) async {
     posted.add(content);
+    if (subjectId != null) subjects.add('$subjectType $subjectId');
     if (closed) throw {'error': 'forbidden', 'code': 'thread_closed'};
     return ThreadItem(
       id: id,
       threadId: threadId,
       senderId: 'whiskers',
       kind: 'message',
+      subjectType: subjectType,
+      subjectId: subjectId,
       content: content,
       commitment: commitment,
       tag: 't',
@@ -586,6 +656,15 @@ class _Cipher implements ThreadCipher {
 
   @override
   Stream<String> get threadKeys => const Stream.empty();
+
+  @override
+  set onKeyRequest(KeyRequestHandler? handler) {}
+
+  @override
+  Future<void> ask(String threadId, List<ThreadCiphertext> items, {String? fingerprint}) async {}
+
+  @override
+  Future<void> answer(KeyRequest request, {String? fingerprint}) async {}
 
   @override
   Future<SealedMessage> seal(String threadId, String text) async {

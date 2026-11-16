@@ -92,6 +92,75 @@ void main() {
     });
   });
 
+  group('keys asked for (#556)', () {
+    test("the other person's device is answered, checked against their fingerprint", () async {
+      await messages.load();
+
+      expect(await cipher.request(threadId, coach), isTrue);
+
+      expect(cipher.answers, ['t1 tablet print-c1']);
+    });
+
+    test("the account's own device is answered with no fingerprint: its own devices are checked by trust", () async {
+      await messages.load();
+
+      expect(await cipher.request(threadId, me), isTrue);
+
+      expect(cipher.answers, ['t1 tablet null']);
+    });
+
+    test('someone not in the thread, or a thread this account does not hold, is turned down for good', () async {
+      await messages.load();
+
+      expect(await cipher.request(threadId, 'stranger'), isTrue);
+      expect(await cipher.request('elsewhere', coach), isTrue);
+
+      expect(cipher.answers, isEmpty);
+    });
+
+    test('a conversation whose connection ended, or that takes nothing more, answers nothing', () async {
+      server.threads = [Thread(id: threadId, otherId: coach, otherName: 'Whiskers')];
+      await messages.load();
+
+      expect(await cipher.request(threadId, coach), isTrue);
+
+      expect(cipher.answers, isEmpty);
+    });
+
+    test('a second request from the same device within a minute is the first one', () async {
+      await messages.load();
+
+      await cipher.request(threadId, coach);
+      await cipher.request(threadId, coach);
+      await cipher.request(threadId, coach, deviceId: 'phone');
+
+      expect(cipher.answers, ['t1 tablet print-c1', 't1 phone print-c1']);
+    });
+
+    test('one that arrives before the inbox was read finds the thread on the device', () async {
+      store.threads[me] = [Thread(id: threadId, connectionId: 'c1', otherId: coach)];
+
+      expect(await cipher.request(threadId, coach), isTrue);
+
+      expect(cipher.answers, ['t1 tablet print-c1']);
+    });
+
+    test('with no account yet, or an answer that fails, the request is kept for later', () async {
+      messages.userId = null;
+      expect(await cipher.request(threadId, coach), isFalse);
+
+      messages.userId = me;
+      await messages.load();
+      cipher.answerFails = StateError('offline');
+      expect(await cipher.request(threadId, coach), isFalse);
+      expect(errors, [isA<StateError>()]);
+
+      cipher.answerFails = null;
+      expect(await cipher.request(threadId, coach), isTrue, reason: 'a failure holds nothing back');
+      expect(cipher.answers, ['t1 tablet print-c1']);
+    });
+  });
+
   group('a thread', () {
     test("opens in the server's order, marks read to the newest, and says whose is whose", () async {
       server.items = [
@@ -183,6 +252,26 @@ void main() {
       await messages.resume();
 
       expect(messages.status, CoachingStatus.idle);
+    });
+
+    test('one still locked once the queue is read is asked for, and nothing opened is', () async {
+      server.items = [_item('open', cursor: 'c1'), _item('stuck', cursor: 'c2')];
+      cipher.missing.add('stuck');
+      await messages.load();
+
+      await messages.open(threadId);
+
+      await pumpEventQueue();
+      expect(cipher.asks, ['t1 item-stuck print-c1']);
+    });
+
+    test('nothing locked asks for nothing', () async {
+      server.items = [_item('open', cursor: 'c1')];
+      await messages.load();
+
+      await messages.open(threadId);
+
+      expect(cipher.asks, isEmpty);
     });
 
     test('nothing locked reads no queue', () async {
@@ -431,12 +520,44 @@ void main() {
     test('shares the key first, then sends, under the id it was written with', () async {
       await messages.load();
 
-      await messages.send(threadId, 'my knee', subjectType: 'workout', subjectId: 'w1');
+      messages.writeAbout('c1', const MessageSubject(.workout, 'w1'));
+      await messages.send(threadId, 'my knee');
 
       expect(cipher.shares, ['t1 $coach print-c1']);
       expect(server.posted.single, (id: 'mine-0', content: 'sealed:my knee', subjectId: 'w1'));
       final sent = messages.thread(threadId).messages.single;
       expect((sent.text, sent.mine, sent.delivery), ('my knee', true, MessageDelivery.sent));
+    });
+
+    test('what a message is about goes with the next one written to that person, then clears', () async {
+      await messages.load();
+      messages.writeAbout('c1', const MessageSubject(.exerciseSet, 's3'));
+      expect(messages.about('c1'), const MessageSubject(.exerciseSet, 's3'));
+
+      final first = messages.send(threadId, 'that third set');
+      // a second, sent while the first is still on its way, is about nothing
+      final second = messages.send(threadId, 'and the rest');
+      await (first, second).wait;
+
+      expect(server.posted.map((each) => each.subjectId), ['s3', null]);
+      expect(messages.thread(threadId).messages.first.subject, const MessageSubject(.exerciseSet, 's3'));
+      expect(messages.about('c1'), isNull, reason: 'said: the next one is about nothing in particular');
+    });
+
+    test('a message that could not be sealed keeps what it was about', () async {
+      await messages.load();
+      messages.writeAbout('c1', const MessageSubject(.workout, 'w1'));
+      cipher.sealFails = StateError('device keys are off');
+
+      await expectLater(messages.send(threadId, 'my knee'), throwsStateError);
+
+      expect(messages.about('c1'), const MessageSubject(.workout, 'w1'));
+    });
+
+    test("a subject this build doesn't know reads as none", () {
+      expect(MessageSubject.of('skip', 'k1'), isNull);
+      expect(MessageSubject.of('workout', ''), isNull);
+      expect(MessageSubject.of('exercise_set', 's1'), const MessageSubject(.exerciseSet, 's1'));
     });
 
     test('what went out reads the inbox again, so the thread moves up it', () async {
@@ -866,6 +987,15 @@ class _Store implements LocalThreadService {
 class _Cipher implements ThreadCipher {
   final _keys = StreamController<String>.broadcast();
   final shares = <String>[];
+
+  /// What [ask] was asked for: `<thread> <item ids> <fingerprint>`.
+  final asks = <String>[];
+
+  /// Requests answered: `<thread> <device> <fingerprint>`.
+  final answers = <String>[];
+  Object? answerFails;
+
+  KeyRequestHandler? onRequest;
   final missing = <String>{};
   Object? shareFails;
   Object? sealFails;
@@ -887,7 +1017,27 @@ class _Cipher implements ThreadCipher {
     queued = {};
   }
 
+  /// A request from [userId]'s [deviceId], as the cipher hands it over:
+  /// whether it was dealt with.
+  Future<bool> request(String threadId, String userId, {String deviceId = 'tablet'}) {
+    return onRequest!((threadId: threadId, userId: userId, deviceId: deviceId, sessions: {'s1'}));
+  }
+
   void dispose() => _keys.close();
+
+  @override
+  set onKeyRequest(KeyRequestHandler? handler) => onRequest = handler;
+
+  @override
+  Future<void> ask(String threadId, List<ThreadCiphertext> items, {String? fingerprint}) async {
+    asks.add('$threadId ${items.map((each) => each.id).join(',')} $fingerprint');
+  }
+
+  @override
+  Future<void> answer(KeyRequest request, {String? fingerprint}) async {
+    if (answerFails case final Object failure) throw failure;
+    answers.add('${request.threadId} ${request.deviceId} $fingerprint');
+  }
 
   @override
   Stream<String> get threadKeys => _keys.stream;
