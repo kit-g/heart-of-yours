@@ -634,6 +634,7 @@ void main() {
         'entryReview',
         'weeklySets',
         'sampleTemplates',
+        'exercisesTab',
         'pastWorkouts',
         'coachPeople',
         'yourCoach',

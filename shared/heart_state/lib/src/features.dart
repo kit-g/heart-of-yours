@@ -133,6 +133,15 @@ enum Feature {
   /// either way.
   sampleTemplates('sampleTemplates', defaultOn: true),
 
+  /// The Exercises tab in the navigation bar (#608), the first of the home
+  /// screens a user can leave out. Core since 1.9.0, so on by default
+  /// ([defaultOn]) and never asked about: a switch to hide a surface, not an
+  /// ask to add one. Off, the bar has one tab fewer and reflows as if it had
+  /// never been there; the library is still the workout's picker, an
+  /// exercise's page opens over the screen it was asked from, and the
+  /// catalog and the user's own exercises are untouched.
+  exercisesTab('exercisesTab', defaultOn: true),
+
   /// Logging a workout that already happened (#530): when it was, then what
   /// was done, saved straight to History like any finished workout. No live
   /// session, so no clock, rest timers, lock screen or watch. Offered once,

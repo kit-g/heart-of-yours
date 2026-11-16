@@ -87,6 +87,8 @@ const _workoutOverName = 'workoutOver';
 const _workoutOverPath = '/past-workout/:workoutId';
 const _filteredExercisesName = 'filteredExercises';
 const _filteredExercisesPath = '/filtered-exercises';
+const _exerciseArchiveOverName = 'exerciseArchiveOver';
+const _exerciseArchiveOverPath = '/archived-exercises';
 const _onboardingName = 'welcome';
 const _onboardingPath = '/$_onboardingName';
 // the Coaching space (#566): a shell of its own, beside the app's

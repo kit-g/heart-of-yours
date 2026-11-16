@@ -99,6 +99,7 @@ final class HeartRouter {
           _galleryRoute(),
           _programOverRoute(),
           _filteredExercisesRoute(),
+          _exerciseArchiveOverRoute(),
           _libraryProgramOverRoute(),
           _exerciseOverRoute(),
           _workoutOverRoute(),
@@ -129,13 +130,39 @@ final class HeartRouter {
   /// tab and open the sheet again — a jank over a screen that was already
   /// right, since the tap also brings a backgrounded app to the front exactly
   /// as it was left.
-  static OnEnterResult _onEnter(BuildContext _, GoRouterState _, GoRouterState next, GoRouter router) {
-    final onScreen = router.routerDelegate.currentConfiguration.matches.any(
-      (match) => match.matchedLocation == _activeWorkoutPath,
-    );
-    return switch (next.uri.path == _openWorkoutPath && onScreen) {
-      true => const Block.stop(),
-      false => const Allow(),
+  ///
+  /// With the Exercises tab left out (#608), a way into it — a shared
+  /// exercise link, the archive — opens the same page over the screen on
+  /// view instead. A cold start has no screen to stay on, and is left to
+  /// [_decide].
+  static OnEnterResult _onEnter(BuildContext context, GoRouterState _, GoRouterState next, GoRouter router) {
+    final current = router.routerDelegate.currentConfiguration;
+    final onScreen = current.matches.any((match) => match.matchedLocation == _activeWorkoutPath);
+    if (next.uri.path == _openWorkoutPath && onScreen) return const Block.stop();
+    if (current.isNotEmpty) {
+      if (_overTheTab(context, next.uri) case final String over) return Block.then(() => router.push(over));
+    }
+    return const Allow();
+  }
+
+  /// Where [uri], a location inside the Exercises tab, opens while the tab is
+  /// left out (#608): the same page, over whatever is on screen. Null while
+  /// the tab is there, or for a location outside it.
+  static String? _overTheTab(BuildContext context, Uri uri) {
+    if (Preferences.of(context).isOn(.exercisesTab)) return null;
+    final tab = uri.queryParameters['tab'];
+    return switch (uri.pathSegments) {
+      [_exercisesName] => _filteredExercisesPath,
+      [_exercisesName, 'archived'] => _exerciseArchiveOverPath,
+      // an exercise, archived or not, and a workout opened from its page,
+      // which leads back to the exercise
+      [_exercisesName, 'archived', final String id] ||
+      [_exercisesName, final String id] ||
+      [_exercisesName, final String id, 'workout', _] => switch (tab) {
+        null => '/exercise/$id',
+        final String tab => Uri(path: '/exercise/$id', queryParameters: {'tab': tab}).toString(),
+      },
+      _ => null,
     };
   }
 
@@ -182,6 +209,14 @@ final class HeartRouter {
     if (state.uri.path == _openWorkoutPath) {
       unawaited(_openActiveWorkoutWhenResolved(Workouts.of(context)));
       return _workoutPath;
+    }
+
+    // a link into the Exercises tab while it is left out (#608), on a cold
+    // start: [_onEnter] had no screen to open it over, so it opens over the
+    // first tab
+    if (_overTheTab(context, state.uri) case final String over) {
+      Future.delayed(const Duration(milliseconds: 50)).then((_) => _rootNavigatorKey.currentContext?.push(over));
+      return _profilePath;
     }
 
     switch (state.uri.path.split('/')) {

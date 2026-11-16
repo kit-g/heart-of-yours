@@ -1162,6 +1162,25 @@ RouteBase _filteredExercisesRoute() {
   );
 }
 
+/// The archived exercises over any tab (#608): the archive's way in with the
+/// Exercises tab left out, which is the filtered library's Archived button.
+/// An exercise in it opens over it in turn.
+RouteBase _exerciseArchiveOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _exerciseArchiveOverPath,
+    name: _exerciseArchiveOverName,
+    builder: (context, _) {
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, _, _) => ExerciseArchive(
+          onExercise: (exercise, _) => context.pushExerciseOver(exercise.id),
+        ),
+      );
+    },
+  );
+}
+
 /// A library program over any tab: its next programs and the user's copy
 /// stack over it in turn.
 RouteBase _libraryProgramOverRoute() {
