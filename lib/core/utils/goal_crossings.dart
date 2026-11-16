@@ -131,7 +131,8 @@ num? _value(Goal goal, GoalPrior prior, Workout workout, GoalFold fold) {
 List<LensSets> _lensSetsOf(Workout workout, bool Function(ExerciseSet set) working, GoalFold fold) {
   return [
     for (final entry in workout)
-      if (entry.where(working).length case final int sets when sets > 0)
+      // a drop set is one set however many drops it has (#614)
+      if (entry.countEfforts(working) case final int sets when sets > 0)
         if (fold.exerciseOf(entry.exercise) case final exercise)
           (
             workoutId: workout.id,

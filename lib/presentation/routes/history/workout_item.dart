@@ -169,7 +169,8 @@ class WorkoutItem extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                '${exercise.exercise.name} ×${exercise.where((set) => set.isCompleted).length}',
+                                // the sets done, a drop set one however many drops (#614)
+                                '${exercise.exercise.name} ×${exercise.countEfforts((set) => set.isCompleted)}',
                                 style: textTheme.bodySmall,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

@@ -113,4 +113,51 @@ void main() {
     expect(find.text('Pushdown ×0'), findsOneWidget);
     expect(find.text('45 kg x 15'), findsNothing);
   });
+
+  // #614: a working set and its drops are one set; every drop is volume
+  testWidgets('a drop set counts once in the card, and all of its load', (tester) async {
+    SharedPreferences.setMockInitialValues({'weightUnit': 'metric', 'distanceUnit': 'metric'});
+    final preferences = Preferences();
+    await preferences.init();
+    final exercises = Exercises(
+      remoteService: MockRemoteExerciseService(),
+      service: MockExerciseService(),
+      libraryService: MockExerciseLibraryService(),
+      catalogService: MockLocalCatalogService(),
+      preferenceService: MockRemoteExercisePreferenceService(),
+    );
+
+    final bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
+    ExerciseSet done(double weight, int reps, [SetType type = .normal]) {
+      return ExerciseSet(bench, weight: weight, reps: reps, setType: type)..isCompleted = true;
+    }
+
+    final workout = Workout.fromExercises([
+      WorkoutExercise(starter: done(40, 10, .warmup))
+        ..add(done(100, 8))
+        ..add(done(80, 6, .drop))
+        ..add(done(60, 6, .drop))
+        ..add(done(100, 6)),
+    ])..finish(DateTime.now());
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<Preferences>.value(value: preferences),
+          ChangeNotifierProvider<Exercises>.value(value: exercises),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: localizationsDelegates,
+          supportedLocales: L.supportedLocales,
+          home: Scaffold(
+            body: WorkoutItem(workout: workout, showsMenuButton: false),
+          ),
+        ),
+      ),
+    );
+
+    // the warm-up, then two efforts: the first of them three sets ticked
+    expect(find.text('Bench Press ×3'), findsOneWidget);
+    expect(find.text('${100 * 8 + 80 * 6 + 60 * 6 + 100 * 6} kg'), findsOneWidget);
+  });
 }

@@ -279,6 +279,8 @@ mixin _Stats on _LocalDatabase implements StatsService {
         int? reps,
         double? duration,
         double? distance,
+        bool drop,
+        bool continuesEffort,
       })
     >
   >
@@ -318,6 +320,8 @@ mixin _Stats on _LocalDatabase implements StatsService {
               reps: (row['reps'] as num?)?.toInt(),
               duration: (row['duration'] as num?)?.toDouble(),
               distance: (row['distance'] as num?)?.toDouble(),
+              drop: row['set_type'] == SetType.drop.value,
+              continuesEffort: row['continues_effort'] == 1,
             );
           },
         ).toList();

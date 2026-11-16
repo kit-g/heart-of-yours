@@ -221,7 +221,8 @@ void main() {
         ..first.setType = .warmup
         ..first.isCompleted = true;
 
-      expect(workoutMuscleSets(workout, lookup: (_) => null).map((row) => row.sets), [2]);
+      // the working set and its drop are one set (#614)
+      expect(workoutMuscleSets(workout, lookup: (_) => null).map((row) => row.sets), [1]);
     });
 
     test("takes the library's tagging over the workout's own copy", () {

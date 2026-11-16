@@ -36,6 +36,26 @@ void main() {
     });
   });
 
+  test('a drop never holds a record, even one whose values it matches (#614)', () {
+    final top = ExerciseSet(bench, weight: 100, reps: 8)..isCompleted = true;
+    final drop = ExerciseSet(bench, weight: 70, reps: 20, setType: .drop)..isCompleted = true;
+    final workout = Workout.fromExercises([WorkoutExercise(starter: top)..add(drop)]);
+    final marks = recordMarks(workout, [
+      (
+        exercise: bench,
+        kind: RecordKind.mostReps,
+        record: {
+          'weight': 70.0,
+          'reps': 20,
+          'workoutId': workout.id,
+          'previous': {'weight': 60.0, 'reps': 15},
+        },
+      ),
+    ]);
+
+    expect(marks, isEmpty);
+  });
+
   test("an exercise's first time marks nothing: every record would fall at once", () {
     final workout = session();
     final marks = recordMarks(workout, [
