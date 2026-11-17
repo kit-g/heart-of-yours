@@ -8,7 +8,7 @@ import 'package:firebase_auth_platform_interface/firebase_auth_platform_interfac
     show InternalUserInfo, PasswordPolicy;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:heart_models/heart_models.dart' show User;
+import 'package:heart_models/heart_models.dart' show Settings, User;
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
@@ -336,15 +336,141 @@ void main() {
       expect(sut.entitlementsKnown, isTrue);
       expect(sut.user?.mayCoach, isTrue);
 
-      // a new name or photo: Firebase hands the account over again, and the
-      // server's answer to it is slow
+      // a new name: Firebase hands the account over again, it goes to the
+      // server, and the server's answer is slow
       when(account.registerAccount(any)).thenAnswer((_) => Completer<User>().future);
-      firebase.userChangedStreamController.add(firebase.currentUser);
+      firebase.userChangedStreamController.add(MockUser(uid: 'muffin', email: 'muffin@test', displayName: 'Muffin'));
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
       expect(sut.entitlementsKnown, isTrue);
       expect(sut.user?.mayCoach, isTrue, reason: 'a coach never reads as one who may not coach in between');
       sut.dispose();
+    });
+
+    group('the same session reported again (#676)', () {
+      late MockFirebaseAuth firebase;
+      late List<String> tokens;
+      var entered = 0;
+
+      Auth start({Future<void> Function()? entering, bool registers = true}) {
+        firebase = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+        );
+        tokens = [];
+        entered = 0;
+        when(account.isAuthenticated).thenReturn(true);
+        if (registers) {
+          when(account.registerAccount(any)).thenAnswer(
+            (inv) async => User(
+              id: (inv.positionalArguments.first as User).id,
+              settings: const Settings(firstWeekday: 1),
+              scheduledForDeletionAt: DateTime.utc(2026, 12),
+              entitlements: ['coach'],
+            ),
+          );
+        }
+        return Auth(
+          service: account,
+          firebase: firebase,
+          onEnter: (_, _) async {
+            entered++;
+            await entering?.call();
+          },
+          onToken: tokens.add,
+          onError: (_, {stacktrace}) {},
+        );
+      }
+
+      Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 20));
+
+      test('after the run that started it: not started or registered again, and the token is handed over', () async {
+        final sut = start();
+        await settle();
+
+        // the token read at start-up refreshes it, and Firebase says so
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await settle();
+
+        expect(entered, 1);
+        verify(account.registerAccount(any)).called(1);
+        expect(tokens, hasLength(1));
+        sut.dispose();
+      });
+
+      test('while that run is still out: it waits for it, and then does nothing more', () async {
+        final entering = Completer<void>();
+        final sut = start(entering: () => entering.future);
+        await settle();
+
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await settle();
+        entering.complete();
+        await settle();
+
+        expect(entered, 1);
+        verify(account.registerAccount(any)).called(1);
+        sut.dispose();
+      });
+
+      test('what the server said of the account holds through it', () async {
+        final sut = start();
+        await settle();
+
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await settle();
+
+        expect(sut.user?.settings, const Settings(firstWeekday: 1), reason: 'or every answer here reads as newer');
+        expect(sut.user?.scheduledForDeletionAt, DateTime.utc(2026, 12), reason: 'or the restore gate lets go');
+        expect(sut.user?.mayCoach, isTrue);
+        sut.dispose();
+      });
+
+      test('a new name goes to the server', () async {
+        final sut = start();
+        await settle();
+
+        firebase.userChangedStreamController.add(MockUser(uid: 'muffin', email: 'muffin@test', displayName: 'Muffin'));
+        await settle();
+
+        expect(entered, 1);
+        final [first, second] = verify(account.registerAccount(captureAny)).captured.cast<User>();
+        expect((first.displayName, second.displayName), (null, 'Muffin'));
+        sut.dispose();
+      });
+
+      test('a registration that failed is tried again, without starting up again', () async {
+        final sut = start(registers: false);
+        when(account.registerAccount(any)).thenThrow(const SocketException('offline'));
+        await settle();
+
+        when(account.registerAccount(any))
+            .thenAnswer((inv) async => User(id: (inv.positionalArguments.first as User).id));
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await settle();
+
+        expect(entered, 1);
+        expect(sut.entitlementsKnown, isTrue);
+        sut.dispose();
+      });
+
+      test('a start-up that failed is started again', () async {
+        var fails = true;
+        final sut = start(
+          entering: () async {
+            if (fails) throw const SocketException('offline');
+          },
+        );
+        await settle();
+
+        fails = false;
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await settle();
+
+        expect(entered, 2);
+        expect(sut.entitlementsKnown, isTrue);
+        sut.dispose();
+      });
     });
 
     test('a registration that never reaches the server is handed to onError, not thrown (HEART-OF-YOURS-2S)', () async {

@@ -15,6 +15,10 @@ class _Account with ChangeNotifier implements SettingsAccount {
   @override
   bool isAnonymous;
 
+  /// The server's copy is in once [arrive] has run, as after registering.
+  @override
+  bool settingsKnown = true;
+
   final saved = <Settings>[];
 
   new() : isAnonymous = false;
@@ -321,6 +325,27 @@ void main() {
       final [saved] = account.saved;
       expect(featureRecordsOf(saved), {feature: FeatureRecord(on: true, at: later)});
       expect(saved.extra['kept'], isTrue);
+    });
+
+    test('nothing is compared before the server\'s copy of the account arrives (#676)', () async {
+      await boot(
+        stored: {
+          'feature-muscleMap': 'on',
+          'feature-muscleMap-at': earlier.toIso8601String(),
+        },
+      );
+      // signed in, as Firebase knows the account: no settings at all
+      account
+        ..settingsKnown = false
+        ..user = User(id: 'muffin', displayName: 'Muffin', email: null, avatar: null, createdAt: null)
+        ..notifyListeners();
+      await settle();
+      expect(account.saved, isEmpty, reason: 'every answer here is newer than none, and would be written for nothing');
+
+      account.settingsKnown = true;
+      account.arrive(settingsWith(on: true, at: earlier));
+      await settle();
+      expect(account.saved, isEmpty);
     });
 
     test('a second phone that was never asked takes the answer and does not ask', () async {
