@@ -756,18 +756,12 @@ Future<void> startPlanned(
 /// a share of a base as a weight on the user's plates, a lighter cycle
 /// lighter. Anything else starts as it was written, with no plan.
 PlannedWorkout startingWorkout(BuildContext context, Template template) {
-  final preferences = Preferences.of(context);
   if (!programIdShown(context, template.programId)) return (workout: template.toWorkout(), plan: null);
-  final exercises = Exercises.of(context);
   return Programs.of(context).plan(
     template,
     now: DateTime.now(),
     firstWeekday: firstWeekdayOf(context),
-    // the nearest weight the plates make: 2.5 kg, or 5 lb
-    round: (exercise, kilograms) => switch (exercises.unitFor(exercise.id) ?? preferences.weightUnit) {
-      .metric => (kilograms / 2.5).round() * 2.5,
-      .imperial => ((kilograms.asPounds / 5).round() * 5).asKilograms,
-    },
+    round: roundToPlates(context),
   );
 }
 

@@ -17,6 +17,7 @@ import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/live_goals.dart';
 import 'package:heart/core/utils/live_records.dart';
 import 'package:heart/core/utils/misc.dart';
+import 'package:heart/core/utils/plates.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/core/utils/records.dart';
