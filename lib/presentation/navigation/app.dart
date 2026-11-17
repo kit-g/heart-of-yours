@@ -547,6 +547,8 @@ class HeartApp extends StatelessWidget {
                 userId,
                 hasLocalNotifications: hasLocalNotifications,
               ),
+              // Firebase refreshed the token under a running session
+              onToken: api.reauthenticate,
               // "Erase my data": the anonymous session's store is this
               // device's alone, so the wipe is the local database's to do
               onErase: db.eraseUser,

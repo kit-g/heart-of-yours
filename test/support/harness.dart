@@ -165,9 +165,16 @@ class TestAppHarness {
     // Startup runs in the root zone, which a widget test's pumps never get
     // to, so the registration that follows it never comes: the account is
     // registered here instead, as coming back to the app would (#676)
-    await tester.pump();
-    if (find.byType(Navigator).evaluate().firstOrNull case final Element element) {
-      unawaited(Auth.of(element).registerAgain());
+    // Once Firebase's first word has arrived, which may take a few frames;
+    // a test that signs in later registers through the sign-in itself.
+    for (var i = 0; i < 5; i++) {
+      await tester.pump();
+      if (find.byType(Navigator).evaluate().firstOrNull case final Element element) {
+        final auth = Auth.of(element);
+        if (auth.user == null) continue;
+        unawaited(auth.registerAgain());
+        break;
+      }
     }
 
     switch (settle) {

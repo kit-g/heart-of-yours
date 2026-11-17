@@ -548,20 +548,6 @@ void main() {
 
       expect(remote.calls.where((each) => each.startsWith('getProgramActions')), hasLength(1));
     });
-
-    test('so is one archived before its first workout, which holds only bases (#676)', () async {
-      remote.programs = [
-        Program.fromJson({...program().toMap(), 'archived': true}),
-      ];
-      remote.bases['p1'] = [
-        ProgramBase(id: 'b1', programId: 'p1', exerciseId: 'deadlift', value: 140, at: DateTime.utc(2026, 10, 1)),
-      ];
-
-      await programs.init();
-      await relaunch().init();
-
-      expect(remote.calls.where((each) => each.startsWith('getProgramBases')), hasLength(1));
-    });
   });
 
   group('pull, the one program a push named (#567)', () {

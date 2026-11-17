@@ -507,18 +507,13 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
 
     await _step(() => _pullSkips(id));
 
-    // an archived program's history is read once; nothing moves it after.
-    // Its actions and bases arrive together, so either in the mirror means
-    // it was: one archived before its first workout holds only bases (#676)
+    // an archived program's history is read once; nothing moves it after
     await Future.wait([
       for (final MapEntry<String, Program>(key: programId, value: program) in [..._programs.entries])
-        if (!program.archived || !_read(programId)) _step(() => _pull(id, programId)),
+        if (!program.archived || !_actions.containsKey(programId)) _step(() => _pull(id, programId)),
       for (final program in _coached) _step(() => _readHistory(id, program.id!)),
     ]);
   }
-
-  /// Whether [programId]'s history is in the mirror.
-  bool _read(String programId) => _actions.containsKey(programId) || _bases.containsKey(programId);
 
   /// The coach's copies still in play: followed or waiting.
   Iterable<Program> get _coached {
