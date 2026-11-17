@@ -58,18 +58,22 @@ class _CoachingFrameState extends State<CoachingFrame> {
         (
           label: l.coachingClients,
           icon: (_) => const Icon(Icons.groups_rounded, key: AppKeys.coachingClientsStack),
+          branch: 0,
         ),
         (
           label: l.coachingMessages,
           icon: (_) => const _MessagesIcon(),
+          branch: 1,
         ),
         (
           label: l.coachingPrograms,
           icon: (_) => const Icon(Icons.event_repeat_rounded, key: AppKeys.coachingProgramsStack),
+          branch: 2,
         ),
         (
           label: l.coachingMe,
           icon: (_) => const Icon(Icons.badge_outlined, key: AppKeys.coachingMeStack),
+          branch: 3,
         ),
       ],
       // every tab is one page for now: tapping it again has nowhere to go back to

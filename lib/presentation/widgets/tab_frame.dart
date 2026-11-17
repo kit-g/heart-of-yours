@@ -4,9 +4,12 @@ import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// One tab of a [TabFrame]: what it is called, and its icon, built where the
-/// bar or the rail wants it.
-typedef TabDestination = ({String label, WidgetBuilder icon});
+/// One tab of a [TabFrame]: what it is called, its icon, built where the bar
+/// or the rail wants it, and the [StatefulNavigationShell] branch it opens.
+///
+/// The branch, not the place in the bar: a space can leave a tab out (#608),
+/// and the tabs after it move up a place while their branches stay put.
+typedef TabDestination = ({String label, WidgetBuilder icon, int branch});
 
 /// A space's tabs around its [shell]: a bottom bar on a compact window, a rail
 /// on a wide one. The app's own space and the Coaching space (#566) share it,
@@ -32,9 +35,10 @@ class TabFrame extends StatelessWidget {
   final StatefulNavigationShell shell;
   final List<TabDestination> destinations;
 
-  /// A tab tapped while it is already the one showing: the space decides what
-  /// that does (`docs/style.md`: a navbar button is a back action).
-  final void Function(BuildContext context, int index) onReselect;
+  /// A tab tapped while it is already the one showing, by its branch: the
+  /// space decides what that does (`docs/style.md`: a navbar button is a back
+  /// action).
+  final void Function(BuildContext context, int branch) onReselect;
 
   /// Under the rail's destinations on a wide window, such as the way between
   /// spaces. Absent on a compact one, where the space puts it in its pages.
@@ -91,6 +95,16 @@ class TabFrame extends StatelessWidget {
     };
   }
 
+  /// Where the branch on screen sits in the bar. A branch with no tab (one
+  /// the space has just left out) reads as the first, for the frame the space
+  /// takes to move off it.
+  int get _selected {
+    return switch (destinations.indexWhere((each) => each.branch == shell.currentIndex)) {
+      -1 => 0,
+      final position => position,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutProvider(
@@ -117,7 +131,8 @@ class TabFrame extends StatelessWidget {
           case LayoutSize.compact:
             return _KeyMap(
               shell: shell,
-              tabs: destinations.length,
+              branches: [for (final each in destinations) each.branch],
+              selected: _selected,
               onReselect: onReselect,
               child: Scaffold(
                 body: AnnotatedRegion<SystemUiOverlayStyle>(
@@ -137,8 +152,8 @@ class TabFrame extends StatelessWidget {
                     );
                     return BottomNavigationBar(
                       type: BottomNavigationBarType.shifting,
-                      currentIndex: shell.currentIndex,
-                      onTap: (index) => _onTap(context, index),
+                      currentIndex: _selected,
+                      onTap: (position) => _onTap(context, position),
                       // through the styles, not `selectedFontSize`: the theme
                       // sets both label styles, and a style's own `fontSize`
                       // wins over the widget's size parameters
@@ -158,7 +173,8 @@ class TabFrame extends StatelessWidget {
           case LayoutSize.wide:
             return _KeyMap(
               shell: shell,
-              tabs: destinations.length,
+              branches: [for (final each in destinations) each.branch],
+              selected: _selected,
               onReselect: onReselect,
               child: Scaffold(
                 body: AnnotatedRegion<SystemUiOverlayStyle>(
@@ -167,8 +183,8 @@ class TabFrame extends StatelessWidget {
                     children: [
                       NavigationRail(
                         key: AppKeys.navigationRail,
-                        selectedIndex: shell.currentIndex,
-                        onDestinationSelected: (index) => _onTap(context, index),
+                        selectedIndex: _selected,
+                        onDestinationSelected: (position) => _onTap(context, position),
                         labelType: NavigationRailLabelType.all,
                         // at the bottom of the rail, where the eye doesn't
                         // mistake it for one more tab
@@ -191,27 +207,33 @@ class TabFrame extends StatelessWidget {
     );
   }
 
-  Future<void> _onTap(BuildContext context, int index) async {
+  Future<void> _onTap(BuildContext context, int position) async {
     HapticFeedback.mediumImpact();
-    if (shell.currentIndex != index) {
+    final branch = destinations[position].branch;
+    if (shell.currentIndex != branch) {
       // switch to that navigation stack unless already there
-      return shell.goBranch(index);
+      return shell.goBranch(branch);
     }
-    onReselect(context, index);
+    onReselect(context, branch);
   }
 }
 
-/// `[` and `]` for the tab either side, and ⌘1 onwards for each tab by place.
+/// `[` and `]` for the tab either side, and ⌘1 onwards for each tab by place:
+/// places in the bar, which [branches] maps to the shell's.
 class _KeyMap extends StatelessWidget {
   final Widget child;
   final StatefulNavigationShell shell;
-  final int tabs;
-  final void Function(BuildContext context, int index) onReselect;
+  final List<int> branches;
+
+  /// The place in the bar of the tab on screen, as the bar shows it.
+  final int selected;
+  final void Function(BuildContext context, int branch) onReselect;
 
   const new({
     required this.child,
     required this.shell,
-    required this.tabs,
+    required this.branches,
+    required this.selected,
     required this.onReselect,
   });
 
@@ -229,18 +251,19 @@ class _KeyMap extends StatelessWidget {
       shortcuts: {
         LogicalKeySet(.bracketRight): _NextTabIntent(),
         LogicalKeySet(.bracketLeft): _PreviousTabIntent(),
-        for (final (index, digit) in _digits.take(tabs).indexed) LogicalKeySet(.meta, digit): _TabIntent(index),
+        for (final (position, digit) in _digits.take(branches.length).indexed)
+          LogicalKeySet(.meta, digit): _TabIntent(position),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
           _NextTabIntent: CallbackAction<_NextTabIntent>(
-            onInvoke: (_) => _changeTab(context, (shell.currentIndex + 1) % tabs),
+            onInvoke: (_) => _changeTab(context, (selected + 1) % branches.length),
           ),
           _PreviousTabIntent: CallbackAction<_PreviousTabIntent>(
-            onInvoke: (_) => _changeTab(context, (shell.currentIndex - 1 + tabs) % tabs),
+            onInvoke: (_) => _changeTab(context, (selected - 1 + branches.length) % branches.length),
           ),
           _TabIntent: CallbackAction<_TabIntent>(
-            onInvoke: (intent) => _changeTab(context, intent.index),
+            onInvoke: (intent) => _changeTab(context, intent.position),
           ),
         },
         child: child,
@@ -248,11 +271,12 @@ class _KeyMap extends StatelessWidget {
     );
   }
 
-  void _changeTab(BuildContext context, int index) {
-    if (index != shell.currentIndex) {
-      shell.goBranch(index);
+  void _changeTab(BuildContext context, int position) {
+    final branch = branches[position];
+    if (branch != shell.currentIndex) {
+      shell.goBranch(branch);
     } else {
-      onReselect(context, index);
+      onReselect(context, branch);
     }
   }
 }
@@ -262,7 +286,7 @@ class _NextTabIntent extends Intent;
 class _PreviousTabIntent extends Intent;
 
 class _TabIntent extends Intent {
-  final int index;
+  final int position;
 
-  const new(this.index);
+  const new(this.position);
 }

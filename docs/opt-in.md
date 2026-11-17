@@ -175,6 +175,15 @@ the assistant nor a pinned shortcut can name a sample. Off is the UI only: the
 samples are still fetched and kept, and a copy made from one is the user's own
 template either way.
 
+The Exercises tab (`Feature.exercisesTab`, #608) is the first switch that
+takes a core surface away rather than adding one: on by default, never asked,
+and off leaves the navigation bar with three tabs, reflowed as if the fourth
+had never been there. Its branch stays in the router, so turning it back on
+finds the tab where it was left, and a way into it (a shared exercise link,
+the archive) opens the same page over the screen on view while it is off.
+The other home screens follow the same switch family as they become
+optional.
+
 ## Answers follow the account
 
 A signed-in account's answers sync. Each device keeps its own copy, which is

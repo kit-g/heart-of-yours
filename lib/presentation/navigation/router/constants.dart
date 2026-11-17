@@ -30,6 +30,8 @@ const _exerciseDetailName = 'exerciseDetail';
 const _exerciseWorkoutName = 'exerciseWorkout';
 const _exerciseArchivedDetailName = 'exerciseArchivedDetail';
 const _exerciseArchive = 'archive';
+const _exerciseArchivedSegment = 'archived';
+const _exerciseWorkoutSegment = 'workout';
 const _doneName = 'done';
 const _donePath = '/$_doneName';
 const _accountManagementPath = 'account';
@@ -87,6 +89,8 @@ const _workoutOverName = 'workoutOver';
 const _workoutOverPath = '/past-workout/:workoutId';
 const _filteredExercisesName = 'filteredExercises';
 const _filteredExercisesPath = '/filtered-exercises';
+const _exerciseArchiveOverName = 'exerciseArchiveOver';
+const _exerciseArchiveOverPath = '/archived-exercises';
 const _onboardingName = 'welcome';
 const _onboardingPath = '/$_onboardingName';
 // the Coaching space (#566): a shell of its own, beside the app's
