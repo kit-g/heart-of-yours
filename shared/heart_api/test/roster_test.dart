@@ -312,6 +312,45 @@ void main() {
 
       expect(api.logClientWorkout('sam', Workout()), throwsA(containsPair('code', 'forbidden')));
     });
+
+    test("the plan of what was logged goes under the client's workout, in the plan shape (heart-api#439)", () async {
+      respond(client: client, method: 'PUT', path: Router.clientWorkoutPlan('sam', 'w1'), statusCode: 204, body: {});
+      const plan = WorkoutPlan({
+        'exercises': [
+          {
+            'sets': [
+              {'setId': 's1', 'weight': 62.5},
+            ],
+          },
+        ],
+      });
+
+      await api.saveClientWorkoutPlan('sam', 'w1', plan);
+
+      final sent = verify(
+        client.put(
+          Uri.https('api.example.com', Router.clientWorkoutPlan('sam', 'w1')),
+          headers: anyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured.single;
+      expect(jsonDecode(sent as String), {'plan': plan.plan});
+    });
+
+    test('a plan refused is thrown whole', () async {
+      respond(
+        client: client,
+        method: 'PUT',
+        path: Router.clientWorkoutPlan('sam', 'w1'),
+        statusCode: 400,
+        body: {'error': 'bad request', 'code': 'invalid_plan'},
+      );
+
+      expect(
+        api.saveClientWorkoutPlan('sam', 'w1', const WorkoutPlan({'exercises': <Object>[]})),
+        throwsA(containsPair('code', 'invalid_plan')),
+      );
+    });
   });
 
   group("a client's copy (#558)", () {

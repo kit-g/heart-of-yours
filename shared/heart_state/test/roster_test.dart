@@ -368,21 +368,33 @@ void main() {
       expect(server.loggedPlans, isEmpty);
     });
 
-    test('a plan that fails throws as the log would, and sending both again lands it', () async {
-      server.workouts.add(_workout('w1', DateTime.utc(2026, 11, 7)));
-      await roster.loadRecord('muffin');
+    test("a plan that doesn't land leaves it logged, and goes with the next try", () async {
+      final errors = <Object>[];
+      roster = Roster(service: server, onError: (error, {stacktrace}) => errors.add(error));
       final workout = Workout(name: 'Day A')..start = DateTime.utc(2026, 11, 9);
       const plan = WorkoutPlan({'exercises': <Map<String, dynamic>>[]});
       server.refusePlan = {'code': 'unavailable'};
 
-      expect(roster.logFor('muffin', workout, plan: plan), throwsA(containsPair('code', 'unavailable')));
-      await pumpEventQueue();
-      expect(roster.workoutsOf('muffin').map((each) => each.id), ['w1'], reason: 'not shown as logged yet');
+      await roster.logFor('muffin', workout, plan: plan);
+
+      expect(server.logged['muffin'], [workout], reason: 'a comparison lost, never a workout');
+      expect(server.loggedPlans, isEmpty);
+      expect(errors, [containsPair('code', 'unavailable')]);
 
       server.refusePlan = null;
-      await roster.logFor('muffin', workout, plan: plan);
+      await roster.loadRecord('muffin');
+      await pumpEventQueue();
       expect(server.loggedPlans, {workout.id: plan});
-      expect(roster.workoutsOf('muffin').map((each) => each.id), [workout.id, 'w1']);
+    });
+
+    test('a plan refused as malformed is let go: sending it again cannot help', () async {
+      final workout = Workout(name: 'Day A')..start = DateTime.utc(2026, 11, 9);
+      server.refusePlan = {'code': 'invalid_plan'};
+      await roster.logFor('muffin', workout, plan: const WorkoutPlan({'exercises': <Map<String, dynamic>>[]}));
+
+      server.refusePlan = null;
+      await roster.sendOwedPlans();
+      expect(server.loggedPlans, isEmpty);
     });
 
     test('a log refused is thrown, and changes nothing here', () async {

@@ -41,6 +41,31 @@ PlannedWorkout planSession(
   return (workout: workout, plan: WorkoutPlan(_planOf(planned, laid)));
 }
 
+/// [session] of [program] as it starts from the program's history: its
+/// [marks] and [actions] fold into the position, the latest of [bases] and the
+/// stages [actions] reached feed [planSession]. The user's own device plans
+/// from what it holds (`Programs.plan`), a coach's from what it can read of a
+/// client's (`ClientPrograms.plan`), so the two lay a session out alike.
+PlannedWorkout planProgramSession(
+  Template session, {
+  required Program program,
+  required Iterable<ProgramMark> marks,
+  required Iterable<ProgramAction> actions,
+  required Iterable<ProgramBase> bases,
+  required DateTime now,
+  int firstWeekday = DateTime.monday,
+  required RoundWeight round,
+}) {
+  return planSession(
+    session,
+    program: program,
+    position: ProgramPosition.of(program, marks: marks, actions: actions, now: now, firstWeekday: firstWeekday),
+    bases: currentBases(bases),
+    stages: currentStages(actions),
+    round: round,
+  );
+}
+
 /// What became of one planned set: the set it is, and the weight it shows.
 typedef _Laid = ({String setId, num? weight});
 

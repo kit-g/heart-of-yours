@@ -13,7 +13,6 @@ import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/plates.dart';
 import 'package:heart/core/utils/visual.dart';
-import 'package:heart/core/utils/weeks.dart';
 import 'package:heart/presentation/navigation/pushes.dart';
 import 'package:heart/presentation/routes/messages/messages.dart';
 import 'package:heart/presentation/widgets/avatar.dart';

@@ -439,12 +439,14 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
       null => null,
     };
     if (id == null || program == null || !program.live) return (workout: session.toWorkout(), plan: null);
-    return planSession(
+    return planProgramSession(
       session,
       program: program,
-      position: position(program, now: now, firstWeekday: firstWeekday),
-      bases: currentBasesOf(id),
-      stages: currentStagesOf(id),
+      marks: _marks[id] ?? const [],
+      actions: _actions[id] ?? const [],
+      bases: basesOf(id),
+      now: now,
+      firstWeekday: firstWeekday,
       round: round,
     );
   }

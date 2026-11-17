@@ -64,6 +64,14 @@ final class ProgramConflict {
   const new({required this.programId, this.session, this.fields, this.unsent = false, this.refused = false});
 }
 
+/// Whether [local], folded on this device, is where the server says the
+/// client stands ([server], `CoachProgramView.position`).
+bool _agrees(ProgramPosition local, Map<String, dynamic> server) {
+  return local.week == server['week'] &&
+      local.next == server['next'] &&
+      local.lighter == (server['lighter'] ?? local.lighter);
+}
+
 /// The server's refusal of a write because the other person changed the same
 /// thing first.
 bool isProgramChanged(Object? error) => error is Map && error['code'] == 'program_changed';
@@ -176,29 +184,35 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
     notifyListeners();
   }
 
-  /// [session] of [programId] laid out as the client's own device would
-  /// start it (#560, heart-api#439): their bases, stages and position, as
-  /// [open] last read them, with the plan it was asked to be. It is as far as
-  /// the coach can see: a workout hidden from them moves none of these, so it
-  /// can trail what the client's device would show. Without a read view, or
-  /// for a program not running, the session as it was written, with no plan.
-  PlannedWorkout plan(
-    String programId,
-    Template session, {
-    required DateTime now,
-    required int firstWeekday,
-    required RoundWeight round,
-  }) {
-    return switch (_views[programId]) {
-      CoachProgramView(:final program, :final actions, :final bases, :final marks) when program.live => planSession(
-        session,
-        program: program,
-        position: ProgramPosition.of(program, marks: marks, actions: actions, now: now, firstWeekday: firstWeekday),
-        bases: currentBases(bases),
-        stages: currentStages(actions),
-        round: round,
-      ),
-      _ => (workout: session.toWorkout(), plan: null),
+  /// [session] laid out as the client's own device would have started it
+  /// [at] (#560, heart-api#439): their bases, stages and position from what
+  /// happened before then, with the plan it was asked to be. As far as the
+  /// coach can see: a workout hidden from them moves none of these.
+  ///
+  /// Only from a copy [open] just read: one whose last read failed is stale.
+  /// And only when that read can be trusted to plan from, its history folding
+  /// [now] to where the server says the client stands; an answer without the
+  /// history (from before heart-api#439) doesn't. Otherwise, or for a program
+  /// not running, the session as it was written, with no plan: a plan kept is
+  /// kept for good, so none is better than a wrong one.
+  PlannedWorkout plan(Template session, {required DateTime at, required DateTime now, required RoundWeight round}) {
+    final unplanned = (workout: session.toWorkout(), plan: null);
+    final id = session.programId;
+    if (id == null || status(id) != .loaded) return unplanned;
+    return switch (_views[id]) {
+      CoachProgramView(:final program, :final actions, :final bases, :final marks, :final position)
+          when program.live &&
+              _agrees(ProgramPosition.of(program, marks: marks, actions: actions, now: now), position) =>
+        planProgramSession(
+          session,
+          program: program,
+          marks: marks.where((mark) => mark.at.isBefore(at)),
+          actions: actions.where((action) => action.at.isBefore(at)),
+          bases: bases.where((base) => base.at.isBefore(at)),
+          now: at,
+          round: round,
+        ),
+      _ => unplanned,
     };
   }
 

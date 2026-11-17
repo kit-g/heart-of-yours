@@ -1108,6 +1108,8 @@ void main() {
             },
           ],
           planning: {
+            // where a history of nothing folds to, so it can be planned from
+            'position': {'week': 1, 'next': 's1'},
             'bases': [
               ProgramBase(
                 id: 'b1',

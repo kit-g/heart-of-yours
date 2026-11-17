@@ -20,6 +20,7 @@ class _Server implements ClientProgramService {
   /// exercises: none unless a test gives them.
   Map<String, Object> planning = {};
   List<Object> exercises = [];
+  var failRead = false;
 
   @override
   Future<List<Program>> getClientPrograms(String studentId) async {
@@ -28,6 +29,7 @@ class _Server implements ClientProgramService {
 
   @override
   Future<CoachProgramView> getClientProgram(String studentId, String programId) async {
+    if (failRead) throw {'code': 'unavailable'};
     return CoachProgramView.fromJson({
       'program': {
         'id': programId,
@@ -231,6 +233,9 @@ void main() {
   group("a session laid out as the client's device would (heart-api#439)", () {
     final now = DateTime.utc(2026, 11, 16, 12);
     num round(Exercise _, num kilograms) => (kilograms / 2.5).round() * 2.5;
+    Map<String, dynamic> base(String id, num value, DateTime at) {
+      return ProgramBase(id: id, programId: 'p1', exerciseId: 'squat', value: value, at: at).toMap();
+    }
 
     setUp(() {
       server.exercises = [
@@ -249,45 +254,55 @@ void main() {
           ],
         },
       ];
-    });
-
-    test("from the client's bases, with the plan it was asked to be", () async {
       server.planning = {
-        'bases': [
-          ProgramBase(id: 'b1', programId: 'p1', exerciseId: 'squat', value: 100, at: DateTime.utc(2026, 11)).toMap(),
-          // the later one is where it stands
-          ProgramBase(
-            id: 'b2',
-            programId: 'p1',
-            exerciseId: 'squat',
-            value: 110,
-            at: DateTime.utc(2026, 11, 8),
-          ).toMap(),
-        ],
+        'position': {'week': 1, 'next': 's1'},
+        'bases': [base('b1', 100, DateTime.utc(2026, 11)), base('b2', 110, DateTime.utc(2026, 11, 8))],
         'actions': <Object>[],
         'marks': <Object>[],
       };
+    });
+
+    Future<PlannedWorkout> planAt(DateTime at) async {
       await programs.open('muffin', 'p1');
       final session = programs.view('p1')!.sessions.single;
+      return programs.plan(session, at: at, now: now, round: round);
+    }
 
-      final (:workout, :plan) = programs.plan('p1', session, now: now, firstWeekday: DateTime.monday, round: round);
+    test("from the client's bases, with the plan it was asked to be", () async {
+      final (:workout, :plan) = await planAt(now);
 
       final set = workout.single.single;
-      // 70% of 110 is 77, down to the 2.5 step; 100's would be 70
+      // 70% of the later 110 is 77, down to the 2.5 step; 100's would be 70
       expect(set.target?[TargetMeasure.weight]?.min, 75);
       expect(plan, isNotNull);
       final planned = ((plan!.plan['exercises'] as List).single as Map)['sets'] as List;
       expect((planned.single as Map)['setId'], set.id, reason: 'target beside done finds the set it became');
     });
 
-    test('an answer from before the server sent them plans with no base', () async {
+    test('as it stood when the session was: nothing after it moves it', () async {
+      final (:workout, plan: _) = await planAt(DateTime.utc(2026, 11, 5));
+
+      expect(workout.single.single.target?[TargetMeasure.weight]?.min, 70, reason: "the base the 8th set wasn't yet");
+    });
+
+    test("a history that doesn't fold to where the server says they are plans nothing", () async {
+      // as an answer from before the history was sent reads: none of it
+      server.planning['position'] = {'week': 3, 'next': 's1'};
+
+      final (:workout, :plan) = await planAt(now);
+
+      expect(workout.single.single.target?[TargetMeasure.weight], isNull);
+      expect(plan, isNull);
+    });
+
+    test('a copy whose last read failed plans nothing, rather than from what it read before', () async {
       await programs.open('muffin', 'p1');
-      final session = programs.view('p1')!.sessions.single;
+      server.failRead = true;
 
-      final (:workout, :plan) = programs.plan('p1', session, now: now, firstWeekday: DateTime.monday, round: round);
+      final (:workout, :plan) = await planAt(now);
 
-      expect(workout.single.single.weight, isNull);
-      expect(plan, isNotNull);
+      expect(programs.view('p1'), isNotNull, reason: 'the earlier read still shows');
+      expect(plan, isNull);
     });
 
     test('a copy never read starts as written, with no plan', () {
@@ -299,7 +314,7 @@ void main() {
         'exercises': server.exercises,
       });
 
-      final (:workout, :plan) = programs.plan('p2', session, now: now, firstWeekday: DateTime.monday, round: round);
+      final (:workout, :plan) = programs.plan(session, at: now, now: now, round: round);
 
       expect(workout.single.single.target?[TargetMeasure.weight], isNull);
       expect(plan, isNull);
