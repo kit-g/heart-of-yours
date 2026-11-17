@@ -71,6 +71,16 @@ class _Server implements RosterService {
     (logged[studentId] ??= []).add(workout);
     return Workout.fromJson({...workout.toMap(), 'loggedBy': 'whiskers', 'loggedByName': 'Whiskers'});
   }
+
+  /// Keyed by workout: the first one stays, as the server keeps it.
+  final loggedPlans = <String, WorkoutPlan>{};
+  Object? refusePlan;
+
+  @override
+  Future<void> saveClientWorkoutPlan(String studentId, String workoutId, WorkoutPlan plan) async {
+    if (refusePlan case final Object refusal) throw refusal;
+    loggedPlans.putIfAbsent(workoutId, () => plan);
+  }
 }
 
 Workout _workout(String id, DateTime start) {
@@ -341,6 +351,38 @@ void main() {
       await roster.logFor('muffin', workout);
 
       expect(reported.parametersOf('workout_logged_for'), {'exercise_count': 1, 'set_count': 1});
+    });
+
+    test("a program session's plan goes with it, once the workout is in (heart-api#439)", () async {
+      final workout = Workout(name: 'Day A')..start = DateTime.utc(2026, 11, 9);
+      const plan = WorkoutPlan({'exercises': <Map<String, dynamic>>[]});
+
+      await roster.logFor('muffin', workout, plan: plan);
+
+      expect(server.logged['muffin'], [workout]);
+      expect(server.loggedPlans, {workout.id: plan});
+    });
+
+    test('no plan sends none', () async {
+      await roster.logFor('muffin', Workout()..start = DateTime.utc(2026, 11, 9));
+      expect(server.loggedPlans, isEmpty);
+    });
+
+    test('a plan that fails throws as the log would, and sending both again lands it', () async {
+      server.workouts.add(_workout('w1', DateTime.utc(2026, 11, 7)));
+      await roster.loadRecord('muffin');
+      final workout = Workout(name: 'Day A')..start = DateTime.utc(2026, 11, 9);
+      const plan = WorkoutPlan({'exercises': <Map<String, dynamic>>[]});
+      server.refusePlan = {'code': 'unavailable'};
+
+      expect(roster.logFor('muffin', workout, plan: plan), throwsA(containsPair('code', 'unavailable')));
+      await pumpEventQueue();
+      expect(roster.workoutsOf('muffin').map((each) => each.id), ['w1'], reason: 'not shown as logged yet');
+
+      server.refusePlan = null;
+      await roster.logFor('muffin', workout, plan: plan);
+      expect(server.loggedPlans, {workout.id: plan});
+      expect(roster.workoutsOf('muffin').map((each) => each.id), [workout.id, 'w1']);
     });
 
     test('a log refused is thrown, and changes nothing here', () async {

@@ -89,6 +89,14 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     return Workout.fromJson(_named(json));
   }
 
+  /// Keeps what a workout the coach logged for [studentId] was asked to be,
+  /// to put target beside done. The server keeps the first plan, so sending
+  /// it again changes nothing.
+  Future<void> saveClientWorkoutPlan(String studentId, String workoutId, WorkoutPlan plan) async {
+    final (json, code) = await put(Router.clientWorkoutPlan(studentId, workoutId), body: plan.toMap());
+    if (code != 204) throw json;
+  }
+
   /// The copies the coach manages for a client.
   Future<List<Program>> getClientPrograms(String studentId) async {
     final (json, code) = await get(Router.clientPrograms(studentId));

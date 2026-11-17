@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import 'analytics.dart';
 import 'coaching.dart' show CoachingStatus;
+import 'program_plan.dart';
+import 'programs.dart' show ProgramLife;
 import 'remote.dart';
 import 'template_drafting.dart';
 
@@ -172,6 +174,32 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
       _status[programId] = .failed;
     }
     notifyListeners();
+  }
+
+  /// [session] of [programId] laid out as the client's own device would
+  /// start it (#560, heart-api#439): their bases, stages and position, as
+  /// [open] last read them, with the plan it was asked to be. It is as far as
+  /// the coach can see: a workout hidden from them moves none of these, so it
+  /// can trail what the client's device would show. Without a read view, or
+  /// for a program not running, the session as it was written, with no plan.
+  PlannedWorkout plan(
+    String programId,
+    Template session, {
+    required DateTime now,
+    required int firstWeekday,
+    required RoundWeight round,
+  }) {
+    return switch (_views[programId]) {
+      CoachProgramView(:final program, :final actions, :final bases, :final marks) when program.live => planSession(
+        session,
+        program: program,
+        position: ProgramPosition.of(program, marks: marks, actions: actions, now: now, firstWeekday: firstWeekday),
+        bases: currentBases(bases),
+        stages: currentStages(actions),
+        round: round,
+      ),
+      _ => (workout: session.toWorkout(), plan: null),
+    };
   }
 
   /// Opens [session] of the copy in the editor, or a new one with none. The

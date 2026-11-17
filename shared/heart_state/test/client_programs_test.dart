@@ -16,6 +16,11 @@ class _Server implements ClientProgramService {
 
   var managed = true;
 
+  /// What the client's device plans from (heart-api#439), and the sessions'
+  /// exercises: none unless a test gives them.
+  Map<String, Object> planning = {};
+  List<Object> exercises = [];
+
   @override
   Future<List<Program>> getClientPrograms(String studentId) async {
     return [if (managed) Program(id: 'p1', name: 'Strength block', perWeek: 2, weeks: 4)];
@@ -35,9 +40,10 @@ class _Server implements ClientProgramService {
       },
       'sessions': [
         for (final id in sessionRevisions.keys)
-          {'id': id, 'name': 'Day A', 'order': 0, 'programId': programId, 'exercises': <Object>[]},
+          {'id': id, 'name': 'Day A', 'order': 0, 'programId': programId, 'exercises': exercises},
       ],
       'position': {'week': 1},
+      ...planning,
     });
   }
 
@@ -220,6 +226,84 @@ void main() {
       'session_deleted',
     ]);
     expect(reported.names, everyElement('client_program_edited'));
+  });
+
+  group("a session laid out as the client's device would (heart-api#439)", () {
+    final now = DateTime.utc(2026, 11, 16, 12);
+    num round(Exercise _, num kilograms) => (kilograms / 2.5).round() * 2.5;
+
+    setUp(() {
+      server.exercises = [
+        {
+          'id': 'te1',
+          'exercise': {'id': 'squat', 'name': 'Squat', 'category': 'Barbell', 'target': 'Legs'},
+          'sets': [
+            {
+              'id': 'set-1',
+              'set_type': 'normal',
+              'target': {
+                'share': 0.7,
+                'reps': {'min': 5, 'max': 5},
+              },
+            },
+          ],
+        },
+      ];
+    });
+
+    test("from the client's bases, with the plan it was asked to be", () async {
+      server.planning = {
+        'bases': [
+          ProgramBase(id: 'b1', programId: 'p1', exerciseId: 'squat', value: 100, at: DateTime.utc(2026, 11)).toMap(),
+          // the later one is where it stands
+          ProgramBase(
+            id: 'b2',
+            programId: 'p1',
+            exerciseId: 'squat',
+            value: 110,
+            at: DateTime.utc(2026, 11, 8),
+          ).toMap(),
+        ],
+        'actions': <Object>[],
+        'marks': <Object>[],
+      };
+      await programs.open('muffin', 'p1');
+      final session = programs.view('p1')!.sessions.single;
+
+      final (:workout, :plan) = programs.plan('p1', session, now: now, firstWeekday: DateTime.monday, round: round);
+
+      final set = workout.single.single;
+      // 70% of 110 is 77, down to the 2.5 step; 100's would be 70
+      expect(set.target?[TargetMeasure.weight]?.min, 75);
+      expect(plan, isNotNull);
+      final planned = ((plan!.plan['exercises'] as List).single as Map)['sets'] as List;
+      expect((planned.single as Map)['setId'], set.id, reason: 'target beside done finds the set it became');
+    });
+
+    test('an answer from before the server sent them plans with no base', () async {
+      await programs.open('muffin', 'p1');
+      final session = programs.view('p1')!.sessions.single;
+
+      final (:workout, :plan) = programs.plan('p1', session, now: now, firstWeekday: DateTime.monday, round: round);
+
+      expect(workout.single.single.weight, isNull);
+      expect(plan, isNotNull);
+    });
+
+    test('a copy never read starts as written, with no plan', () {
+      final session = Template.fromJson({
+        'id': 's1',
+        'name': 'Day A',
+        'order': 0,
+        'programId': 'p2',
+        'exercises': server.exercises,
+      });
+
+      final (:workout, :plan) = programs.plan('p2', session, now: now, firstWeekday: DateTime.monday, round: round);
+
+      expect(workout.single.single.target?[TargetMeasure.weight], isNull);
+      expect(plan, isNull);
+    });
   });
 
   test('sign-out forgets every copy', () async {

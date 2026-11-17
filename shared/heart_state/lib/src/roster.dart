@@ -39,6 +39,10 @@ abstract interface class RosterService {
   /// Logs a workout as the client's (#560), by its own id: a retry answers
   /// the stored one.
   Future<Workout> logClientWorkout(String studentId, Workout workout);
+
+  /// What a workout the coach logged was asked to be. The server keeps the
+  /// first one.
+  Future<void> saveClientWorkoutPlan(String studentId, String workoutId, WorkoutPlan plan);
 }
 
 /// What a coach has read of one client: their workouts, a page at a time, and
@@ -257,11 +261,18 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
   /// themselves. Throws what the service threw, so the caller can say so and
   /// try again under the same id.
   ///
+  /// [plan], for a program's session, is what it was asked to be (#558), sent
+  /// once the workout is in: so a coach compares their own in-person session
+  /// with its targets as with any other. Its failing throws as the log's
+  /// would. Sending both again is safe: the server answers the stored workout
+  /// and keeps the first plan.
+  ///
   /// Their record keeps the server's order, newest id first, and a workout
   /// logged now has the newest id there is: it goes first, whenever it was.
-  Future<Workout> logFor(String studentId, Workout workout) async {
+  Future<Workout> logFor(String studentId, Workout workout, {WorkoutPlan? plan}) async {
     workout.keepDone();
     final logged = await _service.logClientWorkout(studentId, workout);
+    if (plan != null) await _service.saveClientWorkoutPlan(studentId, logged.id, plan);
     // what was sent, after keepDone dropped what wasn't done: the server's
     // answer is the same workout, and the client's history is what it holds
     analytics?.workoutLoggedFor(
