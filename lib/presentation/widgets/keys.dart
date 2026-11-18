@@ -17,7 +17,6 @@ abstract final class AppKeys {
 
   /// Placeholder holding a two-pane detail open before anything is selected.
   /// Asserting on it distinguishes "nothing selected" from "no detail pane".
-  static const noSelection = Key('AppFrame.noSelection');
 
   /// History's switch between the list and the calendar, and the calendar
   /// itself (#609).
@@ -406,6 +405,8 @@ abstract final class AppKeys {
 
   static Key coachingClient(String connectionId) => Key('Coaching.client.$connectionId');
 
+  static const coachingSettings = Key('Coaching.settings');
+  static const coachingLogOut = Key('Coaching.logOut');
   static Key coachingMarkReviewed(String connectionId) => Key('Coaching.reviewed.$connectionId');
 
   /// One client (#559): their page, or the pane beside the roster, its way

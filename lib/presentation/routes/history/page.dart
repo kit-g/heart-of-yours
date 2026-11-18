@@ -423,23 +423,11 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
           ),
           true => switch (layout) {
             .compact => page,
-            .wide => Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: page,
-                ),
-                const VerticalDivider(width: 1),
-                // held open whether or not anything is selected, so picking a
-                // workout does not resize the list underneath you
-                Expanded(
-                  flex: 3,
-                  child: switch (widget.detail) {
-                    null => const _NoSelectionState(),
-                    Widget detail => detail,
-                  },
-                ),
-              ],
+            // nothing picked, the list has the page; a pick opens beside it
+            .wide => MasterDetail(
+              masterWidth: (width) => width * 2 / 5,
+              master: page,
+              detail: widget.detail,
             ),
           },
         },
@@ -484,20 +472,6 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final L(:emptyHistoryTitle, :emptyHistoryBody) = L.of(context);
     return _Placeholder(title: emptyHistoryTitle, body: emptyHistoryBody);
-  }
-}
-
-/// Holds the detail pane open on a wide screen before a workout is picked.
-///
-/// The pane used to collapse instead, which let the list reflow from full width
-/// to two fifths the moment you tapped a card.
-class _NoSelectionState extends StatelessWidget {
-  const new();
-
-  @override
-  Widget build(BuildContext context) {
-    final L(:noWorkoutSelectedTitle, :noWorkoutSelectedBody) = L.of(context);
-    return _Placeholder(key: AppKeys.noSelection, title: noWorkoutSelectedTitle, body: noWorkoutSelectedBody);
   }
 }
 
