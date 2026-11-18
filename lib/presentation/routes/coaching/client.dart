@@ -95,6 +95,10 @@ class _ClientView extends StatefulWidget {
   /// title for that.
   final Widget? leading;
 
+  /// Whether opening this view is the coach looking at the client (#686):
+  /// not when it is built under a workout opened from Activity.
+  final bool looks;
+
   const new({
     super.key,
     required this.connectionId,
@@ -104,6 +108,7 @@ class _ClientView extends StatefulWidget {
     required this.onNotes,
     required this.onLog,
     this.leading,
+    this.looks = true,
   });
 
   @override
@@ -122,6 +127,18 @@ class _ClientViewState extends State<_ClientView> {
     super.didUpdateWidget(old);
     // after this build: reading notifies the roster this view is built from
     if (old.connectionId != widget.connectionId) WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  /// Clears what a look clears for the client as the roster now has them.
+  Future<void> _look(Roster roster) async {
+    final client = roster.client(widget.connectionId);
+    if (client == null || _former(client) || !_lookClears(client)) return;
+    try {
+      await roster.markReviewed(client);
+    } catch (error, stacktrace) {
+      // the row stays set apart, and the next open asks again
+      reportToSentry(error, stacktrace: stacktrace);
+    }
   }
 
   Future<void> _load() async {
@@ -151,10 +168,11 @@ class _ClientViewState extends State<_ClientView> {
       case final ClientSummary client when _former(client):
         if (messages.status == .idle) await messages.load();
       case final ClientSummary client:
-        // opening them is looking at them: what a look clears goes (#686),
-        // before the roster is read again, which would bring it back
-        if (_lookClears(client)) await roster.markReviewed(client).catchError((_) {});
         await (roster.load(), roster.loadRecord(client.studentId), programs.loadManaged(client.studentId)).wait;
+        // opening them is looking at them (#686): what a look clears goes,
+        // decided on the row as just read, once what they did is on screen.
+        // Not from under a workout opened over them, which they never saw
+        if (widget.looks && mounted) await _look(roster);
       case null:
         break;
     }
@@ -239,7 +257,7 @@ class _ClientViewState extends State<_ClientView> {
             // the coach's own notes on them, which they never see (#556):
             // not where this device has nowhere to keep the keys
             if (DeviceKeys.of(context).supported) ...[
-              _Heading(l.coachingNotes),
+              _Heading(l.coachingYourNotes),
               _NotesTile(
                 connectionId: client.connectionId,
                 headed: true,
@@ -572,22 +590,31 @@ class _ClientPaneState extends State<_ClientPane> {
   /// the pane's widget and words as they are now each time it builds.
   Route<void> _client() {
     return MaterialPageRoute(
+      // a column as on a page, not the pane's whole width
       builder: (context) => Material(
-        child: _ClientView(
-          key: AppKeys.coachingClientPane,
-          connectionId: widget.opened.connectionId,
-          onOpenWorkout: (workoutId) => _navigator.currentState?.push(_review(workoutId)),
-          onOpenProgram: (programId) => widget.onOpenProgram(programId),
-          onMessage: (id) => widget.onMessage(id),
-          onNotes: (id) => widget.onNotes(id),
-          onLog: (id, past) => widget.onLog(id, past),
-          leading: Align(
-            alignment: .centerRight,
-            child: IconButton(
-              key: AppKeys.coachingClientClose,
-              tooltip: L.of(context).coachingClientClose,
-              onPressed: () => widget.onClose(),
-              icon: const Icon(Icons.close_rounded),
+        child: Align(
+          alignment: .topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: readableWidth),
+            child: _ClientView(
+              key: AppKeys.coachingClientPane,
+              connectionId: widget.opened.connectionId,
+              // under a workout opened from Activity it was never seen
+              looks: widget.opened.workoutId == null,
+              onOpenWorkout: (workoutId) => _navigator.currentState?.push(_review(workoutId)),
+              onOpenProgram: (programId) => widget.onOpenProgram(programId),
+              onMessage: (id) => widget.onMessage(id),
+              onNotes: (id) => widget.onNotes(id),
+              onLog: (id, past) => widget.onLog(id, past),
+              leading: Align(
+                alignment: .centerRight,
+                child: IconButton(
+                  key: AppKeys.coachingClientClose,
+                  tooltip: L.of(context).coachingClientClose,
+                  onPressed: () => widget.onClose(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ),
             ),
           ),
         ),
@@ -611,7 +638,7 @@ class _ClientPaneState extends State<_ClientPane> {
   }
 }
 
-/// A section's heading on a client's page (#686).
+/// A section's heading on the coach's pages about a client (#686).
 class _Heading extends StatelessWidget {
   final String text;
 
@@ -621,7 +648,10 @@ class _Heading extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const .fromLTRB(16, 24, 16, 4),
-      child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+      child: Semantics(
+        header: true,
+        child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+      ),
     );
   }
 }
@@ -638,7 +668,6 @@ class _ClientActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
-    final ThemeData(:colorScheme) = Theme.of(context);
     final unread = Messages.watch(context).threadOf(client.connectionId)?.unread ?? 0;
     final message = PrimaryButton.shrunk(
       key: AppKeys.coachingClientMessages,
@@ -648,10 +677,17 @@ class _ClientActions extends StatelessWidget {
         spacing: 8,
         children: [
           const Icon(Icons.forum_outlined, size: 18),
-          Text(switch (client.name?.trim()) {
-            final String name when name.isNotEmpty => l.messagesWith(name),
-            _ => l.coachingMessages,
-          }),
+          // a long name gives way rather than overflow
+          Flexible(
+            child: Text(
+              switch (client.name?.trim()) {
+                final String name when name.isNotEmpty => l.messagesWith(name),
+                _ => l.coachingMessages,
+              },
+              maxLines: 1,
+              overflow: .ellipsis,
+            ),
+          ),
         ],
       ),
     );
@@ -661,14 +697,9 @@ class _ClientActions extends StatelessWidget {
         spacing: 8,
         runSpacing: 8,
         children: [
-          switch (unread) {
-            0 => message,
-            final int count => Badge(
-              label: Text('$count', semanticsLabel: l.messagesUnread(count)),
-              child: message,
-            ),
-          },
-          _LogForButton(client: client, onLog: onLog, color: colorScheme.secondaryContainer),
+          // the Messages tab's own badge: one count, one look
+          UnreadBadge(count: unread, child: message),
+          _LogForButton(client: client, onLog: onLog),
         ],
       ),
     );
@@ -700,8 +731,9 @@ class _ProgramCard extends StatelessWidget {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final progress = switch (client) {
+      // weeks behind them: the week they are in is still to train
       ClientSummary(programWeek: final int week, programWeeks: final int weeks) when following && weeks > 0 =>
-        (week / weeks).clamp(0.0, 1.0),
+        ((week - 1) / weeks).clamp(0.0, 1.0),
       _ => null,
     };
     return Padding(

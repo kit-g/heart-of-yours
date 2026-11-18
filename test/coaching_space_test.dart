@@ -430,6 +430,11 @@ void main() {
         reason: 'a gap holds until it stops being true',
       );
       expect(find.byKey(AppKeys.coachingReasonFilter('note')), findsNothing, reason: 'nobody left with a note');
+
+      // a gap a look doesn't clear: opening them marks nothing
+      await tester.tapByKey(AppKeys.coachingClient('c-pip'));
+      await tester.pumpTimes();
+      verifyNever(api.markReviewed('c-pip', at: anyNamed('at')));
     });
 
     testWidgets('someone who accepts while the coach is away is there when the app comes back', (tester) async {

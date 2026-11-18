@@ -1020,12 +1020,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.coachingClient,
     _Guideline.androidTapTarget,
-    'Message and Log a workout are PrimaryButton.shrunk (lib/presentation/routes/coaching/client.dart:640, lib/presentation/routes/coaching/log_for.dart:39) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+    'Message and Log a workout are PrimaryButton.shrunk (lib/presentation/routes/coaching/client.dart:673, lib/presentation/routes/coaching/log_for.dart:36), 32pt with no larger hit area yet: re-enable once PrimaryButton takes a 48pt hit area (PR #690)',
   ),
   (
     _Screen.coachingClient,
     _Guideline.iosTapTarget,
-    'Message and Log a workout are PrimaryButton.shrunk (lib/presentation/routes/coaching/client.dart:640, lib/presentation/routes/coaching/log_for.dart:39) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+    'Message and Log a workout are PrimaryButton.shrunk (lib/presentation/routes/coaching/client.dart:673, lib/presentation/routes/coaching/log_for.dart:36), 32pt with no larger hit area yet: re-enable once PrimaryButton takes a 48pt hit area (PR #690)',
   ),
   // someone no longer coached (#556): who they were, and the coach's notes
   (_Screen.coachingFormerClient, _Guideline.labeledTapTarget, null),

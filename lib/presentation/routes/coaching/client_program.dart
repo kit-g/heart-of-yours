@@ -150,10 +150,7 @@ class _CopyView extends StatelessWidget {
             title: Text(l.programAddSession, style: TextStyle(color: colorScheme.primary)),
             onTap: () => edit(null),
           ),
-        Padding(
-          padding: const .fromLTRB(16, 24, 16, 4),
-          child: Text(l.coachingCopyHistory, style: textTheme.titleMedium),
-        ),
+        _Heading(l.coachingCopyHistory),
         if (changes.isEmpty)
           Padding(
             padding: const .symmetric(horizontal: 16),

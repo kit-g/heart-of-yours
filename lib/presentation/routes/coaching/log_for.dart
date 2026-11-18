@@ -8,10 +8,7 @@ class _LogForButton extends StatefulWidget {
   /// Opens the workout to fill in.
   final ValueChanged<PastWorkout> onLog;
 
-  /// The button's fill.
-  final Color color;
-
-  const new({required this.client, required this.onLog, required this.color});
+  const new({required this.client, required this.onLog});
 
   @override
   State<_LogForButton> createState() => _LogForButtonState();
@@ -37,7 +34,7 @@ class _LogForButtonState extends State<_LogForButton> {
       message: l.coachingLogWorkoutBody,
       child: PrimaryButton.shrunk(
         key: AppKeys.coachingLogFor,
-        backgroundColor: widget.color,
+        backgroundColor: colorScheme.secondaryContainer,
         onPressed: _start,
         child: Row(
           mainAxisSize: .min,
@@ -53,7 +50,14 @@ class _LogForButtonState extends State<_LogForButton> {
                 false => Icon(Icons.edit_calendar_outlined, size: 18, color: colorScheme.onSecondaryContainer),
               },
             ),
-            Text(l.coachingLogWorkout, style: TextStyle(color: colorScheme.onSecondaryContainer)),
+            Flexible(
+              child: Text(
+                l.coachingLogWorkout,
+                maxLines: 1,
+                overflow: .ellipsis,
+                style: TextStyle(color: colorScheme.onSecondaryContainer),
+              ),
+            ),
           ],
         ),
       ),

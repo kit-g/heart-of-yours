@@ -6236,5 +6236,7 @@
   "coachingCopyPutBackTitle": "Put this back?",
   "@coachingCopyPutBackTitle": {"description": "Title of the question asked before undoing one change to a client's copy of a program (#686)", "type": "text", "placeholders": {}},
   "coachingCopyPutBackBody": "{change}. Putting it back changes {name}'s program too.",
-  "@coachingCopyPutBackBody": {"description": "Body of the question asked before undoing one change to a client's program (#686). {change} is the change in words, {name} the client", "type": "text", "placeholders": {"change": {"type": "String"}, "name": {"type": "String"}}}
+  "@coachingCopyPutBackBody": {"description": "Body of the question asked before undoing one change to a client's program (#686). {change} is the change in words, {name} the client", "type": "text", "placeholders": {"change": {"type": "String"}, "name": {"type": "String"}}},
+  "coachingYourNotes": "Your notes",
+  "@coachingYourNotes": {"description": "Heading over the coach's own notes on a client, which the client never sees, on the coach's page for that client (#686)", "type": "text", "placeholders": {}}
 }

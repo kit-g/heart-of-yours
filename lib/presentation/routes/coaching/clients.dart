@@ -481,59 +481,67 @@ class _ClientRow extends StatelessWidget {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme, :dividerColor) = Theme.of(context);
     final opener = _ClientOpener.of(context);
-    return InkWell(
-      key: AppKeys.coachingClient(client.connectionId),
-      onTap: switch (opener) {
-        final opener? => () => opener.onOpenClient(client.connectionId),
-        null => null,
+    // the fill on the Material under the ink, so a set-apart row still
+    // shows its splash, hover and focus
+    return Material(
+      color: switch (_lookClears(client)) {
+        true => colorScheme.surfaceContainerHigh,
+        false => Colors.transparent,
       },
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          // set apart while opening them would clear a reason (#686)
-          color: switch (_lookClears(client)) {
-            true => colorScheme.surfaceContainerHigh,
-            false => null,
-          },
-          border: Border(top: BorderSide(color: dividerColor.withValues(alpha: .4))),
-        ),
-        child: Padding(
-          padding: const .fromLTRB(16, 8, 16, 8),
-          child: Row(
-            children: [
-              Expanded(
-                flex: _columns.client,
-                child: Row(
-                  children: [
-                    Avatar(remote: client.avatar, radius: 16),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(_clientName(l, client), style: textTheme.bodyLarge, maxLines: 1, overflow: .ellipsis),
-                    ),
-                  ],
+      child: InkWell(
+        key: AppKeys.coachingClient(client.connectionId),
+        onTap: switch (opener) {
+          final opener? => () => opener.onOpenClient(client.connectionId),
+          null => null,
+        },
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: dividerColor.withValues(alpha: .4))),
+          ),
+          child: Padding(
+            padding: const .fromLTRB(16, 8, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: _columns.client,
+                  child: Row(
+                    children: [
+                      Avatar(remote: client.avatar, radius: 16),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _clientName(l, client),
+                          style: textTheme.bodyLarge,
+                          maxLines: 1,
+                          overflow: .ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                flex: _columns.program,
-                child: Padding(
-                  padding: const .only(right: 8),
-                  child: Text(_programLine(l, client), style: textTheme.bodyMedium, maxLines: 2, overflow: .ellipsis),
+                Expanded(
+                  flex: _columns.program,
+                  child: Padding(
+                    padding: const .only(right: 8),
+                    child: Text(_programLine(l, client), style: textTheme.bodyMedium, maxLines: 2, overflow: .ellipsis),
+                  ),
                 ),
-              ),
-              Expanded(
-                flex: _columns.days,
-                child: Align(
-                  alignment: .centerLeft,
-                  child: _WeekDots(client: client),
+                Expanded(
+                  flex: _columns.days,
+                  child: Align(
+                    alignment: .centerLeft,
+                    child: _WeekDots(client: client),
+                  ),
                 ),
-              ),
-              Expanded(
-                flex: _columns.reasons,
-                child: Text(
-                  _reasonsInWords(l, client).join(' · '),
-                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary),
+                Expanded(
+                  flex: _columns.reasons,
+                  child: Text(
+                    _reasonsInWords(l, client).join(' · '),
+                    style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -634,11 +642,12 @@ class _FormerClients extends StatelessWidget {
   }
 }
 
-/// Whether a look would clear anything: a gap or an ending holds until it
-/// stops being true, so a button for those alone would do nothing. A reason
-/// this build doesn't know might clear, so it gets the button.
+/// Whether opening [client] would clear a reason they have (#686): one a
+/// look clears, which this build knows. A reason it doesn't know may hold
+/// until it stops being true, and marking for it on every open would never
+/// clear it.
 bool _lookClears(ClientSummary client) {
-  return client.reasons.any((reason) => ClientReason.of(reason)?.clearsOnReview ?? true);
+  return client.reasons.any((reason) => ClientReason.of(reason)?.clearsOnReview ?? false);
 }
 
 /// Whether [client] is no longer coached: the connection was severed.
