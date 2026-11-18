@@ -385,6 +385,10 @@ class const MusclePanel({
 
     return switch (help) {
       String help => Stack(
+        // passthrough: a loose Stack let the box shrink to its content inside
+        // the profile's stretched row, so the figures and the list beside them
+        // came out different heights (#687)
+        fit: .passthrough,
         children: [
           box,
           Positioned(top: 0, right: 0, child: PanelHelp(message: help)),
