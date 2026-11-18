@@ -976,6 +976,18 @@ void main() {
         tester,
       ) async {
         withSam();
+        // a conversation to show first
+        when(api.getThreads()).thenAnswer(
+          (_) async => [
+            Thread(
+              id: 't-c-sam',
+              connectionId: 'c-sam',
+              otherId: 'sam',
+              otherName: 'Sam',
+              lastAt: DateTime.utc(2026, 11, 12, 8),
+            ),
+          ],
+        );
         await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, size: const Size(1600, 1000));
 
         await tester.tapByKey(AppKeys.coachingClient('c-sam'));
@@ -1021,6 +1033,9 @@ void main() {
       await tester.pumpTimes();
       final beside = find.byKey(AppKeys.coachingBeside);
       expect(beside, findsOneWidget);
+      // no conversation yet: none is opened on the server just by looking
+      expect(find.descendant(of: beside, matching: find.byType(ThreadView)), findsNothing);
+      verifyNever(api.openThread(any));
       final client = find.byKey(AppKeys.coachingClientPane);
       expect(tester.getTopLeft(beside).dx, lessThan(tester.getTopRight(client).dx), reason: 'under the client');
       expect(tester.getTopLeft(beside).dy, greaterThan(tester.getTopLeft(client).dy));

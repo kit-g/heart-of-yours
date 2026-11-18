@@ -412,6 +412,8 @@ abstract final class AppKeys {
   static const coachingClientPane = Key('Coaching.clientPane');
   static const coachingReplyAbout = Key('Coaching.replyAbout');
   static const coachingBeside = Key('Coaching.beside');
+  static const coachingBesideMenu = Key('Coaching.besideMenu');
+  static const coachingRosterViewMenu = Key('Coaching.rosterViewMenu');
   static Key coachingBesideTab(String tab) => Key('Coaching.beside.$tab');
   static const coachingLatestWorkout = Key('Coaching.latestWorkout');
   static const coachingClientClose = Key('Coaching.clientClose');

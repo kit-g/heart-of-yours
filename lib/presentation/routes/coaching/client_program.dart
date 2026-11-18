@@ -53,12 +53,6 @@ class _ClientProgramBodyState extends State<_ClientProgramBody> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
-  @override
-  void didUpdateWidget(covariant _ClientProgramBody old) {
-    super.didUpdateWidget(old);
-    if (old.programId != widget.programId) WidgetsBinding.instance.addPostFrameCallback((_) => _load());
-  }
-
   Future<void> _load() async {
     if (!mounted) return;
     final roster = Roster.of(context);

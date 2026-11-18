@@ -226,9 +226,14 @@ class _ClientViewState extends State<_ClientView> {
       _Desk() => entries.whereType<_Trained>().firstOrNull?.workout,
       null => null,
     };
-    final earlier = switch (latest) {
-      final Workout latest => entries.where((entry) => entry is! _Trained || entry.workout.id != latest.id).toList(),
-      null => entries,
+    // skips since the latest workout stay above it, newest first; the rest
+    // is earlier
+    final (newer, earlier) = switch (latest) {
+      final Workout latest => (
+        entries.takeWhile((entry) => entry is! _Trained).toList(),
+        entries.skipWhile((entry) => entry is! _Trained).skip(1).toList(),
+      ),
+      null => (const <_Entry>[], entries),
     };
 
     return NotificationListener<ScrollNotification>(
@@ -260,7 +265,7 @@ class _ClientViewState extends State<_ClientView> {
             // or not: the ones both of them edit (#558)
             // upright on a tablet, it is only beside them
             if (_programsOf(client, ClientPrograms.watch(context).managed(id)) case final programs
-                when programs.isNotEmpty && (desk?.programInColumn ?? true)) ...[
+                when programs.isNotEmpty && (desk == null || _DeskShape.of(context))) ...[
               _Heading(l.coachingClientProgram),
               for (final (id, name, waiting) in programs)
                 _ProgramCard(
@@ -272,9 +277,11 @@ class _ClientViewState extends State<_ClientView> {
                   name: name,
                   following: id == client.programId,
                   waiting: waiting,
+                  // the one they follow is beside them in full; a copy
+                  // they don't opens on its own
                   onTap: switch (desk) {
-                    final _Desk desk => () => desk.show(.program),
-                    null => () => widget.onOpenProgram(id),
+                    final _Desk desk when id == client.programId => () => desk.show(.program),
+                    _ => () => widget.onOpenProgram(id),
                   },
                 ),
             ],
@@ -289,6 +296,8 @@ class _ClientViewState extends State<_ClientView> {
                 onTap: () => widget.onNotes(client.connectionId),
               ),
             ],
+            for (final entry in newer)
+              if (entry case _Skipped(:final skip)) _SkipTile(skip: skip),
             if (latest case final Workout latest)
               _LatestWorkout(
                 key: AppKeys.coachingLatestWorkout,
@@ -338,12 +347,7 @@ class _ClientViewState extends State<_ClientView> {
                       workout: workout,
                       onTap: () => widget.onOpenWorkout(workout.id),
                     ),
-                    _Skipped(:final skip) => ListTile(
-                      key: AppKeys.coachingClientSkip,
-                      leading: const Icon(Icons.redo_rounded),
-                      title: Text(l.coachingClientSkipped),
-                      subtitle: Text(DateFormat.MMMEd(l.localeName).format(skip.at.toLocal())),
-                    ),
+                    _Skipped(:final skip) => _SkipTile(skip: skip),
                   },
                 if (more)
                   const Padding(
@@ -497,6 +501,24 @@ class _MessagesTile extends StatelessWidget {
         final int count => Badge(label: Text('$count', semanticsLabel: l.messagesUnread(count))),
       },
       onTap: onTap,
+    );
+  }
+}
+
+/// A day the client set aside with Not today.
+class _SkipTile extends StatelessWidget {
+  final TrainingSkip skip;
+
+  const new({required this.skip});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    return ListTile(
+      key: AppKeys.coachingClientSkip,
+      leading: const Icon(Icons.redo_rounded),
+      title: Text(l.coachingClientSkipped),
+      subtitle: Text(DateFormat.MMMEd(l.localeName).format(skip.at.toLocal())),
     );
   }
 }

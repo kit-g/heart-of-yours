@@ -19,6 +19,7 @@ import 'package:heart/presentation/routes/messages/messages.dart';
 import 'package:heart/presentation/widgets/avatar.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/menu.dart';
 import 'package:heart/presentation/widgets/workout/past_workout.dart';
 import 'package:heart/presentation/widgets/shared_program.dart';
 import 'package:heart/presentation/widgets/responsive/master_detail.dart';

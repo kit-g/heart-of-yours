@@ -13,14 +13,10 @@ const _besideColumnAt = 760.0;
 
 /// What a client's view leaves to the column beside it on a tablet (#693).
 class _Desk {
-  /// Whether their program sits in their column too, as a summary: on a
-  /// landscape page, where the column beside it may show something else.
-  final bool programInColumn;
-
   /// Shows [tab] beside the client.
   final ValueChanged<_Beside> show;
 
-  const new({required this.programInColumn, required this.show});
+  const new({required this.show});
 }
 
 /// What is open beside the roster: a client, and one of their workouts over
@@ -56,6 +52,9 @@ class _ClientPane extends StatefulWidget {
 
   /// Opens the template editor on a session of their program.
   final void Function(String programId, {required bool isNew}) onEditSession;
+
+  /// Opens a workout of the coach's own that a message is about.
+  final ValueChanged<String>? onOpenOwnWorkout;
   final void Function(String connectionId, PastWorkout past) onLog;
   final VoidCallback onClose;
 
@@ -66,6 +65,7 @@ class _ClientPane extends StatefulWidget {
     required this.onEditSession,
     required this.onLog,
     required this.onClose,
+    this.onOpenOwnWorkout,
   });
 
   @override
@@ -75,11 +75,28 @@ class _ClientPane extends StatefulWidget {
 class _ClientPaneState extends State<_ClientPane> {
   final _navigator = GlobalKey<NavigatorState>();
 
-  /// What is beside the client, kept through a turn of the device.
-  final _beside = ValueNotifier(_Beside.messages);
+  /// The client's column, moved rather than built again as the pane changes
+  /// shape on a turn of the device: its scroll, and what it has read, stay.
+  final _column = GlobalKey();
+
+  /// What the coach picked to have beside the client, kept through a turn;
+  /// nothing until they pick, which shows the conversation where there is one.
+  final _beside = ValueNotifier<_Beside?>(null);
 
   /// Whether the column beside the client fit beside them at the last build.
   var _wide = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // whether there is a conversation to show first: a read, where opening
+    // one would write
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final messages = Messages.of(context);
+      if (messages.status == .idle) messages.load();
+    });
+  }
 
   @override
   void dispose() {
@@ -111,6 +128,7 @@ class _ClientPaneState extends State<_ClientPane> {
       connectionId: widget.opened.connectionId,
       tab: _beside,
       onOpenWorkout: _openWorkout,
+      onOpenOwnWorkout: widget.onOpenOwnWorkout,
       onOpenProgram: widget.onOpenProgram,
       onEditSession: widget.onEditSession,
     );
@@ -122,45 +140,57 @@ class _ClientPaneState extends State<_ClientPane> {
   Route<void> _client() {
     return MaterialPageRoute(
       builder: (context) {
-        final wide = _DeskShape.of(context);
-        final view = Align(
-          alignment: .topCenter,
-          // a column as on a page, not the pane's whole width
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: readableWidth),
-            child: _ClientView(
-              key: AppKeys.coachingClientPane,
-              connectionId: widget.opened.connectionId,
-              // under a workout opened from Activity it was never seen
-              looks: widget.opened.workoutId == null,
-              onOpenWorkout: _openWorkout,
-              onOpenProgram: widget.onOpenProgram,
-              onMessage: (_) => _show(.messages),
-              onNotes: (_) => _show(.notes),
-              onLog: widget.onLog,
-              desk: _Desk(programInColumn: wide, show: _show),
-              leading: Align(
-                alignment: .centerRight,
-                child: IconButton(
-                  key: AppKeys.coachingClientClose,
-                  tooltip: L.of(context).coachingClientClose,
-                  onPressed: widget.onClose,
-                  icon: const Icon(Icons.close_rounded),
+        final view = KeyedSubtree(
+          key: _column,
+          child: Align(
+            alignment: .topCenter,
+            // a column as on a page, not the pane's whole width
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: readableWidth),
+              child: _ClientView(
+                key: AppKeys.coachingClientPane,
+                connectionId: widget.opened.connectionId,
+                // under a workout opened from Activity it was never seen
+                looks: widget.opened.workoutId == null,
+                onOpenWorkout: _openWorkout,
+                onOpenProgram: widget.onOpenProgram,
+                onMessage: (_) => _show(.messages),
+                onNotes: (_) => _show(.notes),
+                onLog: widget.onLog,
+                desk: _Desk(show: _show),
+                leading: Align(
+                  alignment: .centerRight,
+                  child: IconButton(
+                    key: AppKeys.coachingClientClose,
+                    tooltip: L.of(context).coachingClientClose,
+                    onPressed: widget.onClose,
+                    icon: const Icon(Icons.close_rounded),
+                  ),
                 ),
               ),
             ),
           ),
         );
         return Material(
-          child: switch (wide) {
+          child: switch (_DeskShape.of(context)) {
             true => view,
-            // upright: the client over what is beside them
+            // upright: the client over what is beside them, as wide as
+            // their column
             false => Column(
               crossAxisAlignment: .stretch,
               children: [
                 Expanded(flex: 5, child: view),
                 const Divider(height: 1),
-                Expanded(flex: 6, child: _besidePane()),
+                Expanded(
+                  flex: 6,
+                  child: Align(
+                    alignment: .topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: readableWidth),
+                      child: _besidePane(),
+                    ),
+                  ),
+                ),
               ],
             ),
           },
@@ -171,38 +201,39 @@ class _ClientPaneState extends State<_ClientPane> {
 
   @override
   Widget build(BuildContext context) {
-    // Back on Android steps back inside the pane before it leaves the page
-    final navigator = NavigatorPopHandler(
+    // Back on Android steps back inside the pane before it leaves the page;
+    // above both shapes, so a turn keeps what it was told it can pop
+    return NavigatorPopHandler(
       onPopWithResult: (_) => _navigator.currentState?.maybePop(),
-      child: Navigator(
-        key: _navigator,
-        onGenerateInitialRoutes: (_, _) => [
-          _client(),
-          if (widget.opened.workoutId case final String workoutId) _review(workoutId),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = _wide = constraints.maxWidth >= _besideColumnAt;
+          final navigator = Navigator(
+            key: _navigator,
+            onGenerateInitialRoutes: (_, _) => [
+              _client(),
+              if (widget.opened.workoutId case final String workoutId) _review(workoutId),
+            ],
+          );
+          return _DeskShape(
+            wide: wide,
+            child: switch (wide) {
+              true => Row(
+                crossAxisAlignment: .stretch,
+                children: [
+                  Expanded(child: navigator),
+                  const VerticalDivider(width: 1),
+                  SizedBox(
+                    width: _besideColumnWidth,
+                    child: Material(child: _besidePane()),
+                  ),
+                ],
+              ),
+              false => navigator,
+            },
+          );
+        },
       ),
-    );
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = _wide = constraints.maxWidth >= _besideColumnAt;
-        return _DeskShape(
-          wide: wide,
-          child: switch (wide) {
-            true => Row(
-              crossAxisAlignment: .stretch,
-              children: [
-                Expanded(child: navigator),
-                const VerticalDivider(width: 1),
-                SizedBox(
-                  width: _besideColumnWidth,
-                  child: Material(child: _besidePane()),
-                ),
-              ],
-            ),
-            false => navigator,
-          },
-        );
-      },
     );
   }
 }
@@ -211,8 +242,9 @@ class _ClientPaneState extends State<_ClientPane> {
 /// them, one at a time, beside or under them (#693).
 class _BesidePane extends StatelessWidget {
   final String connectionId;
-  final ValueNotifier<_Beside> tab;
+  final ValueNotifier<_Beside?> tab;
   final ValueChanged<String> onOpenWorkout;
+  final ValueChanged<String>? onOpenOwnWorkout;
   final ValueChanged<String> onOpenProgram;
   final void Function(String programId, {required bool isNew}) onEditSession;
 
@@ -222,32 +254,33 @@ class _BesidePane extends StatelessWidget {
     required this.onOpenWorkout,
     required this.onOpenProgram,
     required this.onEditSession,
+    this.onOpenOwnWorkout,
   });
 
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
     final client = Roster.watch(context).client(connectionId);
-    final former = switch (client) {
-      final ClientSummary client => _former(client),
-      null => false,
-    };
-    final tabs = <_Beside, Widget>{
+    final former = client != null && _former(client);
+    final conversation = _holdsConversation(context, connectionId);
+    final tabs = <_Beside, String>{
       // an ended connection takes no new message: only one to read back
-      if (!former || _holdsConversation(context, connectionId))
-        .messages: Text(l.coachingMessages, key: AppKeys.coachingBesideTab('messages')),
+      if (!former || conversation) .messages: l.coachingMessages,
       // no longer coached, their program isn't the coach's to read
-      if (!former) .program: Text(l.coachingClientProgram, key: AppKeys.coachingBesideTab('program')),
+      if (!former) .program: l.coachingClientProgram,
       // where this device has somewhere to keep the keys
-      if (DeviceKeys.of(context).supported) .notes: Text(l.coachingNotes, key: AppKeys.coachingBesideTab('notes')),
+      if (DeviceKeys.of(context).supported) .notes: l.coachingNotes,
     };
     if (tabs.isEmpty) return const SizedBox.shrink();
     return ValueListenableBuilder(
       valueListenable: tab,
       builder: (context, picked, _) {
-        final shown = switch (tabs.containsKey(picked)) {
-          true => picked,
-          false => tabs.keys.first,
+        final shown = switch (picked) {
+          final _Beside picked when tabs.containsKey(picked) => picked,
+          // nothing picked yet: the conversation where there is one, and
+          // otherwise not, since opening one writes it on the server
+          _ when conversation && tabs.containsKey(_Beside.messages) => _Beside.messages,
+          _ => tabs.keys.firstWhere((each) => each != .messages, orElse: () => tabs.keys.first),
         };
         return Column(
           key: AppKeys.coachingBeside,
@@ -264,15 +297,12 @@ class _BesidePane extends StatelessWidget {
                       _ => Semantics(
                         label: l.coachingClientBeside,
                         container: true,
-                        // larger type shrinks the three words to the
-                        // column rather than run them off its edge
-                        child: FittedBox(
-                          fit: .scaleDown,
-                          child: SettingSwitcher<_Beside>(
-                            value: shown,
-                            onValueChanged: (each) => tab.value = each ?? shown,
-                            children: tabs,
-                          ),
+                        child: _Segments<_Beside>(
+                          value: shown,
+                          labels: tabs,
+                          keyOf: (each) => AppKeys.coachingBesideTab(each.name),
+                          menuKey: AppKeys.coachingBesideMenu,
+                          onPicked: (each) => tab.value = each,
                         ),
                       ),
                     },
@@ -292,20 +322,145 @@ class _BesidePane extends StatelessWidget {
             ),
             Expanded(
               child: switch (shown) {
-                .messages => ThreadView(
-                  key: ValueKey(connectionId),
-                  connectionId: connectionId,
-                  onOpenWorkout: (client: onOpenWorkout, own: null),
+                .messages => _WhileShown(
+                  child: ThreadView(
+                    key: ValueKey(connectionId),
+                    connectionId: connectionId,
+                    onOpenWorkout: (client: onOpenWorkout, own: onOpenOwnWorkout),
+                  ),
                 ),
                 .program => _BesideProgram(
                   connectionId: connectionId,
                   onOpenProgram: onOpenProgram,
                   onEditSession: onEditSession,
                 ),
-                .notes => _NotesList(connectionId: connectionId),
+                .notes => _FreshNotes(connectionId: connectionId),
               },
             ),
           ],
+        );
+      },
+    );
+  }
+}
+
+/// [child] only while it is on screen: an open conversation follows its
+/// thread and marks what arrives read, which it must not do from a tab the
+/// coach left, or from under a page or a workout open over it.
+class _WhileShown extends StatelessWidget {
+  final Widget child;
+
+  const new({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TickerMode.valuesOf(context).enabled ? child : const SizedBox.expand();
+  }
+}
+
+/// The coach's notes on a client, read again on showing: another device of
+/// the coach's may have written since, as the notes page reads on opening.
+class _FreshNotes extends StatefulWidget {
+  final String connectionId;
+
+  const new({required this.connectionId});
+
+  @override
+  State<_FreshNotes> createState() => _FreshNotesState();
+}
+
+class _FreshNotesState extends State<_FreshNotes> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) CoachNotes.of(context).load();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => _NotesList(connectionId: widget.connectionId);
+}
+
+/// One of a few choices as segments where they fit at the text size in
+/// use, and otherwise the value with a menu of the choices (docs/style.md).
+class _Segments<T extends Object> extends StatelessWidget {
+  final T value;
+  final Map<T, String> labels;
+  final Key Function(T each) keyOf;
+
+  /// The value's key, where the choices are a menu.
+  final Key menuKey;
+  final ValueChanged<T> onPicked;
+
+  const new({
+    required this.value,
+    required this.labels,
+    required this.keyOf,
+    required this.menuKey,
+    required this.onPicked,
+  });
+
+  /// Room a segment takes beside its words.
+  static const _segmentPadding = 32.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = DefaultTextStyle.of(context).style.merge(Theme.of(context).textTheme.labelLarge);
+    final scaler = MediaQuery.textScalerOf(context);
+    final direction = Directionality.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final needed = labels.values.fold(0.0, (sum, label) {
+          final painter = TextPainter(
+            text: TextSpan(text: label, style: style),
+            textScaler: scaler,
+            textDirection: direction,
+            maxLines: 1,
+          )..layout();
+          final width = painter.width;
+          painter.dispose();
+          return sum + width + _segmentPadding;
+        });
+        if (needed <= constraints.maxWidth) {
+          return Center(
+            child: SettingSwitcher<T>(
+              value: value,
+              onValueChanged: (picked) => onPicked(picked ?? value),
+              children: {for (final MapEntry(:key, value: label) in labels.entries) key: Text(label, key: keyOf(key))},
+            ),
+          );
+        }
+        return Align(
+          alignment: .centerLeft,
+          child: Builder(
+            builder: (context) => InkWell(
+              key: menuKey,
+              borderRadius: const .all(.circular(8)),
+              onTap: () async {
+                final picked = await showMenu<T>(
+                  context: context,
+                  position: menuUnder(context),
+                  items: [
+                    for (final MapEntry(:key, value: label) in labels.entries)
+                      PopupMenuItem(key: keyOf(key), value: key, child: Text(label)),
+                  ],
+                );
+                if (picked != null) onPicked(picked);
+              },
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: kMinInteractiveDimension),
+                child: Padding(
+                  padding: const .symmetric(horizontal: 12),
+                  child: Align(
+                    alignment: .centerLeft,
+                    widthFactor: 1,
+                    child: MenuValue(labels[value] ?? '', share: 1),
+                  ),
+                ),
+              ),
+            ),
+          ),
         );
       },
     );
@@ -379,14 +534,22 @@ class _LatestWorkout extends StatefulWidget {
 }
 
 class _LatestWorkoutState extends State<_LatestWorkout> {
-  late Future<WorkoutReview> _review = _read();
+  /// The reading of the workout beside its plan: read again for a newer
+  /// workout, or on Retry.
+  late final _review = ValueNotifier(_read());
 
   Future<WorkoutReview> _read() => Roster.of(context).review(widget.client.studentId, widget.workout.id);
 
   @override
   void didUpdateWidget(covariant _LatestWorkout old) {
     super.didUpdateWidget(old);
-    if (old.workout.id != widget.workout.id) _review = _read();
+    if (old.workout.id != widget.workout.id) _review.value = _read();
+  }
+
+  @override
+  void dispose() {
+    _review.dispose();
+    super.dispose();
   }
 
   @override
@@ -450,19 +613,35 @@ class _LatestWorkoutState extends State<_LatestWorkout> {
                   ),
                 ),
               ),
-            FutureBuilder(
-              future: _review,
-              builder: (context, snapshot) => switch (snapshot) {
-                AsyncSnapshot(hasData: true, :final data?) => _ReviewTable(review: data),
-                AsyncSnapshot(hasError: true) => Padding(
-                  padding: const .fromLTRB(16, 0, 16, 8),
-                  child: Text(l.coachingReviewFailed, style: muted),
-                ),
-                _ => const Padding(
-                  padding: .all(16),
-                  child: Center(child: CircularProgressIndicator.adaptive()),
-                ),
-              },
+            ValueListenableBuilder(
+              valueListenable: _review,
+              builder: (context, review, _) => FutureBuilder(
+                // a newer workout starts afresh, never under the last one's table
+                key: ValueKey(review),
+                future: review,
+                builder: (context, snapshot) => switch (snapshot) {
+                  AsyncSnapshot(hasData: true, :final data?) => _ReviewTable(review: data),
+                  AsyncSnapshot(hasError: true) => Padding(
+                    padding: const .fromLTRB(16, 0, 8, 8),
+                    child: Row(
+                      children: [
+                        Expanded(child: Text(l.coachingReviewFailed, style: muted)),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension),
+                          ),
+                          onPressed: () => _review.value = _read(),
+                          child: Text(l.retry),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _ => const Padding(
+                    padding: .all(16),
+                    child: Center(child: CircularProgressIndicator.adaptive()),
+                  ),
+                },
+              ),
             ),
             if (widget.onReply case final reply?)
               Padding(
@@ -599,15 +778,7 @@ class _ReviewRow extends StatelessWidget {
     // each way it differed once, in the order the sets went
     final differed = switch (compare && !exercise.skipped) {
       true => {
-        for (final set in exercise.sets)
-          ?switch (set.outcome) {
-            .lighter => l.coachingReviewLighter,
-            .fewer => l.coachingReviewFewer,
-            .shorter => l.coachingReviewShorter,
-            .skipped => l.coachingReviewSkipped,
-            .added => l.coachingReviewAdded,
-            .asked || null => null,
-          },
+        for (final set in exercise.sets) ?_outcomeWords(l, set.outcome),
       }.join(' · '),
       false => '',
     };
@@ -620,7 +791,12 @@ class _ReviewRow extends StatelessWidget {
         if (compare)
           Expanded(
             flex: 4,
-            child: Text(asked, style: body?.copyWith(color: colorScheme.onSurfaceVariant)),
+            // the column's heading is said with each value
+            child: Semantics(
+              label: '${l.coachingReviewAsked}: $asked',
+              excludeSemantics: true,
+              child: Text(asked, style: body?.copyWith(color: colorScheme.onSurfaceVariant)),
+            ),
           ),
         Expanded(
           flex: 5,
@@ -628,7 +804,11 @@ class _ReviewRow extends StatelessWidget {
             crossAxisAlignment: .start,
             spacing: 2,
             children: [
-              Text(done, style: body),
+              Semantics(
+                label: compare ? '${l.coachingReviewDone}: $done' : done,
+                excludeSemantics: true,
+                child: Text(done, style: body),
+              ),
               if (differed.isNotEmpty) Text(differed, style: body?.copyWith(color: colorScheme.tertiary)),
             ],
           ),

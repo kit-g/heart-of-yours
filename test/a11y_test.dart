@@ -2764,7 +2764,12 @@ void main() {
           await tester.pumpTimes();
         }
         if (screen == _Screen.coachingNotes) {
-          // beside the client on a page this wide (#693)
+          // beside the client on a page this wide (#693): a menu where the
+          // test font leaves no room for the segments
+          if (find.byKey(AppKeys.coachingBesideMenu).evaluate().isNotEmpty) {
+            await tester.tapByKey(AppKeys.coachingBesideMenu);
+            await tester.pumpTimes();
+          }
           await tester.tapByKey(AppKeys.coachingBesideTab('notes'));
           await tester.pumpTimes();
         }
