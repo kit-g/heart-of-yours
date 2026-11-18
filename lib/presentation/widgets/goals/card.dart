@@ -264,17 +264,22 @@ class _GoalsCardState extends State<GoalsCard> {
           from: program.name,
           onEdit: () => HeartRouter.of(context).pushProgramOver(program.id!),
         ),
-      for (final ImpliedGoal(:goal, :program) in implied)
-        if (goal.metric == .workouts && goal.cadence == .week)
-          for (final own in paused)
-            Padding(
-              key: AppKeys.goalSetAside(own.id),
-              padding: const .fromLTRB(16, 0, 16, 8),
-              child: Text(
-                L.of(context).goalPausedByProgram(own.stages.firstOrNull?.target.toInt() ?? 0, program.name),
-                style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-              ),
-            ),
+      // One sentence for everything set aside, not one per goal: nothing stops
+      // an account holding two weekly workouts goals (another device, a goal
+      // made twice), and a line each printed the same words twice (#687).
+      if ((implied.where((each) => each.goal.metric == .workouts && each.goal.cadence == .week).firstOrNull, paused)
+          case (ImpliedGoal(:final program), [final first, ...]))
+        Padding(
+          key: AppKeys.goalSetAside(first.id),
+          padding: const .fromLTRB(12, 0, 12, 8),
+          child: Text(
+            switch (paused.map((own) => own.stages.firstOrNull?.target.toInt()).toSet().toList()) {
+              [final int target] => L.of(context).goalPausedByProgram(target, program.name),
+              _ => L.of(context).goalsPausedByProgram(program.name),
+            },
+            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+          ),
+        ),
     ];
 
     return switch (widget.bounded) {

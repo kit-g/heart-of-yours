@@ -280,6 +280,29 @@ void main() {
       expect(find.byKey(AppKeys.goalRow('done-1')), findsNothing);
     });
 
+    // #687: the faces differ in length, and swapping them resized the card
+    // mid-turn, so everything under it on the profile jumped
+    testWidgets('takes the same room on either face, the taller one\'s', (tester) async {
+      await seed([workoutsGoal(id: 'live-1'), finished(), finished(id: 'done-2'), finished(id: 'done-3')]);
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+      final front = tester.getSize(find.byType(GoalsCard));
+
+      await tester.tap(find.byKey(AppKeys.goalsViewAchieved));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.getSize(find.byType(GoalsCard)), front, reason: 'mid-turn');
+      await tester.pumpAndSettle();
+      expect(tester.getSize(find.byType(GoalsCard)), front);
+      // and the taller face is the one it measures to: three achieved rows
+      // against one live one
+      final back = find.ancestor(of: find.byKey(AppKeys.goalRow('done-3')), matching: find.byType(Container)).first;
+      expect(
+        tester.getSize(back).height,
+        greaterThan(tester.getSize(find.byKey(AppKeys.goalRow('done-1'))).height * 2),
+      );
+    });
+
     testWidgets('comes back to the live face when the last achieved goal goes', (tester) async {
       // otherwise the card is left showing an empty back with no way off it
       await seed([workoutsGoal(id: 'live-1'), finished()]);
@@ -437,8 +460,31 @@ void main() {
       // the program's 3 a week, and the user's 2 said under it
       expect(find.byKey(AppKeys.goalRow('program:p1:workouts')), findsOneWidget);
       expect(find.byKey(AppKeys.goalRow('goal-1')), findsNothing);
-      expect(find.text('Your 2 a week is paused while you follow Split'), findsOneWidget);
+      expect(find.text('Your own goal of 2 workouts a week is on hold while you follow Split.'), findsOneWidget);
       expect(goals.all.single.stages.single.target, 2);
+    });
+
+    // #687: an account can hold two weekly workouts goals, and a line each
+    // printed the same sentence twice
+    testWidgets('two weekly goals of the same target are set aside in one sentence', (tester) async {
+      await seed([workoutsGoal(target: 4), workoutsGoal(id: 'goal-3', target: 4)]);
+      await follow(split);
+
+      await pumpWith(tester);
+
+      expect(find.text('Your own goal of 4 workouts a week is on hold while you follow Split.'), findsOneWidget);
+      expect(find.textContaining('on hold while you follow'), findsOneWidget);
+    });
+
+    testWidgets('two weekly goals of different targets are set aside in one sentence', (tester) async {
+      await seed([workoutsGoal(target: 2), workoutsGoal(id: 'goal-3', target: 4)]);
+      await follow(split);
+
+      await pumpWith(tester);
+
+      expect(find.text('Your own weekly workout goals are on hold while you follow Split.'), findsOneWidget);
+      expect(find.textContaining('on hold while you follow'), findsOneWidget);
+      expect(goals.all.map((goal) => goal.stages.single.target), [2, 4]);
     });
 
     testWidgets("the program's weekly goal counts the program's own sessions", (tester) async {
@@ -460,7 +506,7 @@ void main() {
       await pumpWith(tester, on: false);
 
       expect(find.byKey(AppKeys.goalRow('goal-1')), findsOneWidget);
-      expect(find.textContaining('is paused while you follow'), findsNothing);
+      expect(find.textContaining('on hold while you follow'), findsNothing);
     });
 
     testWidgets('with Programs off, goals are as they were', (tester) async {
