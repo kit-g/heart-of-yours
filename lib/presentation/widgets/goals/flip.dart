@@ -17,10 +17,20 @@ const _flipCurve = Curves.easeInOutCubic;
 /// The halves are swapped at the quarter turn, when the face is edge-on and
 /// invisible, so neither is ever seen mirrored. The back is pre-rotated a half
 /// turn for the same reason — without it, its content reads backwards.
+///
+/// The front decides the card's size on both sides (#687): it stays laid out,
+/// unseen, while the back is up, and the back fills that size and scrolls
+/// within it. Swapping one for the other resized the card mid-turn, and
+/// everything under it on the profile jumped; sizing to the taller of the two
+/// let a long list of finished goals stretch the live side instead. The back is
+/// built only while it is turning or up, so a card nobody turns reads nothing
+/// for it.
 class _FlipCard extends StatelessWidget {
   final bool showsBack;
   final Widget front;
-  final Widget back;
+
+  /// Fills the front's size, so a list on it scrolls rather than grows.
+  final WidgetBuilder back;
 
   const new({
     required this.showsBack,
@@ -34,7 +44,7 @@ class _FlipCard extends StatelessWidget {
       tween: Tween(end: showsBack ? 1 : 0),
       duration: _flipDuration,
       curve: _flipCurve,
-      builder: (_, turn, _) {
+      builder: (context, turn, _) {
         final past = turn >= .5;
         return Transform(
           alignment: .center,
@@ -42,17 +52,23 @@ class _FlipCard extends StatelessWidget {
             // a little perspective, or the card scales rather than turns
             ..setEntry(3, 2, .0012)
             ..rotateY(turn * pi),
-          child: _Faces(
-            showsBack: past,
-            front: ExcludeFocus(excluding: past, child: front),
-            back: ExcludeFocus(
-              excluding: !past,
-              child: Transform(
-                alignment: .center,
-                transform: Matrix4.identity()..rotateY(pi),
-                child: back,
-              ),
-            ),
+          child: Stack(
+            // the card's width and, when it has one, its height reach the front
+            fit: .passthrough,
+            children: [
+              _Face(shown: !past, child: front),
+              if (turn > 0)
+                Positioned.fill(
+                  child: _Face(
+                    shown: past,
+                    child: Transform(
+                      alignment: .center,
+                      transform: Matrix4.identity()..rotateY(pi),
+                      child: back(context),
+                    ),
+                  ),
+                ),
+            ],
           ),
         );
       },
@@ -60,120 +76,98 @@ class _FlipCard extends StatelessWidget {
   }
 }
 
-/// Both faces of the card, laid out at the taller one's height, with only the
-/// one turned up painted, hit or read out (#687).
-///
-/// Swapping one face for the other resized the card mid-turn whenever the two
-/// lists differed in length, and everything under it on the profile jumped.
-/// Both stay laid out instead, so the card takes the same room on either side,
-/// and the shorter face stretches to it rather than leaving a step.
-class _Faces extends MultiChildRenderObjectWidget {
-  final bool showsBack;
+/// One side of a [_FlipCard]: laid out either way, so the card keeps its
+/// size, and while it is turned away neither painted, hit, focused nor read
+/// out.
+class _Face extends StatelessWidget {
+  final bool shown;
+  final Widget child;
 
-  new({required this.showsBack, required Widget front, required Widget back}) : super(children: [front, back]);
+  const new({required this.shown, required this.child});
 
-  @override
-  MultiChildRenderObjectElement createElement() => _FacesElement(this);
-
-  @override
-  _RenderFaces createRenderObject(BuildContext context) => _RenderFaces(showsBack: showsBack);
+  /// Whether the face [context] is on is the one turned up. A row swiped open
+  /// closes when its face turns away, as it did when the face was unmounted.
+  static bool isShown(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<_FaceShown>()?.shown ?? true;
+  }
 
   @override
-  void updateRenderObject(BuildContext context, _RenderFaces renderObject) {
-    renderObject.showsBack = showsBack;
+  Widget build(BuildContext context) {
+    return _FaceShown(
+      shown: shown,
+      child: ExcludeFocus(
+        excluding: !shown,
+        child: _FaceBox(shown: shown, child: child),
+      ),
+    );
   }
 }
 
-/// Lets finders treat the face turned down as offstage, as [Offstage] does:
-/// it is laid out for its height and never seen.
-class _FacesElement extends MultiChildRenderObjectElement {
-  new(_Faces super.widget);
+class _FaceShown extends InheritedWidget {
+  final bool shown;
+
+  const new({required this.shown, required super.child});
+
+  @override
+  bool updateShouldNotify(_FaceShown oldWidget) => shown != oldWidget.shown;
+}
+
+/// Lays its child out and, while not [shown], keeps it out of paint, hit tests
+/// and semantics — and offstage to finders, as [Offstage] is, without giving
+/// up the size the card takes from it.
+class _FaceBox extends SingleChildRenderObjectWidget {
+  final bool shown;
+
+  const new({required this.shown, required Widget super.child});
+
+  @override
+  SingleChildRenderObjectElement createElement() => _FaceBoxElement(this);
+
+  @override
+  _RenderFaceBox createRenderObject(BuildContext context) => _RenderFaceBox(shown: shown);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderFaceBox renderObject) {
+    renderObject.shown = shown;
+  }
+}
+
+class _FaceBoxElement extends SingleChildRenderObjectElement {
+  new(_FaceBox super.widget);
 
   @override
   void debugVisitOnstageChildren(ElementVisitor visitor) {
-    final shown = (widget as _Faces).showsBack ? 1 : 0;
-    if (children.elementAtOrNull(shown) case final Element face) visitor(face);
+    if ((widget as _FaceBox).shown) super.debugVisitOnstageChildren(visitor);
   }
 }
 
-class _FaceParentData extends ContainerBoxParentData<RenderBox>;
+class _RenderFaceBox extends RenderProxyBox {
+  new({required this._shown});
 
-class _RenderFaces extends RenderBox
-    with
-        ContainerRenderObjectMixin<RenderBox, _FaceParentData>,
-        RenderBoxContainerDefaultsMixin<RenderBox, _FaceParentData> {
-  new({required this._showsBack});
+  bool _shown;
 
-  bool _showsBack;
-
-  set showsBack(bool value) {
-    if (value == _showsBack) return;
-    _showsBack = value;
+  set shown(bool value) {
+    if (value == _shown) return;
+    _shown = value;
     markNeedsPaint();
     markNeedsSemanticsUpdate();
   }
 
-  RenderBox? get _shown => _showsBack ? lastChild : firstChild;
-
-  Iterable<RenderBox> get _faces sync* {
-    var child = firstChild;
-    while (child != null) {
-      yield child;
-      child = childAfter(child);
-    }
-  }
-
   @override
-  void setupParentData(RenderBox child) {
-    if (child.parentData is! _FaceParentData) child.parentData = _FaceParentData();
-  }
-
-  double _most(double Function(RenderBox face) measure) => _faces.map(measure).fold(0, max);
-
-  @override
-  double computeMinIntrinsicWidth(double height) => _most((face) => face.getMinIntrinsicWidth(height));
-
-  @override
-  double computeMaxIntrinsicWidth(double height) => _most((face) => face.getMaxIntrinsicWidth(height));
-
-  @override
-  double computeMinIntrinsicHeight(double width) => _most((face) => face.getMinIntrinsicHeight(width));
-
-  @override
-  double computeMaxIntrinsicHeight(double width) => _most((face) => face.getMaxIntrinsicHeight(width));
-
-  @override
-  void performLayout() {
-    // each at its own height first, then both again at least the taller one's
-    final tallest = _most((face) {
-      face.layout(constraints, parentUsesSize: true);
-      return face.size.height;
-    });
-    size = constraints.constrain(Size(constraints.maxWidth, tallest));
-    // a floor rather than a tight height: a tight face is a relayout boundary,
-    // and a row that grows once its reading arrives would overflow the card
-    // instead of coming back here to be measured again
-    final fitted = constraints.copyWith(minHeight: size.height);
-    for (final face in _faces) {
-      face.layout(fitted, parentUsesSize: true);
-    }
-  }
+  bool paintsChild(RenderBox child) => _shown;
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    if (_shown case final RenderBox face) context.paintChild(face, offset);
+    if (_shown) super.paint(context, offset);
   }
 
   @override
-  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
-    return switch (_shown) {
-      final RenderBox face => face.hitTest(result, position: position),
-      null => false,
-    };
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    return _shown && super.hitTest(result, position: position);
   }
 
   @override
   void visitChildrenForSemantics(RenderObjectVisitor visitor) {
-    if (_shown case final RenderBox face) visitor(face);
+    if (_shown) super.visitChildrenForSemantics(visitor);
   }
 }

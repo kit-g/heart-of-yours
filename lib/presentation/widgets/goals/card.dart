@@ -107,20 +107,25 @@ class _GoalsCardState extends State<GoalsCard> {
       ),
     );
 
-    final achieved = Container(
-      clipBehavior: .antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: const .all(.circular(12)),
-        // tinted rather than neutral: turning the card over should land you
-        // somewhere that plainly is not the list you left. Derived from the
-        // seed, so it holds under whatever accent the user picked.
-        color: colorScheme.secondaryContainer,
-      ),
-      child: Padding(
-        padding: const .symmetric(vertical: 8),
-        child: _rows(state.archived),
-      ),
-    );
+    // built only while the card is turning or turned (#687): every row on it
+    // reads its own progress
+    Widget achieved(BuildContext _) {
+      return Container(
+        clipBehavior: .antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: const .all(.circular(12)),
+          // tinted rather than neutral: turning the card over should land you
+          // somewhere that plainly is not the list you left. Derived from the
+          // seed, so it holds under whatever accent the user picked.
+          color: colorScheme.secondaryContainer,
+        ),
+        child: Padding(
+          padding: const .symmetric(vertical: 8),
+          // the live side's size, whatever the list: it scrolls within it
+          child: _rows(state.archived, scrolls: true),
+        ),
+      );
+    }
 
     // Same skeleton as the aggregation chart it sits beside — a title in
     // `titleLarge` over a filled, rounded block. An outlined box with the title
@@ -233,10 +238,17 @@ class _GoalsCardState extends State<GoalsCard> {
     );
   }
 
-  /// The same rows either way; only who owns the scrolling changes. The
-  /// goals running programs imply (#353) come after the user's own, labelled
-  /// with their program, and open it rather than a goal.
-  Widget _rows(List<Goal> goals, {List<ProgramFeed> feeds = const [], List<ImpliedGoal> implied = const []}) {
+  /// The same rows either way; only who owns the scrolling changes — the
+  /// list itself when the card is [GoalsCard.bounded] or the rows are the
+  /// back's, which [scrolls] in the front's size. The goals running programs
+  /// imply (#353) come after the user's own, labelled with their program, and
+  /// open it rather than a goal.
+  Widget _rows(
+    List<Goal> goals, {
+    List<ProgramFeed> feeds = const [],
+    List<ImpliedGoal> implied = const [],
+    bool scrolls = false,
+  }) {
     final lensSets = _lensSets();
     // the user's own weekly workouts goal, while a program's cadence
     // overrides it: not shown as a row, never edited, said under the program's
@@ -273,8 +285,9 @@ class _GoalsCardState extends State<GoalsCard> {
           key: AppKeys.goalSetAside(first.id),
           padding: const .fromLTRB(12, 0, 12, 8),
           child: Text(
-            switch (paused.map((own) => own.stages.firstOrNull?.target.toInt()).toSet().toList()) {
-              [final int target] => L.of(context).goalPausedByProgram(target, program.name),
+            // one goal, or several with one target, reads as the one goal
+            switch (paused.map((own) => own.stages.firstOrNull?.target.toInt() ?? 0).toSet().toList()) {
+              [final target] => L.of(context).goalPausedByProgram(target, program.name),
               _ => L.of(context).goalsPausedByProgram(program.name),
             },
             style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
@@ -282,8 +295,10 @@ class _GoalsCardState extends State<GoalsCard> {
         ),
     ];
 
-    return switch (widget.bounded) {
+    return switch (widget.bounded || scrolls) {
       true => ListView(
+        // the page's own scroll keeps the keyboard's Page Up and Down
+        primary: false,
         padding: .zero,
         children: rows,
       ),
