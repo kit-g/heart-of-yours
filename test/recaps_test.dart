@@ -262,7 +262,7 @@ void main() {
     testWidgets('the entry lists the months, and a month opens its report', (tester) async {
       await at(midMonth, () async {
         stubHistory();
-        await pumpProfile(tester, answer: 'on');
+        await pumpProfile(tester, answer: 'on', width: 390);
 
         await tester.ensureVisible(byKey(AppKeys.recapsEntry));
         await tester.tapByKey(AppKeys.recapsEntry);
@@ -279,16 +279,43 @@ void main() {
       });
     });
 
-    for (final width in [390.0, 1194.0]) {
-      testWidgets('at ${width.toInt()}pt the card keeps a readable measure, and opens last month', (tester) async {
+    // #687: an iPad either way up has room for the list and a report beside it
+    for (final width in [834.0, 1194.0]) {
+      testWidgets('at ${width.toInt()}pt the months and the newest report sit side by side', (tester) async {
+        await at(midMonth, () async {
+          stubHistory();
+          await pumpProfile(tester, answer: 'on', width: width);
+
+          await tester.ensureVisible(byKey(AppKeys.recapsEntry));
+          await tester.tapByKey(AppKeys.recapsEntry);
+          await tester.pumpTimes();
+
+          final report = find.byKey(AppKeys.monthlyReport);
+          expect(report, findsOneWidget);
+          expect(find.descendant(of: report, matching: find.text('September 2026')), findsOneWidget);
+          // Back is the list's, not the report's too
+          expect(find.descendant(of: report, matching: find.byType(BackButton)), findsNothing);
+          expect(find.byType(BackButton), findsOneWidget);
+          // the month picked is marked, and no chevron promises another page
+          expect(tester.widget<ListTile>(find.widgetWithText(ListTile, '2 workouts')).selected, isTrue);
+          expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+          expect(tester.takeException(), isNull);
+        });
+      });
+    }
+
+    for (final width in [390.0, 834.0, 1194.0]) {
+      testWidgets('at ${width.toInt()}pt the card is as wide as the chart tile, and opens last month', (tester) async {
         await at(firstWeek, () async {
           stubHistory();
           await pumpProfile(tester, answer: 'on', width: width);
 
           final card = byKey(AppKeys.recapCard);
           await tester.ensureVisible(card);
-          expect(tester.getSize(card).width, lessThanOrEqualTo(readableWidth));
-          expect(tester.getSize(byKey(AppKeys.recapsEntry)).width, lessThanOrEqualTo(readableWidth));
+          final pane = tester.getRect(find.byType(CustomScrollView).first);
+          expect(tester.getSize(card).width, tileWidth(pane.width - 32));
+          expect(tester.getTopLeft(card).dx, pane.left + 16);
+          expect(tester.getSize(byKey(AppKeys.recapsEntry)).width, tileWidth(pane.width - 32));
           expect(tester.takeException(), isNull);
 
           await tester.tapByKey(AppKeys.recapCard);

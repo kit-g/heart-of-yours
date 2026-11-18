@@ -10,7 +10,12 @@ class MonthlyReportPage extends StatefulWidget {
   /// The month's first day.
   final DateTime month;
 
-  const new({super.key, required this.month});
+  /// Whether the bar offers the way back. Not beside the month list on a
+  /// wide page (#687): there, Back belongs to the list's bar, and a second
+  /// one over the report would close both.
+  final bool implyBack;
+
+  const new({super.key, required this.month, this.implyBack = true});
 
   @override
   State<MonthlyReportPage> createState() => _MonthlyReportPageState();
@@ -32,7 +37,10 @@ class _MonthlyReportPageState extends State<MonthlyReportPage> {
 
     return Scaffold(
       key: AppKeys.monthlyReport,
-      appBar: AppBar(title: Text(monthTitle(l, widget.month))),
+      appBar: AppBar(
+        title: Text(monthTitle(l, widget.month)),
+        automaticallyImplyLeading: widget.implyBack,
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final width = math.min(constraints.maxWidth, readableWidth);

@@ -2619,7 +2619,9 @@ void main() {
       case _Screen.recaps:
         GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps');
         await tester.pumpTimes();
-        expect(find.text('September 2026'), findsOneWidget);
+        // at this width the list and the newest month's report, side by side (#687)
+        expect(find.widgetWithText(ListTile, 'September 2026'), findsOneWidget);
+        expect(find.byKey(AppKeys.monthlyReport), findsOneWidget);
       case _Screen.monthlyReport:
         GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps/2026-09');
         await tester.pumpTimes();
