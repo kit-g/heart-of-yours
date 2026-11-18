@@ -2,19 +2,22 @@ part of 'coaching.dart';
 
 /// The way to log a session a coach trained with a client (#560): it becomes
 /// the client's workout, in their history, marked as logged by the coach.
-class _LogForTile extends StatefulWidget {
+class _LogForButton extends StatefulWidget {
   final ClientSummary client;
 
   /// Opens the workout to fill in.
   final ValueChanged<PastWorkout> onLog;
 
-  const new({required this.client, required this.onLog});
+  /// The button's fill.
+  final Color color;
+
+  const new({required this.client, required this.onLog, required this.color});
 
   @override
-  State<_LogForTile> createState() => _LogForTileState();
+  State<_LogForButton> createState() => _LogForButtonState();
 }
 
-class _LogForTileState extends State<_LogForTile> {
+class _LogForButtonState extends State<_LogForButton> {
   /// Reading their program, and asking which session and when: a second tap
   /// meanwhile would start a second log.
   final _busy = ValueNotifier(false);
@@ -28,22 +31,32 @@ class _LogForTileState extends State<_LogForTile> {
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
-    return ListTile(
-      key: AppKeys.coachingLogFor,
-      leading: const Icon(Icons.edit_calendar_outlined),
-      title: Text(l.coachingLogWorkout),
-      subtitle: Text(l.coachingLogWorkoutBody),
-      trailing: ValueListenableBuilder<bool>(
-        valueListenable: _busy,
-        builder: (_, busy, _) => switch (busy) {
-          true => const SizedBox.square(
-            dimension: 18,
-            child: CircularProgressIndicator.adaptive(strokeWidth: 2),
-          ),
-          false => const Icon(Icons.chevron_right_rounded),
-        },
+    final ThemeData(:colorScheme) = Theme.of(context);
+    return Tooltip(
+      // what it is for, which the button's two words don't say
+      message: l.coachingLogWorkoutBody,
+      child: PrimaryButton.shrunk(
+        key: AppKeys.coachingLogFor,
+        backgroundColor: widget.color,
+        onPressed: _start,
+        child: Row(
+          mainAxisSize: .min,
+          spacing: 8,
+          children: [
+            ValueListenableBuilder<bool>(
+              valueListenable: _busy,
+              builder: (_, busy, _) => switch (busy) {
+                true => const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+                ),
+                false => Icon(Icons.edit_calendar_outlined, size: 18, color: colorScheme.onSecondaryContainer),
+              },
+            ),
+            Text(l.coachingLogWorkout, style: TextStyle(color: colorScheme.onSecondaryContainer)),
+          ],
+        ),
       ),
-      onTap: _start,
     );
   }
 

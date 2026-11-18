@@ -1017,8 +1017,16 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingClient, _Guideline.labeledTapTarget, null),
   (_Screen.coachingClient, _Guideline.textContrastLight, null),
   (_Screen.coachingClient, _Guideline.textContrastDark, null),
-  (_Screen.coachingClient, _Guideline.androidTapTarget, null),
-  (_Screen.coachingClient, _Guideline.iosTapTarget, null),
+  (
+    _Screen.coachingClient,
+    _Guideline.androidTapTarget,
+    'Message and Log a workout are PrimaryButton.shrunk (lib/presentation/routes/coaching/client.dart:640, lib/presentation/routes/coaching/log_for.dart:39) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.coachingClient,
+    _Guideline.iosTapTarget,
+    'Message and Log a workout are PrimaryButton.shrunk (lib/presentation/routes/coaching/client.dart:640, lib/presentation/routes/coaching/log_for.dart:39) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
   // someone no longer coached (#556): who they were, and the coach's notes
   (_Screen.coachingFormerClient, _Guideline.labeledTapTarget, null),
   (_Screen.coachingFormerClient, _Guideline.textContrastLight, null),

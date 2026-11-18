@@ -220,8 +220,11 @@ class _ChangeTile extends StatelessWidget {
           style: TextButton.styleFrom(minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension)),
           onPressed: () async {
             final messenger = ScaffoldMessenger.of(context);
+            final programs = ClientPrograms.of(context);
+            // it changes what the client trains, so it says so first (#686)
+            if (!await _confirmPutBack(context, what: what, name: _clientName(l, client))) return;
             try {
-              await ClientPrograms.of(context).revert(client.studentId, change.programId, change);
+              await programs.revert(client.studentId, change.programId, change);
             } catch (error, stacktrace) {
               reportToSentry(error, stacktrace: stacktrace);
               messenger.snack(l.coachingCopyPutBackFailed);
@@ -233,4 +236,34 @@ class _ChangeTile extends StatelessWidget {
       },
     );
   }
+}
+
+/// Whether the coach means to undo [what] in [name]'s program: asked first,
+/// since it changes what the client trains (#686).
+Future<bool> _confirmPutBack(BuildContext context, {required String what, required String name}) async {
+  final l = L.of(context);
+  final ThemeData(:colorScheme) = Theme.of(context);
+  final picked = await showBrandedDialog<bool>(
+    context,
+    title: Text(l.coachingCopyPutBackTitle, textAlign: .center),
+    content: Text(l.coachingCopyPutBackBody(what, name), textAlign: .center),
+    actions: [
+      Column(
+        spacing: 8,
+        children: [
+          PrimaryButton.wide(
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
+            child: Center(child: Text(l.cancel)),
+          ),
+          PrimaryButton.wide(
+            key: AppKeys.coachingCopyPutBackConfirm,
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
+            child: Center(child: Text(l.coachingCopyPutBack)),
+          ),
+        ],
+      ),
+    ],
+  );
+  return picked ?? false;
 }

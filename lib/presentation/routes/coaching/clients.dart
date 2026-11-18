@@ -388,7 +388,8 @@ class _ReasonFilter extends StatelessWidget {
 }
 
 /// A client on a phone: who, their program and week, why they may need a
-/// word, the last seven days, and "looked at" while a look would clear one.
+/// word, and the last seven days; set apart while opening them would clear
+/// a reason.
 class _ClientTile extends StatelessWidget {
   final ClientSummary client;
 
@@ -421,8 +422,10 @@ class _ClientTile extends StatelessWidget {
           ],
         ],
       ),
-      trailing: switch (_lookClears(client)) {
-        true => _MarkReviewed(client: client),
+      // something new since the coach last opened them: set apart until
+      // they do, which is what clears it (#686)
+      tileColor: switch (_lookClears(client)) {
+        true => colorScheme.surfaceContainerHigh,
         false => null,
       },
       isThreeLine: true,
@@ -430,7 +433,7 @@ class _ClientTile extends StatelessWidget {
   }
 }
 
-/// The table's columns, by flex, with "looked at" a fixed button's width.
+/// The table's columns, by flex.
 const _columns = (client: 3, program: 3, days: 2, reasons: 3);
 
 class _TableHeader extends StatelessWidget {
@@ -461,7 +464,6 @@ class _TableHeader extends StatelessWidget {
             flex: _columns.reasons,
             child: Text(l.coachingColumnReasons, style: style),
           ),
-          const SizedBox(width: kMinInteractiveDimension),
         ],
       ),
     );
@@ -487,6 +489,11 @@ class _ClientRow extends StatelessWidget {
       },
       child: DecoratedBox(
         decoration: BoxDecoration(
+          // set apart while opening them would clear a reason (#686)
+          color: switch (_lookClears(client)) {
+            true => colorScheme.surfaceContainerHigh,
+            false => null,
+          },
           border: Border(top: BorderSide(color: dividerColor.withValues(alpha: .4))),
         ),
         child: Padding(
@@ -526,44 +533,10 @@ class _ClientRow extends StatelessWidget {
                   style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary),
                 ),
               ),
-              SizedBox(
-                width: kMinInteractiveDimension,
-                child: switch (_lookClears(client)) {
-                  true => _MarkReviewed(client: client),
-                  false => null,
-                },
-              ),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-/// The coach has looked at a client: their note or lighter session stops
-/// counting.
-class _MarkReviewed extends StatelessWidget {
-  final ClientSummary client;
-
-  const new({required this.client});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = L.of(context);
-    return IconButton(
-      key: AppKeys.coachingMarkReviewed(client.connectionId),
-      tooltip: l.coachingMarkReviewed,
-      icon: const Icon(Icons.done_rounded),
-      onPressed: () async {
-        final messenger = ScaffoldMessenger.of(context);
-        final failed = l.coachingMarkReviewedFailed;
-        try {
-          await Roster.of(context).markReviewed(client);
-        } catch (_) {
-          messenger.snack(failed);
-        }
-      },
     );
   }
 }

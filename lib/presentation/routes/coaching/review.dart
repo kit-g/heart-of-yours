@@ -83,7 +83,8 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
                     key: AppKeys.reviewMessage,
                     tooltip: l.messagesAboutThisWorkout,
                     onPressed: () => message(MessageSubject(.workout, review.workout.id)),
-                    icon: const Icon(Icons.add_comment_outlined),
+                    // the Messages tab's own icon: one meaning, one picture (#686)
+                    icon: const Icon(Icons.forum_outlined),
                   ),
                 const SizedBox(width: 8),
               ],
