@@ -4,7 +4,7 @@ part of 'coaching.dart';
 /// sessions, a save of the coach's that didn't land with both versions to
 /// pick from, and every change either of them made, each one that can be put
 /// back.
-class ClientProgramPage extends StatefulWidget {
+class ClientProgramPage extends StatelessWidget {
   final String connectionId;
   final String programId;
 
@@ -14,14 +14,49 @@ class ClientProgramPage extends StatefulWidget {
   const new({super.key, required this.connectionId, required this.programId, required this.onEditSession});
 
   @override
-  State<ClientProgramPage> createState() => _ClientProgramPageState();
+  Widget build(BuildContext context) {
+    final view = ClientPrograms.watch(context).view(programId);
+    return Scaffold(
+      appBar: AppBar(title: Text(view?.program.name ?? '')),
+      body: Align(
+        alignment: .topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: readableWidth),
+          child: _ClientProgramBody(
+            connectionId: connectionId,
+            programId: programId,
+            onEditSession: onEditSession,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _ClientProgramPageState extends State<ClientProgramPage> {
+/// A client's copy of a program, read on opening: a page's body on a phone,
+/// a tab beside the client on a tablet (#693).
+class _ClientProgramBody extends StatefulWidget {
+  final String connectionId;
+  final String programId;
+  final void Function({required bool isNew}) onEditSession;
+
+  const new({super.key, required this.connectionId, required this.programId, required this.onEditSession});
+
+  @override
+  State<_ClientProgramBody> createState() => _ClientProgramBodyState();
+}
+
+class _ClientProgramBodyState extends State<_ClientProgramBody> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void didUpdateWidget(covariant _ClientProgramBody old) {
+    super.didUpdateWidget(old);
+    if (old.programId != widget.programId) WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
@@ -40,27 +75,18 @@ class _ClientProgramPageState extends State<ClientProgramPage> {
     final programs = ClientPrograms.watch(context);
     final client = Roster.watch(context).client(widget.connectionId);
     final view = programs.view(widget.programId);
-    return Scaffold(
-      appBar: AppBar(title: Text(view?.program.name ?? '')),
-      body: Align(
-        alignment: .topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: readableWidth),
-          child: switch ((programs.status(widget.programId), view, client)) {
-            (_, final CoachProgramView view, final ClientSummary client) => RefreshIndicator.adaptive(
-              onRefresh: _load,
-              child: _CopyView(view: view, client: client, onEditSession: widget.onEditSession),
-            ),
-            (.failed, _, _) => _Empty(
-              icon: Icons.cloud_off_rounded,
-              title: l.coachingCopyFailed,
-              action: OutlinedButton(onPressed: _load, child: Text(l.retry)),
-            ),
-            _ => const Center(child: CircularProgressIndicator.adaptive()),
-          },
-        ),
+    return switch ((programs.status(widget.programId), view, client)) {
+      (_, final CoachProgramView view, final ClientSummary client) => RefreshIndicator.adaptive(
+        onRefresh: _load,
+        child: _CopyView(view: view, client: client, onEditSession: widget.onEditSession),
       ),
-    );
+      (.failed, _, _) => _Empty(
+        icon: Icons.cloud_off_rounded,
+        title: l.coachingCopyFailed,
+        action: OutlinedButton(onPressed: _load, child: Text(l.retry)),
+      ),
+      _ => const Center(child: CircularProgressIndicator.adaptive()),
+    };
   }
 }
 
