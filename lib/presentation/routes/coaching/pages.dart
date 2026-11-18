@@ -1,10 +1,13 @@
 part of 'coaching.dart';
 
-/// The coach as their clients see them: the name and photo they use in Heart.
+/// The coach as their clients see them, the name and photo they use in
+/// Heart, and the account itself: Settings and logging out, without leaving
+/// the space for them (#685).
 class CoachMePage extends StatelessWidget {
   final VoidCallback onYourTraining;
+  final VoidCallback onSettings;
 
-  const new({super.key, required this.onYourTraining});
+  const new({super.key, required this.onYourTraining, required this.onSettings});
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +35,25 @@ class CoachMePage extends StatelessWidget {
             l.coachingMeBody,
             style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
             textAlign: .center,
+          ),
+          const SizedBox(height: 24),
+          ListTile(
+            key: AppKeys.coachingSettings,
+            leading: const Icon(Icons.settings_rounded),
+            title: Text(l.settings),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: onSettings,
+          ),
+          ListTile(
+            key: AppKeys.coachingLogOut,
+            leading: const Icon(Icons.logout_rounded),
+            title: Text(l.logOut),
+            // signed out, the space goes as if it had never been built, and
+            // the frame takes the user back to their own
+            onTap: () {
+              AppTheme.of(context).onSignOut();
+              clearState(context);
+            },
           ),
         ],
       ),

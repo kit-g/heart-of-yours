@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
 import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
+import 'package:heart/presentation/routes/coaching/coaching.dart' show coachingSpaceOn;
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/tab_frame.dart';
@@ -25,9 +26,13 @@ class AppFrame extends StatelessWidget {
 
   final StatefulNavigationShell shell;
 
+  /// Into the Coaching space, from the foot of the rail while it is on.
+  final VoidCallback onCoaching;
+
   const new({
     super.key,
     required this.shell,
+    required this.onCoaching,
   });
 
   @override
@@ -132,6 +137,16 @@ class AppFrame extends StatelessWidget {
           shell: shell,
           destinations: destinations,
           onReselect: _customCallbacks,
+          // opt-in (#566): off, the rail ends at its tabs, as before
+          railFooter: switch (coachingSpaceOn(context, listen: true)) {
+            true => SpaceSwitch(
+              key: AppKeys.coachingButton,
+              icon: Icons.groups_rounded,
+              label: L.of(context).coaching,
+              onPressed: onCoaching,
+            ),
+            false => null,
+          },
         ),
       ),
     );

@@ -187,34 +187,6 @@ extension on BuildContext {
     return goNamed(_accountManagementName);
   }
 
-  void goToImportData() {
-    return goNamed(_importDataName);
-  }
-
-  void goToExportData() {
-    return goNamed(_exportDataName);
-  }
-
-  void goToWhatsNew() {
-    return goNamed(_whatsNewName);
-  }
-
-  void goToRestTimers() {
-    return goNamed(_restTimersName);
-  }
-
-  void goToPushSettings() {
-    return goNamed(_pushSettingsName);
-  }
-
-  void goToYourDevices() {
-    return goNamed(_yourDevicesName);
-  }
-
-  void goToFeatures() {
-    return goNamed(_featuresName);
-  }
-
   void goToRecaps() {
     return goNamed(_recapsName);
   }
@@ -222,24 +194,6 @@ extension on BuildContext {
   /// [month]'s recap, by its first day: `/profile/recaps/2026-09`.
   void goToMonthlyReport(DateTime month) {
     return goNamed(_monthlyReportName, pathParameters: {_monthParam: _monthKey(month)});
-  }
-
-  void goToApiTokens() {
-    return goNamed(_apiTokensName);
-  }
-
-  void goToNewApiToken() {
-    return goNamed(_newApiTokenName);
-  }
-
-  /// Opens Features at [feature] over What's new (#239): pushed, so back
-  /// returns to the note that sent the user there.
-  void pushFeature(Feature feature) {
-    pushNamed(
-      _featuresName,
-      queryParameters: {_featureQuery: feature.value},
-      extra: FeatureLinkSource.whatsNew,
-    );
   }
 
   void goToAvatar() {

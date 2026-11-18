@@ -67,10 +67,10 @@ final class HeartRouter {
         onEnter: _onEnter,
         routes: [
           StatefulShellRoute.indexedStack(
-            pageBuilder: (_, state, shell) {
-              return NoTransitionPage<void>(
+            pageBuilder: (context, state, shell) {
+              return _spacePage(
                 key: state.pageKey,
-                child: AppFrame(shell: shell),
+                child: AppFrame(shell: shell, onCoaching: context.goToCoaching),
               );
             },
             branches: [
