@@ -31,7 +31,7 @@ import 'package:heart/presentation/widgets/heatmap_ink.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/muscle_figures.dart';
-import 'package:heart/presentation/routes/recaps/recaps.dart' show monthTitle, recapSummary;
+import 'package:heart/presentation/routes/recaps/recaps.dart' show monthTitle, recapSummary, recapsSideBySide;
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart/presentation/widgets/responsive/columns.dart';
 import 'package:heart/presentation/widgets/setting_picker.dart';

@@ -127,6 +127,7 @@ enum _Screen {
   yourDevices,
   features,
   recaps,
+  recapsPhone,
   monthlyReport,
   upsyncRunning,
   upsyncFailed,
@@ -1160,6 +1161,13 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.recaps, _Guideline.textContrastDark, null),
   (_Screen.recaps, _Guideline.androidTapTarget, null),
   (_Screen.recaps, _Guideline.iosTapTarget, null),
+  // the same list where a phone has no room beside it (#687): the list alone,
+  // a month a page of its own
+  (_Screen.recapsPhone, _Guideline.labeledTapTarget, null),
+  (_Screen.recapsPhone, _Guideline.textContrastLight, null),
+  (_Screen.recapsPhone, _Guideline.textContrastDark, null),
+  (_Screen.recapsPhone, _Guideline.androidTapTarget, null),
+  (_Screen.recapsPhone, _Guideline.iosTapTarget, null),
   (_Screen.monthlyReport, _Guideline.labeledTapTarget, null),
   (_Screen.monthlyReport, _Guideline.textContrastLight, null),
   (_Screen.monthlyReport, _Guideline.textContrastDark, null),
@@ -1365,7 +1373,11 @@ void main() {
     // environment, so a fallback font's metrics apply) and overflows
     // LogoStripe. A larger, phone-plausible surface sidesteps that without
     // touching production layout.
-    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.physicalSize = switch (screen) {
+      // a screen whose layout is a phone's only on a phone's width (#687)
+      _Screen.recapsPhone => const Size(390, 844),
+      _ => const Size(1200, 2400),
+    };
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -1396,7 +1408,7 @@ void main() {
     if (screen == _Screen.templateMuscles) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
     }
-    if (screen == _Screen.recaps || screen == _Screen.monthlyReport) {
+    if (screen == _Screen.recaps || screen == _Screen.recapsPhone || screen == _Screen.monthlyReport) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'weightUnit': 'metric', 'feature-recaps': 'on'});
       final start = DateTime(2026, 9, 7, 18);
       when(db.getRecapWorkouts(any, any, userId: anyNamed('userId'))).thenAnswer(
@@ -2622,6 +2634,11 @@ void main() {
         // at this width the list and the newest month's report, side by side (#687)
         expect(find.widgetWithText(ListTile, 'September 2026'), findsOneWidget);
         expect(find.byKey(AppKeys.monthlyReport), findsOneWidget);
+      case _Screen.recapsPhone:
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps');
+        await tester.pumpTimes();
+        expect(find.widgetWithText(ListTile, 'September 2026'), findsOneWidget);
+        expect(find.byKey(AppKeys.monthlyReport), findsNothing);
       case _Screen.monthlyReport:
         GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps/2026-09');
         await tester.pumpTimes();

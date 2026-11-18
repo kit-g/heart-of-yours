@@ -215,8 +215,13 @@ extension on BuildContext {
     return goNamed(_featuresName);
   }
 
-  void goToRecaps() {
-    return goNamed(_recapsName);
+  /// Every past month; on a page wide enough, with [month] open beside them:
+  /// `/profile/recaps?month=2026-09`.
+  void goToRecaps({DateTime? month}) {
+    return goNamed(
+      _recapsName,
+      queryParameters: {if (month != null) _monthParam: _monthKey(month)},
+    );
   }
 
   /// [month]'s recap, by its first day: `/profile/recaps/2026-09`.

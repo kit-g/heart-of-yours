@@ -88,7 +88,12 @@ void main() {
 
   /// The app on a [width]-point window, its answer about recaps [answer]
   /// (absent: never asked).
-  Future<Preferences> pumpProfile(WidgetTester tester, {String? answer, double width = 1200}) async {
+  Future<Preferences> pumpProfile(
+    WidgetTester tester, {
+    String? answer,
+    double width = 1200,
+    Analytics? analytics,
+  }) async {
     // metric, so the volume reads in the kilograms it was logged in
     SharedPreferences.setMockInitialValues({...pastOnboarding(), 'weightUnit': 'metric', feature: ?answer});
 
@@ -103,6 +108,7 @@ void main() {
       api: api,
       cdn: cdn,
       router: router,
+      analytics: analytics,
       firebaseAuth: MockFirebaseAuth(
         mockUser: MockUser(uid: 'u1', email: 'u1@test'),
         signedIn: true,
@@ -299,10 +305,63 @@ void main() {
           // the month picked is marked, and no chevron promises another page
           expect(tester.widget<ListTile>(find.widgetWithText(ListTile, '2 workouts')).selected, isTrue);
           expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+          // the report's scroll is the page's; the list's is its own
+          expect(
+            tester.widget<ListView>(find.ancestor(of: find.byType(ListTile), matching: find.byType(ListView))).primary,
+            isFalse,
+          );
           expect(tester.takeException(), isNull);
         });
       });
     }
+
+    testWidgets('beside the list a month opened in place is counted as the report it is', (tester) async {
+      await at(midMonth, () async {
+        stubHistory();
+        final recorded = RecordedAnalytics();
+        await pumpProfile(
+          tester,
+          answer: 'on',
+          width: 1194,
+          analytics: Analytics(service: recorded),
+        );
+
+        await tester.ensureVisible(byKey(AppKeys.recapsEntry));
+        await tester.tapByKey(AppKeys.recapsEntry);
+        await tester.pumpTimes();
+        await tester.tap(find.widgetWithText(ListTile, '2 workouts'));
+        await tester.pumpTimes();
+
+        // the name the same report goes by as a route of its own
+        expect(recorded.of('screen_view'), [
+          {'screen_name': 'monthlyReport'},
+        ]);
+      });
+    });
+
+    test('the list and a report share a page only with room for both and the line between', () {
+      // a 320pt list, the 1pt line, and a report no narrower than a tile
+      expect(recapsSideBySide(320 + 1 + minTileWidth), isTrue);
+      expect(recapsSideBySide(320 + minTileWidth), isFalse);
+    });
+
+    testWidgets('on a phone the list is the page, and a month opens over it', (tester) async {
+      await at(midMonth, () async {
+        stubHistory();
+        await pumpProfile(tester, answer: 'on', width: 390);
+
+        await tester.ensureVisible(byKey(AppKeys.recapsEntry));
+        await tester.tapByKey(AppKeys.recapsEntry);
+        await tester.pumpTimes();
+
+        expect(find.byKey(AppKeys.monthlyReport), findsNothing);
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        expect(
+          tester.widget<ListView>(find.ancestor(of: find.byType(ListTile), matching: find.byType(ListView))).primary,
+          isTrue,
+        );
+      });
+    });
 
     for (final width in [390.0, 834.0, 1194.0]) {
       testWidgets('at ${width.toInt()}pt the card is as wide as the chart tile, and opens last month', (tester) async {
@@ -321,8 +380,24 @@ void main() {
           await tester.tapByKey(AppKeys.recapCard);
           await tester.pumpTimes();
 
+          // one report: on a wide page last month opens beside the list,
+          // rather than on a page of its own over a list showing it already
           expect(find.byType(MonthlyReportPage), findsOneWidget);
-          expect(find.text('September 2026'), findsOneWidget);
+          final report = find.byKey(AppKeys.monthlyReport);
+          expect(find.descendant(of: report, matching: find.text('September 2026')), findsOneWidget);
+          final location = router.config.routerDelegate.currentConfiguration.uri.toString();
+          switch (recapsSideBySide(pane.width)) {
+            case true:
+              expect(location, '/profile/recaps?month=2026-09');
+              expect(tester.widget<ListTile>(find.widgetWithText(ListTile, '2 workouts')).selected, isTrue);
+            case false:
+              expect(location, '/profile/recaps/2026-09');
+          }
+
+          // and Back is the profile, not the same report again
+          await tester.pageBack();
+          await tester.pumpTimes();
+          if (recapsSideBySide(pane.width)) expect(find.byType(MonthlyReportPage), findsNothing);
         });
       });
     }

@@ -154,7 +154,7 @@ class _Totals extends StatelessWidget {
       if (recap.volume > 0) (l.totalVolume, recapVolume(l, recap.volume, recap.weightUnit)),
     ];
     final columns = columnsFor(width, maxExtent: 240);
-    final tileWidth = (width - tileGutter * (columns - 1)) / columns;
+    final cellWidth = (width - tileGutter * (columns - 1)) / columns;
 
     return Wrap(
       spacing: tileGutter,
@@ -162,7 +162,7 @@ class _Totals extends StatelessWidget {
       children: [
         for (final (label, value) in tiles)
           SizedBox(
-            width: tileWidth,
+            width: cellWidth,
             child: _Stat(label: label, value: value),
           ),
       ],
