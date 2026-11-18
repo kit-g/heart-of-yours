@@ -42,3 +42,11 @@ const minTileWidth = 320.0;
 /// tablet breakpoint while the band itself is ~520pt, which halves into two
 /// tiles too narrow to hold either.
 bool tilesShareRow(double width) => width >= minTileWidth * 2 + tileGutter;
+
+/// How wide a line under or over the profile's band runs, in a band [width]
+/// wide: one tile while two share a row, so it starts and ends on the tile's
+/// edges, and the whole band once they stack.
+///
+/// A readable measure instead left a banner or a row of prose short of the
+/// tile it sat over, off any line the page draws (#687).
+double tileWidth(double width) => tilesShareRow(width) ? (width - tileGutter) / 2 : width;

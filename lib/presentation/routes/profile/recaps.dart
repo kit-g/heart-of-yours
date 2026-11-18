@@ -97,7 +97,17 @@ class _RecapsSectionState extends State<_RecapsSection> {
       [] => const SizedBox.shrink(),
       _ => Padding(
         padding: const .only(left: 16, right: 16, bottom: 8),
-        child: Column(crossAxisAlignment: .stretch, spacing: 8, children: children),
+        // as wide as the chart tile above, starting and ending on its edges
+        // (#687): a readable measure left the card and the entry short of it
+        child: LayoutBuilder(
+          builder: (_, constraints) => Align(
+            alignment: .centerLeft,
+            child: SizedBox(
+              width: tileWidth(constraints.maxWidth),
+              child: Column(crossAxisAlignment: .stretch, spacing: 8, children: children),
+            ),
+          ),
+        ),
       ),
     };
   }
@@ -139,57 +149,50 @@ class _RecapCardState extends State<_RecapCard> {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme, :dividerColor) = Theme.of(context);
 
-    return Align(
-      alignment: .centerLeft,
-      child: ConstrainedBox(
-        // a line of prose and a chevron: an iPad's width would strand them
-        constraints: const BoxConstraints(maxWidth: readableWidth),
-        child: Semantics(
-          button: true,
-          label: l.recapOpen,
-          child: Material(
-            type: .transparency,
-            child: InkWell(
-              key: AppKeys.recapCard,
+    return Semantics(
+      button: true,
+      label: l.recapOpen,
+      child: Material(
+        type: .transparency,
+        child: InkWell(
+          key: AppKeys.recapCard,
+          borderRadius: const .all(.circular(12)),
+          onTap: widget.onTap,
+          child: Ink(
+            decoration: BoxDecoration(
+              border: .all(color: dividerColor, width: .5),
               borderRadius: const .all(.circular(12)),
-              onTap: widget.onTap,
-              child: Ink(
-                decoration: BoxDecoration(
-                  border: .all(color: dividerColor, width: .5),
-                  borderRadius: const .all(.circular(12)),
-                ),
-                padding: const .all(16),
-                child: Row(
-                  spacing: 12,
-                  children: [
-                    Icon(Icons.insights_rounded, color: colorScheme.primary),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: .start,
-                        spacing: 2,
-                        children: [
-                          Text(
-                            '${l.recapLastMonth} · ${monthTitle(l, widget.month)}',
-                            style: textTheme.titleMedium,
-                          ),
-                          FutureBuilder<Recap>(
-                            future: _read(),
-                            builder: (context, snapshot) => Text(
-                              switch (snapshot.data) {
-                                final recap? => recapSummary(l, recap),
-                                // the line's height held, so nothing jumps
-                                null => '',
-                              },
-                              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                            ),
-                          ),
-                        ],
+            ),
+            padding: const .all(16),
+            child: Row(
+              spacing: 12,
+              children: [
+                Icon(Icons.insights_rounded, color: colorScheme.primary),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: .start,
+                    spacing: 2,
+                    children: [
+                      Text(
+                        '${l.recapLastMonth} · ${monthTitle(l, widget.month)}',
+                        style: textTheme.titleMedium,
                       ),
-                    ),
-                    Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
-                  ],
+                      FutureBuilder<Recap>(
+                        future: _read(),
+                        builder: (context, snapshot) => Text(
+                          switch (snapshot.data) {
+                            final recap? => recapSummary(l, recap),
+                            // the line's height held, so nothing jumps
+                            null => '',
+                          },
+                          style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
+              ],
             ),
           ),
         ),
@@ -209,27 +212,21 @@ class _RecapsEntry extends StatelessWidget {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
-    return Align(
-      alignment: .centerLeft,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: readableWidth),
-        child: Material(
-          type: .transparency,
-          child: InkWell(
-            key: AppKeys.recapsEntry,
-            borderRadius: const .all(.circular(12)),
-            onTap: onTap,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
-              child: Row(
-                spacing: 12,
-                children: [
-                  Icon(Icons.history_rounded, color: colorScheme.onSurfaceVariant),
-                  Expanded(child: Text(l.recaps, style: textTheme.titleMedium)),
-                  Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
-                ],
-              ),
-            ),
+    return Material(
+      type: .transparency,
+      child: InkWell(
+        key: AppKeys.recapsEntry,
+        borderRadius: const .all(.circular(12)),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Row(
+            spacing: 12,
+            children: [
+              Icon(Icons.history_rounded, color: colorScheme.onSurfaceVariant),
+              Expanded(child: Text(l.recaps, style: textTheme.titleMedium)),
+              Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
+            ],
           ),
         ),
       ),
