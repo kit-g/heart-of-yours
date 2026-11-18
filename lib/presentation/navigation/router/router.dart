@@ -69,6 +69,7 @@ final class HeartRouter {
           StatefulShellRoute.indexedStack(
             pageBuilder: (context, state, shell) {
               return _spacePage(
+                context,
                 key: state.pageKey,
                 child: AppFrame(shell: shell, onCoaching: context.goToCoaching),
               );

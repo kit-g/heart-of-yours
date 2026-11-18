@@ -1,3 +1,4 @@
+import 'package:heart/core/utils/visual.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// How long the detail pane takes to open or close.
@@ -20,7 +21,7 @@ const _duration = Duration(milliseconds: 280);
 class MasterDetail extends StatelessWidget {
   final Widget master;
 
-  /// What was picked, or null for nothing.
+  /// What was picked; absent for nothing.
   final Widget? detail;
 
   /// How wide the list stays with the pane open, from the page's own width.
@@ -33,8 +34,8 @@ class MasterDetail extends StatelessWidget {
   const new({
     super.key,
     required this.master,
-    required this.detail,
     required this.masterWidth,
+    this.detail,
     this.maxMasterWidth = 720,
   });
 
@@ -45,16 +46,13 @@ class MasterDetail extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final narrow = masterWidth(width).clamp(0.0, width);
         final alone = maxMasterWidth.clamp(0.0, width);
+        // never wider beside the pane than on its own
+        final narrow = masterWidth(width).clamp(0.0, alone);
         return TweenAnimationBuilder<double>(
-          tween: Tween(
-            end: switch (open) {
-              true => 1.0,
-              false => 0.0,
-            },
-          ),
-          duration: _duration,
+          tween: Tween(end: open ? 1.0 : 0.0),
+          // asked for less motion, the pane is simply there (`docs/a11y.md`)
+          duration: lessMotion(context) ? Duration.zero : _duration,
           curve: Curves.easeOutCubic,
           // the list keeps one child throughout, so its scroll position and
           // state ride through the pane opening and closing
@@ -79,18 +77,19 @@ class MasterDetail extends StatelessWidget {
                     start: listStart + listWidth,
                     top: 0,
                     bottom: 0,
-                    width: width - narrow,
                     // the pane slides in at its full width, from off the edge
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        border: BorderDirectional(start: BorderSide(color: dividerColor)),
-                      ),
-                      child: FadeTransition(
-                        opacity: AlwaysStoppedAnimation(shown),
-                        child: switch (detail) {
-                          final Widget detail => detail,
-                          null => const SizedBox.expand(),
-                        },
+                    width: width - narrow,
+                    // clipped: a page pushed inside the pane slides within
+                    // it, not over the list
+                    child: ClipRect(
+                      child: DecoratedBox(
+                        // over the pane's own opaque page, which hides it
+                        // drawn underneath
+                        position: .foreground,
+                        decoration: BoxDecoration(
+                          border: BorderDirectional(start: BorderSide(color: dividerColor)),
+                        ),
+                        child: Opacity(opacity: shown, child: detail ?? const SizedBox.expand()),
                       ),
                     ),
                   ),

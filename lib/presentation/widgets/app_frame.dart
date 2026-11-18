@@ -2,7 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
 import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
-import 'package:heart/presentation/routes/coaching/coaching.dart' show coachingSpaceOn;
+import 'package:heart/presentation/navigation/pushes.dart' show coachingSpaceRuns;
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/tab_frame.dart';
@@ -138,7 +138,7 @@ class AppFrame extends StatelessWidget {
           destinations: destinations,
           onReselect: _customCallbacks,
           // opt-in (#566): off, the rail ends at its tabs, as before
-          railFooter: switch (coachingSpaceOn(context, listen: true)) {
+          railFooter: switch (_coachingOn(context)) {
             true => SpaceSwitch(
               key: AppKeys.coachingButton,
               icon: Icons.groups_rounded,
@@ -207,3 +207,14 @@ Future<void> _customCallbacks(BuildContext context, int branch) async {
 }
 
 class _NewWorkoutIntent extends Intent;
+
+/// Whether the Coaching space is on, rebuilding the frame only when that
+/// answer changes, not on every other preference or sign-in notice.
+bool _coachingOn(BuildContext context) {
+  // read outside the selectors, which may not look anything up themselves
+  final auth = Auth.of(context);
+  final preferences = Preferences.of(context);
+  final byPreferences = context.select<Preferences, bool>((it) => coachingSpaceRuns(it, auth));
+  final byAuth = context.select<Auth, bool>((it) => coachingSpaceRuns(preferences, it));
+  return byPreferences && byAuth;
+}

@@ -108,6 +108,9 @@ class _ClientsPageState extends State<ClientsPage> {
   /// opened.
   final _open = ValueNotifier<_Opened?>(null);
 
+  /// Counts taps that open something beside the roster.
+  var _taps = 0;
+
   @override
   void initState() {
     super.initState();
@@ -173,12 +176,15 @@ class _ClientsPageState extends State<ClientsPage> {
                 };
                 final list = _ClientOpener(
                   selected: shown?.connectionId,
+                  beside: beside,
+                  // a fresh tap each time, so tapping what is already open
+                  // starts the pane over rather than being equal to it
                   onOpenClient: (id) => switch (beside) {
-                    true => _open.value = (connectionId: id, workoutId: null),
+                    true => _open.value = (connectionId: id, workoutId: null, tap: ++_taps),
                     false => widget.onOpenClient(id),
                   },
                   onOpenWorkout: (id, workoutId) => switch (beside) {
-                    true => _open.value = (connectionId: id, workoutId: workoutId),
+                    true => _open.value = (connectionId: id, workoutId: workoutId, tap: ++_taps),
                     false => widget.onOpenWorkout(id, workoutId),
                   },
                   // nobody coached: no activity, only invitations out and
@@ -253,11 +259,16 @@ extension on _ClientsPageState {
 class _ClientOpener extends InheritedWidget {
   /// The client open beside the roster, if any.
   final String? selected;
+
+  /// Whether what a row opens goes beside the roster, which the rows' taps
+  /// depend on: a turn of the device can change it with nothing selected.
+  final bool beside;
   final ValueChanged<String> onOpenClient;
   final void Function(String connectionId, String workoutId) onOpenWorkout;
 
   const new({
     required this.selected,
+    required this.beside,
     required this.onOpenClient,
     required this.onOpenWorkout,
     required super.child,
@@ -266,7 +277,7 @@ class _ClientOpener extends InheritedWidget {
   static _ClientOpener? of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_ClientOpener>();
 
   @override
-  bool updateShouldNotify(_ClientOpener old) => selected != old.selected;
+  bool updateShouldNotify(_ClientOpener old) => selected != old.selected || beside != old.beside;
 }
 
 /// Everyone, sorted by who may need a word, with a filter for each reason

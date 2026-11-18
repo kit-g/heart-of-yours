@@ -1307,28 +1307,6 @@ DateTime? _monthOf(String? key) {
   };
 }
 
-/// A space's whole shell (#685): the user's own, or Coaching. Going between
-/// them is going between two apps' navigation, so it fades through rather
-/// than snapping, and the same way in both directions.
-CustomTransitionPage<void> _spacePage({required LocalKey key, required Widget child}) {
-  return CustomTransitionPage<void>(
-    key: key,
-    child: child,
-    transitionDuration: const Duration(milliseconds: 300),
-    reverseTransitionDuration: const Duration(milliseconds: 300),
-    transitionsBuilder: (_, animation, _, child) {
-      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-      return FadeTransition(
-        opacity: curved,
-        child: ScaleTransition(
-          scale: Tween(begin: .96, end: 1.0).animate(curved),
-          child: child,
-        ),
-      );
-    },
-  );
-}
-
 /// The Coaching space (#566): its own shell and tabs, there only while
 /// [coachingSpaceOn]. Off, a link into it is one the app has no screen for.
 RouteBase _coachingRoute() {
@@ -1337,6 +1315,7 @@ RouteBase _coachingRoute() {
   return StatefulShellRoute.indexedStack(
     pageBuilder: (context, state, shell) {
       return _spacePage(
+        context,
         key: state.pageKey,
         child: CoachingFrame(
           shell: shell,
@@ -1568,10 +1547,7 @@ RouteBase _coachingProgramsRoute(GoRouterRedirect off) {
           page: list(
             context,
             selectedId: selectedId,
-            detail: switch (shown) {
-              true => detail,
-              false => null,
-            },
+            detail: shown ? detail : null,
           ),
         ),
       };
@@ -1637,6 +1613,10 @@ GoRoute _coachingLibraryRoute(
             onEdit: () => context.pushCoachingProgramEdit(programId),
             onEditSession: ({required isNew}) => context.pushCoachingProgramSession(programId, isNew: isNew),
             onGone: context.goToCoachingPrograms,
+            onClose: switch (LayoutProvider.of(context)) {
+              .wide => context.goToCoachingPrograms,
+              .compact => null,
+            },
           );
         },
         routes: [

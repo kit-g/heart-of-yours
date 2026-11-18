@@ -11,7 +11,10 @@ extension on BuildContext {
 
   /// Into the Coaching space (#566). The space remembers itself while it is on
   /// screen (`CoachingFrame`), so the app opens there next.
-  void goToCoaching() => goNamed(_coachingClientsName);
+  void goToCoaching() {
+    _crossSpaces();
+    goNamed(_coachingClientsName);
+  }
 
   /// One client's page (#559), over the roster.
   void pushCoachingClient(String connectionId) {
@@ -93,6 +96,7 @@ extension on BuildContext {
   /// Profile's redirect reads it.
   void leaveCoaching({String to = _profileName}) {
     Preferences.of(this).setInCoachingSpace(inside: false);
+    _crossSpaces();
     return goNamed(to);
   }
 
