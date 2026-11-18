@@ -59,15 +59,16 @@ class _LogForTileState extends State<_LogForTile> {
   }
 
   /// Which of their program's sessions it was, when they follow one, then
-  /// when it was, then the workout to fill in.
+  /// when it was, then the workout to fill in. A session starts as the
+  /// client's own device would have laid it out then, targets and all, and
+  /// goes with the plan it was asked to be (heart-api#439).
   Future<void> _log(BuildContext context) async {
     final client = widget.client;
     final l = L.of(context);
     final name = _clientName(l, client);
-    final logTo = _logFor(client.studentId, name);
     final sessions = await _sessionsOf(context);
     if (!context.mounted) return;
-    final Workout workout;
+    final _LogStart start;
     switch (sessions) {
       case (:final sessions, :final next) when sessions.isNotEmpty:
         final picked = await showMenu<_LogStart>(
@@ -88,19 +89,41 @@ class _LogForTileState extends State<_LogForTile> {
           ],
         );
         if (picked == null || !context.mounted) return;
-        workout = switch (picked) {
-          _FromSession(:final session) => session.toWorkout(),
-          _Blank() => Workout(),
-        };
+        start = picked;
       case _:
-        workout = Workout();
+        start = const _Blank();
     }
+    final programs = ClientPrograms.of(context);
+    final round = roundToPlates(context);
     await logPastWorkout(
       context,
-      workout: workout,
-      logTo: logTo,
+      logTo: _logFor(client.studentId, name),
       loggingFor: name,
-      open: widget.onLog,
+      // a session is laid out once its time is known: as it stood then
+      open: (past) => widget.onLog(switch (start) {
+        _FromSession(:final session) => _planned(programs, session, past, name: name, round: round),
+        _Blank() => past,
+      }),
+    );
+  }
+
+  /// [session] as the client's device would have started it when [past]
+  /// began, at the time picked for it, sent with its plan.
+  PastWorkout _planned(
+    ClientPrograms programs,
+    Template session,
+    PastWorkout past, {
+    required String name,
+    required RoundWeight round,
+  }) {
+    final (:workout, :plan) = programs.plan(session, at: past.workout.start, now: clock.now(), round: round);
+    workout
+      ..start = past.workout.start
+      ..end = past.workout.end;
+    return PastWorkout(
+      workout: workout,
+      logTo: _logFor(widget.client.studentId, name, plan: plan),
+      loggingFor: past.loggingFor,
     );
   }
 
@@ -171,15 +194,16 @@ class _SessionItem extends StatelessWidget {
 /// by then, so what happens is said in a snackbar. A failure that may pass,
 /// the network or the server's, offers to send it again under the same id,
 /// which the server takes once; a refusal says why, and nothing more: sending
-/// it again would be refused the same way.
-LogTo _logFor(String studentId, String name) {
+/// it again would be refused the same way. [plan] goes with it once it is
+/// in; a plan that doesn't land waits for the next try (`Roster.sendOwedPlans`).
+LogTo _logFor(String studentId, String name, {WorkoutPlan? plan}) {
   return (context, workout) async {
     final l = L.of(context);
     final roster = Roster.of(context);
     final messenger = ScaffoldMessenger.of(context);
     Future<void> send() async {
       try {
-        await roster.logFor(studentId, workout);
+        await roster.logFor(studentId, workout, plan: plan);
         messenger.snack(l.coachingLogged(name));
       } catch (error, stacktrace) {
         switch (_refusal(l, name, error)) {

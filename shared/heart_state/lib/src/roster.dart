@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:heart_models/heart_models.dart';
@@ -39,6 +40,10 @@ abstract interface class RosterService {
   /// Logs a workout as the client's (#560), by its own id: a retry answers
   /// the stored one.
   Future<Workout> logClientWorkout(String studentId, Workout workout);
+
+  /// What a workout the coach logged was asked to be. The server keeps the
+  /// first one.
+  Future<void> saveClientWorkoutPlan(String studentId, String workoutId, WorkoutPlan plan);
 }
 
 /// What a coach has read of one client: their workouts, a page at a time, and
@@ -182,6 +187,7 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
     _records.clear();
     _reviews.clear();
     _single.clear();
+    _owedPlans.clear();
     notifyListeners();
   }
 
@@ -228,6 +234,7 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
   /// read before.
   Future<void> loadRecord(String studentId) async {
     if (!_remote.allowed) return;
+    unawaited(sendOwedPlans());
     final record = _records.putIfAbsent(studentId, _Record.new);
     record.status = .loading;
     notifyListeners();
@@ -257,11 +264,18 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
   /// themselves. Throws what the service threw, so the caller can say so and
   /// try again under the same id.
   ///
+  /// [plan], for a program's session, is what it was asked to be (#558), sent
+  /// once the workout is in: so a coach compares their own in-person session
+  /// with its targets as with any other. A plan not kept is a comparison lost,
+  /// never a workout: one that doesn't land waits for [sendOwedPlans], and the
+  /// log still counts as logged.
+  ///
   /// Their record keeps the server's order, newest id first, and a workout
   /// logged now has the newest id there is: it goes first, whenever it was.
-  Future<Workout> logFor(String studentId, Workout workout) async {
+  Future<Workout> logFor(String studentId, Workout workout, {WorkoutPlan? plan}) async {
     workout.keepDone();
     final logged = await _service.logClientWorkout(studentId, workout);
+    if (plan != null) _owedPlans[logged.id] = (studentId: studentId, plan: plan);
     // what was sent, after keepDone dropped what wasn't done: the server's
     // answer is the same workout, and the client's history is what it holds
     analytics?.workoutLoggedFor(
@@ -274,7 +288,30 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
         ..insert(0, logged);
       notifyListeners();
     }
+    await sendOwedPlans();
     return logged;
+  }
+
+  /// Plans of workouts logged for a client that the server hasn't taken yet,
+  /// by workout id.
+  final _owedPlans = <String, ({String studentId, WorkoutPlan plan})>{};
+
+  /// Sends the plans [logFor] couldn't, as `Workouts.sendWorkoutPlans` does
+  /// the user's own: the server keeps the first plan, so a retry is harmless.
+  /// One refused as malformed, or for a workout that is no longer the
+  /// coach's to plan, is let go, since sending it again can't help; anything
+  /// else waits for the next log or the next read of a client's record.
+  Future<void> sendOwedPlans() async {
+    if (!_remote.allowed) return;
+    for (final MapEntry(key: workoutId, value: (:studentId, :plan)) in _owedPlans.entries.toList()) {
+      try {
+        await _service.saveClientWorkoutPlan(studentId, workoutId, plan);
+        _owedPlans.remove(workoutId);
+      } catch (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+        if (error case {'code': 'invalid_plan' || 'forbidden' || 'not_found'}) _owedPlans.remove(workoutId);
+      }
+    }
   }
 
   /// The next older page of [studentId]'s workouts, if there is one.

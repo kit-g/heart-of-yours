@@ -71,6 +71,16 @@ class _Server implements RosterService {
     (logged[studentId] ??= []).add(workout);
     return Workout.fromJson({...workout.toMap(), 'loggedBy': 'whiskers', 'loggedByName': 'Whiskers'});
   }
+
+  /// Keyed by workout: the first one stays, as the server keeps it.
+  final loggedPlans = <String, WorkoutPlan>{};
+  Object? refusePlan;
+
+  @override
+  Future<void> saveClientWorkoutPlan(String studentId, String workoutId, WorkoutPlan plan) async {
+    if (refusePlan case final Object refusal) throw refusal;
+    loggedPlans.putIfAbsent(workoutId, () => plan);
+  }
 }
 
 Workout _workout(String id, DateTime start) {
@@ -341,6 +351,50 @@ void main() {
       await roster.logFor('muffin', workout);
 
       expect(reported.parametersOf('workout_logged_for'), {'exercise_count': 1, 'set_count': 1});
+    });
+
+    test("a program session's plan goes with it, once the workout is in (heart-api#439)", () async {
+      final workout = Workout(name: 'Day A')..start = DateTime.utc(2026, 11, 9);
+      const plan = WorkoutPlan({'exercises': <Map<String, dynamic>>[]});
+
+      await roster.logFor('muffin', workout, plan: plan);
+
+      expect(server.logged['muffin'], [workout]);
+      expect(server.loggedPlans, {workout.id: plan});
+    });
+
+    test('no plan sends none', () async {
+      await roster.logFor('muffin', Workout()..start = DateTime.utc(2026, 11, 9));
+      expect(server.loggedPlans, isEmpty);
+    });
+
+    test("a plan that doesn't land leaves it logged, and goes with the next try", () async {
+      final errors = <Object>[];
+      roster = Roster(service: server, onError: (error, {stacktrace}) => errors.add(error));
+      final workout = Workout(name: 'Day A')..start = DateTime.utc(2026, 11, 9);
+      const plan = WorkoutPlan({'exercises': <Map<String, dynamic>>[]});
+      server.refusePlan = {'code': 'unavailable'};
+
+      await roster.logFor('muffin', workout, plan: plan);
+
+      expect(server.logged['muffin'], [workout], reason: 'a comparison lost, never a workout');
+      expect(server.loggedPlans, isEmpty);
+      expect(errors, [containsPair('code', 'unavailable')]);
+
+      server.refusePlan = null;
+      await roster.loadRecord('muffin');
+      await pumpEventQueue();
+      expect(server.loggedPlans, {workout.id: plan});
+    });
+
+    test('a plan refused as malformed is let go: sending it again cannot help', () async {
+      final workout = Workout(name: 'Day A')..start = DateTime.utc(2026, 11, 9);
+      server.refusePlan = {'code': 'invalid_plan'};
+      await roster.logFor('muffin', workout, plan: const WorkoutPlan({'exercises': <Map<String, dynamic>>[]}));
+
+      server.refusePlan = null;
+      await roster.sendOwedPlans();
+      expect(server.loggedPlans, isEmpty);
     });
 
     test('a log refused is thrown, and changes nothing here', () async {

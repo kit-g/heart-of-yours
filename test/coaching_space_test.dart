@@ -979,7 +979,11 @@ void main() {
       programWeek: 2,
       programWeeks: 4,
     );
-    CoachProgramView copy({int sessionRevision = 0}) {
+    CoachProgramView copy({
+      int sessionRevision = 0,
+      List<Object> exercises = const [],
+      Map<String, Object> planning = const {},
+    }) {
       return CoachProgramView.fromJson({
         'program': {
           'id': 'p1',
@@ -991,20 +995,21 @@ void main() {
           'sessionRevisions': {'s1': sessionRevision},
         },
         'sessions': [
-          {'id': 's1', 'name': 'Day A', 'order': 0, 'programId': 'p1', 'exercises': <Object>[]},
+          {'id': 's1', 'name': 'Day A', 'order': 0, 'programId': 'p1', 'exercises': exercises},
         ],
         'position': {'week': 2},
+        ...planning,
       });
     }
 
-    void withCopy({ClientSummary? client}) {
+    void withCopy({ClientSummary? client, CoachProgramView? view}) {
       account(coach: true);
       when(api.getClients(former: false, cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: [client ?? sam], cursor: null));
       when(api.getClientWorkouts('sam', cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: <Workout>[], cursor: null));
       when(api.getClientSkips('sam')).thenAnswer((_) async => <TrainingSkip>[]);
-      when(api.getClientProgram('sam', 'p1')).thenAnswer((_) async => copy());
+      when(api.getClientProgram('sam', 'p1')).thenAnswer((_) async => view ?? copy());
       when(api.getClientPrograms('sam')).thenAnswer((_) async => [copy().program]);
       when(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since'))).thenAnswer(
         (_) async => [
@@ -1078,6 +1083,64 @@ void main() {
       await tester.pumpTimes();
 
       verify(api.logClientWorkout('sam', editor.copy)).called(1);
+      expect(find.text('Logged for Sam'), findsOneWidget);
+    });
+
+    testWidgets("the session starts at the client's targets, and its plan goes with it (heart-api#439)", (
+      tester,
+    ) async {
+      withCopy(
+        view: copy(
+          exercises: [
+            {
+              'id': 'te1',
+              'exercise': {'id': bench.id, 'name': bench.name, 'category': 'Barbell', 'target': 'Chest'},
+              'sets': [
+                {
+                  'id': 'set-1',
+                  'set_type': 'normal',
+                  'target': {
+                    'share': 0.7,
+                    'reps': {'min': 5, 'max': 5},
+                  },
+                },
+              ],
+            },
+          ],
+          planning: {
+            // where a history of nothing folds to, so it can be planned from
+            'position': {'week': 1, 'next': 's1'},
+            'bases': [
+              ProgramBase(
+                id: 'b1',
+                programId: 'p1',
+                exerciseId: bench.id,
+                value: 100,
+                at: DateTime.utc(2026, 11),
+              ).toMap(),
+            ],
+          },
+        ),
+      );
+      when(api.logClientWorkout('sam', any)).thenAnswer(
+        (invocation) async => invocation.positionalArguments.last as Workout,
+      );
+
+      final editor = await logDayA(tester);
+
+      final set = editor.copy.single.single;
+      // 70% of Sam's 100 kg is 154 lb: 155 on the coach's plates, which count
+      // in pounds here
+      expect(set.target?[TargetMeasure.weight]?.min, closeTo(155.asKilograms, 0.001));
+      set
+        ..setMeasurements(weight: 70, reps: 5)
+        ..isCompleted = true;
+      await editor.logTo!(tester.element(find.byType(WorkoutEditor)), editor.copy);
+      await tester.pumpTimes();
+
+      final plan = verify(api.saveClientWorkoutPlan('sam', editor.copy.id, captureAny)).captured.single as WorkoutPlan;
+      final planned = ((plan.plan['exercises'] as List).single as Map)['sets'] as List;
+      expect((planned.single as Map)['setId'], set.id);
       expect(find.text('Logged for Sam'), findsOneWidget);
     });
 
