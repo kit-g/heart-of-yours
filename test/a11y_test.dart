@@ -1093,16 +1093,8 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingInviteDialog, _Guideline.labeledTapTarget, null),
   (_Screen.coachingInviteDialog, _Guideline.textContrastLight, null),
   (_Screen.coachingInviteDialog, _Guideline.textContrastDark, null),
-  (
-    _Screen.coachingInviteDialog,
-    _Guideline.androidTapTarget,
-    'Cancel and Make a link are PrimaryButton.shrunk (lib/presentation/routes/coaching/invite.dart:126, :133), the Goals header\'s pair (#688), at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
-  ),
-  (
-    _Screen.coachingInviteDialog,
-    _Guideline.iosTapTarget,
-    'Cancel and Make a link are PrimaryButton.shrunk (lib/presentation/routes/coaching/invite.dart:126, :133), the Goals header\'s pair (#688), at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
-  ),
+  (_Screen.coachingInviteDialog, _Guideline.androidTapTarget, null),
+  (_Screen.coachingInviteDialog, _Guideline.iosTapTarget, null),
 
   // what a coach's invitation link opens (#553): prose, two switches, three answers
   (_Screen.invitation, _Guideline.labeledTapTarget, null),

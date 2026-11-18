@@ -81,9 +81,23 @@ class _InviteForm extends StatefulWidget {
 class _InviteFormState extends State<_InviteForm> {
   final _name = TextEditingController();
 
+  /// Whether there is a name to make a link for: the buttons rebuild when this
+  /// flips, not on every keystroke.
+  final _named = ValueNotifier(false);
+
+  @override
+  void initState() {
+    super.initState();
+    _name.addListener(_onName);
+  }
+
+  void _onName() => _named.value = _name.text.trim().isNotEmpty;
+
   @override
   void dispose() {
+    _name.removeListener(_onName);
     _name.dispose();
+    _named.dispose();
     super.dispose();
   }
 
@@ -101,37 +115,46 @@ class _InviteFormState extends State<_InviteForm> {
       crossAxisAlignment: .stretch,
       spacing: 12,
       children: [
-        TextField(
-          key: AppKeys.coachingInviteName,
-          controller: _name,
-          autofocus: true,
-          textCapitalization: .words,
-          textInputAction: .done,
-          // a placeholder, not a floating label: a label floated over the
-          // field doesn't sit right in the house font at this weight (#688)
-          decoration: InputDecoration(hintText: l.name),
-          onSubmitted: (_) => _submit(),
+        // a placeholder, not a floating label: a label floated over the
+        // field doesn't sit right in the house font at this weight (#688).
+        // The placeholder goes once a name is typed; the label stays
+        Semantics(
+          label: l.name,
+          textField: true,
+          child: TextField(
+            key: AppKeys.coachingInviteName,
+            controller: _name,
+            autofocus: true,
+            textCapitalization: .words,
+            textInputAction: .done,
+            decoration: InputDecoration(hintText: l.name),
+            onSubmitted: (_) => _submit(),
+          ),
         ),
         Text(l.coachingInviteNote, style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
         // the whole row rebuilds, so Cancel's right edge meets the field's
         // while Make a link is absent, rather than a gap's width short of it
-        ValueListenableBuilder<TextEditingValue>(
-          valueListenable: _name,
-          builder: (_, value, _) => Row(
+        ValueListenableBuilder<bool>(
+          valueListenable: _named,
+          builder: (_, named, _) => Row(
             mainAxisAlignment: .end,
             spacing: 8,
             children: [
               // the Goals header's pair: the way out on the quiet fill, the
-              // way on on the accent
+              // way on on the accent. Each answers taps over a full target
               PrimaryButton.shrunk(
                 backgroundColor: colorScheme.secondaryContainer,
+                hitHeight: kMinInteractiveDimension,
+                // no buzz for backing out
+                enableFeedback: false,
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(l.cancel, style: TextStyle(color: colorScheme.onSecondaryContainer)),
               ),
               // a link needs someone to be for: absent rather than dead until then
-              if (value.text.trim().isNotEmpty)
+              if (named)
                 PrimaryButton.shrunk(
                   key: AppKeys.coachingMakeLink,
+                  hitHeight: kMinInteractiveDimension,
                   onPressed: _submit,
                   child: Text(l.coachingMakeLink),
                 ),
@@ -168,7 +191,7 @@ class _WaitingInvitations extends StatelessWidget {
         for (final invitation in invitations)
           ListTile(
             key: AppKeys.coachingInvitation(invitation.id),
-            leading: Tooltip(message: l.coachingInvitesWaiting, child: const Icon(Icons.schedule_send_outlined)),
+            leading: const Icon(Icons.schedule_send_outlined),
             title: Text(invitation.name),
             subtitle: Text(l.coachingInviteUntil(format.format(invitation.expiresAt.toLocal()))),
             // its own context, so the menu and the iPad's share popover open

@@ -28,13 +28,16 @@ String _names(Iterable<GoEasyEntry> entries) {
 /// The neutral mark on an exercise harder on something the user goes easy
 /// on: a leaf and what it is harder on, in the muted ink. With [exercise]
 /// and [candidates] it opens the kinder swaps; without, it only says so — a
-/// picker row has a tap of its own.
+/// picker row has a tap of its own. A long press says what the leaf means,
+/// unless [explains] is off: a refused picker row keeps the long press for
+/// the reason it can't be picked.
 class GoEasyMarker extends StatelessWidget {
   final List<GoEasyEntry> marks;
   final Exercise? exercise;
   final Iterable<Exercise> candidates;
+  final bool explains;
 
-  const new({super.key, required this.marks, this.exercise, this.candidates = const []});
+  const new({super.key, required this.marks, this.exercise, this.candidates = const [], this.explains = true});
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +45,8 @@ class GoEasyMarker extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final color = colorScheme.onSurfaceVariant;
     final names = _names(marks);
-    final mark = Row(
+    final said = copy.goEasyHarderOn(names);
+    final row = Row(
       mainAxisSize: .min,
       spacing: 4,
       children: [
@@ -57,13 +61,14 @@ class GoEasyMarker extends StatelessWidget {
         ),
       ],
     );
+    final mark = explains ? Tooltip(message: said, child: row) : row;
 
     return switch (exercise) {
       // its own node: a tap target of its own inside a card that reads as one
       final Exercise exercise => Semantics(
         container: true,
         button: true,
-        label: copy.goEasyHarderOn(names),
+        label: said,
         excludeSemantics: true,
         child: InkWell(
           borderRadius: const .all(.circular(6)),
@@ -71,7 +76,7 @@ class GoEasyMarker extends StatelessWidget {
           child: Padding(padding: const .symmetric(vertical: 4), child: mark),
         ),
       ),
-      null => Semantics(label: copy.goEasyHarderOn(names), excludeSemantics: true, child: mark),
+      null => Semantics(label: said, excludeSemantics: true, child: mark),
     };
   }
 }

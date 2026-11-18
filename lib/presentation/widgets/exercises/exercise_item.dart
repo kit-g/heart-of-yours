@@ -93,26 +93,15 @@ class ExerciseItem extends StatelessWidget {
                             ),
                             // harder on something the user goes easy on
                             // (#396): said, never refused
-                            if (marks.isNotEmpty)
-                              Semantics(
-                                label: L.of(context).goEasyHarderOn(_names(marks)),
-                                excludeSemantics: true,
-                                child: Row(
-                                  spacing: 4,
-                                  children: [
-                                    Text('  ·  ', style: style),
-                                    Tooltip(
-                                      message: L.of(context).goEasyHarderOn(_names(marks)),
-                                      excludeFromSemantics: true,
-                                      child: Icon(Icons.spa_outlined, size: 14, color: colorScheme.onSurfaceVariant),
-                                    ),
-                                    Text(
-                                      _names(marks),
-                                      style: style?.copyWith(color: colorScheme.onSurfaceVariant),
-                                    ),
-                                  ],
-                                ),
+                            if (marks.isNotEmpty) ...[
+                              ExcludeSemantics(child: Text('  ·  ', style: style)),
+                              // the marker ellipsizes its names in a Flexible,
+                              // which needs a bounded width, and this line
+                              // scrolls sideways: measured, it gets its whole
+                              IntrinsicWidth(
+                                child: GoEasyMarker(marks: marks, explains: enabled),
                               ),
+                            ],
                           ],
                         ),
                       ],
