@@ -77,6 +77,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  AND sets.set_type IS NOT 'drop' -- a best no drop sets (#614)
   /*discarded:sets*/
   AND sets.reps > 0
 GROUP BY workouts.id, workouts.start
@@ -97,6 +98,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  AND sets.set_type IS NOT 'drop' -- a best no drop sets (#614)
   /*discarded:sets*/
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
@@ -116,6 +118,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  AND sets.set_type IS NOT 'drop' -- a best no drop sets (#614)
   /*discarded:sets*/
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
@@ -154,6 +157,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  AND sets.set_type IS NOT 'drop' -- a best no drop sets (#614)
   /*discarded:sets*/
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
@@ -193,6 +197,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  AND sets.set_type IS NOT 'drop' -- a best no drop sets (#614)
   /*discarded:sets*/
   AND sets.reps > 0
   AND sets.weight > 0

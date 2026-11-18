@@ -131,7 +131,8 @@ num? _value(Goal goal, GoalPrior prior, Workout workout, GoalFold fold) {
 List<LensSets> _lensSetsOf(Workout workout, bool Function(ExerciseSet set) working, GoalFold fold) {
   return [
     for (final entry in workout)
-      if (entry.where(working).length case final int sets when sets > 0)
+      // a drop set is one set however many drops it has (#614)
+      if (entry.countEfforts(working) case final int sets when sets > 0)
         if (fold.exerciseOf(entry.exercise) case final exercise)
           (
             workoutId: workout.id,
@@ -165,25 +166,28 @@ num? _sessionValue(ChartPreferenceType metric, List<ExerciseSet> sets) {
   }
 
   num weight(ExerciseSet set) => set.weight ?? 0;
+  // a best is no drop's to set (#614): the totals count every drop, the
+  // bests the rest, as the queries do
+  final undropped = sets.where((set) => set.setType != .drop);
 
   switch (metric) {
     case .topSetWeight:
-      return sets.map(weight).reduce(max<num>);
+      return undropped.isEmpty ? null : undropped.map(weight).reduce(max<num>);
     case .assistanceWeight:
-      return sets.map(weight).reduce(min<num>);
+      return undropped.isEmpty ? null : undropped.map(weight).reduce(min<num>);
     case .maxConsecutiveReps:
-      final reps = sets.map((set) => set.reps).nonNulls;
+      final reps = undropped.map((set) => set.reps).nonNulls;
       return reps.isEmpty ? null : reps.reduce(max);
     case .totalReps:
       return sum((set) => set.reps);
     case .totalVolume:
       return sum((set) => weight(set) * (set.reps ?? 0));
     case .averageWorkingWeight:
-      final counted = sets.where((set) => (set.reps ?? 0) > 0);
+      final counted = undropped.where((set) => (set.reps ?? 0) > 0);
       if (counted.isEmpty) return null;
       return sum((set) => weight(set) * set.reps!, counted) / sum((set) => set.reps, counted);
     case .estimatedOneRepMax:
-      final counted = sets.where((set) => (set.reps ?? 0) > 0 && (set.weight ?? 0) > 0);
+      final counted = undropped.where((set) => (set.reps ?? 0) > 0 && (set.weight ?? 0) > 0);
       if (counted.isEmpty) return null;
       // Brzycki, as the query has it
       return counted.map((set) => set.weight! / (1.0278 - (0.0278 * set.reps!))).reduce(max);

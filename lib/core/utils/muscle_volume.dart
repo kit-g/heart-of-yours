@@ -64,7 +64,8 @@ Iterable<MuscleSets> workoutMuscleSets(Workout workout, {required Exercise? Func
           start: workout.start,
           muscles: _tagging(each.exercise, lookup),
           target: each.exercise.target,
-          sets: each.where((set) => set.isCompleted && _counts(set)).length,
+          // a drop set is one set however many drops it has (#614)
+          sets: each.countEfforts(),
         ),
       )
       .where((row) => row.sets > 0);
@@ -90,7 +91,7 @@ MuscleVolume plannedMuscleVolume(
 }
 
 /// The sets of [exercise] a plan's muscle map counts.
-int plannedSets(WorkoutExercise exercise) => exercise.where(_counts).length;
+int plannedSets(WorkoutExercise exercise) => exercise.countEfforts(_counts);
 
 /// The last [days] calendar days, today included, of [rows].
 ///

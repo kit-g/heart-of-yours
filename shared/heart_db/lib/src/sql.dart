@@ -529,7 +529,9 @@ WHERE we.exercise_id = ?
 /// One query instead of per-metric aggregates so a record can carry the *set*
 /// it happened on (its own reps, its own date), never two independent maxima
 /// glued together. Warm-ups are no one's record (heart-api#83); `IS NOT`
-/// keeps the sets stored before types existed, whose column is null.
+/// keeps the sets stored before types existed, whose column is null. A drop
+/// is marked rather than left out: it holds no record (#614), but its load and
+/// its session are the lifetime totals' all the same.
 const recordSets = '''
 SELECT
     sets.weight,
@@ -537,7 +539,8 @@ SELECT
     sets.duration,
     sets.distance,
     workouts.id AS workout_id,
-    workouts.start AS start
+    workouts.start AS start,
+    sets.set_type IS 'drop' AS is_drop
 FROM sets
 INNER JOIN workout_exercises we ON sets.exercise_id = we.id
 INNER JOIN workouts ON we.workout_id = workouts.id
@@ -559,7 +562,8 @@ SELECT
     sets.duration,
     sets.distance,
     workouts.id AS workout_id,
-    workouts.start AS start
+    workouts.start AS start,
+    sets.set_type IS 'drop' AS is_drop
 FROM sets
 INNER JOIN workout_exercises we ON sets.exercise_id = we.id
 INNER JOIN workouts ON we.workout_id = workouts.id
@@ -582,7 +586,8 @@ SELECT
     sets.duration,
     sets.distance,
     workouts.id AS workout_id,
-    workouts.start AS start
+    workouts.start AS start,
+    sets.set_type IS 'drop' AS is_drop
 FROM sets
 INNER JOIN workout_exercises we ON sets.exercise_id = we.id
 INNER JOIN workouts ON we.workout_id = workouts.id
@@ -606,6 +611,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  AND sets.set_type IS NOT 'drop' -- a best no drop sets (#614)
   /*discarded:sets*/
 GROUP BY workouts.id
 ORDER BY "when" DESC
@@ -624,6 +630,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  AND sets.set_type IS NOT 'drop' -- a best no drop sets (#614)
   /*discarded:sets*/
 GROUP BY workouts.id 
 ORDER BY "when" DESC
@@ -642,6 +649,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  AND sets.set_type IS NOT 'drop' -- a best no drop sets (#614)
   /*discarded:sets*/
 GROUP BY workouts.id 
 ORDER BY "when" DESC
@@ -660,6 +668,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  AND sets.set_type IS NOT 'drop' -- a best no drop sets (#614)
   /*discarded:sets*/
 GROUP BY workouts.id
 ORDER BY "when" DESC
@@ -726,9 +735,25 @@ GROUP BY _recent.exercise_id, _recent.workout_exercise_id, _recent.last_workout_
 ;
 """;
 
+/// Whether the set aliased `s` continues the effort before it (#614): a drop
+/// right after a ticked set of its exercise entry that is not a warm-up, the
+/// rule [DropEfforts] keeps in Dart. A drop after a set never ticked starts
+/// an effort of its own, as it does once finishing drops the unticked set.
+/// Sets are in the order they were stored, which is the order the workout
+/// lists them. A drop set counts as one set however many drops it has, so
+/// the counts below leave these out; volume does not. The subquery runs for a
+/// drop alone.
+const _continuesEffort = """(CASE WHEN s.set_type IS 'drop' THEN coalesce(
+    (SELECT p.completed AND coalesce(p.set_type, 'normal') IS NOT 'warmup' FROM sets p
+     WHERE p.exercise_id = s.exercise_id AND p.rowid < s.rowid
+     ORDER BY p.rowid DESC LIMIT 1),
+    0
+) ELSE 0 END)""";
+
 /// Completed working sets per exercise per finished workout started in a
 /// window, with the exercise's muscle tagging: the muscle map's read.
-const muscleSets = '''
+const muscleSets =
+    '''
 SELECT
     w.start AS start,
     e.muscles AS muscles,
@@ -744,6 +769,7 @@ WHERE w.user_id = ?
   AND w.start < ?
   AND s.completed
   AND s.set_type IS NOT 'warmup'
+  AND NOT $_continuesEffort
   /*discarded:s*/
 GROUP BY w.id, we.exercise_id
 ;
@@ -751,7 +777,8 @@ GROUP BY w.id, we.exercise_id
 
 /// The muscle map's read with the rest of the exercise, for the pattern lens
 /// (#341): the workout, the movement and the target beside the tagging.
-const lensSets = '''
+const lensSets =
+    '''
 SELECT
     w.id AS workout_id,
     we.exercise_id AS exercise_id,
@@ -770,6 +797,7 @@ WHERE w.user_id = ?
   AND w.start < ?
   AND s.completed
   AND s.set_type IS NOT 'warmup'
+  AND NOT $_continuesEffort
   /*discarded:s*/
 GROUP BY w.id, we.exercise_id
 ;
@@ -798,7 +826,8 @@ ORDER BY start, id
 /// started in a window, from its first time up to the window's end, with what
 /// the exercise is: a recap's sets, and the history its records beat (#154).
 /// Ordered as [recordSets] is, so the shared records fold reads the same.
-const recapSets = '''
+const recapSets =
+    '''
 SELECT
     w.id AS workout_id,
     w.start AS start,
@@ -810,7 +839,9 @@ SELECT
     s.weight AS weight,
     s.reps AS reps,
     s.duration AS duration,
-    s.distance AS distance
+    s.distance AS distance,
+    s.set_type AS set_type,
+    $_continuesEffort AS continues_effort
 FROM workouts w
 INNER JOIN workout_exercises we ON we.workout_id = w.id
 INNER JOIN sets s ON s.exercise_id = we.id
@@ -866,13 +897,15 @@ WHERE "end" IS NOT NULL
 /// `/*discarded:s*/` sits inside the join, after the warm-up clause, where the
 /// rest of the counts carry it: a set the user marks as a bad entry (#428)
 /// drops out of both totals once that marker is honoured.
-const trainingTotals = '''
+const trainingTotals =
+    '''
 SELECT
     w.start AS start,
     w."end" AS "end",
     w.pauses AS pauses,
     /*discardedTime:w*/ 0 AS time_left_out,
-    count(s.id) AS sets,
+    -- an effort, not each of its drops (#614)
+    count(CASE WHEN NOT $_continuesEffort THEN s.id END) AS sets,
     coalesce(
         sum(
             CASE e.category

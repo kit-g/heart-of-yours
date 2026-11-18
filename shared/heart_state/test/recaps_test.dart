@@ -181,6 +181,21 @@ void main() {
     });
   });
 
+  test('a drop set is one set, its drops are volume, and no drop holds a record (#614)', () {
+    final dropped = recap(
+      sets: [
+        bench.set('muffin-push', evening, weight: 100, reps: 8),
+        bench.set('muffin-push', evening, weight: 90, reps: 30, drop: true, continuesEffort: true),
+      ],
+    );
+
+    expect(dropped.sets, 1);
+    expect(dropped.exercises.single.sets, 1);
+    expect(dropped.exercises.single.volume, 100 * 8 + 90 * 30);
+    expect(dropped.records, isNotEmpty);
+    expect(dropped.records.map((each) => each.value['weight']), everyElement(100));
+  });
+
   group('muscles and patterns', () {
     test('muscles count by the muscle map\'s rule, most sets first', () {
       final muscles = recap().muscles;
@@ -434,7 +449,16 @@ class _Exercise {
          }),
        };
 
-  RecapSet set(String workout, DateTime start, {double? weight, int? reps, double? duration, double? distance}) {
+  RecapSet set(
+    String workout,
+    DateTime start, {
+    double? weight,
+    int? reps,
+    double? duration,
+    double? distance,
+    bool drop = false,
+    bool continuesEffort = false,
+  }) {
     return (
       workoutId: workout,
       exerciseId: id,
@@ -447,6 +471,8 @@ class _Exercise {
       reps: reps,
       duration: duration,
       distance: distance,
+      drop: drop,
+      continuesEffort: continuesEffort,
     );
   }
 }

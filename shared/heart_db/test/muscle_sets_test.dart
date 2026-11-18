@@ -110,13 +110,17 @@ void main() {
     expect(target, Target.chest);
   });
 
-  test('leaves out warm-ups, and counts drop and failure sets', () async {
+  test('leaves out warm-ups, counts a failure set, and a drop set once (#614)', () async {
     await seed(exercise: 'bench', start: DateTime.utc(2026, 9, 2, 10), completed: 4, warmups: 2);
-    await db.update('sets', {'set_type': 'drop'}, where: 'id = ?', whereArgs: ['w${sequence - 1}-s3']);
+    await db.update('sets', {'set_type': 'failure'}, where: 'id = ?', whereArgs: ['w${sequence - 1}-s3']);
 
-    final [(:sets, muscles: _, target: _, start: _)] = await local.getMuscleSets(from, to, userId: userId);
-
+    var [(:sets, muscles: _, target: _, start: _)] = await local.getMuscleSets(from, to, userId: userId);
     expect(sets, 2);
+
+    // the last set a drop of the one before it: one effort
+    await db.update('sets', {'set_type': 'drop'}, where: 'id = ?', whereArgs: ['w${sequence - 1}-s3']);
+    [(:sets, muscles: _, target: _, start: _)] = await local.getMuscleSets(from, to, userId: userId);
+    expect(sets, 1);
   });
 
   test('an untagged custom exercise comes back with empty tagging and its target, not dropped', () async {

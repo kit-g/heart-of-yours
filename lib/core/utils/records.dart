@@ -26,7 +26,12 @@ enum RecordKind {
 
 /// Ticked and not a warm-up: the sets every record, chart, lens count and
 /// goal counts (#151).
-bool isWorkingSet(ExerciseSet set) => set.isCompleted && set.setType != .warmup;
+const isWorkingSet = isTickedWorkingSet;
+
+/// A working set that can hold a record: not a drop (#614). A drop is the
+/// lighter tail of an effort, so it never sets a best it could not fairly
+/// earn, as in the query the Done page reads.
+bool _isRecordSet(ExerciseSet set) => isWorkingSet(set) && set.setType != .drop;
 
 /// One record standing after a workout: which exercise, which kind, and the
 /// record entry itself (value, set context, workoutId, at).
@@ -79,7 +84,7 @@ RecordMarks recordMarks(Workout workout, Iterable<AchievedRecord> achieved) {
     final holder = workout
         .where((entry) => entry.exercise.id == exercise.id)
         .expand((entry) => entry)
-        .where(isWorkingSet)
+        .where(_isRecordSet)
         .where((set) => _holds(set, record))
         .firstOrNull;
     if (holder != null) marks.putIfAbsent(holder.id, () => []).add(kind);
@@ -112,13 +117,14 @@ RecordMarks liveRecordMarks(Workout workout, Map<ExerciseId, Map?> prior) {
 }
 
 /// [exercise]'s records with [workout]'s ticked working sets after [prior]'s.
-/// Warm-ups are no one's record (#151), as in the query the Done page reads.
+/// Warm-ups (#151) and drops (#614) are no one's record, as in the query the
+/// Done page reads.
 Map? _foldToday(Workout workout, Exercise exercise, Map? prior) {
   final at = workout.start.toUtc().toIso8601String();
   final today = workout
       .where((entry) => entry.exercise.id == exercise.id)
       .expand((entry) => entry)
-      .where(isWorkingSet)
+      .where(_isRecordSet)
       .map(
         (set) => RecordSet(
           weight: set.weight,

@@ -309,6 +309,107 @@ void main() {
     });
   });
 
+  // #614: a working set and the drops after it are one effort
+  group('a drop set is one set', () {
+    final from = DateTime.utc(2026, 9, 1);
+    final to = DateTime.utc(2026, 10, 1);
+
+    setUp(() async {
+      await local.storeWorkoutHistory([
+        server(
+          'w1',
+          sets: [
+            // ids out of order on purpose: the order is the list's, not the ids'
+            set('z-warmup', weight: 60, type: 'warmup'),
+            // one effort: 100 × 8, then two drops; the second drop does the
+            // most reps and the most volume of any set
+            set('a-top', weight: 100, reps: 8),
+            set('y-drop', weight: 80, reps: 6, type: 'drop'),
+            set('b-drop', weight: 70, reps: 20, type: 'drop'),
+            // and a plain set after it, the second effort
+            set('x-plain', weight: 100, reps: 6),
+          ],
+        ),
+      ], user);
+    });
+
+    test('in the muscle map and the lenses', () async {
+      final muscles = await local.getMuscleSets(from, to, userId: user);
+      expect(muscles.single.sets, 2);
+
+      final lens = await local.getLensSets(from, to, userId: user);
+      expect(lens.single.sets, 2);
+    });
+
+    test('in the dashboard totals, while every drop is volume', () async {
+      final [totals] = await local.getTrainingTotals(from, to, userId: user);
+      expect(totals.sets, 2);
+      expect(totals.volume, 100 * 8 + 80 * 6 + 70 * 20 + 100 * 6);
+    });
+
+    test('in a recap\'s sets, which still carry every drop for the volume', () async {
+      final sets = await local.getRecapSets(from, to, userId: user);
+      expect(sets.map((each) => (each.drop, each.continuesEffort)), [
+        (false, false),
+        (true, true),
+        (true, true),
+        (false, false),
+      ]);
+    });
+
+    test('and no drop holds a record', () async {
+      final records = (await local.getRecord(user, benchPress))!;
+      // 70 × 20 is the most volume in one set, and a drop's
+      expect((records['bestVolume'] as Map)['value'], 800);
+      expect((records['heaviest'] as Map)['weight'], 100);
+      // while a lifetime adds up every drop
+      expect(records['totalVolume'], 100 * 8 + 80 * 6 + 70 * 20 + 100 * 6);
+      expect(records['sessions'], 1);
+    });
+
+    test('and no drop is a best on the charts, while every drop is volume', () async {
+      final top = await local.getWeightHistory(user, benchPress);
+      expect(top.single.$1, 100);
+      final reps = await local.getExerciseMetics(user, .maxConsecutiveReps, bench);
+      expect(reps!.single.$1, 8);
+      final volume = await local.getExerciseMetics(user, .totalVolume, bench);
+      expect(volume!.single.$1, 100 * 8 + 80 * 6 + 70 * 20 + 100 * 6);
+    });
+
+    test('a drop after a set never ticked starts an effort of its own', () async {
+      await local.storeWorkoutHistory([
+        server(
+          'w2',
+          start: '2026-09-27T08:00:00.000Z',
+          sets: [
+            {...set('m-planned', weight: 100, reps: 8), 'completed': false},
+            set('n-drop', weight: 80, reps: 6, type: 'drop'),
+          ],
+        ),
+      ], user);
+
+      final lens = await local.getLensSets(from, to, userId: user);
+      expect(lens.map((each) => each.sets), unorderedEquals([2, 1]));
+    });
+
+    test('a drop with nothing but a warm-up before it starts an effort of its own', () async {
+      await local.storeWorkoutHistory([
+        server(
+          'w2',
+          start: '2026-09-27T08:00:00.000Z',
+          sets: [
+            set('f-warmup', weight: 60, type: 'warmup'),
+            set('g-drop', weight: 80, reps: 6, type: 'drop'),
+            set('h-drop', weight: 60, reps: 6, type: 'drop'),
+          ],
+        ),
+      ], user);
+
+      final lens = await local.getLensSets(from, to, userId: user);
+      expect(lens.map((each) => each.sets), unorderedEquals([2, 1]));
+    });
+  });
+
   // #244: the before-and-after count an import's RPE offer turns on
   group('rated sets are counted', () {
     test("only those with an RPE, in the user's finished workouts", () async {
