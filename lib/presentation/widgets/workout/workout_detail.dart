@@ -900,14 +900,12 @@ class NewWorkoutHeader extends StatelessWidget {
             spacing: 8,
             children: [
               Expanded(child: start),
-              Tooltip(
-                message: L.of(context).logPastWorkout,
-                child: PrimaryButton.shrunk(
-                  key: WorkoutDetailKeys.logPastWorkout,
-                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-                  onPressed: log,
-                  child: const Icon(Icons.more_time_rounded, size: 18),
-                ),
+              PrimaryButton.shrunk(
+                key: WorkoutDetailKeys.logPastWorkout,
+                tooltip: L.of(context).logPastWorkout,
+                backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                onPressed: log,
+                child: const Icon(Icons.more_time_rounded, size: 18),
               ),
             ],
           ),
@@ -1296,13 +1294,11 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                                             // paused (#134): the way back sits beside the
                                             // stopped clock, where the eye goes to check it
                                             if (workouts.isPaused)
-                                              Tooltip(
-                                                message: l.resumePausedWorkout,
-                                                child: PrimaryButton.shrunk(
-                                                  key: WorkoutDetailKeys.resume,
-                                                  onPressed: workouts.resume,
-                                                  child: const Icon(Icons.play_arrow_rounded),
-                                                ),
+                                              PrimaryButton.shrunk(
+                                                key: WorkoutDetailKeys.resume,
+                                                tooltip: l.resumePausedWorkout,
+                                                onPressed: workouts.resume,
+                                                child: const Icon(Icons.play_arrow_rounded),
                                               ),
                                             WorkoutTimer(
                                               key: WorkoutDetailKeys.timer,
