@@ -410,6 +410,10 @@ abstract final class AppKeys {
   /// One client (#559): their page, or the pane beside the roster, its way
   /// shut, and a workout or skip of theirs.
   static const coachingClientPane = Key('Coaching.clientPane');
+  static const coachingReplyAbout = Key('Coaching.replyAbout');
+  static const coachingBeside = Key('Coaching.beside');
+  static Key coachingBesideTab(String tab) => Key('Coaching.beside.$tab');
+  static const coachingLatestWorkout = Key('Coaching.latestWorkout');
   static const coachingClientClose = Key('Coaching.clientClose');
   static Key coachingClientWorkout(String workoutId) => Key('Coaching.clientWorkout.$workoutId');
   static const coachingClientSkip = Key('Coaching.clientSkip');

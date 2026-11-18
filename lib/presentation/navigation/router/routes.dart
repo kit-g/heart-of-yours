@@ -1343,6 +1343,7 @@ RouteBase _coachingRoute() {
               onOpenClient: context.pushCoachingClient,
               onOpenWorkout: context.pushCoachingClientWorkout,
               onOpenProgram: context.pushCoachingClientProgram,
+              onEditSession: context.pushCoachingClientSession,
               onMessage: context.pushCoachingClientThread,
               onNotes: context.pushCoachingClientNotes,
               onLog: context.pushCoachingClientLog,

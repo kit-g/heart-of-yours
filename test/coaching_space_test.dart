@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/history/history.dart' show WorkoutEditor;
-import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage;
+import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage, ThreadView;
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show TemplateEditor;
 import 'package:heart/presentation/widgets/buttons.dart';
@@ -69,6 +69,13 @@ void main() {
         .thenAnswer((_) async => (items: <CoachFeedItem>[], cursor: null));
     when(api.getLibraryPrograms(cursor: anyNamed('cursor')))
         .thenAnswer((_) async => (items: <CoachProgram>[], cursor: null));
+    // a client opened beside the roster opens the conversation beside them (#693)
+    when(api.openThread(any)).thenAnswer((invocation) async {
+      final connectionId = invocation.positionalArguments.first as String;
+      return Thread(id: 't-$connectionId', connectionId: connectionId, otherId: connectionId, otherName: connectionId);
+    });
+    when(api.getThreadItems(any, limit: anyNamed('limit')))
+        .thenAnswer((_) async => (items: <ThreadItem>[], cursor: null));
     share.shared.clear();
   });
 
@@ -78,11 +85,12 @@ void main() {
     WidgetTester tester,
     Map<String, Object> prefs, {
     bool wide = false,
+    Size? size,
     KeyVault? keyVault,
     AnalyticsService? analytics,
   }) async {
-    tester.view.physicalSize = wide ? const Size(1200, 2400) : const Size(1179, 2556);
-    tester.view.devicePixelRatio = wide ? 1 : 3;
+    tester.view.physicalSize = size ?? (wide ? const Size(1200, 2400) : const Size(1179, 2556));
+    tester.view.devicePixelRatio = (wide || size != null) ? 1 : 3;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues({...pastOnboarding(), ...prefs});
@@ -960,6 +968,81 @@ void main() {
       expect(tester.takeException(), isNull);
       verify(api.getClientWorkouts('pip', cursor: anyNamed('cursor'))).called(1);
       expect(find.text('Nothing logged yet'), findsOneWidget);
+    });
+
+    testWidgets(
+      'on its side, a client opens with the conversation beside them, and a reply is about the workout (#693)',
+      (
+        tester,
+      ) async {
+        withSam();
+        await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, size: const Size(1600, 1000));
+
+        await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+        await tester.pumpTimes();
+
+        final beside = find.byKey(AppKeys.coachingBeside);
+        expect(beside, findsOneWidget);
+        expect(find.descendant(of: beside, matching: find.byType(ThreadView)), findsOneWidget);
+        expect(
+          find.descendant(of: find.byKey(AppKeys.coachingClientPane), matching: find.byKey(AppKeys.coachingBeside)),
+          findsNothing,
+          reason: 'beside the client, not under them',
+        );
+        // the latest workout in full, target beside done
+        final latest = find.byKey(AppKeys.coachingLatestWorkout);
+        expect(find.descendant(of: latest, matching: find.text('Asked')), findsOneWidget);
+        expect(find.descendant(of: latest, matching: find.text('Last set was a grind')), findsOneWidget);
+        expect(
+          find.byKey(AppKeys.coachingClientMessages),
+          findsNothing,
+          reason: 'the conversation is already beside them',
+        );
+
+        await tester.tapByKey(AppKeys.coachingBesideTab('program'));
+        await tester.pumpTimes();
+        expect(find.descendant(of: beside, matching: find.byType(ThreadView)), findsNothing);
+
+        await tester.tapByKey(AppKeys.coachingReplyAbout);
+        await tester.pumpTimes();
+        expect(find.descendant(of: beside, matching: find.byType(ThreadView)), findsOneWidget);
+        final messages = Messages.of(tester.element(beside));
+        expect(messages.about('c-sam'), const MessageSubject(.workout, 'w1'));
+      },
+    );
+
+    testWidgets('upright, what is beside the client is under them, and stays picked through a turn (#693)', (
+      tester,
+    ) async {
+      withSam();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, size: const Size(900, 1200));
+
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      final beside = find.byKey(AppKeys.coachingBeside);
+      expect(beside, findsOneWidget);
+      final client = find.byKey(AppKeys.coachingClientPane);
+      expect(tester.getTopLeft(beside).dx, lessThan(tester.getTopRight(client).dx), reason: 'under the client');
+      expect(tester.getTopLeft(beside).dy, greaterThan(tester.getTopLeft(client).dy));
+
+      await tester.tapByKey(AppKeys.coachingBesideTab('program'));
+      await tester.pumpTimes();
+
+      tester.view.physicalSize = const Size(1600, 1000);
+      await tester.pumpTimes();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(AppKeys.coachingClientPane), findsOneWidget, reason: 'the same client');
+      expect(
+        find.descendant(of: beside, matching: find.byType(ThreadView)),
+        findsNothing,
+        reason: 'still Program',
+      );
+      expect(
+        tester.getTopLeft(beside).dx,
+        greaterThanOrEqualTo(tester.getTopRight(client).dx),
+        reason: 'beside them now',
+      );
     });
 
     testWidgets('a workout in Activity opens target beside done', (tester) async {

@@ -99,6 +99,9 @@ class _ClientView extends StatefulWidget {
   /// not when it is built under a workout opened from Activity.
   final bool looks;
 
+  /// On a tablet, what this view leaves to the column beside it (#693).
+  final _Desk? desk;
+
   const new({
     super.key,
     required this.connectionId,
@@ -109,6 +112,7 @@ class _ClientView extends StatefulWidget {
     required this.onLog,
     this.leading,
     this.looks = true,
+    this.desk,
   });
 
   @override
@@ -198,6 +202,8 @@ class _ClientViewState extends State<_ClientView> {
       return _FormerView(
         client: client,
         leading: widget.leading,
+        // beside them on a tablet
+        tiles: widget.desk == null,
         onMessage: widget.onMessage,
         onNotes: widget.onNotes,
       );
@@ -214,6 +220,16 @@ class _ClientViewState extends State<_ClientView> {
           .map(_Skipped.new),
     ]..sort((a, b) => b.at.compareTo(a.at));
     final status = roster.recordStatus(id);
+    final desk = widget.desk;
+    // on a tablet the newest workout is in full at the top (#693)
+    final latest = switch (desk) {
+      _Desk() => entries.whereType<_Trained>().firstOrNull?.workout,
+      null => null,
+    };
+    final earlier = switch (latest) {
+      final Workout latest => entries.where((entry) => entry is! _Trained || entry.workout.id != latest.id).toList(),
+      null => entries,
+    };
 
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
@@ -232,14 +248,19 @@ class _ClientViewState extends State<_ClientView> {
             // each under its heading (#686)
             _ClientActions(
               client: client,
-              onMessage: () => widget.onMessage(client.connectionId),
+              // beside them on a tablet
+              onMessage: switch (desk) {
+                _Desk() => null,
+                null => () => widget.onMessage(client.connectionId),
+              },
               // a session they trained together, logged as theirs (#560)
               onLog: (past) => widget.onLog(client.connectionId, past),
             ),
             // what they follow, and every copy the coach sent them, waiting
             // or not: the ones both of them edit (#558)
+            // upright on a tablet, it is only beside them
             if (_programsOf(client, ClientPrograms.watch(context).managed(id)) case final programs
-                when programs.isNotEmpty) ...[
+                when programs.isNotEmpty && (desk?.programInColumn ?? true)) ...[
               _Heading(l.coachingClientProgram),
               for (final (id, name, waiting) in programs)
                 _ProgramCard(
@@ -251,12 +272,16 @@ class _ClientViewState extends State<_ClientView> {
                   name: name,
                   following: id == client.programId,
                   waiting: waiting,
-                  onTap: () => widget.onOpenProgram(id),
+                  onTap: switch (desk) {
+                    final _Desk desk => () => desk.show(.program),
+                    null => () => widget.onOpenProgram(id),
+                  },
                 ),
             ],
             // the coach's own notes on them, which they never see (#556):
-            // not where this device has nowhere to keep the keys
-            if (DeviceKeys.of(context).supported) ...[
+            // not where this device has nowhere to keep the keys, and beside
+            // them on a tablet
+            if (DeviceKeys.of(context).supported && desk == null) ...[
               _Heading(l.coachingYourNotes),
               _NotesTile(
                 connectionId: client.connectionId,
@@ -264,8 +289,28 @@ class _ClientViewState extends State<_ClientView> {
                 onTap: () => widget.onNotes(client.connectionId),
               ),
             ],
-            _Heading(l.coachingClientWorkouts),
-            ...switch ((status, entries)) {
+            if (latest case final Workout latest)
+              _LatestWorkout(
+                key: AppKeys.coachingLatestWorkout,
+                client: client,
+                workout: latest,
+                onOpen: () => widget.onOpenWorkout(latest.id),
+                onReply: switch (desk) {
+                  final _Desk desk => () {
+                    Messages.of(context).writeAbout(client.connectionId, MessageSubject(.workout, latest.id));
+                    desk.show(.messages);
+                  },
+                  null => null,
+                },
+              ),
+            switch (latest) {
+              Workout() when earlier.isNotEmpty => _Heading(l.coachingClientEarlier),
+              Workout() => const SizedBox.shrink(),
+              null => _Heading(l.coachingClientWorkouts),
+            },
+            ...switch ((status, earlier)) {
+              // the latest alone: nothing earlier to say is missing
+              (_, []) when latest != null => const <Widget>[],
               (.idle || .loading, []) => [
                 const Padding(
                   padding: .all(24),
@@ -287,7 +332,7 @@ class _ClientViewState extends State<_ClientView> {
                 ),
               ],
               _ => [
-                for (final entry in entries)
+                for (final entry in earlier)
                   switch (entry) {
                     _Trained(:final workout) => _WorkoutTile(
                       workout: workout,
@@ -379,7 +424,17 @@ class _FormerView extends StatelessWidget {
   final ValueChanged<String> onMessage;
   final ValueChanged<String> onNotes;
 
-  const new({required this.client, required this.leading, required this.onMessage, required this.onNotes});
+  /// The ways to the conversation and the notes: not where they are beside
+  /// this view already (#693).
+  final bool tiles;
+
+  const new({
+    required this.client,
+    required this.leading,
+    required this.onMessage,
+    required this.onNotes,
+    this.tiles = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -395,9 +450,9 @@ class _FormerView extends StatelessWidget {
           ?leading,
           _ClientHeader(client: client, named: leading != null, former: true),
           // an ended connection takes no new message: only one to read back
-          if (_holdsConversation(context, client.connectionId))
+          if (tiles && _holdsConversation(context, client.connectionId))
             _MessagesTile(client: client, onTap: () => onMessage(client.connectionId)),
-          if (notes) _NotesTile(connectionId: client.connectionId, onTap: () => onNotes(client.connectionId)),
+          if (tiles && notes) _NotesTile(connectionId: client.connectionId, onTap: () => onNotes(client.connectionId)),
         ],
       ),
     );
@@ -541,103 +596,6 @@ class _NotesTile extends StatelessWidget {
   }
 }
 
-/// What is open beside the roster: a client, and one of their workouts over
-/// them when that is what was opened, from Activity or the client's own list,
-/// by the tap that opened it.
-typedef _Opened = ({String connectionId, String? workoutId, int tap});
-
-/// A client beside the roster (#685): their view, with what opens from it
-/// opening in the pane too, so the roster stays where it was. A workout
-/// opened from Activity lands over its client's view, and Back goes there.
-class _ClientPane extends StatefulWidget {
-  final _Opened opened;
-  final ValueChanged<String> onOpenProgram;
-  final ValueChanged<String> onMessage;
-  final ValueChanged<String> onNotes;
-  final void Function(String connectionId, PastWorkout past) onLog;
-  final VoidCallback onClose;
-
-  const new({
-    super.key,
-    required this.opened,
-    required this.onOpenProgram,
-    required this.onMessage,
-    required this.onNotes,
-    required this.onLog,
-    required this.onClose,
-  });
-
-  @override
-  State<_ClientPane> createState() => _ClientPaneState();
-}
-
-class _ClientPaneState extends State<_ClientPane> {
-  final _navigator = GlobalKey<NavigatorState>();
-
-  Route<void> _review(String workoutId) {
-    final connectionId = widget.opened.connectionId;
-    return MaterialPageRoute(
-      builder: (_) => WorkoutReviewPage(
-        key: ValueKey(workoutId),
-        connectionId: connectionId,
-        workoutId: workoutId,
-        onMessage: () => widget.onMessage(connectionId),
-      ),
-    );
-  }
-
-  /// The client's own view, at the bottom of the pane: built once, reading
-  /// the pane's widget and words as they are now each time it builds.
-  Route<void> _client() {
-    return MaterialPageRoute(
-      // a column as on a page, not the pane's whole width
-      builder: (context) => Material(
-        child: Align(
-          alignment: .topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: readableWidth),
-            child: _ClientView(
-              key: AppKeys.coachingClientPane,
-              connectionId: widget.opened.connectionId,
-              // under a workout opened from Activity it was never seen
-              looks: widget.opened.workoutId == null,
-              onOpenWorkout: (workoutId) => _navigator.currentState?.push(_review(workoutId)),
-              onOpenProgram: (programId) => widget.onOpenProgram(programId),
-              onMessage: (id) => widget.onMessage(id),
-              onNotes: (id) => widget.onNotes(id),
-              onLog: (id, past) => widget.onLog(id, past),
-              leading: Align(
-                alignment: .centerRight,
-                child: IconButton(
-                  key: AppKeys.coachingClientClose,
-                  tooltip: L.of(context).coachingClientClose,
-                  onPressed: () => widget.onClose(),
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Back on Android steps back inside the pane before it leaves the page
-    return NavigatorPopHandler(
-      onPopWithResult: (_) => _navigator.currentState?.maybePop(),
-      child: Navigator(
-        key: _navigator,
-        onGenerateInitialRoutes: (_, _) => [
-          _client(),
-          if (widget.opened.workoutId case final String workoutId) _review(workoutId),
-        ],
-      ),
-    );
-  }
-}
-
 /// A section's heading on the coach's pages about a client (#686).
 class _Heading extends StatelessWidget {
   final String text;
@@ -660,10 +618,12 @@ class _Heading extends StatelessWidget {
 /// write to them, and log a session they trained together (#686).
 class _ClientActions extends StatelessWidget {
   final ClientSummary client;
-  final VoidCallback onMessage;
+
+  /// Opens the conversation; none where it is beside them already (#693).
+  final VoidCallback? onMessage;
   final ValueChanged<PastWorkout> onLog;
 
-  const new({required this.client, required this.onMessage, required this.onLog});
+  const new({required this.client, required this.onLog, this.onMessage});
 
   @override
   Widget build(BuildContext context) {
@@ -698,7 +658,7 @@ class _ClientActions extends StatelessWidget {
         runSpacing: 8,
         children: [
           // the Messages tab's own badge: one count, one look
-          UnreadBadge(count: unread, child: message),
+          if (onMessage != null) UnreadBadge(count: unread, child: message),
           _LogForButton(client: client, onLog: onLog),
         ],
       ),

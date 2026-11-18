@@ -38,6 +38,7 @@ part 'activity.dart';
 part 'client.dart';
 part 'client_program.dart';
 part 'clients.dart';
+part 'desk.dart';
 part 'frame.dart';
 part 'invitation.dart';
 part 'invite.dart';

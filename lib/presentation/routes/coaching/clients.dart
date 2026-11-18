@@ -25,6 +25,10 @@ class ClientsPage extends StatefulWidget {
   /// Opens a client's copy of their program.
   final void Function(String connectionId, String programId) onOpenProgram;
 
+  /// Opens the template editor on a session of a client's program, from the
+  /// program beside them on a tablet (#693).
+  final void Function(String connectionId, String programId, {required bool isNew}) onEditSession;
+
   /// Opens the conversation with a client.
   final ValueChanged<String> onMessage;
 
@@ -40,6 +44,7 @@ class ClientsPage extends StatefulWidget {
     required this.onOpenClient,
     required this.onOpenWorkout,
     required this.onOpenProgram,
+    required this.onEditSession,
     required this.onMessage,
     required this.onNotes,
     required this.onLog,
@@ -66,8 +71,19 @@ Future<void> _reloadClients(BuildContext context) async {
 /// list of names and a client's workouts side by side.
 const _besideWidth = 720.0;
 
-/// How wide the roster stays with a client open beside it.
-const _paneRosterWidth = 340.0;
+/// Where a page has room for the roster, a client and the column beside
+/// them: an 11" iPad on its side, past its rail.
+const _threeColumnsAt = 1000.0;
+
+/// How wide the roster stays with a client open beside it: narrower on a
+/// page with room for a third column, as the coaching design's desk has it
+/// (#693).
+double _paneRosterWidth(double width) {
+  return switch (width >= _threeColumnsAt) {
+    true => 300,
+    false => 280,
+  };
+}
 
 class _ClientsPageState extends State<ClientsPage> {
   final _view = ValueNotifier(_ClientsView.roster);
@@ -195,7 +211,7 @@ class _ClientsPageState extends State<ClientsPage> {
                   },
                 );
                 return MasterDetail(
-                  masterWidth: (_) => _paneRosterWidth,
+                  masterWidth: _paneRosterWidth,
                   maxMasterWidth: _rosterMaxWidth,
                   master: list,
                   detail: switch (shown) {
@@ -205,8 +221,9 @@ class _ClientsPageState extends State<ClientsPage> {
                       key: ValueKey(shown),
                       opened: shown,
                       onOpenProgram: (programId) => widget.onOpenProgram(shown.connectionId, programId),
-                      onMessage: widget.onMessage,
-                      onNotes: widget.onNotes,
+                      onEditSession: (programId, {required isNew}) {
+                        widget.onEditSession(shown.connectionId, programId, isNew: isNew);
+                      },
                       onLog: widget.onLog,
                       onClose: () => _open.value = null,
                     ),
@@ -231,7 +248,10 @@ extension on _ClientsPageState {
         children: [
           Padding(
             padding: const .fromLTRB(16, 8, 16, 8),
-            child: Center(
+            // a narrowed roster beside a client, under larger type: the two
+            // words shrink rather than run off its edge
+            child: FittedBox(
+              fit: .scaleDown,
               child: SettingSwitcher<_ClientsView>(
                 value: view,
                 onValueChanged: (picked) => _view.value = picked ?? view,
