@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show RouteSettings;
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/telemetry.dart';
 import 'package:heart_api/heart_api.dart' show NetworkException;
@@ -50,6 +51,19 @@ FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config)
         };
     },
     appRunner: appRunner,
+  );
+}
+
+/// Records a move between two screens that changes no route — a pane beside a
+/// list — as the navigator observer records one that does, so an issue's
+/// breadcrumbs still say where the user was.
+void paneBreadcrumb({required String from, required String to}) {
+  Sentry.addBreadcrumb(
+    RouteObserverBreadcrumb(
+      navigationType: 'pane',
+      from: RouteSettings(name: from),
+      to: RouteSettings(name: to),
+    ),
   );
 }
 
