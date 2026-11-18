@@ -107,34 +107,36 @@ class _InviteFormState extends State<_InviteForm> {
           autofocus: true,
           textCapitalization: .words,
           textInputAction: .done,
-          decoration: InputDecoration(hintText: l.coachingInviteNameHint),
+          // a placeholder, not a floating label: a label floated over the
+          // field doesn't sit right in the house font at this weight (#688)
+          decoration: InputDecoration(hintText: l.name),
           onSubmitted: (_) => _submit(),
         ),
         Text(l.coachingInviteNote, style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
-        Row(
-          mainAxisAlignment: .end,
-          spacing: 8,
-          children: [
-            // the theme's buttons are compact; a dialog's answers stay a full tap target
-            TextButton(
-              style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(l.cancel),
-            ),
-            // a link needs someone to be for: absent rather than dead until then
-            ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _name,
-              builder: (_, value, _) => switch (value.text.trim().isEmpty) {
-                true => const SizedBox.shrink(),
-                false => FilledButton(
+        // the whole row rebuilds, so Cancel's right edge meets the field's
+        // while Make a link is absent, rather than a gap's width short of it
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _name,
+          builder: (_, value, _) => Row(
+            mainAxisAlignment: .end,
+            spacing: 8,
+            children: [
+              // the Goals header's pair: the way out on the quiet fill, the
+              // way on on the accent
+              PrimaryButton.shrunk(
+                backgroundColor: colorScheme.secondaryContainer,
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l.cancel, style: TextStyle(color: colorScheme.onSecondaryContainer)),
+              ),
+              // a link needs someone to be for: absent rather than dead until then
+              if (value.text.trim().isNotEmpty)
+                PrimaryButton.shrunk(
                   key: AppKeys.coachingMakeLink,
-                  style: FilledButton.styleFrom(minimumSize: const Size(64, 48)),
                   onPressed: _submit,
                   child: Text(l.coachingMakeLink),
                 ),
-              },
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -166,7 +168,7 @@ class _WaitingInvitations extends StatelessWidget {
         for (final invitation in invitations)
           ListTile(
             key: AppKeys.coachingInvitation(invitation.id),
-            leading: const Icon(Icons.schedule_send_outlined),
+            leading: Tooltip(message: l.coachingInvitesWaiting, child: const Icon(Icons.schedule_send_outlined)),
             title: Text(invitation.name),
             subtitle: Text(l.coachingInviteUntil(format.format(invitation.expiresAt.toLocal()))),
             // its own context, so the menu and the iPad's share popover open

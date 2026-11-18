@@ -101,7 +101,11 @@ class ExerciseItem extends StatelessWidget {
                                   spacing: 4,
                                   children: [
                                     Text('  ·  ', style: style),
-                                    Icon(Icons.spa_outlined, size: 14, color: colorScheme.onSurfaceVariant),
+                                    Tooltip(
+                                      message: L.of(context).goEasyHarderOn(_names(marks)),
+                                      excludeFromSemantics: true,
+                                      child: Icon(Icons.spa_outlined, size: 14, color: colorScheme.onSurfaceVariant),
+                                    ),
                                     Text(
                                       _names(marks),
                                       style: style?.copyWith(color: colorScheme.onSurfaceVariant),

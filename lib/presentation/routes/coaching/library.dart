@@ -92,7 +92,10 @@ class _LibraryTile extends StatelessWidget {
       title: Text(program.name, maxLines: 1, overflow: .ellipsis),
       subtitle: Text(l.coachingProgramVersion(program.version, date)),
       trailing: switch (unsaved) {
-        true => Icon(Icons.cloud_off_rounded, color: colorScheme.error, semanticLabel: l.coachingProgramUnsaved),
+        true => Tooltip(
+          message: l.coachingProgramUnsaved,
+          child: Icon(Icons.cloud_off_rounded, color: colorScheme.error),
+        ),
         false => const Icon(Icons.chevron_right_rounded),
       },
       onTap: onTap,

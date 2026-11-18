@@ -5577,8 +5577,6 @@
   "@coachingBackToWorkout": {"description": "Button on coachingWorkoutRunning that leaves the Coaching space and opens the running workout (#566)", "type": "text", "placeholders": {}},
   "coachingInvite": "Invite someone",
   "@coachingInvite": {"description": "Button on the Coaching space's Clients tab that starts a one-person invitation link, and the title of its dialog (#553)", "type": "text", "placeholders": {}},
-  "coachingInviteNameHint": "Their name",
-  "@coachingInviteNameHint": {"description": "Hint in the invite dialog's field: what the coach calls the person invited (#553)", "type": "text", "placeholders": {}},
   "coachingInviteNote": "Only you see this name. A link is for one person, and lasts a week.",
   "@coachingInviteNote": {"description": "Under the invite dialog's name field (#553): who sees the name, and what a link is", "type": "text", "placeholders": {}},
   "coachingMakeLink": "Make a link",
@@ -6234,5 +6232,7 @@
   "historyDensityCompact": "Compact",
   "@historyDensityCompact": {"description": "Settings choice: History's workout cards in three lines, with the muscle groups trained instead of the exercises (#611)", "type": "text", "placeholders": {}},
   "muscleFamilyLowerBody": "Lower body",
-  "@muscleFamilyLowerBody": {"description": "The muscle family of legs, glutes, hamstrings and adductors: a colour key on History's calendar and the name beside its dot (#617)", "type": "text", "placeholders": {}}
+  "@muscleFamilyLowerBody": {"description": "The muscle family of legs, glutes, hamstrings and adductors: a colour key on History's calendar and the name beside its dot (#617)", "type": "text", "placeholders": {}},
+  "program": "Program",
+  "@program": {"description": "Tooltip and screen-reader label of the icon that marks something as a program: a program on a client's page, a program session's note at the top of its workout (#688)", "type": "text", "placeholders": {}}
 }

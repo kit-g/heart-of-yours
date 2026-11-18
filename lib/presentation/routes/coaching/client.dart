@@ -225,7 +225,7 @@ class _ClientViewState extends State<_ClientView> {
                   true => AppKeys.coachingClientProgram,
                   false => AppKeys.coachingClientCopy(id),
                 },
-                leading: const Icon(Icons.event_repeat_rounded),
+                leading: Tooltip(message: l.program, child: const Icon(Icons.event_repeat_rounded)),
                 title: Text(name, maxLines: 1, overflow: .ellipsis),
                 subtitle: switch (waiting) {
                   true => Text(l.coachingCopyWaiting),
@@ -439,7 +439,7 @@ class _WorkoutTile extends StatelessWidget {
     return ListTile(
       key: AppKeys.coachingClientWorkout(workout.id),
       onTap: onTap,
-      leading: const Icon(Icons.check_circle_outline_rounded),
+      leading: Tooltip(message: l.workout, child: const Icon(Icons.check_circle_outline_rounded)),
       title: Text(workoutTitle(l, workout), maxLines: 1, overflow: .ellipsis),
       subtitle: Column(
         crossAxisAlignment: .start,
