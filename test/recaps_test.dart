@@ -287,7 +287,9 @@ void main() {
 
     // #687: an iPad either way up has room for the list and a report beside it
     for (final width in [834.0, 1194.0]) {
-      testWidgets('at ${width.toInt()}pt the months and the newest report sit side by side', (tester) async {
+      testWidgets('at ${width.toInt()}pt the months stand alone, and a month opens beside them and closes', (
+        tester,
+      ) async {
         await at(midMonth, () async {
           stubHistory();
           await pumpProfile(tester, answer: 'on', width: width);
@@ -296,7 +298,11 @@ void main() {
           await tester.tapByKey(AppKeys.recapsEntry);
           await tester.pumpTimes();
 
+          // the list alone until a month is picked (#685)
           final report = find.byKey(AppKeys.monthlyReport);
+          expect(report, findsNothing);
+          await tester.tap(find.widgetWithText(ListTile, '2 workouts'));
+          await tester.pumpTimes();
           expect(report, findsOneWidget);
           expect(find.descendant(of: report, matching: find.text('September 2026')), findsOneWidget);
           // Back is the list's, not the report's too
@@ -311,6 +317,11 @@ void main() {
             isFalse,
           );
           expect(tester.takeException(), isNull);
+
+          await tester.tapByKey(AppKeys.closeDetail);
+          await tester.pumpTimes();
+          expect(report, findsNothing);
+          expect(tester.widget<ListTile>(find.widgetWithText(ListTile, '2 workouts')).selected, isFalse);
         });
       });
     }

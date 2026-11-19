@@ -15,7 +15,11 @@ class MonthlyReportPage extends StatefulWidget {
   /// one over the report would close both.
   final bool implyBack;
 
-  const new({super.key, required this.month, this.implyBack = true});
+  /// Closes the report where it sits beside the month list: the list's
+  /// standard close (#685).
+  final VoidCallback? onClose;
+
+  const new({super.key, required this.month, this.implyBack = true, this.onClose});
 
   @override
   State<MonthlyReportPage> createState() => _MonthlyReportPageState();
@@ -38,6 +42,15 @@ class _MonthlyReportPageState extends State<MonthlyReportPage> {
     return Scaffold(
       key: AppKeys.monthlyReport,
       appBar: AppBar(
+        leading: switch (widget.onClose) {
+          final VoidCallback close => IconButton(
+            key: AppKeys.closeDetail,
+            tooltip: l.close,
+            onPressed: close,
+            icon: const Icon(Icons.close),
+          ),
+          null => null,
+        },
         title: Text(monthTitle(l, widget.month)),
         automaticallyImplyLeading: widget.implyBack,
       ),

@@ -2653,11 +2653,12 @@ void main() {
       case _Screen.settings || _Screen.anonymousSettings:
         await tester.tap(find.byIcon(Icons.settings_rounded));
       case _Screen.recaps:
-        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps');
+        // at this width a month opens beside the list (#687), with its close
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps?month=2026-09');
         await tester.pumpTimes();
-        // at this width the list and the newest month's report, side by side (#687)
         expect(find.widgetWithText(ListTile, 'September 2026'), findsOneWidget);
         expect(find.byKey(AppKeys.monthlyReport), findsOneWidget);
+        expect(find.byKey(AppKeys.closeDetail), findsOneWidget);
       case _Screen.recapsPhone:
         GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps');
         await tester.pumpTimes();
