@@ -267,14 +267,7 @@ class _ReviewedExerciseCard extends StatelessWidget {
                       if (compare)
                         Expanded(
                           child: Text(
-                            switch (set.outcome) {
-                              .lighter => l.coachingReviewLighter,
-                              .fewer => l.coachingReviewFewer,
-                              .shorter => l.coachingReviewShorter,
-                              .skipped => l.coachingReviewSkipped,
-                              .added => l.coachingReviewAdded,
-                              .asked || null => '',
-                            },
+                            _outcomeWords(l, set.outcome) ?? '',
                             style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary),
                             textAlign: .end,
                           ),
@@ -320,4 +313,17 @@ class _MessageableSet extends StatelessWidget {
     );
     if (picked ?? false) message();
   }
+}
+
+/// How a set differed from what was asked, in words; nothing for one done as
+/// asked.
+String? _outcomeWords(L l, SetOutcome? outcome) {
+  return switch (outcome) {
+    .lighter => l.coachingReviewLighter,
+    .fewer => l.coachingReviewFewer,
+    .shorter => l.coachingReviewShorter,
+    .skipped => l.coachingReviewSkipped,
+    .added => l.coachingReviewAdded,
+    .asked || null => null,
+  };
 }

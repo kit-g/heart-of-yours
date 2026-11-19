@@ -25,11 +25,13 @@ class ClientsPage extends StatefulWidget {
   /// Opens a client's copy of their program.
   final void Function(String connectionId, String programId) onOpenProgram;
 
-  /// Opens the conversation with a client.
-  final ValueChanged<String> onMessage;
+  /// Opens the template editor on a session of a client's program, from the
+  /// program beside them on a tablet (#693).
+  final void Function(String connectionId, String programId, {required bool isNew}) onEditSession;
 
-  /// Opens the coach's notes on a client.
-  final ValueChanged<String> onNotes;
+  /// Opens a workout of the coach's own that a message beside a client is
+  /// about.
+  final ValueChanged<String>? onOpenOwnWorkout;
 
   /// Opens a workout to log for a client (#560).
   final void Function(String connectionId, PastWorkout past) onLog;
@@ -40,9 +42,9 @@ class ClientsPage extends StatefulWidget {
     required this.onOpenClient,
     required this.onOpenWorkout,
     required this.onOpenProgram,
-    required this.onMessage,
-    required this.onNotes,
+    required this.onEditSession,
     required this.onLog,
+    this.onOpenOwnWorkout,
   });
 
   @override
@@ -66,8 +68,10 @@ Future<void> _reloadClients(BuildContext context) async {
 /// list of names and a client's workouts side by side.
 const _besideWidth = 720.0;
 
-/// How wide the roster stays with a client open beside it.
-const _paneRosterWidth = 340.0;
+/// How wide the roster stays with a client open beside it: 300, as the
+/// coaching design's desk has it, where that still leaves the client the
+/// column beside them (#693); 280 otherwise.
+double _paneRosterWidth(double width) => width - 300 >= _besideColumnAt ? 300 : 280;
 
 class _ClientsPageState extends State<ClientsPage> {
   final _view = ValueNotifier(_ClientsView.roster);
@@ -195,7 +199,7 @@ class _ClientsPageState extends State<ClientsPage> {
                   },
                 );
                 return MasterDetail(
-                  masterWidth: (_) => _paneRosterWidth,
+                  masterWidth: _paneRosterWidth,
                   maxMasterWidth: _rosterMaxWidth,
                   master: list,
                   detail: switch (shown) {
@@ -205,8 +209,10 @@ class _ClientsPageState extends State<ClientsPage> {
                       key: ValueKey(shown),
                       opened: shown,
                       onOpenProgram: (programId) => widget.onOpenProgram(shown.connectionId, programId),
-                      onMessage: widget.onMessage,
-                      onNotes: widget.onNotes,
+                      onEditSession: (programId, {required isNew}) {
+                        widget.onEditSession(shown.connectionId, programId, isNew: isNew);
+                      },
+                      onOpenOwnWorkout: widget.onOpenOwnWorkout,
                       onLog: widget.onLog,
                       onClose: () => _open.value = null,
                     ),
@@ -231,15 +237,16 @@ extension on _ClientsPageState {
         children: [
           Padding(
             padding: const .fromLTRB(16, 8, 16, 8),
-            child: Center(
-              child: SettingSwitcher<_ClientsView>(
-                value: view,
-                onValueChanged: (picked) => _view.value = picked ?? view,
-                children: {
-                  .roster: Text(l.coachingClients, key: AppKeys.coachingRosterView),
-                  .activity: Text(l.coachingActivity, key: AppKeys.coachingActivityView),
-                },
-              ),
+            // a menu where a narrowed roster can't fit both at the text size
+            child: _Segments<_ClientsView>(
+              value: view,
+              labels: {.roster: l.coachingClients, .activity: l.coachingActivity},
+              keyOf: (each) => switch (each) {
+                .roster => AppKeys.coachingRosterView,
+                .activity => AppKeys.coachingActivityView,
+              },
+              menuKey: AppKeys.coachingRosterViewMenu,
+              onPicked: (picked) => _view.value = picked,
             ),
           ),
           Expanded(

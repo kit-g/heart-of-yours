@@ -26,9 +26,6 @@ class _ClientNotesPageState extends State<ClientNotesPage> {
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    final notes = CoachNotes.watch(context);
-    final written = notes.on(widget.connectionId);
     final client = Roster.watch(context).client(widget.connectionId);
     return Scaffold(
       appBar: AppBar(
@@ -37,12 +34,7 @@ class _ClientNotesPageState extends State<ClientNotesPage> {
           null => l.coachingNotes,
         }),
         actions: [
-          IconButton(
-            key: AppKeys.coachingNoteNew,
-            tooltip: l.coachingNoteNew,
-            onPressed: () => _showNoteEditor(context, connectionId: widget.connectionId),
-            icon: const Icon(Icons.add_rounded),
-          ),
+          _NewNoteButton(connectionId: widget.connectionId),
           const SizedBox(width: 8),
         ],
       ),
@@ -50,51 +42,85 @@ class _ClientNotesPageState extends State<ClientNotesPage> {
         alignment: .topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: readableWidth),
-          child: RefreshIndicator.adaptive(
-            onRefresh: notes.load,
-            child: switch ((notes.status, written)) {
-              (.idle || .loading, []) => const Center(child: CircularProgressIndicator.adaptive()),
-              (.failed, []) => _Empty(
-                icon: Icons.cloud_off_rounded,
-                title: l.coachingNotesFailed,
-                action: OutlinedButton(onPressed: notes.load, child: Text(l.retry)),
-              ),
-              (_, []) => _Empty(
-                icon: Icons.sticky_note_2_outlined,
-                title: l.coachingNotesEmpty,
-                body: l.coachingNotesEmptyBody,
-                action: FilledButton.icon(
-                  key: AppKeys.coachingNoteFirst,
-                  onPressed: () => _showNoteEditor(context, connectionId: widget.connectionId),
-                  icon: const Icon(Icons.edit_note_rounded),
-                  label: Text(l.coachingNoteNew),
-                ),
-              ),
-              _ => ListView(
-                padding: const .fromLTRB(16, 8, 16, 24),
-                children: [
-                  Padding(
-                    padding: const .only(bottom: 12),
-                    child: Row(
-                      spacing: 8,
-                      children: [
-                        Icon(Icons.lock_outline_rounded, size: 16, color: colorScheme.onSurfaceVariant),
-                        Expanded(
-                          child: Text(
-                            l.coachingNotesPrivate,
-                            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  for (final note in written) _NoteCard(connectionId: widget.connectionId, note: note),
-                ],
-              ),
-            },
-          ),
+          child: _NotesList(connectionId: widget.connectionId),
         ),
       ),
+    );
+  }
+}
+
+/// Writes a new note on [connectionId]'s client.
+class _NewNoteButton extends StatelessWidget {
+  final String connectionId;
+
+  const new({required this.connectionId});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      key: AppKeys.coachingNoteNew,
+      tooltip: L.of(context).coachingNoteNew,
+      onPressed: () => _showNoteEditor(context, connectionId: connectionId),
+      icon: const Icon(Icons.add_rounded),
+    );
+  }
+}
+
+/// The coach's notes on one client, newest first: a page's body on a phone,
+/// a tab beside the client on a tablet (#693).
+class _NotesList extends StatelessWidget {
+  final String connectionId;
+
+  const new({required this.connectionId});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final notes = CoachNotes.watch(context);
+    final written = notes.on(connectionId);
+    return RefreshIndicator.adaptive(
+      onRefresh: notes.load,
+      child: switch ((notes.status, written)) {
+        (.idle || .loading, []) => const Center(child: CircularProgressIndicator.adaptive()),
+        (.failed, []) => _Empty(
+          icon: Icons.cloud_off_rounded,
+          title: l.coachingNotesFailed,
+          action: OutlinedButton(onPressed: notes.load, child: Text(l.retry)),
+        ),
+        (_, []) => _Empty(
+          icon: Icons.sticky_note_2_outlined,
+          title: l.coachingNotesEmpty,
+          body: l.coachingNotesEmptyBody,
+          action: FilledButton.icon(
+            key: AppKeys.coachingNoteFirst,
+            onPressed: () => _showNoteEditor(context, connectionId: connectionId),
+            icon: const Icon(Icons.edit_note_rounded),
+            label: Text(l.coachingNoteNew),
+          ),
+        ),
+        _ => ListView(
+          padding: const .fromLTRB(16, 8, 16, 24),
+          children: [
+            Padding(
+              padding: const .only(bottom: 12),
+              child: Row(
+                spacing: 8,
+                children: [
+                  Icon(Icons.lock_outline_rounded, size: 16, color: colorScheme.onSurfaceVariant),
+                  Expanded(
+                    child: Text(
+                      l.coachingNotesPrivate,
+                      style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            for (final note in written) _NoteCard(connectionId: connectionId, note: note),
+          ],
+        ),
+      },
     );
   }
 }
