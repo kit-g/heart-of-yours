@@ -6,6 +6,7 @@ import 'package:heart/presentation/routes/history/history.dart' show WorkoutEdit
 import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage;
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show TemplateEditor;
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetail, WorkoutDetailKeys;
 import 'package:heart_models/heart_models.dart';
@@ -376,10 +377,29 @@ void main() {
           .thenAnswer((_) async => (items: clients, cursor: null));
     }
 
-    testWidgets('who needs a word comes first, with why in words, and a look clears what it can', (tester) async {
+    testWidgets('who needs a word comes first, with why in words, and opening them clears what a look can', (
+      tester,
+    ) async {
       account(coach: true);
       clients([sam, pip, riley]);
-      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
+      // the server, asked again after the look, has the note gone
+      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {
+        clients([
+          ClientSummary(
+            connectionId: 'c-sam',
+            studentId: 'sam',
+            name: 'Sam',
+            status: 'active',
+            programName: 'Strength block',
+            programWeek: 2,
+            programWeeks: 6,
+            recent: [DateTime.now().toUtc()],
+            reasons: ['gap'],
+          ),
+          pip,
+          riley,
+        ]);
+      });
       final recorded = RecordedAnalytics();
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, analytics: recorded);
       expect(recorded.property('coaching_role'), [
@@ -396,10 +416,10 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.byKey(AppKeys.coachingMarkReviewed('c-riley')), findsNothing, reason: 'nothing to look at');
-      expect(find.byKey(AppKeys.coachingMarkReviewed('c-pip')), findsNothing, reason: 'a look clears no gap');
-
-      await tester.tapByKey(AppKeys.coachingMarkReviewed('c-sam'));
+      // opening the client is the look (#686): no button for it
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.pageBack();
       await tester.pumpTimes();
 
       verify(api.markReviewed('c-sam', at: anyNamed('at'))).called(1);
@@ -410,11 +430,11 @@ void main() {
         reason: 'a gap holds until it stops being true',
       );
       expect(find.byKey(AppKeys.coachingReasonFilter('note')), findsNothing, reason: 'nobody left with a note');
-      expect(
-        find.byKey(AppKeys.coachingMarkReviewed('c-sam')),
-        findsNothing,
-        reason: 'a look would clear nothing more',
-      );
+
+      // a gap a look doesn't clear: opening them marks nothing
+      await tester.tapByKey(AppKeys.coachingClient('c-pip'));
+      await tester.pumpTimes();
+      verifyNever(api.markReviewed('c-pip', at: anyNamed('at')));
     });
 
     testWidgets('someone who accepts while the coach is away is there when the app comes back', (tester) async {
@@ -1175,12 +1195,12 @@ void main() {
       clearInteractions(api);
 
       await tester.ensureVisible(find.byKey(AppKeys.coachingLogFor));
-      // both before a frame: the second reaches the tile as it was
-      final tile = tester.widget<ListTile>(find.byKey(AppKeys.coachingLogFor));
-      tile.onTap!();
-      tile.onTap!();
+      // both before a frame: the second reaches the button as it was
+      final button = tester.widget<PrimaryButton>(find.byKey(AppKeys.coachingLogFor));
+      button.onPressed!();
+      button.onPressed!();
       await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget, reason: 'the chevron, while it reads');
+      expect(find.byType(CircularProgressIndicator), findsOneWidget, reason: 'the icon, while it reads');
       await tester.pumpTimes();
 
       expect(find.byKey(AppKeys.coachingLogBlank), findsOneWidget, reason: 'one menu');
@@ -1280,11 +1300,22 @@ void main() {
       when(api.revertClientChange('sam', 'p1', 'ch2')).thenThrow({'code': 'conflict'});
       await openCopy(tester);
 
+      // asked first, since it changes what they train (#686): no, then yes
       await tester.tapByKey(AppKeys.coachingCopyPutBack('ch1'));
+      await tester.pumpTimes();
+      expect(find.text('Put this back?'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpTimes();
+      verifyNever(api.revertClientChange('sam', 'p1', 'ch1'));
+      await tester.tapByKey(AppKeys.coachingCopyPutBack('ch1'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingCopyPutBackConfirm);
       await tester.pumpTimes();
       verify(api.revertClientChange('sam', 'p1', 'ch1')).called(1);
 
       await tester.tapByKey(AppKeys.coachingCopyPutBack('ch2'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingCopyPutBackConfirm);
       await tester.pumpTimes();
       expect(find.text("Couldn't put that back. It has changed since."), findsOneWidget);
     });

@@ -403,9 +403,9 @@ abstract final class AppKeys {
 
   static Key coachingClient(String connectionId) => Key('Coaching.client.$connectionId');
 
+  static const coachingCopyPutBackConfirm = Key('Coaching.copyPutBackConfirm');
   static const coachingSettings = Key('Coaching.settings');
   static const coachingLogOut = Key('Coaching.logOut');
-  static Key coachingMarkReviewed(String connectionId) => Key('Coaching.reviewed.$connectionId');
 
   /// One client (#559): their page, or the pane beside the roster, its way
   /// shut, and a workout or skip of theirs.

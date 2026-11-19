@@ -95,6 +95,10 @@ class _ClientView extends StatefulWidget {
   /// title for that.
   final Widget? leading;
 
+  /// Whether opening this view is the coach looking at the client (#686):
+  /// not when it is built under a workout opened from Activity.
+  final bool looks;
+
   const new({
     super.key,
     required this.connectionId,
@@ -104,6 +108,7 @@ class _ClientView extends StatefulWidget {
     required this.onNotes,
     required this.onLog,
     this.leading,
+    this.looks = true,
   });
 
   @override
@@ -122,6 +127,18 @@ class _ClientViewState extends State<_ClientView> {
     super.didUpdateWidget(old);
     // after this build: reading notifies the roster this view is built from
     if (old.connectionId != widget.connectionId) WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  /// Clears what a look clears for the client as the roster now has them.
+  Future<void> _look(Roster roster) async {
+    final client = roster.client(widget.connectionId);
+    if (client == null || _former(client) || !_lookClears(client)) return;
+    try {
+      await roster.markReviewed(client);
+    } catch (error, stacktrace) {
+      // the row stays set apart, and the next open asks again
+      reportToSentry(error, stacktrace: stacktrace);
+    }
   }
 
   Future<void> _load() async {
@@ -152,6 +169,10 @@ class _ClientViewState extends State<_ClientView> {
         if (messages.status == .idle) await messages.load();
       case final ClientSummary client:
         await (roster.load(), roster.loadRecord(client.studentId), programs.loadManaged(client.studentId)).wait;
+        // opening them is looking at them (#686): what a look clears goes,
+        // decided on the row as just read, once what they did is on screen.
+        // Not from under a workout opened over them, which they never saw
+        if (widget.looks && mounted) await _look(roster);
       case null:
         break;
     }
@@ -207,37 +228,43 @@ class _ClientViewState extends State<_ClientView> {
             ?widget.leading,
             // a page names them in its title
             _ClientHeader(client: client, named: widget.leading != null),
-            // their one conversation with the coach (#556), in Messages
-            _MessagesTile(client: client, onTap: () => widget.onMessage(client.connectionId)),
-            // the coach's own notes on them, which they never see (#556):
-            // not where this device has nowhere to keep the keys
-            if (DeviceKeys.of(context).supported)
-              _NotesTile(connectionId: client.connectionId, onTap: () => widget.onNotes(client.connectionId)),
-            // a session they trained together, logged as theirs (#560): while
-            // they are a client, which a former one, on a page of their own,
-            // is not
-            _LogForTile(client: client, onLog: (past) => widget.onLog(client.connectionId, past)),
+            // what the coach does with them, then what there is of them,
+            // each under its heading (#686)
+            _ClientActions(
+              client: client,
+              onMessage: () => widget.onMessage(client.connectionId),
+              // a session they trained together, logged as theirs (#560)
+              onLog: (past) => widget.onLog(client.connectionId, past),
+            ),
             // what they follow, and every copy the coach sent them, waiting
             // or not: the ones both of them edit (#558)
-            for (final (id, name, waiting) in _programsOf(client, ClientPrograms.watch(context).managed(id)))
-              ListTile(
-                key: switch (id == client.programId) {
-                  true => AppKeys.coachingClientProgram,
-                  false => AppKeys.coachingClientCopy(id),
-                },
-                leading: const Icon(Icons.event_repeat_rounded),
-                title: Text(name, maxLines: 1, overflow: .ellipsis),
-                subtitle: switch (waiting) {
-                  true => Text(l.coachingCopyWaiting),
-                  false => null,
-                },
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => widget.onOpenProgram(id),
+            if (_programsOf(client, ClientPrograms.watch(context).managed(id)) case final programs
+                when programs.isNotEmpty) ...[
+              _Heading(l.coachingClientProgram),
+              for (final (id, name, waiting) in programs)
+                _ProgramCard(
+                  key: switch (id == client.programId) {
+                    true => AppKeys.coachingClientProgram,
+                    false => AppKeys.coachingClientCopy(id),
+                  },
+                  client: client,
+                  name: name,
+                  following: id == client.programId,
+                  waiting: waiting,
+                  onTap: () => widget.onOpenProgram(id),
+                ),
+            ],
+            // the coach's own notes on them, which they never see (#556):
+            // not where this device has nowhere to keep the keys
+            if (DeviceKeys.of(context).supported) ...[
+              _Heading(l.coachingYourNotes),
+              _NotesTile(
+                connectionId: client.connectionId,
+                headed: true,
+                onTap: () => widget.onNotes(client.connectionId),
               ),
-            Padding(
-              padding: const .fromLTRB(16, 16, 16, 4),
-              child: Text(l.coachingClientWorkouts, style: Theme.of(context).textTheme.titleMedium),
-            ),
+            ],
+            _Heading(l.coachingClientWorkouts),
             ...switch ((status, entries)) {
               (.idle || .loading, []) => [
                 const Padding(
@@ -306,8 +333,7 @@ class _ClientHeader extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final reasons = _reasonsInWords(l, client);
     return Padding(
-      // the right edge is the look button's, which someone gone has none of
-      padding: .fromLTRB(16, 16, former ? 16 : 8, 0),
+      padding: const .fromLTRB(16, 16, 16, 0),
       child: Row(
         crossAxisAlignment: .start,
         spacing: 16,
@@ -337,7 +363,6 @@ class _ClientHeader extends StatelessWidget {
               ],
             ),
           ),
-          if (!former && _lookClears(client)) _MarkReviewed(client: client),
         ],
       ),
     );
@@ -479,24 +504,37 @@ class _NotesTile extends StatelessWidget {
   final String connectionId;
   final VoidCallback onTap;
 
-  const new({required this.connectionId, required this.onTap});
+  /// Under a Notes heading, which already names it: the latest note alone.
+  final bool headed;
+
+  const new({required this.connectionId, required this.onTap, this.headed = false});
 
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
     final latest = CoachNotes.watch(context).on(connectionId).firstOrNull;
+    final text = Text(
+      switch (latest?.text?.trim()) {
+        final String text when text.isNotEmpty => text,
+        _ => l.coachingNotesOnlyYou,
+      },
+      maxLines: switch (headed) {
+        true => 2,
+        false => 1,
+      },
+      overflow: .ellipsis,
+    );
     return ListTile(
       key: AppKeys.coachingClientNotes,
       leading: const Icon(Icons.sticky_note_2_outlined),
-      title: Text(l.coachingNotes),
-      subtitle: Text(
-        switch (latest?.text?.trim()) {
-          final String text when text.isNotEmpty => text,
-          _ => l.coachingNotesOnlyYou,
-        },
-        maxLines: 1,
-        overflow: .ellipsis,
-      ),
+      title: switch (headed) {
+        true => text,
+        false => Text(l.coachingNotes),
+      },
+      subtitle: switch (headed) {
+        true => null,
+        false => text,
+      },
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: onTap,
     );
@@ -552,22 +590,31 @@ class _ClientPaneState extends State<_ClientPane> {
   /// the pane's widget and words as they are now each time it builds.
   Route<void> _client() {
     return MaterialPageRoute(
+      // a column as on a page, not the pane's whole width
       builder: (context) => Material(
-        child: _ClientView(
-          key: AppKeys.coachingClientPane,
-          connectionId: widget.opened.connectionId,
-          onOpenWorkout: (workoutId) => _navigator.currentState?.push(_review(workoutId)),
-          onOpenProgram: (programId) => widget.onOpenProgram(programId),
-          onMessage: (id) => widget.onMessage(id),
-          onNotes: (id) => widget.onNotes(id),
-          onLog: (id, past) => widget.onLog(id, past),
-          leading: Align(
-            alignment: .centerRight,
-            child: IconButton(
-              key: AppKeys.coachingClientClose,
-              tooltip: L.of(context).coachingClientClose,
-              onPressed: () => widget.onClose(),
-              icon: const Icon(Icons.close_rounded),
+        child: Align(
+          alignment: .topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: readableWidth),
+            child: _ClientView(
+              key: AppKeys.coachingClientPane,
+              connectionId: widget.opened.connectionId,
+              // under a workout opened from Activity it was never seen
+              looks: widget.opened.workoutId == null,
+              onOpenWorkout: (workoutId) => _navigator.currentState?.push(_review(workoutId)),
+              onOpenProgram: (programId) => widget.onOpenProgram(programId),
+              onMessage: (id) => widget.onMessage(id),
+              onNotes: (id) => widget.onNotes(id),
+              onLog: (id, past) => widget.onLog(id, past),
+              leading: Align(
+                alignment: .centerRight,
+                child: IconButton(
+                  key: AppKeys.coachingClientClose,
+                  tooltip: L.of(context).coachingClientClose,
+                  onPressed: () => widget.onClose(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ),
             ),
           ),
         ),
@@ -586,6 +633,151 @@ class _ClientPaneState extends State<_ClientPane> {
           _client(),
           if (widget.opened.workoutId case final String workoutId) _review(workoutId),
         ],
+      ),
+    );
+  }
+}
+
+/// A section's heading on the coach's pages about a client (#686).
+class _Heading extends StatelessWidget {
+  final String text;
+
+  const new(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const .fromLTRB(16, 24, 16, 4),
+      child: Semantics(
+        header: true,
+        child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+      ),
+    );
+  }
+}
+
+/// What the coach does with a client, as buttons under who they are:
+/// write to them, and log a session they trained together (#686).
+class _ClientActions extends StatelessWidget {
+  final ClientSummary client;
+  final VoidCallback onMessage;
+  final ValueChanged<PastWorkout> onLog;
+
+  const new({required this.client, required this.onMessage, required this.onLog});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final unread = Messages.watch(context).threadOf(client.connectionId)?.unread ?? 0;
+    final message = PrimaryButton.shrunk(
+      key: AppKeys.coachingClientMessages,
+      onPressed: onMessage,
+      child: Row(
+        mainAxisSize: .min,
+        spacing: 8,
+        children: [
+          const Icon(Icons.forum_outlined, size: 18),
+          // a long name gives way rather than overflow
+          Flexible(
+            child: Text(
+              switch (client.name?.trim()) {
+                final String name when name.isNotEmpty => l.messagesWith(name),
+                _ => l.coachingMessages,
+              },
+              maxLines: 1,
+              overflow: .ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+    return Padding(
+      padding: const .fromLTRB(16, 16, 16, 0),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          // the Messages tab's own badge: one count, one look
+          UnreadBadge(count: unread, child: message),
+          _LogForButton(client: client, onLog: onLog),
+        ],
+      ),
+    );
+  }
+}
+
+/// The program a client follows, or a copy the coach sent them, as a card:
+/// its name, and for the one they follow, where in it they are (#686).
+class _ProgramCard extends StatelessWidget {
+  final ClientSummary client;
+  final String name;
+
+  /// The one they follow, rather than a copy waiting or put aside.
+  final bool following;
+  final bool waiting;
+  final VoidCallback onTap;
+
+  const new({
+    super.key,
+    required this.client,
+    required this.name,
+    required this.following,
+    required this.waiting,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final progress = switch (client) {
+      // weeks behind them: the week they are in is still to train
+      ClientSummary(programWeek: final int week, programWeeks: final int weeks) when following && weeks > 0 =>
+        ((week - 1) / weeks).clamp(0.0, 1.0),
+      _ => null,
+    };
+    return Padding(
+      padding: const .symmetric(horizontal: 16, vertical: 4),
+      child: Card(
+        margin: .zero,
+        clipBehavior: .antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const .all(16),
+            child: Row(
+              spacing: 16,
+              children: [
+                Tooltip(message: l.coachingClientProgram, child: const Icon(Icons.event_repeat_rounded)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: .start,
+                    spacing: 8,
+                    children: [
+                      Text(
+                        switch (following) {
+                          true => _programLine(l, client),
+                          false => name,
+                        },
+                        style: textTheme.bodyLarge,
+                        maxLines: 2,
+                        overflow: .ellipsis,
+                      ),
+                      if (waiting)
+                        Text(
+                          l.coachingCopyWaiting,
+                          style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      if (progress case final double progress)
+                        LinearProgressIndicator(value: progress, borderRadius: const .all(.circular(4))),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
