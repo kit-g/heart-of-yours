@@ -3,9 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/history/history.dart' show WorkoutEditor;
-import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage;
+import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage, ThreadView;
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show TemplateEditor;
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetail, WorkoutDetailKeys;
 import 'package:heart_models/heart_models.dart';
@@ -68,6 +69,13 @@ void main() {
         .thenAnswer((_) async => (items: <CoachFeedItem>[], cursor: null));
     when(api.getLibraryPrograms(cursor: anyNamed('cursor')))
         .thenAnswer((_) async => (items: <CoachProgram>[], cursor: null));
+    // a client opened beside the roster opens the conversation beside them (#693)
+    when(api.openThread(any)).thenAnswer((invocation) async {
+      final connectionId = invocation.positionalArguments.first as String;
+      return Thread(id: 't-$connectionId', connectionId: connectionId, otherId: connectionId, otherName: connectionId);
+    });
+    when(api.getThreadItems(any, limit: anyNamed('limit')))
+        .thenAnswer((_) async => (items: <ThreadItem>[], cursor: null));
     share.shared.clear();
   });
 
@@ -77,11 +85,12 @@ void main() {
     WidgetTester tester,
     Map<String, Object> prefs, {
     bool wide = false,
+    Size? size,
     KeyVault? keyVault,
     AnalyticsService? analytics,
   }) async {
-    tester.view.physicalSize = wide ? const Size(1200, 2400) : const Size(1179, 2556);
-    tester.view.devicePixelRatio = wide ? 1 : 3;
+    tester.view.physicalSize = size ?? (wide ? const Size(1200, 2400) : const Size(1179, 2556));
+    tester.view.devicePixelRatio = (wide || size != null) ? 1 : 3;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues({...pastOnboarding(), ...prefs});
@@ -376,10 +385,29 @@ void main() {
           .thenAnswer((_) async => (items: clients, cursor: null));
     }
 
-    testWidgets('who needs a word comes first, with why in words, and a look clears what it can', (tester) async {
+    testWidgets('who needs a word comes first, with why in words, and opening them clears what a look can', (
+      tester,
+    ) async {
       account(coach: true);
       clients([sam, pip, riley]);
-      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
+      // the server, asked again after the look, has the note gone
+      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {
+        clients([
+          ClientSummary(
+            connectionId: 'c-sam',
+            studentId: 'sam',
+            name: 'Sam',
+            status: 'active',
+            programName: 'Strength block',
+            programWeek: 2,
+            programWeeks: 6,
+            recent: [DateTime.now().toUtc()],
+            reasons: ['gap'],
+          ),
+          pip,
+          riley,
+        ]);
+      });
       final recorded = RecordedAnalytics();
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, analytics: recorded);
       expect(recorded.property('coaching_role'), [
@@ -396,10 +424,10 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.byKey(AppKeys.coachingMarkReviewed('c-riley')), findsNothing, reason: 'nothing to look at');
-      expect(find.byKey(AppKeys.coachingMarkReviewed('c-pip')), findsNothing, reason: 'a look clears no gap');
-
-      await tester.tapByKey(AppKeys.coachingMarkReviewed('c-sam'));
+      // opening the client is the look (#686): no button for it
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.pageBack();
       await tester.pumpTimes();
 
       verify(api.markReviewed('c-sam', at: anyNamed('at'))).called(1);
@@ -410,11 +438,11 @@ void main() {
         reason: 'a gap holds until it stops being true',
       );
       expect(find.byKey(AppKeys.coachingReasonFilter('note')), findsNothing, reason: 'nobody left with a note');
-      expect(
-        find.byKey(AppKeys.coachingMarkReviewed('c-sam')),
-        findsNothing,
-        reason: 'a look would clear nothing more',
-      );
+
+      // a gap a look doesn't clear: opening them marks nothing
+      await tester.tapByKey(AppKeys.coachingClient('c-pip'));
+      await tester.pumpTimes();
+      verifyNever(api.markReviewed('c-pip', at: anyNamed('at')));
     });
 
     testWidgets('someone who accepts while the coach is away is there when the app comes back', (tester) async {
@@ -942,6 +970,96 @@ void main() {
       expect(find.text('Nothing logged yet'), findsOneWidget);
     });
 
+    testWidgets(
+      'on its side, a client opens with the conversation beside them, and a reply is about the workout (#693)',
+      (
+        tester,
+      ) async {
+        withSam();
+        // a conversation to show first
+        when(api.getThreads()).thenAnswer(
+          (_) async => [
+            Thread(
+              id: 't-c-sam',
+              connectionId: 'c-sam',
+              otherId: 'sam',
+              otherName: 'Sam',
+              lastAt: DateTime.utc(2026, 11, 12, 8),
+            ),
+          ],
+        );
+        await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, size: const Size(1600, 1000));
+
+        await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+        await tester.pumpTimes();
+
+        final beside = find.byKey(AppKeys.coachingBeside);
+        expect(beside, findsOneWidget);
+        expect(find.descendant(of: beside, matching: find.byType(ThreadView)), findsOneWidget);
+        expect(
+          find.descendant(of: find.byKey(AppKeys.coachingClientPane), matching: find.byKey(AppKeys.coachingBeside)),
+          findsNothing,
+          reason: 'beside the client, not under them',
+        );
+        // the latest workout in full, target beside done
+        final latest = find.byKey(AppKeys.coachingLatestWorkout);
+        expect(find.descendant(of: latest, matching: find.text('Asked')), findsOneWidget);
+        expect(find.descendant(of: latest, matching: find.text('Last set was a grind')), findsOneWidget);
+        expect(
+          find.byKey(AppKeys.coachingClientMessages),
+          findsNothing,
+          reason: 'the conversation is already beside them',
+        );
+
+        await tester.tapByKey(AppKeys.coachingBesideTab('program'));
+        await tester.pumpTimes();
+        expect(find.descendant(of: beside, matching: find.byType(ThreadView)), findsNothing);
+
+        await tester.tapByKey(AppKeys.coachingReplyAbout);
+        await tester.pumpTimes();
+        expect(find.descendant(of: beside, matching: find.byType(ThreadView)), findsOneWidget);
+        final messages = Messages.of(tester.element(beside));
+        expect(messages.about('c-sam'), const MessageSubject(.workout, 'w1'));
+      },
+    );
+
+    testWidgets('upright, what is beside the client is under them, and stays picked through a turn (#693)', (
+      tester,
+    ) async {
+      withSam();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, size: const Size(900, 1200));
+
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      final beside = find.byKey(AppKeys.coachingBeside);
+      expect(beside, findsOneWidget);
+      // no conversation yet: none is opened on the server just by looking
+      expect(find.descendant(of: beside, matching: find.byType(ThreadView)), findsNothing);
+      verifyNever(api.openThread(any));
+      final client = find.byKey(AppKeys.coachingClientPane);
+      expect(tester.getTopLeft(beside).dx, lessThan(tester.getTopRight(client).dx), reason: 'under the client');
+      expect(tester.getTopLeft(beside).dy, greaterThan(tester.getTopLeft(client).dy));
+
+      await tester.tapByKey(AppKeys.coachingBesideTab('program'));
+      await tester.pumpTimes();
+
+      tester.view.physicalSize = const Size(1600, 1000);
+      await tester.pumpTimes();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(AppKeys.coachingClientPane), findsOneWidget, reason: 'the same client');
+      expect(
+        find.descendant(of: beside, matching: find.byType(ThreadView)),
+        findsNothing,
+        reason: 'still Program',
+      );
+      expect(
+        tester.getTopLeft(beside).dx,
+        greaterThanOrEqualTo(tester.getTopRight(client).dx),
+        reason: 'beside them now',
+      );
+    });
+
     testWidgets('a workout in Activity opens target beside done', (tester) async {
       withSam();
       when(api.getCoachFeed(cursor: anyNamed('cursor'))).thenAnswer(
@@ -1175,12 +1293,12 @@ void main() {
       clearInteractions(api);
 
       await tester.ensureVisible(find.byKey(AppKeys.coachingLogFor));
-      // both before a frame: the second reaches the tile as it was
-      final tile = tester.widget<ListTile>(find.byKey(AppKeys.coachingLogFor));
-      tile.onTap!();
-      tile.onTap!();
+      // both before a frame: the second reaches the button as it was
+      final button = tester.widget<PrimaryButton>(find.byKey(AppKeys.coachingLogFor));
+      button.onPressed!();
+      button.onPressed!();
       await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget, reason: 'the chevron, while it reads');
+      expect(find.byType(CircularProgressIndicator), findsOneWidget, reason: 'the icon, while it reads');
       await tester.pumpTimes();
 
       expect(find.byKey(AppKeys.coachingLogBlank), findsOneWidget, reason: 'one menu');
@@ -1280,11 +1398,22 @@ void main() {
       when(api.revertClientChange('sam', 'p1', 'ch2')).thenThrow({'code': 'conflict'});
       await openCopy(tester);
 
+      // asked first, since it changes what they train (#686): no, then yes
       await tester.tapByKey(AppKeys.coachingCopyPutBack('ch1'));
+      await tester.pumpTimes();
+      expect(find.text('Put this back?'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpTimes();
+      verifyNever(api.revertClientChange('sam', 'p1', 'ch1'));
+      await tester.tapByKey(AppKeys.coachingCopyPutBack('ch1'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingCopyPutBackConfirm);
       await tester.pumpTimes();
       verify(api.revertClientChange('sam', 'p1', 'ch1')).called(1);
 
       await tester.tapByKey(AppKeys.coachingCopyPutBack('ch2'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingCopyPutBackConfirm);
       await tester.pumpTimes();
       expect(find.text("Couldn't put that back. It has changed since."), findsOneWidget);
     });

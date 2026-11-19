@@ -70,104 +70,130 @@ RouteBase _profileRoute() {
           ),
         ],
       ),
+      _settingsRoute(parent: _profilePath),
+    ],
+  );
+}
+
+/// Settings and every page under it, at [parent]: under Profile, and again
+/// under the Coaching space's Me (#685), so a coach reaches Settings without
+/// leaving the space and Back returns to where they came from. Names are the
+/// router's own and must be unique, so the copy under Coaching takes them
+/// with [prefix]; every way between these pages goes by [prefix]ed name.
+GoRoute _settingsRoute({required String parent, String prefix = ''}) {
+  String named(String name) => '$prefix$name';
+  final settings = '$parent/$_settingsPath';
+
+  return GoRoute(
+    path: _settingsPath,
+    builder: (context, _) {
+      return SettingsPage(
+        onAccountManagement: () => context.goNamed(named(_accountManagementName)),
+        onImportData: () => context.goNamed(named(_importDataName)),
+        onExportData: () => context.goNamed(named(_exportDataName)),
+        onWhatsNew: () => context.goNamed(named(_whatsNewName)),
+        onRestTimers: () => context.goNamed(named(_restTimersName)),
+        onPushSettings: () => context.goNamed(named(_pushSettingsName)),
+        onYourDevices: () => context.goNamed(named(_yourDevicesName)),
+        onFeatures: () => context.goNamed(named(_featuresName)),
+        onDeveloperApi: () => context.goNamed(named(_apiTokensName)),
+        onErased: context.goToProfile,
+      );
+    },
+    name: named(_settingsName),
+    routes: [
       GoRoute(
-        path: _settingsPath,
+        path: _accountManagementPath,
         builder: (context, _) {
-          return SettingsPage(
-            onAccountManagement: context.goToAccountManagement,
-            onImportData: context.goToImportData,
-            onExportData: context.goToExportData,
-            onWhatsNew: context.goToWhatsNew,
-            onRestTimers: context.goToRestTimers,
-            onPushSettings: context.goToPushSettings,
-            onYourDevices: context.goToYourDevices,
-            onFeatures: context.goToFeatures,
-            onDeveloperApi: context.goToApiTokens,
-            onErased: context.goToProfile,
+          return AccountManagementPage(
+            onError: reportToSentry,
+            onDeleted: context.goToProfile,
           );
         },
-        name: _settingsName,
+        name: named(_accountManagementName),
+      ),
+      GoRoute(
+        path: _importDataPath,
+        builder: (_, _) => const ImportDataPage(onError: reportToSentry),
+        name: named(_importDataName),
+      ),
+      GoRoute(
+        path: _exportDataPath,
+        builder: (_, _) => const ExportDataPage(onError: reportToSentry),
+        name: named(_exportDataName),
+      ),
+      GoRoute(
+        path: _apiTokensPath,
+        builder: (context, _) => ApiTokensPage(
+          onNewToken: () => context.goNamed(named(_newApiTokenName)),
+          onError: reportToSentry,
+        ),
+        name: named(_apiTokensName),
         routes: [
           GoRoute(
-            path: _accountManagementPath,
-            builder: (context, _) {
-              return AccountManagementPage(
-                onError: reportToSentry,
-                onDeleted: context.goToProfile,
-              );
-            },
-            name: _accountManagementName,
-          ),
-          GoRoute(
-            path: _importDataPath,
-            builder: (_, _) => const ImportDataPage(onError: reportToSentry),
-            name: _importDataName,
-          ),
-          GoRoute(
-            path: _exportDataPath,
-            builder: (_, _) => const ExportDataPage(onError: reportToSentry),
-            name: _exportDataName,
-          ),
-          GoRoute(
-            path: _apiTokensPath,
-            builder: (context, _) => ApiTokensPage(onNewToken: context.goToNewApiToken, onError: reportToSentry),
-            name: _apiTokensName,
-            routes: [
-              GoRoute(
-                path: _newApiTokenPath,
-                builder: (context, _) => NewApiTokenPage(onDone: context.goToApiTokens, onError: reportToSentry),
-                name: _newApiTokenName,
-              ),
-            ],
-          ),
-          GoRoute(
-            path: _whatsNewPath,
-            builder: (context, _) => WhatsNewPage(onError: reportToSentry, onFeature: context.pushFeature),
-            name: _whatsNewName,
-          ),
-          GoRoute(
-            path: _restTimersPath,
-            builder: (_, _) => const RestTimersPage(),
-            name: _restTimersName,
-          ),
-          GoRoute(
-            path: _pushSettingsPath,
-            // off, a link here is one the app has no screen for (`docs/opt-in.md`)
-            redirect: (context, _) => switch (pushesOn(context)) {
-              true => null,
-              false => '$_profilePath/$_settingsPath',
-            },
-            builder: (_, _) => const PushSettingsPage(),
-            name: _pushSettingsName,
-          ),
-          GoRoute(
-            path: _yourDevicesPath,
-            // only where device keys run (#555): off, a link here is one the
-            // app has no screen for (`docs/opt-in.md`)
-            redirect: (context, _) => switch (pushesOn(context) && DeviceKeys.of(context).supported) {
-              true => null,
-              false => '$_profilePath/$_settingsPath',
-            },
-            builder: (_, _) => const YourDevicesPage(onError: reportToSentry),
-            name: _yourDevicesName,
-          ),
-          GoRoute(
-            path: _featuresPath,
-            builder: (_, state) {
-              return FeaturesPage(
-                focus: Feature.values
-                    .where((feature) => feature.value == state.uri.queryParameters[_featureQuery])
-                    .firstOrNull,
-                // only What's new passes one: anything else arrived as a link
-                source: switch (state.extra) {
-                  FeatureLinkSource source => source,
-                  _ => .link,
-                },
-              );
-            },
-            name: _featuresName,
+            path: _newApiTokenPath,
+            builder: (context, _) => NewApiTokenPage(
+              onDone: () => context.goNamed(named(_apiTokensName)),
+              onError: reportToSentry,
+            ),
+            name: named(_newApiTokenName),
           ),
         ],
+      ),
+      GoRoute(
+        path: _whatsNewPath,
+        builder: (context, _) => WhatsNewPage(
+          onError: reportToSentry,
+          // pushed, so back returns to the note that sent the user there
+          onFeature: (feature) => context.pushNamed(
+            named(_featuresName),
+            queryParameters: {_featureQuery: feature.value},
+            extra: FeatureLinkSource.whatsNew,
+          ),
+        ),
+        name: named(_whatsNewName),
+      ),
+      GoRoute(
+        path: _restTimersPath,
+        builder: (_, _) => const RestTimersPage(),
+        name: named(_restTimersName),
+      ),
+      GoRoute(
+        path: _pushSettingsPath,
+        // off, a link here is one the app has no screen for (`docs/opt-in.md`)
+        redirect: (context, _) => switch (pushesOn(context)) {
+          true => null,
+          false => settings,
+        },
+        builder: (_, _) => const PushSettingsPage(),
+        name: named(_pushSettingsName),
+      ),
+      GoRoute(
+        path: _yourDevicesPath,
+        // only where device keys run (#555): off, a link here is one the
+        // app has no screen for (`docs/opt-in.md`)
+        redirect: (context, _) => switch (pushesOn(context) && DeviceKeys.of(context).supported) {
+          true => null,
+          false => settings,
+        },
+        builder: (_, _) => const YourDevicesPage(onError: reportToSentry),
+        name: named(_yourDevicesName),
+      ),
+      GoRoute(
+        path: _featuresPath,
+        builder: (_, state) {
+          return FeaturesPage(
+            focus: Feature.values
+                .where((feature) => feature.value == state.uri.queryParameters[_featureQuery])
+                .firstOrNull,
+            // only What's new passes one: anything else arrived as a link
+            source: switch (state.extra) {
+              FeatureLinkSource source => source,
+              _ => .link,
+            },
+          );
+        },
+        name: named(_featuresName),
       ),
     ],
   );
@@ -1297,18 +1323,10 @@ DateTime? _monthOf(String? key) {
 RouteBase _coachingRoute() {
   String? off(BuildContext context, GoRouterState _) => coachingSpaceOn(context) ? null : _profilePath;
 
-  GoRoute page(String path, String name, Widget Function(VoidCallback onYourTraining) build) {
-    return GoRoute(
-      path: path,
-      name: name,
-      redirect: off,
-      builder: (context, _) => build(context.leaveCoaching),
-    );
-  }
-
   return StatefulShellRoute.indexedStack(
     pageBuilder: (context, state, shell) {
-      return NoTransitionPage<void>(
+      return _spacePage(
+        context,
         key: state.pageKey,
         child: CoachingFrame(
           shell: shell,
@@ -1336,8 +1354,8 @@ RouteBase _coachingRoute() {
               onOpenClient: context.pushCoachingClient,
               onOpenWorkout: context.pushCoachingClientWorkout,
               onOpenProgram: context.pushCoachingClientProgram,
-              onMessage: context.pushCoachingClientThread,
-              onNotes: context.pushCoachingClientNotes,
+              onEditSession: context.pushCoachingClientSession,
+              onOpenOwnWorkout: context.pushWorkoutOver,
               onLog: context.pushCoachingClientLog,
             ),
             routes: [
@@ -1489,7 +1507,19 @@ RouteBase _coachingRoute() {
       ),
       StatefulShellBranch(routes: [_coachingProgramsRoute(off)]),
       StatefulShellBranch(
-        routes: [page(_coachingMePath, _coachingMeName, (back) => CoachMePage(onYourTraining: back))],
+        routes: [
+          GoRoute(
+            path: _coachingMePath,
+            name: _coachingMeName,
+            redirect: off,
+            builder: (context, _) => CoachMePage(
+              onYourTraining: context.leaveCoaching,
+              onSettings: () => context.goNamed('$_coachingPrefix$_settingsName'),
+            ),
+            // Settings without leaving the space (#685)
+            routes: [_settingsRoute(parent: _coachingMePath, prefix: _coachingPrefix)],
+          ),
+        ],
       ),
     ],
   );
@@ -1497,17 +1527,59 @@ RouteBase _coachingRoute() {
 
 /// A coach's library (#557): the list, a new program, one program, and the
 /// program form and template editor on it, as the coach's own programs have.
-GoRoute _coachingProgramsRoute(GoRouterRedirect off) {
+///
+/// On a wide window the library keeps its list and what is picked opens
+/// beside it (#685), the program and its forms in the pane's own navigator,
+/// as Exercises does.
+RouteBase _coachingProgramsRoute(GoRouterRedirect off) {
+  final navigatorKey = GlobalKey<NavigatorState>();
+
+  CoachProgramsPage list(BuildContext context, {String? selectedId, Widget? detail}) {
+    return CoachProgramsPage(
+      selectedId: selectedId,
+      detail: detail,
+      onYourTraining: context.leaveCoaching,
+      onOpen: context.goToCoachingProgram,
+      onNew: context.goToNewCoachingProgram,
+    );
+  }
+
+  return ShellRoute(
+    navigatorKey: navigatorKey,
+    builder: (context, state, detail) {
+      final selectedId = state.pathParameters['programId'];
+      final making = state.topRoute?.name == _coachingNewProgramName;
+      final shown = selectedId != null || making;
+      return switch (LayoutProvider.of(context)) {
+        .compact => detail,
+        .wide => _withNavigator(
+          detail,
+          shown: shown,
+          page: list(
+            context,
+            selectedId: selectedId,
+            detail: shown ? detail : null,
+          ),
+        ),
+      };
+    },
+    routes: [_coachingLibraryRoute(off, list)],
+  );
+}
+
+GoRoute _coachingLibraryRoute(
+  GoRouterRedirect off,
+  CoachProgramsPage Function(BuildContext context, {String? selectedId, Widget? detail}) list,
+) {
   return GoRoute(
     path: _coachingProgramsPath,
     name: _coachingProgramsName,
     redirect: off,
     builder: (context, _) {
-      return CoachProgramsPage(
-        onYourTraining: context.leaveCoaching,
-        onOpen: context.goToCoachingProgram,
-        onNew: context.goToNewCoachingProgram,
-      );
+      return switch (LayoutProvider.of(context)) {
+        .wide => const SizedBox.shrink(), // already rendered by the shell
+        .compact => list(context),
+      };
     },
     routes: [
       // before ':programId', which would otherwise take "new" for an id
@@ -1552,6 +1624,10 @@ GoRoute _coachingProgramsRoute(GoRouterRedirect off) {
             onEdit: () => context.pushCoachingProgramEdit(programId),
             onEditSession: ({required isNew}) => context.pushCoachingProgramSession(programId, isNew: isNew),
             onGone: context.goToCoachingPrograms,
+            onClose: switch (LayoutProvider.of(context)) {
+              .wide => context.goToCoachingPrograms,
+              .compact => null,
+            },
           );
         },
         routes: [

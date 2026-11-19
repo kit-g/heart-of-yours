@@ -29,6 +29,7 @@ import 'package:heart/presentation/widgets/part_of_program.dart';
 import 'package:heart/presentation/widgets/menu.dart';
 import 'package:heart/presentation/widgets/muscle_family.dart';
 import 'package:heart/presentation/widgets/muscle_figures.dart';
+import 'package:heart/presentation/widgets/responsive/master_detail.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/skip_sheet.dart' show SkipReasonCopy;

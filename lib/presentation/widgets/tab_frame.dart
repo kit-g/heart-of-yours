@@ -290,3 +290,51 @@ class _TabIntent extends Intent {
 
   const new(this.position);
 }
+
+/// The way between spaces at the foot of a [TabFrame]'s rail (#685): the same
+/// place and the same shape on both sides, so the user finds it where they
+/// left it. In words under its icon, as the rail's own tabs are: it is the
+/// one way across, and an icon alone could pass for one more tab.
+class SpaceSwitch extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  const new({super.key, required this.icon, required this.label, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const .only(bottom: 16),
+      child: Tooltip(
+        message: label,
+        excludeFromSemantics: true,
+        child: Semantics(
+          button: true,
+          label: label,
+          excludeSemantics: true,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: const .all(.circular(12)),
+            child: ConstrainedBox(
+              // two lines rather than a wider rail: the rail is as wide on
+              // both sides, so the tabs don't shift on the way across
+              constraints: const BoxConstraints(minWidth: 72, maxWidth: 88, minHeight: 56),
+              child: Padding(
+                padding: const .symmetric(horizontal: 4, vertical: 8),
+                child: Column(
+                  mainAxisSize: .min,
+                  spacing: 4,
+                  children: [
+                    Icon(icon),
+                    Text(label, style: Theme.of(context).textTheme.labelMedium, textAlign: .center),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -102,11 +102,12 @@ class _FeedTile extends StatelessWidget {
         (.ending, null) => l.coachingFeedEndingUntitled(name),
       }),
       subtitle: Text(DateFormat.MMMEd(l.localeName).add_jm().format(at)),
-      trailing: Icon(switch (kind) {
-        .workout => Icons.check_circle_outline_rounded,
-        .skip => Icons.redo_rounded,
-        .ending => Icons.flag_outlined,
-      }),
+      // the sentence says what happened; the end of the row says only
+      // whether it opens (#686)
+      trailing: switch ((kind, client)) {
+        (.workout, _?) => const Icon(Icons.chevron_right_rounded),
+        _ => null,
+      },
     );
   }
 }

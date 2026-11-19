@@ -83,7 +83,8 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
                     key: AppKeys.reviewMessage,
                     tooltip: l.messagesAboutThisWorkout,
                     onPressed: () => message(MessageSubject(.workout, review.workout.id)),
-                    icon: const Icon(Icons.add_comment_outlined),
+                    // the Messages tab's own icon: one meaning, one picture (#686)
+                    icon: const Icon(Icons.forum_outlined),
                   ),
                 const SizedBox(width: 8),
               ],
@@ -266,14 +267,7 @@ class _ReviewedExerciseCard extends StatelessWidget {
                       if (compare)
                         Expanded(
                           child: Text(
-                            switch (set.outcome) {
-                              .lighter => l.coachingReviewLighter,
-                              .fewer => l.coachingReviewFewer,
-                              .shorter => l.coachingReviewShorter,
-                              .skipped => l.coachingReviewSkipped,
-                              .added => l.coachingReviewAdded,
-                              .asked || null => '',
-                            },
+                            _outcomeWords(l, set.outcome) ?? '',
                             style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary),
                             textAlign: .end,
                           ),
@@ -319,4 +313,17 @@ class _MessageableSet extends StatelessWidget {
     );
     if (picked ?? false) message();
   }
+}
+
+/// How a set differed from what was asked, in words; nothing for one done as
+/// asked.
+String? _outcomeWords(L l, SetOutcome? outcome) {
+  return switch (outcome) {
+    .lighter => l.coachingReviewLighter,
+    .fewer => l.coachingReviewFewer,
+    .shorter => l.coachingReviewShorter,
+    .skipped => l.coachingReviewSkipped,
+    .added => l.coachingReviewAdded,
+    .asked || null => null,
+  };
 }
