@@ -502,3 +502,91 @@ class _NotesTile extends StatelessWidget {
     );
   }
 }
+
+/// What is open beside the roster: a client, and one of their workouts over
+/// them when that is what was opened, from Activity or the client's own list,
+/// by the tap that opened it.
+typedef _Opened = ({String connectionId, String? workoutId, int tap});
+
+/// A client beside the roster (#685): their view, with what opens from it
+/// opening in the pane too, so the roster stays where it was. A workout
+/// opened from Activity lands over its client's view, and Back goes there.
+class _ClientPane extends StatefulWidget {
+  final _Opened opened;
+  final ValueChanged<String> onOpenProgram;
+  final ValueChanged<String> onMessage;
+  final ValueChanged<String> onNotes;
+  final void Function(String connectionId, PastWorkout past) onLog;
+  final VoidCallback onClose;
+
+  const new({
+    super.key,
+    required this.opened,
+    required this.onOpenProgram,
+    required this.onMessage,
+    required this.onNotes,
+    required this.onLog,
+    required this.onClose,
+  });
+
+  @override
+  State<_ClientPane> createState() => _ClientPaneState();
+}
+
+class _ClientPaneState extends State<_ClientPane> {
+  final _navigator = GlobalKey<NavigatorState>();
+
+  Route<void> _review(String workoutId) {
+    final connectionId = widget.opened.connectionId;
+    return MaterialPageRoute(
+      builder: (_) => WorkoutReviewPage(
+        key: ValueKey(workoutId),
+        connectionId: connectionId,
+        workoutId: workoutId,
+        onMessage: () => widget.onMessage(connectionId),
+      ),
+    );
+  }
+
+  /// The client's own view, at the bottom of the pane: built once, reading
+  /// the pane's widget and words as they are now each time it builds.
+  Route<void> _client() {
+    return MaterialPageRoute(
+      builder: (context) => Material(
+        child: _ClientView(
+          key: AppKeys.coachingClientPane,
+          connectionId: widget.opened.connectionId,
+          onOpenWorkout: (workoutId) => _navigator.currentState?.push(_review(workoutId)),
+          onOpenProgram: (programId) => widget.onOpenProgram(programId),
+          onMessage: (id) => widget.onMessage(id),
+          onNotes: (id) => widget.onNotes(id),
+          onLog: (id, past) => widget.onLog(id, past),
+          leading: Align(
+            alignment: .centerRight,
+            child: IconButton(
+              key: AppKeys.coachingClientClose,
+              tooltip: L.of(context).coachingClientClose,
+              onPressed: () => widget.onClose(),
+              icon: const Icon(Icons.close_rounded),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Back on Android steps back inside the pane before it leaves the page
+    return NavigatorPopHandler(
+      onPopWithResult: (_) => _navigator.currentState?.maybePop(),
+      child: Navigator(
+        key: _navigator,
+        onGenerateInitialRoutes: (_, _) => [
+          _client(),
+          if (widget.opened.workoutId case final String workoutId) _review(workoutId),
+        ],
+      ),
+    );
+  }
+}

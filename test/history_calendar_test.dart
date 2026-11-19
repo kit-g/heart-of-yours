@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui' show Tristate;
 
 import 'package:clock/clock.dart';
@@ -591,7 +592,7 @@ void main() {
     expect(find.byKey(AppKeys.historyCalendar), findsOneWidget);
     expect(
       tester.getTopLeft(find.byType(WorkoutEditor)).dx,
-      greaterThan(tester.getTopRight(find.byKey(AppKeys.historyCalendar)).dx),
+      greaterThanOrEqualTo(tester.getTopRight(find.byKey(AppKeys.historyCalendar)).dx),
     );
     expect(tester.getSemantics(day(label)).getSemanticsData().flagsCollection.isSelected, Tristate.isTrue);
     expect(tester.takeException(), isNull);
@@ -625,7 +626,10 @@ void main() {
     final items = find.byType(PopupMenuItem<Object>);
     expect(items, findsNWidgets(2));
     final menu = tester.getRect(items.first);
-    expect((menu.left - rect.left).abs(), lessThan(rect.width), reason: 'menu at $menu, day at $rect');
+    // hung off whichever edge of the day has the room: its left, or its right
+    // once the day sits in the right half of the page
+    final off = [(menu.left - rect.left).abs(), (menu.right - rect.right).abs()].reduce(min);
+    expect(off, lessThan(rect.width), reason: 'menu at $menu, day at $rect');
 
     // the earlier one into the pane; asked again, the list checks it
     await tester.tap(items.first);

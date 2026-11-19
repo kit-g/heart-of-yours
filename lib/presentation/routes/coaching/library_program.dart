@@ -25,12 +25,17 @@ class CoachProgramPage extends StatefulWidget {
   /// Leaves the page once the program is deleted.
   final VoidCallback onGone;
 
+  /// Puts the page away, where it sits beside the library: there, a close
+  /// rather than a back to nothing (#685). Absent over the list.
+  final VoidCallback? onClose;
+
   const new({
     super.key,
     required this.programId,
     required this.onEdit,
     required this.onEditSession,
     required this.onGone,
+    this.onClose,
   });
 
   @override
@@ -114,6 +119,15 @@ class _CoachProgramPageState extends State<CoachProgramPage> {
     final settled = !unsaved && !library.saving(program.id);
     return Scaffold(
       appBar: AppBar(
+        leading: switch (widget.onClose) {
+          final VoidCallback close => IconButton(
+            key: AppKeys.closeDetail,
+            tooltip: l.close,
+            onPressed: close,
+            icon: const Icon(Icons.close),
+          ),
+          null => null,
+        },
         title: Text(program.program.name),
         actions: [
           // a program with nothing in it, or not yet on the server, has

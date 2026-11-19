@@ -103,8 +103,13 @@ class _ClientsPageState extends State<ClientsPage> {
     if (shown && stale) _reload();
   }
 
-  /// The client open beside the roster, on a page wide enough for both.
-  final _open = ValueNotifier<String?>(null);
+  /// The client open beside the roster, on a page wide enough for both, and
+  /// one of their workouts over them in the pane when that is what was
+  /// opened.
+  final _open = ValueNotifier<_Opened?>(null);
+
+  /// Counts taps that open something beside the roster.
+  var _taps = 0;
 
   @override
   void initState() {
@@ -137,7 +142,8 @@ class _ClientsPageState extends State<ClientsPage> {
       title: l.coachingClients,
       onYourTraining: widget.onYourTraining,
       actions: [invite],
-      maxWidth: _rosterMaxWidth,
+      // the roster caps itself; the page is the pane's too
+      maxWidth: .infinity,
       child: switch ((roster.status, roster.clients, waiting)) {
         (.idle || .loading, [], []) => const Center(child: CircularProgressIndicator.adaptive()),
         (.failed, [], []) => _Empty(
@@ -165,16 +171,22 @@ class _ClientsPageState extends State<ClientsPage> {
               builder: (context, open, _) {
                 // a client who left the roster since closes with it
                 final shown = switch (open) {
-                  final String id when beside && roster.client(id) != null => id,
+                  final _Opened open when beside && roster.client(open.connectionId) != null => open,
                   _ => null,
                 };
                 final list = _ClientOpener(
-                  selected: shown,
+                  selected: shown?.connectionId,
+                  beside: beside,
+                  // a fresh tap each time, so tapping what is already open
+                  // starts the pane over rather than being equal to it
                   onOpenClient: (id) => switch (beside) {
-                    true => _open.value = id,
+                    true => _open.value = (connectionId: id, workoutId: null, tap: ++_taps),
                     false => widget.onOpenClient(id),
                   },
-                  onOpenWorkout: widget.onOpenWorkout,
+                  onOpenWorkout: (id, workoutId) => switch (beside) {
+                    true => _open.value = (connectionId: id, workoutId: workoutId, tap: ++_taps),
+                    false => widget.onOpenWorkout(id, workoutId),
+                  },
                   // nobody coached: no activity, only invitations out and
                   // the people who were
                   child: switch (roster.clients.isEmpty) {
@@ -182,33 +194,24 @@ class _ClientsPageState extends State<ClientsPage> {
                     false => _rosterOrActivity(l, waiting),
                   },
                 );
-                if (shown == null) return list;
-                return Row(
-                  crossAxisAlignment: .stretch,
-                  children: [
-                    SizedBox(width: _paneRosterWidth, child: list),
-                    const VerticalDivider(width: 1),
-                    Expanded(
-                      child: _ClientView(
-                        key: AppKeys.coachingClientPane,
-                        connectionId: shown,
-                        onOpenWorkout: (workoutId) => widget.onOpenWorkout(shown, workoutId),
-                        onOpenProgram: (programId) => widget.onOpenProgram(shown, programId),
-                        onMessage: widget.onMessage,
-                        onNotes: widget.onNotes,
-                        onLog: widget.onLog,
-                        leading: Align(
-                          alignment: .centerRight,
-                          child: IconButton(
-                            key: AppKeys.coachingClientClose,
-                            tooltip: l.coachingClientClose,
-                            onPressed: () => _open.value = null,
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                        ),
-                      ),
+                return MasterDetail(
+                  masterWidth: (_) => _paneRosterWidth,
+                  maxMasterWidth: _rosterMaxWidth,
+                  master: list,
+                  detail: switch (shown) {
+                    final _Opened shown => _ClientPane(
+                      // what was opened, afresh: another client, or a workout
+                      // from Activity, starts the pane over
+                      key: ValueKey(shown),
+                      opened: shown,
+                      onOpenProgram: (programId) => widget.onOpenProgram(shown.connectionId, programId),
+                      onMessage: widget.onMessage,
+                      onNotes: widget.onNotes,
+                      onLog: widget.onLog,
+                      onClose: () => _open.value = null,
                     ),
-                  ],
+                    null => null,
+                  },
                 );
               },
             );
@@ -256,11 +259,16 @@ extension on _ClientsPageState {
 class _ClientOpener extends InheritedWidget {
   /// The client open beside the roster, if any.
   final String? selected;
+
+  /// Whether what a row opens goes beside the roster, which the rows' taps
+  /// depend on: a turn of the device can change it with nothing selected.
+  final bool beside;
   final ValueChanged<String> onOpenClient;
   final void Function(String connectionId, String workoutId) onOpenWorkout;
 
   const new({
     required this.selected,
+    required this.beside,
     required this.onOpenClient,
     required this.onOpenWorkout,
     required super.child,
@@ -269,7 +277,7 @@ class _ClientOpener extends InheritedWidget {
   static _ClientOpener? of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_ClientOpener>();
 
   @override
-  bool updateShouldNotify(_ClientOpener old) => selected != old.selected;
+  bool updateShouldNotify(_ClientOpener old) => selected != old.selected || beside != old.beside;
 }
 
 /// Everyone, sorted by who may need a word, with a filter for each reason

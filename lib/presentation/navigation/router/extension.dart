@@ -11,7 +11,10 @@ extension on BuildContext {
 
   /// Into the Coaching space (#566). The space remembers itself while it is on
   /// screen (`CoachingFrame`), so the app opens there next.
-  void goToCoaching() => goNamed(_coachingClientsName);
+  void goToCoaching() {
+    _crossSpaces();
+    goNamed(_coachingClientsName);
+  }
 
   /// One client's page (#559), over the roster.
   void pushCoachingClient(String connectionId) {
@@ -93,6 +96,7 @@ extension on BuildContext {
   /// Profile's redirect reads it.
   void leaveCoaching({String to = _profileName}) {
     Preferences.of(this).setInCoachingSpace(inside: false);
+    _crossSpaces();
     return goNamed(to);
   }
 
@@ -187,34 +191,6 @@ extension on BuildContext {
     return goNamed(_accountManagementName);
   }
 
-  void goToImportData() {
-    return goNamed(_importDataName);
-  }
-
-  void goToExportData() {
-    return goNamed(_exportDataName);
-  }
-
-  void goToWhatsNew() {
-    return goNamed(_whatsNewName);
-  }
-
-  void goToRestTimers() {
-    return goNamed(_restTimersName);
-  }
-
-  void goToPushSettings() {
-    return goNamed(_pushSettingsName);
-  }
-
-  void goToYourDevices() {
-    return goNamed(_yourDevicesName);
-  }
-
-  void goToFeatures() {
-    return goNamed(_featuresName);
-  }
-
   void goToRecaps() {
     return goNamed(_recapsName);
   }
@@ -222,24 +198,6 @@ extension on BuildContext {
   /// [month]'s recap, by its first day: `/profile/recaps/2026-09`.
   void goToMonthlyReport(DateTime month) {
     return goNamed(_monthlyReportName, pathParameters: {_monthParam: _monthKey(month)});
-  }
-
-  void goToApiTokens() {
-    return goNamed(_apiTokensName);
-  }
-
-  void goToNewApiToken() {
-    return goNamed(_newApiTokenName);
-  }
-
-  /// Opens Features at [feature] over What's new (#239): pushed, so back
-  /// returns to the note that sent the user there.
-  void pushFeature(Feature feature) {
-    pushNamed(
-      _featuresName,
-      queryParameters: {_featureQuery: feature.value},
-      extra: FeatureLinkSource.whatsNew,
-    );
   }
 
   void goToAvatar() {

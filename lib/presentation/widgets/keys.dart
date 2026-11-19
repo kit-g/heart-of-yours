@@ -15,10 +15,6 @@ abstract final class AppKeys {
   /// test tells it is looking at the compact frame.
   static const navigationRail = Key('AppFrame.navigationRail');
 
-  /// Placeholder holding a two-pane detail open before anything is selected.
-  /// Asserting on it distinguishes "nothing selected" from "no detail pane".
-  static const noSelection = Key('AppFrame.noSelection');
-
   /// History's switch between the list and the calendar, and the calendar
   /// itself (#609).
   static const historyViewSwitch = Key('History.view.switch');
@@ -374,8 +370,9 @@ abstract final class AppKeys {
   static const pickerCreateExercise = Key('ExercisePicker.createExercise');
   static const settingsPickerGrouping = Key('Settings.pickerGrouping');
 
-  /// The Coaching space (#566): the way in on Profile, the way back out, its
-  /// tabs, and the line that leads back to a workout still going.
+  /// The Coaching space (#566): the way in (on Profile's app bar, or at the
+  /// foot of the rail), the way back out, its tabs, and the line that leads
+  /// back to a workout still going.
   static const coachingButton = Key('Profile.coaching');
   static const coachingYourTraining = Key('Coaching.yourTraining');
   static const coachingClientsStack = Key('Coaching.clientsStack');
@@ -406,6 +403,8 @@ abstract final class AppKeys {
 
   static Key coachingClient(String connectionId) => Key('Coaching.client.$connectionId');
 
+  static const coachingSettings = Key('Coaching.settings');
+  static const coachingLogOut = Key('Coaching.logOut');
   static Key coachingMarkReviewed(String connectionId) => Key('Coaching.reviewed.$connectionId');
 
   /// One client (#559): their page, or the pane beside the roster, its way
