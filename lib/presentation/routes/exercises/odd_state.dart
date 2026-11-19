@@ -5,7 +5,6 @@ class _OddState extends StatelessWidget {
   final String body;
 
   const new({
-    super.key,
     required this.title,
     required this.body,
   });
@@ -50,20 +49,6 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final L(emptyExerciseHistoryTitle: title, emptyExerciseHistoryBody: body) = L.of(context);
     return _OddState(title: title, body: body);
-  }
-}
-
-/// Holds the detail pane open on a wide screen before anything is picked.
-///
-/// The pane used to collapse instead, which let the list reflow from full width
-/// to two fifths the moment you tapped a row.
-class _NoSelectionState extends StatelessWidget {
-  const new();
-
-  @override
-  Widget build(BuildContext context) {
-    final L(noExerciseSelectedTitle: title, noExerciseSelectedBody: body) = L.of(context);
-    return _OddState(key: AppKeys.noSelection, title: title, body: body);
   }
 }
 

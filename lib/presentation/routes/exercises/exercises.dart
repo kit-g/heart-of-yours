@@ -24,6 +24,7 @@ import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/prose.dart';
 import 'package:heart/presentation/widgets/responsive/columns.dart';
+import 'package:heart/presentation/widgets/responsive/master_detail.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';

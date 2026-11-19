@@ -124,8 +124,9 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
         actions: [
           // a student's coach, when there is one to write to (#556)
           const _CoachMessages(),
-          // opt-in (#566): off, Settings is the first action, as before
-          if (coachingSpaceOn(context, listen: true))
+          // opt-in (#566): off, Settings is the first action, as before. A
+          // wide window has it at the foot of the rail instead (#685)
+          if (coachingSpaceOn(context, listen: true) && LayoutProvider.of(context) == .compact)
             IconButton(
               key: AppKeys.coachingButton,
               tooltip: L.of(context).coaching,

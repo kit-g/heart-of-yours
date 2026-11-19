@@ -25,11 +25,13 @@ class ClientsPage extends StatefulWidget {
   /// Opens a client's copy of their program.
   final void Function(String connectionId, String programId) onOpenProgram;
 
-  /// Opens the conversation with a client.
-  final ValueChanged<String> onMessage;
+  /// Opens the template editor on a session of a client's program, from the
+  /// program beside them on a tablet (#693).
+  final void Function(String connectionId, String programId, {required bool isNew}) onEditSession;
 
-  /// Opens the coach's notes on a client.
-  final ValueChanged<String> onNotes;
+  /// Opens a workout of the coach's own that a message beside a client is
+  /// about.
+  final ValueChanged<String>? onOpenOwnWorkout;
 
   /// Opens a workout to log for a client (#560).
   final void Function(String connectionId, PastWorkout past) onLog;
@@ -40,9 +42,9 @@ class ClientsPage extends StatefulWidget {
     required this.onOpenClient,
     required this.onOpenWorkout,
     required this.onOpenProgram,
-    required this.onMessage,
-    required this.onNotes,
+    required this.onEditSession,
     required this.onLog,
+    this.onOpenOwnWorkout,
   });
 
   @override
@@ -66,8 +68,10 @@ Future<void> _reloadClients(BuildContext context) async {
 /// list of names and a client's workouts side by side.
 const _besideWidth = 720.0;
 
-/// How wide the roster stays with a client open beside it.
-const _paneRosterWidth = 340.0;
+/// How wide the roster stays with a client open beside it: 300, as the
+/// coaching design's desk has it, where that still leaves the client the
+/// column beside them (#693); 280 otherwise.
+double _paneRosterWidth(double width) => width - 300 >= _besideColumnAt ? 300 : 280;
 
 class _ClientsPageState extends State<ClientsPage> {
   final _view = ValueNotifier(_ClientsView.roster);
@@ -103,8 +107,13 @@ class _ClientsPageState extends State<ClientsPage> {
     if (shown && stale) _reload();
   }
 
-  /// The client open beside the roster, on a page wide enough for both.
-  final _open = ValueNotifier<String?>(null);
+  /// The client open beside the roster, on a page wide enough for both, and
+  /// one of their workouts over them in the pane when that is what was
+  /// opened.
+  final _open = ValueNotifier<_Opened?>(null);
+
+  /// Counts taps that open something beside the roster.
+  var _taps = 0;
 
   @override
   void initState() {
@@ -137,7 +146,8 @@ class _ClientsPageState extends State<ClientsPage> {
       title: l.coachingClients,
       onYourTraining: widget.onYourTraining,
       actions: [invite],
-      maxWidth: _rosterMaxWidth,
+      // the roster caps itself; the page is the pane's too
+      maxWidth: .infinity,
       child: switch ((roster.status, roster.clients, waiting)) {
         (.idle || .loading, [], []) => const Center(child: CircularProgressIndicator.adaptive()),
         (.failed, [], []) => _Empty(
@@ -165,16 +175,22 @@ class _ClientsPageState extends State<ClientsPage> {
               builder: (context, open, _) {
                 // a client who left the roster since closes with it
                 final shown = switch (open) {
-                  final String id when beside && roster.client(id) != null => id,
+                  final _Opened open when beside && roster.client(open.connectionId) != null => open,
                   _ => null,
                 };
                 final list = _ClientOpener(
-                  selected: shown,
+                  selected: shown?.connectionId,
+                  beside: beside,
+                  // a fresh tap each time, so tapping what is already open
+                  // starts the pane over rather than being equal to it
                   onOpenClient: (id) => switch (beside) {
-                    true => _open.value = id,
+                    true => _open.value = (connectionId: id, workoutId: null, tap: ++_taps),
                     false => widget.onOpenClient(id),
                   },
-                  onOpenWorkout: widget.onOpenWorkout,
+                  onOpenWorkout: (id, workoutId) => switch (beside) {
+                    true => _open.value = (connectionId: id, workoutId: workoutId, tap: ++_taps),
+                    false => widget.onOpenWorkout(id, workoutId),
+                  },
                   // nobody coached: no activity, only invitations out and
                   // the people who were
                   child: switch (roster.clients.isEmpty) {
@@ -182,33 +198,26 @@ class _ClientsPageState extends State<ClientsPage> {
                     false => _rosterOrActivity(l, waiting),
                   },
                 );
-                if (shown == null) return list;
-                return Row(
-                  crossAxisAlignment: .stretch,
-                  children: [
-                    SizedBox(width: _paneRosterWidth, child: list),
-                    const VerticalDivider(width: 1),
-                    Expanded(
-                      child: _ClientView(
-                        key: AppKeys.coachingClientPane,
-                        connectionId: shown,
-                        onOpenWorkout: (workoutId) => widget.onOpenWorkout(shown, workoutId),
-                        onOpenProgram: (programId) => widget.onOpenProgram(shown, programId),
-                        onMessage: widget.onMessage,
-                        onNotes: widget.onNotes,
-                        onLog: widget.onLog,
-                        leading: Align(
-                          alignment: .centerRight,
-                          child: IconButton(
-                            key: AppKeys.coachingClientClose,
-                            tooltip: l.coachingClientClose,
-                            onPressed: () => _open.value = null,
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                        ),
-                      ),
+                return MasterDetail(
+                  masterWidth: _paneRosterWidth,
+                  maxMasterWidth: _rosterMaxWidth,
+                  master: list,
+                  detail: switch (shown) {
+                    final _Opened shown => _ClientPane(
+                      // what was opened, afresh: another client, or a workout
+                      // from Activity, starts the pane over
+                      key: ValueKey(shown),
+                      opened: shown,
+                      onOpenProgram: (programId) => widget.onOpenProgram(shown.connectionId, programId),
+                      onEditSession: (programId, {required isNew}) {
+                        widget.onEditSession(shown.connectionId, programId, isNew: isNew);
+                      },
+                      onOpenOwnWorkout: widget.onOpenOwnWorkout,
+                      onLog: widget.onLog,
+                      onClose: () => _open.value = null,
                     ),
-                  ],
+                    null => null,
+                  },
                 );
               },
             );
@@ -228,15 +237,16 @@ extension on _ClientsPageState {
         children: [
           Padding(
             padding: const .fromLTRB(16, 8, 16, 8),
-            child: Center(
-              child: SettingSwitcher<_ClientsView>(
-                value: view,
-                onValueChanged: (picked) => _view.value = picked ?? view,
-                children: {
-                  .roster: Text(l.coachingClients, key: AppKeys.coachingRosterView),
-                  .activity: Text(l.coachingActivity, key: AppKeys.coachingActivityView),
-                },
-              ),
+            // a menu where a narrowed roster can't fit both at the text size
+            child: _Segments<_ClientsView>(
+              value: view,
+              labels: {.roster: l.coachingClients, .activity: l.coachingActivity},
+              keyOf: (each) => switch (each) {
+                .roster => AppKeys.coachingRosterView,
+                .activity => AppKeys.coachingActivityView,
+              },
+              menuKey: AppKeys.coachingRosterViewMenu,
+              onPicked: (picked) => _view.value = picked,
             ),
           ),
           Expanded(
@@ -256,11 +266,16 @@ extension on _ClientsPageState {
 class _ClientOpener extends InheritedWidget {
   /// The client open beside the roster, if any.
   final String? selected;
+
+  /// Whether what a row opens goes beside the roster, which the rows' taps
+  /// depend on: a turn of the device can change it with nothing selected.
+  final bool beside;
   final ValueChanged<String> onOpenClient;
   final void Function(String connectionId, String workoutId) onOpenWorkout;
 
   const new({
     required this.selected,
+    required this.beside,
     required this.onOpenClient,
     required this.onOpenWorkout,
     required super.child,
@@ -269,7 +284,7 @@ class _ClientOpener extends InheritedWidget {
   static _ClientOpener? of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_ClientOpener>();
 
   @override
-  bool updateShouldNotify(_ClientOpener old) => selected != old.selected;
+  bool updateShouldNotify(_ClientOpener old) => selected != old.selected || beside != old.beside;
 }
 
 /// Everyone, sorted by who may need a word, with a filter for each reason
@@ -380,7 +395,8 @@ class _ReasonFilter extends StatelessWidget {
 }
 
 /// A client on a phone: who, their program and week, why they may need a
-/// word, the last seven days, and "looked at" while a look would clear one.
+/// word, and the last seven days; set apart while opening them would clear
+/// a reason.
 class _ClientTile extends StatelessWidget {
   final ClientSummary client;
 
@@ -413,8 +429,10 @@ class _ClientTile extends StatelessWidget {
           ],
         ],
       ),
-      trailing: switch (_lookClears(client)) {
-        true => _MarkReviewed(client: client),
+      // something new since the coach last opened them: set apart until
+      // they do, which is what clears it (#686)
+      tileColor: switch (_lookClears(client)) {
+        true => colorScheme.surfaceContainerHigh,
         false => null,
       },
       isThreeLine: true,
@@ -422,7 +440,7 @@ class _ClientTile extends StatelessWidget {
   }
 }
 
-/// The table's columns, by flex, with "looked at" a fixed button's width.
+/// The table's columns, by flex.
 const _columns = (client: 3, program: 3, days: 2, reasons: 3);
 
 class _TableHeader extends StatelessWidget {
@@ -453,7 +471,6 @@ class _TableHeader extends StatelessWidget {
             flex: _columns.reasons,
             child: Text(l.coachingColumnReasons, style: style),
           ),
-          const SizedBox(width: kMinInteractiveDimension),
         ],
       ),
     );
@@ -471,91 +488,70 @@ class _ClientRow extends StatelessWidget {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme, :dividerColor) = Theme.of(context);
     final opener = _ClientOpener.of(context);
-    return InkWell(
-      key: AppKeys.coachingClient(client.connectionId),
-      onTap: switch (opener) {
-        final opener? => () => opener.onOpenClient(client.connectionId),
-        null => null,
+    // the fill on the Material under the ink, so a set-apart row still
+    // shows its splash, hover and focus
+    return Material(
+      color: switch (_lookClears(client)) {
+        true => colorScheme.surfaceContainerHigh,
+        false => Colors.transparent,
       },
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: dividerColor.withValues(alpha: .4))),
-        ),
-        child: Padding(
-          padding: const .fromLTRB(16, 8, 16, 8),
-          child: Row(
-            children: [
-              Expanded(
-                flex: _columns.client,
-                child: Row(
-                  children: [
-                    Avatar(remote: client.avatar, radius: 16),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(_clientName(l, client), style: textTheme.bodyLarge, maxLines: 1, overflow: .ellipsis),
-                    ),
-                  ],
+      child: InkWell(
+        key: AppKeys.coachingClient(client.connectionId),
+        onTap: switch (opener) {
+          final opener? => () => opener.onOpenClient(client.connectionId),
+          null => null,
+        },
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: dividerColor.withValues(alpha: .4))),
+          ),
+          child: Padding(
+            padding: const .fromLTRB(16, 8, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: _columns.client,
+                  child: Row(
+                    children: [
+                      Avatar(remote: client.avatar, radius: 16),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _clientName(l, client),
+                          style: textTheme.bodyLarge,
+                          maxLines: 1,
+                          overflow: .ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                flex: _columns.program,
-                child: Padding(
-                  padding: const .only(right: 8),
-                  child: Text(_programLine(l, client), style: textTheme.bodyMedium, maxLines: 2, overflow: .ellipsis),
+                Expanded(
+                  flex: _columns.program,
+                  child: Padding(
+                    padding: const .only(right: 8),
+                    child: Text(_programLine(l, client), style: textTheme.bodyMedium, maxLines: 2, overflow: .ellipsis),
+                  ),
                 ),
-              ),
-              Expanded(
-                flex: _columns.days,
-                child: Align(
-                  alignment: .centerLeft,
-                  child: _WeekDots(client: client),
+                Expanded(
+                  flex: _columns.days,
+                  child: Align(
+                    alignment: .centerLeft,
+                    child: _WeekDots(client: client),
+                  ),
                 ),
-              ),
-              Expanded(
-                flex: _columns.reasons,
-                child: Text(
-                  _reasonsInWords(l, client).join(' · '),
-                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary),
+                Expanded(
+                  flex: _columns.reasons,
+                  child: Text(
+                    _reasonsInWords(l, client).join(' · '),
+                    style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary),
+                  ),
                 ),
-              ),
-              SizedBox(
-                width: kMinInteractiveDimension,
-                child: switch (_lookClears(client)) {
-                  true => _MarkReviewed(client: client),
-                  false => null,
-                },
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    );
-  }
-}
-
-/// The coach has looked at a client: their note or lighter session stops
-/// counting.
-class _MarkReviewed extends StatelessWidget {
-  final ClientSummary client;
-
-  const new({required this.client});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = L.of(context);
-    return IconButton(
-      key: AppKeys.coachingMarkReviewed(client.connectionId),
-      tooltip: l.coachingMarkReviewed,
-      icon: const Icon(Icons.done_rounded),
-      onPressed: () async {
-        final messenger = ScaffoldMessenger.of(context);
-        final failed = l.coachingMarkReviewedFailed;
-        try {
-          await Roster.of(context).markReviewed(client);
-        } catch (_) {
-          messenger.snack(failed);
-        }
-      },
     );
   }
 }
@@ -653,11 +649,12 @@ class _FormerClients extends StatelessWidget {
   }
 }
 
-/// Whether a look would clear anything: a gap or an ending holds until it
-/// stops being true, so a button for those alone would do nothing. A reason
-/// this build doesn't know might clear, so it gets the button.
+/// Whether opening [client] would clear a reason they have (#686): one a
+/// look clears, which this build knows. A reason it doesn't know may hold
+/// until it stops being true, and marking for it on every open would never
+/// clear it.
 bool _lookClears(ClientSummary client) {
-  return client.reasons.any((reason) => ClientReason.of(reason)?.clearsOnReview ?? true);
+  return client.reasons.any((reason) => ClientReason.of(reason)?.clearsOnReview ?? false);
 }
 
 /// Whether [client] is no longer coached: the connection was severed.

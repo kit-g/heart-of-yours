@@ -119,6 +119,9 @@ const _coachingProgramName = 'coachingProgram';
 const _coachingProgramEditName = 'coachingProgramEdit';
 const _coachingProgramSessionName = 'coachingProgramSession';
 const _coachingMeName = 'coachingMe';
+
+/// What the Coaching space's copies of shared routes are named with (#685).
+const _coachingPrefix = 'coaching.';
 const _coachingMePath = '$_coachingPath/me';
 // what a coach's invitation link opens (#553): the site's own path, which iOS
 // and Android both hand to the app

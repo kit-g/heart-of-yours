@@ -4,7 +4,7 @@ part of 'coaching.dart';
 /// sessions, a save of the coach's that didn't land with both versions to
 /// pick from, and every change either of them made, each one that can be put
 /// back.
-class ClientProgramPage extends StatefulWidget {
+class ClientProgramPage extends StatelessWidget {
   final String connectionId;
   final String programId;
 
@@ -14,10 +14,39 @@ class ClientProgramPage extends StatefulWidget {
   const new({super.key, required this.connectionId, required this.programId, required this.onEditSession});
 
   @override
-  State<ClientProgramPage> createState() => _ClientProgramPageState();
+  Widget build(BuildContext context) {
+    final view = ClientPrograms.watch(context).view(programId);
+    return Scaffold(
+      appBar: AppBar(title: Text(view?.program.name ?? '')),
+      body: Align(
+        alignment: .topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: readableWidth),
+          child: _ClientProgramBody(
+            connectionId: connectionId,
+            programId: programId,
+            onEditSession: onEditSession,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _ClientProgramPageState extends State<ClientProgramPage> {
+/// A client's copy of a program, read on opening: a page's body on a phone,
+/// a tab beside the client on a tablet (#693).
+class _ClientProgramBody extends StatefulWidget {
+  final String connectionId;
+  final String programId;
+  final void Function({required bool isNew}) onEditSession;
+
+  const new({super.key, required this.connectionId, required this.programId, required this.onEditSession});
+
+  @override
+  State<_ClientProgramBody> createState() => _ClientProgramBodyState();
+}
+
+class _ClientProgramBodyState extends State<_ClientProgramBody> {
   @override
   void initState() {
     super.initState();
@@ -40,27 +69,18 @@ class _ClientProgramPageState extends State<ClientProgramPage> {
     final programs = ClientPrograms.watch(context);
     final client = Roster.watch(context).client(widget.connectionId);
     final view = programs.view(widget.programId);
-    return Scaffold(
-      appBar: AppBar(title: Text(view?.program.name ?? '')),
-      body: Align(
-        alignment: .topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: readableWidth),
-          child: switch ((programs.status(widget.programId), view, client)) {
-            (_, final CoachProgramView view, final ClientSummary client) => RefreshIndicator.adaptive(
-              onRefresh: _load,
-              child: _CopyView(view: view, client: client, onEditSession: widget.onEditSession),
-            ),
-            (.failed, _, _) => _Empty(
-              icon: Icons.cloud_off_rounded,
-              title: l.coachingCopyFailed,
-              action: OutlinedButton(onPressed: _load, child: Text(l.retry)),
-            ),
-            _ => const Center(child: CircularProgressIndicator.adaptive()),
-          },
-        ),
+    return switch ((programs.status(widget.programId), view, client)) {
+      (_, final CoachProgramView view, final ClientSummary client) => RefreshIndicator.adaptive(
+        onRefresh: _load,
+        child: _CopyView(view: view, client: client, onEditSession: widget.onEditSession),
       ),
-    );
+      (.failed, _, _) => _Empty(
+        icon: Icons.cloud_off_rounded,
+        title: l.coachingCopyFailed,
+        action: OutlinedButton(onPressed: _load, child: Text(l.retry)),
+      ),
+      _ => const Center(child: CircularProgressIndicator.adaptive()),
+    };
   }
 }
 
@@ -150,10 +170,7 @@ class _CopyView extends StatelessWidget {
             title: Text(l.programAddSession, style: TextStyle(color: colorScheme.primary)),
             onTap: () => edit(null),
           ),
-        Padding(
-          padding: const .fromLTRB(16, 24, 16, 4),
-          child: Text(l.coachingCopyHistory, style: textTheme.titleMedium),
-        ),
+        _Heading(l.coachingCopyHistory),
         if (changes.isEmpty)
           Padding(
             padding: const .symmetric(horizontal: 16),
@@ -220,8 +237,11 @@ class _ChangeTile extends StatelessWidget {
           style: TextButton.styleFrom(minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension)),
           onPressed: () async {
             final messenger = ScaffoldMessenger.of(context);
+            final programs = ClientPrograms.of(context);
+            // it changes what the client trains, so it says so first (#686)
+            if (!await _confirmPutBack(context, what: what, name: _clientName(l, client))) return;
             try {
-              await ClientPrograms.of(context).revert(client.studentId, change.programId, change);
+              await programs.revert(client.studentId, change.programId, change);
             } catch (error, stacktrace) {
               reportToSentry(error, stacktrace: stacktrace);
               messenger.snack(l.coachingCopyPutBackFailed);
@@ -233,4 +253,34 @@ class _ChangeTile extends StatelessWidget {
       },
     );
   }
+}
+
+/// Whether the coach means to undo [what] in [name]'s program: asked first,
+/// since it changes what the client trains (#686).
+Future<bool> _confirmPutBack(BuildContext context, {required String what, required String name}) async {
+  final l = L.of(context);
+  final ThemeData(:colorScheme) = Theme.of(context);
+  final picked = await showBrandedDialog<bool>(
+    context,
+    title: Text(l.coachingCopyPutBackTitle, textAlign: .center),
+    content: Text(l.coachingCopyPutBackBody(what, name), textAlign: .center),
+    actions: [
+      Column(
+        spacing: 8,
+        children: [
+          PrimaryButton.wide(
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
+            child: Center(child: Text(l.cancel)),
+          ),
+          PrimaryButton.wide(
+            key: AppKeys.coachingCopyPutBackConfirm,
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
+            child: Center(child: Text(l.coachingCopyPutBack)),
+          ),
+        ],
+      ),
+    ],
+  );
+  return picked ?? false;
 }
