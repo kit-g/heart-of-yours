@@ -408,5 +408,14 @@ void main() {
       access.account = false;
       expect(access.allowed, isFalse, reason: 'a token alone is not an account');
     });
+
+    test('a build the server no longer serves is offline for good (#683)', () {
+      var outdated = false;
+      final access = RemoteAccess(outdated: () => outdated)..account = true;
+      expect(access.allowed, isTrue);
+
+      outdated = true;
+      expect(access.allowed, isFalse);
+    });
   });
 }
