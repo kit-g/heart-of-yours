@@ -30,9 +30,6 @@ FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config)
         // reported the same failures a second time, ungrouped, and an offline
         // device's DNS failure along with them.
         ..captureFailedRequests = false
-        // what Sentry's own handlers catch — an un-awaited future, a stream
-        // that failed offline — goes through the same filter as [reportToSentry]
-        ..beforeSend = dropUnanswered
         ..dsn = config.sentryDsn
         // Nothing to stitch a client span to: heart-api runs no Sentry, so the
         // `sentry-trace` and `baggage` headers `SentryHttpClient` would add to
@@ -107,88 +104,104 @@ Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
       debugPrint('$stacktrace');
     }
   }
-  return switch (_reportable(exception, stacktrace)) {
-    (final Object error, final stacktrace) => Sentry.captureException(
-      error,
-      stackTrace: stacktrace,
-      withScope: switch (error) {
-        // One issue per status and endpoint. Grouped by stack, every async
-        // chain into the same call became an issue of its own — fifteen of them
-        // for what was mostly one failure. The message is the grouping key:
-        // it names the status, verb and templated path, and never the body.
-        NetworkException() => (scope) => scope.fingerprint = ['NetworkException', error.toString()],
-        // one issue per call and cause, whichever program it was (#660)
-        ProgramReadFailed() => (scope) => scope.fingerprint = ['ProgramReadFailed', error.toString()],
-        _ => null,
-      },
-    ),
-    null => Future.value(),
-  };
+  return Future.wait([
+    for (final (error, trace) in _reportable(exception, stacktrace))
+      Sentry.captureException(
+        error,
+        stackTrace: trace,
+        withScope: switch (error) {
+          // One issue per status and endpoint. Grouped by stack, every async
+          // chain into the same call became an issue of its own — fifteen of
+          // them for what was mostly one failure. The message is the grouping
+          // key: it names the status, verb and templated path, and never the
+          // body.
+          NetworkException() => (scope) => scope.fingerprint = ['NetworkException', error.toString()],
+          // one issue per call and cause, whichever program it was (#660)
+          ProgramReadFailed() => (scope) => scope.fingerprint = ['ProgramReadFailed', error.toString()],
+          _ => null,
+        },
+      ),
+  ]);
 }
 
-/// What to report for [error], with its stack trace: the error itself, or
-/// the first failure inside a wrapper that is worth reporting; null when
-/// there is none, because all of it was the network not answering.
+/// What to report for [error], each with its stack trace: the error itself,
+/// or every failure inside a wrapper that is worth reporting; nothing when
+/// all of it was the network not answering.
+///
+/// Only what a caller caught and handed here is filtered. An offline error
+/// that escapes to Sentry's own handlers is still reported: nothing caught
+/// it, and that missing catch is the bug (HEART-OF-YOURS-34 found one).
 ///
 /// A wrapper is unwrapped because its own type says nothing: `.wait` on a
 /// record of requests (`Coaching.load`) fails as a [ParallelWaitError]
-/// whether a leg was offline or the server refused it, and only the leg says
-/// which. Reported as the leg, a refusal groups with the same
-/// [NetworkException] from anywhere else.
-(Object, dynamic)? _reportable(Object? error, dynamic stacktrace) {
+/// whether a leg was offline or the server refused it, and only the legs say
+/// which. Each leg worth it is reported as itself, so a [NetworkException]
+/// leg groups with the same failure from anywhere else.
+List<(Object?, dynamic)> _reportable(Object? error, dynamic stacktrace) {
   return switch (error) {
-    null => null,
-    AsyncError(:final error, :final stackTrace) => _reportable(error, stackTrace),
+    // an AsyncError of something that isn't an [Error] carries an empty
+    // trace: the caller's is the better one then
+    AsyncError(:final error, :final stackTrace) => _reportable(
+      error,
+      stackTrace == StackTrace.empty ? stacktrace : stackTrace,
+    ),
     ParallelWaitError(:final errors) => switch (_legs(errors)) {
-      final Iterable<Object?> legs => legs.map((each) => _reportable(each, stacktrace)).nonNulls.firstOrNull,
+      final Iterable<Object?> legs => [for (final leg in legs) ..._reportable(leg, stacktrace)],
       // a shape not listed below: report the wrapper rather than lose it
-      null => (error, stacktrace),
+      null => [(error, stacktrace)],
     },
-    _ when _isOffline(error) => null,
-    _ => (error, stacktrace),
+    _ when _isOffline(error) => const [],
+    // a null included: a call site handing over nothing is a bug to find
+    _ => [(error, stacktrace)],
   };
 }
 
-/// The legs of a [ParallelWaitError], an [AsyncError] for each that failed:
-/// from a list, or from a record of the arities the app waits on; null for
-/// any other shape.
+/// The legs of a [ParallelWaitError] that failed, each an [AsyncError]: from
+/// a list, or from a record of any arity `.wait` takes (two to nine); null
+/// for any other shape.
 Iterable<Object?>? _legs(Object? errors) {
   return switch (errors) {
-    Iterable each => each,
-    (final a, final b) => [a, b],
-    (final a, final b, final c) => [a, b, c],
-    (final a, final b, final c, final d) => [a, b, c, d],
-    (final a, final b, final c, final d, final e) => [a, b, c, d, e],
-    (final a, final b, final c, final d, final e, final f) => [a, b, c, d, e, f],
+    Iterable each => each.nonNulls,
+    (final a, final b) => [a, b].nonNulls,
+    (final a, final b, final c) => [a, b, c].nonNulls,
+    (final a, final b, final c, final d) => [a, b, c, d].nonNulls,
+    (final a, final b, final c, final d, final e) => [a, b, c, d, e].nonNulls,
+    (final a, final b, final c, final d, final e, final f) => [a, b, c, d, e, f].nonNulls,
+    (final a, final b, final c, final d, final e, final f, final g) => [a, b, c, d, e, f, g].nonNulls,
+    (final a, final b, final c, final d, final e, final f, final g, final h) => [a, b, c, d, e, f, g, h].nonNulls,
+    (final a, final b, final c, final d, final e, final f, final g, final h, final i) => [
+      a,
+      b,
+      c,
+      d,
+      e,
+      f,
+      g,
+      h,
+      i,
+    ].nonNulls,
     _ => null,
   };
 }
 
-/// [event], unless what it reports is a request that never got an answer
-/// (see [reportToSentry]): the filter for what Sentry's own handlers catch.
-@visibleForTesting
-SentryEvent? dropUnanswered(SentryEvent event, Hint hint) {
-  return switch (event.throwable) {
-    final Object error when _reportable(error, null) == null => null,
-    _ => event,
-  };
-}
-
 /// Whether [error] is a request that never got an answer — offline, DNS, a
-/// socket closed under a backgrounded app — rather than a fault in our code or
-/// a refusal from a server. Every caller already retries on the next launch or
-/// resume, and there is nothing to fix.
+/// socket closed under a backgrounded app, a deadline passed with no reply —
+/// rather than a fault in our code or a refusal from a server. Nothing can
+/// be fixed from a report of it; whatever the caller does with the failure
+/// (a retry on the next launch or resume, an error state) is the caller's.
 ///
 /// Still reported: a status from our server (a [NetworkException]); a
 /// Firebase error that is not about the network; a certificate the handshake
 /// refused, which is our certificate broken or someone in the middle; and a
-/// [TimeoutException], because the only deadline on a request is our own
-/// (`Pushes.unregister`), there to report a server reachable but slow.
+/// socket the device ran out of, which is a leak in our code.
 bool _isOffline(Object? error) {
   return switch (error) {
-    // through the http client, which wraps whatever the socket said, or a
-    // socket error raised outside it
-    http.ClientException() || SocketException() => true,
+    // through the http client, which wraps whatever the socket said
+    http.ClientException() => true,
+    // a socket error raised outside it, unless the device ran out of them
+    SocketException(:final osError) => !_exhausted.contains(osError?.errorCode),
+    // a deadline put on a request, passed without an answer
+    TimeoutException() => true,
     // a TLS handshake the connection ended under (HEART-OF-YOURS-2Z)
     HandshakeException() => _cutOff.hasMatch('$error'),
     // a token refresh that could not reach Google: named (HEART-OF-YOURS-1R)…
@@ -199,16 +212,24 @@ bool _isOffline(Object? error) {
   };
 }
 
+/// EMFILE and ENFILE: too many open files, in the process or the system.
+const _exhausted = {23, 24};
+
 /// A handshake the connection ended under, as against one that failed on its
-/// merits (`CERTIFICATE_VERIFY_FAILED` and the like).
+/// merits (`CERTIFICATE_VERIFY_FAILED` and the like): including a socket iOS
+/// reclaimed while the app was suspended (HEART-OF-YOURS-2S).
 final _cutOff = RegExp(
-  'Connection terminated|Connection reset|Connection closed|Broken pipe|Software caused connection abort|timed out',
+  'Connection terminated|Connection reset|Connection closed|Broken pipe|Software caused connection abort|timed out'
+  '|Bad file descriptor|Socket is not connected',
 );
 
-/// The Java network exceptions an Android Firebase error can carry as text:
-/// `ConnectException`'s "Failed to connect to", `UnknownHostException`'s
-/// "Unable to resolve host".
-final _androidOffline = RegExp('Failed to connect to|Unable to resolve host');
+/// The Java network failures an Android Firebase error can carry as text:
+/// `ConnectException`, `UnknownHostException`, a socket timeout, a reset or
+/// aborted connection, an SSL read cut short.
+final _androidOffline = RegExp(
+  'Failed to connect to|Unable to resolve host|\\[ timeout \\]|Connection reset|Software caused connection abort'
+  '|I/O error during system call',
+);
 
 /// An error whose payload was dropped before it could reach Sentry, leaving
 /// only what is safe: the original type, and the stack trace it came with.

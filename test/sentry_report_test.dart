@@ -83,21 +83,26 @@ void main() {
       expect(sent, isEmpty);
     });
 
+    test('a deadline put on a request, passed without an answer', () async {
+      await report(TimeoutException('no answer', const Duration(seconds: 5)));
+      expect(sent, isEmpty);
+    });
+
+    test('a handshake on a socket iOS reclaimed while suspended', () async {
+      await report(const HandshakeException('Handshake error in client', OSError('Bad file descriptor', 9)));
+      expect(sent, isEmpty);
+    });
+
+    test("Android's unknown Firebase error that timed out", () async {
+      await report(
+        FirebaseAuthException(code: 'unknown', message: 'An internal error has occurred. [ timeout ]'),
+      );
+      expect(sent, isEmpty);
+    });
+
     test('a wait whose every failed leg was offline', () async {
       await report(await waited(const SocketException('Failed host lookup'), http.ClientException('reset')));
       expect(sent, isEmpty);
-    });
-  });
-
-  group("Sentry's own handlers", () {
-    test('an event for a request that never got an answer is dropped', () {
-      final event = SentryEvent(throwable: http.ClientException('offline'));
-      expect(dropUnanswered(event, Hint()), isNull);
-    });
-
-    test('any other event goes through', () {
-      final event = SentryEvent(throwable: StateError('a bug'));
-      expect(dropUnanswered(event, Hint()), same(event));
     });
   });
 
@@ -122,9 +127,27 @@ void main() {
       expect(sent, hasLength(1));
     });
 
-    test('a deadline of our own, on a server reachable but slow', () async {
-      await report(TimeoutException('no answer', const Duration(seconds: 5)));
+    test('a socket the device ran out of: a leak in our code', () async {
+      await report(const SocketException('Too many open files', osError: OSError('Too many open files', 24)));
       expect(sent, hasLength(1));
+    });
+
+    test('every failed leg the server answered, each as itself', () async {
+      // unlike any other test's: Sentry drops an exception object it has
+      // already sent, and two equal consts are one object
+      const forbidden = NetworkException(statusCode: 403, method: 'GET', path: '/v1/connections/pending');
+      const broken = NetworkException(statusCode: 500, method: 'GET', path: '/v1/hidden-workouts');
+      await report(await waited(forbidden, broken));
+      expect(sent.map((each) => each.fingerprint), [
+        ['NetworkException', 'NetworkException(403 GET /v1/connections/pending)'],
+        ['NetworkException', 'NetworkException(500 GET /v1/hidden-workouts)'],
+      ]);
+    });
+
+    test("an AsyncError with no trace of its own keeps the caller's", () async {
+      final caller = StackTrace.current;
+      await reportToSentry(AsyncError(StateError('a bug'), StackTrace.empty), stacktrace: caller);
+      expect(sent.single.exceptions?.single.stackTrace?.frames, isNotEmpty);
     });
 
     test("a wait's failed leg that the server answered, as that leg", () async {
