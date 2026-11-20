@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io' show HandshakeException, SocketException;
 
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' show RouteSettings;
 import 'package:heart/core/env/config.dart';
@@ -28,6 +30,9 @@ FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config)
         // reported the same failures a second time, ungrouped, and an offline
         // device's DNS failure along with them.
         ..captureFailedRequests = false
+        // what Sentry's own handlers catch — an un-awaited future, a stream
+        // that failed offline — goes through the same filter as [reportToSentry]
+        ..beforeSend = dropUnanswered
         ..dsn = config.sentryDsn
         // Nothing to stitch a client span to: heart-api runs no Sentry, so the
         // `sentry-trace` and `baggage` headers `SentryHttpClient` would add to
@@ -102,25 +107,108 @@ Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
       debugPrint('$stacktrace');
     }
   }
-  // A request that never got an answer — offline, DNS, a socket closed under a
-  // backgrounded app. Every caller already retries on the next launch or
-  // resume, and there is nothing in our code to fix.
-  if (exception is http.ClientException) return Future.value();
-  return Sentry.captureException(
-    exception,
-    stackTrace: stacktrace,
-    withScope: switch (exception) {
-      // One issue per status and endpoint. Grouped by stack, every async
-      // chain into the same call became an issue of its own — fifteen of them
-      // for what was mostly one failure. The message is the grouping key:
-      // it names the status, verb and templated path, and never the body.
-      NetworkException() => (scope) => scope.fingerprint = ['NetworkException', exception.toString()],
-      // one issue per call and cause, whichever program it was (#660)
-      ProgramReadFailed() => (scope) => scope.fingerprint = ['ProgramReadFailed', exception.toString()],
-      _ => null,
-    },
-  );
+  return switch (_reportable(exception, stacktrace)) {
+    (final Object error, final stacktrace) => Sentry.captureException(
+      error,
+      stackTrace: stacktrace,
+      withScope: switch (error) {
+        // One issue per status and endpoint. Grouped by stack, every async
+        // chain into the same call became an issue of its own — fifteen of them
+        // for what was mostly one failure. The message is the grouping key:
+        // it names the status, verb and templated path, and never the body.
+        NetworkException() => (scope) => scope.fingerprint = ['NetworkException', error.toString()],
+        // one issue per call and cause, whichever program it was (#660)
+        ProgramReadFailed() => (scope) => scope.fingerprint = ['ProgramReadFailed', error.toString()],
+        _ => null,
+      },
+    ),
+    null => Future.value(),
+  };
 }
+
+/// What to report for [error], with its stack trace: the error itself, or
+/// the first failure inside a wrapper that is worth reporting; null when
+/// there is none, because all of it was the network not answering.
+///
+/// A wrapper is unwrapped because its own type says nothing: `.wait` on a
+/// record of requests (`Coaching.load`) fails as a [ParallelWaitError]
+/// whether a leg was offline or the server refused it, and only the leg says
+/// which. Reported as the leg, a refusal groups with the same
+/// [NetworkException] from anywhere else.
+(Object, dynamic)? _reportable(Object? error, dynamic stacktrace) {
+  return switch (error) {
+    null => null,
+    AsyncError(:final error, :final stackTrace) => _reportable(error, stackTrace),
+    ParallelWaitError(:final errors) => switch (_legs(errors)) {
+      final Iterable<Object?> legs => legs.map((each) => _reportable(each, stacktrace)).nonNulls.firstOrNull,
+      // a shape not listed below: report the wrapper rather than lose it
+      null => (error, stacktrace),
+    },
+    _ when _isOffline(error) => null,
+    _ => (error, stacktrace),
+  };
+}
+
+/// The legs of a [ParallelWaitError], an [AsyncError] for each that failed:
+/// from a list, or from a record of the arities the app waits on; null for
+/// any other shape.
+Iterable<Object?>? _legs(Object? errors) {
+  return switch (errors) {
+    Iterable each => each,
+    (final a, final b) => [a, b],
+    (final a, final b, final c) => [a, b, c],
+    (final a, final b, final c, final d) => [a, b, c, d],
+    (final a, final b, final c, final d, final e) => [a, b, c, d, e],
+    (final a, final b, final c, final d, final e, final f) => [a, b, c, d, e, f],
+    _ => null,
+  };
+}
+
+/// [event], unless what it reports is a request that never got an answer
+/// (see [reportToSentry]): the filter for what Sentry's own handlers catch.
+@visibleForTesting
+SentryEvent? dropUnanswered(SentryEvent event, Hint hint) {
+  return switch (event.throwable) {
+    final Object error when _reportable(error, null) == null => null,
+    _ => event,
+  };
+}
+
+/// Whether [error] is a request that never got an answer — offline, DNS, a
+/// socket closed under a backgrounded app — rather than a fault in our code or
+/// a refusal from a server. Every caller already retries on the next launch or
+/// resume, and there is nothing to fix.
+///
+/// Still reported: a status from our server (a [NetworkException]); a
+/// Firebase error that is not about the network; a certificate the handshake
+/// refused, which is our certificate broken or someone in the middle; and a
+/// [TimeoutException], because the only deadline on a request is our own
+/// (`Pushes.unregister`), there to report a server reachable but slow.
+bool _isOffline(Object? error) {
+  return switch (error) {
+    // through the http client, which wraps whatever the socket said, or a
+    // socket error raised outside it
+    http.ClientException() || SocketException() => true,
+    // a TLS handshake the connection ended under (HEART-OF-YOURS-2Z)
+    HandshakeException() => _cutOff.hasMatch('$error'),
+    // a token refresh that could not reach Google: named (HEART-OF-YOURS-1R)…
+    FirebaseAuthException(code: 'network-request-failed') => true,
+    // …or, on Android, sometimes only in the message of an `unknown` (-33)
+    FirebaseAuthException(code: 'unknown', :final String message) => _androidOffline.hasMatch(message),
+    _ => false,
+  };
+}
+
+/// A handshake the connection ended under, as against one that failed on its
+/// merits (`CERTIFICATE_VERIFY_FAILED` and the like).
+final _cutOff = RegExp(
+  'Connection terminated|Connection reset|Connection closed|Broken pipe|Software caused connection abort|timed out',
+);
+
+/// The Java network exceptions an Android Firebase error can carry as text:
+/// `ConnectException`'s "Failed to connect to", `UnknownHostException`'s
+/// "Unable to resolve host".
+final _androidOffline = RegExp('Failed to connect to|Unable to resolve host');
 
 /// An error whose payload was dropped before it could reach Sentry, leaving
 /// only what is safe: the original type, and the stack trace it came with.
