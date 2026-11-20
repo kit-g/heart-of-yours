@@ -219,6 +219,22 @@ void main() {
     await tester.pumpTimes();
   }
 
+  // Profile's section headings share their row with a button; at large text
+  // on the narrowest phones a longer language ran that row past the edge
+  // (#701). Scrolled to the Charts heading, so the row is laid out.
+  for (final locale in L.supportedLocales) {
+    testWidgets('profile lays out at 2x text under $locale on a 360dp phone', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await pumpTo(tester, _Screen.profile, locale);
+      tester.view.physicalSize = const Size(1080, 2400);
+      await tester.pumpTimes();
+      final l = L.of(tester.element(find.byType(Navigator).first));
+      await tester.scrollUntilVisible(find.text(l.newChart), 300, scrollable: find.byType(Scrollable).first);
+      await tester.pumpTimes();
+    });
+  }
+
   for (final locale in L.supportedLocales) {
     for (final screen in _Screen.values) {
       testWidgets(
