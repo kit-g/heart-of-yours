@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 ///
 /// Held as a single object shared by reference rather than a flag on each
 /// state class, so the rule is decided in one place and consulted everywhere
-/// with the same answer. Three things decide it:
+/// with the same answer. Four things decide it:
 ///
 /// - [account] — [Auth]'s answer: there is an account behind the session.
 ///   While the session is anonymous the answer is no: without an account
@@ -27,6 +27,11 @@ import 'package:provider/provider.dart';
 ///   opening page dials out in between. Those requests left with no token
 ///   (heart-of-yours#336); asked, rather than set, so it can never disagree
 ///   with the headers themselves.
+/// - [outdated] — the client's other answer: the server has refused this
+///   build (426) and the app is showing the upgrade gate. Nothing it sends
+///   from then on can be answered, and every request that tries is another
+///   426 — another report, another redraw of the gate (#683). Asked, like
+///   [hasToken], of the flag the client's hook sets, so there is one.
 ///
 /// Allowed by default, so a class built without an [Auth] behind it (tests,
 /// tools) keeps its remote leg.
@@ -40,12 +45,16 @@ class RemoteAccess {
   /// The client carries the account's token.
   final bool Function() hasToken;
 
-  new({bool allowed = true, bool Function()? hasToken})
+  /// The server no longer serves this build.
+  final bool Function() outdated;
+
+  new({bool allowed = true, bool Function()? hasToken, bool Function()? outdated})
     : account = allowed,
       replaying = false,
-      hasToken = hasToken ?? _always;
+      hasToken = hasToken ?? _always,
+      outdated = outdated ?? _never;
 
-  bool get allowed => account && !replaying && hasToken();
+  bool get allowed => account && !replaying && hasToken() && !outdated();
 
   static RemoteAccess of(BuildContext context) {
     return Provider.of<RemoteAccess>(context, listen: false);
@@ -53,3 +62,5 @@ class RemoteAccess {
 }
 
 bool _always() => true;
+
+bool _never() => false;

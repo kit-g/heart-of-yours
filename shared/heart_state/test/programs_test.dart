@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -34,6 +37,7 @@ void main() {
   Programs relaunch() {
     return Programs(
       service: local,
+      retryDelays: const [],
       remoteService: remote,
       templates: templates,
       remote: access,
@@ -51,6 +55,7 @@ void main() {
     sessionsChanged = 0;
     programs = Programs(
       service: local,
+      retryDelays: const [],
       remoteService: remote,
       templates: templates,
       remote: access,
@@ -423,6 +428,7 @@ void main() {
       final kept = <String>[];
       programs = Programs(
         service: local,
+        retryDelays: const [],
         remoteService: remote,
         templates: templates,
         remote: access,
@@ -547,6 +553,127 @@ void main() {
       await relaunch().init();
 
       expect(remote.calls.where((each) => each.startsWith('getProgramActions')), hasLength(1));
+    });
+  });
+
+  group('program reads, a few at a time (#660)', () {
+    const throttled = {'code': 'server_error', 'reason': 'Internal server error'};
+
+    Programs retrying() {
+      return Programs(
+        service: local,
+        remoteService: remote,
+        templates: templates,
+        remote: access,
+        retryDelays: const [Duration.zero, Duration.zero],
+        onError: (error, {stacktrace}) => errors.add(error),
+      )..userId = uid;
+    }
+
+    int asked(String call) => remote.calls.where((each) => each == call).length;
+
+    test('many programs are read a few requests at a time, each once', () async {
+      final ids = List.generate(6, (i) => 'p$i');
+      remote.programs = [for (final id in ids) program(id: id)];
+      remote.holding = Completer();
+
+      final done = programs.init();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(remote.inFlight, 4);
+      remote.holding!.complete();
+      await done;
+
+      expect(remote.peak, 4);
+      for (final id in ids) {
+        expect(asked('getProgramActions $id'), 1);
+        expect(asked('getProgramBases $id'), 1);
+      }
+      expect(errors, isEmpty);
+    });
+
+    test('a pull asked for while the launch reads the same program joins it', () async {
+      local.programs[uid] = [program()];
+      remote.programs = [program()];
+      remote.holding = Completer();
+      remote.holds = (call) => call.startsWith('getProgramActions') || call.startsWith('getProgramBases');
+
+      final launch = programs.init();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      final pushed = programs.pull('p1');
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      remote.holding!.complete();
+      await (launch, pushed).wait;
+
+      expect(asked('getProgram p1'), 1);
+      expect(asked('getProgramActions p1'), 1);
+      expect(asked('getProgramBases p1'), 1);
+    });
+
+    test('a throttled read is asked again, and is no error', () async {
+      remote.programs = [program()];
+      remote.bases['p1'] = [
+        ProgramBase(id: 'b1', programId: 'p1', exerciseId: bench, value: 100, at: DateTime.utc(2026, 10, 1)),
+      ];
+      remote.failures['getProgramBases p1'] = [throttled];
+      programs = retrying();
+
+      await programs.init();
+
+      expect(asked('getProgramBases p1'), 2);
+      expect(asked('getProgramActions p1'), 1);
+      expect(programs.currentBasesOf('p1')[bench]?.value, 100);
+      expect(errors, isEmpty);
+    });
+
+    test('one that still fails is reported once, naming the call', () async {
+      remote.programs = [program()];
+      remote.failures['getProgramBases p1'] = [throttled, throttled, throttled];
+      programs = retrying();
+
+      await programs.init();
+
+      expect(asked('getProgramBases p1'), 3);
+      expect(errors, hasLength(1));
+      expect(errors.single, isNot(isA<ParallelWaitError>()));
+      expect('${errors.single}', contains('getProgramBases'));
+      expect('${errors.single}', isNot(contains('getProgramActions')));
+    });
+
+    test('both failing are one report naming both', () async {
+      remote.programs = [program()];
+      remote.failures['getProgramActions p1'] = [throttled, throttled, throttled];
+      remote.failures['getProgramBases p1'] = [throttled, throttled, throttled];
+      programs = retrying();
+
+      await programs.init();
+
+      expect(errors, hasLength(1));
+      expect('${errors.single}', allOf(contains('getProgramActions'), contains('getProgramBases')));
+    });
+
+    test('a failure the client raised is retried, and reported as itself', () async {
+      const dropped = FormatException('empty response');
+      remote.programs = [program()];
+      remote.failures['getProgramActions p1'] = [dropped, dropped, dropped];
+      programs = retrying();
+
+      await programs.init();
+
+      expect(asked('getProgramActions p1'), 3);
+      expect(errors, [dropped]);
+    });
+
+    test('a refusal is not asked again', () async {
+      remote.programs = [program()];
+      remote.failures['getProgramActions p1'] = [
+        {'code': 'program_not_found'},
+      ];
+      programs = retrying();
+
+      await programs.init();
+
+      expect(asked('getProgramActions p1'), 1);
+      expect('${errors.single}', contains('getProgramActions'));
     });
   });
 
@@ -1519,6 +1646,7 @@ void main() {
       final swaps = <(String, String, String)>[];
       programs = Programs(
         service: local,
+        retryDelays: const [],
         remoteService: remote,
         templates: templates,
         remote: access,
@@ -1563,6 +1691,7 @@ void main() {
       final swaps = <(String, String, String)>[];
       programs = Programs(
         service: local,
+        retryDelays: const [],
         remoteService: remote,
         templates: templates,
         remote: access,
@@ -1697,6 +1826,7 @@ void main() {
     test('a climb onto a lift with a rule of its own keeps both rules where they are', () async {
       programs = Programs(
         service: local,
+        retryDelays: const [],
         remoteService: remote,
         templates: templates,
         remote: access,
@@ -1738,6 +1868,7 @@ void main() {
     test('a move that fails to write leaves the others reported, Keep and all', () async {
       programs = Programs(
         service: local,
+        retryDelays: const [],
         remoteService: remote,
         templates: templates,
         remote: access,
@@ -2128,6 +2259,29 @@ class _Remote implements RemoteProgramService {
     if (refusing case final String code) throw {'code': code};
   }
 
+  /// What each program read throws before it answers, one per ask: a
+  /// throttled one is the gateway's `server_error` (#660).
+  final failures = <String, List<Object>>{};
+
+  /// Holds program reads open until it completes, to count them: every one,
+  /// or those [holds] names.
+  Completer<void>? holding;
+  bool Function(String call)? holds;
+  var inFlight = 0;
+  var peak = 0;
+
+  Future<void> _read(String call) async {
+    _call(call);
+    inFlight++;
+    peak = max(peak, inFlight);
+    try {
+      if (holds?.call(call) ?? true) await holding?.future;
+    } finally {
+      inFlight--;
+    }
+    if (failures[call] case final List<Object> pending when pending.isNotEmpty) throw pending.removeAt(0);
+  }
+
   @override
   Future<List<Program>> getPrograms() async {
     _call('getPrograms');
@@ -2136,7 +2290,7 @@ class _Remote implements RemoteProgramService {
 
   @override
   Future<Program> getProgram(String programId) async {
-    _call('getProgram $programId');
+    await _read('getProgram $programId');
     return programs.firstWhere((each) => each.id == programId);
   }
 
@@ -2172,7 +2326,7 @@ class _Remote implements RemoteProgramService {
 
   @override
   Future<({List<ProgramChange> items, String? cursor})> getProgramChanges(String programId, {String? since}) async {
-    _call('getProgramChanges $programId ${since ?? '-'}');
+    await _read('getProgramChanges $programId ${since ?? '-'}');
     final all = changes[programId] ?? const <ProgramChange>[];
     final after = switch (since) {
       final String since => all.skipWhile((each) => each.cursor != since).skip(1),
@@ -2189,7 +2343,7 @@ class _Remote implements RemoteProgramService {
 
   @override
   Future<List<ProgramAction>> getProgramActions(String programId) async {
-    _call('getProgramActions $programId');
+    await _read('getProgramActions $programId');
     return [...?actions[programId]];
   }
 
@@ -2207,7 +2361,7 @@ class _Remote implements RemoteProgramService {
 
   @override
   Future<List<ProgramBase>> getProgramBases(String programId) async {
-    _call('getProgramBases $programId');
+    await _read('getProgramBases $programId');
     return [...?bases[programId]];
   }
 
