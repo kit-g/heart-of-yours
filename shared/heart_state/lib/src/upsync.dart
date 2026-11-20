@@ -225,6 +225,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     _total = 0;
     _report = (uploaded: 0, existing: 0, skipped: 0);
     _reachedServer = false;
+    notifyListeners();
   }
 
   /// The moment a sign-in from an anonymous session lands: the store is owed a

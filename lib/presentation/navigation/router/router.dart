@@ -509,6 +509,13 @@ final class HeartRouter {
     return config.goNamed(_workoutName);
   }
 
+  /// Takes the active workout's sheet down, if it is up, onto the workouts
+  /// tab: the workout it showed is gone from under it, with the session it
+  /// belonged to (#671).
+  void closeActiveWorkout() {
+    if (_isActiveWorkoutOpen) goToWorkouts();
+  }
+
   /// The summary of a workout just finished — from the phone's Finish, or the
   /// watch's (#183), which arrives above any route and has no router context.
   void goToWorkoutDone(String? workoutId) {

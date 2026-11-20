@@ -137,6 +137,7 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
     _status = .idle;
     _done = 0;
     _total = 0;
+    notifyListeners();
   }
 
   /// Runs the backfill from wherever the mirror stands. Shares one run between

@@ -174,6 +174,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     initialized = false;
     _pulled = false;
     _initializing = null;
+    notifyListeners();
   }
 
   /// Paints from the local mirror, then reconciles with the server and retries
@@ -216,13 +217,19 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   Future<void> _init() async {
     if (userId case String id) {
       try {
-        _replace(await _mine(id));
+        // a session that ended while they were read (#671): the last one's
+        final live = await _mine(id);
+        if (userId != id) return;
+        _replace(live);
+        final archived = await _mine(id, archived: true);
+        if (userId != id) return;
         _archived
           ..clear()
-          ..addAll(await _mine(id, archived: true));
+          ..addAll(archived);
       } catch (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
       }
+      if (userId != id) return;
       initialized = true;
       notifyListeners();
 

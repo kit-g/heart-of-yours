@@ -87,6 +87,7 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
   @override
   void onSignOut() {
     workouts = WorkoutAggregation.empty();
+    notifyListeners();
   }
 
   static Stats of(BuildContext context) {

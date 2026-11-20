@@ -532,7 +532,7 @@ class HeartApp extends StatelessWidget {
             auth.dispose();
           },
           create: (context) {
-            // the uid the state classes are currently keyed on
+            // the uid the API client's token was last handed over for
             String? current;
             final auth = Auth(
               service: api,
@@ -569,39 +569,27 @@ class HeartApp extends StatelessWidget {
                 // keeps it.
                 if (user?.id != current) api.unauthenticate();
                 router.refresh();
-                // The uid the state is keyed on went away or changed hands
-                // under a running app: an account signed into from an
-                // anonymous session, or a session that ended without the
-                // app's own log out — Firebase signs a user out by itself on a
-                // revoked or expired token or a deleted or disabled account,
-                // and the server can report the account gone (#671). Neither
-                // has a moment that clears the state on its way out, so it is
-                // cleared here, before the next uid is keyed in; without it the
-                // anonymous session minted next showed the account's history,
-                // goals and dashboard. Only the memory: the rows stay under
-                // the account's uid, unsynced ones included, for when it signs
-                // back in. A log out has cleared already, and clearing twice
-                // is harmless. Exercises forgets it was initialized, which is
-                // what makes `_initApp` run the full startup again for the
-                // next uid.
-                if (current != null && user?.id != current) {
-                  clearUserState(context);
+                switch ((keyedUserId(context), user)) {
+                  // The session ended without the app's own log out, which
+                  // clears on its way out and leaves nothing keyed: Firebase
+                  // signs a user out by itself on a revoked or expired token
+                  // or a deleted or disabled account, and the server can
+                  // report the account gone (#671). Without this, the
+                  // anonymous session minted next showed the account's
+                  // history, goals and dashboard.
+                  case (String _, null):
+                    _sessionLost(context, router);
+                  // One uid replacing another: an account signed into from an
+                  // anonymous session, which has no such moment either.
+                  case (String keyed, final next?) when next.id != keyed:
+                    clearUserState(context);
+                  case _:
                 }
                 current = user?.id;
-                Exercises.of(context).userId = user?.id;
-                Charts.of(context).userId = user?.id;
-                Goals.of(context).userId = user?.id;
-                Anomalies.of(context).userId = user?.id;
-                Health.of(context).userId = user?.id;
-                PreviousExercises.of(context).userId = user?.id;
-                Stats.of(context).userId = user?.id;
-                Templates.of(context).userId = user?.id;
-                Programs.of(context).userId = user?.id;
-                GoEasy.of(context).userId = user?.id;
-                Timers.of(context).userId = user?.id;
-                Workouts.of(context).userId = user?.id;
-                Messages.of(context).userId = user?.id;
-                CoachNotes.of(context).userId = user?.id;
+                // Exercises forgets it was initialized on a clear, which is
+                // what makes `_initApp` run the full startup again for the
+                // next uid.
+                keyUserState(context, user?.id);
                 if (user?.id case String id) unawaited(_prepareOpening(context, id));
               },
               onError: reportToSentry,
@@ -1237,6 +1225,23 @@ Future<void> _prepareOpening(BuildContext context, String userId) async {
   } finally {
     unawaited(LaunchScreen.release());
   }
+}
+
+/// What the app's own log out does around `clearState`, for a session that
+/// ended without one (#671): the theme goes back to the default, as it does on
+/// every sign-out, the account's state is forgotten in memory, and an open
+/// workout sheet, whose workout went with it, closes instead of rebuilding
+/// over nothing.
+///
+/// Memory only, and nothing is erased: the account's rows, unsynced ones
+/// included, stay under its uid for when it signs back in. The push client
+/// stops on the same user change (`PushPresenter`), dropping the device's
+/// token; the server is not told, since the session that could tell it is
+/// already gone.
+void _sessionLost(BuildContext context, HeartRouter router) {
+  AppTheme.of(context).onSignOut();
+  clearUserState(context);
+  router.closeActiveWorkout();
 }
 
 /// Where a workout notification lands: the workout if it is still going, the

@@ -138,7 +138,7 @@ void main() {
       expect(notifications, 0);
     });
 
-    test('onSignOut resets workouts to empty without notifying', () async {
+    test('onSignOut resets workouts to empty and says so', () async {
       // Put some non-empty state in
       service.workoutSummary = WorkoutAggregation.fromRows([
         {
@@ -155,7 +155,7 @@ void main() {
 
       expect(stats.workouts, WorkoutAggregation.empty());
       expect(stats.workouts.isNotEmpty, isFalse);
-      expect(notifications, 0, reason: 'onSignOut should not call notifyListeners');
+      expect(notifications, 1, reason: 'what was on screen goes, for whatever is still showing it (#671)');
     });
 
     test('getWeeklyWorkoutCount counts the week that starts on the chosen day, for the user', () async {

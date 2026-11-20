@@ -1119,7 +1119,11 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     final ThemeData(:colorScheme, :scaffoldBackgroundColor, :textTheme, :platform) = Theme.of(context);
     final l = L.of(context);
     final workouts = widget.workouts;
-    final active = workouts.activeWorkout!;
+    // gone from under the open sheet with the session it belonged to (#671):
+    // the route takes the sheet down, and until it does there is nothing to
+    // draw
+    final active = workouts.activeWorkout;
+    if (active == null) return const SizedBox.shrink();
     // a program's session (#349): its plan under each exercise, and a lighter
     // cycle said once at the top; a coach's program runs under Your coach
     // alone (#593)
