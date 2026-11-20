@@ -361,12 +361,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.weeklyLens,
     _Guideline.androidTapTarget,
-    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
+    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:118, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
   ),
   (
     _Screen.weeklyLens,
     _Guideline.iosTapTarget,
-    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
+    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:118, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
   ),
 
   // The weekly sets card's balance pairs (#342): one drawn, one with too
@@ -377,12 +377,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.weeklyBalance,
     _Guideline.androidTapTarget,
-    'bottom nav bar items, and the card\'s Patterns/Muscles/Balance SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
+    'bottom nav bar items, and the card\'s Patterns/Muscles/Balance SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:118, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
   ),
   (
     _Screen.weeklyBalance,
     _Guideline.iosTapTarget,
-    'bottom nav bar items, and the card\'s Patterns/Muscles/Balance SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
+    'bottom nav bar items, and the card\'s Patterns/Muscles/Balance SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:118, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
   ),
 
   // The dashboard's training-wide charts (#137): a volume chart with its
@@ -461,7 +461,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     (
       _Screen.programs,
       guideline,
-      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:279) and its Start (programs.dart:288) at the house 32pt, and a waiting coach program\'s Start (40pt FilledButton, lib/presentation/routes/workout/program_sent.dart) (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:101), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:424) and its Start (programs.dart:433) at the house 32pt, and a waiting coach program\'s Start (40pt FilledButton, lib/presentation/routes/workout/program_sent.dart) (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.programPage,

@@ -103,13 +103,11 @@ class _WeeklyLensCardState extends State<_WeeklyLensCard> {
           constraints: const BoxConstraints(minHeight: _tileHeaderHeight),
           // three choices beside the title outgrow a phone: the choices then
           // take a line of their own under it
-          child: Wrap(
-            alignment: .spaceBetween,
-            crossAxisAlignment: .center,
+          child: HeadingRow(
             spacing: 8,
             runSpacing: 8,
-            children: [
-              Text(l.lensTitle, style: textTheme.titleLarge, maxLines: 2, overflow: .ellipsis),
+            heading: Text(l.lensTitle, style: textTheme.titleLarge, maxLines: 2, overflow: .ellipsis),
+            actions: [
               ValueListenableBuilder<_LensKey>(
                 valueListenable: _key,
                 builder: (_, key, _) {
