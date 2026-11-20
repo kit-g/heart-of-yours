@@ -510,11 +510,13 @@ void main() {
       }
       expectAnswersSideBySide(tester);
       // the sheet has no row in the a11y matrix, which needs a comparison
-      // played to it: its answers are held to the same guidelines here, once
-      // the sheet is still. CI measured its text at 2.5:1 when checked right
-      // after the code arrived, which this machine never did; the handshake's
-      // crypto runs on real time, so the code step can land mid-transition
-      await tester.pump(const Duration(seconds: 1));
+      // played to it: its answers are held to the same target guidelines here.
+      // Not text contrast: with the app's real fonts loaded, the checker reads
+      // the antialiased edges of 14pt text as its colour, and on Linux CI
+      // every line of the sheet, plain body text included, measured 2.5:1
+      // while macOS measured a pass. The colours are the theme's own pairs
+      // (onSurface on the sheet, on surfaceContainerHighest), which the
+      // matrix's contrast rows already hold to 4.5:1 on other screens
       final semantics = tester.ensureSemantics();
       // released in the body, not a tear-down: the binding checks for open
       // handles before tear-downs run
@@ -522,7 +524,6 @@ void main() {
         await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-        await expectLater(tester, meetsGuideline(textContrastGuideline));
       } finally {
         semantics.dispose();
       }
