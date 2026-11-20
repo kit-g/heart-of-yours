@@ -18,6 +18,7 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:heart/presentation/widgets/heading_row.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -44,6 +45,76 @@ enum _Screen {
   coachingPrograms,
   coachingMe,
   invitation,
+}
+
+/// A folder of two templates, neither in a program: what Programs offers to
+/// make a program from, and what gives Templates its folder button's company.
+final _split = TemplateFolder(id: 'f1', name: 'Split');
+
+/// What makes every section heading and its conditional actions render: a
+/// history (Weekly lens shows only with one), an active goal and an achieved
+/// one (Goals' flip button), and [_split].
+void _stubHeadingFixtures(MockLocalDatabase db, MockApi api) {
+  when(
+    db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
+  ).thenAnswer((_) async => WorkoutAggregation.dummy());
+  when(db.getLensSets(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => <LensSets>[]);
+
+  Goal goal(String id) => Goal(
+    id: id,
+    metric: .workouts,
+    stages: [GoalStage(id: '$id-0', target: 3)],
+  );
+  when(
+    db.getTargetUserGoals(
+      requesterId: anyNamed('requesterId'),
+      targetUserId: anyNamed('targetUserId'),
+      archived: anyNamed('archived'),
+    ),
+  ).thenAnswer(
+    (invocation) async => [
+      goal(switch (invocation.namedArguments[#archived]) {
+        true => 'achieved',
+        _ => 'active',
+      }),
+    ],
+  );
+
+  Template session(String id, int order, String name) =>
+      Template.empty(id: id, order: order, folder: _split)..name = name;
+  when(db.getTemplates(any)).thenAnswer((_) async => [session('t1', 0, 'Push'), session('t2', 1, 'Pull')]);
+  when(db.getTemplateFolders(any)).thenAnswer((_) async => [_split]);
+  when(api.getTemplates()).thenAnswer((_) async => null);
+  when(api.getFolders(userId: anyNamed('userId'))).thenAnswer((_) async => [_split]);
+}
+
+/// Scrolls the line headed [heading] into view and checks where its actions
+/// went: beside the heading, under it, or — with [beside] null — either, so
+/// long as they stay on the screen.
+Future<void> _expectHeading(WidgetTester tester, String heading, {required bool? beside}) async {
+  final text = find.descendant(of: find.byType(HeadingRow), matching: find.text(heading));
+  await tester.scrollUntilVisible(text, 200, scrollable: find.byType(Scrollable).first);
+  await tester.pumpTimes();
+
+  final row = tester.widget<HeadingRow>(find.ancestor(of: text, matching: find.byType(HeadingRow)).first);
+  final headingRect = tester.getRect(find.byWidget(row.heading));
+  final actions = row.actions
+      .map((action) => tester.getRect(find.byWidget(action)))
+      .where((rect) => !rect.isEmpty)
+      .reduce((a, b) => a.expandToInclude(b));
+  final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+  final shared = actions.top < headingRect.bottom;
+
+  expect(actions.right, lessThanOrEqualTo(screen.width), reason: '"$heading": its actions run off the screen');
+  if (beside != null) {
+    expect(shared, beside, reason: '"$heading": its actions should be ${beside ? 'beside' : 'under'} it');
+  }
+  switch (shared) {
+    case true:
+      expect(actions.left, greaterThanOrEqualTo(headingRect.right), reason: '"$heading": its actions overlap it');
+    case false:
+      expect(actions.top, greaterThanOrEqualTo(headingRect.bottom), reason: '"$heading": its actions overlap it');
+  }
 }
 
 void main() {
@@ -108,11 +179,12 @@ void main() {
     );
   });
 
-  Future<void> pumpTo(WidgetTester tester, _Screen screen, Locale locale) async {
+  Future<void> pumpTo(WidgetTester tester, _Screen screen, Locale locale, {Size phone = const Size(390, 844)}) async {
     // a phone-plausible surface: tight enough that copy that cannot fit says
     // so, wide enough that the fallback test font's metrics don't cry wolf
-    tester.view.physicalSize = const Size(1170, 2532);
-    tester.view.devicePixelRatio = 3.0;
+    const devicePixelRatio = 3.0;
+    tester.view.physicalSize = phone * devicePixelRatio;
+    tester.view.devicePixelRatio = devicePixelRatio;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
@@ -209,20 +281,48 @@ void main() {
     await tester.pumpTimes();
   }
 
-  // Profile's section headings share their row with a button; at large text
-  // on the narrowest phones a longer language ran that row past the edge
-  // (#701). Scrolled to the Charts heading, so the row is laid out.
+  // Section headings share their line with their actions — Profile's Goals,
+  // Weekly lens and Charts, the Workout tab's Programs and Templates. At large
+  // text on the narrowest phones a longer language ran that line past the edge
+  // (#701); the actions now go under the heading instead. One boot per locale
+  // and text size visits all five, with what makes the conditional actions
+  // render: an achieved goal beside an active one, and a folder of templates
+  // that a program can be made from.
   for (final locale in L.supportedLocales) {
-    testWidgets('profile lays out at 2x text under $locale on a 360dp phone', (tester) async {
-      tester.platformDispatcher.textScaleFactorTestValue = 2;
-      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await pumpTo(tester, _Screen.profile, locale);
-      tester.view.physicalSize = const Size(1080, 2400);
-      await tester.pumpTimes();
-      final l = L.of(tester.element(find.byType(Navigator).first));
-      await tester.scrollUntilVisible(find.text(l.newChart), 300, scrollable: find.byType(Scrollable).first);
-      await tester.pumpTimes();
-    });
+    for (final scale in [1.0, 2.0]) {
+      testWidgets('section headings at ${scale}x text under $locale on a 360dp phone', (tester) async {
+        SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-programs': 'on'});
+        _stubHeadingFixtures(db, api);
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await pumpTo(tester, _Screen.profile, locale, phone: const Size(360, 800));
+
+        final l = L.of(tester.element(find.byType(Navigator).first));
+        // English fits each line at 1x; the longer languages at 2x do not
+        final beside = switch ((locale.languageCode, scale)) {
+          ('en', 1.0) => true,
+          ('es' || 'fr' || 'ru', 2.0) => false,
+          _ => null,
+        };
+        for (final heading in [l.goals, l.charts]) {
+          await _expectHeading(tester, heading, beside: beside);
+        }
+        // three choices beside the title outgrow a phone in any language
+        await _expectHeading(tester, l.lensTitle, beside: false);
+
+        await tester.tapByKey(AppKeys.workoutStack);
+        await tester.pumpTimes();
+        // the startup chain that would load them runs in the root zone, which
+        // a widget test never pumps (see templates_test.dart's openWorkoutTab)
+        final templates = Templates.of(tester.element(find.byType(MaterialApp)));
+        await templates.init();
+        templates.notifyListeners();
+        await tester.pumpTimes();
+        for (final heading in [l.programs, l.templates]) {
+          await _expectHeading(tester, heading, beside: beside);
+        }
+      });
+    }
   }
 
   for (final locale in L.supportedLocales) {
