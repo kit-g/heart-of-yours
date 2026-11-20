@@ -103,19 +103,54 @@ Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
       debugPrint('$stacktrace');
     }
   }
-  if (_isOffline(exception)) return Future.value();
-  return Sentry.captureException(
-    exception,
-    stackTrace: stacktrace,
-    withScope: switch (exception) {
-      // One issue per status and endpoint. Grouped by stack, every async
-      // chain into the same call became an issue of its own — fifteen of them
-      // for what was mostly one failure. The message is the grouping key:
-      // it names the status, verb and templated path, and never the body.
-      NetworkException() => (scope) => scope.fingerprint = ['NetworkException', exception.toString()],
-      _ => null,
-    },
-  );
+  return switch (_reportable(exception, stacktrace)) {
+    (final Object error, final stacktrace) => Sentry.captureException(
+      error,
+      stackTrace: stacktrace,
+      withScope: switch (error) {
+        // One issue per status and endpoint. Grouped by stack, every async
+        // chain into the same call became an issue of its own — fifteen of them
+        // for what was mostly one failure. The message is the grouping key:
+        // it names the status, verb and templated path, and never the body.
+        NetworkException() => (scope) => scope.fingerprint = ['NetworkException', error.toString()],
+        _ => null,
+      },
+    ),
+    null => Future.value(),
+  };
+}
+
+/// What to report for [error], with its stack trace: the error itself, or
+/// the first failure inside a wrapper that is worth reporting; null when
+/// there is none, because all of it was the network not answering.
+///
+/// A wrapper is unwrapped because its own type says nothing: `.wait` on a
+/// record of requests (`Coaching.load`) fails as a [ParallelWaitError]
+/// whether a leg was offline or the server refused it, and only the leg says
+/// which. Reported as the leg, a refusal groups with the same
+/// [NetworkException] from anywhere else.
+(Object, dynamic)? _reportable(Object? error, dynamic stacktrace) {
+  return switch (error) {
+    null => null,
+    AsyncError(:final error, :final stackTrace) => _reportable(error, stackTrace),
+    ParallelWaitError(:final errors) => _legs(errors).map((each) => _reportable(each, stacktrace)).nonNulls.firstOrNull,
+    _ when _isOffline(error) => null,
+    _ => (error, stacktrace),
+  };
+}
+
+/// The legs of a [ParallelWaitError], an [AsyncError] for each that failed:
+/// from a list, or from a record of the arities the app waits on.
+Iterable<Object?> _legs(Object? errors) {
+  return switch (errors) {
+    Iterable each => each,
+    (final a, final b) => [a, b],
+    (final a, final b, final c) => [a, b, c],
+    (final a, final b, final c, final d) => [a, b, c, d],
+    (final a, final b, final c, final d, final e) => [a, b, c, d, e],
+    (final a, final b, final c, final d, final e, final f) => [a, b, c, d, e, f],
+    _ => const [],
+  };
 }
 
 /// Whether [error] is a request that never got an answer — offline, DNS, a
@@ -123,15 +158,18 @@ Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
 /// a refusal from a server. Every caller already retries on the next launch or
 /// resume, and there is nothing to fix.
 ///
-/// A status from our server is a [NetworkException], not one of these, and is
-/// still reported; so is a Firebase error that is not about the network.
+/// Still reported: a status from our server (a [NetworkException]); a
+/// Firebase error that is not about the network; a certificate the handshake
+/// refused, which is our certificate broken or someone in the middle; and a
+/// [TimeoutException], because the only deadline on a request is our own
+/// (`Pushes.unregister`), there to report a server reachable but slow.
 bool _isOffline(Object? error) {
   return switch (error) {
-    // through the http client, which wraps whatever the socket said
-    http.ClientException() => true,
-    // raised outside it: a socket or a TLS handshake cut off (HEART-OF-YOURS-2Z),
-    // or a deadline a caller put on a request
-    SocketException() || HandshakeException() || TimeoutException() => true,
+    // through the http client, which wraps whatever the socket said, or a
+    // socket error raised outside it
+    http.ClientException() || SocketException() => true,
+    // a TLS handshake the connection ended under (HEART-OF-YOURS-2Z)
+    HandshakeException() => _cutOff.hasMatch('$error'),
     // a token refresh that could not reach Google: named (HEART-OF-YOURS-1R)…
     FirebaseAuthException(code: 'network-request-failed') => true,
     // …or, on Android, sometimes only in the message of an `unknown` (-33)
@@ -139,6 +177,12 @@ bool _isOffline(Object? error) {
     _ => false,
   };
 }
+
+/// A handshake the connection ended under, as against one that failed on its
+/// merits (`CERTIFICATE_VERIFY_FAILED` and the like).
+final _cutOff = RegExp(
+  'Connection terminated|Connection reset|Connection closed|Broken pipe|Software caused connection abort|timed out',
+);
 
 /// The Java network exceptions an Android Firebase error can carry as text:
 /// `ConnectException`'s "Failed to connect to", `UnknownHostException`'s

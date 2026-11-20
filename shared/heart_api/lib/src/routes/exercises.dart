@@ -135,7 +135,7 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
       String text => await post(Router.exercisePreferences, body: {'exerciseId': exerciseId, 'note': text}),
       null => await delete('${Router.exercisePreferences}/$exerciseId', query: {'pref': 'note'}),
     };
-    if (status < 200 || status >= 300) throw {'code': body['code'], 'status': status};
+    if (status < 200 || status >= 300) throw _unexpected(body, status);
   }
 
   @override

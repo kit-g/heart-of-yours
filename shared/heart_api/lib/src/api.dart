@@ -91,46 +91,70 @@ class Api
     instance.defaultHeaders = headers;
   }
 
-  // Every verb runs through [_answered]: the one answer that must never come
-  // back is caught before any caller can act on it, and any other failure
-  // comes back knowing the request it answers.
+  // Every verb runs through [_send]: the one answer that must never come back
+  // is caught before any caller can act on it, and every other answer comes
+  // back knowing the request it answers.
 
   @override
   Future<Response> get(String endpoint, {Map<String, String>? headers, Map<String, dynamic>? query}) {
-    return super.get(endpoint, headers: headers, query: query).then((r) => _answered(r, 'GET', endpoint));
+    return _send(super.get(endpoint, headers: headers, query: query), 'GET', endpoint);
   }
 
   @override
   Future<Response> post(String endpoint, {Map<String, String>? headers, Json? body, Map<String, dynamic>? query}) {
-    return super.post(endpoint, headers: headers, body: body, query: query).then((r) => _answered(r, 'POST', endpoint));
+    return _send(super.post(endpoint, headers: headers, body: body, query: query), 'POST', endpoint);
   }
 
   @override
   Future<Response> put(String endpoint, {Map<String, String>? headers, Json? body}) {
-    return super.put(endpoint, headers: headers, body: body).then((r) => _answered(r, 'PUT', endpoint));
+    return _send(super.put(endpoint, headers: headers, body: body), 'PUT', endpoint);
   }
 
   @override
   Future<Response> patch(String endpoint, {Map<String, String>? headers, Json? body}) {
-    return super.patch(endpoint, headers: headers, body: body).then((r) => _answered(r, 'PATCH', endpoint));
+    return _send(super.patch(endpoint, headers: headers, body: body), 'PATCH', endpoint);
   }
 
   @override
   Future<Response> delete(String endpoint, {Map<String, String>? headers, Map<String, dynamic>? query}) {
-    return super.delete(endpoint, headers: headers, query: query).then((r) => _answered(r, 'DELETE', endpoint));
+    return _send(super.delete(endpoint, headers: headers, query: query), 'DELETE', endpoint);
   }
 
-  /// [response], with a failure's body wrapped as a [_ServerAnswer] naming
-  /// the request — the path as the request carried it, which is what
-  /// [NetworkException] templates — and the tripwire checked first.
-  Response _answered(Response response, String method, String endpoint) {
-    return switch (_tripwire(response)) {
-      (final json, final code && (< 200 || >= 300)) => (
-        _ServerAnswer(json, statusCode: code, method: method, path: Uri.https(gateway, endpoint).path),
-        code,
-      ),
-      final response => response,
-    };
+  /// [request]'s answer, the tripwire checked first, with the request it
+  /// answered attached: a failure's body wrapped as a [_ServerAnswer], a
+  /// success remembered in [_requests] for a route that cannot read it.
+  ///
+  /// A failure with no body is thrown by the mixin itself, before any route
+  /// sees it, as a bare [NetworkException]; it becomes a [_ServerAnswer] too,
+  /// so every answer from the server reads the same, to `heart_state` and in
+  /// Sentry alike.
+  ///
+  /// The path is the one the request carried, which is what
+  /// [NetworkException] templates.
+  Future<Response> _send(Future<Response> request, String method, String endpoint) {
+    final path = Uri.https(gateway, endpoint).path;
+    return request.then(
+      (response) => switch (_tripwire(response)) {
+        (final json, final code && (< 200 || >= 300)) => (
+          _ServerAnswer(json, statusCode: code, method: method, path: path),
+          code,
+        ),
+        (final json, _) => _remembered(response, json, (method: method, path: path)),
+      },
+      onError: (Object error, StackTrace stacktrace) => switch (error) {
+        _ServerAnswer() => Error.throwWithStackTrace(error, stacktrace),
+        NetworkException(:final statusCode) => Error.throwWithStackTrace(
+          _ServerAnswer({}, statusCode: statusCode, method: method, path: path),
+          stacktrace,
+        ),
+        _ => Error.throwWithStackTrace(error, stacktrace),
+      },
+    );
+  }
+
+  static Response _remembered(Response response, Json json, ({String method, String path}) request) {
+    _requests[json] = request;
+    return response;
   }
 
   /// The server refused the token because it belongs to an anonymous

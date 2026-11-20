@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:heart_api/src/api.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:http/http.dart' as http;
 import 'package:mockito/mockito.dart';
 import 'package:network_utils/network_utils.dart' show NetworkException;
 import 'package:test/test.dart';
@@ -467,7 +468,9 @@ void main() {
       );
     });
 
-    test('a success in a shape the route cannot read is thrown as its status alone', () async {
+    // still an answer to heart_state (an empty map, so "the server answered"),
+    // grouped by its own endpoint, and without the account's data
+    test('a success in a shape the route cannot read names its request and drops the body', () async {
       respond(
         client: client,
         method: 'POST',
@@ -479,9 +482,41 @@ void main() {
       final thrown = await api
           .createApiToken(name: 'My sheet', expiry: .year)
           .then<Object?>((_) => null, onError: (Object e) => e);
-      expect(thrown, isA<NetworkException>().having((e) => e.statusCode, 'statusCode', 200));
-      expect(thrown, isNot(isA<Map>()));
-      expect('$thrown', isNot(contains('hrt_secret')));
+      expect(thrown, isA<NetworkException>());
+      expect('$thrown', 'NetworkException(200 POST /v1/accounts/tokens)');
+      expect(thrown, isA<Map>().having((m) => m.isEmpty, 'isEmpty', isTrue));
+    });
+
+    test('a workout id minted as a start time is templated', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.userWorkout('uid', '2024-03-05T18:22:11.123Z'),
+        statusCode: 404,
+        body: {'code': 'not_found'},
+      );
+
+      await expectLater(
+        api.getTargetWorkout(requesterId: 'uid', targetUserId: 'uid', workoutId: '2024-03-05T18:22:11.123Z'),
+        throwsA(
+          isA<NetworkException>().having(
+            (e) => '$e',
+            'toString',
+            'NetworkException(404 GET /v1/accounts/uid/workouts/{id})',
+          ),
+        ),
+      );
+    });
+
+    test('a failure with no body at all is an answer naming its request too', () async {
+      final uri = Uri.https('api.example.com', '${Router.workouts}/w1');
+      when(
+        client.delete(uri, headers: anyNamed('headers')),
+      ).thenAnswer((_) async => StubResponse('', 502, request: http.Request('DELETE', uri)));
+
+      final thrown = await api.deleteWorkout('w1').then<Object?>((_) => null, onError: (Object e) => e);
+      expect('$thrown', 'NetworkException(502 DELETE /v1/workouts/w1)');
+      expect(thrown, isA<Map>());
     });
   });
 }
