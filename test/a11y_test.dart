@@ -1018,16 +1018,8 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingClient, _Guideline.labeledTapTarget, null),
   (_Screen.coachingClient, _Guideline.textContrastLight, null),
   (_Screen.coachingClient, _Guideline.textContrastDark, null),
-  (
-    _Screen.coachingClient,
-    _Guideline.androidTapTarget,
-    'Message and Log a workout are PrimaryButton.shrunk (lib/presentation/routes/coaching/client.dart:673, lib/presentation/routes/coaching/log_for.dart:36), 32pt with no larger hit area yet: re-enable once PrimaryButton takes a 48pt hit area (PR #690)',
-  ),
-  (
-    _Screen.coachingClient,
-    _Guideline.iosTapTarget,
-    'Message and Log a workout are PrimaryButton.shrunk (lib/presentation/routes/coaching/client.dart:673, lib/presentation/routes/coaching/log_for.dart:36), 32pt with no larger hit area yet: re-enable once PrimaryButton takes a 48pt hit area (PR #690)',
-  ),
+  (_Screen.coachingClient, _Guideline.androidTapTarget, null),
+  (_Screen.coachingClient, _Guideline.iosTapTarget, null),
   // someone no longer coached (#556): who they were, and the coach's notes
   (_Screen.coachingFormerClient, _Guideline.labeledTapTarget, null),
   (_Screen.coachingFormerClient, _Guideline.textContrastLight, null),
@@ -1043,16 +1035,8 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingClientCopy, _Guideline.labeledTapTarget, null),
   (_Screen.coachingClientCopy, _Guideline.textContrastLight, null),
   (_Screen.coachingClientCopy, _Guideline.textContrastDark, null),
-  (
-    _Screen.coachingClientCopy,
-    _Guideline.androidTapTarget,
-    'beside the client on a page this wide (#693), with Log a workout and Reply about this, PrimaryButton.shrunk (lib/presentation/routes/coaching/log_for.dart:36, lib/presentation/routes/coaching/desk.dart:467), 32pt with no larger hit area yet: re-enable once PrimaryButton takes a 48pt hit area (PR #690)',
-  ),
-  (
-    _Screen.coachingClientCopy,
-    _Guideline.iosTapTarget,
-    'beside the client on a page this wide (#693), with Log a workout and Reply about this, PrimaryButton.shrunk (lib/presentation/routes/coaching/log_for.dart:36, lib/presentation/routes/coaching/desk.dart:467), 32pt with no larger hit area yet: re-enable once PrimaryButton takes a 48pt hit area (PR #690)',
-  ),
+  (_Screen.coachingClientCopy, _Guideline.androidTapTarget, null),
+  (_Screen.coachingClientCopy, _Guideline.iosTapTarget, null),
 
   (_Screen.coachingMessages, _Guideline.labeledTapTarget, null),
   (_Screen.coachingMessages, _Guideline.textContrastLight, null),
@@ -1069,16 +1053,8 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingNotes, _Guideline.labeledTapTarget, null),
   (_Screen.coachingNotes, _Guideline.textContrastLight, null),
   (_Screen.coachingNotes, _Guideline.textContrastDark, null),
-  (
-    _Screen.coachingNotes,
-    _Guideline.androidTapTarget,
-    'beside the client on a page this wide (#693), with Log a workout and Reply about this, PrimaryButton.shrunk (lib/presentation/routes/coaching/log_for.dart:36, lib/presentation/routes/coaching/desk.dart:467), 32pt with no larger hit area yet: re-enable once PrimaryButton takes a 48pt hit area (PR #690)',
-  ),
-  (
-    _Screen.coachingNotes,
-    _Guideline.iosTapTarget,
-    'beside the client on a page this wide (#693), with Log a workout and Reply about this, PrimaryButton.shrunk (lib/presentation/routes/coaching/log_for.dart:36, lib/presentation/routes/coaching/desk.dart:467), 32pt with no larger hit area yet: re-enable once PrimaryButton takes a 48pt hit area (PR #690)',
-  ),
+  (_Screen.coachingNotes, _Guideline.androidTapTarget, null),
+  (_Screen.coachingNotes, _Guideline.iosTapTarget, null),
 
   (_Screen.coachingPrograms, _Guideline.labeledTapTarget, null),
   (_Screen.coachingPrograms, _Guideline.textContrastLight, null),

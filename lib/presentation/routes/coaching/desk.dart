@@ -650,6 +650,8 @@ class _LatestWorkoutState extends State<_LatestWorkout> {
                   alignment: .centerLeft,
                   child: PrimaryButton.shrunk(
                     key: AppKeys.coachingReplyAbout,
+                    // the house 32pt look, and a full tap target
+                    hitHeight: kMinInteractiveDimension,
                     backgroundColor: colorScheme.secondaryContainer,
                     onPressed: reply,
                     child: Row(
