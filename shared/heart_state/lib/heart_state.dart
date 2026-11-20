@@ -39,6 +39,7 @@ export 'src/program_goals.dart';
 export 'src/program_growth.dart';
 export 'src/program_library.dart';
 export 'src/program_plan.dart';
+export 'src/program_reads.dart' show ProgramReadFailed;
 export 'src/programs.dart';
 export 'src/picker_grouping.dart';
 export 'src/pushes.dart';
