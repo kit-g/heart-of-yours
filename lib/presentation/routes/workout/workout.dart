@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:heart_api/heart_api.dart' show NetworkException;
 import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/utils/headers.dart';

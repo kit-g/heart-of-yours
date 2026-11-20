@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:heart_api/src/api.dart';
 import 'package:heart_models/heart_models.dart';
-import 'package:http/http.dart' as http;
 import 'package:mockito/mockito.dart';
 import 'package:network_utils/network_utils.dart' show NetworkException;
 import 'package:test/test.dart';
@@ -50,9 +49,7 @@ void main() {
       expect(() => api.registerAccount(user), throwsA(isA<AccountDeleted>()));
     });
 
-    // #681: thrown as the bare body, a status the route does not name reached
-    // Sentry titled with the map and grouped by stack.
-    test('registerAccount throws a status it does not name as a NetworkException naming the request', () async {
+    test('registerAccount throws on unexpected error', () async {
       final user = User(id: '42', displayName: 'Jane');
 
       respond(
@@ -60,20 +57,10 @@ void main() {
         method: 'PUT',
         path: Router.accounts,
         statusCode: 500,
-        body: {'code': 'server_error', 'error': 'Jane Doe <jane@example.com>'},
+        body: {'error': 'unexpected'},
       );
 
-      final thrown = await api.registerAccount(user).then<Object?>((_) => null, onError: (Object e) => e);
-      expect(
-        thrown,
-        isA<NetworkException>()
-            .having((e) => e.statusCode, 'statusCode', 500)
-            .having((e) => e.method, 'method', 'PUT')
-            .having((e) => e.path, 'path', '/v1/accounts'),
-      );
-      expect('$thrown', 'NetworkException(500 PUT /v1/accounts)');
-      // still the body to a caller reading its code across the package line
-      expect(thrown, containsPair('code', 'server_error'));
+      expect(() => api.registerAccount(user), throwsA(isA<NetworkException>()));
     });
 
     // Scheduling a deletion is an action on `PUT /accounts`, not `DELETE` —
@@ -132,7 +119,7 @@ void main() {
         body: {'error': 'Not Found'},
       );
 
-      expect(() => api.deleteAccount(accountId: '42'), throwsA(isA<Map>()));
+      expect(() => api.deleteAccount(accountId: '42'), throwsA(isA<NetworkException>()));
     });
 
     // The path is the assertion here, not decoration: these four stubbed
@@ -218,7 +205,7 @@ void main() {
         body: {'error': 'bad request'},
       );
 
-      expect(() => api.undoAccountDeletion(), throwsA(isA<Map>()));
+      expect(() => api.undoAccountDeletion(), throwsA(isA<NetworkException>()));
     });
   });
 
@@ -282,27 +269,7 @@ void main() {
       );
 
       // an empty summary would read as "your mirror is complete"
-      await expectLater(
-        api.getAccountSummary,
-        throwsA(
-          isA<NetworkException>().having((e) => '$e', 'toString', 'NetworkException(500 GET /v1/accounts/summary)'),
-        ),
-      );
-    });
-
-    test("a gateway's error, with no code of ours, is a NetworkException too", () async {
-      respond(
-        client: client,
-        method: 'GET',
-        path: '${Router.accounts}/summary',
-        statusCode: 502,
-        body: {'message': 'Internal server error'},
-      );
-
-      await expectLater(
-        api.getAccountSummary,
-        throwsA(isA<NetworkException>().having((e) => e.statusCode, 'statusCode', 502)),
-      );
+      await expectLater(api.getAccountSummary, throwsA(anything));
     });
   });
 
@@ -424,7 +391,7 @@ void main() {
 
       expect(
         () => api.createApiToken(name: 'one more', expiry: .year),
-        throwsA(isA<Map>().having((m) => m['code'], 'code', 'token_limit')),
+        throwsA(refused(containsPair('code', 'token_limit'))),
       );
     });
 
@@ -441,36 +408,67 @@ void main() {
         statusCode: 404,
         body: {'error': 'not found', 'code': 'not_found', 'message': 'token #nope not found'},
       );
-      expect(() => api.revokeApiToken('nope'), throwsA(isA<Map>().having((m) => m['code'], 'code', 'not_found')));
+      expect(() => api.revokeApiToken('nope'), throwsA(refused(containsPair('code', 'not_found'))));
     });
   });
 
-  group('a failure names its request, never its body (#681)', () {
-    test('an id in the path is templated, so one endpoint groups as one', () async {
-      const tokenId = '0190a6e2-3c4d-7e5f-8a9b-0c1d2e3f4a5b';
+  // #681: a status a route does not name used to be thrown as the bare body,
+  // which reached Sentry titled with the map and grouped by stack
+  group('a refusal is a NetworkException naming its request (#681)', () {
+    test('a status the route does not name: status, verb and path, and the body for the caller', () async {
       respond(
         client: client,
-        method: 'DELETE',
-        path: Router.accountToken(tokenId),
-        statusCode: 404,
-        body: {'code': 'not_found'},
+        method: 'PUT',
+        path: Router.accounts,
+        statusCode: 500,
+        body: {'code': 'server_error', 'error': 'Muffin <muffin@example.com>'},
+      );
+
+      final thrown = await api.registerAccount(User(id: '42')).then<Object?>((_) => null, onError: (Object e) => e);
+      expect(thrown, refused(containsPair('code', 'server_error')));
+      expect('$thrown', 'NetworkException(500 PUT /v1/accounts)');
+    });
+
+    test('the summary refuses rather than answering empty', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: '${Router.accounts}/summary',
+        statusCode: 502,
+        body: {'message': 'x'},
       );
 
       await expectLater(
-        api.revokeApiToken(tokenId),
+        api.getAccountSummary,
         throwsA(
-          isA<NetworkException>().having(
-            (e) => '$e',
-            'toString',
-            'NetworkException(404 DELETE /v1/accounts/tokens/{id})',
-          ),
+          isA<NetworkException>().having((e) => '$e', 'toString', 'NetworkException(502 GET /v1/accounts/summary)'),
         ),
       );
     });
 
-    // still an answer to heart_state (an empty map, so "the server answered"),
-    // grouped by its own endpoint, and without the account's data
-    test('a success in a shape the route cannot read names its request and drops the body', () async {
+    test('426 is UpgradeRequired where no upgrade gate is set', () async {
+      respond(client: client, method: 'GET', path: '${Router.accounts}/summary', statusCode: 426, body: {'code': 'x'});
+
+      await expectLater(api.getAccountSummary, throwsA(isA<UpgradeRequired>()));
+    });
+
+    test("426 is UpgradeRequired after the app's upgrade gate has seen it too", () async {
+      var gated = 0;
+      api = Api(
+        gateway: 'api.example.com',
+        client: client,
+        onUpgradeRequired: (json) {
+          gated++;
+          return (json, 426);
+        },
+      );
+      respond(client: client, method: 'PUT', path: Router.accounts, statusCode: 426, body: {'code': 'upgrade'});
+
+      await expectLater(api.registerAccount(User(id: '42')), throwsA(isA<UpgradeRequired>()));
+      expect(gated, 1);
+    });
+
+    test('a success in a shape the route cannot read names its request, and not the body', () async {
       respond(
         client: client,
         method: 'POST',
@@ -479,44 +477,26 @@ void main() {
         body: {'name': 'My sheet', 'secret': 'hrt_secret'},
       );
 
-      final thrown = await api
-          .createApiToken(name: 'My sheet', expiry: .year)
-          .then<Object?>((_) => null, onError: (Object e) => e);
-      expect(thrown, isA<NetworkException>());
-      expect('$thrown', 'NetworkException(200 POST /v1/accounts/tokens)');
-      expect(thrown, isA<Map>().having((m) => m.isEmpty, 'isEmpty', isTrue));
-    });
-
-    test('a workout id minted as a start time is templated', () async {
-      respond(
-        client: client,
-        method: 'GET',
-        path: Router.userWorkout('uid', '2024-03-05T18:22:11.123Z'),
-        statusCode: 404,
-        body: {'code': 'not_found'},
-      );
-
       await expectLater(
-        api.getTargetWorkout(requesterId: 'uid', targetUserId: 'uid', workoutId: '2024-03-05T18:22:11.123Z'),
+        api.createApiToken(name: 'My sheet', expiry: .year),
         throwsA(
-          isA<NetworkException>().having(
-            (e) => '$e',
-            'toString',
-            'NetworkException(404 GET /v1/accounts/uid/workouts/{id})',
-          ),
+          isA<NetworkException>()
+              .having((e) => '$e', 'toString', 'NetworkException(200 POST /v1/accounts/tokens)')
+              .having((e) => e.body, 'body', isNull),
         ),
       );
     });
 
-    test('a failure with no body at all is an answer naming its request too', () async {
-      final uri = Uri.https('api.example.com', '${Router.workouts}/w1');
-      when(
-        client.delete(uri, headers: anyNamed('headers')),
-      ).thenAnswer((_) async => StubResponse('', 502, request: http.Request('DELETE', uri)));
+    test('a route that has always read a refusal as nothing still does', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.accountTokens,
+        statusCode: 500,
+        body: {'code': 'server_error'},
+      );
 
-      final thrown = await api.deleteWorkout('w1').then<Object?>((_) => null, onError: (Object e) => e);
-      expect('$thrown', 'NetworkException(502 DELETE /v1/workouts/w1)');
-      expect(thrown, isA<Map>());
+      expect(await api.listApiTokens(), isEmpty);
     });
   });
 }

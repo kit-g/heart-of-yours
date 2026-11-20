@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
 
 /// The push client's state (#567, #554): registering once, and settings that
 /// show a change at once and put it back when the server refuses.
@@ -210,7 +211,7 @@ void main() {
       await pushes.load();
       service.failing = true;
 
-      await expectLater(pushes.set('coaching.message', 'off'), throwsA(isA<Map>()));
+      await expectLater(pushes.set('coaching.message', 'off'), throwsA(isA<NetworkException>()));
 
       expect(pushes.topics.single.delivery, 'instant');
     });
@@ -236,7 +237,7 @@ void main() {
       await pushes.load();
       service.failing = true;
 
-      await expectLater(pushes.setFor('coaching.message', 'c1', null), throwsA(isA<Map>()));
+      await expectLater(pushes.setFor('coaching.message', 'c1', null), throwsA(isA<NetworkException>()));
 
       expect(pushes.deliveryFor('coaching.message', 'c1'), 'off');
     });
@@ -266,7 +267,7 @@ class _Service implements RemotePushService {
 
   void _call(String call) {
     calls.add(call);
-    if (failing) throw {'error': 'unavailable'};
+    if (failing) throw const NetworkException(statusCode: 503, body: {'error': 'unavailable'});
   }
 
   @override

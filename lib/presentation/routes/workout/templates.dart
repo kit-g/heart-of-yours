@@ -412,7 +412,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
   void _showFolderError(BuildContext context, Object error) {
     final L(:folderNameTaken, :unknownError) = L.of(context);
     final message = switch (error) {
-      {'code': 'bad_request'} => folderNameTaken,
+      NetworkException(isRefusal: true, body: {'code': 'bad_request'}) => folderNameTaken,
       _ => unknownError,
     };
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -1314,7 +1314,7 @@ class _FolderNameFormState extends State<_FolderNameForm> {
       final L(:folderNameTaken, :unknownError) = L.of(context);
       _saving.value = false;
       _rejected.value = switch (error) {
-        {'code': 'bad_request'} => folderNameTaken,
+        NetworkException(isRefusal: true, body: {'code': 'bad_request'}) => folderNameTaken,
         _ => unknownError,
       };
     }

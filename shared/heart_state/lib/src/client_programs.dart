@@ -9,6 +9,10 @@ import 'programs.dart' show ProgramLife;
 import 'remote.dart';
 import 'template_drafting.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'refusals.dart';
+
 /// What the server does with a coach's work on a client's copy of a program
 /// (heart-of-yours#558), the app's view of those routes.
 abstract interface class ClientProgramService {
@@ -74,11 +78,13 @@ bool _agrees(ProgramPosition local, Map<String, dynamic> server) {
 
 /// The server's refusal of a write because the other person changed the same
 /// thing first.
-bool isProgramChanged(Object? error) => error is Map && error['code'] == 'program_changed';
+bool isProgramChanged(Object? error) {
+  return error is NetworkException && error.isRefusal && error.body?['code'] == 'program_changed';
+}
 
 /// The server's refusal of a write the coach may no longer make: the copy
 /// wasn't sent through their connection, or it ended.
-bool _isForbidden(Object? error) => error is Map && error['code'] == 'forbidden';
+bool _isForbidden(Object? error) => error is NetworkException && error.isRefusal && error.body?['code'] == 'forbidden';
 
 /// A coach's view of their clients' copies (#558): one open at a time, its
 /// sessions, its history, and the editor on one of its sessions.

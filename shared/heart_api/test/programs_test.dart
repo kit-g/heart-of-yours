@@ -4,6 +4,7 @@ import 'package:heart_api/src/api.dart';
 import 'package:heart_api/src/programs.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:mockito/mockito.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
 import 'package:test/test.dart';
 
 import 'support/http.dart';
@@ -47,7 +48,7 @@ void main() {
 
       expect(
         api.editTemplate(Template.empty(id: 's1', order: 0), baseRevision: 1, changeId: 'ch2'),
-        throwsA(allOf(containsPair('code', 'program_changed'), containsPair('revision', 4))),
+        throwsA(refused(allOf(containsPair('code', 'program_changed'), containsPair('revision', 4)))),
       );
     });
 
@@ -284,7 +285,7 @@ void main() {
       );
 
       respond(client: client, method: 'GET', path: Router.programs, statusCode: 500, body: {'error': 'boom'});
-      await expectLater(api.getPrograms(), throwsA(isA<Map>()));
+      await expectLater(api.getPrograms(), throwsA(isA<NetworkException>()));
     });
   });
 

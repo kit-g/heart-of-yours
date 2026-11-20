@@ -11,6 +11,10 @@ import 'remote.dart';
 import 'workout_review.dart';
 import 'workouts.dart' show LoggedAfter;
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'refusals.dart';
+
 /// What the server does with a coach's view of everyone they coach
 /// (heart-of-yours#559). Like [CoachingService], the app's view of a few
 /// routes, which the app adapts `Api` onto.
@@ -309,7 +313,12 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
         _owedPlans.remove(workoutId);
       } catch (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
-        if (error case {'code': 'invalid_plan' || 'forbidden' || 'not_found'}) _owedPlans.remove(workoutId);
+        if (error case NetworkException(
+          isRefusal: true,
+          body: {'code': 'invalid_plan' || 'forbidden' || 'not_found'},
+        )) {
+          _owedPlans.remove(workoutId);
+        }
       }
     }
   }

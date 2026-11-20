@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'test_utils.dart';
 
 /// The server's side, in memory: the list it would answer with, and the
 /// refusals it is told to give.
@@ -29,7 +32,7 @@ class _Server implements ApiTokenService {
     required ApiTokenExpiry expiry,
     ApiTokenPurpose? purpose,
   }) async {
-    if (refuseCreate case final refusal?) throw refusal;
+    if (refuseCreate case final refusal?) throw asRefusal(refusal);
     minted++;
     final token = ApiToken(
       id: 'minted-$minted',
@@ -48,7 +51,7 @@ class _Server implements ApiTokenService {
 
   @override
   Future<void> revokeApiToken(String tokenId) async {
-    if (refuseRevoke case final refusal?) throw refusal;
+    if (refuseRevoke case final refusal?) throw asRefusal(refusal);
     revoked.add(tokenId);
     final index = tokens.indexWhere((token) => token.id == tokenId);
     if (index >= 0) tokens[index] = _token(tokenId, revokedAt: DateTime.utc(2026, 10, 10));
@@ -207,12 +210,20 @@ void main() {
 
   group('ApiTokenRejected.from', () {
     test('reads a code and either wording', () {
-      expect(ApiTokenRejected.from({'code': 'token_limit', 'reason': 'r'})?.reason, 'r');
-      expect(ApiTokenRejected.from({'code': 'not_found', 'message': 'm'})?.reason, 'm');
+      expect(
+        ApiTokenRejected.from(const NetworkException(statusCode: 400, body: {'code': 'token_limit', 'reason': 'r'}))
+            ?.reason,
+        'r',
+      );
+      expect(
+        ApiTokenRejected.from(const NetworkException(statusCode: 404, body: {'code': 'not_found', 'message': 'm'}))
+            ?.reason,
+        'm',
+      );
     });
 
     test('a server error and an unnamed failure are not refusals', () {
-      expect(ApiTokenRejected.from({'code': 'server_error'}), isNull);
+      expect(ApiTokenRejected.from(const NetworkException(statusCode: 500, body: {'code': 'server_error'})), isNull);
       expect(ApiTokenRejected.from(Exception('timeout')), isNull);
     });
   });

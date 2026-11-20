@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:heart_api/src/api.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:mockito/mockito.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
 import 'package:test/test.dart';
 
 import 'support/http.dart';
@@ -207,7 +208,7 @@ void main() {
           userId: 'u1',
           folder: TemplateFolder(name: 'Push'),
         ),
-        throwsA(containsPair('code', 'bad_request')),
+        throwsA(refused(containsPair('code', 'bad_request'))),
       );
     });
 
@@ -250,7 +251,7 @@ void main() {
         body: {'error': 'not found'},
       );
 
-      expect(() => api.deleteFolder(userId: 'u1', folderId: 'f1'), throwsA(isA<Map>()));
+      expect(() => api.deleteFolder(userId: 'u1', folderId: 'f1'), throwsA(isA<NetworkException>()));
     });
 
     test('shareFolder returns one share per template assigned', () async {

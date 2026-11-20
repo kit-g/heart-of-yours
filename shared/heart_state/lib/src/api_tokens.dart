@@ -6,6 +6,10 @@ import 'package:provider/provider.dart';
 
 import 'remote.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'refusals.dart';
+
 /// What the server does with an account's personal access tokens
 /// (heart-api#111): list them, mint one, revoke one.
 ///
@@ -49,17 +53,14 @@ class ApiTokenRejected implements Exception {
   /// The token is not the account's to revoke — gone, or never its own.
   bool get isUnknown => code == 'not_found';
 
-  /// Named, but still transient: the request was fine and the server broke.
-  static const _serverError = 'server_error';
-
   /// Reads a refusal out of whatever the service threw, or null when the
   /// failure could just as well be an outage.
   static ApiTokenRejected? from(Object? error) {
     return switch (error) {
-      {'code': _serverError} => null,
-      {'code': String code} => ApiTokenRejected(
+      // a server error or a throttle is named too, but passes: not a refusal
+      NetworkException(isRefusal: true, body: {'code': String code}) => ApiTokenRejected(
         code,
-        reason: switch (error) {
+        reason: switch (error.body) {
           {'reason': String reason} => reason,
           {'message': String message} => message,
           _ => null,

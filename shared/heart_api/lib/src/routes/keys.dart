@@ -3,7 +3,7 @@ part of '../api.dart';
 /// Device keys and key delivery for end-to-end encryption (heart-of-yours#555).
 ///
 /// The server holds public keys and sealed items only: nothing here ever
-/// carries a private key or words in the clear. A refusal is thrown whole, as
+/// carries a private key or words in the clear. A refusal is a [NetworkException] with its body, as
 /// everywhere, so a caller branches on its `code` (`device_removed`,
 /// `device_limit`, `rate_limited`, `queue_full`).
 /// The most devices one claim may name (heart-api#424).
@@ -33,7 +33,7 @@ mixin _KeyRoutes on Requests {
     );
     return switch ((code, json)) {
       (200 || 201, Map json) => CryptoDevice.fromJson(json),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'POST', Router.cryptoDevices),
     };
   }
 
@@ -50,7 +50,7 @@ mixin _KeyRoutes on Requests {
     );
     return switch ((code, json)) {
       (200, Map json) => CryptoDevices.fromJson(json).devices,
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'GET', Router.cryptoDevices),
     };
   }
 
@@ -69,7 +69,7 @@ mixin _KeyRoutes on Requests {
     );
     return switch ((code, json)) {
       (200, Map json) => CryptoDevice.fromJson(json),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'PUT', Router.cryptoDeviceVouch(deviceId)),
     };
   }
 
@@ -77,7 +77,7 @@ mixin _KeyRoutes on Requests {
   /// its id.
   Future<void> removeCryptoDevice(String deviceId) async {
     final (json, code) = await delete(Router.cryptoDevice(deviceId));
-    if (code != 204) throw _unexpected(json, code);
+    if (code != 204) throw _unreadable(code, 'DELETE', Router.cryptoDevice(deviceId));
   }
 
   /// Adds single-use keys, by the name the device knows each by. Answers how
@@ -97,7 +97,7 @@ mixin _KeyRoutes on Requests {
     );
     return switch ((code, json)) {
       (200, Map json) => OneTimeKeyCount.fromJson(json).count,
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'POST', Router.oneTimeKeys(deviceId)),
     };
   }
 
@@ -106,13 +106,13 @@ mixin _KeyRoutes on Requests {
     final (json, code) = await get(Router.oneTimeKeys(deviceId));
     return switch ((code, json)) {
       (200, Map json) => OneTimeKeyCount.fromJson(json).count,
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'GET', Router.oneTimeKeys(deviceId)),
     };
   }
 
   Future<void> replaceFallbackKey(String deviceId, String key) async {
     final (json, code) = await put(Router.fallbackKey(deviceId), body: {'key': key});
-    if (code != 204) throw _unexpected(json, code);
+    if (code != 204) throw _unreadable(code, 'PUT', Router.fallbackKey(deviceId));
   }
 
   /// Takes one single-use key from each of [userId]'s devices, or the fallback
@@ -126,7 +126,7 @@ mixin _KeyRoutes on Requests {
     final (json, code) = await post(Router.keyClaims(userId), body: {'deviceIds': ?deviceIds});
     return switch ((code, json)) {
       (200, Map json) => CryptoDevices.fromJson(json).devices,
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'POST', Router.keyClaims(userId)),
     };
   }
 
@@ -150,7 +150,7 @@ mixin _KeyRoutes on Requests {
         'content': content,
       },
     );
-    if (code != 204) throw _unexpected(json, code);
+    if (code != 204) throw _unreadable(code, 'POST', Router.keyQueue);
   }
 
   /// Everything waiting for [deviceId] that it hasn't confirmed, in the
@@ -159,7 +159,7 @@ mixin _KeyRoutes on Requests {
     final (json, code) = await get(Router.keyQueue, query: {'deviceId': deviceId});
     return switch ((code, json)) {
       (200, Map json) => QueuedItems.fromJson(json).items,
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'GET', Router.keyQueue),
     };
   }
 
@@ -172,7 +172,7 @@ mixin _KeyRoutes on Requests {
     );
     for (final run in runs) {
       final (json, code) = await post(Router.keyQueueConfirmations, body: {'deviceId': deviceId, 'ids': run});
-      if (code != 204) throw _unexpected(json, code);
+      if (code != 204) throw _unreadable(code, 'POST', Router.keyQueueConfirmations);
     }
   }
 

@@ -81,7 +81,7 @@ class _Server extends Fake implements UpsyncService {
   void _reach(UpsyncResource resource, String id) {
     if (deadAfter case int n when calls.length >= n) throw const SocketException('offline');
     calls.add((resource, id));
-    if (refused[id] case Map<String, dynamic> refusal) throw refusal;
+    if (refused[id] case Map<String, dynamic> refusal) throw asRefusal(refusal);
     if (unreadable.contains(id)) throw ArgumentError('Invalid value for GoalMetric: aMetricFromTheFuture');
   }
 

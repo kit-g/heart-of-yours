@@ -28,7 +28,7 @@ Future<void> inviteSomeone(BuildContext context) async {
     invitation = await Coaching.of(context).invite(name);
   } catch (error) {
     messenger.snack(switch (error) {
-      {'code': 'coaching_beta'} => l.coachingInviteBeta,
+      NetworkException(isRefusal: true, body: {'code': 'coaching_beta'}) => l.coachingInviteBeta,
       _ => l.coachingInviteFailed,
     });
     return;

@@ -1,4 +1,4 @@
-import 'dart:collection';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -11,7 +11,6 @@ import 'moves.dart';
 import 'programs.dart';
 import 'renames.dart';
 
-part 'answers.dart';
 part 'routes/accounts.dart';
 part 'routes/workouts.dart';
 part 'routes/exercises.dart';
@@ -86,75 +85,45 @@ class Api
   @override
   http.Client? client;
 
+  /// A refusal arrives as a [NetworkException] carrying the status, the verb,
+  /// the path and the body, before any route sees it (#681). A route reads
+  /// only what it can use, and names the refusals it has a type for with
+  /// [_refused]; the rest reach the caller as they came, and Sentry as one
+  /// issue per status and endpoint, never with the body in the title.
+  @override
+  bool get throwsOnFailure => true;
+
   @override
   void authenticate(Map<String, String> headers) {
     instance.defaultHeaders = headers;
   }
 
-  // Every verb runs through [_send]: the one answer that must never come back
-  // is caught before any caller can act on it, and every other answer comes
-  // back knowing the request it answers.
+  // Every verb runs through [_tripwire]: the one refusal that must never come
+  // back is caught before any caller can act on it.
 
   @override
   Future<Response> get(String endpoint, {Map<String, String>? headers, Map<String, dynamic>? query}) {
-    return _send(super.get(endpoint, headers: headers, query: query), 'GET', endpoint);
+    return super.get(endpoint, headers: headers, query: query).catchError(_tripwire);
   }
 
   @override
   Future<Response> post(String endpoint, {Map<String, String>? headers, Json? body, Map<String, dynamic>? query}) {
-    return _send(super.post(endpoint, headers: headers, body: body, query: query), 'POST', endpoint);
+    return super.post(endpoint, headers: headers, body: body, query: query).catchError(_tripwire);
   }
 
   @override
   Future<Response> put(String endpoint, {Map<String, String>? headers, Json? body}) {
-    return _send(super.put(endpoint, headers: headers, body: body), 'PUT', endpoint);
+    return super.put(endpoint, headers: headers, body: body).catchError(_tripwire);
   }
 
   @override
   Future<Response> patch(String endpoint, {Map<String, String>? headers, Json? body}) {
-    return _send(super.patch(endpoint, headers: headers, body: body), 'PATCH', endpoint);
+    return super.patch(endpoint, headers: headers, body: body).catchError(_tripwire);
   }
 
   @override
   Future<Response> delete(String endpoint, {Map<String, String>? headers, Map<String, dynamic>? query}) {
-    return _send(super.delete(endpoint, headers: headers, query: query), 'DELETE', endpoint);
-  }
-
-  /// [request]'s answer, the tripwire checked first, with the request it
-  /// answered attached: a failure's body wrapped as a [_ServerAnswer], a
-  /// success remembered in [_requests] for a route that cannot read it.
-  ///
-  /// A failure with no body is thrown by the mixin itself, before any route
-  /// sees it, as a bare [NetworkException]; it becomes a [_ServerAnswer] too,
-  /// so every answer from the server reads the same, to `heart_state` and in
-  /// Sentry alike.
-  ///
-  /// The path is the one the request carried, which is what
-  /// [NetworkException] templates.
-  Future<Response> _send(Future<Response> request, String method, String endpoint) {
-    final path = Uri.https(gateway, endpoint).path;
-    return request.then(
-      (response) => switch (_tripwire(response)) {
-        (final json, final code && (< 200 || >= 300)) => (
-          _ServerAnswer(json, statusCode: code, method: method, path: path),
-          code,
-        ),
-        (final json, _) => _remembered(response, json, (method: method, path: path)),
-      },
-      onError: (Object error, StackTrace stacktrace) => switch (error) {
-        _ServerAnswer() => Error.throwWithStackTrace(error, stacktrace),
-        NetworkException(:final statusCode) => Error.throwWithStackTrace(
-          _ServerAnswer({}, statusCode: statusCode, method: method, path: path),
-          stacktrace,
-        ),
-        _ => Error.throwWithStackTrace(error, stacktrace),
-      },
-    );
-  }
-
-  static Response _remembered(Response response, Json json, ({String method, String path}) request) {
-    _requests[json] = request;
-    return response;
+    return super.delete(endpoint, headers: headers, query: query).catchError(_tripwire);
   }
 
   /// The server refused the token because it belongs to an anonymous
@@ -162,10 +131,10 @@ class Api
   /// `RemoteAccess` closes every leg while the session is anonymous — so this
   /// is not a failure to retry but a gate that failed, and it is thrown as its
   /// own type so it reaches Sentry under a name rather than as a body map.
-  static Response _tripwire(Response response) {
-    return switch (response) {
-      ({'code': 'anonymous_account'}, 403) => throw const AnonymousSessionRejected(),
-      _ => response,
+  static Never _tripwire(Object error, StackTrace stacktrace) {
+    return switch (error) {
+      NetworkException(statusCode: 403, body: {'code': 'anonymous_account'}) => throw const AnonymousSessionRejected(),
+      _ => Error.throwWithStackTrace(error, stacktrace),
     };
   }
 
@@ -220,15 +189,45 @@ class Api
 }
 
 /// `201` made the row, `200` found it — by id, or by name for the two
-/// resources with one. Anything else is thrown whole, code and all, so the
-/// caller can tell a refusal (`id_taken`, `goal_limit`) from an outage.
-(Map, bool) _created(Response response) {
+/// resources with one. A refusal never gets here: it is the
+/// [NetworkException] the `POST` to [endpoint] threw, code and all, so the
+/// caller can tell one (`id_taken`, `goal_limit`) from an outage.
+(Map, bool) _created(Response response, {required String endpoint}) {
   return switch (response) {
     (Map json, 201) => (json, true),
     (Map json, 200) => (json, false),
-    (final json, final code) => throw _unexpected(json, code),
+    (_, final code) => throw _unreadable(code, 'POST', endpoint),
   };
 }
+
+/// What a route throws for an answer it has no arm for. A refusal never gets
+/// here — it is already the [NetworkException] the verb threw — so this is a
+/// success in a shape the route cannot read: thrown as its status and
+/// request, never its body, which is the account's own data and would title a
+/// Sentry issue.
+NetworkException _unreadable(int code, String method, String endpoint) {
+  return NetworkException(statusCode: code, method: method, path: '/$endpoint');
+}
+
+/// [call], with the refusals a route has a meaning for turned into it by
+/// [refused]: a value in their place, or a typed exception. [refused]
+/// rethrows the rest as they came.
+Future<T> _refused<T>(Future<T> call, FutureOr<T> Function(NetworkException failure) refused) {
+  return call.catchError((Object failure) => refused(failure as NetworkException), test: (e) => e is NetworkException);
+}
+
+/// [call]'s answer, a refusal included, for the routes that have always read
+/// one as an answer — "no link", "nothing to show", `false` — and whose
+/// callers were written for that rather than for an exception.
+Future<Response> _lenient(Future<Response> call) => _refused(call, _asAnswer);
+
+/// [call]'s answer, a refusal with [status] included, for a route with a
+/// meaning for that one: a `404` that is "no such thing", answered as null.
+Future<Response> _answering(Future<Response> call, int status) {
+  return _refused(call, (failure) => failure.statusCode == status ? _asAnswer(failure) : throw failure);
+}
+
+Response _asAnswer(NetworkException failure) => (<String, dynamic>{...?failure.body}, failure.statusCode);
 
 /// [body] with its `id` only when it is one the server will take.
 ///

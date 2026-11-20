@@ -4,6 +4,7 @@ import 'package:heart_state/heart_state.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'test_utils.dart';
 
 /// The device's store, in memory: a plan is owed once its workout is synced.
 class _Store implements LocalWorkoutPlanService {
@@ -36,7 +37,7 @@ class _Server implements RemoteWorkoutPlanService {
 
   @override
   Future<void> saveWorkoutPlan(String workoutId, WorkoutPlan plan) async {
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     received[workoutId] = plan;
   }
 }

@@ -80,7 +80,7 @@ void main() {
 
       expect(
         api.publishCryptoDevice(id: _deviceId, identityKey: 'i', signingKey: 's', fallbackKey: 'f'),
-        throwsA(refusal),
+        throwsA(refused(refusal)),
       );
     });
 
@@ -141,7 +141,7 @@ void main() {
           body: refusal,
         );
 
-        expect(api.vouchForCryptoDevice(_deviceId, vouchedBy: _deviceId, signature: 's'), throwsA(refusal));
+        expect(api.vouchForCryptoDevice(_deviceId, vouchedBy: _deviceId, signature: 's'), throwsA(refused(refusal)));
       });
     }
 
@@ -261,7 +261,7 @@ void main() {
         body: refusal,
       );
 
-      expect(api.claimKeys('CoachDanaUid551191'), throwsA(refusal));
+      expect(api.claimKeys('CoachDanaUid551191'), throwsA(refused(refusal)));
     });
   });
 

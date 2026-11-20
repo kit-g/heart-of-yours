@@ -46,7 +46,7 @@ abstract interface class RemoteTemplateFilingService {
 
   /// A session of a coach's copy (#558), from the revision it was read at
   /// ([baseRevision]), under [changeId] so a retry writes once. Throws
-  /// `{'code': 'program_changed'}` when the coach changed it since.
+  /// a `program_changed` refusal when the coach changed it since.
   Future<Template> editSharedTemplate(Template template, {required int baseRevision, required String changeId});
 }
 

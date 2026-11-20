@@ -8,6 +8,7 @@ import 'dart:math';
 
 import 'package:clock/clock.dart';
 import 'package:go_router/go_router.dart';
+import 'package:heart_api/heart_api.dart' show NetworkException;
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';

@@ -101,9 +101,9 @@ class LocalPrograms implements LocalProgramService {
 
 /// Presents [Api] as the [RemoteProgramService] the [Programs] notifier wants.
 ///
-/// A refusal reaches [Programs] as the body the server sent, `{'code': …}`,
-/// the way every other create throws it: `heart_state` cannot see the typed
-/// [ProgramRefused], and decides by the code what not to ask again.
+/// A refusal reaches [Programs] as the [NetworkException] the server's answer
+/// was, the way every other call throws it: `heart_state` cannot see the
+/// typed [ProgramRefused], and decides by the code what not to ask again.
 class RemotePrograms implements RemoteProgramService {
   final Api _api;
 
@@ -183,8 +183,8 @@ class RemotePrograms implements RemoteProgramService {
   static Future<T> _refusedAsBody<T>(Future<T> Function() call) async {
     try {
       return await call();
-    } on ProgramRefused catch (refused) {
-      throw {'code': refused.reason.code};
+    } on ProgramRefused catch (refused, stacktrace) {
+      Error.throwWithStackTrace(refused.failure, stacktrace);
     }
   }
 }

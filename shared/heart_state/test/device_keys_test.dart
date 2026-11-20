@@ -5,6 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:sealbox/sealbox.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'test_utils.dart';
 
 /// Device keys and key delivery (#555), through the real encryption library
 /// and a server that behaves as heart-api's routes do.
@@ -139,7 +142,7 @@ void main() {
 
       expect(phone.status, DeviceKeysStatus.failed);
       expect(errors, [
-        {'error': 'conflict', 'code': 'device_limit'},
+        refusal({'error': 'conflict', 'code': 'device_limit'}),
       ]);
       await phone.refresh();
       expect(phone.status, DeviceKeysStatus.published);
@@ -380,7 +383,7 @@ void main() {
       expect(phone.peer('dana')!.devices.firstWhere((each) => each.id == tablet.deviceId).trust, DeviceTrust.vouched);
       // the same again, as after a lost answer: the device as it is
       expect((await phone.vouchFor(fresh)).signature, vouched.signature);
-      await expectLater(laptop.vouchFor(fresh), throwsA({'error': 'conflict', 'code': 'already_vouched'}));
+      await expectLater(laptop.vouchFor(fresh), throwsA(refusal({'error': 'conflict', 'code': 'already_vouched'})));
       expect(server.devices[tablet.deviceId]!.vouchedBy, phone.deviceId);
     });
 
@@ -419,7 +422,7 @@ void main() {
 
       await student.devicesChanged('riley');
 
-      expect(errors.single, {'error': 'forbidden', 'code': 'forbidden'});
+      expect(errors.single, refusal({'error': 'forbidden', 'code': 'forbidden'}));
     });
   });
 
@@ -745,7 +748,12 @@ void main() {
         // both wait, in order, rather than the second opening without the first
         expect(server.queue, hasLength(2));
         expect(payloads, isEmpty);
-        expect(errors, [failure]);
+        expect(errors, [
+          switch (failure) {
+            final Map body => refusal(body),
+            _ => failure,
+          },
+        ]);
 
         await coach.receive();
 
@@ -2071,13 +2079,13 @@ class _As implements RemoteKeyService {
       return;
     }
     if (server.holds[name] case final Completer<void> hold) await hold.future;
-    if (server.refuseNext.remove(name) case final Object refusal) throw refusal;
+    if (server.refuseNext.remove(name) case final Object refusal) throw asRefusal(refusal);
   }
 
   CryptoDevice _mine(String deviceId) {
     return switch (server.devices[deviceId]) {
       final CryptoDevice device when device.userId == me => device,
-      _ => throw {'error': 'not found', 'code': 'not_found'},
+      _ => throw const NetworkException(statusCode: 404, body: {'error': 'not found', 'code': 'not_found'}),
     };
   }
 
@@ -2091,7 +2099,9 @@ class _As implements RemoteKeyService {
   }) async {
     server.calls.add('publish $me');
     await _answer('publish');
-    if (server.removed.contains(id)) throw {'error': 'forbidden', 'code': 'device_removed'};
+    if (server.removed.contains(id)) {
+      throw const NetworkException(statusCode: 403, body: {'error': 'forbidden', 'code': 'device_removed'});
+    }
     return server.devices[id] ??= CryptoDevice(
       id: id,
       userId: me,
@@ -2109,7 +2119,9 @@ class _As implements RemoteKeyService {
     final owner = userId ?? me;
     server.calls.add('devices $me $owner');
     await _answer('devices');
-    if (!server._shares(me, owner)) throw {'error': 'forbidden', 'code': 'forbidden'};
+    if (!server._shares(me, owner)) {
+      throw const NetworkException(statusCode: 403, body: {'error': 'forbidden', 'code': 'forbidden'});
+    }
     return [...server.devices.values.where((each) => each.userId == owner)];
   }
 
@@ -2123,12 +2135,12 @@ class _As implements RemoteKeyService {
     await _answer('vouch');
     final device = _mine(deviceId);
     if (vouchedBy == deviceId || server.devices[vouchedBy]?.userId != me) {
-      throw {'error': 'bad request', 'code': 'bad_request'};
+      throw const NetworkException(statusCode: 400, body: {'error': 'bad request', 'code': 'bad_request'});
     }
     return switch ((device.vouchedBy, device.signature)) {
       (null, _) => server.vouch(deviceId, by: vouchedBy, signature: signature),
       (final by, final said) when by == vouchedBy && said == signature => device,
-      _ => throw {'error': 'conflict', 'code': 'already_vouched'},
+      _ => throw const NetworkException(statusCode: 409, body: {'error': 'conflict', 'code': 'already_vouched'}),
     };
   }
 
@@ -2139,7 +2151,9 @@ class _As implements RemoteKeyService {
     _mine(deviceId);
     final held = server.oneTimeKeys[deviceId] ??= [];
     held.addAll(keys.entries);
-    if (held.length > 50) throw {'error': 'bad request', 'code': 'bad_request'};
+    if (held.length > 50) {
+      throw const NetworkException(statusCode: 400, body: {'error': 'bad request', 'code': 'bad_request'});
+    }
     return held.length;
   }
 
@@ -2173,9 +2187,11 @@ class _As implements RemoteKeyService {
     server.calls.add('claim $me $userId');
     server.claims.add(deviceIds);
     await _answer('claim');
-    if (!server._shares(me, userId)) throw {'error': 'forbidden', 'code': 'forbidden'};
+    if (!server._shares(me, userId)) {
+      throw const NetworkException(statusCode: 403, body: {'error': 'forbidden', 'code': 'forbidden'});
+    }
     if (deviceIds case final ids? when ids.isEmpty || ids.length > 10) {
-      throw {'error': 'bad request', 'code': 'bad_request'};
+      throw const NetworkException(statusCode: 400, body: {'error': 'bad request', 'code': 'bad_request'});
     }
     // a named device that isn't theirs, or was removed, is left out
     final named = server.devices.values.where(
@@ -2214,8 +2230,12 @@ class _As implements RemoteKeyService {
     await _answer('enqueue');
     _mine(senderDeviceId);
     final recipient = server.devices[recipientDeviceId];
-    if (recipient == null || !server._shares(me, recipient.userId)) throw {'error': 'not found', 'code': 'not_found'};
-    if (content.length > 1024) throw {'error': 'bad request', 'code': 'bad_request'};
+    if (recipient == null || !server._shares(me, recipient.userId)) {
+      throw const NetworkException(statusCode: 404, body: {'error': 'not found', 'code': 'not_found'});
+    }
+    if (content.length > 1024) {
+      throw const NetworkException(statusCode: 400, body: {'error': 'bad request', 'code': 'bad_request'});
+    }
     server.queue.add(
       QueuedItem(
         id: id,

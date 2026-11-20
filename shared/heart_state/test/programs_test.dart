@@ -1,12 +1,17 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'test_utils.dart';
 
 /// The Programs notifier (#346): local first, the server's copy after, and a
 /// position that is folded on request, never held.
@@ -37,7 +42,6 @@ void main() {
   Programs relaunch() {
     return Programs(
       service: local,
-      retryDelays: const [],
       remoteService: remote,
       templates: templates,
       remote: access,
@@ -55,7 +59,6 @@ void main() {
     sessionsChanged = 0;
     programs = Programs(
       service: local,
-      retryDelays: const [],
       remoteService: remote,
       templates: templates,
       remote: access,
@@ -314,7 +317,7 @@ void main() {
 
       await expectLater(
         programs.start(programs.lookup('sent')!, replacing: programs.following.toList()),
-        throwsA(isA<Map>()),
+        throwsA(isA<NetworkException>()),
       );
 
       expect(programs.waiting.map((each) => each.id), ['sent']);
@@ -428,7 +431,6 @@ void main() {
       final kept = <String>[];
       programs = Programs(
         service: local,
-        retryDelays: const [],
         remoteService: remote,
         templates: templates,
         remote: access,
@@ -559,121 +561,258 @@ void main() {
   group('program reads, a few at a time (#660)', () {
     const throttled = {'code': 'server_error', 'reason': 'Internal server error'};
 
-    Programs retrying() {
-      return Programs(
-        service: local,
-        remoteService: remote,
-        templates: templates,
-        remote: access,
-        retryDelays: const [Duration.zero, Duration.zero],
-        onError: (error, {stacktrace}) => errors.add(error),
-      )..userId = uid;
-    }
-
     int asked(String call) => remote.calls.where((each) => each == call).length;
 
-    test('many programs are read a few requests at a time, each once', () async {
-      final ids = List.generate(6, (i) => 'p$i');
-      remote.programs = [for (final id in ids) program(id: id)];
-      remote.holding = Completer();
+    // getPrograms is the list; these are the per-program reads
+    List<String> reads() => [
+      for (final call in remote.calls)
+        if (call.startsWith('getProgram') && call != 'getPrograms') call,
+    ];
 
-      final done = programs.init();
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      expect(remote.inFlight, 4);
-      remote.holding!.complete();
-      await done;
+    List<Program> several() => [for (final id in List.generate(6, (i) => 'p$i')) program(id: id)];
 
-      expect(remote.peak, 4);
-      for (final id in ids) {
-        expect(asked('getProgramActions $id'), 1);
-        expect(asked('getProgramBases $id'), 1);
-      }
-      expect(errors, isEmpty);
+    test('many programs are read a few requests at a time, each once', () {
+      fakeAsync((async) {
+        remote.programs = several();
+        remote.holding = Completer();
+
+        programs.init();
+        async.flushMicrotasks();
+        expect(remote.inFlight, 4);
+        remote.holding!.complete();
+        async.flushMicrotasks();
+
+        expect(remote.peak, 4);
+        for (final each in several()) {
+          expect(asked('getProgramActions ${each.id}'), 1);
+          expect(asked('getProgramBases ${each.id}'), 1);
+        }
+        expect(errors, isEmpty);
+      });
     });
 
-    test('a pull asked for while the launch reads the same program joins it', () async {
-      local.programs[uid] = [program()];
-      remote.programs = [program()];
-      remote.holding = Completer();
-      remote.holds = (call) => call.startsWith('getProgramActions') || call.startsWith('getProgramBases');
+    test('a read the user asked for goes ahead of the launch', () {
+      fakeAsync((async) {
+        local.programs[uid] = several();
+        remote.programs = [...several(), program(id: 'pushed')];
+        remote.holding = Completer();
+        remote.holds = (call) => call != 'getPrograms';
 
-      final launch = programs.init();
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      final pushed = programs.pull('p1');
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      remote.holding!.complete();
-      await (launch, pushed).wait;
+        programs.init();
+        async.flushMicrotasks();
+        programs.pull('pushed');
+        async.flushMicrotasks();
+        remote.holding!.complete();
+        async.flushMicrotasks();
 
-      expect(asked('getProgram p1'), 1);
-      expect(asked('getProgramActions p1'), 1);
-      expect(asked('getProgramBases p1'), 1);
+        expect(reads()[4], 'getProgram pushed');
+      });
     });
 
-    test('a throttled read is asked again, and is no error', () async {
-      remote.programs = [program()];
-      remote.bases['p1'] = [
-        ProgramBase(id: 'b1', programId: 'p1', exerciseId: bench, value: 100, at: DateTime.utc(2026, 10, 1)),
-      ];
-      remote.failures['getProgramBases p1'] = [throttled];
-      programs = retrying();
+    test("a pull the user asked for reads afresh after the launch's, and the next one joins it", () {
+      fakeAsync((async) {
+        local.programs[uid] = [program()];
+        remote.programs = [program()];
+        remote.holding = Completer();
+        remote.holds = (call) => call.startsWith('getProgramActions') || call.startsWith('getProgramBases');
 
-      await programs.init();
+        programs.init();
+        async.flushMicrotasks();
+        // what the push says changed, after the launch's read went out
+        remote.actions['p1'] = [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime.utc(2026, 10, 2))];
+        Program? pushed;
+        programs.pull('p1').then((program) => pushed = program);
+        programs.pull('p1');
+        async.flushMicrotasks();
+        remote.holding!.complete();
+        async.flushMicrotasks();
 
-      expect(asked('getProgramBases p1'), 2);
-      expect(asked('getProgramActions p1'), 1);
-      expect(programs.currentBasesOf('p1')[bench]?.value, 100);
-      expect(errors, isEmpty);
+        expect(pushed?.id, 'p1');
+        expect(asked('getProgramActions p1'), 2);
+        expect(programs.actionsOf('p1').single.id, 'a1');
+      });
     });
 
-    test('one that still fails is reported once, naming the call', () async {
-      remote.programs = [program()];
-      remote.failures['getProgramBases p1'] = [throttled, throttled, throttled];
-      programs = retrying();
+    test('a throttled read is asked again, and is no error', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.bases['p1'] = [
+          ProgramBase(id: 'b1', programId: 'p1', exerciseId: bench, value: 100, at: DateTime.utc(2026, 10, 1)),
+        ];
+        remote.failures['getProgramBases p1'] = [throttled];
 
-      await programs.init();
+        programs.init();
+        async.elapse(const Duration(seconds: 2));
 
-      expect(asked('getProgramBases p1'), 3);
-      expect(errors, hasLength(1));
-      expect(errors.single, isNot(isA<ParallelWaitError>()));
-      expect('${errors.single}', contains('getProgramBases'));
-      expect('${errors.single}', isNot(contains('getProgramActions')));
+        expect(asked('getProgramBases p1'), 2);
+        expect(asked('getProgramActions p1'), 1);
+        expect(programs.currentBasesOf('p1')[bench]?.value, 100);
+        expect(errors, isEmpty);
+      });
     });
 
-    test('both failing are one report naming both', () async {
-      remote.programs = [program()];
-      remote.failures['getProgramActions p1'] = [throttled, throttled, throttled];
-      remote.failures['getProgramBases p1'] = [throttled, throttled, throttled];
-      programs = retrying();
+    test("so is the gateway's throttle, but not its refusal", () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramBases p1'] = [
+          {'message': 'Internal server error'},
+        ];
+        remote.failures['getProgramActions p1'] = [
+          {'message': 'Unauthorized'},
+        ];
 
-      await programs.init();
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
 
-      expect(errors, hasLength(1));
-      expect('${errors.single}', allOf(contains('getProgramActions'), contains('getProgramBases')));
+        expect(asked('getProgramBases p1'), 2);
+        expect(asked('getProgramActions p1'), 1);
+        expect('${errors.single}', 'ProgramReadFailed(getProgramActions: unnamed)');
+      });
     });
 
-    test('a failure the client raised is retried, and reported as itself', () async {
-      const dropped = FormatException('empty response');
-      remote.programs = [program()];
-      remote.failures['getProgramActions p1'] = [dropped, dropped, dropped];
-      programs = retrying();
+    test('one that still fails is reported once, naming the call and not the program', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramBases p1'] = [throttled, throttled, throttled];
 
-      await programs.init();
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
 
-      expect(asked('getProgramActions p1'), 3);
-      expect(errors, [dropped]);
+        expect(asked('getProgramBases p1'), 3);
+        expect(errors.single, isA<ProgramReadFailed>());
+        expect('${errors.single}', 'ProgramReadFailed(getProgramBases: server_error)');
+      });
     });
 
-    test('a refusal is not asked again', () async {
-      remote.programs = [program()];
-      remote.failures['getProgramActions p1'] = [
-        {'code': 'program_not_found'},
-      ];
-      programs = retrying();
+    test('both failing are one report naming both', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [throttled, throttled, throttled];
+        remote.failures['getProgramBases p1'] = [throttled, throttled, throttled];
 
-      await programs.init();
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
 
-      expect(asked('getProgramActions p1'), 1);
-      expect('${errors.single}', contains('getProgramActions'));
+        expect('${errors.single}', 'ProgramReadFailed(getProgramActions, getProgramBases: server_error)');
+      });
+    });
+
+    test('offline, nothing is asked again, and an answer is what gets reported', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [Exception('Connection closed')];
+        remote.failures['getProgramBases p1'] = [
+          {'code': 'program_not_found'},
+        ];
+        var done = false;
+
+        programs.init().then((_) => done = true);
+        async.flushMicrotasks();
+
+        expect(done, isTrue, reason: 'no retry waits');
+        expect(asked('getProgramActions p1'), 1);
+        expect(asked('getProgramBases p1'), 1);
+        expect('${errors.single}', 'ProgramReadFailed(getProgramBases: program_not_found)');
+      });
+    });
+
+    test('alone, an offline failure is reported as itself', () {
+      fakeAsync((async) {
+        const dropped = FormatException('empty response');
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [dropped];
+
+        programs.init();
+        async.flushMicrotasks();
+
+        expect(errors, [dropped]);
+      });
+    });
+
+    test('a read that hangs gives its slot back, is asked again, and is reported', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.holding = Completer();
+        remote.holds = (call) => call == 'getProgramBases p1';
+
+        programs.init();
+        async.elapse(const Duration(seconds: 60));
+
+        expect(asked('getProgramBases p1'), 3);
+        expect('${errors.single}', 'ProgramReadFailed(getProgramBases: timeout)');
+
+        // nothing is left joined to it
+        remote.holds = (_) => false;
+        remote.calls.clear();
+        programs.pull('p1');
+        async.flushMicrotasks();
+        expect(asked('getProgramBases p1'), 1);
+      });
+    });
+
+    test('a retry waiting when the remote leg closes is let go quietly', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramBases p1'] = [throttled];
+
+        programs.init();
+        async.flushMicrotasks();
+        access.account = false;
+        async.elapse(const Duration(seconds: 5));
+
+        expect(asked('getProgramBases p1'), 1);
+        expect(errors, isEmpty);
+      });
+    });
+
+    test('signing out under a joined read lets it, and the backlog, go quietly', () {
+      fakeAsync((async) {
+        local.programs[uid] = several();
+        remote.programs = several();
+        remote.holding = Completer();
+        remote.holds = (call) => call != 'getPrograms';
+
+        var finished = 0;
+        programs.init().then((_) => finished++);
+        async.flushMicrotasks();
+        programs.pull('p0').then((_) => finished++);
+        async.flushMicrotasks();
+        programs.userId = 'u2';
+        remote.holding!.complete();
+        async.flushMicrotasks();
+
+        expect(finished, 2);
+        expect(reads(), hasLength(4), reason: 'what waited for a slot is not sent');
+        expect(local.actions, isEmpty);
+        expect(errors, isEmpty);
+      });
+    });
+
+    test("a coach's copy's changes are asked again a page at a time", () {
+      fakeAsync((async) {
+        remote.programs = [
+          Program.fromJson({...program(id: 'mine').toMap(), 'coachId': 'coach-muffin', 'revision': 1}),
+        ];
+        remote.changes['mine'] = [
+          ProgramChange(
+            id: 'ch1',
+            programId: 'mine',
+            actorId: 'coach-muffin',
+            kind: 'edit',
+            revision: 1,
+            at: DateTime.utc(2026, 10, 3),
+            cursor: 'ch1',
+          ),
+        ];
+        remote.failures['getProgramChanges mine -'] = [throttled];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 2));
+
+        expect(asked('getProgramChanges mine -'), 2);
+        expect(programs.coachChanges('mine', after: DateTime.utc(2026, 10, 1)).single.id, 'ch1');
+        expect(errors, isEmpty);
+      });
     });
   });
 
@@ -1493,6 +1632,20 @@ void main() {
         expect(programs.basesOf('p1').where((each) => each.workoutId == 'w1'), isEmpty);
       });
 
+      test('coming back, what pullCoached just read is not read again (#660)', () async {
+        await follow(growing({'squat': const AddWeight(step: 5)}), bases: [base(100)]);
+        await programs.pull('p1');
+        remote.calls.clear();
+
+        await programs.growLogged(
+          [loggedBy('whiskers', 'w1', start: DateTime.utc(2026, 10, 5))],
+          sessionOf: session,
+          reread: true,
+        );
+
+        expect(remote.calls, isNot(contains('getProgramBases p1')));
+      });
+
       test('one logged from a session not read here yet waits for it, and the ones after it too', () async {
         await follow(growing({'squat': const AddWeight(step: 5)}), bases: [base(100)]);
         final first = loggedBy('whiskers', 'w1', start: DateTime.utc(2026, 10, 5));
@@ -1646,7 +1799,6 @@ void main() {
       final swaps = <(String, String, String)>[];
       programs = Programs(
         service: local,
-        retryDelays: const [],
         remoteService: remote,
         templates: templates,
         remote: access,
@@ -1691,7 +1843,6 @@ void main() {
       final swaps = <(String, String, String)>[];
       programs = Programs(
         service: local,
-        retryDelays: const [],
         remoteService: remote,
         templates: templates,
         remote: access,
@@ -1826,7 +1977,6 @@ void main() {
     test('a climb onto a lift with a rule of its own keeps both rules where they are', () async {
       programs = Programs(
         service: local,
-        retryDelays: const [],
         remoteService: remote,
         templates: templates,
         remote: access,
@@ -1868,7 +2018,6 @@ void main() {
     test('a move that fails to write leaves the others reported, Keep and all', () async {
       programs = Programs(
         service: local,
-        retryDelays: const [],
         remoteService: remote,
         templates: templates,
         remote: access,
@@ -2255,8 +2404,8 @@ class _Remote implements RemoteProgramService {
 
   void _call(String call) {
     calls.add(call);
-    if (failing) throw {'error': 'unavailable'};
-    if (refusing case final String code) throw {'code': code};
+    if (failing) throw const NetworkException(statusCode: 503, body: {'error': 'unavailable'});
+    if (refusing case final String code) throw NetworkException(statusCode: 400, body: {'code': code});
   }
 
   /// What each program read throws before it answers, one per ask: a
@@ -2279,7 +2428,7 @@ class _Remote implements RemoteProgramService {
     } finally {
       inFlight--;
     }
-    if (failures[call] case final List<Object> pending when pending.isNotEmpty) throw pending.removeAt(0);
+    if (failures[call] case final List<Object> pending when pending.isNotEmpty) throw asRefusal(pending.removeAt(0));
   }
 
   @override
@@ -2314,7 +2463,9 @@ class _Remote implements RemoteProgramService {
     edits.add((baseRevision, changeId));
     _call('editProgram ${program.id}');
     if (revisions[program.id] case final int current when baseRevision != null) {
-      if (baseRevision != current) throw {'code': 'program_changed', 'revision': current};
+      if (baseRevision != current) {
+        throw NetworkException(statusCode: 409, body: {'code': 'program_changed', 'revision': current});
+      }
       revisions[program.id!] = current + 1;
       return Program.fromJson({...program.toMap(), 'revision': current + 1});
     }
@@ -2403,7 +2554,9 @@ class _Remote implements RemoteProgramService {
   @override
   Future<Template> setTemplateProgram(Template template, {required String? programId}) async {
     _call('setTemplateProgram ${template.id} $programId');
-    if (failingFilings.contains(template.id)) throw {'error': 'unavailable'};
+    if (failingFilings.contains(template.id)) {
+      throw const NetworkException(statusCode: 503, body: {'error': 'unavailable'});
+    }
     return Template.fromJson({...template.toMap(), 'programId': programId});
   }
 }

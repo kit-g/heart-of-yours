@@ -22,7 +22,7 @@ mixin _AnomalyRoutes on Requests, _ExerciseNaming implements AnomalyService {
         items: _readable(l, (each) => Anomaly.fromJson(_namedAnomaly(each))),
         hasMore: json['cursor'] != null,
       ),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'GET', Router.anomalies),
     };
   }
 
@@ -34,11 +34,11 @@ mixin _AnomalyRoutes on Requests, _ExerciseNaming implements AnomalyService {
     required String anomalyId,
     required AnomalyStatus status,
   }) async {
-    final (json, code) = await put(Router.anomaly(anomalyId), body: {'status': status.value});
+    final (json, code) = await _answering(put(Router.anomaly(anomalyId), body: {'status': status.value}), 404);
     return switch ((code, json)) {
       (200, Map json) => Anomaly.fromJson(_namedAnomaly(json)),
       (404, _) => null,
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'PUT', Router.anomaly(anomalyId)),
     };
   }
 }

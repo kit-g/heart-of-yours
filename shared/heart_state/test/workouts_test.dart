@@ -12,6 +12,8 @@ import 'package:provider/provider.dart';
 import 'mocks.mocks.dart';
 import 'test_utils.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
 void main() {
   final local = MockWorkoutService();
   final remote = MockRemoteWorkoutService();
@@ -157,7 +159,7 @@ void main() {
         targetUserId: anyNamed('targetUserId'),
         workoutId: anyNamed('workoutId'),
       ),
-    ).thenThrow({'error': 'not found', 'code': 'not_found'});
+    ).thenThrow(const NetworkException(statusCode: 404, body: {'error': 'not found', 'code': 'not_found'}));
     when(remote.saveWorkout(any)).thenAnswer((inv) async => inv.positionalArguments.first as Workout);
     when(remote.editWorkout(any)).thenAnswer((inv) async => inv.positionalArguments.first as Workout);
     when(remote.deleteWorkout(any)).thenAnswer((_) async => true);
@@ -988,7 +990,7 @@ void main() {
             targetUserId: anyNamed('targetUserId'),
             workoutId: anyNamed('workoutId'),
           ),
-        ).thenThrow({'error': 'not found', 'code': 'not_found'});
+        ).thenThrow(const NetworkException(statusCode: 404, body: {'error': 'not found', 'code': 'not_found'}));
 
         expect(await sut.fetchWorkout('never-existed'), isFalse);
       });
@@ -1427,7 +1429,7 @@ void main() {
       // any body the server answered with is an answer about that one
       // workout — a 404 is not an outage, whatever shape it comes in
       when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('gone'), stripped('w2')]);
-      fails('gone', {'error': 'not found'});
+      fails('gone', const NetworkException(statusCode: 404, body: {'error': 'not found'}));
       final full = detailed('w2');
       whenServerHas(full);
 

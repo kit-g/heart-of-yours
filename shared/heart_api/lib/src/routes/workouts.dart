@@ -5,7 +5,7 @@ part of '../api.dart';
 mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutService {
   @override
   Future<bool> deleteWorkout(String workoutId) async {
-    final (_, code) = await delete('${Router.workouts}/$workoutId');
+    final (_, code) = await _lenient(delete('${Router.workouts}/$workoutId'));
     return code == 204;
   }
 
@@ -14,10 +14,7 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
     String workoutId, {
     String? imageMimeType,
   }) async {
-    final (json, _) = await put(
-      Router.workoutImages(workoutId),
-      body: {'mimeType': ?imageMimeType},
-    );
+    final (json, _) = await _lenient(put(Router.workoutImages(workoutId), body: {'mimeType': ?imageMimeType}));
     return switch (json) {
       {'url': String url, 'fields': Map fields} => (
         (
@@ -32,7 +29,7 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
 
   @override
   Future<bool> deleteWorkoutImage(String workoutId, String imageId) async {
-    final (_, code) = await delete(Router.workoutImages(workoutId), query: {'key': imageId});
+    final (_, code) = await _lenient(delete(Router.workoutImages(workoutId), query: {'key': imageId}));
     return code == 204;
   }
 
@@ -50,14 +47,14 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
   /// its "n uploaded, n already there" line; the everyday paths only want the
   /// row and read it off this.
   Future<({Workout row, bool created})> replayWorkout(Workout workout) async {
-    final (json, created) = _created(await post(Router.workouts, body: workout.toMap()));
+    final (json, created) = _created(await post(Router.workouts, body: workout.toMap()), endpoint: Router.workouts);
     return (row: Workout.fromJson(_named(json)), created: created);
   }
 
   @override
   Future<Workout> editWorkout(Workout updated) async {
     final (json, code) = await put(Router.workout(updated.id), body: updated.toMap());
-    return _workoutOr(json, code);
+    return _workoutOr(json, code, method: 'PUT', endpoint: Router.workout(updated.id));
   }
 
   @override
@@ -70,15 +67,15 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
         'end': ?end?.toIso8601String(),
       },
     );
-    return _workoutOr(json, code);
+    return _workoutOr(json, code, method: 'PATCH', endpoint: Router.workout(workoutId));
   }
 
-  /// A refusal with a JSON body comes back from `put` and `patch` as a result,
-  /// not an exception, and parsed as a workout it dies on a null `start`.
-  Workout _workoutOr(Map<String, dynamic> json, int code) {
+  /// A refusal never gets here (it is the verb's [NetworkException]); a 2xx
+  /// that is not a workout would die on a null `start` if parsed as one.
+  Workout _workoutOr(Map<String, dynamic> json, int code, {required String method, required String endpoint}) {
     return switch (code) {
       >= 200 && < 300 => Workout.fromJson(_named(json)),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, method, endpoint),
     };
   }
 
@@ -91,22 +88,21 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
     final (json, code) = await get(Router.userWorkout(targetUserId, workoutId));
     return switch ((code, json)) {
       (200, Map json) => Workout.fromJson(_named(json)),
-      // thrown whole: the body carries a stable `code`, which is how the caller
-      // tells "no such workout" apart from "not yours to see" — and both apart
-      // from an outage, where nothing named comes back at all
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'GET', Router.userWorkout(targetUserId, workoutId)),
     };
   }
 
   @override
   Future<Iterable<Workout>?> getWorkouts(String userId, {int? pageSize, String? since}) async {
     // The interface still names these pageSize/since; the wire uses limit/cursor.
-    final (json, code) = await get(
-      '${Router.accounts}/$userId/workouts',
-      query: {
-        'limit': ?pageSize?.toString(),
-        'cursor': ?since,
-      },
+    final (json, _) = await _lenient(
+      get(
+        '${Router.accounts}/$userId/workouts',
+        query: {
+          'limit': ?pageSize?.toString(),
+          'cursor': ?since,
+        },
+      ),
     );
     return switch (json) {
       {'workouts': List l} => Page<Workout>(
@@ -119,7 +115,7 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
 
   @override
   Future<ProgressGalleryResponse> getWorkoutGallery({String? cursor, String? userId}) async {
-    final (json, _) = await get('${Router.workouts}/images', query: {'cursor': ?cursor});
+    final (json, _) = await _lenient(get('${Router.workouts}/images', query: {'cursor': ?cursor}));
     return ProgressGalleryResponse.fromJson(json);
   }
 
@@ -257,10 +253,10 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
 
   /// What a program workout was asked to be (#558, #566). `204`; the server
   /// keeps the first plan it gets, so sending again is harmless. A refusal is
-  /// thrown whole: `400 invalid_plan` for a shape it can't read, `404` for a
+  /// thrown with its body: `400 invalid_plan` for a shape it can't read, `404` for a
   /// workout it doesn't have yet.
   Future<void> saveWorkoutPlan(String workoutId, WorkoutPlan plan) async {
     final (json, code) = await put(Router.workoutPlan(workoutId), body: plan.toMap());
-    if (code != 204) throw _unexpected(json, code);
+    if (code != 204) throw _unreadable(code, 'PUT', Router.workoutPlan(workoutId));
   }
 }

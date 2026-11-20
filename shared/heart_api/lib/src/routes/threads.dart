@@ -16,7 +16,7 @@ typedef ReportedWords = ({
 /// Coaching messages (heart-of-yours#556): one thread per connection, whose
 /// items are ciphertext the server never reads.
 ///
-/// A refusal is thrown whole, as everywhere, so a caller branches on its
+/// A refusal is a [NetworkException] with its body, as everywhere, so a caller branches on its
 /// `code` (`thread_closed`, `rate_limited` with `retryAfter`, `stale_cursor`,
 /// `not_implemented`).
 mixin _ThreadRoutes on Requests {
@@ -25,7 +25,7 @@ mixin _ThreadRoutes on Requests {
     final (json, code) = await post(Router.connectionThread(connectionId));
     return switch ((code, json)) {
       (200 || 201, Map json) => Thread.fromJson(json),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'POST', Router.connectionThread(connectionId)),
     };
   }
 
@@ -35,7 +35,7 @@ mixin _ThreadRoutes on Requests {
     final (json, code) = await get(Router.threads);
     return switch ((code, json)) {
       (200, {'threads': final List threads}) => [for (final each in threads) Thread.fromJson(each as Map)],
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'GET', Router.threads),
     };
   }
 
@@ -66,7 +66,7 @@ mixin _ThreadRoutes on Requests {
     );
     return switch ((code, json)) {
       (200 || 201, Map json) => ThreadItem.fromJson(json),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'POST', Router.threadItems(threadId)),
     };
   }
 
@@ -94,7 +94,7 @@ mixin _ThreadRoutes on Requests {
         ],
         cursor: json['cursor'] as String?,
       ),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'GET', Router.threadItems(threadId)),
     };
   }
 
@@ -102,7 +102,7 @@ mixin _ThreadRoutes on Requests {
   /// with when and by whom.
   Future<void> clearThread(String threadId) async {
     final (json, code) = await delete(Router.threadItems(threadId));
-    if (code != 204) throw _unexpected(json, code);
+    if (code != 204) throw _unreadable(code, 'DELETE', Router.threadItems(threadId));
   }
 
   /// Reports [reportedId], with [messages] they sent: each the words in the
@@ -136,12 +136,12 @@ mixin _ThreadRoutes on Requests {
         ],
       },
     );
-    if (code != 204) throw _unexpected(json, code);
+    if (code != 204) throw _unreadable(code, 'POST', Router.reports);
   }
 
   /// Moves this person's read position in [threadId] to [cursor].
   Future<void> markThreadRead(String threadId, String cursor) async {
     final (json, code) = await put(Router.threadRead(threadId), body: {'cursor': cursor});
-    if (code != 204) throw _unexpected(json, code);
+    if (code != 204) throw _unreadable(code, 'PUT', Router.threadRead(threadId));
   }
 }

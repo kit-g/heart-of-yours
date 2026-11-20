@@ -4,6 +4,8 @@ import 'package:heart_state/heart_state.dart';
 
 import 'test_utils.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
 /// The server's side, in memory, paging by two.
 class _Server implements RosterService {
   final clients = <ClientSummary>[];
@@ -23,19 +25,19 @@ class _Server implements RosterService {
   @override
   Future<({List<ClientSummary> items, String? cursor})> getClients({bool former = false, String? cursor}) async {
     reads++;
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     return _page(former ? this.former : clients, cursor);
   }
 
   @override
   Future<void> markReviewed(String connectionId, {DateTime? at}) async {
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     reviewed[connectionId] = at;
   }
 
   @override
   Future<({List<CoachFeedItem> items, String? cursor})> getCoachFeed({String? cursor}) async {
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     return _page(feed, cursor);
   }
 
@@ -46,7 +48,7 @@ class _Server implements RosterService {
 
   @override
   Future<({List<Workout> items, String? cursor})> getClientWorkouts(String studentId, {String? cursor}) async {
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     return _page(workouts, cursor);
   }
 
@@ -67,7 +69,7 @@ class _Server implements RosterService {
 
   @override
   Future<Workout> logClientWorkout(String studentId, Workout workout) async {
-    if (refuseLog case final Object refusal) throw refusal;
+    if (refuseLog case final Map refusal) throw asRefusal(refusal);
     (logged[studentId] ??= []).add(workout);
     return Workout.fromJson({...workout.toMap(), 'loggedBy': 'whiskers', 'loggedByName': 'Whiskers'});
   }
@@ -78,7 +80,7 @@ class _Server implements RosterService {
 
   @override
   Future<void> saveClientWorkoutPlan(String studentId, String workoutId, WorkoutPlan plan) async {
-    if (refusePlan case final Object refusal) throw refusal;
+    if (refusePlan case final Map refusal) throw asRefusal(refusal);
     loggedPlans.putIfAbsent(workoutId, () => plan);
   }
 }
@@ -183,7 +185,7 @@ void main() {
 
     await roster.markReviewed(roster.clients.single);
     server.refuse = {'code': 'not_found'};
-    await expectLater(roster.markReviewed(roster.clients.single), throwsA(isA<Map>()));
+    await expectLater(roster.markReviewed(roster.clients.single), throwsA(isA<NetworkException>()));
 
     expect(reported.names, ['client_reviewed']);
   });
@@ -193,7 +195,7 @@ void main() {
     await roster.load();
     server.refuse = {'code': 'not_found'};
 
-    await expectLater(roster.markReviewed(roster.clients.single), throwsA(containsPair('code', 'not_found')));
+    await expectLater(roster.markReviewed(roster.clients.single), throwsA(refusal(containsPair('code', 'not_found'))));
     expect(roster.clients.single.reasons, ['note']);
   });
 
@@ -379,7 +381,7 @@ void main() {
 
       expect(server.logged['muffin'], [workout], reason: 'a comparison lost, never a workout');
       expect(server.loggedPlans, isEmpty);
-      expect(errors, [containsPair('code', 'unavailable')]);
+      expect(errors, [refusal(containsPair('code', 'unavailable'))]);
 
       server.refusePlan = null;
       await roster.loadRecord('muffin');
@@ -400,7 +402,7 @@ void main() {
     test('a log refused is thrown, and changes nothing here', () async {
       server.refuseLog = {'code': 'forbidden'};
 
-      expect(roster.logFor('muffin', Workout()), throwsA(containsPair('code', 'forbidden')));
+      expect(roster.logFor('muffin', Workout()), throwsA(refusal(containsPair('code', 'forbidden'))));
       await pumpEventQueue();
       expect(roster.workoutsOf('muffin'), isEmpty);
     });

@@ -118,9 +118,9 @@ class _InvitationPageState extends State<InvitationPage> {
         widget.onDone();
       } catch (error) {
         switch (error) {
-          case {'code': 'invitation_gone'}:
+          case NetworkException(isRefusal: true, body: {'code': 'invitation_gone'}):
             _gone.value = true;
-          case {'code': 'own_invitation'}:
+          case NetworkException(isRefusal: true, body: {'code': 'own_invitation'}):
             messenger.snack(l.invitationOwn);
           default:
             messenger.snack(l.invitationFailed);

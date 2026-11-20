@@ -8,7 +8,7 @@ mixin _LibraryRoutes on Requests {
     final (json, code) = await get(Router.libraryPrograms, query: _cursor(cursor));
     return switch ((code, json)) {
       (200, {'programs': List l}) => (items: _readable(l, CoachProgram.fromJson), cursor: json['cursor'] as String?),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'GET', Router.libraryPrograms),
     };
   }
 
@@ -17,7 +17,7 @@ mixin _LibraryRoutes on Requests {
     final (json, code) = await get(Router.libraryProgram(programId));
     return switch ((code, json)) {
       (200, Map json) => CoachProgram.fromJson(json),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'GET', Router.libraryProgram(programId)),
     };
   }
 
@@ -29,14 +29,14 @@ mixin _LibraryRoutes on Requests {
     final (json, code) = await put(Router.libraryProgram(programId), body: body);
     return switch ((code, json)) {
       (200, Map json) => CoachProgram.fromJson(json),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'PUT', Router.libraryProgram(programId)),
     };
   }
 
   /// Deletes the library program. The copies clients hold stay theirs.
   Future<void> deleteLibraryProgram(String programId) async {
     final (json, code) = await delete(Router.libraryProgram(programId));
-    if (code != 204) throw _unexpected(json, code);
+    if (code != 204) throw _unreadable(code, 'DELETE', Router.libraryProgram(programId));
   }
 
   /// Which clients hold a copy, and of which version.
@@ -44,7 +44,7 @@ mixin _LibraryRoutes on Requests {
     final (json, code) = await get(Router.libraryHolders(programId));
     return switch ((code, json)) {
       (200, Map json) => CoachProgramHolders.fromJson(json).holders,
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'GET', Router.libraryHolders(programId)),
     };
   }
 
@@ -57,7 +57,7 @@ mixin _LibraryRoutes on Requests {
     );
     return switch ((code, json)) {
       (200, Map json) => ProgramDeliveries.fromJson(json).deliveries,
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'POST', Router.librarySend(programId)),
     };
   }
 
@@ -73,7 +73,7 @@ mixin _LibraryRoutes on Requests {
     );
     return switch ((code, json)) {
       (200, Map json) => ProgramDeliveries.fromJson(json).deliveries,
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'POST', Router.libraryUpdate(programId)),
     };
   }
 }

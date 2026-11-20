@@ -852,7 +852,7 @@ class _Server implements RemoteThreadService {
       failNextPost = null;
       throw failure;
     }
-    if (refusePost case final Map<String, Object> refusal) throw refusal;
+    if (refusePost case final Map<String, Object> refusal) throw asRefusal(refusal);
     return ThreadItem(
       id: id,
       threadId: threadId,

@@ -67,10 +67,10 @@ extension _OwnKeys on DeviceKeys {
         signingKey: keys.signingKey,
         fallbackKey: device.fallbackKey,
       );
-    } on Map catch (refusal) {
+    } on NetworkException catch (refusal) {
       // a device removed for good can't come back under its id: this phone
       // starts over as a new one, which takes the old one's place in one step
-      if (refusal case {'code': 'device_removed'}) {
+      if (refusal case NetworkException(isRefusal: true, body: {'code': 'device_removed'})) {
         await _create(run, run.sealbox);
         return _publish(run);
       }

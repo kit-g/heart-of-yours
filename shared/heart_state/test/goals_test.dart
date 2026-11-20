@@ -5,6 +5,8 @@ import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/goals.dart';
 import 'package:heart_state/src/remote.dart';
 
+import 'test_utils.dart';
+
 void main() {
   late _FakeLocal local;
   late _FakeRemote remote;
@@ -830,7 +832,7 @@ class _FakeRemote implements GoalService {
   Map<String, dynamic>? refusalOnAttribution;
 
   void _guard() {
-    if (refusal case Map<String, dynamic> body) throw body;
+    if (refusal case Map<String, dynamic> body) throw asRefusal(body);
     if (failing) throw StateError('network is down');
   }
 
@@ -884,7 +886,7 @@ class _FakeRemote implements GoalService {
     if (achievedBy != null) {
       if (refusalOnAttribution case final Map<String, dynamic> body) {
         attributed.add(achievedBy);
-        throw body;
+        throw asRefusal(body);
       }
     }
     achieved.add(stageId);

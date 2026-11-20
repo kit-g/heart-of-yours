@@ -48,7 +48,7 @@ void main() {
       const refusal = {'error': 'bad request', 'code': 'bad_request', 'reason': 'platform has an invalid value'};
       respond(client: client, method: 'POST', path: Router.devices, statusCode: 400, body: refusal);
 
-      expect(api.registerDevice(platform: .web, token: 't'), throwsA(refusal));
+      expect(api.registerDevice(platform: .web, token: 't'), throwsA(refused(refusal)));
     });
 
     test('unregisterDevice sends the token as registered (heart-api#415)', () async {
@@ -63,7 +63,7 @@ void main() {
       const refusal = {'error': 'bad request', 'code': 'bad_request', 'reason': 'token is required'};
       respond(client: client, method: 'POST', path: Router.deviceRemovals, statusCode: 400, body: refusal);
 
-      expect(api.unregisterDevice(''), throwsA(refusal));
+      expect(api.unregisterDevice(''), throwsA(refused(refusal)));
     });
   });
 
@@ -131,7 +131,7 @@ void main() {
         body: refusal,
       );
 
-      expect(api.setPushSetting('coaching.message', 'daily'), throwsA(refusal));
+      expect(api.setPushSetting('coaching.message', 'daily'), throwsA(refused(refusal)));
     });
 
     test('clearPushSetting names the person in the query', () async {

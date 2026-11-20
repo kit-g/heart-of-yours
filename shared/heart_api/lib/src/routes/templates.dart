@@ -4,13 +4,13 @@ part of '../api.dart';
 mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderService, RemoteTemplateService {
   @override
   Future<bool> deleteTemplate(String templateId) async {
-    final (_, code) = await delete('${Router.templates}/$templateId');
+    final (_, code) = await _lenient(delete('${Router.templates}/$templateId'));
     return code == 204;
   }
 
   @override
   Future<Iterable<Template>?> getTemplates() async {
-    final (json, _) = await get(Router.templates);
+    final (json, _) = await _lenient(get(Router.templates));
     return switch (json) {
       {'templates': List l} => _readable(_namedAll(l, counts: true), Template.fromJson),
       _ => null,
@@ -23,7 +23,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     final (json, code) = await get(Router.template(templateId));
     return switch ((code, json)) {
       (200, Map json) => Template.fromJson(_named(json)),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'GET', Router.template(templateId)),
     };
   }
 
@@ -39,14 +39,17 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
   /// a copy made inside a folder (#262) would land unfiled.
   Future<({Template row, bool created})> replayTemplate(Template template) async {
     final body = <String, dynamic>{...template.toMap(), 'folderId': ?template.folderId};
-    final (json, created) = _created(await post(Router.templates, body: _withClientId(body)));
+    final (json, created) = _created(
+      await post(Router.templates, body: _withClientId(body)),
+      endpoint: Router.templates,
+    );
     return (row: Template.fromJson(_named(json)), created: created);
   }
 
   /// A session of a coach's copy says which revision the edit started from
   /// ([baseRevision]) and names the edit ([changeId]), as [editProgram] does
   /// (#558): `409 program_changed` when the coach changed it since. Anything
-  /// but the template is thrown whole.
+  /// but the template is thrown with its body.
   @override
   Future<Template> editTemplate(Template template, {int? baseRevision, String? changeId}) async {
     final (json, code) = await put(
@@ -55,7 +58,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     );
     return switch ((code, json)) {
       (200, Map json) => Template.fromJson(_named(json)),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'PUT', Router.template(template.id)),
     };
   }
 
@@ -75,7 +78,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     );
     return switch ((code, json)) {
       (200, Map json) => Template.fromJson(_named(json)),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'PUT', Router.template(template.id)),
     };
   }
 
@@ -88,7 +91,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
       // whole or not at all: the caller replaces its folders with these, so a
       // folder skipped here would delete its local copy (see [_readable])
       (200, {'folders': List l}) => _readable(l, TemplateFolder.fromJson),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'GET', Router.templateFolders),
     };
   }
 
@@ -107,6 +110,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
         Router.templateFolders,
         body: {'id': ?folder.id, 'name': folder.name, 'order': folder.order},
       ),
+      endpoint: Router.templateFolders,
     );
     return (row: TemplateFolder.fromJson(json), created: created);
   }
@@ -123,14 +127,14 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     );
     return switch ((code, json)) {
       (200, Map json) => TemplateFolder.fromJson(json),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'PUT', Router.templateFolder(folderId)),
     };
   }
 
   @override
   Future<void> deleteFolder({required String userId, required String folderId}) async {
     final (json, code) = await delete(Router.templateFolder(folderId));
-    if (code >= 400) throw _unexpected(json, code);
+    if (code >= 400) throw _unreadable(code, 'DELETE', Router.templateFolder(folderId));
   }
 
   @override
@@ -142,7 +146,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     final (json, code) = await post(Router.folderShare(targetUserId, folderId));
     return switch ((code, json)) {
       (200, {'shares': List l}) => _readable(l, _shareFromJson),
-      _ => throw _unexpected(json, code),
+      _ => throw _unreadable(code, 'POST', Router.folderShare(targetUserId, folderId)),
     };
   }
 

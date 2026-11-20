@@ -6,6 +6,8 @@ import 'package:heart_state/heart_state.dart';
 
 import 'test_utils.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
 /// The server's side, in memory: a document per program, a new version per
 /// save, as heart-api keeps them.
 class _Server implements CoachLibraryService {
@@ -35,7 +37,7 @@ class _Server implements CoachLibraryService {
   @override
   Future<({List<CoachProgram> items, String? cursor})> getLibraryPrograms({String? cursor}) async {
     reads++;
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     final ids = bodies.keys.toList();
     final from = int.parse(cursor ?? '0');
     return (
@@ -47,14 +49,14 @@ class _Server implements CoachLibraryService {
   @override
   Future<CoachProgram> getLibraryProgram(String programId) async {
     reads++;
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     return _row(programId);
   }
 
   @override
   Future<CoachProgram> saveLibraryProgram(String programId, Map<String, dynamic> body) async {
     await gate?.future;
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     saves.add(body);
     bodies[programId] = body;
     versions[programId] = (versions[programId] ?? 0) + 1;
@@ -64,7 +66,7 @@ class _Server implements CoachLibraryService {
 
   @override
   Future<void> deleteLibraryProgram(String programId) async {
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     deleted.add(programId);
   }
 
@@ -289,7 +291,7 @@ void main() {
     final program = await written();
 
     server.refuse = {'code': 'offline'};
-    await expectLater(library.delete(program.id), throwsA(isA<Map>()));
+    await expectLater(library.delete(program.id), throwsA(isA<NetworkException>()));
     expect(library.programs, hasLength(1));
 
     server.refuse = null;
