@@ -10,7 +10,16 @@ class MonthlyReportPage extends StatefulWidget {
   /// The month's first day.
   final DateTime month;
 
-  const new({super.key, required this.month});
+  /// Whether the bar offers the way back. Not beside the month list on a
+  /// wide page (#687): there, Back belongs to the list's bar, and a second
+  /// one over the report would close both.
+  final bool implyBack;
+
+  /// Closes the report where it sits beside the month list: the list's
+  /// standard close (#685).
+  final VoidCallback? onClose;
+
+  const new({super.key, required this.month, this.implyBack = true, this.onClose});
 
   @override
   State<MonthlyReportPage> createState() => _MonthlyReportPageState();
@@ -32,7 +41,19 @@ class _MonthlyReportPageState extends State<MonthlyReportPage> {
 
     return Scaffold(
       key: AppKeys.monthlyReport,
-      appBar: AppBar(title: Text(monthTitle(l, widget.month))),
+      appBar: AppBar(
+        leading: switch (widget.onClose) {
+          final VoidCallback close => IconButton(
+            key: AppKeys.closeDetail,
+            tooltip: l.close,
+            onPressed: close,
+            icon: const Icon(Icons.close),
+          ),
+          null => null,
+        },
+        title: Text(monthTitle(l, widget.month)),
+        automaticallyImplyLeading: widget.implyBack,
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final width = math.min(constraints.maxWidth, readableWidth);
@@ -146,7 +167,7 @@ class _Totals extends StatelessWidget {
       if (recap.volume > 0) (l.totalVolume, recapVolume(l, recap.volume, recap.weightUnit)),
     ];
     final columns = columnsFor(width, maxExtent: 240);
-    final tileWidth = (width - tileGutter * (columns - 1)) / columns;
+    final cellWidth = (width - tileGutter * (columns - 1)) / columns;
 
     return Wrap(
       spacing: tileGutter,
@@ -154,7 +175,7 @@ class _Totals extends StatelessWidget {
       children: [
         for (final (label, value) in tiles)
           SizedBox(
-            width: tileWidth,
+            width: cellWidth,
             child: _Stat(label: label, value: value),
           ),
       ],

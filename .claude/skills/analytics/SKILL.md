@@ -30,7 +30,9 @@ contract; this page is how to work on it.
 1. **Name it in `Analytics`.** A `const` for the event name, `const`s for its parameter keys, and
    a method taking domain types. Event names are `<domain>_<past_tense>`, snake_case, ≤ 40 chars;
    `firebase_`, `google_` and `ga_` are reserved. Do not send `screen_view` — the navigator
-   observer already does.
+   observer already does — except for a screen opened in a pane beside a list, which changes no
+   route: that goes through `Analytics.paneShown`, named as the same screen's route
+   (`docs/2026-09-24.analytics.md`).
 2. **Encode in the method, not at the call site.** GA4 parameter values are `String` or `num`
    only and the SDK asserts on anything else, so a bool goes through `_flag` as `'true'`/`'false'`
    — which also makes it a dimension rather than a metric. An enum carries an `id`; a raw count

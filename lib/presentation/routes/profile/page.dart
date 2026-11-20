@@ -8,8 +8,9 @@ class ProfilePage extends StatefulWidget {
   /// Where the no-account dialog's action lands: the login page.
   final VoidCallback onLogIn;
 
-  /// Every past month's recap, and one month's (#154).
-  final VoidCallback onRecaps;
+  /// Every past month's recap (#154), with the one given open beside them
+  /// where the page has room.
+  final ValueChanged<DateTime?> onRecaps;
 
   /// Into the Coaching space (#566), while Coach people is on.
   final VoidCallback onCoaching;

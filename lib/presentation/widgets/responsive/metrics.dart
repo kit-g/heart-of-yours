@@ -4,6 +4,8 @@
 /// means, or the same paragraph ends up a different width on every screen.
 library;
 
+import 'dart:math';
+
 /// Roughly 60 characters at body text size — about where a line of prose stops
 /// being comfortable to read.
 ///
@@ -42,3 +44,12 @@ const minTileWidth = 320.0;
 /// tablet breakpoint while the band itself is ~520pt, which halves into two
 /// tiles too narrow to hold either.
 bool tilesShareRow(double width) => width >= minTileWidth * 2 + tileGutter;
+
+/// How wide one tile is in a band [width] wide while two share a row; and
+/// once they stack, a readable measure of the band — a line of prose under the
+/// band stops there rather than running the width of a small tablet.
+///
+/// What a banner or a row of prose over or under the profile's band takes, so
+/// it starts and ends on the tile's edges: [readableWidth] alone left it short
+/// of the tile, off any line the page draws (#687).
+double tileWidth(double width) => tilesShareRow(width) ? (width - tileGutter) / 2 : min(width, readableWidth);

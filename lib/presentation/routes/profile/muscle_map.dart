@@ -308,7 +308,7 @@ class const _MuscleMapBody({
         final top = switch ((parts.figures, parts.breakdown, tilesShareRow(width))) {
           (true, true, true) => SizedBox(
             // the tiles' own height rule, on half the band
-            height: min((width - tileGutter) / 2 * 4 / 5, _maxChartHeight),
+            height: min(tileWidth(width) * 4 / 5, _maxChartHeight),
             child: Row(
               crossAxisAlignment: .stretch,
               spacing: tileGutter,

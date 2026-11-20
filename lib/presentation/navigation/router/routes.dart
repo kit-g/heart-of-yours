@@ -27,7 +27,7 @@ RouteBase _profileRoute() {
         onSettings: context.goToSettings,
         onAccount: context.goToAccountManagement,
         onLogIn: context.goToLogin,
-        onRecaps: context.goToRecaps,
+        onRecaps: (month) => context.goToRecaps(month: month),
         onMonthlyReport: context.goToMonthlyReport,
         onAvatar: () {
           final user = Auth.of(context).user;
@@ -48,7 +48,18 @@ RouteBase _profileRoute() {
         path: _recapsPath,
         // off, a link here is one the app has no screen for (`docs/opt-in.md`)
         redirect: (context, _) => Preferences.of(context).isOn(.recaps) ? null : _profilePath,
-        builder: (context, _) => RecapsPage(onMonth: context.goToMonthlyReport),
+        builder: (context, state) {
+          return RecapsPage(
+            month: _monthOf(state.uri.queryParameters[_monthParam]),
+            onMonth: context.goToMonthlyReport,
+            // beside the list a month is no route, so the observers that
+            // count screens and record navigation are told here (#687)
+            onMonthShown: (_) {
+              Analytics.of(context).paneShown(screen: _monthlyReportName);
+              paneBreadcrumb(from: _recapsName, to: _monthlyReportName);
+            },
+          );
+        },
         name: _recapsName,
         routes: [
           GoRoute(

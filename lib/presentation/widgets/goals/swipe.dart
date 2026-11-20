@@ -39,6 +39,9 @@ class _SwipeToDeleteState extends State<_SwipeToDelete> with SingleTickerProvide
     super.didChangeDependencies();
     _scroll?.removeListener(_close);
     _scroll = Scrollable.maybeOf(context)?.position?..addListener(_close);
+    // turned away, the face stays built for the card's size: shut, so the
+    // card turns back to closed rows as it did when the face was rebuilt
+    if (!_Face.isShown(context)) _open.value = 0;
   }
 
   @override

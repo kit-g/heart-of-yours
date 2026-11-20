@@ -11,7 +11,7 @@ library;
 import 'dart:math';
 
 import 'package:flutter_body_atlas/flutter_body_atlas.dart' show MuscleGroup;
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/goal_crossings.dart';
 import 'package:heart/core/utils/goals.dart';

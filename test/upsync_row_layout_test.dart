@@ -1,8 +1,9 @@
 // Window-size coverage for the upsync row on the profile — the mechanism of
 // integration_test/responsive_frame_test.dart applied to a single surface
 // (docs/handoff.md #4). The row is a line of prose and a bar, so it measures
-// its own LayoutBuilder constraints and caps itself at [readableWidth],
-// start-aligned with the chart under it rather than spanning an iPad.
+// its own LayoutBuilder constraints and takes the width of the chart tile
+// under it ([tileWidth]), starting and ending on its edges rather than
+// spanning an iPad or stopping short of the tile (#687).
 import 'dart:async';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
@@ -66,16 +67,19 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
   }
 
-  testWidgets('an iPad window caps the row at readableWidth, start-aligned', (tester) async {
-    await pumpRunningRowAt(tester, const Size(1194, 834));
+  for (final size in [const Size(1194, 834), const Size(834, 1194)]) {
+    testWidgets('an iPad window ${size.width.toInt()}pt wide gives the row one tile, on its edges', (tester) async {
+      await pumpRunningRowAt(tester, size);
 
-    final row = find.byKey(AppKeys.upsyncRow);
-    expect(tester.getSize(row).width, readableWidth);
-    // the chart grid's own inset from the pane's edge — the pane, not the
-    // window: on an iPad the navigation rail sits to the left of it
-    final pane = tester.getTopLeft(find.byType(CustomScrollView).first).dx;
-    expect(tester.getTopLeft(row).dx, pane + 16);
-  });
+      final row = find.byKey(AppKeys.upsyncRow);
+      // the pane, not the window: on an iPad the navigation rail sits to the
+      // left of it
+      final pane = tester.getRect(find.byType(CustomScrollView).first);
+      expect(tilesShareRow(pane.width - 32), isTrue);
+      expect(tester.getSize(row).width, (pane.width - 32 - tileGutter) / 2);
+      expect(tester.getTopLeft(row).dx, pane.left + 16);
+    });
+  }
 
   testWidgets('a phone window gives the row the pane minus the insets', (tester) async {
     await pumpRunningRowAt(tester, const Size(390, 844));

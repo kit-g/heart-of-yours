@@ -16,7 +16,10 @@ class _RecapsSection extends StatefulWidget {
   /// Only its identity is read: [Stats] replaces it whenever a workout is
   /// finished or deleted, which is when the months behind the slot go stale.
   final WorkoutAggregation workouts;
-  final VoidCallback onRecaps;
+
+  /// Every past month, with one of them open beside the list when the page
+  /// has room for both.
+  final ValueChanged<DateTime?> onRecaps;
   final ValueChanged<DateTime> onMonth;
 
   const new({required this.workouts, required this.onRecaps, required this.onMonth});
@@ -71,14 +74,28 @@ class _RecapsSectionState extends State<_RecapsSection> {
     // last month had training, and this one has only just begun
     final fresh = now.day <= _recapDays && months.containsKey(lastMonth);
 
-    final children = switch (on) {
-      true => [
-        if (fresh) _RecapCard(month: lastMonth, workouts: widget.workouts, onTap: () => widget.onMonth(lastMonth)),
-        if (months.isNotEmpty) _RecapsEntry(onTap: widget.onRecaps),
-      ],
+    // On a page wide enough for the months and a report side by side, last
+    // month opens there, picked: its own page over the list would show the
+    // same report twice, the second time on Back (#687). [band] is the slot's
+    // width, inside the page's 16 each side.
+    List<Widget> feature(double band) => [
+      if (fresh)
+        _RecapCard(
+          month: lastMonth,
+          workouts: widget.workouts,
+          onTap: switch (recapsSideBySide(band + 32)) {
+            true => () => widget.onRecaps(lastMonth),
+            false => () => widget.onMonth(lastMonth),
+          },
+        ),
+      if (months.isNotEmpty) _RecapsEntry(onTap: () => widget.onRecaps(null)),
+    ];
+
+    final List<Widget> Function(double band) children = switch (on) {
+      true => feature,
       // offered where the card would be, when it would be: a recap of a month
       // that has one is the thing being asked about
-      false when fresh => [
+      false when fresh => (_) => [
         FeatureOffer(
           key: AppKeys.recapsOffer,
           acceptKey: AppKeys.recapsAccept,
@@ -90,16 +107,30 @@ class _RecapsSectionState extends State<_RecapsSection> {
           onShown: () => preferences.markOffered(_feature),
         ),
       ],
-      false => const <Widget>[],
+      false => (_) => const <Widget>[],
     };
 
-    return switch (children) {
-      [] => const SizedBox.shrink(),
-      _ => Padding(
-        padding: const .only(left: 16, right: 16, bottom: 8),
-        child: Column(crossAxisAlignment: .stretch, spacing: 8, children: children),
-      ),
-    };
+    return LayoutBuilder(
+      builder: (_, constraints) {
+        final band = constraints.maxWidth - 32;
+        return switch (children(band)) {
+          [] => const SizedBox.shrink(),
+          final children => Padding(
+            padding: const .only(left: 16, right: 16, bottom: 8),
+            // as wide as the chart tile above, starting and ending on its
+            // edges (#687): a readable measure left the card and the entry
+            // short of it
+            child: Align(
+              alignment: .centerLeft,
+              child: SizedBox(
+                width: tileWidth(band),
+                child: Column(crossAxisAlignment: .stretch, spacing: 8, children: children),
+              ),
+            ),
+          ),
+        };
+      },
+    );
   }
 }
 
@@ -139,57 +170,50 @@ class _RecapCardState extends State<_RecapCard> {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme, :dividerColor) = Theme.of(context);
 
-    return Align(
-      alignment: .centerLeft,
-      child: ConstrainedBox(
-        // a line of prose and a chevron: an iPad's width would strand them
-        constraints: const BoxConstraints(maxWidth: readableWidth),
-        child: Semantics(
-          button: true,
-          label: l.recapOpen,
-          child: Material(
-            type: .transparency,
-            child: InkWell(
-              key: AppKeys.recapCard,
+    return Semantics(
+      button: true,
+      label: l.recapOpen,
+      child: Material(
+        type: .transparency,
+        child: InkWell(
+          key: AppKeys.recapCard,
+          borderRadius: const .all(.circular(12)),
+          onTap: widget.onTap,
+          child: Ink(
+            decoration: BoxDecoration(
+              border: .all(color: dividerColor, width: .5),
               borderRadius: const .all(.circular(12)),
-              onTap: widget.onTap,
-              child: Ink(
-                decoration: BoxDecoration(
-                  border: .all(color: dividerColor, width: .5),
-                  borderRadius: const .all(.circular(12)),
-                ),
-                padding: const .all(16),
-                child: Row(
-                  spacing: 12,
-                  children: [
-                    Icon(Icons.insights_rounded, color: colorScheme.primary),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: .start,
-                        spacing: 2,
-                        children: [
-                          Text(
-                            '${l.recapLastMonth} · ${monthTitle(l, widget.month)}',
-                            style: textTheme.titleMedium,
-                          ),
-                          FutureBuilder<Recap>(
-                            future: _read(),
-                            builder: (context, snapshot) => Text(
-                              switch (snapshot.data) {
-                                final recap? => recapSummary(l, recap),
-                                // the line's height held, so nothing jumps
-                                null => '',
-                              },
-                              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                            ),
-                          ),
-                        ],
+            ),
+            padding: const .all(16),
+            child: Row(
+              spacing: 12,
+              children: [
+                Icon(Icons.insights_rounded, color: colorScheme.primary),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: .start,
+                    spacing: 2,
+                    children: [
+                      Text(
+                        '${l.recapLastMonth} · ${monthTitle(l, widget.month)}',
+                        style: textTheme.titleMedium,
                       ),
-                    ),
-                    Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
-                  ],
+                      FutureBuilder<Recap>(
+                        future: _read(),
+                        builder: (context, snapshot) => Text(
+                          switch (snapshot.data) {
+                            final recap? => recapSummary(l, recap),
+                            // the line's height held, so nothing jumps
+                            null => '',
+                          },
+                          style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
+              ],
             ),
           ),
         ),
@@ -209,27 +233,21 @@ class _RecapsEntry extends StatelessWidget {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
-    return Align(
-      alignment: .centerLeft,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: readableWidth),
-        child: Material(
-          type: .transparency,
-          child: InkWell(
-            key: AppKeys.recapsEntry,
-            borderRadius: const .all(.circular(12)),
-            onTap: onTap,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
-              child: Row(
-                spacing: 12,
-                children: [
-                  Icon(Icons.history_rounded, color: colorScheme.onSurfaceVariant),
-                  Expanded(child: Text(l.recaps, style: textTheme.titleMedium)),
-                  Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
-                ],
-              ),
-            ),
+    return Material(
+      type: .transparency,
+      child: InkWell(
+        key: AppKeys.recapsEntry,
+        borderRadius: const .all(.circular(12)),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Row(
+            spacing: 12,
+            children: [
+              Icon(Icons.history_rounded, color: colorScheme.onSurfaceVariant),
+              Expanded(child: Text(l.recaps, style: textTheme.titleMedium)),
+              Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
+            ],
           ),
         ),
       ),
