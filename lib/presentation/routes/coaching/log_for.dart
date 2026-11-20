@@ -34,6 +34,8 @@ class _LogForButtonState extends State<_LogForButton> {
       message: l.coachingLogWorkoutBody,
       child: PrimaryButton.shrunk(
         key: AppKeys.coachingLogFor,
+        // the house 32pt look, and a full tap target
+        hitHeight: kMinInteractiveDimension,
         backgroundColor: colorScheme.secondaryContainer,
         onPressed: _start,
         child: Row(

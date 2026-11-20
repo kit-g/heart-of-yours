@@ -654,6 +654,8 @@ class _ClientActions extends StatelessWidget {
     final message = PrimaryButton.shrunk(
       key: AppKeys.coachingClientMessages,
       onPressed: onMessage,
+      // the house 32pt look, and a full tap target
+      hitHeight: kMinInteractiveDimension,
       child: Row(
         mainAxisSize: .min,
         spacing: 8,

@@ -109,6 +109,16 @@ class PrimaryButton extends StatelessWidget {
   final BoxBorder? border;
   final InteractiveInkFeatureFactory? splashFactory;
 
+  /// The height the button answers taps over, when it is more than it draws:
+  /// a dialog's answers keep the house 32pt look and a full tap target, the
+  /// band above and below it taking the tap too.
+  final double? hitHeight;
+
+  /// What a button with only an icon in it does, on a long press and to a
+  /// screen reader. Inside the button's own node: a [Tooltip] wrapped around
+  /// the button labels the node above it instead.
+  final String? tooltip;
+
   const new shrunk({
     super.key,
     required this.child,
@@ -118,6 +128,8 @@ class PrimaryButton extends StatelessWidget {
     this.enableFeedback = true,
     this.border,
     this.splashFactory = InkRipple.splashFactory,
+    this.hitHeight,
+    this.tooltip,
   }) : wide = false;
 
   const new wide({
@@ -129,6 +141,8 @@ class PrimaryButton extends StatelessWidget {
     this.enableFeedback = true,
     this.border,
     this.splashFactory = InkRipple.splashFactory,
+    this.hitHeight,
+    this.tooltip,
   }) : wide = true;
 
   @override
@@ -147,7 +161,7 @@ class PrimaryButton extends StatelessWidget {
       ),
       _ => child,
     };
-    return SizedBox(
+    final drawn = SizedBox(
       width: wide ? double.infinity : null,
       child: InkButton.rounded(
         border: border,
@@ -158,6 +172,31 @@ class PrimaryButton extends StatelessWidget {
           child: content,
         ),
       ),
+    );
+    final button = switch (tooltip) {
+      final String message => Tooltip(message: message, child: drawn),
+      null => drawn,
+    };
+    // a node of its own with a button's role: the ink alone announces a tap
+    // and its label, not that this is a button, or whether it is enabled.
+    // Wrapping the hit band too, the node is as tall as what answers a tap
+    return Semantics(
+      button: true,
+      container: true,
+      enabled: onPressed != null,
+      child: switch (hitHeight) {
+        final double height => GestureDetector(
+          behavior: .opaque,
+          onTap: onPressed == null ? null : _onPressed,
+          excludeFromSemantics: true,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: height),
+            // sized to the button, then centred in the band
+            child: Align(widthFactor: 1, heightFactor: 1, child: button),
+          ),
+        ),
+        null => button,
+      },
     );
   }
 

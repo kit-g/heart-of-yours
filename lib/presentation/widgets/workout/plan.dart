@@ -168,7 +168,10 @@ class const SessionNote({super.key, required final String note}) extends Statele
         spacing: 8,
         crossAxisAlignment: .start,
         children: [
-          Icon(Icons.event_repeat_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+          Tooltip(
+            message: L.of(context).program,
+            child: Icon(Icons.event_repeat_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+          ),
           Expanded(
             child: Text(note, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
           ),
