@@ -175,6 +175,10 @@ Future<void> _runner({
 
       api
         ..onUpgradeRequired = (j) {
+          // Once is the event: the gate is up, and the remote leg it closes
+          // (RemoteAccess.outdated) stops most of what would ask again. What
+          // still slips through must not count, or redraw, a second time.
+          if (AppVersionSentry.instance.upgradeRequired) return (j, 426);
           AppVersionSentry.instance.requireUpgrade();
           // Nothing else in this app can strand someone as completely, and
           // until now its volume was invisible.

@@ -298,25 +298,42 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// answer — the account's settings and entitlements — unless the session
   /// changed hands while the request was out: a late answer for an account
   /// signed out of must not bring it back.
+  ///
+  /// A build the server no longer serves (426) keeps the session as it is —
+  /// signed in, as Firebase has it, with whatever the server last said of it.
+  /// It used to be dropped to no user while Firebase still had one, and a
+  /// later registration could sign them back in under the upgrade gate
+  /// (#683). The gate is the client's 426 hook's to raise, and it closes the
+  /// remote leg ([RemoteAccess.outdated]) until an update relaunches the app,
+  /// whose first registration, on Firebase's replay of the same user, lands.
   Future<void> _register(String uid) async {
+    final user = _user;
+    if (user == null || !_mayRegister) return;
     try {
-      final registered = await _registerUser(_user);
+      final saved = await _service.registerAccount(user);
       if (_disposed || _user?.id != uid) return;
-      _user = registered;
+      _user = saved;
+      _known = uid;
       // what the server holds for the account — its settings among it
       // — has only now arrived; listeners reading those need telling
       notifyListeners();
     } on AccountDeleted {
       await _logout();
+    } on UpgradeRequired catch (e) {
+      onError?.call(e);
     }
   }
+
+  /// Whether the account may be written to the server: there is one, the
+  /// client has its token, and the server still serves this build.
+  bool get _mayRegister => !_isAnonymous && _service.isAuthenticated && !remote.outdated();
 
   /// Coming back to the app: an account whose registration never reached the
   /// server — the launch was offline — tries again, rather than wait for
   /// Firebase's next word about the user, up to an hour away. Its entitlements
   /// (coaching among them) are unknown until it does.
   Future<void> registerAgain() async {
-    if (_isAnonymous || entitlementsKnown || !_service.isAuthenticated) return;
+    if (entitlementsKnown) return;
     if (_user?.id case final String uid) {
       try {
         await _register(uid);
@@ -783,7 +800,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
       _user = _user?.copyWith(displayName: appleName, email: appleEmail);
       _reportArrival(cred, provider: provider, arrival: arrival);
 
-      _user = await _registerUser(_user);
+      if (_user?.id case final String uid) await _register(uid);
       notifyListeners();
       await _connectPending();
     });
@@ -891,7 +908,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
           await _connectPending();
           if (wasAnonymous || !_enter(cred?.user?.uid)) return;
           onEnter?.call(await cred?.user?.getIdToken(), cred?.user?.uid);
-          _user = await _registerUser(_user);
+          if (cred?.user?.uid case final String uid) await _register(uid);
         });
   }
 
@@ -1019,7 +1036,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   @override
   Future<Settings?> saveSettings(Settings settings) async {
     final user = _user;
-    if (user == null || _isAnonymous || !_service.isAuthenticated) return null;
+    if (user == null || !_mayRegister) return null;
     final saved = await _service.registerAccount(
       user.copyWith(settings: settings),
     );
@@ -1029,19 +1046,6 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     _known = saved.id;
     notifyListeners();
     return saved.settings;
-  }
-
-  Future<User?> _registerUser(User? user) async {
-    try {
-      if (user == null || _isAnonymous) return user;
-      if (!_service.isAuthenticated) return user;
-      final saved = await _service.registerAccount(user);
-      _known = user.id;
-      return saved;
-    } on UpgradeRequired catch (e) {
-      onError?.call(e);
-      return null;
-    }
   }
 
   Future<String?>? get sessionToken => _firebase.currentUser?.getIdToken();
