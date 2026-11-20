@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart' show RouteSettings;
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/telemetry.dart';
 import 'package:heart_api/heart_api.dart' show NetworkException;
+import 'package:heart_state/heart_state.dart' show ProgramReadFailed;
 import 'package:http/http.dart' as http;
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -114,6 +115,8 @@ Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
       // for what was mostly one failure. The message is the grouping key:
       // it names the status, verb and templated path, and never the body.
       NetworkException() => (scope) => scope.fingerprint = ['NetworkException', exception.toString()],
+      // one issue per call and cause, whichever program it was (#660)
+      ProgramReadFailed() => (scope) => scope.fingerprint = ['ProgramReadFailed', exception.toString()],
       _ => null,
     },
   );
