@@ -22,7 +22,7 @@ mixin _AnomalyRoutes on Requests, _ExerciseNaming implements AnomalyService {
         items: _readable(l, (each) => Anomaly.fromJson(_namedAnomaly(each))),
         hasMore: json['cursor'] != null,
       ),
-      _ => throw NetworkException(statusCode: code, body: json),
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -38,7 +38,7 @@ mixin _AnomalyRoutes on Requests, _ExerciseNaming implements AnomalyService {
     return switch ((code, json)) {
       (200, Map json) => Anomaly.fromJson(_namedAnomaly(json)),
       (404, _) => null,
-      _ => throw NetworkException(statusCode: code, body: json),
+      _ => throw _unexpected(json, code),
     };
   }
 }

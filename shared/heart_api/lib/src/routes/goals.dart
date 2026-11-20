@@ -55,7 +55,7 @@ mixin _GoalRoutes on Requests implements GoalService {
     final (json, code) = await put(Router.goal(goalId), body: goal.toBody());
     return switch ((code, json)) {
       (200, Map json) => Goal.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -83,7 +83,7 @@ mixin _GoalRoutes on Requests implements GoalService {
     );
     return switch ((code, json)) {
       (200, Map json) => Goal.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 }

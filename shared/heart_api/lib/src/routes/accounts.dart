@@ -10,7 +10,7 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
       (200, Map json) => User.fromJson(json),
       (400, {'code': 'ACCOUNT_DELETED'}) => throw AccountDeleted(),
       (426, _) => throw UpgradeRequired(),
-      _ => throw json, // error
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -30,7 +30,7 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
     return switch ((code, json)) {
       (200, Map json) => AccountSummary.fromJson(json),
       (426, _) => throw UpgradeRequired(),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -46,7 +46,7 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
     return switch (code) {
       < 400 => null,
       426 => throw UpgradeRequired(),
-      _ => throw json, // error
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -103,7 +103,7 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
         final (json, code) = response;
         return switch (code) {
           < 400 => null,
-          _ => throw json, // error
+          _ => throw _unexpected(json, code),
         };
       },
     );
@@ -156,7 +156,7 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
     );
     return switch ((code, json)) {
       (201, Map json) => MintedApiToken.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -164,7 +164,7 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
   /// account does not own, thrown whole like every refusal.
   Future<void> revokeApiToken(String tokenId) async {
     final (json, code) = await delete(Router.accountToken(tokenId));
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// [json] with its `purpose` only when it is one this build can name.

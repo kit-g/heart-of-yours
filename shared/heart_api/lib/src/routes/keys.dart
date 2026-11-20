@@ -33,7 +33,7 @@ mixin _KeyRoutes on Requests {
     );
     return switch ((code, json)) {
       (200 || 201, Map json) => CryptoDevice.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -50,7 +50,7 @@ mixin _KeyRoutes on Requests {
     );
     return switch ((code, json)) {
       (200, Map json) => CryptoDevices.fromJson(json).devices,
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -69,7 +69,7 @@ mixin _KeyRoutes on Requests {
     );
     return switch ((code, json)) {
       (200, Map json) => CryptoDevice.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -77,7 +77,7 @@ mixin _KeyRoutes on Requests {
   /// its id.
   Future<void> removeCryptoDevice(String deviceId) async {
     final (json, code) = await delete(Router.cryptoDevice(deviceId));
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// Adds single-use keys, by the name the device knows each by. Answers how
@@ -97,7 +97,7 @@ mixin _KeyRoutes on Requests {
     );
     return switch ((code, json)) {
       (200, Map json) => OneTimeKeyCount.fromJson(json).count,
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -106,13 +106,13 @@ mixin _KeyRoutes on Requests {
     final (json, code) = await get(Router.oneTimeKeys(deviceId));
     return switch ((code, json)) {
       (200, Map json) => OneTimeKeyCount.fromJson(json).count,
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
   Future<void> replaceFallbackKey(String deviceId, String key) async {
     final (json, code) = await put(Router.fallbackKey(deviceId), body: {'key': key});
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// Takes one single-use key from each of [userId]'s devices, or the fallback
@@ -126,7 +126,7 @@ mixin _KeyRoutes on Requests {
     final (json, code) = await post(Router.keyClaims(userId), body: {'deviceIds': ?deviceIds});
     return switch ((code, json)) {
       (200, Map json) => CryptoDevices.fromJson(json).devices,
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -150,7 +150,7 @@ mixin _KeyRoutes on Requests {
         'content': content,
       },
     );
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// Everything waiting for [deviceId] that it hasn't confirmed, in the
@@ -159,7 +159,7 @@ mixin _KeyRoutes on Requests {
     final (json, code) = await get(Router.keyQueue, query: {'deviceId': deviceId});
     return switch ((code, json)) {
       (200, Map json) => QueuedItems.fromJson(json).items,
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -172,7 +172,7 @@ mixin _KeyRoutes on Requests {
     );
     for (final run in runs) {
       final (json, code) = await post(Router.keyQueueConfirmations, body: {'deviceId': deviceId, 'ids': run});
-      if (code != 204) throw json;
+      if (code != 204) throw _unexpected(json, code);
     }
   }
 

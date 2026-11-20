@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:heart_api/src/api.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:mockito/mockito.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
 import 'package:test/test.dart';
 
 import 'support/http.dart';
@@ -48,7 +49,9 @@ void main() {
       expect(() => api.registerAccount(user), throwsA(isA<AccountDeleted>()));
     });
 
-    test('registerAccount throws on unexpected error', () async {
+    // #681: thrown as the bare body, a status the route does not name reached
+    // Sentry titled with the map and grouped by stack.
+    test('registerAccount throws a status it does not name as a NetworkException naming the request', () async {
       final user = User(id: '42', displayName: 'Jane');
 
       respond(
@@ -56,10 +59,20 @@ void main() {
         method: 'PUT',
         path: Router.accounts,
         statusCode: 500,
-        body: {'error': 'unexpected'},
+        body: {'code': 'server_error', 'error': 'Jane Doe <jane@example.com>'},
       );
 
-      expect(() => api.registerAccount(user), throwsA(isA<Map>()));
+      final thrown = await api.registerAccount(user).then<Object?>((_) => null, onError: (Object e) => e);
+      expect(
+        thrown,
+        isA<NetworkException>()
+            .having((e) => e.statusCode, 'statusCode', 500)
+            .having((e) => e.method, 'method', 'PUT')
+            .having((e) => e.path, 'path', '/v1/accounts'),
+      );
+      expect('$thrown', 'NetworkException(500 PUT /v1/accounts)');
+      // still the body to a caller reading its code across the package line
+      expect(thrown, containsPair('code', 'server_error'));
     });
 
     // Scheduling a deletion is an action on `PUT /accounts`, not `DELETE` —
@@ -268,7 +281,27 @@ void main() {
       );
 
       // an empty summary would read as "your mirror is complete"
-      await expectLater(api.getAccountSummary, throwsA(anything));
+      await expectLater(
+        api.getAccountSummary,
+        throwsA(
+          isA<NetworkException>().having((e) => '$e', 'toString', 'NetworkException(500 GET /v1/accounts/summary)'),
+        ),
+      );
+    });
+
+    test("a gateway's error, with no code of ours, is a NetworkException too", () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: '${Router.accounts}/summary',
+        statusCode: 502,
+        body: {'message': 'Internal server error'},
+      );
+
+      await expectLater(
+        api.getAccountSummary,
+        throwsA(isA<NetworkException>().having((e) => e.statusCode, 'statusCode', 502)),
+      );
     });
   });
 
@@ -408,6 +441,47 @@ void main() {
         body: {'error': 'not found', 'code': 'not_found', 'message': 'token #nope not found'},
       );
       expect(() => api.revokeApiToken('nope'), throwsA(isA<Map>().having((m) => m['code'], 'code', 'not_found')));
+    });
+  });
+
+  group('a failure names its request, never its body (#681)', () {
+    test('an id in the path is templated, so one endpoint groups as one', () async {
+      const tokenId = '0190a6e2-3c4d-7e5f-8a9b-0c1d2e3f4a5b';
+      respond(
+        client: client,
+        method: 'DELETE',
+        path: Router.accountToken(tokenId),
+        statusCode: 404,
+        body: {'code': 'not_found'},
+      );
+
+      await expectLater(
+        api.revokeApiToken(tokenId),
+        throwsA(
+          isA<NetworkException>().having(
+            (e) => '$e',
+            'toString',
+            'NetworkException(404 DELETE /v1/accounts/tokens/{id})',
+          ),
+        ),
+      );
+    });
+
+    test('a success in a shape the route cannot read is thrown as its status alone', () async {
+      respond(
+        client: client,
+        method: 'POST',
+        path: Router.accountTokens,
+        statusCode: 200,
+        body: {'name': 'My sheet', 'secret': 'hrt_secret'},
+      );
+
+      final thrown = await api
+          .createApiToken(name: 'My sheet', expiry: .year)
+          .then<Object?>((_) => null, onError: (Object e) => e);
+      expect(thrown, isA<NetworkException>().having((e) => e.statusCode, 'statusCode', 200));
+      expect(thrown, isNot(isA<Map>()));
+      expect('$thrown', isNot(contains('hrt_secret')));
     });
   });
 }

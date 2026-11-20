@@ -23,7 +23,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     final (json, code) = await get(Router.template(templateId));
     return switch ((code, json)) {
       (200, Map json) => Template.fromJson(_named(json)),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -55,7 +55,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     );
     return switch ((code, json)) {
       (200, Map json) => Template.fromJson(_named(json)),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -75,7 +75,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     );
     return switch ((code, json)) {
       (200, Map json) => Template.fromJson(_named(json)),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -88,7 +88,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
       // whole or not at all: the caller replaces its folders with these, so a
       // folder skipped here would delete its local copy (see [_readable])
       (200, {'folders': List l}) => _readable(l, TemplateFolder.fromJson),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -123,14 +123,14 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     );
     return switch ((code, json)) {
       (200, Map json) => TemplateFolder.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
   @override
   Future<void> deleteFolder({required String userId, required String folderId}) async {
     final (json, code) = await delete(Router.templateFolder(folderId));
-    if (code >= 400) throw json;
+    if (code >= 400) throw _unexpected(json, code);
   }
 
   @override
@@ -142,7 +142,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     final (json, code) = await post(Router.folderShare(targetUserId, folderId));
     return switch ((code, json)) {
       (200, {'shares': List l}) => _readable(l, _shareFromJson),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 

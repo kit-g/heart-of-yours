@@ -20,7 +20,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.coachClients, query: query.isEmpty ? null : query);
     return switch ((code, json)) {
       (200, {'clients': List l}) => (items: _readable(l, ClientSummary.fromJson), cursor: json['cursor'] as String?),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -32,7 +32,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
       Router.coachClientReviewed(connectionId),
       body: {'at': ?at?.toUtc().toIso8601String()},
     );
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// Workouts, skips and endings of every client, newest first.
@@ -40,7 +40,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.coachFeed, query: _cursor(cursor));
     return switch ((code, json)) {
       (200, {'items': List l}) => (items: _readable(l, CoachFeedItem.fromJson), cursor: json['cursor'] as String?),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -55,7 +55,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
         items: _readable(_namedAll(l), Workout.fromJson),
         cursor: json['cursor'] as String?,
       ),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -64,7 +64,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.clientSkips(studentId));
     return switch ((code, json)) {
       (200, {'skips': List l}) => _readable(l, TrainingSkip.fromJson),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -75,7 +75,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     return switch ((code, json)) {
       (200, Map json) => WorkoutPlan.fromJson(json),
       (404, _) => null,
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -94,7 +94,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
   /// it again changes nothing.
   Future<void> saveClientWorkoutPlan(String studentId, String workoutId, WorkoutPlan plan) async {
     final (json, code) = await put(Router.clientWorkoutPlan(studentId, workoutId), body: plan.toMap());
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// The copies the coach manages for a client.
@@ -102,7 +102,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.clientPrograms(studentId));
     return switch ((code, json)) {
       (200, {'programs': List l}) => _readable(l, Program.fromJson),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -112,7 +112,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.clientProgram(studentId, programId));
     return switch ((code, json)) {
       (200, Map json) => CoachProgramView.fromJson(_namedSessions(json)),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -139,7 +139,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     );
     return switch ((code, json)) {
       (200, Map json) => Program.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -156,13 +156,13 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
       Router.clientSession(studentId, programId, session.id),
       body: {...session.toMap(), 'baseRevision': baseRevision, 'changeId': changeId},
     );
-    if (code != 200) throw json;
+    if (code != 200) throw _unexpected(json, code);
   }
 
   /// The coach removes a session of a copy. Harmless twice.
   Future<void> deleteClientSession(String studentId, String programId, String sessionId) async {
     final (json, code) = await delete(Router.clientSession(studentId, programId, sessionId));
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// What changed in a copy, oldest first, from [since] on.
@@ -173,7 +173,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     );
     return switch ((code, json)) {
       (200, Map json) => ProgramChanges.fromJson(json).changes,
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -181,6 +181,6 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
   /// built on it, thrown whole.
   Future<void> revertClientChange(String studentId, String programId, String changeId) async {
     final (json, code) = await post(Router.clientChangeRevert(studentId, programId, changeId));
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 }

@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io' show HandshakeException, SocketException;
 
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' show RouteSettings;
 import 'package:heart/core/env/config.dart';
@@ -101,10 +103,7 @@ Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
       debugPrint('$stacktrace');
     }
   }
-  // A request that never got an answer — offline, DNS, a socket closed under a
-  // backgrounded app. Every caller already retries on the next launch or
-  // resume, and there is nothing in our code to fix.
-  if (exception is http.ClientException) return Future.value();
+  if (_isOffline(exception)) return Future.value();
   return Sentry.captureException(
     exception,
     stackTrace: stacktrace,
@@ -118,6 +117,33 @@ Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
     },
   );
 }
+
+/// Whether [error] is a request that never got an answer — offline, DNS, a
+/// socket closed under a backgrounded app — rather than a fault in our code or
+/// a refusal from a server. Every caller already retries on the next launch or
+/// resume, and there is nothing to fix.
+///
+/// A status from our server is a [NetworkException], not one of these, and is
+/// still reported; so is a Firebase error that is not about the network.
+bool _isOffline(Object? error) {
+  return switch (error) {
+    // through the http client, which wraps whatever the socket said
+    http.ClientException() => true,
+    // raised outside it: a socket or a TLS handshake cut off (HEART-OF-YOURS-2Z),
+    // or a deadline a caller put on a request
+    SocketException() || HandshakeException() || TimeoutException() => true,
+    // a token refresh that could not reach Google: named (HEART-OF-YOURS-1R)…
+    FirebaseAuthException(code: 'network-request-failed') => true,
+    // …or, on Android, sometimes only in the message of an `unknown` (-33)
+    FirebaseAuthException(code: 'unknown', :final String message) => _androidOffline.hasMatch(message),
+    _ => false,
+  };
+}
+
+/// The Java network exceptions an Android Firebase error can carry as text:
+/// `ConnectException`'s "Failed to connect to", `UnknownHostException`'s
+/// "Unable to resolve host".
+final _androidOffline = RegExp('Failed to connect to|Unable to resolve host');
 
 /// An error whose payload was dropped before it could reach Sentry, leaving
 /// only what is safe: the original type, and the stack trace it came with.

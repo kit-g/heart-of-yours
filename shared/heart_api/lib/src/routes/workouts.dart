@@ -78,7 +78,7 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
   Workout _workoutOr(Map<String, dynamic> json, int code) {
     return switch (code) {
       >= 200 && < 300 => Workout.fromJson(_named(json)),
-      _ => throw NetworkException(statusCode: code, body: json),
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -94,7 +94,7 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
       // thrown whole: the body carries a stable `code`, which is how the caller
       // tells "no such workout" apart from "not yours to see" — and both apart
       // from an outage, where nothing named comes back at all
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -220,6 +220,8 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
       (400, {'reason': String reason}) => throw ImportRejected(reason: reason),
       _ => throw NetworkException(
         statusCode: response.statusCode,
+        method: 'POST',
+        path: url.path,
         body: switch (json) {
           Map m => m,
           _ => null,
@@ -259,6 +261,6 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
   /// workout it doesn't have yet.
   Future<void> saveWorkoutPlan(String workoutId, WorkoutPlan plan) async {
     final (json, code) = await put(Router.workoutPlan(workoutId), body: plan.toMap());
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 }

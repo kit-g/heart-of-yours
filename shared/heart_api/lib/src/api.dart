@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -10,6 +11,7 @@ import 'moves.dart';
 import 'programs.dart';
 import 'renames.dart';
 
+part 'answers.dart';
 part 'routes/accounts.dart';
 part 'routes/workouts.dart';
 part 'routes/exercises.dart';
@@ -89,32 +91,46 @@ class Api
     instance.defaultHeaders = headers;
   }
 
-  // Every verb runs through [_tripwire]: the one answer that must never come
-  // back is caught before any caller can act on it.
+  // Every verb runs through [_answered]: the one answer that must never come
+  // back is caught before any caller can act on it, and any other failure
+  // comes back knowing the request it answers.
 
   @override
   Future<Response> get(String endpoint, {Map<String, String>? headers, Map<String, dynamic>? query}) {
-    return super.get(endpoint, headers: headers, query: query).then(_tripwire);
+    return super.get(endpoint, headers: headers, query: query).then((r) => _answered(r, 'GET', endpoint));
   }
 
   @override
   Future<Response> post(String endpoint, {Map<String, String>? headers, Json? body, Map<String, dynamic>? query}) {
-    return super.post(endpoint, headers: headers, body: body, query: query).then(_tripwire);
+    return super.post(endpoint, headers: headers, body: body, query: query).then((r) => _answered(r, 'POST', endpoint));
   }
 
   @override
   Future<Response> put(String endpoint, {Map<String, String>? headers, Json? body}) {
-    return super.put(endpoint, headers: headers, body: body).then(_tripwire);
+    return super.put(endpoint, headers: headers, body: body).then((r) => _answered(r, 'PUT', endpoint));
   }
 
   @override
   Future<Response> patch(String endpoint, {Map<String, String>? headers, Json? body}) {
-    return super.patch(endpoint, headers: headers, body: body).then(_tripwire);
+    return super.patch(endpoint, headers: headers, body: body).then((r) => _answered(r, 'PATCH', endpoint));
   }
 
   @override
   Future<Response> delete(String endpoint, {Map<String, String>? headers, Map<String, dynamic>? query}) {
-    return super.delete(endpoint, headers: headers, query: query).then(_tripwire);
+    return super.delete(endpoint, headers: headers, query: query).then((r) => _answered(r, 'DELETE', endpoint));
+  }
+
+  /// [response], with a failure's body wrapped as a [_ServerAnswer] naming
+  /// the request — the path as the request carried it, which is what
+  /// [NetworkException] templates — and the tripwire checked first.
+  Response _answered(Response response, String method, String endpoint) {
+    return switch (_tripwire(response)) {
+      (final json, final code && (< 200 || >= 300)) => (
+        _ServerAnswer(json, statusCode: code, method: method, path: Uri.https(gateway, endpoint).path),
+        code,
+      ),
+      final response => response,
+    };
   }
 
   /// The server refused the token because it belongs to an anonymous
@@ -182,11 +198,11 @@ class Api
 /// `201` made the row, `200` found it — by id, or by name for the two
 /// resources with one. Anything else is thrown whole, code and all, so the
 /// caller can tell a refusal (`id_taken`, `goal_limit`) from an outage.
-(Map, bool) _created((Map, int) response) {
+(Map, bool) _created(Response response) {
   return switch (response) {
     (Map json, 201) => (json, true),
     (Map json, 200) => (json, false),
-    (final json, _) => throw json,
+    (final json, final code) => throw _unexpected(json, code),
   };
 }
 

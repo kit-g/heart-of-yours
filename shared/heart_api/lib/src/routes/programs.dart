@@ -10,7 +10,7 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.programs);
     return switch ((code, json)) {
       (200, {'programs': List l}) => [for (final each in l) Program.fromJson(each as Map)],
-      _ => throw _programError(json),
+      _ => throw _programError(json, code),
     };
   }
 
@@ -20,7 +20,7 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.program(programId));
     return switch ((code, json)) {
       (200, Map json) => Program.fromJson(json),
-      _ => throw _programError(json),
+      _ => throw _programError(json, code),
     };
   }
 
@@ -30,7 +30,7 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.programChanges(programId), query: {'since': ?since});
     return switch ((code, json)) {
       (200, Map json) => (items: ProgramChanges.fromJson(json).changes, cursor: json['cursor'] as String?),
-      _ => throw _programError(json),
+      _ => throw _programError(json, code),
     };
   }
 
@@ -49,7 +49,7 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     final (json, created) = switch (response) {
       (Map json, 201) => (json, true),
       (Map json, 200) => (json, false),
-      (final json, _) => throw _programError(json),
+      (final json, final code) => throw _programError(json, code),
     };
     return (row: Program.fromJson(json), created: created);
   }
@@ -68,7 +68,7 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     );
     return switch ((code, json)) {
       (200, Map json) => Program.fromJson(json),
-      _ => throw _programError(json),
+      _ => throw _programError(json, code),
     };
   }
 
@@ -79,7 +79,7 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
       Router.program(programId),
       query: {if (keepTemplates) 'keepTemplates': 'true'},
     );
-    if (code >= 400) throw _programError(json);
+    if (code >= 400) throw _programError(json, code);
   }
 
   /// Files [template] under [programId] as a session, or takes it out of its
@@ -92,7 +92,7 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     );
     return switch ((code, json)) {
       (200, Map json) => Template.fromJson(_named(json)),
-      _ => throw _programError(json),
+      _ => throw _programError(json, code),
     };
   }
 
@@ -100,7 +100,7 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.programActions(programId));
     return switch ((code, json)) {
       (200, {'actions': List l}) => _readable(l, ProgramAction.fromJson),
-      _ => throw _programError(json),
+      _ => throw _programError(json, code),
     };
   }
 
@@ -110,21 +110,21 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     return switch ((code, json)) {
       (201, Map json) => (row: ProgramAction.fromJson(json), created: true),
       (200, Map json) => (row: ProgramAction.fromJson(json), created: false),
-      _ => throw _programError(json),
+      _ => throw _programError(json, code),
     };
   }
 
   /// Undoes an action, and the bases it moved with it.
   Future<void> deleteProgramAction(String programId, String actionId) async {
     final (json, code) = await delete(Router.programAction(programId, actionId));
-    if (code >= 400) throw _programError(json);
+    if (code >= 400) throw _programError(json, code);
   }
 
   Future<List<ProgramBase>> getProgramBases(String programId) async {
     final (json, code) = await get(Router.programBases(programId));
     return switch ((code, json)) {
       (200, {'bases': List l}) => _readable(l, ProgramBase.fromJson),
-      _ => throw _programError(json),
+      _ => throw _programError(json, code),
     };
   }
 
@@ -135,13 +135,13 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     return switch ((code, json)) {
       (201, Map json) => (row: ProgramBase.fromJson(json), created: true),
       (200, Map json) => (row: ProgramBase.fromJson(json), created: false),
-      _ => throw _programError(json),
+      _ => throw _programError(json, code),
     };
   }
 
   Future<void> deleteProgramBase(String programId, String baseId) async {
     final (json, code) = await delete(Router.programBase(programId, baseId));
-    if (code >= 400) throw _programError(json);
+    if (code >= 400) throw _programError(json, code);
   }
 
   /// Every skip the account holds ("Not today", #312), newest first: every
@@ -157,7 +157,7 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
           skips.addAll(_readable(l, TrainingSkip.fromJson));
           cursor = json['cursor'] as String?;
         case _:
-          throw _programError(json);
+          throw _programError(json, code);
       }
     } while (cursor != null);
     return skips;
@@ -170,14 +170,14 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     return switch ((code, json)) {
       (201, Map json) => (row: TrainingSkip.fromJson(json), created: true),
       (200, Map json) => (row: TrainingSkip.fromJson(json), created: false),
-      _ => throw _programError(json),
+      _ => throw _programError(json, code),
     };
   }
 
   /// Takes a skip back. One that isn't there is not an error.
   Future<void> deleteSkip(String skipId) async {
     final (json, code) = await delete(Router.skip(skipId));
-    if (code >= 400) throw _programError(json);
+    if (code >= 400) throw _programError(json, code);
   }
 
   /// Starts a coach's copy that has waited while the student was on something
@@ -185,15 +185,15 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
   /// caller's to stop following.
   Future<void> startProgram(String programId) async {
     final (json, code) = await post(Router.programStart(programId));
-    if (code != 204) throw _programError(json);
+    if (code != 204) throw _programError(json, code);
   }
 
-  /// A refusal the program routes name, typed; anything else as it came, the
-  /// way the rest of this class throws.
-  static Object _programError(Object? body) {
-    return switch (ProgramRefusal.of(body)) {
+  /// A refusal the program routes name, typed; anything else the way every
+  /// route throws it.
+  static Exception _programError(Json json, int code) {
+    return switch (ProgramRefusal.of(json)) {
       final ProgramRefusal reason => ProgramRefused(reason),
-      null => body ?? const FormatException('empty response'),
+      null => _unexpected(json, code),
     };
   }
 }

@@ -25,7 +25,7 @@ mixin _ThreadRoutes on Requests {
     final (json, code) = await post(Router.connectionThread(connectionId));
     return switch ((code, json)) {
       (200 || 201, Map json) => Thread.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -35,7 +35,7 @@ mixin _ThreadRoutes on Requests {
     final (json, code) = await get(Router.threads);
     return switch ((code, json)) {
       (200, {'threads': final List threads}) => [for (final each in threads) Thread.fromJson(each as Map)],
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -66,7 +66,7 @@ mixin _ThreadRoutes on Requests {
     );
     return switch ((code, json)) {
       (200 || 201, Map json) => ThreadItem.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -94,7 +94,7 @@ mixin _ThreadRoutes on Requests {
         ],
         cursor: json['cursor'] as String?,
       ),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -102,7 +102,7 @@ mixin _ThreadRoutes on Requests {
   /// with when and by whom.
   Future<void> clearThread(String threadId) async {
     final (json, code) = await delete(Router.threadItems(threadId));
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// Reports [reportedId], with [messages] they sent: each the words in the
@@ -136,12 +136,12 @@ mixin _ThreadRoutes on Requests {
         ],
       },
     );
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// Moves this person's read position in [threadId] to [cursor].
   Future<void> markThreadRead(String threadId, String cursor) async {
     final (json, code) = await put(Router.threadRead(threadId), body: {'cursor': cursor});
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 }

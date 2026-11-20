@@ -10,7 +10,7 @@ mixin _ConnectionRoutes on Requests {
     final (json, code) = await get(Router.connections);
     return switch ((code, json)) {
       (200, {'connections': List l}) => _readable(l, Connection.fromJson),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -29,7 +29,7 @@ mixin _ConnectionRoutes on Requests {
     );
     return switch ((code, json)) {
       (200, Map json) => Connection.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -39,14 +39,14 @@ mixin _ConnectionRoutes on Requests {
     final (json, code) = await put(Router.connection(connectionId), body: {'status': status.name});
     return switch ((code, json)) {
       (200, Map json) => Connection.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
   /// Ends a connection for both people. The row stays, as `severed`.
   Future<void> endConnection(String connectionId) async {
     final (json, code) = await delete(Router.connection(connectionId));
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// The workouts the account has hidden from every connection, and since when.
@@ -54,7 +54,7 @@ mixin _ConnectionRoutes on Requests {
     final (json, code) = await get(Router.hiddenWorkouts);
     return switch ((code, json)) {
       (200, {'workouts': List l}) => [for (final each in l.cast<Map>()) HiddenWorkout.fromJson(each)],
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -65,11 +65,11 @@ mixin _ConnectionRoutes on Requests {
       Router.workoutHidden(workoutId),
       body: {'at': ?at?.toUtc().toIso8601String()},
     );
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   Future<void> unhideWorkout(String workoutId) async {
     final (json, code) = await delete(Router.workoutHidden(workoutId));
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 }

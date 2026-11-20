@@ -57,7 +57,7 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
       Router.exercisePreferences,
       body: {'exerciseId': exerciseId, 'unitSystem': unit.name},
     );
-    if (code >= 300) throw json;
+    if (code >= 300) throw _unexpected(json, code);
   }
 
   @override
@@ -86,7 +86,7 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
     return switch ((code, json)) {
       (200, _) => Exercise.fromJson(json),
       (409, {'code': 'name_taken'}) => throw const ExerciseNameTaken(),
-      _ => throw ArgumentError(json),
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -113,7 +113,7 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
       (400, {'code': 'same_exercise'}) => throw const ExerciseMoveRefused(.sameExercise),
       (404, {'code': 'unknown_exercise'}) => throw const ExerciseMoveRefused(.unknownExercise),
       (400, {'code': 'incompatible_exercise'}) => throw const ExerciseMoveRefused(.incompatibleExercise),
-      _ => throw NetworkException(statusCode: code, body: json),
+      _ => throw _unexpected(json, code),
     };
   }
 

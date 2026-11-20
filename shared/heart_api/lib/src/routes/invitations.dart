@@ -12,7 +12,7 @@ mixin _InvitationRoutes on Requests {
     final (json, code) = await post(Router.invitations, body: {'name': name, 'programId': ?programId});
     return switch ((code, json)) {
       (201, Map json) => Invitation.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -21,7 +21,7 @@ mixin _InvitationRoutes on Requests {
     final (json, code) = await get(Router.invitations, query: _cursor(cursor));
     return switch ((code, json)) {
       (200, {'invitations': List l}) => (items: _readable(l, Invitation.fromJson), cursor: json['cursor'] as String?),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -31,14 +31,14 @@ mixin _InvitationRoutes on Requests {
     final (json, code) = await post(Router.invitationResend(invitationId));
     return switch ((code, json)) {
       (200, Map json) => Invitation.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
   /// Withdraws a link. Withdrawing one that's gone is not an error.
   Future<void> cancelInvitation(String invitationId) async {
     final (json, code) = await delete(Router.invitation(invitationId));
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// What a link says to anyone who opens it, signed in or not: whether it is
@@ -49,7 +49,7 @@ mixin _InvitationRoutes on Requests {
     return switch ((code, json)) {
       (200, Map json) => InvitationPreview.fromJson(json),
       (404, _) => null,
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
@@ -66,20 +66,20 @@ mixin _InvitationRoutes on Requests {
     );
     return switch ((code, json)) {
       (200, Map json) => AcceptedInvitation.fromJson(json),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
   Future<void> declineInvitation(String token) async {
     final (json, code) = await post(Router.invitationLinkDecline(token));
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// Blocks whoever made the link, though no connection exists yet: their next
   /// link reads as one that is no longer good.
   Future<void> blockInviter(String token) async {
     final (json, code) = await post(Router.invitationLinkBlock(token));
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 
   /// Who the account has blocked, newest first.
@@ -87,13 +87,13 @@ mixin _InvitationRoutes on Requests {
     final (json, code) = await get(Router.blocks, query: _cursor(cursor));
     return switch ((code, json)) {
       (200, {'blocks': List l}) => (items: _readable(l, BlockedPerson.fromJson), cursor: json['cursor'] as String?),
-      _ => throw json,
+      _ => throw _unexpected(json, code),
     };
   }
 
   /// Lifts a block. It restores nothing: a connection it ended stays ended.
   Future<void> liftBlock(String userId) async {
     final (json, code) = await delete(Router.block(userId));
-    if (code != 204) throw json;
+    if (code != 204) throw _unexpected(json, code);
   }
 }
