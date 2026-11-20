@@ -249,7 +249,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
                           false => PrimaryButton.wide(
                             // the default padding renders 32pt tall; the primary
                             // action on this page should make a 48pt tap target
-                            margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 14),
+                            margin: tallButtonPadding,
                             onPressed: () => _onChooseFile(context),
                             child: Center(
                               child: Text(chooseFile),
@@ -800,37 +800,18 @@ class _ImportConsentViewState extends State<_ImportConsentView> {
             );
           },
         ),
-        // the dialogs' pair, laid flat: a muted way out and the one action —
-        // both at the same 48pt target as the page's Choose-file button
-        Row(
-          spacing: 8,
-          children: [
-            Expanded(
-              child: PrimaryButton.wide(
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                margin: const .symmetric(horizontal: 8.0, vertical: 14),
-                onPressed: widget.onCancel,
-                child: Center(
-                  child: Text(cancel),
-                ),
-              ),
-            ),
-            Expanded(
-              child: PrimaryButton.wide(
-                margin: const .symmetric(horizontal: 8.0, vertical: 14),
-                onPressed: () {
-                  // in export order, not tap order
-                  widget.onImport([
-                    for (final (:name, sets: _) in exercisesUnmatched)
-                      if (_approved.value.contains(name)) name,
-                  ]);
-                },
-                child: Center(
-                  child: Text(importAction),
-                ),
-              ),
-            ),
-          ],
+        // at the same 48pt target as the page's Choose-file button
+        ButtonPair(
+          cancel: cancel,
+          onCancel: widget.onCancel,
+          action: importAction,
+          onAction: () {
+            // in export order, not tap order
+            widget.onImport([
+              for (final (:name, sets: _) in exercisesUnmatched)
+                if (_approved.value.contains(name)) name,
+            ]);
+          },
         ),
       ],
     );

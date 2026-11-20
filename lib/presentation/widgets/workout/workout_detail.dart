@@ -932,7 +932,11 @@ class NewWorkoutHeader extends StatelessWidget {
                 mainAxisSize: .min,
                 children: [
                   const Icon(Icons.add_rounded, size: 18),
-                  Text(L.of(context).startNewWorkout),
+                  // a fixed-height pinned header: one line, cut short at a
+                  // large text size rather than run past the button (#701)
+                  Flexible(
+                    child: Text(L.of(context).startNewWorkout, maxLines: 1, overflow: .ellipsis),
+                  ),
                 ],
               ),
             };

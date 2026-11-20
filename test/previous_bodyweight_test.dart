@@ -5,10 +5,8 @@
 // time, however often it had been done. The other exercises, all loaded,
 // filled. Neither its place in the template nor the template lookup mattered:
 // the template-scoped read and the anywhere read hand back the same row.
-import 'dart:convert';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
@@ -22,16 +20,7 @@ import 'support/harness.dart';
 
 void main() {
   // the app's own fonts: the test font's em-wide glyphs overflow the sheet
-  setUpAll(() async {
-    final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
-    for (final entry in manifest.cast<Map>()) {
-      final loader = FontLoader(entry['family'] as String);
-      for (final font in (entry['fonts'] as List).cast<Map>()) {
-        loader.addFont(rootBundle.load(font['asset'] as String));
-      }
-      await loader.load();
-    }
-  });
+  setUpAll(loadAppFonts);
 
   final squat = Exercise(name: 'Goblet Squat', category: .dumbbell, target: .legs);
   final bridge = Exercise(name: 'Single Leg Bridge', category: .weightedBodyWeight, target: .legs);

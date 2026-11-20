@@ -142,27 +142,27 @@ class _GoalsCardState extends State<GoalsCard> {
             // matches the aggregation chart beside it: the shared height is a
             // floor so the two headings line up, not a clip
             constraints: BoxConstraints(minHeight: widget.headerHeight),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: _flipDuration,
-                    switchInCurve: _flipCurve,
-                    // the switcher stacks its children centred, which pushed
-                    // the heading off the left edge every other tile lines up on
-                    layoutBuilder: (current, previous) {
-                      return Stack(
-                        alignment: Alignment.centerLeft,
-                        children: [...previous, ?current],
-                      );
-                    },
-                    child: Text(
-                      _showsAchieved ? goalsAchievedTitle : goals,
-                      key: ValueKey(_showsAchieved),
-                      style: textTheme.titleLarge,
-                    ),
-                  ),
+            // the actions go under the heading when they don't fit beside it:
+            // a longer language at a large text size on a phone (#701)
+            child: HeadingRow(
+              heading: AnimatedSwitcher(
+                duration: _flipDuration,
+                switchInCurve: _flipCurve,
+                // the switcher stacks its children centred, which pushed
+                // the heading off the left edge every other tile lines up on
+                layoutBuilder: (current, previous) {
+                  return Stack(
+                    alignment: .centerLeft,
+                    children: [...previous, ?current],
+                  );
+                },
+                child: Text(
+                  _showsAchieved ? goalsAchievedTitle : goals,
+                  key: ValueKey(_showsAchieved),
+                  style: textTheme.titleLarge,
                 ),
+              ),
+              actions: [
                 // Only ever offered when there is something on the other side.
                 if (state.hasArchived)
                   PrimaryButton.shrunk(
@@ -181,7 +181,7 @@ class _GoalsCardState extends State<GoalsCard> {
                 AnimatedSize(
                   duration: _flipDuration,
                   curve: _flipCurve,
-                  alignment: Alignment.centerRight,
+                  alignment: .centerRight,
                   child: AnimatedOpacity(
                     duration: _flipDuration,
                     curve: _flipCurve,
@@ -193,12 +193,12 @@ class _GoalsCardState extends State<GoalsCard> {
                       // the leading gap lives in here so it collapses too
                       false => switch (state.isAtCapacity) {
                         true => Padding(
-                          padding: const EdgeInsets.only(left: 8),
+                          padding: const .only(left: 8),
                           child: Tooltip(
                             key: AppKeys.goalsAtCapacity,
                             message: goalsAtCapacity,
                             // tap, not hover: on a phone there is nothing to hover with
-                            triggerMode: TooltipTriggerMode.tap,
+                            triggerMode: .tap,
                             showDuration: const Duration(seconds: 4),
                             child: Icon(
                               Icons.help_outline_rounded,
@@ -208,14 +208,15 @@ class _GoalsCardState extends State<GoalsCard> {
                           ),
                         ),
                         false => Padding(
-                          padding: const EdgeInsets.only(left: 8),
+                          padding: const .only(left: 8),
                           child: PrimaryButton.shrunk(
                             onPressed: _addGoal,
                             child: Row(
+                              mainAxisSize: .min,
                               spacing: 6,
                               children: [
                                 const Icon(Icons.add_rounded, size: 20),
-                                Text(addGoal),
+                                Flexible(child: Text(addGoal)),
                               ],
                             ),
                           ),

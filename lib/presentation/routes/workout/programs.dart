@@ -92,10 +92,11 @@ class _ProgramsSection extends StatelessWidget {
         children: [
           Padding(
             padding: const .symmetric(vertical: 8),
-            child: Row(
-              mainAxisAlignment: .spaceBetween,
-              children: [
-                Text(copy.programs, style: textTheme.headlineSmall),
+            // the button goes under the heading when it doesn't fit beside
+            // it: a longer language at a large text size on a phone (#701)
+            child: HeadingRow(
+              heading: Text(copy.programs, style: textTheme.headlineSmall),
+              actions: [
                 if (folders.isNotEmpty) _FromFolderButton(folders: folders, onPick: onFromFolder),
               ],
             ),
@@ -299,9 +300,11 @@ class _FromFolderButton extends StatelessWidget {
           spacing: 4,
           children: [
             Icon(Icons.event_repeat_rounded, size: 18, color: colorScheme.onSecondaryContainer),
-            Text(
-              copy.programsFromFolder,
-              style: textTheme.labelLarge?.copyWith(color: colorScheme.onSecondaryContainer),
+            Flexible(
+              child: Text(
+                copy.programsFromFolder,
+                style: textTheme.labelLarge?.copyWith(color: colorScheme.onSecondaryContainer),
+              ),
             ),
           ],
         ),

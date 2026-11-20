@@ -69,9 +69,13 @@ class _FeatureOfferState extends State<FeatureOffer> {
                 ],
               ),
               Text(widget.body, style: textTheme.bodyMedium),
-              Row(
-                mainAxisAlignment: .end,
+              // stacked, still at the end, when the two don't fit one line:
+              // Russian at a large text size on a phone (#701)
+              OverflowBar(
+                alignment: .end,
+                overflowAlignment: .end,
                 spacing: 8,
+                overflowSpacing: 8,
                 children: [
                   TextButton(
                     key: widget.declineKey,
