@@ -4,6 +4,7 @@ import 'package:feedback/feedback.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/goals_widget.dart';
@@ -119,7 +120,10 @@ class HeartApp extends StatelessWidget {
         // One gate for every remote leg below; Auth decides, the rest consult.
         // Above them all because each takes it at construction.
         Provider<RemoteAccess>(
-          create: (_) => RemoteAccess(hasToken: () => api.isAuthenticated),
+          create: (_) => RemoteAccess(
+            hasToken: () => api.isAuthenticated,
+            outdated: () => AppVersionSentry.instance.upgradeRequired,
+          ),
         ),
         ChangeNotifierProvider<AppTheme>(
           create: (_) => AppTheme(),
