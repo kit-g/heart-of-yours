@@ -13,7 +13,6 @@
 // suite (`Exercises.onLocaleChanged`): app startup runs through `Zone.root`
 // (see `_initApp`), outside the fake-async test zone, so the full-app harness
 // cannot deterministically observe the API side of it.
-import 'dart:convert';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
@@ -58,16 +57,7 @@ void main() {
   // overflows a phone-sized surface. The app bundles every family it uses
   // (display faces included), so load them all and measure what production
   // measures.
-  setUpAll(() async {
-    final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
-    for (final entry in manifest.cast<Map>()) {
-      final loader = FontLoader(entry['family'] as String);
-      for (final font in (entry['fonts'] as List).cast<Map>()) {
-        loader.addFont(rootBundle.load(font['asset'] as String));
-      }
-      await loader.load();
-    }
-  });
+  setUpAll(loadAppFonts);
 
   setUp(() {
     SharedPreferences.setMockInitialValues(pastOnboarding());

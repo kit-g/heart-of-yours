@@ -1514,6 +1514,23 @@ void main() {
       expect(errors, isEmpty);
     });
 
+    test('a yes meant for another comparison says nothing to this one (#668)', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await codes(phone, tablet);
+
+      final sent = server.queue.length;
+      await phone.approval.confirm(id: 'one-that-ended');
+
+      expect(phone.approval.value!.confirmed, isFalse);
+      expect(server.queue, hasLength(sent), reason: 'no proof sent');
+
+      await phone.approval.confirm(id: phone.approval.value!.id);
+      expect(phone.approval.value!.confirmed, isTrue);
+    });
+
     test('keys swapped in the list between the code and the proof fail it, and nothing is vouched for', () async {
       final phone = device('dana');
       final tablet = device('dana');
