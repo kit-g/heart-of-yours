@@ -245,13 +245,21 @@ class ButtonPair extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final widest = math.max(lineWidth(context, cancel), lineWidth(context, action));
-    final ColorScheme(:surfaceContainerHighest) = Theme.of(context).colorScheme;
+    final ColorScheme(:surfaceContainerHighest, :onSurface) = Theme.of(context).colorScheme;
+    // a button given its own fill draws its label in the ambient color,
+    // which under a sheet is not the one that reads on this fill
     final wayOut = PrimaryButton.wide(
       key: cancelKey,
       backgroundColor: surfaceContainerHighest,
       margin: tallButtonPadding,
       onPressed: onCancel,
-      child: Center(child: Text(cancel, textAlign: .center)),
+      child: Center(
+        child: Text(
+          cancel,
+          textAlign: .center,
+          style: TextStyle(color: onSurface),
+        ),
+      ),
     );
     final go = PrimaryButton.wide(
       key: actionKey,

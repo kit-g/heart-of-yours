@@ -212,7 +212,13 @@ class _ComparisonSheetState extends State<_ComparisonSheet> {
           backgroundColor: colorScheme.surfaceContainerHighest,
           margin: tallButtonPadding,
           onPressed: () => widget.approval.deny(id: widget.id),
-          child: Center(child: Text(l.cancel, textAlign: .center)),
+          child: Center(
+            child: Text(
+              l.cancel,
+              textAlign: .center,
+              style: TextStyle(color: colorScheme.onSurface),
+            ),
+          ),
         ),
       ],
       ComparisonCode(:final decimals) => [
