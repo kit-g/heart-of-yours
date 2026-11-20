@@ -510,7 +510,11 @@ void main() {
       }
       expectAnswersSideBySide(tester);
       // the sheet has no row in the a11y matrix, which needs a comparison
-      // played to it: its answers are held to the same guidelines here
+      // played to it: its answers are held to the same guidelines here, once
+      // the sheet is still. CI measured its text at 2.5:1 when checked right
+      // after the code arrived, which this machine never did; the handshake's
+      // crypto runs on real time, so the code step can land mid-transition
+      await tester.pump(const Duration(seconds: 1));
       final semantics = tester.ensureSemantics();
       // released in the body, not a tear-down: the binding checks for open
       // handles before tear-downs run
