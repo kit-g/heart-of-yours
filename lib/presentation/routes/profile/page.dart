@@ -152,7 +152,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
           // macos renders things differently
           if (platform == .macOS) const SizedBox(width: 8),
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
+            padding: const .only(right: 16),
             child: switch (isAnonymous) {
               // there is nothing to log out of; the slot says what the session
               // is instead, and opens the one place that explains it
@@ -178,7 +178,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
         selector: (_, provider) => provider.workouts,
         builder: (_, workouts, _) {
           final emptyState = Stack(
-            alignment: Alignment.center,
+            alignment: .center,
             children: [
               IgnorePointer(
                 child: WorkoutsAggregationChart(
@@ -242,21 +242,14 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const .symmetric(vertical: 6, horizontal: 16),
-                  // a Wrap, not a Row: at large text in a longer language the
-                  // heading and the button don't share a phone's width, and the
-                  // button goes under the heading instead of past the edge (#701)
-                  child: Wrap(
-                    alignment: .spaceBetween,
-                    crossAxisAlignment: .center,
-                    spacing: 12,
-                    runSpacing: 6,
-                    children: [
-                      // The section had a button and nothing else: on a tablet
-                      // that left one control floating over an empty screen,
-                      // with nothing to say what it was for. Goals and
-                      // Templates both name themselves and both say when they
-                      // are empty; this is the one that was missed.
-                      Text(charts, style: textTheme.headlineSmall),
+                  // The section had a button and nothing else: on a tablet
+                  // that left one control floating over an empty screen,
+                  // with nothing to say what it was for. Goals and
+                  // Templates both name themselves and both say when they
+                  // are empty; this is the one that was missed.
+                  child: HeadingRow(
+                    heading: Text(charts, style: textTheme.headlineSmall),
+                    actions: [
                       PrimaryButton.shrunk(
                         onPressed: () async {
                           final charts = Charts.of(context);

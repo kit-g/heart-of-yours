@@ -26,6 +26,7 @@ import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart';
 import 'package:heart/presentation/widgets/feedback_button.dart';
+import 'package:heart/presentation/widgets/heading_row.dart';
 import 'package:heart/presentation/widgets/health/section.dart';
 import 'package:heart/presentation/widgets/heatmap_ink.dart';
 import 'package:heart/presentation/navigation/router/router.dart';

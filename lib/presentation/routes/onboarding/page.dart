@@ -310,10 +310,6 @@ class _Footer extends StatelessWidget {
     required this.onLogIn,
   });
 
-  /// Grows the 32pt button the dialogs use to a full tap target: this is a
-  /// page's one action, not a footer's.
-  static const _margin = EdgeInsets.symmetric(horizontal: 8, vertical: 14);
-
   @override
   Widget build(BuildContext context) {
     final L(:onboardingNext, :onboardingContinue, :logIn, :onboardingScreenOf) = L.of(context);
@@ -354,7 +350,7 @@ class _Footer extends StatelessWidget {
                     maintainState: true,
                     child: PrimaryButton.wide(
                       key: AppKeys.onboardingSignIn,
-                      margin: _margin,
+                      margin: tallButtonPadding,
                       backgroundColor: colorScheme.surfaceContainerHighest,
                       onPressed: onLogIn,
                       child: Center(child: Text(logIn)),
@@ -365,13 +361,13 @@ class _Footer extends StatelessWidget {
                   switch (isLast) {
                     false => PrimaryButton.wide(
                       key: AppKeys.onboardingNext,
-                      margin: _margin,
+                      margin: tallButtonPadding,
                       onPressed: onNext,
                       child: Center(child: Text(onboardingNext)),
                     ),
                     true => PrimaryButton.wide(
                       key: AppKeys.onboardingContinue,
-                      margin: _margin,
+                      margin: tallButtonPadding,
                       onPressed: onContinue,
                       child: Center(child: Text(onboardingContinue)),
                     ),

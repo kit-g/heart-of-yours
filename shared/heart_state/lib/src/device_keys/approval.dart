@@ -174,10 +174,13 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
   }
 
   /// The person says the codes match: this device proves its keys to the
-  /// other, and lets it in once the other's proof checks out.
-  Future<void> confirm() async {
+  /// other, and lets it in once the other's proof checks out. [id] names the
+  /// comparison meant, as for [deny]: a screen left open on one never says
+  /// yes to the next.
+  Future<void> confirm({String? id}) async {
     final comparing = _current;
     if (comparing == null || comparing.ended || comparing.info == null || comparing.confirmed) return;
+    if (id != null && comparing.id != id) return;
     comparing.confirmed = true;
     _show(comparing, _value!.phase);
     final run = comparing.run;

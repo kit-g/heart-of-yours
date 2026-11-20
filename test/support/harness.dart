@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/analytics.dart';
 import 'package:heart/core/env/calendar.dart';
@@ -18,6 +20,20 @@ import 'package:mockito/mockito.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../mocks.mocks.dart';
+
+/// Loads every face the app bundles, for a `setUpAll`: the test font draws
+/// each glyph an em square, so anything that measures or fits text (app
+/// bars at phone width, a sheet sizing its code) needs the real metrics.
+Future<void> loadAppFonts() async {
+  final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
+  for (final entry in manifest.cast<Map>()) {
+    final loader = FontLoader(entry['family'] as String);
+    for (final font in (entry['fonts'] as List).cast<Map>()) {
+      loader.addFont(rootBundle.load(font['asset'] as String));
+    }
+    await loader.load();
+  }
+}
 
 /// The least a pumped app needs to start up without tripping over an
 /// unstubbed call: what the profile page's first layout and the chained
