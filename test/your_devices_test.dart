@@ -591,20 +591,7 @@ void main() {
 
       tester.platformDispatcher.textScaleFactorTestValue = 2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      // the profile behind the sheet overflows on its own at this size in the
-      // longer languages (profile/page.dart): only the sheet's are this test's
-      final errors = <FlutterErrorDetails>[];
-      final reported = FlutterError.onError;
-      FlutterError.onError = errors.add;
-      try {
-        await tester.pumpTimes();
-      } finally {
-        FlutterError.onError = reported;
-      }
-      final sheetErrors = errors
-          .map((each) => each.toString())
-          .where((each) => each.contains('compare_codes.dart') || each.contains('buttons.dart'));
-      expect(sheetErrors, isEmpty);
+      await tester.pumpTimes();
 
       expect(oneLine(tester, code), isFalse, reason: 'grown past the row, it wraps');
       final rendered = paragraph(tester, find.text(code));
