@@ -383,3 +383,24 @@ bool lessMotion(BuildContext context) {
 double lineExtent(TextStyle? style, TextScaler scaler) {
   return scaler.scale(style?.fontSize ?? 14) * (style?.height ?? 1.4);
 }
+
+/// How wide [text] lays out on one line where [context] is, as a `Text`
+/// there draws it: the ambient style merged with [style], bold when the
+/// platform asks for bold text, at [textScaler] (the reader's by default).
+/// Measuring at the plain weight undercounts: bold digits run 5–8% wider in
+/// some presets' faces.
+double lineWidth(BuildContext context, String text, {TextStyle? style, TextScaler? textScaler}) {
+  final bold = MediaQuery.boldTextOf(context);
+  final painter = TextPainter(
+    text: TextSpan(
+      text: text,
+      style: DefaultTextStyle.of(context).style.merge(style).merge(bold ? const TextStyle(fontWeight: .bold) : null),
+    ),
+    textDirection: Directionality.of(context),
+    textScaler: textScaler ?? MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
+}

@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
+import 'package:heart/core/utils/visual.dart' show lineWidth;
 import 'package:material_ui/material_ui.dart';
 
 /// Flat coloured (or transparent by default) button with an ink well
@@ -96,6 +99,10 @@ const primaryButtonRadius = Radius.circular(8);
 /// PrimaryButton. Setting the floor states the intent — the two are the same
 /// height — instead of chasing it with a padding fudge.
 const primaryButtonMinHeight = 32.0;
+
+/// The inset that makes a [PrimaryButton] a full 48pt tap target: a page's
+/// main action, and the pair of answers a sheet or page ends in.
+const tallButtonPadding = EdgeInsets.symmetric(horizontal: 8.0, vertical: 14);
 
 const _defaultMargin = primaryButtonPadding;
 
@@ -205,6 +212,77 @@ class PrimaryButton extends StatelessWidget {
       HapticFeedback.mediumImpact();
     }
     onPressed?.call();
+  }
+}
+
+/// The dialogs' pair laid flat: a muted way out beside the one action, the
+/// same size, side by side at the full 48pt.
+///
+/// Side by side only while both labels fit their halves on one line, at the
+/// reader's text size, bold or not. A label that would break there ("Ils ne
+/// correspondent pas" on a phone at large text broke mid-word) stacks the
+/// pair full width instead, the way out first as the dialogs stack it.
+class ButtonPair extends StatelessWidget {
+  final String cancel;
+  final VoidCallback? onCancel;
+  final Key? cancelKey;
+  final String action;
+  final VoidCallback? onAction;
+  final Key? actionKey;
+
+  const new({
+    super.key,
+    required this.cancel,
+    required this.onCancel,
+    this.cancelKey,
+    required this.action,
+    required this.onAction,
+    this.actionKey,
+  });
+
+  static const _gap = 8.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final widest = math.max(lineWidth(context, cancel), lineWidth(context, action));
+    final ColorScheme(:surfaceContainerHighest) = Theme.of(context).colorScheme;
+    final wayOut = PrimaryButton.wide(
+      key: cancelKey,
+      backgroundColor: surfaceContainerHighest,
+      margin: tallButtonPadding,
+      onPressed: onCancel,
+      child: Center(child: Text(cancel, textAlign: .center)),
+    );
+    final go = PrimaryButton.wide(
+      key: actionKey,
+      margin: tallButtonPadding,
+      onPressed: onAction,
+      child: Center(child: Text(action, textAlign: .center)),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final half = (constraints.maxWidth - _gap) / 2 - tallButtonPadding.horizontal;
+        return switch (widest <= half) {
+          // sized together all the same: a fallback glyph can still make
+          // one label a hair taller than the other
+          true => IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: .stretch,
+              spacing: _gap,
+              children: [
+                Expanded(child: wayOut),
+                Expanded(child: go),
+              ],
+            ),
+          ),
+          false => Column(
+            crossAxisAlignment: .stretch,
+            spacing: _gap,
+            children: [wayOut, go],
+          ),
+        };
+      },
+    );
   }
 }
 

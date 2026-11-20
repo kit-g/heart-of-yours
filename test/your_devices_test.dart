@@ -3,8 +3,9 @@ import 'dart:convert';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/core/theme/state.dart';
+import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/visual.dart' show dialogWidth;
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
@@ -23,16 +24,7 @@ import 'support/harness.dart';
 void main() {
   // the app's own fonts: the comparison sheet sizes its code by measuring it,
   // and the test font's em-wide glyphs measure nothing like a real face
-  setUpAll(() async {
-    final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
-    for (final entry in manifest.cast<Map>()) {
-      final loader = FontLoader(entry['family'] as String);
-      for (final font in (entry['fonts'] as List).cast<Map>()) {
-        loader.addFont(rootBundle.load(font['asset'] as String));
-      }
-      await loader.load();
-    }
-  });
+  setUpAll(loadAppFonts);
 
   late MockLocalDatabase db;
   late MockApi api;
@@ -303,16 +295,32 @@ void main() {
     expect(DeviceKeys.of(root(tester)).approval.value, isNull);
   });
 
-  /// The comparison up to the codes, as the tablet plays it: answers the
-  /// app's start with its key, and answers what the code is bound to.
-  Future<({String id, Comparison comparison, String info})> toCodes(WidgetTester tester) async {
-    final asked = opened('compare_start');
+  /// The comparison up to the codes, as the tablet plays it: answering the
+  /// app's start with its key, or, when [tabletAsks], asking itself and
+  /// answering the app's key with its own. Either way the sheet is up on the
+  /// app with the code, which [code] spells as the sheet does.
+  Future<({String id, Comparison comparison, String info, String code})> toCodes(
+    WidgetTester tester, {
+    bool tabletAsks = false,
+  }) async {
     final comparison = Comparison.start();
     addTearDown(comparison.end);
-    final id = asked['c']! as String;
-    await reply(tester, 'compare_key', {'c': id, 'key': comparison.publicKey});
-    comparison.establish(opened('compare_key')['key']! as String, theirCommitment: asked['commitment']! as String);
-    return (id: id, comparison: comparison, info: 'heart-of.me/compare/v1\n${phone.id}\n${tablet.id}');
+    final String id;
+    final String info;
+    if (tabletAsks) {
+      id = uuidV7();
+      await reply(tester, 'compare_start', {'c': id, 'commitment': comparison.commitment});
+      comparison.establish(opened('compare_key')['key']! as String);
+      await reply(tester, 'compare_key', {'c': id, 'key': comparison.publicKey});
+      info = 'heart-of.me/compare/v1\n${tablet.id}\n${phone.id}';
+    } else {
+      final asked = opened('compare_start');
+      id = asked['c']! as String;
+      await reply(tester, 'compare_key', {'c': id, 'key': comparison.publicKey});
+      comparison.establish(opened('compare_key')['key']! as String, theirCommitment: asked['commitment']! as String);
+      info = 'heart-of.me/compare/v1\n${phone.id}\n${tablet.id}';
+    }
+    return (id: id, comparison: comparison, info: info, code: comparison.code(info).decimals.join('   '));
   }
 
   testWidgets('a vouch that fails says the device is approved here only, and the rest are told later', (tester) async {
@@ -323,7 +331,7 @@ void main() {
     await openDevices(tester);
     await tester.tap(find.byKey(AppKeys.compareCodes(tablet.id)));
     await tester.pumpTimes();
-    final (:id, :comparison, :info) = await toCodes(tester);
+    final (:id, :comparison, :info, code: _) = await toCodes(tester);
 
     await tester.tap(find.byKey(AppKeys.codesMatch));
     await tester.pumpTimes();
@@ -422,31 +430,19 @@ void main() {
     expect(find.byKey(AppKeys.yourDevices, skipOffstage: false), findsNothing);
   });
 
-  /// The tablet asks, and plays its side as far as the codes: the sheet is up
-  /// on the app with its code and the two answers.
-  Future<({String id, Comparison comparison, String info, String code})> askedToCodes(WidgetTester tester) async {
-    final comparison = Comparison.start();
-    addTearDown(comparison.end);
-    final id = uuidV7();
-    await reply(tester, 'compare_start', {'c': id, 'commitment': comparison.commitment});
-    comparison.establish(opened('compare_key')['key']! as String);
-    await reply(tester, 'compare_key', {'c': id, 'key': comparison.publicKey});
-    final info = 'heart-of.me/compare/v1\n${tablet.id}\n${phone.id}';
-    return (id: id, comparison: comparison, info: info, code: comparison.code(info).decimals.join('   '));
+  RenderParagraph paragraph(WidgetTester tester, Finder finder) {
+    return tester.renderObject<RenderParagraph>(find.descendant(of: finder, matching: find.byType(RichText)).first);
   }
 
-  RenderParagraph paragraph(WidgetTester tester, String text) {
-    return tester.renderObject<RenderParagraph>(find.descendant(of: find.text(text), matching: find.byType(RichText)));
-  }
-
-  /// Whether [text] took one line: laid out with no limit, it is as tall.
-  bool oneLine(WidgetTester tester, String text) {
-    final rendered = paragraph(tester, text);
+  /// Whether [code] took one line: laid out with no limit, it is as tall.
+  bool oneLine(WidgetTester tester, String code) {
+    final rendered = paragraph(tester, find.text(code));
     return rendered.size.height <= rendered.getMaxIntrinsicHeight(double.infinity) + .5;
   }
 
-  /// The sheet's two answers (#668): one size, side by side, full targets.
-  void expectAnswersPaired(WidgetTester tester) {
+  /// The sheet's two answers (#668), side by side: one size, one line, full
+  /// targets.
+  void expectAnswersSideBySide(WidgetTester tester) {
     final match = tester.getRect(find.byKey(AppKeys.codesMatch));
     final dontMatch = tester.getRect(find.byKey(AppKeys.codesDontMatch));
     expect(match.size, dontMatch.size, reason: 'the two answers share one size');
@@ -454,32 +450,78 @@ void main() {
     expect(match.height, greaterThanOrEqualTo(kMinInteractiveDimension));
   }
 
+  /// The two answers stacked full width, the way out first as the dialogs
+  /// stack it, with no word in either label broken across lines.
+  void expectAnswersStacked(WidgetTester tester) {
+    final match = tester.getRect(find.byKey(AppKeys.codesMatch));
+    final dontMatch = tester.getRect(find.byKey(AppKeys.codesDontMatch));
+    expect((match.left, match.width), (dontMatch.left, dontMatch.width), reason: 'one column, one width');
+    expect(dontMatch.bottom, lessThanOrEqualTo(match.top), reason: 'the way out first');
+    expect(match.height, greaterThanOrEqualTo(kMinInteractiveDimension));
+    for (final key in [AppKeys.codesMatch, AppKeys.codesDontMatch]) {
+      final label = paragraph(tester, find.byKey(key));
+      for (final word in label.text.toPlainText().split(' ')) {
+        final painter = TextPainter(
+          text: TextSpan(text: word, style: label.text.style),
+          textDirection: .ltr,
+          textScaler: label.textScaler,
+        )..layout();
+        expect(painter.width, lessThanOrEqualTo(label.constraints.maxWidth), reason: '"$word" breaks mid-word');
+        painter.dispose();
+      }
+    }
+  }
+
+  /// The tablet asks, and the sheet comes up over the profile at [size].
+  Future<String> sheetAt(WidgetTester tester, Size size) async {
+    await pump(tester, size: size);
+    final (:code, id: _, comparison: _, info: _) = await toCodes(tester, tabletAsks: true);
+    return code;
+  }
+
+  // whether the room the sheet has makes the type scale's 48pt too big
   const sizes = {
-    'a 360dp Android phone': Size(360, 780),
-    'an iPhone 17 Pro': Size(402, 874),
-    'an iPad in landscape': Size(1194, 834),
-    'an iPad in portrait': Size(834, 1194),
+    'a 360dp Android phone': (Size(360, 780), shrinks: true),
+    'an iPhone 17 Pro': (Size(402, 874), shrinks: true),
+    'an iPad in landscape': (Size(1194, 834), shrinks: false),
+    'an iPad in portrait': (Size(834, 1194), shrinks: false),
   };
 
-  for (final MapEntry(key: device, value: size) in sizes.entries) {
+  for (final MapEntry(key: device, value: (size, :shrinks)) in sizes.entries) {
     testWidgets('on $device the code reads as one row, the answers as one pair, and Close fills the row', (
       tester,
     ) async {
       await pump(tester, size: size);
-      final (:id, :comparison, :info, :code) = await askedToCodes(tester);
+      final (:id, :comparison, :info, :code) = await toCodes(tester, tabletAsks: true);
 
       expect(find.text(code), findsOneWidget);
       expect(oneLine(tester, code), isTrue, reason: '$code wrapped');
-      expect(paragraph(tester, code).text.style?.fontSize, greaterThanOrEqualTo(24));
-      expectAnswersPaired(tester);
+      final fontSize = paragraph(tester, find.text(code)).text.style!.fontSize!;
+      switch (shrinks) {
+        // shrunk to fit, not to the floor: on a phone it still spans the row
+        case true:
+          expect(fontSize, inExclusiveRange(24, 48));
+          final row = tester
+              .getRect(find.byKey(AppKeys.codesDontMatch))
+              .expandToInclude(tester.getRect(find.byKey(AppKeys.codesMatch)));
+          expect(paragraph(tester, find.text(code)).getMaxIntrinsicWidth(double.infinity), greaterThan(row.width - 6));
+        case false:
+          expect(fontSize, 48, reason: 'room for the type scale: nothing to shrink');
+      }
+      expectAnswersSideBySide(tester);
       // the sheet has no row in the a11y matrix, which needs a comparison
       // played to it: its answers are held to the same guidelines here
       final semantics = tester.ensureSemantics();
-      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-      await expectLater(tester, meetsGuideline(textContrastGuideline));
-      semantics.dispose();
+      // released in the body, not a tear-down: the binding checks for open
+      // handles before tear-downs run
+      try {
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+      } finally {
+        semantics.dispose();
+      }
       final pair = tester
           .getRect(find.byKey(AppKeys.codesDontMatch))
           .expandToInclude(tester.getRect(find.byKey(AppKeys.codesMatch)));
@@ -503,16 +545,94 @@ void main() {
     });
   }
 
-  testWidgets('at a large text size on a phone the code wraps between groups and the answers stay a pair', (
-    tester,
-  ) async {
-    tester.platformDispatcher.textScaleFactorTestValue = 2;
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await pump(tester, size: const Size(360, 780));
-    final (:code, id: _, comparison: _, info: _) = await askedToCodes(tester);
+  // the widest faces, in bold, a step up the text size, at the narrowest
+  // phone: where a fit measured at the plain weight and base size wrapped
+  for (final preset in Preset.values) {
+    testWidgets('in ${preset.name}, with bold text a step larger, the code still takes one row on a 360dp phone', (
+      tester,
+    ) async {
+      tester.platformDispatcher
+        ..textScaleFactorTestValue = 1.15
+        ..accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(boldText: true);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await pump(tester, size: const Size(360, 780));
+      AppTheme.of(tester.element(find.byType(MaterialApp))).preset = preset;
+      await tester.pumpTimes();
+      final (:code, id: _, comparison: _, info: _) = await toCodes(tester, tabletAsks: true);
 
-    expect(oneLine(tester, code), isFalse, reason: 'grown past the row, it wraps');
-    expectAnswersPaired(tester);
-    expect(tester.takeException(), isNull);
+      expect(paragraph(tester, find.text(code)).text.style?.fontWeight, FontWeight.bold, reason: 'drawn bold');
+      expect(oneLine(tester, code), isTrue, reason: '$code wrapped');
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final locale in const [Locale('en'), Locale('fr'), Locale('ru')]) {
+    testWidgets('in $locale on a 360dp phone the code takes one row, and at twice the text size it wraps by group '
+        'and the answers stack whole', (tester) async {
+      tester.platformDispatcher.localesTestValue = [locale];
+      addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+      final code = await sheetAt(tester, const Size(360, 780));
+      expect(oneLine(tester, code), isTrue, reason: '$code wrapped');
+      // French stacks already: "Ils ne correspondent pas" outgrows half a phone
+      final sideBySide =
+          tester.getRect(find.byKey(AppKeys.codesMatch)).top == tester.getRect(find.byKey(AppKeys.codesDontMatch)).top;
+      expect(sideBySide, locale.languageCode != 'fr');
+      if (sideBySide) {
+        expectAnswersSideBySide(tester);
+      } else {
+        expectAnswersStacked(tester);
+      }
+
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      // the profile behind the sheet overflows on its own at this size in the
+      // longer languages (profile/page.dart): only the sheet's are this test's
+      final errors = <FlutterErrorDetails>[];
+      final reported = FlutterError.onError;
+      FlutterError.onError = errors.add;
+      try {
+        await tester.pumpTimes();
+      } finally {
+        FlutterError.onError = reported;
+      }
+      final sheetErrors = errors
+          .map((each) => each.toString())
+          .where((each) => each.contains('compare_codes.dart') || each.contains('buttons.dart'));
+      expect(sheetErrors, isEmpty);
+
+      expect(oneLine(tester, code), isFalse, reason: 'grown past the row, it wraps');
+      final rendered = paragraph(tester, find.text(code));
+      final groups = code.split('   ').map((group) {
+        final painter = TextPainter(
+          text: TextSpan(text: group, style: rendered.text.style),
+          textDirection: .ltr,
+          textScaler: rendered.textScaler,
+        )..layout();
+        final width = painter.width;
+        painter.dispose();
+        return width;
+      });
+      expect(groups.every((width) => width <= rendered.constraints.maxWidth), isTrue, reason: 'no group broken');
+      expectAnswersStacked(tester);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('a comparison abandoned under the sheet can no longer be answered (#668)', (tester) async {
+    final code = await sheetAt(tester, const Size(360, 780));
+    expect(find.text(code), findsOneWidget);
+
+    // the keys stop, as on a sign-out: the comparison is gone, the sheet not
+    DeviceKeys.of(root(tester)).stop();
+    await tester.pumpTimes();
+
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.text(l(tester).compareCodesCancelled), findsOneWidget);
+    expect(find.byKey(AppKeys.codesMatch), findsNothing);
+    expect(find.byKey(AppKeys.codesDontMatch), findsNothing);
+    await tester.tap(find.byKey(AppKeys.closeComparison));
+    await tester.pumpTimes();
+    expect(find.byType(BottomSheet), findsNothing);
   });
 }

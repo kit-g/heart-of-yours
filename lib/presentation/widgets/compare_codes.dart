@@ -1,5 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart' show ValueListenable;
-import 'package:heart/core/utils/visual.dart' show dialogWidth;
+import 'package:heart/core/utils/visual.dart' show dialogWidth, lineWidth;
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
@@ -56,47 +58,45 @@ Future<void> showCodeComparison(BuildContext context, DeviceApproval approval, S
   }
 }
 
-/// The inset that makes the sheet's buttons full 48pt targets, as the import
-/// page's pair is.
-const EdgeInsets _answerInset = .symmetric(horizontal: 8, vertical: 14);
-
-/// The code, as large as fits the sheet on one line at the reader's base text
-/// size, because it is read and compared as one row: at the type scale's 48pt
-/// it took two lines on every phone. Text scaling grows it from there and
-/// wraps it between groups, never inside one.
+/// The code, as large as fits the sheet on one line, because it is read and
+/// compared as one row: at the type scale's 48pt it took two lines on every
+/// phone. It grows with the reader's text size as far as the row allows, and
+/// shrinks no further than its floor at that size; only past the floor does
+/// it wrap, between groups, never inside one.
 class _Code extends StatelessWidget {
   final List<int> decimals;
 
   const new(this.decimals);
 
-  /// Below this the code stops reading as the thing to compare.
+  /// Below this, at the reader's text size, the code stops reading as the
+  /// thing to compare.
   static const _smallest = 24.0;
+
+  /// Room left over, so a size computed to fit exactly still fits once the
+  /// glyphs are rounded.
+  static const _slack = 2.0;
 
   @override
   Widget build(BuildContext context) {
     final code = decimals.join('   ');
-    final style = DefaultTextStyle.of(context).style.merge(
-      Theme.of(context).textTheme.displaySmall?.copyWith(fontFeatures: const [.tabularFigures()]),
-    );
+    final display = Theme.of(context).textTheme.displaySmall;
+    final full = display?.fontSize ?? _smallest;
+    final style = (display ?? const TextStyle()).copyWith(fontSize: full, fontFeatures: const [.tabularFigures()]);
+    // a face's advance grows in step with its size: one measure serves every
+    // width the sheet can have
+    final perPoint = lineWidth(context, code, style: style, textScaler: .noScaling) / full;
+    final scaler = MediaQuery.textScalerOf(context);
+    final wanted = scaler.scale(full);
+    final floor = math.min(scaler.scale(_smallest), wanted);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final full = style.fontSize ?? _smallest;
-        final painter = TextPainter(
-          text: TextSpan(text: code, style: style),
-          textDirection: Directionality.of(context),
-          maxLines: 1,
-        )..layout();
-        final width = painter.width;
-        painter.dispose();
-        // floored: a size that fits exactly can still wrap on rounding
-        final fitted = switch (width <= constraints.maxWidth) {
-          true => full,
-          false => (full * constraints.maxWidth / width).floorToDouble(),
-        };
+        final fits = (constraints.maxWidth - _slack) / perPoint;
         return Text(
           code,
           textAlign: .center,
-          style: style.copyWith(fontSize: fitted < _smallest ? _smallest : fitted),
+          // scaled here already, where the fit can account for it
+          textScaler: .noScaling,
+          style: style.copyWith(fontSize: fits.clamp(floor, wanted)),
         );
       },
     );
@@ -141,7 +141,21 @@ class _ComparisonSheetState extends State<_ComparisonSheet> {
   }
 
   void _follow() {
-    if (_mine() case final CodeComparison comparison) _shown.value = comparison;
+    switch ((_mine(), _shown.value)) {
+      case (final CodeComparison comparison, _):
+        _shown.value = comparison;
+      // abandoned under the sheet, as when the keys stop: it can no longer be
+      // answered, and an answer must never reach whatever runs next
+      case (null, final CodeComparison shown) when shown.running:
+        _shown.value = CodeComparison(
+          id: shown.id,
+          deviceId: shown.deviceId,
+          role: shown.role,
+          phase: const ComparisonCancelled(),
+        );
+      case (null, _):
+        break;
+    }
   }
 
   @override
@@ -179,7 +193,7 @@ class _ComparisonSheetState extends State<_ComparisonSheet> {
     final ThemeData(:colorScheme) = Theme.of(context);
     final close = PrimaryButton.wide(
       key: AppKeys.closeComparison,
-      margin: _answerInset,
+      margin: tallButtonPadding,
       onPressed: () => Navigator.of(context).pop(),
       child: Center(child: Text(l.close, textAlign: .center)),
     );
@@ -196,7 +210,7 @@ class _ComparisonSheetState extends State<_ComparisonSheet> {
         PrimaryButton.wide(
           key: AppKeys.codesDontMatch,
           backgroundColor: colorScheme.surfaceContainerHighest,
-          margin: _answerInset,
+          margin: tallButtonPadding,
           onPressed: () => widget.approval.deny(id: widget.id),
           child: Center(child: Text(l.cancel, textAlign: .center)),
         ),
@@ -210,33 +224,13 @@ class _ComparisonSheetState extends State<_ComparisonSheet> {
             const Center(child: CircularProgressIndicator()),
           ],
           false => [
-            // the dialogs' pair laid flat, as on the import page: one row,
-            // one size, the way out muted. Sized together, so a label that
-            // wraps in a longer language grows both and they stay one choice
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: .stretch,
-                spacing: 8,
-                children: [
-                  Expanded(
-                    child: PrimaryButton.wide(
-                      key: AppKeys.codesDontMatch,
-                      backgroundColor: colorScheme.surfaceContainerHighest,
-                      margin: _answerInset,
-                      onPressed: () => widget.approval.deny(id: widget.id),
-                      child: Center(child: Text(l.codesDontMatch, textAlign: .center)),
-                    ),
-                  ),
-                  Expanded(
-                    child: PrimaryButton.wide(
-                      key: AppKeys.codesMatch,
-                      margin: _answerInset,
-                      onPressed: widget.approval.confirm,
-                      child: Center(child: Text(l.codesMatch, textAlign: .center)),
-                    ),
-                  ),
-                ],
-              ),
+            ButtonPair(
+              cancel: l.codesDontMatch,
+              cancelKey: AppKeys.codesDontMatch,
+              onCancel: () => widget.approval.deny(id: widget.id),
+              action: l.codesMatch,
+              actionKey: AppKeys.codesMatch,
+              onAction: () => widget.approval.confirm(id: widget.id),
             ),
           ],
         },

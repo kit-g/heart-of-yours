@@ -1,7 +1,3 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart';
-
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -18,16 +14,7 @@ import 'support/harness.dart';
 void main() => exerciseNoteTests();
 
 void exerciseNoteTests({Future<void> Function(String name)? onFrame, bool useDeviceSize = false}) {
-  setUpAll(() async {
-    final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
-    for (final entry in manifest.cast<Map>()) {
-      final loader = FontLoader(entry['family'] as String);
-      for (final font in (entry['fonts'] as List).cast<Map>()) {
-        loader.addFont(rootBundle.load(font['asset'] as String));
-      }
-      await loader.load();
-    }
-  });
+  setUpAll(loadAppFonts);
   final sizes = switch (useDeviceSize) {
     true => [const Size(390, 844)],
     false => [const Size(390, 844), const Size(1194, 834), const Size(834, 1194)],

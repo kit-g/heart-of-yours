@@ -1,7 +1,6 @@
 // Warm-up sets (#158): the one offer on the workout sheet, the exercise menu's
 // row, the ramp in Settings › Features, and the app without any of it — at a
 // phone's width and an iPad's.
-import 'dart:convert';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
@@ -22,16 +21,7 @@ import 'support/harness.dart';
 void main() {
   // the app's own fonts, as the screens are laid out for them: the test font
   // is wider and overflows the app bars at phone width (pause_workout_test)
-  setUpAll(() async {
-    final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
-    for (final entry in manifest.cast<Map>()) {
-      final loader = FontLoader(entry['family'] as String);
-      for (final font in (entry['fonts'] as List).cast<Map>()) {
-        loader.addFont(rootBundle.load(font['asset'] as String));
-      }
-      await loader.load();
-    }
-  });
+  setUpAll(loadAppFonts);
 
   late MockLocalDatabase db;
   late MockApi api;
