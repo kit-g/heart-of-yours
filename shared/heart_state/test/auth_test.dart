@@ -8,7 +8,7 @@ import 'package:firebase_auth_platform_interface/firebase_auth_platform_interfac
     show InternalUserInfo, PasswordPolicy;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:heart_models/heart_models.dart' show Settings, User;
+import 'package:heart_models/heart_models.dart' show Settings, UpgradeRequired, User;
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
@@ -508,6 +508,81 @@ void main() {
       await sut.registerAgain();
       verifyNever(account.registerAccount(any));
       sut.dispose();
+    });
+
+    group('a build the server no longer serves (#683)', () {
+      late MockFirebaseAuth firebase;
+      late List<Object?> reported;
+
+      Auth launch() {
+        reported = [];
+        return Auth(
+          service: account,
+          firebase: firebase,
+          onError: (error, {stacktrace}) => reported.add(error),
+        );
+      }
+
+      Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 20));
+
+      setUp(() {
+        firebase = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+        );
+        when(account.isAuthenticated).thenReturn(true);
+        when(account.registerAccount(any)).thenThrow(UpgradeRequired());
+      });
+
+      test('keeps the session Firebase has: signed in, entitlements unknown', () async {
+        final sut = launch();
+        await settle();
+
+        expect(sut.user?.id, firebase.currentUser?.uid, reason: 'the app and Firebase agree on who is in');
+        expect(sut.isLoggedIn, isTrue);
+        expect(sut.entitlementsKnown, isFalse);
+        expect(sut.isInitialized, isTrue);
+        expect(reported.single, isA<UpgradeRequired>());
+        sut.dispose();
+      });
+
+      test('nothing registers again until a relaunch: not a resume, not a token refresh', () async {
+        final sut = launch();
+        await settle();
+        var notified = 0;
+        sut.addListener(() => notified++);
+
+        await sut.registerAgain();
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await settle();
+
+        verify(account.registerAccount(any)).called(1);
+        expect(notified, 0, reason: 'nothing changed under the gate');
+        expect(sut.user?.id, 'muffin');
+        expect(reported, hasLength(1));
+        sut.dispose();
+      });
+
+      test('an updated build, relaunched, registers the same account without a sign-in', () async {
+        final outdated = launch();
+        await settle();
+        expect(reported.single, isA<UpgradeRequired>());
+        outdated.dispose();
+
+        when(account.registerAccount(any)).thenAnswer(
+          (inv) async => User(id: (inv.positionalArguments.first as User).id, entitlements: ['coach']),
+        );
+        // a new process: Firebase restores the account it never let go of
+        firebase = MockFirebaseAuth(signedIn: true, mockUser: firebase.currentUser as MockUser);
+        final relaunched = launch();
+        await settle();
+
+        expect(relaunched.user?.id, 'muffin');
+        expect(relaunched.entitlementsKnown, isTrue);
+        expect(relaunched.user?.mayCoach, isTrue);
+        expect(reported, isEmpty);
+        relaunched.dispose();
+      });
     });
 
     test('any other failure of a user change is reported too, and settles the session', () async {

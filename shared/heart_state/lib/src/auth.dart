@@ -299,6 +299,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// changed hands while the request was out: a late answer for an account
   /// signed out of must not bring it back.
   Future<void> _register(String uid) async {
+    // nothing to ask, and nothing changed to tell anyone of
+    if (_outdated) return;
     try {
       final registered = await _registerUser(_user);
       if (_disposed || _user?.id != uid) return;
@@ -1031,18 +1033,34 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     return saved.settings;
   }
 
+  /// Registers [user] with the server and returns its copy of the account,
+  /// or [user] as it was where there is nothing to ask or no answer to keep.
+  ///
+  /// A build the server no longer serves (426) keeps the session as Firebase
+  /// has it, signed in, with its entitlements unknown. The answer used to be
+  /// no user at all while Firebase still had one, and a later registration —
+  /// a resume, an hourly token refresh — could sign them back in under the
+  /// upgrade gate (#683). The gate itself comes up from the API client's
+  /// 426 hook, for this request as for any other; and an update is a
+  /// relaunch, whose first registration, on Firebase's replay of the same
+  /// user, is the one that lands.
   Future<User?> _registerUser(User? user) async {
     try {
-      if (user == null || _isAnonymous) return user;
+      if (user == null || _isAnonymous || _outdated) return user;
       if (!_service.isAuthenticated) return user;
       final saved = await _service.registerAccount(user);
       _known = user.id;
       return saved;
     } on UpgradeRequired catch (e) {
+      _outdated = true;
       onError?.call(e);
-      return null;
+      return user;
     }
   }
+
+  /// The server refused this build (426): no registration is sent again until
+  /// the app is relaunched — updated, the only way that answer changes.
+  bool _outdated = false;
 
   Future<String?>? get sessionToken => _firebase.currentUser?.getIdToken();
 
