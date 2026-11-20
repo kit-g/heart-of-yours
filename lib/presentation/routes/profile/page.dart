@@ -242,8 +242,14 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const .symmetric(vertical: 6, horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: .spaceBetween,
+                  // a Wrap, not a Row: at large text in a longer language the
+                  // heading and the button don't share a phone's width, and the
+                  // button goes under the heading instead of past the edge (#701)
+                  child: Wrap(
+                    alignment: .spaceBetween,
+                    crossAxisAlignment: .center,
+                    spacing: 12,
+                    runSpacing: 6,
                     children: [
                       // The section had a button and nothing else: on a tablet
                       // that left one control floating over an empty screen,
@@ -268,10 +274,11 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                           }
                         },
                         child: Row(
+                          mainAxisSize: .min,
                           spacing: 6,
                           children: [
                             const Icon(Icons.add_rounded),
-                            Text(newChart),
+                            Flexible(child: Text(newChart)),
                           ],
                         ),
                       ),
