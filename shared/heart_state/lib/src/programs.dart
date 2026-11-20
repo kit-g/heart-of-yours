@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:math';
@@ -185,6 +186,21 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// (#350), or its "Keep". Templates are the template list's to edit.
   final Future<void> Function(Iterable<String> sessions, {required String from, required String to})? onAdvance;
 
+  /// How long a program read waits before each retry of a failure that may
+  /// pass, the gateway's throttle above all (#660); as many retries as there
+  /// are waits.
+  final List<Duration> _retryDelays;
+
+  /// Every program read goes through these few slots: a launch with many
+  /// programs asks for them a few at a time, not in one burst the server's
+  /// concurrency limit answers with a 500 (#660).
+  final _reads = _Bounded(4);
+
+  /// Each program pull and history read running now, by what it reads: a
+  /// second ask joins it instead of sending it again, and its failure is
+  /// reported once, by whoever started it.
+  final _reading = <(String, String, String), Future<void>>{};
+
   new({
     required this._service,
     required this._remoteService,
@@ -195,6 +211,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     this.onKeepSession,
     this._workouts,
     RemoteAccess? remote,
+    this._retryDelays = const [Duration(seconds: 1), Duration(seconds: 3)],
   }) : _remote = remote ?? RemoteAccess() {
     _workouts?.addListener(_onWorkouts);
   }
@@ -512,8 +529,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     // an archived program's history is read once; nothing moves it after
     await Future.wait([
       for (final MapEntry<String, Program>(key: programId, value: program) in [..._programs.entries])
-        if (!program.archived || !_actions.containsKey(programId)) _step(() => _pull(id, programId)),
-      for (final program in _coached) _step(() => _readHistory(id, program.id!)),
+        if (!program.archived || !_actions.containsKey(programId)) _pullOnce(id, programId),
+      for (final program in _coached) _changesOnce(id, program.id!),
     ]);
   }
 
@@ -597,7 +614,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   Future<void> _readHistory(String uid, String programId) async {
     final held = [...?_history[programId]];
     for (var page = 0; page < 10; page++) {
-      final (:items, :cursor) = await _remoteService.getProgramChanges(programId, since: held.lastOrNull?.cursor);
+      final (:items, :cursor) = await _read(
+        'getProgramChanges',
+        programId,
+        () => _remoteService.getProgramChanges(programId, since: held.lastOrNull?.cursor),
+      );
       if (userId != uid) return;
       held.addAll(items);
       if (items.isEmpty || cursor == null) break;
@@ -618,7 +639,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     final owed = _owed.values.any((each) => each.row == .program && each.id == programId);
     if (!owed) {
       await _step(() async {
-        final program = await _remoteService.getProgram(programId);
+        final program = await _read('getProgram', programId, () => _remoteService.getProgram(programId));
         if (userId != id) return;
         await _service.storeProgram(program, id);
         if (program.id case final String programId) _programs[programId] = program;
@@ -626,8 +647,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
         notifyListeners();
       });
     }
-    await _step(() => _pull(id, programId));
-    if (_programs[programId]?.coachId != null) await _step(() => _readHistory(id, programId));
+    await _pullOnce(id, programId);
+    if (_programs[programId]?.coachId != null) await _changesOnce(id, programId);
     return _programs[programId];
   }
 
@@ -655,12 +676,73 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     notifyListeners();
   }
 
+  /// [_pull], unless it is running already: then that one, whose failure its
+  /// starter reports. A cold start's init and a resume's [pullCoached] ask for
+  /// the same programs at once.
+  Future<void> _pullOnce(String uid, String programId) => _once('pull', uid, programId, () => _pull(uid, programId));
+
+  /// [_readHistory], unless it is running already, as [_pullOnce].
+  Future<void> _changesOnce(String uid, String programId) {
+    return _once('changes', uid, programId, () => _readHistory(uid, programId));
+  }
+
+  Future<void> _once(String what, String uid, String programId, Future<void> Function() read) {
+    final key = (what, uid, programId);
+    // a block: whenComplete awaits a Future its callback returns, and the
+    // one remove returns is this one
+    return _reading[key] ??= _step(read).whenComplete(() {
+      _reading.remove(key);
+    });
+  }
+
+  /// [read], [call] of [programId], in one of [_reads]' slots, asked again
+  /// after each of [_retryDelays] while what it throws may pass. A body the
+  /// server still answers with is thrown as a [_ReadFailed] naming the call;
+  /// anything else (a dropped connection, the client's own exception) names
+  /// itself, and the app's reporter knows which of those to drop.
+  Future<T> _read<T>(String call, String programId, Future<T> Function() read, {int attempt = 0}) async {
+    try {
+      return await _reads(read);
+    } catch (error, stack) {
+      // the slot is let go while it waits: the burst it was part of drains
+      final wait = _passing(error) && _remote.allowed ? _retryDelays.elementAtOrNull(attempt) : null;
+      if (wait == null) Error.throwWithStackTrace(_ReadFailed.of(programId, call, error), stack);
+      await Future<void>.delayed(wait);
+      return _read(call, programId, read, attempt: attempt + 1);
+    }
+  }
+
+  /// Whether [error] may pass if asked again: a `server_error`, which is also
+  /// what the gateway answers a throttled request with before it reaches the
+  /// server's code, or a failure with no name (no body, a timeout, a dropped
+  /// connection). A named refusal gets the same answer again, and an [Error]
+  /// is this side's bug.
+  static bool _passing(Object error) {
+    return switch (error) {
+      Error() => false,
+      {'code': 'server_error'} => true,
+      {'code': _} => false,
+      _ => true,
+    };
+  }
+
   /// Reads [programId]'s actions and bases from the server over the mirror's.
+  /// Either failing fails both, once, naming whichever did.
   Future<void> _pull(String uid, String programId) async {
-    final (actions, bases) = await (
-      _remoteService.getProgramActions(programId),
-      _remoteService.getProgramBases(programId),
-    ).wait;
+    final List<ProgramAction> actions;
+    final List<ProgramBase> bases;
+    try {
+      (actions, bases) = await (
+        _read('getProgramActions', programId, () => _remoteService.getProgramActions(programId)),
+        _read('getProgramBases', programId, () => _remoteService.getProgramBases(programId)),
+      ).wait;
+    } on ParallelWaitError<(List<ProgramAction>?, List<ProgramBase>?), (AsyncError?, AsyncError?)> catch (e) {
+      final failed = [e.errors.$1, e.errors.$2].nonNulls;
+      Error.throwWithStackTrace(
+        _ReadFailed.all(programId, failed.map((each) => each.error)),
+        failed.first.stackTrace,
+      );
+    }
     if (userId != uid) return;
     final ownActions = _rowsOwed<ProgramAction>(
       actions,
@@ -1340,7 +1422,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     ];
     if (reread && _remote.allowed) {
       final read = {for (final (_, programId) in waiting()) programId};
-      await Future.wait([for (final programId in read) _step(() => _pull(uid, programId))]);
+      await Future.wait([for (final programId in read) _pullOnce(uid, programId)]);
       if (userId != uid) return;
     }
     final blocked = <String>{};
@@ -2017,6 +2099,69 @@ extension ProgramLife on Program {
 
 /// Every program, for [Programs.growLogged]'s default.
 bool _every(Program _) => true;
+
+/// A program read the retries could not save: which call, of which program,
+/// so the report says that rather than a [ParallelWaitError] of a pair (#660).
+class _ReadFailed implements Exception {
+  final String programId;
+  final List<String> calls;
+
+  /// What the first of [calls] threw.
+  final Object error;
+
+  const new(this.programId, this.calls, this.error);
+
+  /// What [call] threw, named by it when it is a body the server answered.
+  static Object of(String programId, String call, Object error) {
+    return switch (error) {
+      Map() => _ReadFailed(programId, [call], error),
+      _ => error,
+    };
+  }
+
+  /// The failures of reads of one program, as one: the bodies together, or
+  /// else the first that names itself.
+  static Object all(String programId, Iterable<Object> errors) {
+    final reads = errors.whereType<_ReadFailed>();
+    return switch (reads.firstOrNull) {
+      final _ReadFailed first => _ReadFailed(programId, [...reads.expand((each) => each.calls)], first.error),
+      null => errors.first,
+    };
+  }
+
+  @override
+  String toString() => '${calls.join(' and ')} of program $programId failed: $error';
+}
+
+/// At most [slots] calls running at once; the rest wait their turn, in the
+/// order they asked.
+class _Bounded {
+  final int slots;
+  final _waiting = Queue<Completer<void>>();
+  var _running = 0;
+
+  new(this.slots);
+
+  Future<T> call<T>(Future<T> Function() run) async {
+    if (_running < slots) {
+      _running++;
+    } else {
+      final turn = Completer<void>();
+      _waiting.add(turn);
+      // the slot is handed over by whoever let it go
+      await turn.future;
+    }
+    try {
+      return await run();
+    } finally {
+      if (_waiting.isEmpty) {
+        _running--;
+      } else {
+        _waiting.removeFirst().complete();
+      }
+    }
+  }
+}
 
 /// [Programs] as far as a predicate lets any be seen (#593): the same reads,
 /// without the programs it hides.
