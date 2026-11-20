@@ -9,6 +9,10 @@ import 'analytics.dart';
 import 'remote.dart';
 import 'templates.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'refusals.dart';
+
 /// The server's answer to one replayed create: the row as it now stands there,
 /// and whether this call made it (`201`) or found it already there (`200`).
 typedef Replayed<T> = ({T row, bool created});
@@ -203,10 +207,12 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   /// (heart-of-yours#113).
   bool get reachedServer => _reachedServer;
 
-  /// `Api` throws the decoded body when the server answered and the answer was
-  /// an error; a transport failure arrives as a `SocketException`, a
-  /// `ClientException` or a timeout. So a Map is the server's voice.
-  static bool _isServerAnswer(Object? error) => error is Map;
+  /// `Api` throws a [NetworkException] when the server answered and the answer
+  /// was an error; a transport failure arrives as a `SocketException`, a
+  /// `ClientException` or a timeout. So a NetworkException with a body is the
+  /// server's voice, a `500` among them (#113); a bodiless one, a gateway's
+  /// page, could as well be the connection.
+  static bool _isServerAnswer(Object? error) => error is NetworkException && error.body != null;
 
   Future<void>? _running;
 
@@ -491,7 +497,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
 
   static bool _isRefusal(Object? error) {
     return switch (error) {
-      {'code': String code} when _refusals.contains(code) => true,
+      NetworkException(isRefusal: true, body: {'code': String code}) when _refusals.contains(code) => true,
       _ => GoalRejected.from(error) != null,
     };
   }

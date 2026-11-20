@@ -4,6 +4,8 @@ import 'package:heart_state/heart_state.dart';
 
 import 'test_utils.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
 /// The server's side, in memory.
 class _Server implements CoachingService {
   final connections = <Connection>[];
@@ -15,7 +17,7 @@ class _Server implements CoachingService {
   var reads = 0;
 
   Connection _write(String id, Connection Function(Connection) change) {
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     final index = connections.indexWhere((each) => each.connectionId == id);
     return connections[index] = change(connections[index]);
   }
@@ -48,7 +50,7 @@ class _Server implements CoachingService {
 
   @override
   Future<void> hideWorkout(String workoutId, {DateTime? at}) async {
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     hidden[workoutId] = at ?? DateTime.utc(2026);
   }
 
@@ -83,7 +85,7 @@ class _Server implements CoachingService {
 
   @override
   Future<Invitation> createInvitation(String name, {String? programId}) async {
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     final invitation = _invitation('i${invitations.length}', name, token: 'token-${tokens++}');
     invitations.insert(0, invitation);
     return invitation;
@@ -116,7 +118,7 @@ class _Server implements CoachingService {
 
   @override
   Future<AcceptedInvitation> acceptInvitation(String token, Set<ConnectionShare> shares) async {
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     final connection = _connection('alex', .student, shares: [for (final share in shares) share.name]);
     connections.add(connection);
     return AcceptedInvitation(connection);
@@ -248,7 +250,7 @@ void main() {
 
     await expectLater(
       coaching.setShares(coaching.clients.single, {.goals}),
-      throwsA(containsPair('code', 'forbidden')),
+      throwsA(refusal(containsPair('code', 'forbidden'))),
     );
     expect(coaching.clients.single.shares, isEmpty);
   });
@@ -328,7 +330,7 @@ void main() {
 
     test('a refused one throws and lists nothing', () async {
       server.refuse = {'code': 'coaching_beta'};
-      await expectLater(coaching.invite('Muffin'), throwsA(containsPair('code', 'coaching_beta')));
+      await expectLater(coaching.invite('Muffin'), throwsA(refusal(containsPair('code', 'coaching_beta'))));
       expect(coaching.invitations, isEmpty);
     });
 
@@ -436,7 +438,7 @@ void main() {
       await coaching.load();
       server.refuse = {'code': 'forbidden'};
 
-      await expectLater(coaching.pause(coaching.coaches.single), throwsA(isA<Map>()));
+      await expectLater(coaching.pause(coaching.coaches.single), throwsA(isA<NetworkException>()));
 
       expect(reported.events, isEmpty);
     });
@@ -470,7 +472,7 @@ void main() {
     test('a refused invitation is not counted', () async {
       server.refuse = {'code': 'coaching_beta'};
 
-      await expectLater(coaching.invite('Muffin'), throwsA(isA<Map>()));
+      await expectLater(coaching.invite('Muffin'), throwsA(isA<NetworkException>()));
 
       expect(reported.names, isNot(contains('invitation_created')));
     });

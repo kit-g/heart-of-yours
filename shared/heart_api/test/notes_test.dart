@@ -55,7 +55,7 @@ void main() {
 
     expect(
       api.saveNote(_noteId, connectionId: _connectionId, content: 'abc'),
-      throwsA(containsPair('code', 'not_found')),
+      throwsA(refused(containsPair('code', 'not_found'))),
     );
   });
 
@@ -104,6 +104,6 @@ void main() {
       body: {'error': 'not found', 'code': 'not_found', 'message': 'Note #x not found'},
     );
 
-    expect(api.deleteNote(_noteId), throwsA(containsPair('code', 'not_found')));
+    expect(api.deleteNote(_noteId), throwsA(refused(containsPair('code', 'not_found'))));
   });
 }

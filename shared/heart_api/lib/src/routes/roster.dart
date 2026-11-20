@@ -20,19 +20,19 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.coachClients, query: query.isEmpty ? null : query);
     return switch ((code, json)) {
       (200, {'clients': List l}) => (items: _readable(l, ClientSummary.fromJson), cursor: json['cursor'] as String?),
-      _ => throw json,
+      _ => throw _unreadable(code, 'GET', Router.coachClients),
     };
   }
 
   /// The coach has looked at a client: from [at], or now, only what comes
   /// after counts towards their reasons. `404` for a connection that isn't
-  /// the coach's, thrown whole.
+  /// the coach's, thrown with its body.
   Future<void> markReviewed(String connectionId, {DateTime? at}) async {
     final (json, code) = await put(
       Router.coachClientReviewed(connectionId),
       body: {'at': ?at?.toUtc().toIso8601String()},
     );
-    if (code != 204) throw json;
+    if (code != 204) throw _unreadable(code, 'PUT', Router.coachClientReviewed(connectionId));
   }
 
   /// Workouts, skips and endings of every client, newest first.
@@ -40,7 +40,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.coachFeed, query: _cursor(cursor));
     return switch ((code, json)) {
       (200, {'items': List l}) => (items: _readable(l, CoachFeedItem.fromJson), cursor: json['cursor'] as String?),
-      _ => throw json,
+      _ => throw _unreadable(code, 'GET', Router.coachFeed),
     };
   }
 
@@ -55,7 +55,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
         items: _readable(_namedAll(l), Workout.fromJson),
         cursor: json['cursor'] as String?,
       ),
-      _ => throw json,
+      _ => throw _unreadable(code, 'GET', Router.clientWorkouts(studentId)),
     };
   }
 
@@ -64,18 +64,18 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.clientSkips(studentId));
     return switch ((code, json)) {
       (200, {'skips': List l}) => _readable(l, TrainingSkip.fromJson),
-      _ => throw json,
+      _ => throw _unreadable(code, 'GET', Router.clientSkips(studentId)),
     };
   }
 
   /// What a client's workout was asked to be, to put target beside done; null
   /// for a workout with no plan (`404`), which has nothing to compare with.
   Future<WorkoutPlan?> getClientWorkoutPlan(String studentId, String workoutId) async {
-    final (json, code) = await get(Router.clientWorkoutPlan(studentId, workoutId));
+    final (json, code) = await _answering(get(Router.clientWorkoutPlan(studentId, workoutId)), 404);
     return switch ((code, json)) {
       (200, Map json) => WorkoutPlan.fromJson(json),
       (404, _) => null,
-      _ => throw json,
+      _ => throw _unreadable(code, 'GET', Router.clientWorkoutPlan(studentId, workoutId)),
     };
   }
 
@@ -83,9 +83,12 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
   /// in the client's history from now on, marked as logged by the coach.
   /// The id is the device's, so a retry answers the stored one; an id someone
   /// else used is refused (`id_taken`), and so is a client this coach no
-  /// longer coaches (`forbidden`), both thrown whole.
+  /// longer coaches (`forbidden`), both thrown with its body.
   Future<Workout> logClientWorkout(String studentId, Workout workout) async {
-    final (json, _) = _created(await post(Router.clientWorkouts(studentId), body: workout.toMap()));
+    final (json, _) = _created(
+      await post(Router.clientWorkouts(studentId), body: workout.toMap()),
+      endpoint: Router.clientWorkouts(studentId),
+    );
     return Workout.fromJson(_named(json));
   }
 
@@ -94,7 +97,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
   /// it again changes nothing.
   Future<void> saveClientWorkoutPlan(String studentId, String workoutId, WorkoutPlan plan) async {
     final (json, code) = await put(Router.clientWorkoutPlan(studentId, workoutId), body: plan.toMap());
-    if (code != 204) throw json;
+    if (code != 204) throw _unreadable(code, 'PUT', Router.clientWorkoutPlan(studentId, workoutId));
   }
 
   /// The copies the coach manages for a client.
@@ -102,7 +105,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.clientPrograms(studentId));
     return switch ((code, json)) {
       (200, {'programs': List l}) => _readable(l, Program.fromJson),
-      _ => throw json,
+      _ => throw _unreadable(code, 'GET', Router.clientPrograms(studentId)),
     };
   }
 
@@ -112,7 +115,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     final (json, code) = await get(Router.clientProgram(studentId, programId));
     return switch ((code, json)) {
       (200, Map json) => CoachProgramView.fromJson(_namedSessions(json)),
-      _ => throw json,
+      _ => throw _unreadable(code, 'GET', Router.clientProgram(studentId, programId)),
     };
   }
 
@@ -139,7 +142,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     );
     return switch ((code, json)) {
       (200, Map json) => Program.fromJson(json),
-      _ => throw json,
+      _ => throw _unreadable(code, 'PUT', Router.clientProgram(studentId, program.id!)),
     };
   }
 
@@ -156,13 +159,13 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
       Router.clientSession(studentId, programId, session.id),
       body: {...session.toMap(), 'baseRevision': baseRevision, 'changeId': changeId},
     );
-    if (code != 200) throw json;
+    if (code != 200) throw _unreadable(code, 'PUT', Router.clientSession(studentId, programId, session.id));
   }
 
   /// The coach removes a session of a copy. Harmless twice.
   Future<void> deleteClientSession(String studentId, String programId, String sessionId) async {
     final (json, code) = await delete(Router.clientSession(studentId, programId, sessionId));
-    if (code != 204) throw json;
+    if (code != 204) throw _unreadable(code, 'DELETE', Router.clientSession(studentId, programId, sessionId));
   }
 
   /// What changed in a copy, oldest first, from [since] on.
@@ -173,14 +176,14 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     );
     return switch ((code, json)) {
       (200, Map json) => ProgramChanges.fromJson(json).changes,
-      _ => throw json,
+      _ => throw _unreadable(code, 'GET', Router.clientProgramChanges(studentId, programId)),
     };
   }
 
   /// Puts [changeId] back, as a new change. `409` when the client has since
-  /// built on it, thrown whole.
+  /// built on it, thrown with its body.
   Future<void> revertClientChange(String studentId, String programId, String changeId) async {
     final (json, code) = await post(Router.clientChangeRevert(studentId, programId, changeId));
-    if (code != 204) throw json;
+    if (code != 204) throw _unreadable(code, 'POST', Router.clientChangeRevert(studentId, programId, changeId));
   }
 }

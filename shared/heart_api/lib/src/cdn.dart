@@ -121,15 +121,16 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
   Future<({String body, String? etag})?> getGoEasy({String? etag}) => _getContent(_goEasy, etag: etag);
 
   Future<({String body, String? etag})?> _getContent(String path, {String? etag}) async {
+    final url = Uri.https(gateway, path);
     final response = await (client?.get ?? http.get)(
-      Uri.https(gateway, path),
+      url,
       headers: {...?defaultHeaders, 'If-None-Match': ?etag},
     );
     return switch (response.statusCode) {
       304 => null,
       // UTF-8 by definition, with no charset for `response.body` to go by
       200 => (body: utf8.decode(response.bodyBytes), etag: response.headers['etag']),
-      final code => throw NetworkException(statusCode: code),
+      final code => throw NetworkException(statusCode: code, method: 'GET', path: url.path),
     };
   }
 
@@ -172,8 +173,9 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
       (locale: final same, :final etag, version: _) when same == locale => etag,
       _ => null,
     };
+    final url = Uri.https(gateway, '$_library/$locale.json');
     final response = await (client?.get ?? http.get)(
-      Uri.https(gateway, '$_library/$locale.json'),
+      url,
       headers: {...?defaultHeaders, 'If-None-Match': ?etag},
     );
 
@@ -189,7 +191,7 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
         ),
         final body => throw FormatException('not an exercise library', body),
       },
-      final code => throw NetworkException(statusCode: code),
+      final code => throw NetworkException(statusCode: code, method: 'GET', path: url.path),
     };
   }
 

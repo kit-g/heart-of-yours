@@ -591,10 +591,10 @@ extension _Owed on DeviceKeys {
         paid.add(id);
       } on _Stopped {
         rethrow;
-      } on Map catch (refusal) {
+      } on NetworkException catch (refusal) {
         switch (refusal) {
           // vouched for by another between the list and this: nothing owed
-          case {'code': 'already_vouched'}:
+          case NetworkException(isRefusal: true, body: {'code': 'already_vouched'}):
             paid.add(id);
           default:
             _report(refusal);

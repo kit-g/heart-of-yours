@@ -6,6 +6,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:mockito/mockito.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
+import 'package:test/test.dart';
 
 export '../mocks.mocks.dart';
 
@@ -49,3 +51,7 @@ class StubResponse(
   required super.request,
   super.headers,
 }) extends http.Response;
+
+/// A refusal as the Api throws it (#681): a [NetworkException], with the
+/// body the server sent matching [body].
+Matcher refused(Object? body) => isA<NetworkException>().having((e) => e.body, 'body', body);

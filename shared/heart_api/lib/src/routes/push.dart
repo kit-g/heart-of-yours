@@ -24,7 +24,7 @@ mixin _PushRoutes on Requests {
         'utcOffsetMinutes': ?utcOffsetMinutes,
       },
     );
-    if (code != 204) throw json;
+    if (code != 204) throw _unreadable(code, 'POST', Router.devices);
   }
 
   /// Stops [token] getting the signed-in account's pushes (heart-api#415), on
@@ -32,7 +32,7 @@ mixin _PushRoutes on Requests {
   /// for nobody, or for someone else, is already stopped and answers the same.
   Future<void> unregisterDevice(String token) async {
     final (json, code) = await post(Router.deviceRemovals, body: {'token': token});
-    if (code != 204) throw json;
+    if (code != 204) throw _unreadable(code, 'POST', Router.deviceRemovals);
   }
 
   /// Every topic the account can change, in the device's language, with what
@@ -41,7 +41,7 @@ mixin _PushRoutes on Requests {
     final (json, code) = await get(Router.pushSettings);
     return switch ((code, json)) {
       (200, Map json) => PushSettings.fromJson(json),
-      _ => throw json,
+      _ => throw _unreadable(code, 'GET', Router.pushSettings),
     };
   }
 
@@ -52,7 +52,7 @@ mixin _PushRoutes on Requests {
       Router.pushSetting(topic),
       body: {'delivery': delivery, 'connectionId': ?connectionId},
     );
-    if (code != 204) throw json;
+    if (code != 204) throw _unreadable(code, 'PUT', Router.pushSetting(topic));
   }
 
   /// Puts [topic] back to the server's default, or, with [connectionId], lets
@@ -66,6 +66,6 @@ mixin _PushRoutes on Requests {
         null => null,
       },
     );
-    if (code != 204) throw json;
+    if (code != 204) throw _unreadable(code, 'DELETE', Router.pushSetting(topic));
   }
 }

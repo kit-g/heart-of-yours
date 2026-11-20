@@ -25,6 +25,12 @@ dependencies:
   sign_in_with_apple: ^8.2.0
   # end-to-end encryption (#555): a device's keys and what carries them
   sealbox:
+  # NetworkException only: how a server's refusal reaches the notifiers (#681)
+  network_utils:
+    git:
+      url: "https://github.com/kit-g/dart-network-utils.git"
+      ref: "main"
+    version: 0.6.0
 
 resolution: workspace
 

@@ -9,6 +9,10 @@ import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'test_utils.dart';
+
 /// The Programs notifier (#346): local first, the server's copy after, and a
 /// position that is folded on request, never held.
 void main() {
@@ -313,7 +317,7 @@ void main() {
 
       await expectLater(
         programs.start(programs.lookup('sent')!, replacing: programs.following.toList()),
-        throwsA(isA<Map>()),
+        throwsA(isA<NetworkException>()),
       );
 
       expect(programs.waiting.map((each) => each.id), ['sent']);
@@ -2400,8 +2404,8 @@ class _Remote implements RemoteProgramService {
 
   void _call(String call) {
     calls.add(call);
-    if (failing) throw {'error': 'unavailable'};
-    if (refusing case final String code) throw {'code': code};
+    if (failing) throw const NetworkException(statusCode: 503, body: {'error': 'unavailable'});
+    if (refusing case final String code) throw NetworkException(statusCode: 400, body: {'code': code});
   }
 
   /// What each program read throws before it answers, one per ask: a
@@ -2424,7 +2428,7 @@ class _Remote implements RemoteProgramService {
     } finally {
       inFlight--;
     }
-    if (failures[call] case final List<Object> pending when pending.isNotEmpty) throw pending.removeAt(0);
+    if (failures[call] case final List<Object> pending when pending.isNotEmpty) throw asRefusal(pending.removeAt(0));
   }
 
   @override
@@ -2459,7 +2463,9 @@ class _Remote implements RemoteProgramService {
     edits.add((baseRevision, changeId));
     _call('editProgram ${program.id}');
     if (revisions[program.id] case final int current when baseRevision != null) {
-      if (baseRevision != current) throw {'code': 'program_changed', 'revision': current};
+      if (baseRevision != current) {
+        throw NetworkException(statusCode: 409, body: {'code': 'program_changed', 'revision': current});
+      }
       revisions[program.id!] = current + 1;
       return Program.fromJson({...program.toMap(), 'revision': current + 1});
     }
@@ -2548,7 +2554,9 @@ class _Remote implements RemoteProgramService {
   @override
   Future<Template> setTemplateProgram(Template template, {required String? programId}) async {
     _call('setTemplateProgram ${template.id} $programId');
-    if (failingFilings.contains(template.id)) throw {'error': 'unavailable'};
+    if (failingFilings.contains(template.id)) {
+      throw const NetworkException(statusCode: 503, body: {'error': 'unavailable'});
+    }
     return Template.fromJson({...template.toMap(), 'programId': programId});
   }
 }

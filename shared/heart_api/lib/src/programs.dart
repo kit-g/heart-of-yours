@@ -2,6 +2,8 @@
 /// there).
 library;
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
 /// Why the server refused a program write, by the `code` it named.
 enum ProgramRefusal {
   /// `400 invalid_rule`: a growth rule this server does not know, or out of
@@ -57,7 +59,11 @@ enum ProgramRefusal {
 class ProgramRefused implements Exception {
   final ProgramRefusal reason;
 
-  const new(this.reason);
+  /// The refusal as the server sent it, for a caller that reads refusals by
+  /// their body, as `heart_state` does.
+  final NetworkException failure;
+
+  const new(this.reason, this.failure);
 
   @override
   String toString() => 'ProgramRefused(${reason.code})';

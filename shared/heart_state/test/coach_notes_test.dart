@@ -6,6 +6,8 @@ import 'package:heart_state/heart_state.dart';
 
 import 'test_utils.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
 /// A coach's notes (#556): kept here sealed, sent when the server can be
 /// reached, and shown by client.
 void main() {
@@ -225,7 +227,7 @@ void main() {
 
     expect(server.notes.keys, [fine]);
     expect(store.notes[me]![refused]!.pending, isTrue);
-    expect(errors, everyElement(containsPair('code', 'not_found')));
+    expect(errors, everyElement(refusal(containsPair('code', 'not_found'))));
   });
 
   test('a note refused for good is not sent again, nor reported again, until it is written again', () async {
@@ -244,6 +246,21 @@ void main() {
     await notes.save(client, 'refused, rewritten', id: refused);
     await notes.flush();
     expect(server.notes.keys, [refused]);
+  });
+
+  // a gateway's bare 502 names nothing about the note: it is no refusal (#681)
+  test('a failure with no body keeps the note pending, and it goes with the next run', () async {
+    server.refuse['n0'] = const NetworkException(statusCode: 502, method: 'PUT', path: '/v1/notes/n0');
+    final waiting = await notes.save(client, 'waiting');
+    await notes.flush();
+
+    expect(server.notes, isEmpty);
+    expect(store.notes[me]![waiting]!.pending, isTrue);
+
+    server.refuse.remove(waiting);
+    await notes.flush();
+
+    expect(server.notes.keys, [waiting]);
   });
 
   test('a refusal for being too quick sends everything again with the next run', () async {
@@ -358,7 +375,7 @@ void main() {
 class _Server implements RemoteNoteService {
   final notes = <String, CoachNote>{};
   final calls = <String>[];
-  final refuse = <String, Map<String, String>>{};
+  final refuse = <String, Object>{};
   var pageSize = 50;
   Completer<void>? hold;
 
@@ -369,7 +386,7 @@ class _Server implements RemoteNoteService {
   Future<CoachNote> saveNote(String id, {required String connectionId, required String content}) async {
     calls.add('save $id');
     await hold?.future;
-    if (refuse[id] case final Map<String, String> refusal) throw refusal;
+    if (refuse[id] case final Object refusal) throw asRefusal(refusal);
     return notes[id] = CoachNote(
       id: id,
       connectionId: connectionId,
@@ -391,7 +408,7 @@ class _Server implements RemoteNoteService {
   @override
   Future<void> deleteNote(String id) async {
     calls.add('delete $id');
-    if (notes.remove(id) == null) throw {'code': 'not_found'};
+    if (notes.remove(id) == null) throw const NetworkException(statusCode: 404, body: {'code': 'not_found'});
   }
 }
 

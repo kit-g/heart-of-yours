@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:heart_api/src/api.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:mockito/mockito.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
 import 'package:test/test.dart';
 
 import 'support/http.dart';
@@ -45,6 +46,35 @@ void main() {
       final goals = await api.getTargetUserGoals(requesterId: userId, targetUserId: userId);
 
       expect(goals.map((each) => each.id), ['goal-1']);
+    });
+
+    // the caller replaces its synced goals with this list: an empty one for a
+    // broken server would delete them all (#681)
+    test('a server that is busy or broken is thrown, never answered as no goals', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: '${Router.accounts}/$userId/goals',
+        statusCode: 503,
+        body: {'message': 'Service Unavailable'},
+      );
+
+      await expectLater(
+        api.getTargetUserGoals(requesterId: userId, targetUserId: userId),
+        throwsA(isA<NetworkException>().having((e) => e.statusCode, 'statusCode', 503)),
+      );
+    });
+
+    test('a refusal is still no goals', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: '${Router.accounts}/$userId/goals',
+        statusCode: 403,
+        body: {'code': 'forbidden'},
+      );
+
+      expect(await api.getTargetUserGoals(requesterId: userId, targetUserId: userId), isEmpty);
     });
 
     test('a goal this build cannot read costs that goal, not the list (#277)', () async {

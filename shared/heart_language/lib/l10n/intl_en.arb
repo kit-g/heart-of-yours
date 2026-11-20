@@ -6246,5 +6246,7 @@
   "coachingClientEarlier": "Earlier",
   "@coachingClientEarlier": {"description": "Heading over a client's workouts before the latest one, on a tablet where the latest is shown in full (#693)", "type": "text", "placeholders": {}},
   "coachingClientBeside": "Beside the client",
-  "@coachingClientBeside": {"description": "Screen-reader label of the switch between the conversation, the program and the notes shown beside a client on a tablet (#693)", "type": "text", "placeholders": {}}
+  "@coachingClientBeside": {"description": "Screen-reader label of the switch between the conversation, the program and the notes shown beside a client on a tablet (#693)", "type": "text", "placeholders": {}},
+  "exerciseSaveFailed": "Couldn't save the exercise. Try again.",
+  "@exerciseSaveFailed": {"description": "Snack when creating or editing an own exercise failed for any reason other than a name already taken; the dialog closes (#681)", "type": "text", "placeholders": {}}
 }

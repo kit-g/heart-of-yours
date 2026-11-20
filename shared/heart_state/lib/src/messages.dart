@@ -9,6 +9,10 @@ import 'coaching.dart' show CoachingStatus;
 import 'device_keys.dart';
 import 'remote.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'refusals.dart';
+
 /// What the server does with threads (heart-of-yours#556). Like
 /// [RemoteKeyService], the app's view of a few routes, which the app adapts
 /// `Api` onto.
@@ -684,8 +688,8 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   Future<({List<ThreadItem> items, String? cursor})> _readSince(String threadId, String since) async {
     try {
       return await _service.getThreadItems(threadId, since: since, limit: _page);
-    } on Map catch (refusal) {
-      if (refusal case {'code': 'stale_cursor'}) {
+    } on NetworkException catch (refusal) {
+      if (refusal case NetworkException(isRefusal: true, body: {'code': 'stale_cursor'})) {
         final page = await _service.getThreadItems(threadId, limit: _page);
         return (items: page.items.reversed.toList(), cursor: null);
       }
@@ -814,12 +818,12 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
           await _local.storeThreadItems(userId, [(item: sent, position: held.firstOrNull?.position, pending: false)]);
         });
       }
-    } on Map catch (refusal, stacktrace) {
+    } on NetworkException catch (refusal, stacktrace) {
       switch (refusal) {
-        case {'code': 'thread_closed'}:
+        case NetworkException(isRefusal: true, body: {'code': 'thread_closed'}):
           _view(threadId, closed: true);
-        case {'code': 'rate_limited'}:
-          final wait = switch (refusal['retryAfter']) {
+        case NetworkException(body: {'code': 'rate_limited'}):
+          final wait = switch (refusal.body?['retryAfter']) {
             final num seconds => Duration(seconds: seconds.ceil()),
             _ => const Duration(minutes: 1),
           };

@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
 
 // Increments and returns a function to attach as a listener for ChangeNotifier
 int addCounterListener(ChangeNotifier notifier) {
@@ -119,3 +121,26 @@ class ReportedAnalytics implements AnalyticsService {
     properties[name] = value;
   }
 }
+
+/// What a fake service throws, as the Api throws it (#681): a body the
+/// server sent becomes a [NetworkException] carrying it, with a status that
+/// fits its `code`; anything else (a transport failure) goes as it is.
+Object asRefusal(Object refusal) {
+  if (refusal is! Map) return refusal;
+  final status = switch (refusal) {
+    {'code': 'not_found'} => 404,
+    {'code': 'forbidden' || 'device_removed' || 'thread_closed' || 'id_taken'} => 403,
+    {'code': 'program_changed' || 'already_vouched'} => 409,
+    {'code': 'rate_limited'} || {'message': 'Too Many Requests'} => 429,
+    {'message': 'Unauthorized'} => 401,
+    {'code': 'server_error'} => 500,
+    {'code': _} => 400,
+    {'message': _} => 500,
+    _ => 500,
+  };
+  return NetworkException(statusCode: status, body: refusal);
+}
+
+/// A refusal as it reaches a notifier (#681): a [NetworkException] whose
+/// body matches [body].
+Matcher refusal(Object? body) => isA<NetworkException>().having((e) => e.body, 'body', body);

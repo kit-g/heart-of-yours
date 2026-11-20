@@ -11,6 +11,8 @@ import 'package:material_ui/material_ui.dart';
 
 import 'mocks.mocks.dart';
 
+import 'package:heart_api/heart_api.dart' show NetworkException;
+
 /// Composing a new goal, and editing an existing one's target.
 ///
 /// `new_goal.dart` lived inside the profile screen's private part library
@@ -428,7 +430,7 @@ class _FakeRemote implements GoalService {
   Future<Goal> createGoal(Goal goal, String userId) async {
     if (rejectNextCreate case final GoalRejected rejection) {
       rejectNextCreate = null;
-      throw {'code': rejection.code};
+      throw NetworkException(statusCode: 400, body: {'code': rejection.code});
     }
     goals.add(goal);
     return goal;

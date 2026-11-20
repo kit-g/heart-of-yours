@@ -761,7 +761,7 @@ void main() {
           'reason': 'plan must be {exercises: [{sets: [{weight, setId}]}]}',
         },
       );
-      expect(api.saveWorkoutPlan(workoutId, plan), throwsA(containsPair('code', 'invalid_plan')));
+      expect(api.saveWorkoutPlan(workoutId, plan), throwsA(refused(containsPair('code', 'invalid_plan'))));
     });
   });
 }

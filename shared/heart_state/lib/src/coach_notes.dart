@@ -9,6 +9,10 @@ import 'coaching.dart' show CoachingStatus;
 import 'device_keys.dart';
 import 'remote.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'refusals.dart';
+
 /// What the server does with a coach's notes (heart-of-yours#556): the app's
 /// view of a few routes, which the app adapts `Api` onto.
 abstract interface class RemoteNoteService {
@@ -320,16 +324,16 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
           case false:
             await _send(userId, note);
         }
-      } on Map catch (refusal) {
-        onError?.call(refusal);
-        // everything goes again with the next run
-        if (refusal['code'] == 'rate_limited') break;
-        // refused for this note alone, and for good: the others still go
-        _refused.add(note.id);
       } catch (error, stacktrace) {
-        // no network, or no answer: everything waits for the next run
         onError?.call(error, stacktrace: stacktrace);
-        break;
+        if (error case NetworkException(isRefusal: true)) {
+          // refused for this note alone, and for good: the others still go
+          _refused.add(note.id);
+        } else {
+          // no network, no answer, a rate limit or a busy server: everything
+          // goes again with the next run
+          break;
+        }
       }
       if (userId != _userId) return;
     }
@@ -356,9 +360,14 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
   Future<void> _sendDeletion(String userId, CoachNote note) async {
     try {
       await _service.deleteNote(note.id);
-    } on Map catch (refusal) {
-      // never reached the server, or deleted from another device: gone either way
-      if (refusal['code'] != 'not_found') rethrow;
+    } on NetworkException catch (refusal) {
+      switch (refusal) {
+        // deleted from another device: gone either way
+        case NetworkException(isRefusal: true, body: {'code': 'not_found'}):
+          break;
+        default:
+          rethrow;
+      }
     }
     await _inTurn(userId, () async {
       if (_stored[note.id] case (pending: _, deleted: true, note: _)) {

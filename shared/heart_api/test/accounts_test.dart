@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:heart_api/src/api.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:mockito/mockito.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
 import 'package:test/test.dart';
 
 import 'support/http.dart';
@@ -59,7 +60,7 @@ void main() {
         body: {'error': 'unexpected'},
       );
 
-      expect(() => api.registerAccount(user), throwsA(isA<Map>()));
+      expect(() => api.registerAccount(user), throwsA(isA<NetworkException>()));
     });
 
     // Scheduling a deletion is an action on `PUT /accounts`, not `DELETE` —
@@ -118,7 +119,7 @@ void main() {
         body: {'error': 'Not Found'},
       );
 
-      expect(() => api.deleteAccount(accountId: '42'), throwsA(isA<Map>()));
+      expect(() => api.deleteAccount(accountId: '42'), throwsA(isA<NetworkException>()));
     });
 
     // The path is the assertion here, not decoration: these four stubbed
@@ -204,7 +205,7 @@ void main() {
         body: {'error': 'bad request'},
       );
 
-      expect(() => api.undoAccountDeletion(), throwsA(isA<Map>()));
+      expect(() => api.undoAccountDeletion(), throwsA(isA<NetworkException>()));
     });
   });
 
@@ -390,7 +391,7 @@ void main() {
 
       expect(
         () => api.createApiToken(name: 'one more', expiry: .year),
-        throwsA(isA<Map>().having((m) => m['code'], 'code', 'token_limit')),
+        throwsA(refused(containsPair('code', 'token_limit'))),
       );
     });
 
@@ -407,7 +408,95 @@ void main() {
         statusCode: 404,
         body: {'error': 'not found', 'code': 'not_found', 'message': 'token #nope not found'},
       );
-      expect(() => api.revokeApiToken('nope'), throwsA(isA<Map>().having((m) => m['code'], 'code', 'not_found')));
+      expect(() => api.revokeApiToken('nope'), throwsA(refused(containsPair('code', 'not_found'))));
+    });
+  });
+
+  // #681: a status a route does not name used to be thrown as the bare body,
+  // which reached Sentry titled with the map and grouped by stack
+  group('a refusal is a NetworkException naming its request (#681)', () {
+    test('a status the route does not name: status, verb and path, and the body for the caller', () async {
+      respond(
+        client: client,
+        method: 'PUT',
+        path: Router.accounts,
+        statusCode: 500,
+        body: {'code': 'server_error', 'error': 'Muffin <muffin@example.com>'},
+      );
+
+      final thrown = await api.registerAccount(User(id: '42')).then<Object?>((_) => null, onError: (Object e) => e);
+      expect(thrown, refused(containsPair('code', 'server_error')));
+      expect('$thrown', 'NetworkException(500 PUT /v1/accounts)');
+    });
+
+    test('the summary refuses rather than answering empty', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: '${Router.accounts}/summary',
+        statusCode: 502,
+        body: {'message': 'x'},
+      );
+
+      await expectLater(
+        api.getAccountSummary,
+        throwsA(
+          isA<NetworkException>().having((e) => '$e', 'toString', 'NetworkException(502 GET /v1/accounts/summary)'),
+        ),
+      );
+    });
+
+    test('426 is UpgradeRequired where no upgrade gate is set', () async {
+      respond(client: client, method: 'GET', path: '${Router.accounts}/summary', statusCode: 426, body: {'code': 'x'});
+
+      await expectLater(api.getAccountSummary, throwsA(isA<UpgradeRequired>()));
+    });
+
+    test("426 is UpgradeRequired after the app's upgrade gate has seen it too", () async {
+      var gated = 0;
+      api = Api(
+        gateway: 'api.example.com',
+        client: client,
+        onUpgradeRequired: (json) {
+          gated++;
+          return (json, 426);
+        },
+      );
+      respond(client: client, method: 'PUT', path: Router.accounts, statusCode: 426, body: {'code': 'upgrade'});
+
+      await expectLater(api.registerAccount(User(id: '42')), throwsA(isA<UpgradeRequired>()));
+      expect(gated, 1);
+    });
+
+    test('a success in a shape the route cannot read names its request, and not the body', () async {
+      respond(
+        client: client,
+        method: 'POST',
+        path: Router.accountTokens,
+        statusCode: 200,
+        body: {'name': 'My sheet', 'secret': 'hrt_secret'},
+      );
+
+      await expectLater(
+        api.createApiToken(name: 'My sheet', expiry: .year),
+        throwsA(
+          isA<NetworkException>()
+              .having((e) => '$e', 'toString', 'NetworkException(200 POST /v1/accounts/tokens)')
+              .having((e) => e.body, 'body', isNull),
+        ),
+      );
+    });
+
+    test('a route that has always read a refusal as nothing still does', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.accountTokens,
+        statusCode: 500,
+        body: {'code': 'server_error'},
+      );
+
+      expect(await api.listApiTokens(), isEmpty);
     });
   });
 }

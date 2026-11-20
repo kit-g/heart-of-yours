@@ -6,6 +6,10 @@ import 'package:provider/provider.dart';
 
 import 'remote.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'refusals.dart';
+
 /// The local half of goal storage.
 ///
 /// [GoalService] covers what both ends can do; these three are the bookkeeping
@@ -73,17 +77,14 @@ class GoalRejected implements Exception {
   /// telling apart so a stamp can be retried without it rather than dropped.
   bool get isUnknownWorkout => code == 'goal_workout_unknown';
 
-  /// Named, but still transient: the request was fine and the server broke.
-  static const _serverError = 'server_error';
-
   /// Reads a refusal out of whatever the service threw, or null when the
   /// failure could just as well be an outage.
   static GoalRejected? from(Object? error) {
     return switch (error) {
-      {'code': _serverError} => null,
-      {'code': String code} => GoalRejected(
+      // a server error or a throttle is named too, but passes: not a refusal
+      NetworkException(isRefusal: true, body: {'code': String code}) => GoalRejected(
         code,
-        reason: switch (error) {
+        reason: switch (error.body) {
           {'reason': String reason} => reason,
           {'message': String message} => message,
           _ => null,

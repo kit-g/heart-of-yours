@@ -4,6 +4,8 @@ import 'package:heart_state/heart_state.dart';
 
 import 'test_utils.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
 /// One copy on the server, with revisions as the server keeps them.
 class _Server implements ClientProgramService {
   var programRevision = 0;
@@ -29,7 +31,7 @@ class _Server implements ClientProgramService {
 
   @override
   Future<CoachProgramView> getClientProgram(String studentId, String programId) async {
-    if (failRead) throw {'code': 'unavailable'};
+    if (failRead) throw const NetworkException(statusCode: 400, body: {'code': 'unavailable'});
     return CoachProgramView.fromJson({
       'program': {
         'id': programId,
@@ -62,10 +64,13 @@ class _Server implements ClientProgramService {
     required int baseRevision,
     required String changeId,
   }) async {
-    if (refuse case final refusal?) throw refusal;
+    if (refuse case final refusal?) throw asRefusal(refusal);
     writes.add((session.id, baseRevision));
     if (baseRevision != sessionRevisions[session.id]) {
-      throw {'code': 'program_changed', 'revision': sessionRevisions[session.id]};
+      throw NetworkException(
+        statusCode: 409,
+        body: {'code': 'program_changed', 'revision': sessionRevisions[session.id]},
+      );
     }
     sessionRevisions[session.id] = baseRevision + 1;
   }
@@ -77,7 +82,9 @@ class _Server implements ClientProgramService {
     required int baseRevision,
     required String changeId,
   }) async {
-    if (baseRevision != programRevision) throw {'code': 'program_changed', 'revision': programRevision};
+    if (baseRevision != programRevision) {
+      throw NetworkException(statusCode: 409, body: {'code': 'program_changed', 'revision': programRevision});
+    }
     programRevision++;
     return program;
   }

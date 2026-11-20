@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'refusals.dart';
+
 /// What a program call's failure says about asking again, for every program
 /// call, reads and writes alike: one classifier, so a retry and a refusal
 /// never disagree about the same answer.
@@ -43,7 +47,8 @@ const _refusals = {
 
 /// API Gateway's own bodies for a request it could not get answered: a
 /// throttled or failed integration, too many requests, a timeout. They carry
-/// a `message` and no `code`; their wording is the gateway's, fixed.
+/// a `message` and no `code`; their wording is the gateway's, fixed. Only
+/// a report's name reads them: their statuses already say to ask again.
 const _gatewayBusy = {
   'Internal server error',
   'Too Many Requests',
@@ -57,11 +62,11 @@ ProgramFailure programFailure(Object? error) {
     // an attempt that ran out of time: its slot is let go, and it is asked
     // again like a busy gateway
     TimeoutException() => .passing,
-    {'code': 'server_error'} => .passing,
-    {'code': final String code} when _refusals.contains(code) => .refused,
-    {'code': _} => .answered,
-    {'message': final String message} when _gatewayBusy.contains(message) => .passing,
-    Map() => .answered,
+    // the server broke, or the gateway in front of it was busy or gave up:
+    // 408, 425, 429 and 5xx, whatever the body says
+    NetworkException(isTransient: true) => .passing,
+    NetworkException(isRefusal: true, body: {'code': final String code}) when _refusals.contains(code) => .refused,
+    NetworkException() => .answered,
     _ => .unanswered,
   };
 }
@@ -82,10 +87,10 @@ class ProgramReadFailed implements Exception {
   /// The failure's name: the server's code, else what kind it was.
   String get code {
     return switch (error) {
-      {'code': final String code} => code,
-      {'message': final String message} when _gatewayBusy.contains(message) => message,
+      NetworkException(body: {'code': final String code}) => code,
+      NetworkException(body: {'message': final String message}) when _gatewayBusy.contains(message) => message,
       TimeoutException() => 'timeout',
-      Map() => 'unnamed',
+      NetworkException() => 'unnamed',
       _ => '${error.runtimeType}',
     };
   }
@@ -160,7 +165,7 @@ class ProgramReads {
 
   static Object _named(String call, Object error) {
     return switch (error) {
-      Map() || TimeoutException() => ProgramReadFailed([call], error),
+      NetworkException() || TimeoutException() => ProgramReadFailed([call], error),
       _ => error,
     };
   }

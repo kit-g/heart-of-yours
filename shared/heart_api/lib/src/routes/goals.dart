@@ -11,15 +11,21 @@ mixin _GoalRoutes on Requests implements GoalService {
     // Reading goals is scoped by whose they are — the same shape workouts use,
     // where asking for your own id is the first allowed case. `archived` picks
     // a slice rather than widening one: true returns only the achieved goals.
-    final (json, _) = await get(
-      Router.userGoals(targetUserId),
-      // as a query parameter, not glued onto the path — `Uri.https` encodes the
-      // path, so a `?` in it arrives as `%3F` and the server sees one long path
-      // segment that matches no route
-      query: switch (archived) {
-        true => const {'archived': 'true'},
-        false => null,
-      },
+    final (json, _) = await _refused(
+      get(
+        Router.userGoals(targetUserId),
+        // as a query parameter, not glued onto the path — `Uri.https` encodes the
+        // path, so a `?` in it arrives as `%3F` and the server sees one long path
+        // segment that matches no route
+        query: switch (archived) {
+          true => const {'archived': 'true'},
+          false => null,
+        },
+      ),
+      // a refusal (someone else's, not shared) is no goals; a server that is
+      // busy or broken is thrown, because the caller replaces its synced slice
+      // with this list, and an empty one would delete every goal it holds
+      (failure) => failure.isTransient ? throw failure : _asAnswer(failure),
     );
     return switch (json) {
       // whole or not at all: the caller replaces its synced slice with this,
@@ -36,7 +42,7 @@ mixin _GoalRoutes on Requests implements GoalService {
   }
 
   /// See [replayWorkout]. The body carries a stable `code` on a refusal;
-  /// thrown whole so the caller can tell one from an outage instead of
+  /// thrown with its body so the caller can tell one from an outage instead of
   /// retrying both forever.
   Future<({Goal row, bool created})> replayGoal(Goal goal) async {
     final (json, created) = _created(
@@ -46,6 +52,7 @@ mixin _GoalRoutes on Requests implements GoalService {
         // goal by path, and the server preserves the id it was first given
         body: {'id': ?goal.id, ...goal.toBody()},
       ),
+      endpoint: Router.goals,
     );
     return (row: Goal.fromJson(json), created: created);
   }
@@ -55,13 +62,13 @@ mixin _GoalRoutes on Requests implements GoalService {
     final (json, code) = await put(Router.goal(goalId), body: goal.toBody());
     return switch ((code, json)) {
       (200, Map json) => Goal.fromJson(json),
-      _ => throw json,
+      _ => throw _unreadable(code, 'PUT', Router.goal(goalId)),
     };
   }
 
   @override
   Future<void> deleteGoal(String goalId, String userId) {
-    return delete(Router.goal(goalId));
+    return _lenient(delete(Router.goal(goalId)));
   }
 
   @override
@@ -83,7 +90,7 @@ mixin _GoalRoutes on Requests implements GoalService {
     );
     return switch ((code, json)) {
       (200, Map json) => Goal.fromJson(json),
-      _ => throw json,
+      _ => throw _unreadable(code, 'PUT', Router.goalStage(goalId, stageId)),
     };
   }
 }

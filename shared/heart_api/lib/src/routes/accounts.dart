@@ -5,12 +5,26 @@ part of '../api.dart';
 mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
   @override
   Future<User> registerAccount(User user) async {
-    final (json, code) = await put(Router.accounts, body: user.toMap());
+    final (json, code) = await _refused(
+      put(Router.accounts, body: user.toMap()),
+      (failure) => switch (failure) {
+        NetworkException(statusCode: 400, body: {'code': 'ACCOUNT_DELETED'}) => throw AccountDeleted(),
+        _ => _upgradeGate(failure),
+      },
+    );
     return switch ((code, json)) {
       (200, Map json) => User.fromJson(json),
-      (400, {'code': 'ACCOUNT_DELETED'}) => throw AccountDeleted(),
-      (426, _) => throw UpgradeRequired(),
-      _ => throw json, // error
+      _ => throw _unreadable(code, 'PUT', Router.accounts),
+    };
+  }
+
+  /// `426` as [UpgradeRequired], the account routes' name for it. The app's
+  /// `onUpgradeRequired` has already shown the upgrade gate by then; the
+  /// refusal still arrives, as every refusal does.
+  static Never _upgradeGate(NetworkException failure) {
+    throw switch (failure.statusCode) {
+      426 => UpgradeRequired(),
+      _ => failure,
     };
   }
 
@@ -26,28 +40,26 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
   /// as "your mirror is complete", which is the one answer a failed call must
   /// never give.
   Future<AccountSummary> getAccountSummary() async {
-    final (json, code) = await get('${Router.accounts}/summary');
+    final (json, code) = await _refused(get('${Router.accounts}/summary'), _upgradeGate);
     return switch ((code, json)) {
       (200, Map json) => AccountSummary.fromJson(json),
-      (426, _) => throw UpgradeRequired(),
-      _ => throw json,
+      _ => throw _unreadable(code, 'GET', '${Router.accounts}/summary'),
     };
   }
 
   @override
   Future<String?> deleteAccount({required String accountId, AppleDeletionGrant? appleGrant}) async {
-    final (json, code) = await put(
-      Router.accounts,
-      body: {
-        'action': 'scheduleAccountDeletion',
-        ...?appleGrant?.toMap(),
-      },
+    await _refused(
+      put(
+        Router.accounts,
+        body: {
+          'action': 'scheduleAccountDeletion',
+          ...?appleGrant?.toMap(),
+        },
+      ),
+      _upgradeGate,
     );
-    return switch (code) {
-      < 400 => null,
-      426 => throw UpgradeRequired(),
-      _ => throw json, // error
-    };
+    return null;
   }
 
   @override
@@ -57,12 +69,14 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
     // matched no route and came back `404 not_found` — while the handler was
     // reading the user off the auth token all along, which is why every
     // sibling call here (upsert, delete, undo) posts to the bare path.
-    final (json, code) = await put(
-      Router.accounts,
-      body: {
-        'action': 'uploadAvatar',
-        'mimeType': ?imageMimeType,
-      },
+    final (json, _) = await _lenient(
+      put(
+        Router.accounts,
+        body: {
+          'action': 'uploadAvatar',
+          'mimeType': ?imageMimeType,
+        },
+      ),
     );
     return switch (json) {
       {'url': String url, 'fields': Map fields} => (
@@ -86,32 +100,18 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
   Future<bool> removeAvatar(String userId) async {
     // See [getAvatarUploadLink] — the same wrong path, and unreported only
     // because removing an avatar needs one to have been uploaded first.
-    final (_, code) = await put(
-      Router.accounts,
-      body: {'action': 'removeAvatar'},
-    );
+    final (_, code) = await _lenient(put(Router.accounts, body: {'action': 'removeAvatar'}));
     return 200 <= code && code < 300;
   }
 
   @override
   Future<String?> undoAccountDeletion() {
-    return put(
-      Router.accounts,
-      body: {'action': 'undoAccountDeletion'},
-    ).then(
-      (response) {
-        final (json, code) = response;
-        return switch (code) {
-          < 400 => null,
-          _ => throw json, // error
-        };
-      },
-    );
+    return _refused(put(Router.accounts, body: {'action': 'undoAccountDeletion'}), _upgradeGate).then((_) => null);
   }
 
   @override
   Future<bool> submitFeedback({required String mimeType, String? feedback, Uint8List? screenshot}) async {
-    final (json, code) = await post(Router.feedback, body: {'message': feedback});
+    final (json, _) = await _lenient(post(Router.feedback, body: {'message': feedback}));
 
     final link = switch (json) {
       {'url': String url, 'fields': Map fields} => (
@@ -135,7 +135,7 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
   /// heard of is dropped from the token rather than the token from the list,
   /// because a token the app cannot show is one the owner cannot revoke.
   Future<Iterable<ApiToken>> listApiTokens() async {
-    final (json, _) = await get(Router.accountTokens);
+    final (json, _) = await _lenient(get(Router.accountTokens));
     return switch (json) {
       {'tokens': List l} => _readable(l, (each) => ApiToken.fromJson(_withKnownPurpose(each))),
       _ => const <ApiToken>[],
@@ -143,8 +143,8 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
   }
 
   /// Mints a token. `201` with the secret, the one time it exists in
-  /// plaintext; anything else is thrown whole, so the caller can tell the cap
-  /// (`token_limit`) from an outage.
+  /// plaintext; a refusal is the [NetworkException] with the body, so the
+  /// caller can tell the cap (`token_limit`) from an outage.
   Future<MintedApiToken> createApiToken({
     required String name,
     required ApiTokenExpiry expiry,
@@ -156,15 +156,15 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
     );
     return switch ((code, json)) {
       (201, Map json) => MintedApiToken.fromJson(json),
-      _ => throw json,
+      _ => throw _unreadable(code, 'POST', Router.accountTokens),
     };
   }
 
   /// Revokes a token. `204`, also for one already revoked; `404` for one the
-  /// account does not own, thrown whole like every refusal.
+  /// account does not own, thrown like every refusal.
   Future<void> revokeApiToken(String tokenId) async {
     final (json, code) = await delete(Router.accountToken(tokenId));
-    if (code != 204) throw json;
+    if (code != 204) throw _unreadable(code, 'DELETE', Router.accountToken(tokenId));
   }
 
   /// [json] with its `purpose` only when it is one this build can name.

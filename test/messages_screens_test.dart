@@ -15,6 +15,8 @@ import 'package:material_ui/material_ui.dart';
 
 import 'support/harness.dart';
 
+import 'package:heart_api/heart_api.dart' show NetworkException;
+
 /// Coaching messages on screen (#556): a conversation in the server's order,
 /// writing in it, and a coach's inbox beside the open one on a wide pane.
 void main() {
@@ -549,7 +551,7 @@ class _Server implements RemoteThreadService {
   }) async {
     posted.add(content);
     if (subjectId != null) subjects.add('$subjectType $subjectId');
-    if (closed) throw {'error': 'forbidden', 'code': 'thread_closed'};
+    if (closed) throw const NetworkException(statusCode: 403, body: {'error': 'forbidden', 'code': 'thread_closed'});
     return ThreadItem(
       id: id,
       threadId: threadId,

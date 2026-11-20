@@ -11,6 +11,8 @@ import 'package:provider/provider.dart';
 import 'mocks.mocks.dart';
 import 'test_utils.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
 void main() {
   group('Templates (unit)', () {
     final local = MockTemplateService();
@@ -82,7 +84,7 @@ void main() {
         templates.shared = shared;
         when(
           filing.editSharedTemplate(any, baseRevision: anyNamed('baseRevision'), changeId: anyNamed('changeId')),
-        ).thenThrow({'code': 'program_changed', 'revision': 5});
+        ).thenThrow(const NetworkException(statusCode: 409, body: {'code': 'program_changed', 'revision': 5}));
         when(filing.getTemplate('c1')).thenAnswer((_) async => day('Day A (coach)'));
 
         templates.editable = day('Day A (mine)');
@@ -98,7 +100,7 @@ void main() {
         templates.userId = 'u1';
         clearInteractions(filing);
         when(filing.getTemplate('s1')).thenAnswer((_) async => tmpl(id: 's1', order: 0, name: 'Day 1'));
-        when(filing.getTemplate('s2')).thenThrow({'error': 'not found'});
+        when(filing.getTemplate('s2')).thenThrow(const NetworkException(statusCode: 404, body: {'error': 'not found'}));
         when(local.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
 
         await templates.pull(['s1', 's2']);
@@ -795,10 +797,13 @@ void main() {
 
       test('a rejected createFolder throws and keeps nothing', () async {
         when(remoteFolders.createFolder(userId: 'u1', folder: anyNamed('folder'))).thenThrow(
-          {'code': 'bad_request', 'reason': 'you already have a folder called "Push"'},
+          const NetworkException(
+            statusCode: 400,
+            body: {'code': 'bad_request', 'reason': 'you already have a folder called "Push"'},
+          ),
         );
 
-        await expectLater(templates.createFolder('Push'), throwsA(isA<Map>()));
+        await expectLater(templates.createFolder('Push'), throwsA(isA<NetworkException>()));
         expect(templates.folders, isEmpty);
         verifyNever(localFolders.storeFolder(any, any));
       });
@@ -861,7 +866,8 @@ void main() {
         when(local.getTemplates('u1')).thenAnswer((_) async => [template]);
         await templates.init();
 
-        when(filing.moveTemplate(any, folderId: 'f1')).thenThrow({'error': 'not found'});
+        when(filing.moveTemplate(any, folderId: 'f1'))
+            .thenThrow(const NetworkException(statusCode: 404, body: {'error': 'not found'}));
 
         await templates.moveToFolder(template, folder);
 

@@ -86,7 +86,8 @@ bool _ownNameTaken(Exercises exercises, Exercise editable, String typed) {
 
 Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String? name}) {
   final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
-  final L(:createNewExercise, :save, name: nameCopy, category: categoryCopy, target: targetCopy) = L.of(context);
+  final L(:createNewExercise, :save, :exerciseSaveFailed, name: nameCopy, category: categoryCopy, target: targetCopy) =
+      L.of(context);
   final category = ValueNotifier<Category?>(editable?.category);
   final target = ValueNotifier<Target?>(editable?.target);
   // one of the library's patterns, or none: optional, and never asked twice
@@ -235,10 +236,8 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                                       } on ExerciseNameTaken {
                                         close = false;
                                         refused.value = true;
-                                      } on ArgumentError catch (e) {
-                                        messenger.snack('${e.message}');
-                                      } catch (e) {
-                                        messenger.snack('$e');
+                                      } catch (_) {
+                                        messenger.snack(exerciseSaveFailed);
                                       } finally {
                                         loading.value = false;
                                         // this dialog's route and nothing else: a bare pop

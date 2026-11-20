@@ -5,7 +5,7 @@ part of '../api.dart';
 mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   @override
   Future<Iterable<Exercise>> getExercises() async {
-    final (json, code) = await get(Router.exercises);
+    final (json, _) = await _lenient(get(Router.exercises));
     return switch (json) {
       {'exercises': List l} => _readable(l, Exercise.fromJson),
       _ => [],
@@ -14,7 +14,7 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
 
   @override
   Future<Iterable<Exercise>> getOwnExercises() async {
-    final (json, code) = await get(Router.exercises, query: {'owned': 'true'});
+    final (json, _) = await _lenient(get(Router.exercises, query: {'owned': 'true'}));
     return switch (json) {
       {'exercises': List l} => _readable(l, Exercise.fromJson),
       _ => [],
@@ -45,6 +45,7 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
           'pattern': ?exercise.movement.groups.firstOrNull,
         },
       ),
+      endpoint: Router.exercises,
     );
     return (row: Exercise.fromJson(json), created: created);
   }
@@ -57,7 +58,7 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
       Router.exercisePreferences,
       body: {'exerciseId': exerciseId, 'unitSystem': unit.name},
     );
-    if (code >= 300) throw json;
+    if (code >= 300) throw _unreadable(code, 'POST', Router.exercisePreferences);
   }
 
   @override
@@ -71,22 +72,27 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   Future<Exercise> renameExercise(Exercise exercise) => _editExercise(exercise, rename: true);
 
   Future<Exercise> _editExercise(Exercise exercise, {required bool rename}) async {
-    final (json, code) = await put(
-      '${Router.exercises}/${exercise.id}',
-      body: {
-        if (rename) 'name': exercise.name,
-        'category': exercise.category.value,
-        'target': exercise.target.value,
-        'instructions': ?exercise.instructions,
-        'archived': exercise.isArchived,
-        // always sent: null is "none", and clears one the server holds (#616)
-        'pattern': exercise.movement.groups.firstOrNull,
+    final (json, code) = await _refused(
+      put(
+        '${Router.exercises}/${exercise.id}',
+        body: {
+          if (rename) 'name': exercise.name,
+          'category': exercise.category.value,
+          'target': exercise.target.value,
+          'instructions': ?exercise.instructions,
+          'archived': exercise.isArchived,
+          // always sent: null is "none", and clears one the server holds (#616)
+          'pattern': exercise.movement.groups.firstOrNull,
+        },
+      ),
+      (failure) => switch (failure) {
+        NetworkException(statusCode: 409, body: {'code': 'name_taken'}) => throw const ExerciseNameTaken(),
+        _ => throw failure,
       },
     );
     return switch ((code, json)) {
       (200, _) => Exercise.fromJson(json),
-      (409, {'code': 'name_taken'}) => throw const ExerciseNameTaken(),
-      _ => throw ArgumentError(json),
+      _ => throw _unreadable(code, 'PUT', '${Router.exercises}/${exercise.id}'),
     };
   }
 
@@ -103,17 +109,28 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
     required String targetId,
     bool dryRun = false,
   }) async {
-    final (json, code) = await post(
-      Router.exerciseMoves(sourceId),
-      body: {'targetId': targetId},
-      query: {if (dryRun) 'dryRun': 'true'},
+    final (json, code) = await _refused(
+      post(
+        Router.exerciseMoves(sourceId),
+        body: {'targetId': targetId},
+        query: {if (dryRun) 'dryRun': 'true'},
+      ),
+      (failure) => switch (failure) {
+        NetworkException(statusCode: 400, body: {'code': 'same_exercise'}) => throw const ExerciseMoveRefused(
+          .sameExercise,
+        ),
+        NetworkException(statusCode: 404, body: {'code': 'unknown_exercise'}) => throw const ExerciseMoveRefused(
+          .unknownExercise,
+        ),
+        NetworkException(statusCode: 400, body: {'code': 'incompatible_exercise'}) => throw const ExerciseMoveRefused(
+          .incompatibleExercise,
+        ),
+        _ => throw failure,
+      },
     );
     return switch ((code, json)) {
       (200, Map json) => ExerciseMoveReport.fromJson(json),
-      (400, {'code': 'same_exercise'}) => throw const ExerciseMoveRefused(.sameExercise),
-      (404, {'code': 'unknown_exercise'}) => throw const ExerciseMoveRefused(.unknownExercise),
-      (400, {'code': 'incompatible_exercise'}) => throw const ExerciseMoveRefused(.incompatibleExercise),
-      _ => throw NetworkException(statusCode: code, body: json),
+      _ => throw _unreadable(code, 'POST', Router.exerciseMoves(sourceId)),
     };
   }
 
@@ -123,7 +140,7 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   ///
   /// Unpaginated — a preference exists only where the user set one.
   Future<Iterable<ExercisePreference>> getExercisePreferences() async {
-    final (json, _) = await get(Router.exercisePreferences);
+    final (json, _) = await _lenient(get(Router.exercisePreferences));
     return switch (json) {
       {'preferences': List l} => _readable(l, ExercisePreference.fromJson),
       _ => const <ExercisePreference>[],
@@ -131,23 +148,25 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   }
 
   Future<void> setExerciseNote(String exerciseId, String? note) async {
-    final (body, status) = switch (note) {
+    final (_, status) = switch (note) {
       String text => await post(Router.exercisePreferences, body: {'exerciseId': exerciseId, 'note': text}),
       null => await delete('${Router.exercisePreferences}/$exerciseId', query: {'pref': 'note'}),
     };
-    if (status < 200 || status >= 300) throw {'code': body['code'], 'status': status};
+    if (status >= 300) {
+      throw switch (note) {
+        String _ => _unreadable(status, 'POST', Router.exercisePreferences),
+        null => _unreadable(status, 'DELETE', '${Router.exercisePreferences}/$exerciseId'),
+      };
+    }
   }
 
   @override
   Future<void> saveUnitPreference(String exerciseId, MeasurementUnit unit) {
-    return post(
-      Router.exercisePreferences,
-      body: {'exerciseId': exerciseId, 'unitSystem': unit.name},
-    );
+    return _lenient(post(Router.exercisePreferences, body: {'exerciseId': exerciseId, 'unitSystem': unit.name}));
   }
 
   @override
   Future<void> deleteUnitPreference(String exerciseId) {
-    return delete('${Router.exercisePreferences}/$exerciseId');
+    return _lenient(delete('${Router.exercisePreferences}/$exerciseId'));
   }
 }

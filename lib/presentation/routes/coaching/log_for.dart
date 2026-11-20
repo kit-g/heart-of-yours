@@ -246,8 +246,8 @@ LogTo _logFor(String studentId, String name, {WorkoutPlan? plan}) {
 /// change; null for a failure that may pass, a rate limit's among them.
 String? _refusal(L l, String name, Object error) {
   return switch (error) {
-    {'code': 'forbidden' || 'not_found'} => l.coachingLogNotClient(name),
-    {'code': 'id_taken' || 'bad_request'} => l.coachingLogRefused,
+    NetworkException(isRefusal: true, body: {'code': 'forbidden' || 'not_found'}) => l.coachingLogNotClient(name),
+    NetworkException(isRefusal: true, body: {'code': 'id_taken' || 'bad_request'}) => l.coachingLogRefused,
     _ => null,
   };
 }

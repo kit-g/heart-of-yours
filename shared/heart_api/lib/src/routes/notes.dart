@@ -10,7 +10,7 @@ mixin _NoteRoutes on Requests {
     final (json, code) = await put(Router.note(id), body: {'connectionId': connectionId, 'content': content});
     return switch ((code, json)) {
       (200 || 201, Map json) => CoachNote.fromJson(json),
-      _ => throw json,
+      _ => throw _unreadable(code, 'PUT', Router.note(id)),
     };
   }
 
@@ -32,13 +32,13 @@ mixin _NoteRoutes on Requests {
         ],
         cursor: json['cursor'] as String?,
       ),
-      _ => throw json,
+      _ => throw _unreadable(code, 'GET', Router.notes),
     };
   }
 
   /// Deletes the note [id]. One already gone is refused (`not_found`).
   Future<void> deleteNote(String id) async {
     final (json, code) = await delete(Router.note(id));
-    if (code != 204) throw json;
+    if (code != 204) throw _unreadable(code, 'DELETE', Router.note(id));
   }
 }

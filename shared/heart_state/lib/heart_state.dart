@@ -22,6 +22,7 @@ export 'src/settings_sync.dart';
 export 'src/features.dart';
 export 'src/go_easy.dart';
 export 'src/goals.dart';
+export 'src/refusals.dart';
 export 'src/health.dart';
 export 'src/history_filter.dart';
 export 'src/import.dart';

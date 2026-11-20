@@ -14,6 +14,10 @@ import 'supersets.dart';
 import 'warmups.dart';
 import 'workout_plans.dart';
 
+import 'package:network_utils/network_utils.dart' show NetworkException;
+
+import 'refusals.dart';
+
 typedef WorkoutId = String;
 
 /// A workout logged after the fact (#530), the user's own or a coach's for a
@@ -518,7 +522,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         await local.markWorkoutPlanSent(workoutId);
       } catch (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
-        if (error case {'code': 'invalid_plan'}) await local.markWorkoutPlanSent(workoutId);
+        if (error case NetworkException(isRefusal: true, body: {'code': 'invalid_plan'})) {
+          await local.markWorkoutPlanSent(workoutId);
+        }
       }
     }
   }
@@ -1416,7 +1422,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         targetUserId: id,
         workoutId: workoutId,
       );
-    } on Map {
+    } on NetworkException catch (failure) {
+      // a busy server, or one that sent nothing to read, said nothing about it
+      if (!failure.isAnswered) rethrow;
       return null;
     } on ArgumentError {
       return null;

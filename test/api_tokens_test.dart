@@ -14,6 +14,8 @@ import 'package:mockito/mockito.dart';
 import 'mocks.mocks.dart';
 import 'support/harness.dart';
 
+import 'package:heart_api/heart_api.dart' show NetworkException;
+
 ApiToken _token(
   String id, {
   String? name,
@@ -232,7 +234,12 @@ void main() {
     testWidgets('a refusal at the cap sends the form back to the list', (tester) async {
       when(
         api.createApiToken(name: anyNamed('name'), expiry: anyNamed('expiry'), purpose: anyNamed('purpose')),
-      ).thenAnswer((_) async => throw {'code': 'token_limit', 'reason': 'you can have at most 5 active tokens'});
+      ).thenAnswer(
+        (_) async => throw const NetworkException(
+          statusCode: 400,
+          body: {'code': 'token_limit', 'reason': 'you can have at most 5 active tokens'},
+        ),
+      );
       await pumpToTokens(tester);
       await tester.tapByKey(AppKeys.newApiToken);
       await tester.pumpTimes();

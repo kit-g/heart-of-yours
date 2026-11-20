@@ -1195,10 +1195,10 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: "18381c08a2dc8712df3e37c873e716516098ccff"
+      resolved-ref: abc2cb740e5101731ba950aba5ecf04dc20798f0
       url: "https://github.com/kit-g/dart-network-utils.git"
     source: git
-    version: "0.4.5"
+    version: "0.6.0"
   node_preamble:
     dependency: transitive
     description:
