@@ -569,13 +569,22 @@ class HeartApp extends StatelessWidget {
                 // keeps it.
                 if (user?.id != current) api.unauthenticate();
                 router.refresh();
-                // One uid replacing another under a running app — an account
-                // signed into from an anonymous session. A sign-out clears the
-                // state on its way out; this switch has no such moment, so it
-                // is cleared here, before the new uid is keyed in. Exercises
-                // forgets it was initialized, which is what makes `_initApp`
-                // run the full startup again for the new uid.
-                if (current != null && user != null && user.id != current) {
+                // The uid the state is keyed on went away or changed hands
+                // under a running app: an account signed into from an
+                // anonymous session, or a session that ended without the
+                // app's own log out — Firebase signs a user out by itself on a
+                // revoked or expired token or a deleted or disabled account,
+                // and the server can report the account gone (#671). Neither
+                // has a moment that clears the state on its way out, so it is
+                // cleared here, before the next uid is keyed in; without it the
+                // anonymous session minted next showed the account's history,
+                // goals and dashboard. Only the memory: the rows stay under
+                // the account's uid, unsynced ones included, for when it signs
+                // back in. A log out has cleared already, and clearing twice
+                // is harmless. Exercises forgets it was initialized, which is
+                // what makes `_initApp` run the full startup again for the
+                // next uid.
+                if (current != null && user?.id != current) {
                   clearUserState(context);
                 }
                 current = user?.id;
