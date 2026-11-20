@@ -56,6 +56,53 @@ Future<void> showCodeComparison(BuildContext context, DeviceApproval approval, S
   }
 }
 
+/// The inset that makes the sheet's buttons full 48pt targets, as the import
+/// page's pair is.
+const EdgeInsets _answerInset = .symmetric(horizontal: 8, vertical: 14);
+
+/// The code, as large as fits the sheet on one line at the reader's base text
+/// size, because it is read and compared as one row: at the type scale's 48pt
+/// it took two lines on every phone. Text scaling grows it from there and
+/// wraps it between groups, never inside one.
+class _Code extends StatelessWidget {
+  final List<int> decimals;
+
+  const new(this.decimals);
+
+  /// Below this the code stops reading as the thing to compare.
+  static const _smallest = 24.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final code = decimals.join('   ');
+    final style = DefaultTextStyle.of(context).style.merge(
+      Theme.of(context).textTheme.displaySmall?.copyWith(fontFeatures: const [.tabularFigures()]),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final full = style.fontSize ?? _smallest;
+        final painter = TextPainter(
+          text: TextSpan(text: code, style: style),
+          textDirection: Directionality.of(context),
+          maxLines: 1,
+        )..layout();
+        final width = painter.width;
+        painter.dispose();
+        // floored: a size that fits exactly can still wrap on rounding
+        final fitted = switch (width <= constraints.maxWidth) {
+          true => full,
+          false => (full * constraints.maxWidth / width).floorToDouble(),
+        };
+        return Text(
+          code,
+          textAlign: .center,
+          style: style.copyWith(fontSize: fitted < _smallest ? _smallest : fitted),
+        );
+      },
+    );
+  }
+}
+
 class _ComparisonSheet extends StatefulWidget {
   final DeviceApproval approval;
   final String id;
@@ -129,13 +176,12 @@ class _ComparisonSheetState extends State<_ComparisonSheet> {
   }
 
   List<Widget> _body(BuildContext context, L l, CodeComparison comparison) {
-    final ThemeData(:textTheme) = Theme.of(context);
-    final close = Align(
-      child: PrimaryButton.shrunk(
-        key: AppKeys.closeComparison,
-        onPressed: () => Navigator.of(context).pop(),
-        child: Text(l.close),
-      ),
+    final ThemeData(:colorScheme) = Theme.of(context);
+    final close = PrimaryButton.wide(
+      key: AppKeys.closeComparison,
+      margin: _answerInset,
+      onPressed: () => Navigator.of(context).pop(),
+      child: Center(child: Text(l.close, textAlign: .center)),
     );
     return switch (comparison.phase) {
       ComparisonWaiting() => [
@@ -147,43 +193,50 @@ class _ComparisonSheetState extends State<_ComparisonSheet> {
           textAlign: .center,
         ),
         const Center(child: CircularProgressIndicator()),
-        Align(
-          child: OutlinedButton(
-            key: AppKeys.codesDontMatch,
-            onPressed: () => widget.approval.deny(id: widget.id),
-            child: Text(l.cancel),
-          ),
+        PrimaryButton.wide(
+          key: AppKeys.codesDontMatch,
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          margin: _answerInset,
+          onPressed: () => widget.approval.deny(id: widget.id),
+          child: Center(child: Text(l.cancel, textAlign: .center)),
         ),
       ],
       ComparisonCode(:final decimals) => [
         Text(l.compareCodesCheck, textAlign: .center),
-        Text(
-          decimals.join('   '),
-          textAlign: .center,
-          style: textTheme.displaySmall?.copyWith(fontFeatures: const [.tabularFigures()]),
-        ),
+        _Code(decimals),
         ...switch (comparison.confirmed) {
           true => [
             Text(l.compareCodesConfirmed, textAlign: .center),
             const Center(child: CircularProgressIndicator()),
           ],
           false => [
-            Wrap(
-              alignment: .center,
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                OutlinedButton(
-                  key: AppKeys.codesDontMatch,
-                  onPressed: () => widget.approval.deny(id: widget.id),
-                  child: Text(l.codesDontMatch),
-                ),
-                PrimaryButton.shrunk(
-                  key: AppKeys.codesMatch,
-                  onPressed: widget.approval.confirm,
-                  child: Text(l.codesMatch),
-                ),
-              ],
+            // the dialogs' pair laid flat, as on the import page: one row,
+            // one size, the way out muted. Sized together, so a label that
+            // wraps in a longer language grows both and they stay one choice
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: .stretch,
+                spacing: 8,
+                children: [
+                  Expanded(
+                    child: PrimaryButton.wide(
+                      key: AppKeys.codesDontMatch,
+                      backgroundColor: colorScheme.surfaceContainerHighest,
+                      margin: _answerInset,
+                      onPressed: () => widget.approval.deny(id: widget.id),
+                      child: Center(child: Text(l.codesDontMatch, textAlign: .center)),
+                    ),
+                  ),
+                  Expanded(
+                    child: PrimaryButton.wide(
+                      key: AppKeys.codesMatch,
+                      margin: _answerInset,
+                      onPressed: widget.approval.confirm,
+                      child: Center(child: Text(l.codesMatch, textAlign: .center)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         },
