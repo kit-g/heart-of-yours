@@ -68,9 +68,9 @@ Future<void> bootstrap({
   // watch, rather than pre-empt, is that a pooled socket can die while the app
   // is backgrounded and be handed back on resume. `IOClient` times idle sockets
   // out, which covers most of it; what is left would surface as a
-  // `ClientException` on the first call after a resume. Nothing in this app
-  // retries a transport failure today, so Sentry is where that would show up —
-  // and now with the timing beside it, because the wrapper spans every call.
+  // `ClientException` on the first call after a resume. `reportToSentry`
+  // drops a failure like that when a caller hands it over (#682), so it shows
+  // up in the request spans the wrapper records, not as an issue.
   //
   // The wrapper decorates this client rather than replacing it: one pool, one
   // set of keep-alive connections, exactly as measured above.
