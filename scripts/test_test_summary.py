@@ -1,10 +1,11 @@
-"""The summary's JUnit reading: the Android native tests' Gradle reports."""
+"""The summary's JUnit reading (the Android native tests' Gradle reports) and
+its adding up of a suite split over several jobs."""
 
 import pathlib
 import tempfile
 import unittest
 
-from test_summary import parse_junit, render
+from test_summary import Suite, merge, parse_junit, render
 
 _REPORT = """<?xml version="1.0" encoding="UTF-8"?>
 <testsuite name="me.heart.FunctionPlansTest" tests="4" skipped="1" failures="1" errors="1" time="0.2">
@@ -46,6 +47,22 @@ class ParseJunitTest(unittest.TestCase):
             suite = parse_junit(directory)
 
         self.assertEqual(suite.total, 0)
+
+
+class MergeTest(unittest.TestCase):
+    def test_shards_add_up_and_take_the_slowest_time(self):
+        suite = merge(
+            "app",
+            [
+                Suite(name="app", passed=10, skipped=2, seconds=120.5),
+                Suite(name="app", passed=7, failed=1, seconds=140.0, failures=["breaks"]),
+            ],
+        )
+
+        self.assertEqual((suite.passed, suite.failed, suite.skipped), (17, 1, 2))
+        self.assertEqual(suite.seconds, 140.0)
+        self.assertEqual(suite.failures, ["breaks"])
+        self.assertIn("| `app` | ❌ | 17 | 1 | 2 | 140.0s |", render([suite]))
 
 
 if __name__ == "__main__":

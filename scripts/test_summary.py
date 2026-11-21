@@ -10,7 +10,9 @@ Input: `dart test --file-reporter=json` output — newline-delimited events.
 Counted from `testDone` events, ignoring the synthetic "loading …" suites the
 reporter emits per file. And JUnit XML, which Gradle writes for the Android
 native tests (one `TEST-<class>.xml` per class): every XML file under one
-directory is one suite, named after the directory.
+directory is one suite, named after the directory. A suite CI splits over
+several jobs reports once per job as `<suite>.<k>-of-<n>.json`; those add up
+to one row.
 
 Usage:  test_summary.py <report-dir>
 
@@ -110,6 +112,19 @@ def parse_junit(directory: pathlib.Path) -> Suite:
     return suite
 
 
+def merge(name: str, shards: list[Suite]) -> Suite:
+    """One row for a suite run as [shards] in parallel jobs: the counts add up,
+    and its time is the slowest shard's, since that is how long it took."""
+    return Suite(
+        name=name,
+        passed=sum(s.passed for s in shards),
+        failed=sum(s.failed for s in shards),
+        skipped=sum(s.skipped for s in shards),
+        seconds=max((s.seconds for s in shards), default=0.0),
+        failures=[failure for s in shards for failure in s.failures],
+    )
+
+
 def render(suites: list[Suite]) -> str:
     out: list[str] = ["## Test results", ""]
 
@@ -152,7 +167,10 @@ def render(suites: list[Suite]) -> str:
 
 def main() -> int:
     reports = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "test-reports")
-    suites = [parse_dart(path) for path in sorted(reports.rglob("*.json"))]
+    shards: dict[str, list[Suite]] = {}
+    for path in sorted(reports.rglob("*.json")):
+        shards.setdefault(path.name.split(".")[0], []).append(parse_dart(path))
+    suites = [merge(name, parts) for name, parts in shards.items()]
     suites += [parse_junit(directory) for directory in sorted({path.parent for path in reports.rglob("*.xml")})]
     print(render(suites))
     return 0
