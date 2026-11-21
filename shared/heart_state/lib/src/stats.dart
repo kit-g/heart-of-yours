@@ -84,9 +84,24 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
 
   WorkoutAggregation workouts = WorkoutAggregation.empty();
 
+  /// Moves, and listeners hear, whenever an [init] lands, whether or not
+  /// [workouts] changed, and when the session ends: what the history behind every longer window read
+  /// here — a recap, the muscle map, a goal's count — may have changed beyond
+  /// the eight weeks [workouts] holds (an older workout deleted or imported,
+  /// an entry discarded). A reader that keeps such a read re-reads on it.
+  int get revision => _revision;
+  int _revision = 0;
+
+  /// Which [init] may land: a later one, or the end of the session, outdates
+  /// one still reading.
+  int _generation = 0;
+
   @override
   void onSignOut() {
+    _generation++;
+    userId = null;
     workouts = WorkoutAggregation.empty();
+    _revision++;
     notifyListeners();
   }
 
@@ -100,15 +115,36 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
 
   /// Reads the weekly counts for the session's user, empty ones included: a
   /// user with no workouts gets an empty chart, not the last user's.
+  ///
+  /// The latest call wins. Each one reads afresh rather than joining one in
+  /// flight, which may have started before the change its caller is asking
+  /// about; a read that a later call or the end of the session outdated is
+  /// dropped. A failure is reported and leaves what was held; nobody awaits
+  /// this to the point of handling what it throws.
   Future<void> init() async {
-    final id = userId;
-    final local = await _service.getWorkoutSummary(userId: id);
-    // the session changed while they were read: the last user's (#671)
-    if (userId != id) return;
-    // nothing to show before or after: no rebuild for it
-    if (local.isEmpty && workouts.isEmpty) return;
-    workouts = local;
-    notifyListeners();
+    final (id, generation) = (userId, ++_generation);
+    try {
+      final local = await _service.getWorkoutSummary(userId: id);
+      // outdated while it was read: by a fresher read, or by the session
+      // ending — the last user's (#671, #719)
+      if (generation != _generation || userId != id) return;
+      // the same weeks: kept, so a chart drawn from them is not redrawn
+      if (!_sameWeeks(local, workouts)) workouts = local;
+      _revision++;
+      notifyListeners();
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+    }
+  }
+
+  /// Whether [a] and [b] hold the same workouts, named the same, in the
+  /// same weeks.
+  static bool _sameWeeks(WorkoutAggregation a, WorkoutAggregation b) {
+    String shape(WorkoutAggregation weeks) {
+      return weeks.map((week) => '${week.weekId}:${week.map((each) => '${each.id}=${each.name}').join(',')}').join(';');
+    }
+
+    return identical(a, b) || shape(a) == shape(b);
   }
 
   /// Finished workouts in [d]'s week, which starts on [firstWeekday] — the

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -157,6 +158,29 @@ void main() {
 
       sut.onSignOut();
       expect(sut.isEmpty, isTrue);
+    });
+
+    // #719: the log out clears, then awaits the push unregister, and only
+    // then is the next uid keyed. A load started for the account that left
+    // lands in between, and must neither fill the dashboard nor mark it read.
+    test("a load for the session that ended lands on nothing, and the next user's still reads", () async {
+      final stale = Completer<List<DashboardChart>>();
+      when(mockService.getCharts(userId)).thenAnswer((_) => stale.future);
+      final loading = sut.init();
+
+      sut.onSignOut();
+      expect(sut.userId, isNull);
+      stale.complete([exercise('a')]);
+      await loading;
+
+      expect(sut.isEmpty, isTrue);
+      expect(sut.initialized, isFalse);
+
+      when(mockService.getCharts('next')).thenAnswer((_) async => [exercise('b')]);
+      sut.userId = 'next';
+      await sut.init();
+
+      expect(sut.map((each) => each.id), ['b']);
     });
   });
 

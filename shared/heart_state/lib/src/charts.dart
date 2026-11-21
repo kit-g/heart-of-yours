@@ -177,6 +177,9 @@ class Charts with ChangeNotifier, Iterable<DashboardChart> implements SignOutSta
   @override
   void onSignOut() {
     _charts.clear();
+    // a load still reading for the session that ended is dropped on landing,
+    // rather than marking the next one's dashboard read (#719)
+    userId = null;
     initialized = false;
     _loading = null;
     notifyListeners();
