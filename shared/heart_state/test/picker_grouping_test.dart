@@ -100,6 +100,70 @@ void main() {
     });
   });
 
+  group('representativeOf (#711)', () {
+    Exercise pictured(String key) {
+      return Exercise.fromJson({
+        'id': 'id-$key',
+        'key': key,
+        'name': key,
+        'category': 'Barbell',
+        'target': 'Legs',
+        'thumbnail': {'link': 'https://cdn.example/$key.png'},
+      });
+    }
+
+    final box = pictured('box-squat-barbell');
+    final front = pictured('front-squat-barbell');
+    final back = pictured('squat-barbell');
+    final custom = lift('my-squat', category: 'Machine', target: 'Legs');
+
+    test('the one done most, whatever the order', () {
+      final done = {front.id: 4, back.id: 2};
+      expect(representativeOf([box, front, back], timesDone: (id) => done[id] ?? 0), front);
+    });
+
+    test('with nothing done, the best-known one rather than the first', () {
+      expect(representativeOf([box, front, back], timesDone: (_) => 0), back);
+      expect(representativeOf([box, front, back]), back);
+    });
+
+    test('with nothing done and no staple, the first in the list', () {
+      expect(representativeOf([box, front]), box);
+    });
+
+    test('a picture beats being done most: a custom exercise has none to show', () {
+      final done = {custom.id: 50};
+      expect(representativeOf([custom, box], timesDone: (id) => done[id] ?? 0), box);
+    });
+
+    test('a group with no picture at all still has one, the one done most, and no members have none', () {
+      final other = lift('my-lunge', target: 'Legs');
+      final done = {other.id: 3};
+      expect(representativeOf([custom, other], timesDone: (id) => done[id] ?? 0), other);
+      expect(representativeOf(const []), isNull);
+    });
+  });
+
+  group('PreviousExercises.timesDone (#711)', () {
+    test('reads the sessions last time carries, and 0 for one never done', () async {
+      final service = _Previous({
+        'id-bench': [
+          {'weight': 100, 'reps': 5, 'workout_start': '2026-10-03T08:00:00.000Z', 'sessions': 7},
+        ],
+        // a row read before the count existed
+        'id-row': [
+          {'weight': 60, 'reps': 8, 'workout_start': '2026-10-01T08:00:00.000Z'},
+        ],
+      });
+      final previous = PreviousExercises(service: service)..userId = 'u1';
+      await previous.init();
+
+      expect(previous.timesDone('id-bench'), 7);
+      expect(previous.timesDone('id-row'), 0);
+      expect(previous.timesDone('id-never'), 0);
+    });
+  });
+
   group('Preferences', () {
     test('the grouping is none until chosen, then the choice, as a screen choice with its time', () async {
       SharedPreferences.setMockInitialValues({});
@@ -181,4 +245,13 @@ void main() {
       },
     );
   });
+}
+
+class _Previous implements PreviousExerciseService {
+  final Map<ExerciseId, List<Map<String, dynamic>>> sets;
+
+  new(this.sets);
+
+  @override
+  Future<Map<ExerciseId, List<Map<String, dynamic>>>> getPreviousSets(String userId) async => sets;
 }
