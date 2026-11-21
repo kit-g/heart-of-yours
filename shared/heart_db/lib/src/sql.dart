@@ -690,10 +690,7 @@ WITH _recent AS (
         we.exercise_id,
         we.workout_id,
         we.id AS workout_exercise_id,
-        w.start AS last_workout_date,
-        -- every finished session with the exercise in it, not only the last:
-        -- a grouped picker's heading pictures the one done most (#711)
-        count(DISTINCT we.workout_id) AS sessions
+        w.start AS last_workout_date
     FROM workout_exercises we
     JOIN sets s ON s.exercise_id = we.id
     JOIN workouts w ON w.id = we.workout_id
@@ -719,8 +716,7 @@ SELECT
             'distance', s.distance,
             'set_type', s.set_type,
             -- when last time was: the picker ranks search results by it (#135)
-            'workout_start', _recent.last_workout_date,
-            'sessions', _recent.sessions
+            'workout_start', _recent.last_workout_date
         )
     ) AS sets
 FROM _recent
@@ -729,6 +725,26 @@ WHERE s.completed = 1
 GROUP BY _recent.exercise_id, _recent.workout_exercise_id, _recent.last_workout_date
 ;
 """;
+
+/// How many finished workouts each exercise was done in: a workout counts
+/// when it holds a completed working set of the exercise. Warm-ups and
+/// discarded sets are no session of it, as everywhere else that counts. A
+/// grouped picker pictures each group by the one done most (#711).
+const sessionsPerExercise = '''
+SELECT
+    we.exercise_id AS exercise_id,
+    count(DISTINCT w.id) AS sessions
+FROM workouts w
+INNER JOIN workout_exercises we ON we.workout_id = w.id
+INNER JOIN sets s ON s.exercise_id = we.id
+WHERE w.user_id = ?
+  AND w."end" IS NOT NULL
+  AND s.completed
+  AND s.set_type IS NOT 'warmup'
+  /*discarded:s*/
+GROUP BY we.exercise_id
+;
+''';
 
 /// Completed working sets per exercise per finished workout started in a
 /// window, with the exercise's muscle tagging: the muscle map's read.
