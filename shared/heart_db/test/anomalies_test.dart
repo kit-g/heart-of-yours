@@ -160,6 +160,16 @@ void main() {
       expect(heaviest, 100);
     });
 
+    test('a workout whose every set of an exercise is discarded is no session of it while it is on (#711)', () async {
+      await local.storeAnomaly(anomaly('a2', setId: 's1', status: 'invalid'), userId);
+
+      local.leavesOutDiscarded = false;
+      expect(await local.getSessionCounts(userId), {bench.id: 1});
+
+      local.leavesOutDiscarded = true;
+      expect(await local.getSessionCounts(userId), isEmpty);
+    });
+
     test('stays in the log', () async {
       local.leavesOutDiscarded = true;
 

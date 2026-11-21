@@ -535,13 +535,12 @@ final class HeartRouter {
 
   /// The library showing only [filter] — from a count on the profile, the
   /// exercises behind it — the previous filters cleared, as a chip's tap does.
+  /// Asked for by name, so a grouped library shows it too (#711).
   ///
   /// Pushed over the tab it was opened from, so Back — Android's too —
   /// returns there rather than leaving the Exercises tab, or the app.
   void goToFilteredExercises(Exercises exercises, ExerciseFilter filter) {
-    exercises
-      ..clearFilters()
-      ..addFilter(filter);
+    exercises.showOnly(filter);
     config.pushNamed(_filteredExercisesName);
   }
 

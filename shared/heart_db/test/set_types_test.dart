@@ -188,6 +188,29 @@ void main() {
     expect(previous[bench]?.single['workout_start'], '2026-09-26T08:00:00.000Z');
   });
 
+  test(
+    'sessions count finished workouts with a working set, not sets, warm-ups or the one in progress (#711)',
+    () async {
+      await local.storeWorkoutHistory([
+        server('w1', start: '2026-09-20T08:00:00.000Z', sets: [set('a', weight: 90), set('b', weight: 90)]),
+        server('w2', start: '2026-09-26T08:00:00.000Z', sets: [set('c', weight: 100), set('d', weight: 100)]),
+        // warm-ups alone are no session of the exercise
+        server(
+          'w0',
+          start: '2026-09-10T08:00:00.000Z',
+          sets: [set('e', weight: 40, type: 'warmup')],
+        ),
+      ], user);
+      final running = server('now', start: '2026-09-28T08:00:00.000Z', sets: [set('f', weight: 100)]);
+      running.end = null;
+      await local.startWorkout(running, user);
+      await local.storeWorkoutHistory([running], user);
+
+      expect(await local.getSessionCounts(user), {bench: 2});
+      expect(await local.getSessionCounts('someone-else'), isEmpty);
+    },
+  );
+
   test('last time is never the workout in progress, which a restart mid-workout read back', () async {
     await local.storeWorkoutHistory([
       server('done', start: '2026-09-20T08:00:00.000Z', sets: [set('last', weight: 90)]),

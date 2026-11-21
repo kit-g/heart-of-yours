@@ -4,10 +4,14 @@ import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 
 extension Position on GlobalKey {
-  RelativeRect? position() {
-    final context = currentContext;
-    if (context == null) return null;
-    final RenderBox renderBox = context.findRenderObject() as RenderBox;
+  RelativeRect? position() => currentContext?.menuPosition();
+}
+
+extension MenuPosition on BuildContext {
+  /// Where a menu dropping from the widget at this context sits: under it,
+  /// as wide as it.
+  RelativeRect menuPosition() {
+    final RenderBox renderBox = findRenderObject() as RenderBox;
     final Offset offset = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
     return RelativeRect.fromLTRB(

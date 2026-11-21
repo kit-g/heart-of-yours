@@ -305,11 +305,9 @@ extension on BuildContext {
   /// Opens the library showing only [filter], replacing whatever was filtered
   /// before — arriving from a chip means "show me these", not "narrow what I
   /// had", and the previous filters are not visible from where the chip was
-  /// tapped.
+  /// tapped. Asked for by name, so a grouped library shows it too (#711).
   void goToFilteredExercises(ExerciseFilter filter) {
-    Exercises.of(this)
-      ..clearFilters()
-      ..addFilter(filter);
+    Exercises.of(this).showOnly(filter);
     return goNamed(_exercisesName);
   }
 
