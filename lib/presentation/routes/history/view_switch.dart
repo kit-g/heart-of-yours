@@ -12,20 +12,24 @@ const _fadeOut = 0.35;
 /// How far, in logical pixels, the arriving body rises into place.
 const _rise = 16.0;
 
+/// History's header, open. Pinned, it folds to the toolbar as a view scrolls.
+const _headerHeight = 80.0;
+
 /// History's two views, one turning into the other when the choice changes
 /// (#712).
 ///
-/// Each view stays its own scrollable, keyed by view, so neither hands its
-/// offset to the other. While they swap both are built, the leaving one under
-/// the arriving one. The arriving view's header is drawn whole from the first
-/// frame and covers the leaving one's, so the header and its buttons stay put
-/// and only the body under it changes. With less motion asked for, or the
-/// page off screen (the choice made in Settings), the new view is there at
-/// once.
+/// Each view is its own scrollable. While they swap both are built: the
+/// arriving one on top, the leaving one under it, faded out and taking no
+/// taps. The arriving view's header is drawn whole from the first frame,
+/// folded as far as the leaving one's was, and opens from there, so the header
+/// and its buttons never jump. Changing the choice back mid-swap runs the same
+/// swap backwards from where it is. With less motion asked for, or History off
+/// screen (the choice made in Settings), the new view is there at once.
 class _ViewSwitch extends StatefulWidget {
   final HistoryView view;
 
-  /// Builds a view. Called for both views only while they swap.
+  /// Builds a view. The view chosen is built afresh each time; the other one,
+  /// while it is still on screen, is kept as it was last built.
   final Widget Function(HistoryView) builder;
 
   const new({required this.view, required this.builder});
@@ -35,68 +39,158 @@ class _ViewSwitch extends StatefulWidget {
 }
 
 class _ViewSwitchState extends State<_ViewSwitch> with SingleTickerProviderStateMixin {
+  /// 1 when the view on top is all there is; 0 when the one under it is.
   late final _progress = AnimationController(vsync: this, duration: _switchDuration, value: 1)
     ..addStatusListener(_settle);
 
-  late final _fading = _progress.drive(
-    Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: const Interval(0, _fadeOut, curve: Curves.easeIn))),
+  late final _arrival = CurvedAnimation(
+    parent: _progress,
+    curve: const Interval(_fadeOut, 1, curve: Curves.easeOutCubic),
   );
 
-  /// The view on its way out, while it is.
-  final _leaving = ValueNotifier<HistoryView?>(null);
+  late final _fading = CurvedAnimation(
+    parent: _progress,
+    curve: const Interval(0, _fadeOut, curve: Curves.easeIn),
+  );
 
-  void _settle(AnimationStatus status) {
-    if (status.isCompleted) _leaving.value = null;
+  late final _leaving = ReverseAnimation(_fading);
+
+  /// From the leaving header's height to open; its start is set per swap.
+  final _opening = Tween(begin: _headerHeight, end: _headerHeight);
+
+  late final _header = _progress.drive(_opening.chain(CurveTween(curve: Curves.easeOutCubic)));
+
+  /// Whether the arriving header's switch shows its new glyph yet: one frame
+  /// of the old, so the glyph has something to turn from.
+  final _turned = ValueNotifier(true);
+
+  /// The view on top, and the one under it while the two swap.
+  late final _views = ValueNotifier<(HistoryView, HistoryView?)>((widget.view, null));
+
+  /// Each view as last built, so the one leaving is faded, not rebuilt: the
+  /// list is a pass over all of history.
+  final _built = <HistoryView, Widget>{};
+
+  /// How far each view's own scrollable is scrolled, which says how far its
+  /// header is folded. A plain map: it never needs a frame.
+  final _offsets = <HistoryView, double>{};
+
+  late final _steady = _Phase(
+    arrival: kAlwaysCompleteAnimation,
+    header: const AlwaysStoppedAnimation(_headerHeight),
+    turned: _turned,
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // gone off screen mid-swap: nothing would finish it
+    if (!TickerMode.valuesOf(context).enabled && _views.value.$2 != null) _settleOn(widget.view);
   }
 
   @override
   void didUpdateWidget(covariant _ViewSwitch oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.view == widget.view) return;
-    if (lessMotion(context) || !TickerMode.valuesOf(context).enabled) {
-      _progress.value = 1;
-      _leaving.value = null;
-      return;
+    if (lessMotion(context) || !TickerMode.valuesOf(context).enabled) return _settleOn(widget.view);
+    switch (_views.value) {
+      case (final HistoryView top, null):
+        final folded = _headerHeight - (_offsets[top] ?? 0);
+        // never quite the toolbar: a header whose open and folded heights
+        // are the same has nothing to lay its title out between
+        _opening.begin = folded.clamp(kToolbarHeight + .5, _headerHeight);
+        _offsets.remove(widget.view);
+        _views.value = (widget.view, top);
+        _turned.value = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _turned.value = true;
+        });
+        _progress.forward(from: 0);
+      // back to the one leaving: the same swap, backwards from here
+      case (_, final HistoryView under) when under == widget.view:
+        _progress.reverse();
+      case (_, HistoryView _):
+        _progress.forward();
     }
-    _leaving.value = oldWidget.view;
-    _progress.forward(from: 0);
+  }
+
+  void _settle(AnimationStatus status) {
+    switch (status) {
+      case .completed:
+        _views.value = (_views.value.$1, null);
+      // turned all the way back; a swap starting from 0 passes through
+      // dismissed too, still headed for the view chosen
+      case .dismissed when _views.value.$2 == widget.view:
+        _settleOn(widget.view);
+      case .dismissed || .forward || .reverse:
+        break;
+    }
+  }
+
+  void _settleOn(HistoryView view) {
+    _views.value = (view, null);
+    _turned.value = true;
+    _progress.value = 1;
   }
 
   @override
   void dispose() {
+    _arrival.dispose();
+    _fading.dispose();
     _progress.dispose();
-    _leaving.dispose();
+    _turned.dispose();
+    _views.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
-      valueListenable: _leaving,
-      builder: (context, leaving, _) => Stack(
-        fit: .expand,
-        children: [
-          if (leaving case final HistoryView view) _slot(view, leaving: true),
-          _slot(widget.view, leaving: false),
-        ],
-      ),
+      valueListenable: _views,
+      builder: (context, views, _) {
+        final (top, under) = views;
+        _built.removeWhere((view, _) => view != top && view != under);
+        return Stack(
+          fit: .expand,
+          children: [
+            if (under case final HistoryView view) _slot(view, top: false, under: null),
+            _slot(top, top: true, under: under),
+          ],
+        );
+      },
     );
   }
 
-  // The same shape arriving or leaving, keyed by view: a view going from one
-  // to the other keeps its state, its scroll and its calendar's months.
-  Widget _slot(HistoryView view, {required bool leaving}) {
+  Widget _slot(HistoryView view, {required bool top, required HistoryView? under}) {
+    if (view == widget.view || !_built.containsKey(view)) _built[view] = widget.builder(view);
     return KeyedSubtree(
+      // Keyed by view, so switching replaces the scrollable rather than
+      // handing one view's offset and physics to the other, and a view going
+      // from top to under keeps its state.
       key: ValueKey(view),
-      child: FadeTransition(
-        opacity: leaving ? _fading : kAlwaysCompleteAnimation,
-        child: IgnorePointer(
-          ignoring: leaving,
-          child: ExcludeSemantics(
-            excluding: leaving,
-            child: _ViewPhase(
-              progress: leaving ? kAlwaysCompleteAnimation : _progress,
-              child: widget.builder(view),
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification.depth == 0) _offsets[view] = notification.metrics.pixels;
+          return false;
+        },
+        child: FadeTransition(
+          opacity: top ? kAlwaysCompleteAnimation : _leaving,
+          child: IgnorePointer(
+            ignoring: !top,
+            child: ExcludeSemantics(
+              excluding: !top,
+              child: _ViewPhase(
+                phase: switch (top) {
+                  true => _Phase(
+                    arrival: _arrival,
+                    header: _header,
+                    turned: _turned,
+                    from: under,
+                  ),
+                  false => _steady,
+                },
+                child: _built[view]!,
+              ),
             ),
           ),
         ),
@@ -105,36 +199,83 @@ class _ViewSwitchState extends State<_ViewSwitch> with SingleTickerProviderState
   }
 }
 
-/// How far the view under it is into arriving: complete, unless it is
-/// arriving now.
-class _ViewPhase extends InheritedWidget {
-  final Animation<double> progress;
+/// Where a view stands in a swap.
+class _Phase {
+  /// How far its body is in: faded and risen.
+  final Animation<double> arrival;
 
-  const new({required this.progress, required super.child});
+  /// How open its header is.
+  final Animation<double> header;
 
-  static Animation<double> of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<_ViewPhase>()?.progress ?? kAlwaysCompleteAnimation;
+  /// Whether its switch shows the glyph for the view it is on.
+  final ValueNotifier<bool> turned;
+
+  /// The view it is arriving from, while it is.
+  final HistoryView? from;
+
+  const new({required this.arrival, required this.header, required this.turned, this.from});
+
+  bool get settling => from != null;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _Phase &&
+        other.arrival == arrival &&
+        other.header == header &&
+        other.turned == turned &&
+        other.from == from;
   }
 
   @override
-  bool updateShouldNotify(_ViewPhase oldWidget) => progress != oldWidget.progress;
+  int get hashCode => Object.hash(arrival, header, turned, from);
 }
 
-/// A part of a view's body, fading in and rising into place as its view
-/// arrives. The header is never under one: it is there whole from the start.
-class _Arriving extends StatelessWidget {
-  final Widget sliver;
+class _ViewPhase extends InheritedWidget {
+  final _Phase phase;
 
-  const new({required this.sliver});
+  const new({required this.phase, required super.child});
+
+  static _Phase of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_ViewPhase>()!.phase;
+
+  @override
+  bool updateShouldNotify(_ViewPhase oldWidget) => phase != oldWidget.phase;
+}
+
+/// A view's header, as open as its swap has it.
+class _SwitchHeader extends StatelessWidget {
+  final Widget Function(double height) builder;
+
+  const new({required this.builder});
 
   @override
   Widget build(BuildContext context) {
-    final arrival = _ViewPhase.of(
-      context,
-    ).drive(CurveTween(curve: const Interval(_fadeOut, 1, curve: Curves.easeOutCubic)));
-    return SliverFadeTransition(
-      opacity: arrival,
-      sliver: _SliverRise(arrival: arrival, sliver: sliver),
+    return ValueListenableBuilder(
+      valueListenable: _ViewPhase.of(context).header,
+      builder: (context, height, _) => builder(height),
+    );
+  }
+}
+
+/// A view's body, under the header and anything both views share: it fades
+/// in and rises into place as its view arrives, and takes no taps until it is
+/// all there.
+class _Arriving extends StatelessWidget {
+  final List<Widget> slivers;
+
+  const new({required this.slivers});
+
+  @override
+  Widget build(BuildContext context) {
+    final phase = _ViewPhase.of(context);
+    return SliverIgnorePointer(
+      ignoring: phase.settling,
+      sliver: SliverFadeTransition(
+        opacity: phase.arrival,
+        sliver: _SliverRise(
+          arrival: phase.arrival,
+          sliver: SliverMainAxisGroup(slivers: slivers),
+        ),
+      ),
     );
   }
 }
@@ -206,19 +347,21 @@ class _RenderSliverRise extends RenderProxySliver {
     required double crossAxisPosition,
   }) {
     return switch (child) {
-      final RenderSliver child when child.geometry!.hitTestExtent > 0 => child.hitTest(
-        result,
-        mainAxisPosition: mainAxisPosition - _drop,
+      final RenderSliver child when child.geometry!.hitTestExtent > 0 => result.addWithAxisOffset(
+        paintOffset: Offset(0, _drop),
+        mainAxisOffset: _drop,
+        crossAxisOffset: 0,
+        mainAxisPosition: mainAxisPosition,
         crossAxisPosition: crossAxisPosition,
+        hitTest: child.hitTest,
       ),
       _ => false,
     };
   }
 }
 
-/// The switch's glyph: the view it offers, turning from the one it offered
-/// as the view arrives.
-class _ViewSwitchIcon extends StatelessWidget {
+/// The switch's glyph: the view it offers, turning from the one it offered.
+class _SwitchGlyph extends StatelessWidget {
   /// The view on screen.
   final HistoryView view;
 
@@ -231,31 +374,22 @@ class _ViewSwitchIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final turn = _ViewPhase.of(context).drive(CurveTween(curve: Curves.easeInOutCubic));
-    final gone = ReverseAnimation(turn);
-    return Stack(
-      alignment: .center,
-      children: [
-        FadeTransition(
-          opacity: gone,
-          child: ScaleTransition(
-            scale: gone.drive(Tween(begin: .6, end: 1.0)),
-            child: Icon(
-              _offering(switch (view) {
-                .list => .calendar,
-                .calendar => .list,
-              }),
-            ),
+    final phase = _ViewPhase.of(context);
+    return ValueListenableBuilder(
+      valueListenable: phase.turned,
+      builder: (context, turned, _) {
+        final shown = turned ? view : phase.from ?? view;
+        return AnimatedSwitcher(
+          duration: lessMotion(context) ? Duration.zero : _switchDuration,
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(scale: animation.drive(Tween(begin: .6, end: 1.0)), child: child),
           ),
-        ),
-        FadeTransition(
-          opacity: turn,
-          child: ScaleTransition(
-            scale: turn.drive(Tween(begin: .6, end: 1.0)),
-            child: Icon(_offering(view)),
-          ),
-        ),
-      ],
+          child: Icon(_offering(shown), key: ValueKey(shown)),
+        );
+      },
     );
   }
 }

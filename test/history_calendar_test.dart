@@ -535,6 +535,94 @@ void main() {
     });
   }
 
+  // the slot a view is in while the two swap: its own fade
+  double faded(WidgetTester tester, HistoryView view) => tester
+      .widget<FadeTransition>(
+        find.descendant(of: find.byKey(ValueKey(view)), matching: find.byType(FadeTransition)).first,
+      )
+      .opacity
+      .value;
+
+  testCalendar('from a scrolled list, the folded header stays folded and opens without a jump (#712)', (tester) async {
+    final history = [for (final day in List.generate(12, (i) => 2 + i * 2)) finished(current, day)];
+    await pumpApp(tester, size: const Size(390, 844), history: history);
+    tester.state<ScrollableState>(find.byType(Scrollable).first).position.jumpTo(300);
+    await tester.pumpTimes();
+    Finder header() => find.byType(FlexibleSpaceBar).last;
+    final folded = tester.getRect(header());
+    expect(folded.height, kToolbarHeight);
+    final button = tester.getRect(find.byKey(AppKeys.historyViewSwitch));
+
+    await tester.tap(find.byTooltip('Show as calendar'));
+    await tester.pump();
+    expect(tester.getRect(header()).height, closeTo(folded.height, 1));
+    expect(tester.getRect(find.byKey(AppKeys.historyViewSwitch).last), button);
+    var last = tester.getRect(header()).height;
+    for (var frame = 0; frame < 20; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      final now = tester.getRect(header()).height;
+      expect(now, greaterThanOrEqualTo(last));
+      expect(now - last, lessThan(6), reason: 'the header opens, it does not jump');
+      last = now;
+    }
+    await tester.pumpTimes();
+    expect(tester.getRect(header()).height, 80);
+    expect(tester.getRect(find.byKey(AppKeys.historyViewSwitch)).top, button.top);
+    expect(tester.takeException(), isNull);
+  });
+
+  testCalendar('changed back mid-swap, the views turn back from where they are (#712)', (tester) async {
+    await pumpApp(tester, size: const Size(390, 844), history: [finished(current, 5)]);
+    await tester.tap(find.byTooltip('Show as calendar'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+    final leaving = faded(tester, .list);
+    expect(leaving, inExclusiveRange(0, 1));
+
+    await tester.tap(find.byTooltip('Show as list'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    // coming back, not snapped to whole or to gone
+    expect(faded(tester, .list), inExclusiveRange(leaving, 1));
+    expect(find.byKey(AppKeys.historyCalendar), findsOneWidget);
+    await tester.pumpTimes();
+    expect(find.byKey(AppKeys.historyCalendar), findsNothing);
+    expect(find.byType(WorkoutItem), findsOneWidget);
+    expect(find.byKey(AppKeys.historyViewSwitch), findsOneWidget);
+    expect(find.byTooltip('Show as calendar'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testCalendar('off screen mid-swap, the swap ends where it was going (#712)', (tester) async {
+    await pumpApp(tester, size: const Size(390, 844), history: [finished(current, 5)]);
+    await tester.tap(find.byTooltip('Show as calendar'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.tapByKey(AppKeys.profileStack);
+    await tester.pumpTimes();
+    expect(find.byType(WorkoutItem, skipOffstage: false), findsNothing);
+    expect(find.byKey(AppKeys.historyCalendar, skipOffstage: false), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testCalendar('the leaving view takes no taps and says nothing (#712)', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpApp(tester, size: const Size(390, 844), history: [finished(current, 5)]);
+    final card = tester.getCenter(find.byType(WorkoutItem));
+    expect(find.semantics.byLabel(RegExp('Session')), findsWidgets);
+
+    await tester.tap(find.byTooltip('Show as calendar'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+    expect(find.byType(WorkoutItem), findsOneWidget, reason: 'still leaving');
+    expect(find.semantics.byLabel(RegExp('Session')), findsNothing);
+    await tester.tapAt(card);
+    await tester.pumpTimes();
+    expect(find.byType(WorkoutEditor), findsNothing);
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
   testCalendar("the calendar does not inherit the list's scroll (#609)", (tester) async {
     final history = [for (final day in List.generate(12, (i) => 2 + i * 2)) finished(current, day)];
     await pumpApp(tester, size: const Size(390, 844), history: history);

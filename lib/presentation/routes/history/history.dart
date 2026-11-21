@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/rendering.dart';
 import 'package:heart/core/utils/image_picker.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/record_book.dart';
@@ -43,7 +44,6 @@ import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'entry_review_page.dart';
