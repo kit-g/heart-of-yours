@@ -145,4 +145,14 @@ class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
       _ => null,
     };
   }
+
+  /// How many finished sessions held a completed set of [exerciseId], as of
+  /// what [lastDone] is counted from; 0 for one never done. A grouped picker
+  /// pictures each group by the one done most (#711).
+  int timesDone(ExerciseId exerciseId) {
+    return switch (_previous[exerciseId]?.firstOrNull?['sessions']) {
+      int sessions => sessions,
+      _ => 0,
+    };
+  }
 }
