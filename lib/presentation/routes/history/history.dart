@@ -43,6 +43,7 @@ import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'entry_review_page.dart';
@@ -52,5 +53,6 @@ part 'skip_item.dart';
 part 'skip_page.dart';
 part 'calendar.dart';
 part 'utils.dart';
+part 'view_switch.dart';
 part 'workout_editor.dart';
 part 'workout_item.dart';
