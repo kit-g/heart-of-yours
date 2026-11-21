@@ -340,6 +340,28 @@ void main() {
       expect(notes.values, isEmpty);
     });
 
+    test('a preference read that fails keeps every note, rather than reading as none (#681)', () async {
+      final bench = ex('Bench Press');
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
+      when(preferences.getExercisePreferences()).thenAnswer(
+        (_) async => [ExercisePreference(exerciseId: bench.id, note: 'Pause')],
+      );
+      await sut.init();
+
+      // a 5xx, a throttle, a 2xx it could not read: heart_api throws them all
+      for (final failure in [
+        const ServerFailed(),
+        refusedAs({'code': 'rate_limited'}, status: 429),
+        const FormatException('an answer this build cannot read'),
+      ]) {
+        when(preferences.getExercisePreferences()).thenThrow(failure);
+        await sut.init();
+        expect(sut.noteFor(bench.id), 'Pause');
+        expect(notes.values[bench.id], 'Pause');
+      }
+    });
+
     test('a catalog gap preserves a cached pin until its exercise can be reconciled', () async {
       final bench = ex('Bench Press');
       notes.values[bench.id] = 'Pause';

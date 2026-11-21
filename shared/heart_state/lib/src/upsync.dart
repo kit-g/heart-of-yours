@@ -15,8 +15,8 @@ typedef Replayed<T> = ({T row, bool created});
 
 /// The remote half of the replay — `Api` behind an adapter in the app, the way
 /// `RemoteTemplateFilingService` is. One method per resource the replay
-/// order names (heart-api#66); each throws the server's body whole on a
-/// refusal, so [Upsync] can read the `code` off it.
+/// order names (heart-api#66); each throws a [ServerRefusal] on a refusal, so
+/// [Upsync] can read its `code`.
 abstract interface class UpsyncService {
   Future<Replayed<Exercise>> replayExercise(Exercise exercise);
 
@@ -158,7 +158,16 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     this.analytics,
     this.onError,
     this.onComplete,
-  }) : _access = access ?? RemoteAccess();
+    bool Function(Object error)? answered,
+  }) : _access = access ?? RemoteAccess(),
+       _answered = answered ?? _refused;
+
+  /// Whether a failure was the server's answer rather than no answer at all:
+  /// told by whoever knows the transport (the app does), since a 5xx is an
+  /// answer with no type of its own here. Without it, only a refusal is.
+  final bool Function(Object error) _answered;
+
+  static bool _refused(Object error) => error is ServerRefusal;
 
   /// Every remote leg is held shut for the length of a run, so how long one
   /// takes and whether it lands is the difference between a new account that
@@ -202,11 +211,6 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   /// stopped a 358-row backup at row 26 read exactly that way
   /// (heart-of-yours#113).
   bool get reachedServer => _reachedServer;
-
-  /// `Api` throws the decoded body when the server answered and the answer was
-  /// an error; a transport failure arrives as a `SocketException`, a
-  /// `ClientException` or a timeout. So a Map is the server's voice.
-  static bool _isServerAnswer(Object? error) => error is Map;
 
   Future<void>? _running;
 
@@ -395,7 +399,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
               ledger.putIfAbsent(step.resource, () => {})[step.id] = .skipped;
               _report = _counting(_report, .skipped);
             } else {
-              _reachedServer = _isServerAnswer(error);
+              _reachedServer = _answered(error);
               _status = .failed;
               _reportReplay(elapsed, ok: false);
               notifyListeners();
@@ -492,7 +496,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
 
   static bool _isRefusal(Object? error) {
     return switch (error) {
-      {'code': String code} when _refusals.contains(code) => true,
+      ServerRefusal(:final code) when _refusals.contains(code) => true,
       _ => GoalRejected.from(error) != null,
     };
   }

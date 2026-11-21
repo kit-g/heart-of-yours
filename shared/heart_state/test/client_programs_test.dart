@@ -29,7 +29,7 @@ class _Server implements ClientProgramService {
 
   @override
   Future<CoachProgramView> getClientProgram(String studentId, String programId) async {
-    if (failRead) throw {'code': 'unavailable'};
+    if (failRead) throw const ServerFailed();
     return CoachProgramView.fromJson({
       'program': {
         'id': programId,
@@ -65,7 +65,7 @@ class _Server implements ClientProgramService {
     if (refuse case final refusal?) throw refusal;
     writes.add((session.id, baseRevision));
     if (baseRevision != sessionRevisions[session.id]) {
-      throw {'code': 'program_changed', 'revision': sessionRevisions[session.id]};
+      throw refusedAs({'code': 'program_changed', 'revision': sessionRevisions[session.id]});
     }
     sessionRevisions[session.id] = baseRevision + 1;
   }
@@ -77,7 +77,7 @@ class _Server implements ClientProgramService {
     required int baseRevision,
     required String changeId,
   }) async {
-    if (baseRevision != programRevision) throw {'code': 'program_changed', 'revision': programRevision};
+    if (baseRevision != programRevision) throw refusedAs({'code': 'program_changed', 'revision': programRevision});
     programRevision++;
     return program;
   }
@@ -192,7 +192,7 @@ void main() {
   test('a write refused as no longer theirs is kept to say so, and the copy stays read-only after a read', () async {
     await programs.open('sam', 'p1');
     programs.editSession('sam', 'p1', session: programs.view('p1')!.sessions.single);
-    server.refuse = {'code': 'forbidden'};
+    server.refuse = refusedAs({'code': 'forbidden'});
     await programs.saveEditable();
 
     expect(programs.conflict('p1')?.refused, isTrue);

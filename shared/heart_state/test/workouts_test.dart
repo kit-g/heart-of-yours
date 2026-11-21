@@ -1424,10 +1424,9 @@ void main() {
     });
 
     test('skips a workout the server no longer has and carries on', () async {
-      // any body the server answered with is an answer about that one
-      // workout — a 404 is not an outage, whatever shape it comes in
+      // a refusal is an answer about that one workout, not an outage
       when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('gone'), stripped('w2')]);
-      fails('gone', {'error': 'not found'});
+      fails('gone', refusedAs({'error': 'not found', 'code': 'not_found'}, status: 404));
       final full = detailed('w2');
       whenServerHas(full);
 
@@ -1435,6 +1434,35 @@ void main() {
 
       verify(local.storeWorkoutHistory([full], 'u1')).called(1);
       expect(sut.lookup('w2'), full);
+    });
+
+    test('skips a workout whose answer this build cannot read, and carries on', () async {
+      // a 2xx heart_api could not read is a FormatException (UnreadableAnswer):
+      // asking again gets the same, so it must not stop the pass every launch
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('odd'), stripped('w2')]);
+      fails('odd', const FormatException('an answer this build cannot read'));
+      final full = detailed('w2');
+      whenServerHas(full);
+
+      await sut.initHistory();
+
+      verify(local.storeWorkoutHistory([full], 'u1')).called(1);
+    });
+
+    test('stops at a server that failed or asked to wait, to go again later', () async {
+      for (final failure in [
+        const ServerFailed(),
+        refusedAs({'code': 'rate_limited'}, status: 429),
+      ]) {
+        clearInteractions(local);
+        when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('w1'), stripped('w2')]);
+        fails('w1', failure);
+        whenServerHas(detailed('w2'));
+
+        await sut.initHistory();
+
+        verifyNever(local.storeWorkoutHistory(argThat(isNotEmpty), 'u1'));
+      }
     });
 
     test('asks about a workout once per session', () async {

@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'refusals.dart';
 import 'remote.dart';
 
 /// The local half of goal storage.
@@ -73,17 +74,15 @@ class GoalRejected implements Exception {
   /// telling apart so a stamp can be retried without it rather than dropped.
   bool get isUnknownWorkout => code == 'goal_workout_unknown';
 
-  /// Named, but still transient: the request was fine and the server broke.
-  static const _serverError = 'server_error';
-
   /// Reads a refusal out of whatever the service threw, or null when the
-  /// failure could just as well be an outage.
+  /// failure could just as well be an outage, or is the server's throttle,
+  /// which says "later", not "no".
   static GoalRejected? from(Object? error) {
     return switch (error) {
-      {'code': _serverError} => null,
-      {'code': String code} => GoalRejected(
+      ServerRefusal(:final isThrottle) when isThrottle => null,
+      ServerRefusal(:final code, :final details) => GoalRejected(
         code,
-        reason: switch (error) {
+        reason: switch (details) {
           {'reason': String reason} => reason,
           {'message': String message} => message,
           _ => null,
@@ -577,7 +576,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     } catch (error, stacktrace) {
       if (GoalRejected.from(error) case GoalRejected rejection) {
         await onRejected(local);
-        throw rejection;
+        Error.throwWithStackTrace(rejection, stacktrace);
       }
       onError?.call(error, stacktrace: stacktrace);
       return local;

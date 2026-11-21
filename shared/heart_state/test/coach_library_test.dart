@@ -136,7 +136,7 @@ void main() {
   });
 
   test('a library that cannot be read says so', () async {
-    server.refuse = {'code': 'boom'};
+    server.refuse = const ServerFailed();
     await library.load();
     expect(library.status, CoachingStatus.failed);
   });
@@ -230,7 +230,7 @@ void main() {
 
   test("a save that doesn't arrive is kept here, unsaved, until a retry gets it there", () async {
     final program = await written();
-    server.refuse = {'code': 'offline'};
+    server.refuse = const ServerFailed();
 
     final saved = await library.save(program.copyWith(program: program.program.copyWith(name: 'Strength block v2')));
 
@@ -288,8 +288,8 @@ void main() {
   test('a delete leaves the library, and a refused one leaves it as it was', () async {
     final program = await written();
 
-    server.refuse = {'code': 'offline'};
-    await expectLater(library.delete(program.id), throwsA(isA<Map>()));
+    server.refuse = const ServerFailed();
+    await expectLater(library.delete(program.id), throwsA(isA<ServerFailed>()));
     expect(library.programs, hasLength(1));
 
     server.refuse = null;

@@ -70,7 +70,7 @@ class _Server extends Fake implements UpsyncService {
   final merged = <String, String>{};
 
   /// Refusals, by id sent.
-  final refused = <String, Map<String, dynamic>>{};
+  final refused = <String, Object>{};
 
   /// Ids the server takes, and answers in a shape this build cannot read.
   final unreadable = <String>{};
@@ -81,7 +81,7 @@ class _Server extends Fake implements UpsyncService {
   void _reach(UpsyncResource resource, String id) {
     if (deadAfter case int n when calls.length >= n) throw const SocketException('offline');
     calls.add((resource, id));
-    if (refused[id] case Map<String, dynamic> refusal) throw refusal;
+    if (refused[id] case final Object refusal) throw refusal;
     if (unreadable.contains(id)) throw ArgumentError('Invalid value for GoalMetric: aMetricFromTheFuture');
   }
 
@@ -302,6 +302,8 @@ void main() {
       analytics: Analytics(service: reported),
       onError: (error, {stacktrace}) => errors.add(error),
       onComplete: () => completions++,
+      // as the app tells it: the server answered, refusing or failing
+      answered: (error) => error is ServerRefusal || error is ServerFailed,
     );
     when(exercises.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
     when(folders.storeFolder(any, any)).thenAnswer((_) async {});
@@ -731,7 +733,7 @@ void main() {
 
     test('a refusal is skipped and reported, and the run goes on', () async {
       seedStore();
-      server.refused['g1'] = {'error': 'bad request', 'code': 'goal_limit'};
+      server.refused['g1'] = refusedAs({'error': 'bad request', 'code': 'goal_limit'});
       await sut.claim(from: uid, to: uid);
 
       await sut.run(uid);
@@ -757,10 +759,39 @@ void main() {
       expect(access.allowed, isTrue, reason: 'the remote leg opens');
     });
 
+    test('a 2xx this build cannot read at all is skipped too, not met again every run', () async {
+      // heart_api's UnreadableAnswer is a FormatException: the server took
+      // the row, and the next pull brings it to a build that can read it
+      seedStore();
+      server.refused['g1'] = const FormatException('an answer this build cannot read');
+      await sut.claim(from: uid, to: uid);
+
+      await sut.run(uid);
+      await sut.run(uid);
+
+      expect(sut.status, UpsyncStatus.done);
+      expect(server.calls.where((each) => each.$2 == 'g1'), hasLength(1));
+    });
+
+    test("the server's throttle stops the run to go again, and is never recorded as final", () async {
+      seedStore();
+      server.refused['g1'] = refusedAs({'code': 'rate_limited', 'retryAfter': 30}, status: 429);
+      await sut.claim(from: uid, to: uid);
+
+      await sut.run(uid);
+      expect(sut.status, UpsyncStatus.failed);
+      expect(sut.reachedServer, isTrue);
+
+      server.refused.remove('g1');
+      await sut.run(uid);
+      expect(sut.status, UpsyncStatus.done);
+      expect(server.calls.where((each) => each.$2 == 'g1'), hasLength(2));
+    });
+
     test('an id that belongs to someone else is skipped and never retried', () async {
       final monday = finished('Monday');
       seedStore(pending: [monday, finished('Tuesday')]);
-      server.refused[monday.id] = {'error': 'forbidden', 'code': 'id_taken'};
+      server.refused[monday.id] = refusedAs({'error': 'forbidden', 'code': 'id_taken'}, status: 403);
       await sut.claim(from: uid, to: uid);
 
       // stopped by a dead network right after, so the second run is a resume
@@ -780,11 +811,11 @@ void main() {
       // Before it the same case arrived as a 500, which reads as an outage:
       // the run stopped where it stood and everything behind it went untried.
       seedStore();
-      server.refused[unitOn.id] = {
+      server.refused[unitOn.id] = refusedAs({
         'error': 'not found',
         'code': 'unknown_exercise',
         'message': 'Exercise #${unitOn.id} not found',
-      };
+      }, status: 404);
       await sut.claim(from: 'anon-1', to: uid);
 
       await sut.run(uid);
@@ -811,10 +842,10 @@ void main() {
 
     test('an unrecognised server error is not a connection problem', () async {
       seedStore();
-      // `Api` throws the decoded body when the server answered; this one is
-      // not a refusal the replay knows, so the run stops — but it stops having
-      // been answered. The 500 that stopped a 358-row backup read like this.
-      server.refused[unitOn.id] = {'error': 'server error', 'code': 'server_error'};
+      // a 500: not a refusal the replay knows, so the run stops, to go again
+      // later — but it stops having been answered. The 500 that stopped a
+      // 358-row backup read like this.
+      server.refused[unitOn.id] = const ServerFailed();
       await sut.claim(from: 'anon-1', to: uid);
 
       await sut.run(uid);
@@ -969,7 +1000,7 @@ void main() {
     });
 
     test('a program the server refuses is skipped, and its sessions go up as plain templates', () async {
-      server.refused['p1'] = {'code': 'program_limit'};
+      server.refused['p1'] = refusedAs({'code': 'program_limit'});
 
       await sut.claim(from: uid, to: uid);
       await sut.run(uid);

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
@@ -10,6 +11,22 @@ int addCounterListener(ChangeNotifier notifier) {
   // Since Dart passes primitives by value, return the count initial value and rely on external closure not possible.
   // Provide a small wrapper type instead.
   return count; // Not used directly; prefer ListenerProbe below.
+}
+
+/// What heart_api throws for a 4xx that names its `code` (#681): [body] read
+/// as the [ServerRefusal] it is.
+ServerRefusal refusedAs(Map<String, dynamic> body, {int status = 400}) {
+  return ServerRefusal.tryParse(status: status, method: 'POST', route: '/v1/test', body: body)!;
+}
+
+/// A [ServerRefusal] naming [code].
+Matcher isRefusal(String code) => isA<ServerRefusal>().having((refusal) => refusal.code, 'code', code);
+
+/// A failure heart_state has no type for: a 5xx, a gateway's page, a 4xx
+/// without a code. heart_api throws a `NetworkException`, which this package
+/// never sees by name.
+class ServerFailed implements Exception {
+  const new();
 }
 
 class ListenerProbe {

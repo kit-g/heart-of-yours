@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'analytics.dart';
 import 'coaching.dart' show CoachingStatus;
 import 'device_keys.dart';
+import 'refusals.dart';
 import 'remote.dart';
 
 /// What the server does with a coach's notes (heart-of-yours#556): the app's
@@ -320,14 +321,16 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
           case false:
             await _send(userId, note);
         }
-      } on Map catch (refusal) {
-        onError?.call(refusal);
-        // everything goes again with the next run
-        if (refusal['code'] == 'rate_limited') break;
+      } on ServerRefusal catch (refusal, stacktrace) {
+        // the server's throttle: everything goes again with the next run
+        if (refusal.isThrottle) break;
+        onError?.call(refusal, stacktrace: stacktrace);
         // refused for this note alone, and for good: the others still go
         _refused.add(note.id);
       } catch (error, stacktrace) {
-        // no network, or no answer: everything waits for the next run
+        // no network, no answer, or one without a code (a gateway's 413 or
+        // 502), which says nothing about the note: everything waits for the
+        // next run
         onError?.call(error, stacktrace: stacktrace);
         break;
       }
@@ -356,9 +359,9 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
   Future<void> _sendDeletion(String userId, CoachNote note) async {
     try {
       await _service.deleteNote(note.id);
-    } on Map catch (refusal) {
+    } on ServerRefusal catch (refusal) {
       // never reached the server, or deleted from another device: gone either way
-      if (refusal['code'] != 'not_found') rethrow;
+      if (refusal.code != 'not_found') rethrow;
     }
     await _inTurn(userId, () async {
       if (_stored[note.id] case (pending: _, deleted: true, note: _)) {

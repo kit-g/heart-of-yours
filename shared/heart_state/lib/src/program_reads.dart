@@ -1,26 +1,31 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:heart_models/heart_models.dart';
+
+import 'refusals.dart';
+
 /// What a program call's failure says about asking again, for every program
 /// call, reads and writes alike: one classifier, so a retry and a refusal
 /// never disagree about the same answer.
 enum ProgramFailure {
-  /// The server broke, or the gateway in front of it was busy (a throttle
-  /// reaches the app as a 500 before the server's code runs) or gave up:
-  /// asking again may pass.
+  /// Anything but a refusal (#681): the server broke, the gateway in front of
+  /// it was busy or gave up, the server's own throttle, a timeout, or no
+  /// answer at all. Asking again may pass. Offline is among these, since
+  /// nothing here can tell it from a server error: retrying it costs a few
+  /// seconds before the report, which drops it.
   passing,
 
   /// An answer that repeating would only repeat: a rule or key the server
   /// does not take, a cap reached, a row it does not have.
   refused,
 
-  /// Any other answer: an unknown code, or the gateway's own refusal (a 401
-  /// is `{message: Unauthorized}`). Asking again the same way gets it again.
+  /// Any other refusal: a code this build has no meaning for. Asking again
+  /// the same way gets it again.
   answered,
 
-  /// No answer to read at all: offline, a dropped connection, a body this
-  /// side could not parse. Retrying while offline only delays the report.
-  unanswered,
+  /// An answer this build cannot read. Asking again gets the same one.
+  unreadable,
 }
 
 /// Codes the server refuses with; see [ProgramFailure.refused].
@@ -41,28 +46,14 @@ const _refusals = {
   'skip_limit',
 };
 
-/// API Gateway's own bodies for a request it could not get answered: a
-/// throttled or failed integration, too many requests, a timeout. They carry
-/// a `message` and no `code`; their wording is the gateway's, fixed.
-const _gatewayBusy = {
-  'Internal server error',
-  'Too Many Requests',
-  'Service Unavailable',
-  'Endpoint request timed out',
-};
-
 ProgramFailure programFailure(Object? error) {
   return switch (error) {
     ProgramReadFailed(:final error) => programFailure(error),
-    // an attempt that ran out of time: its slot is let go, and it is asked
-    // again like a busy gateway
-    TimeoutException() => .passing,
-    {'code': 'server_error'} => .passing,
-    {'code': final String code} when _refusals.contains(code) => .refused,
-    {'code': _} => .answered,
-    {'message': final String message} when _gatewayBusy.contains(message) => .passing,
-    Map() => .answered,
-    _ => .unanswered,
+    ServerRefusal(:final isThrottle) when isThrottle => .passing,
+    ServerRefusal(:final code) when _refusals.contains(code) => .refused,
+    ServerRefusal() => .answered,
+    TypeError() || FormatException() || ArgumentError() => .unreadable,
+    _ => .passing,
   };
 }
 
@@ -82,10 +73,8 @@ class ProgramReadFailed implements Exception {
   /// The failure's name: the server's code, else what kind it was.
   String get code {
     return switch (error) {
-      {'code': final String code} => code,
-      {'message': final String message} when _gatewayBusy.contains(message) => message,
+      ServerRefusal(:final code) => code,
       TimeoutException() => 'timeout',
-      Map() => 'unnamed',
       _ => '${error.runtimeType}',
     };
   }
@@ -133,9 +122,9 @@ class ProgramReads {
   /// [read], the remote call [name] of a program for [uid], in a slot: ahead of the queue
   /// when the user [asked] for it, a pull to refresh or a push they opened.
   /// Asked again after each wait while its failure is [ProgramFailure.passing].
-  /// What still fails is thrown as a [ProgramReadFailed] when it was an
-  /// answer or a timeout; with no answer at all (offline), as itself, which
-  /// the app's reporter knows to drop.
+  /// What still fails is thrown as a [ProgramReadFailed] when it was a
+  /// refusal or a timeout; anything else as itself, which the app's reporter
+  /// groups by status and route, or drops when nothing answered.
   Future<T> call<T>(String uid, String name, Future<T> Function() read, {bool asked = false, int attempt = 0}) async {
     try {
       return await _slots(() {
@@ -149,7 +138,7 @@ class ProgramReads {
     } catch (error, stack) {
       final wait = switch (programFailure(error)) {
         .passing => _waits.elementAtOrNull(attempt),
-        .refused || .answered || .unanswered => null,
+        .refused || .answered || .unreadable => null,
       };
       if (wait == null) Error.throwWithStackTrace(_named(name, error), stack);
       // the slot is let go while it waits: the burst it was part of drains
@@ -158,9 +147,12 @@ class ProgramReads {
     }
   }
 
+  /// A refusal or a timeout, named by its call; anything else as itself: a
+  /// failed request is reported by its own status and route, and no answer
+  /// at all is dropped by the reporter.
   static Object _named(String call, Object error) {
     return switch (error) {
-      Map() || TimeoutException() => ProgramReadFailed([call], error),
+      ServerRefusal() || TimeoutException() => ProgramReadFailed([call], error),
       _ => error,
     };
   }
@@ -193,8 +185,9 @@ class ProgramReads {
   }
 
   /// The failures of reads run together as one: dropped if any was, else
-  /// the named ones as one naming each call, else the first that is not
-  /// plainly offline, with its own stack.
+  /// the named ones as one naming each call, else the first that would not
+  /// have passed (an answer this build cannot read), else the first, each
+  /// with its own stack.
   static AsyncError merged(Iterable<AsyncError> failed) {
     if (failed.where((each) => each.error is ReadDropped).firstOrNull case final AsyncError dropped) return dropped;
     final named = [
@@ -204,7 +197,7 @@ class ProgramReads {
     if (named.firstOrNull case (final ProgramReadFailed first, final StackTrace stack)) {
       return AsyncError(ProgramReadFailed([for (final (read, _) in named) ...read.calls], first.error), stack);
     }
-    return failed.where((each) => programFailure(each.error) != .unanswered).firstOrNull ?? failed.first;
+    return failed.where((each) => programFailure(each.error) != .passing).firstOrNull ?? failed.first;
   }
 }
 

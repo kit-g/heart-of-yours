@@ -46,7 +46,7 @@ abstract interface class RemoteTemplateFilingService {
 
   /// A session of a coach's copy (#558), from the revision it was read at
   /// ([baseRevision]), under [changeId] so a retry writes once. Throws
-  /// `{'code': 'program_changed'}` when the coach changed it since.
+  /// the `ServerRefusal` `program_changed` when the coach changed it since.
   Future<Template> editSharedTemplate(Template template, {required int baseRevision, required String changeId});
 }
 
@@ -402,9 +402,21 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
     return Future.wait(
       [
         _service.deleteTemplate(template.id),
-        if (_remote.allowed) _remoteService.deleteTemplate(template.id),
+        if (_remote.allowed) _deleteRemote(template.id),
       ],
     );
+  }
+
+  /// One the server no longer has is gone either way; any other failure is
+  /// reported rather than thrown at the screen that deleted it.
+  Future<void> _deleteRemote(String templateId) async {
+    try {
+      await _remoteService.deleteTemplate(templateId);
+    } on ServerRefusal catch (refusal, stacktrace) {
+      if (refusal.status != 404) onError?.call(refusal, stacktrace: stacktrace);
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+    }
   }
 
   /// Folders are remote-first — the server mints their ids — so there are none

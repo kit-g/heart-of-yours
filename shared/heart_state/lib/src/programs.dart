@@ -108,7 +108,7 @@ abstract interface class RemoteProgramService {
   Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions});
 
   /// A coach's copy's edit says the revision it started from and names
-  /// itself (#558); `{'code': 'program_changed'}` when the coach changed the
+  /// itself (#558); the `ServerRefusal` `program_changed` when the coach changed the
   /// same fields since.
   Future<Program> editProgram(Program program, {int? baseRevision, String? changeId});
 

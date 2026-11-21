@@ -591,13 +591,13 @@ extension _Owed on DeviceKeys {
         paid.add(id);
       } on _Stopped {
         rethrow;
-      } on Map catch (refusal) {
-        switch (refusal) {
+      } on ServerRefusal catch (refusal, stacktrace) {
+        switch (refusal.code) {
           // vouched for by another between the list and this: nothing owed
-          case {'code': 'already_vouched'}:
+          case 'already_vouched':
             paid.add(id);
           default:
-            _report(refusal);
+            _report(refusal, stacktrace);
         }
       } catch (error, stacktrace) {
         // still owed: the next start, resume or word of the devices tries again

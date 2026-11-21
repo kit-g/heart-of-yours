@@ -637,11 +637,17 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
     if (!_remote.allowed) return;
 
-    switch (unit) {
-      case MeasurementUnit u:
-        await _remoteService.saveUnitPreference(exercise.id, u);
-      case null:
-        await _remoteService.deleteUnitPreference(exercise.id);
+    // the device's choice stands either way: a failure to tell the server is
+    // reported, not thrown at the screen that made it
+    try {
+      switch (unit) {
+        case MeasurementUnit u:
+          await _remoteService.saveUnitPreference(exercise.id, u);
+        case null:
+          await _remoteService.deleteUnitPreference(exercise.id);
+      }
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
     }
   }
 
