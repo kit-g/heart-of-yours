@@ -121,6 +121,7 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
     _ownLoaded = false;
     _templates.clear();
     _folders.clear();
+    notifyListeners();
   }
 
   @override
@@ -149,8 +150,12 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
     // runs: local templates that fail to read must not keep the folders, or
     // the server's copies, from loading.
     final id = userId!;
+    // A session that ends mid-read (#671) has had its state cleared for the
+    // next one: what lands after that is the last one's and stays out. Every
+    // step checks the uid again once it has awaited.
     await _step(() async {
       final local = await _service.getTemplates(id);
+      if (userId != id) return;
       if (local.isNotEmpty) {
         _templates.addAll(local);
         notifyListeners();
@@ -161,10 +166,12 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
     });
     // read, whether or not anything was there — or the read failed, which
     // [_step] has reported; nothing is still to come from this device
+    if (userId != id) return;
     _ownLoaded = true;
 
     await _step(() async {
       final localFolders = await _folderService.getFolders(id);
+      if (userId != id) return;
       if (localFolders.isNotEmpty) {
         _folders.addAll(localFolders);
         notifyListeners();
@@ -172,18 +179,20 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
     });
 
     // the mirror is the whole story until there is a server to reconcile with
-    if (!_remote.allowed) return;
+    if (userId != id || !_remote.allowed) return;
 
     await _step(() async {
       final remote = await _remoteService.getTemplates() ?? [];
+      if (userId != id) return;
       if (remote.isNotEmpty) {
         _templates
           ..removeWhere(remote.contains)
           ..addAll(remote);
         notifyListeners();
-        await _service.storeTemplates(remote, userId: userId);
+        await _service.storeTemplates(remote, userId: id);
       }
     });
+    if (userId != id) return;
 
     // After the templates above: this replace also unfiles whatever points at
     // a folder the server no longer has, so it must see the final template
@@ -191,6 +200,7 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
     // all, so a failure leaves the local folders as they are.
     await _step(() async {
       final remoteFolders = (await _remoteFolderService.getFolders(userId: id)).toList();
+      if (userId != id) return;
       if (remoteFolders.isNotEmpty || _folders.isNotEmpty) {
         _folders
           ..clear()

@@ -435,7 +435,8 @@ Directory _packageRoot() {
 /// signed out after a wait (`final session = Auth.of(context);` … `await
 /// session.onSignOut();`).
 List<String> _fannedOut(String clear) {
-  final direct = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
+  // called, or handed over as a tear-off
+  final direct = RegExp(r'(\w+)\.of\(context\)\.onSignOut\b');
   final held = RegExp(r'final (\w+) = (\w+)\.of\(context\);');
   return [
     for (final match in direct.allMatches(clear)) match.group(1)!,

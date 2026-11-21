@@ -165,7 +165,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
             await _loginWithGoogle(account);
             if (_enter(user?.id)) await onEnter?.call(account.authentication.idToken, user?.id);
           case GoogleSignInAuthenticationEventSignOut():
-            _user = null;
+            // the session ended: the app is told like any other way out, so
+            // what it held of the account goes with it (#671)
+            _adopt(null);
+            onUserChange?.call(null);
             notifyListeners();
         }
       });

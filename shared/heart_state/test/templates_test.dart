@@ -725,14 +725,14 @@ void main() {
       });
     });
 
-    test('onSignOut clears editable, userId and templates (no notify)', () {
+    test('onSignOut clears editable, userId and templates, and says so', () {
       templates.userId = 'u1';
       // put one into collection
       templates.onSignOut();
       expect(templates.userId, isNull);
       expect(templates.editable, isNull);
       expect(templates.length, 0);
-      expect(probe.notifications, 0);
+      expect(probe.notifications, 1);
     });
 
     group('folders', () {

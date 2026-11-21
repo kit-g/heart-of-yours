@@ -481,6 +481,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     _changeIds.clear();
     _coachedReadAt = null;
     _askedAt.clear();
+    notifyListeners();
   }
 
   @override

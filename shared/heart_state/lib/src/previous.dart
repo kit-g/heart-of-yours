@@ -72,6 +72,7 @@ class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
     _previous.clear();
     _inTemplate.clear();
     userId = null;
+    notifyListeners();
   }
 
   static PreviousExercises of(BuildContext context) {

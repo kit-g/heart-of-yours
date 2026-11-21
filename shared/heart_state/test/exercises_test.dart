@@ -1075,7 +1075,7 @@ void main() {
   });
 
   group('misc', () {
-    test('iterator, index operator, and sign-out does not notify', () async {
+    test('iterator, index operator, and sign-out says so', () async {
       when(
         local.getExercises(userId: anyNamed('userId')),
       ).thenAnswer(
@@ -1089,7 +1089,7 @@ void main() {
 
       final probe = ListenerProbe()..attach(sut);
       sut.onSignOut();
-      expect(probe.notifications, 0);
+      expect(probe.notifications, 1);
       expect(sut.isInitialized, isFalse);
       expect(sut.selected, isEmpty);
       expect(sut.filters, isEmpty);

@@ -191,6 +191,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     _selectedExercises.clear();
     _units.clear();
     _notes.clear();
+    notifyListeners();
   }
 
   @override
@@ -269,26 +270,39 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// init can write against.
   Future<bool> init({String? locale}) async {
     _catalogLocale = locale;
+    // A session that ends mid-init (#671) has had its state cleared for the
+    // next one: what this run read is the last one's, and it must neither go
+    // back in nor mark the next one's catalog as initialized, which would skip
+    // that one's startup. False then, which also stops the chained init.
+    final owner = userId;
+    bool left() => _disposed || userId != owner;
     await _step(() async {
-      final (_, local) = await _service.getExercises(userId: userId);
-      if (local.isNotEmpty) {
+      final (_, local) = await _service.getExercises(userId: owner);
+      if (local.isNotEmpty && !left()) {
         _exercises.addAll(local.byId);
-        _glossary = await _catalogService.getSearchGlossary() ?? .empty();
-        if (!_disposed) notifyListeners();
+        final glossary = await _catalogService.getSearchGlossary() ?? .empty();
+        if (left()) return;
+        _glossary = glossary;
+        notifyListeners();
       }
     });
-    if (userId case String id) {
+    if (owner case String id when !left()) {
       await _step(() async {
-        _units.addAll(await _service.getExerciseUnits(id));
-        _notes.addAll(await _noteService?.read(id) ?? {});
+        final units = await _service.getExerciseUnits(id);
+        final notes = await _noteService?.read(id) ?? {};
+        if (left()) return;
+        _units.addAll(units);
+        _notes.addAll(notes);
       });
     }
+    if (left()) return false;
     final synced = await _step(_syncLibrary);
+    if (left()) return false;
     if (_remote.allowed) await _step(_syncOwn);
 
     // the app may be gone by the time the catalog is read — a tree torn down
     // mid-init has no one to tell
-    if (_disposed) return false;
+    if (left()) return false;
     isInitialized = synced || _exercises.values.any((each) => !each.isMine);
     notifyListeners();
     return isInitialized;
