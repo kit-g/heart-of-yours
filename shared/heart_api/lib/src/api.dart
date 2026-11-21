@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:heart_models/heart_models.dart' hide PreSignedUrl;
@@ -183,6 +182,26 @@ class Api
     (final json, 201) => (json, true),
     (final json, _) => (json, false),
   };
+}
+
+/// Whether [error] says the thing asked about is not there: a 404, with a
+/// code or without (a gateway's `{message: Not Found}`). For a read that has
+/// a meaning for none, none.
+bool _gone(Object error) => originOf(error)?.statusCode == 404;
+
+extension on Requests {
+  /// The list under [key] in what a GET of [path] answered, and the page it
+  /// came in, for its cursor. A 2xx without that list is an
+  /// [UnreadableAnswer] on the route, reported and grouped like any other
+  /// failed request; never a bare cast error, and never an empty list, which
+  /// a caller that syncs would read as "the account holds none".
+  Future<(List, Json)> _listAt(String path, String key, {Map<String, dynamic>? query}) async {
+    final (json, status) = await get(path, query: query);
+    return switch (json[key]) {
+      final List list => (list, json),
+      _ => throw UnreadableAnswer(statusCode: status, method: 'GET', path: '/$path'),
+    };
+  }
 }
 
 /// [body] with its `id` only when it is one the server will take.

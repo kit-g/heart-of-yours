@@ -121,8 +121,8 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
   /// A failure is thrown, never answered as no tokens: an empty list says the
   /// account holds none.
   Future<Iterable<ApiToken>> listApiTokens() async {
-    final (json, _) = await get(Router.accountTokens);
-    return _readable(json['tokens'] as List, (each) => ApiToken.fromJson(_withKnownPurpose(each)));
+    final (tokens, _) = await _listAt(Router.accountTokens, 'tokens');
+    return _readable(tokens, (each) => ApiToken.fromJson(_withKnownPurpose(each)));
   }
 
   /// Mints a token: `201` with the secret, the one time it exists in

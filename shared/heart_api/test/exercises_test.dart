@@ -153,7 +153,7 @@ void main() {
         body: {'error': 'no data'},
       );
 
-      await expectLater(api.getExercises(), throwsA(isA<TypeError>()));
+      await expectLater(api.getExercises(), throwsA(isA<UnreadableAnswer>()));
     });
   });
 
@@ -239,7 +239,7 @@ void main() {
       );
 
       // the caller replaces the device's notes with this: none would delete them
-      await expectLater(api.getExercisePreferences(), throwsA(isA<TypeError>()));
+      await expectLater(api.getExercisePreferences(), throwsA(isA<UnreadableAnswer>()));
     });
 
     test('getExercisePreferences throws a failure, never answering none', () async {

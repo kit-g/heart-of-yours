@@ -17,8 +17,7 @@ typedef ReportedWords = ({
 /// items are ciphertext the server never reads.
 ///
 /// A refusal is a [ServerRefusal], as everywhere, so a caller branches on its
-/// `code` (`thread_closed`, `rate_limited` with `retryAfter`, `stale_cursor`,
-/// `not_implemented`).
+/// `code` (`thread_closed`, `rate_limited` with `retryAfter`, `stale_cursor`).
 mixin _ThreadRoutes on Requests {
   /// The one thread of [connectionId], opened the first time it is asked for.
   Future<Thread> openThread(String connectionId) async {
@@ -29,8 +28,8 @@ mixin _ThreadRoutes on Requests {
   /// The inbox: every thread, last arrival first. Read whole or not at all:
   /// it replaces the device's inbox, where a thread skipped would be deleted.
   Future<List<Thread>> getThreads() async {
-    final (json, _) = await get(Router.threads);
-    return [for (final each in json['threads'] as List) Thread.fromJson(each as Map)];
+    final (threads, _) = await _listAt(Router.threads, 'threads');
+    return [for (final each in threads) Thread.fromJson(each as Map)];
   }
 
   /// Stores one item. [id] is the device's, so a retry answers the stored item
@@ -70,8 +69,9 @@ mixin _ThreadRoutes on Requests {
     String? before,
     int? limit,
   }) async {
-    final (json, _) = await get(
+    final (items, page) = await _listAt(
       Router.threadItems(threadId),
+      'items',
       query: switch ({'since': ?since, 'before': ?before, 'limit': ?limit?.toString()}) {
         final Map<String, String> query when query.isNotEmpty => query,
         _ => null,
@@ -79,10 +79,10 @@ mixin _ThreadRoutes on Requests {
     );
     return (
       items: [
-        for (final each in json['items'] as List)
+        for (final each in items)
           if (each is Map) ThreadItem.fromJson(each),
       ],
-      cursor: json['cursor'] as String?,
+      cursor: page['cursor'] as String?,
     );
   }
 

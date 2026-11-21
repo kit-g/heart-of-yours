@@ -82,7 +82,7 @@ void main() {
         body: {'unexpected': []},
       );
 
-      await expectLater(api.getTemplates(), throwsA(isA<TypeError>()));
+      await expectLater(api.getTemplates(), throwsA(isA<UnreadableAnswer>()));
     });
 
     test('moveTemplate sends the full body plus an explicit folderId', () async {

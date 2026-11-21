@@ -10,8 +10,8 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
   /// templates in order. Read whole or not at all: the caller replaces its
   /// programs with these, and one skipped would delete its local copy.
   Future<List<Program>> getPrograms() async {
-    final (json, _) = await get(Router.programs);
-    return [for (final each in json['programs'] as List) Program.fromJson(each as Map)];
+    final (programs, _) = await _listAt(Router.programs, 'programs');
+    return [for (final each in programs) Program.fromJson(each as Map)];
   }
 
   /// One of the account's programs: what a push names when a coach sent it,
@@ -79,8 +79,8 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
   }
 
   Future<List<ProgramAction>> getProgramActions(String programId) async {
-    final (json, _) = await get(Router.programActions(programId));
-    return _readable(json['actions'] as List, ProgramAction.fromJson);
+    final (actions, _) = await _listAt(Router.programActions(programId), 'actions');
+    return _readable(actions, ProgramAction.fromJson);
   }
 
   /// Records [action]; safe to repeat on its id.
@@ -95,8 +95,8 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
   }
 
   Future<List<ProgramBase>> getProgramBases(String programId) async {
-    final (json, _) = await get(Router.programBases(programId));
-    return _readable(json['bases'] as List, ProgramBase.fromJson);
+    final (bases, _) = await _listAt(Router.programBases(programId), 'bases');
+    return _readable(bases, ProgramBase.fromJson);
   }
 
   /// Records [base]; safe to repeat on its id, and on its exercise and
@@ -117,8 +117,8 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     final skips = <TrainingSkip>[];
     String? cursor;
     do {
-      final (json, _) = await get(Router.skips, query: {'limit': '100', 'cursor': ?cursor});
-      skips.addAll(_readable(json['skips'] as List, TrainingSkip.fromJson));
+      final (page, json) = await _listAt(Router.skips, 'skips', query: {'limit': '100', 'cursor': ?cursor});
+      skips.addAll(_readable(page, TrainingSkip.fromJson));
       cursor = json['cursor'] as String?;
     } while (cursor != null);
     return skips;

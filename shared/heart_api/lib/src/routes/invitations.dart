@@ -16,8 +16,8 @@ mixin _InvitationRoutes on Requests {
 
   /// The coach's links, newest first, however they ended. Never a token.
   Future<({List<Invitation> items, String? cursor})> getInvitations({String? cursor}) async {
-    final (json, _) = await get(Router.invitations, query: _cursor(cursor));
-    return (items: _readable(json['invitations'] as List, Invitation.fromJson), cursor: json['cursor'] as String?);
+    final (invitations, page) = await _listAt(Router.invitations, 'invitations', query: _cursor(cursor));
+    return (items: _readable(invitations, Invitation.fromJson), cursor: page['cursor'] as String?);
   }
 
   /// A new token and a new week for a link nobody has answered; the old token
@@ -37,8 +37,8 @@ mixin _InvitationRoutes on Requests {
     try {
       final (json, _) = await get(Router.invitationLink(token));
       return InvitationPreview.fromJson(json);
-    } on ServerRefusal catch (refusal) {
-      if (refusal.status == 404) return null;
+    } on Exception catch (error) {
+      if (_gone(error)) return null;
       rethrow;
     }
   }
@@ -65,8 +65,8 @@ mixin _InvitationRoutes on Requests {
 
   /// Who the account has blocked, newest first.
   Future<({List<BlockedPerson> items, String? cursor})> getBlocks({String? cursor}) async {
-    final (json, _) = await get(Router.blocks, query: _cursor(cursor));
-    return (items: _readable(json['blocks'] as List, BlockedPerson.fromJson), cursor: json['cursor'] as String?);
+    final (blocks, page) = await _listAt(Router.blocks, 'blocks', query: _cursor(cursor));
+    return (items: _readable(blocks, BlockedPerson.fromJson), cursor: page['cursor'] as String?);
   }
 
   /// Lifts a block. It restores nothing: a connection it ended stays ended.

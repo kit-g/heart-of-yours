@@ -17,8 +17,8 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
       if (former) 'former': 'true',
       'cursor': ?cursor,
     };
-    final (json, _) = await get(Router.coachClients, query: query.isEmpty ? null : query);
-    return (items: _readable(json['clients'] as List, ClientSummary.fromJson), cursor: json['cursor'] as String?);
+    final (clients, page) = await _listAt(Router.coachClients, 'clients', query: query.isEmpty ? null : query);
+    return (items: _readable(clients, ClientSummary.fromJson), cursor: page['cursor'] as String?);
   }
 
   /// The coach has looked at a client: from [at], or now, only what comes
@@ -33,8 +33,8 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
 
   /// Workouts, skips and endings of every client, newest first.
   Future<({List<CoachFeedItem> items, String? cursor})> getCoachFeed({String? cursor}) async {
-    final (json, _) = await get(Router.coachFeed, query: _cursor(cursor));
-    return (items: _readable(json['items'] as List, CoachFeedItem.fromJson), cursor: json['cursor'] as String?);
+    final (items, page) = await _listAt(Router.coachFeed, 'items', query: _cursor(cursor));
+    return (items: _readable(items, CoachFeedItem.fromJson), cursor: page['cursor'] as String?);
   }
 
   /// A client's workouts, newest first, as their coach may read them: from
@@ -42,17 +42,17 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
   /// started during a pause, no photos. A [ServerRefusal] `403` once the
   /// connection ends.
   Future<({List<Workout> items, String? cursor})> getClientWorkouts(String studentId, {String? cursor}) async {
-    final (json, _) = await get(Router.clientWorkouts(studentId), query: _cursor(cursor));
+    final (workouts, page) = await _listAt(Router.clientWorkouts(studentId), 'workouts', query: _cursor(cursor));
     return (
-      items: _readable(_namedAll(json['workouts'] as List), Workout.fromJson),
-      cursor: json['cursor'] as String?,
+      items: _readable(_namedAll(workouts), Workout.fromJson),
+      cursor: page['cursor'] as String?,
     );
   }
 
   /// When a client skipped a session, never why.
   Future<List<TrainingSkip>> getClientSkips(String studentId) async {
-    final (json, _) = await get(Router.clientSkips(studentId));
-    return _readable(json['skips'] as List, TrainingSkip.fromJson);
+    final (skips, _) = await _listAt(Router.clientSkips(studentId), 'skips');
+    return _readable(skips, TrainingSkip.fromJson);
   }
 
   /// What a client's workout was asked to be, to put target beside done; null
@@ -61,8 +61,8 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
     try {
       final (json, _) = await get(Router.clientWorkoutPlan(studentId, workoutId));
       return WorkoutPlan.fromJson(json);
-    } on ServerRefusal catch (refusal) {
-      if (refusal.status == 404) return null;
+    } on Exception catch (error) {
+      if (_gone(error)) return null;
       rethrow;
     }
   }
@@ -86,8 +86,8 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
 
   /// The copies the coach manages for a client.
   Future<List<Program>> getClientPrograms(String studentId) async {
-    final (json, _) = await get(Router.clientPrograms(studentId));
-    return _readable(json['programs'] as List, Program.fromJson);
+    final (programs, _) = await _listAt(Router.clientPrograms(studentId), 'programs');
+    return _readable(programs, Program.fromJson);
   }
 
   /// One copy as the coach can see it: its sessions, and its position worked

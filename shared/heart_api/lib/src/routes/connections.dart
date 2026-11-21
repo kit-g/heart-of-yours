@@ -7,8 +7,8 @@ mixin _ConnectionRoutes on Requests {
   /// Read whole: a connection this build can't read is dropped, not fatal,
   /// since the server's roles and domains may grow ahead of the app.
   Future<List<Connection>> getConnections() async {
-    final (json, _) = await get(Router.connections);
-    return _readable(json['connections'] as List, Connection.fromJson);
+    final (connections, _) = await _listAt(Router.connections, 'connections');
+    return _readable(connections, Connection.fromJson);
   }
 
   /// What the student of a coach connection opens to their coach beyond
@@ -39,8 +39,8 @@ mixin _ConnectionRoutes on Requests {
 
   /// The workouts the account has hidden from every connection, and since when.
   Future<List<HiddenWorkout>> getHiddenWorkouts() async {
-    final (json, _) = await get(Router.hiddenWorkouts);
-    return [for (final each in (json['workouts'] as List).cast<Map>()) HiddenWorkout.fromJson(each)];
+    final (workouts, _) = await _listAt(Router.hiddenWorkouts, 'workouts');
+    return [for (final each in workouts.cast<Map>()) HiddenWorkout.fromJson(each)];
   }
 
   /// Hides a workout from every connection, peers too. [at] is when the device

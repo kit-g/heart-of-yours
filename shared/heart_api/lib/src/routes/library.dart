@@ -5,8 +5,8 @@ part of '../api.dart';
 mixin _LibraryRoutes on Requests {
   /// The library, a page at a time, without bodies.
   Future<({List<CoachProgram> items, String? cursor})> getLibraryPrograms({String? cursor}) async {
-    final (json, _) = await get(Router.libraryPrograms, query: _cursor(cursor));
-    return (items: _readable(json['programs'] as List, CoachProgram.fromJson), cursor: json['cursor'] as String?);
+    final (programs, page) = await _listAt(Router.libraryPrograms, 'programs', query: _cursor(cursor));
+    return (items: _readable(programs, CoachProgram.fromJson), cursor: page['cursor'] as String?);
   }
 
   /// One library program, with its body.

@@ -11,8 +11,9 @@ mixin _GoalRoutes on Requests implements GoalService {
     // Reading goals is scoped by whose they are — the same shape workouts use,
     // where asking for your own id is the first allowed case. `archived` picks
     // a slice rather than widening one: true returns only the achieved goals.
-    final (json, _) = await get(
+    final (goals, _) = await _listAt(
       Router.userGoals(targetUserId),
+      'goals',
       // as a query parameter, not glued onto the path — `Uri.https` encodes the
       // path, so a `?` in it arrives as `%3F` and the server sees one long path
       // segment that matches no route
@@ -25,7 +26,7 @@ mixin _GoalRoutes on Requests implements GoalService {
     // synced slice with this list, and an empty one would delete every goal it
     // holds. A goal of a kind a newer build added costs that goal, not the
     // list (#277).
-    return _readable(json['goals'] as List, Goal.fromJson);
+    return _readable(goals, Goal.fromJson);
   }
 
   @override

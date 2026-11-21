@@ -7,15 +7,15 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   /// what comes back, and an empty list says the account has none.
   @override
   Future<Iterable<Exercise>> getExercises() async {
-    final (json, _) = await get(Router.exercises);
-    return _readable(json['exercises'] as List, Exercise.fromJson);
+    final (exercises, _) = await _listAt(Router.exercises, 'exercises');
+    return _readable(exercises, Exercise.fromJson);
   }
 
   /// See [getExercises].
   @override
   Future<Iterable<Exercise>> getOwnExercises() async {
-    final (json, _) = await get(Router.exercises, query: {'owned': 'true'});
-    return _readable(json['exercises'] as List, Exercise.fromJson);
+    final (exercises, _) = await _listAt(Router.exercises, 'exercises', query: {'owned': 'true'});
+    return _readable(exercises, Exercise.fromJson);
   }
 
   @override
@@ -45,11 +45,6 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
     );
     return (row: Exercise.fromJson(json), created: created);
   }
-
-  /// [saveUnitPreference] that fails loudly: the replay has to know a step
-  /// landed before it records it. Always a `200` when it does — the endpoint
-  /// is an upsert, and the device's preference is the most recent intent.
-  Future<void> replayUnitPreference(String exerciseId, MeasurementUnit unit) => saveUnitPreference(exerciseId, unit);
 
   @override
   Future<Exercise> editExercise(Exercise exercise) => _editExercise(exercise, rename: false);
@@ -126,8 +121,8 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   /// device's notes with what this holds, and an empty answer would delete
   /// every one of them.
   Future<Iterable<ExercisePreference>> getExercisePreferences() async {
-    final (json, _) = await get(Router.exercisePreferences);
-    return _readable(json['preferences'] as List, ExercisePreference.fromJson);
+    final (preferences, _) = await _listAt(Router.exercisePreferences, 'preferences');
+    return _readable(preferences, ExercisePreference.fromJson);
   }
 
   Future<void> setExerciseNote(String exerciseId, String? note) {

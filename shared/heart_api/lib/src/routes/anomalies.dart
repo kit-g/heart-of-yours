@@ -13,13 +13,14 @@ mixin _AnomalyRoutes on Requests, _ExerciseNaming implements AnomalyService {
     String? cursor,
     int limit = 100,
   }) async {
-    final (json, _) = await get(
+    final (anomalies, page) = await _listAt(
       Router.anomalies,
+      'anomalies',
       query: {'limit': '$limit', 'cursor': ?cursor, 'status': ?status?.value},
     );
     return Page(
-      items: _readable(json['anomalies'] as List, (each) => Anomaly.fromJson(_namedAnomaly(each))),
-      hasMore: json['cursor'] != null,
+      items: _readable(anomalies, (each) => Anomaly.fromJson(_namedAnomaly(each))),
+      hasMore: page['cursor'] != null,
     );
   }
 
@@ -34,8 +35,8 @@ mixin _AnomalyRoutes on Requests, _ExerciseNaming implements AnomalyService {
     try {
       final (json, _) = await put(Router.anomaly(anomalyId), body: {'status': status.value});
       return Anomaly.fromJson(_namedAnomaly(json));
-    } on ServerRefusal catch (refusal) {
-      if (refusal.status == 404) return null;
+    } on Exception catch (error) {
+      if (_gone(error)) return null;
       rethrow;
     }
   }

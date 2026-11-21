@@ -14,8 +14,9 @@ mixin _NoteRoutes on Requests {
   /// One page of this coach's notes, on [connectionId] or on every client.
   /// `cursor` is there only when more follow.
   Future<({List<CoachNote> notes, String? cursor})> getNotes({String? connectionId, String? cursor}) async {
-    final (json, _) = await get(
+    final (notes, page) = await _listAt(
       Router.notes,
+      'notes',
       query: switch ({'connectionId': ?connectionId, 'cursor': ?cursor}) {
         final Map<String, String> query when query.isNotEmpty => query,
         _ => null,
@@ -23,10 +24,10 @@ mixin _NoteRoutes on Requests {
     );
     return (
       notes: [
-        for (final each in json['notes'] as List)
+        for (final each in notes)
           if (each is Map) CoachNote.fromJson(each),
       ],
-      cursor: json['cursor'] as String?,
+      cursor: page['cursor'] as String?,
     );
   }
 

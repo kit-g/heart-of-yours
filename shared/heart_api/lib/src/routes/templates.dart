@@ -12,8 +12,8 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
   /// A failure is thrown, never answered as no templates.
   @override
   Future<Iterable<Template>?> getTemplates() async {
-    final (json, _) = await get(Router.templates);
-    return _readable(_namedAll(json['templates'] as List, counts: true), Template.fromJson);
+    final (templates, _) = await _listAt(Router.templates, 'templates');
+    return _readable(_namedAll(templates, counts: true), Template.fromJson);
   }
 
   /// One of the account's templates: a session of a program a push named
@@ -72,10 +72,10 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
   /// is whoever the auth header says, so [userId] plays no part in the request.
   @override
   Future<Iterable<TemplateFolder>> getFolders({required String userId}) async {
-    final (json, _) = await get(Router.templateFolders);
+    final (folders, _) = await _listAt(Router.templateFolders, 'folders');
     // whole or not at all: the caller replaces its folders with these, so a
     // folder skipped here would delete its local copy (see [_readable])
-    return _readable(json['folders'] as List, TemplateFolder.fromJson);
+    return _readable(folders, TemplateFolder.fromJson);
   }
 
   @override
@@ -121,8 +121,13 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     required String targetUserId,
     required String folderId,
   }) async {
-    final (json, _) = await post(Router.folderShare(targetUserId, folderId));
-    return _readable(json['shares'] as List, _shareFromJson);
+    // the one list that answers a POST, so its shape is read here
+    final path = Router.folderShare(targetUserId, folderId);
+    final (json, status) = await post(path);
+    return switch (json['shares']) {
+      final List shares => _readable(shares, _shareFromJson),
+      _ => throw UnreadableAnswer(statusCode: status, method: 'POST', path: '/$path'),
+    };
   }
 
   /// [TemplateShare] only knows how to read itself off a database row; this is

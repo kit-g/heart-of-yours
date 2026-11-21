@@ -217,6 +217,39 @@ void main() {
     }
   });
 
+  test('a 2xx without its list is an UnreadableAnswer on the route, never a cast error', () async {
+    raw(Router.userGoals('u1'), 200, '{"error": "no goals key"}');
+    await expectLater(
+      api.getTargetUserGoals(requesterId: 'u1', targetUserId: 'u1'),
+      throwsA(
+        isA<UnreadableAnswer>()
+            .having((e) => e.statusCode, 'status', 200)
+            .having((e) => '$e', 'message', 'NetworkException(200 GET /v1/accounts/u1/goals)'),
+      ),
+    );
+  });
+
+  group('a 404 is gone, named or not', () {
+    for (final (name, body) in [
+      ('named', '{"error": "not found", "code": "not_found"}'),
+      ("the gateway's", '{"message": "Not Found"}'),
+      ('bodiless', ''),
+    ]) {
+      test(name, () async {
+        raw(Router.invitationLink('tok'), 404, body);
+        expect(await api.previewInvitation('tok'), isNull);
+
+        raw(Router.clientWorkoutPlan('sam', 'w1'), 404, body);
+        expect(await api.getClientWorkoutPlan('sam', 'w1'), isNull);
+      });
+    }
+
+    test('and anything else still fails', () async {
+      raw(Router.invitationLink('tok'), 500, '{}');
+      await expectLater(api.previewInvitation('tok'), throwsA(isA<NetworkException>()));
+    });
+  });
+
   test('a write or a delete never swallows a failure', () async {
     for (final method in ['POST', 'DELETE']) {
       for (final path in [Router.exercisePreferences, Router.exercisePreference('e1'), Router.goal('g1')]) {

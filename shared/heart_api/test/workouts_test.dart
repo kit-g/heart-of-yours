@@ -5,7 +5,7 @@ import 'package:heart_api/src/imports.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:http/http.dart' as http;
 import 'package:mockito/mockito.dart';
-import 'package:network_utils/network_utils.dart' show NetworkException;
+import 'package:network_utils/network_utils.dart' show NetworkException, originOf;
 import 'package:test/test.dart';
 
 import 'support/http.dart';
@@ -449,7 +449,7 @@ void main() {
       };
     }
 
-    test('importWorkouts sends the CSV as-is — jsonEncode would wrap it in quotes', () async {
+    test('importWorkouts sends the CSV whole, in the envelope every import rides', () async {
       api.authenticate({'Authorization': 'Bearer token-1'});
       addTearDown(() => api.defaultHeaders = null);
 
@@ -484,10 +484,48 @@ void main() {
           body: captureAnyNamed('body'),
         ),
       ).captured;
-      // the raw file, not jsonEncode's quoted-and-escaped copy of it
-      expect(body, same(csv));
+      // the file as it was, and no allowlist: the one-shot import
+      expect(jsonDecode(body), {'csv': csv});
       expect(headers, containsPair('Authorization', 'Bearer token-1'));
-      expect(headers, containsPair('Content-Type', 'text/csv'));
+      expect(headers, containsPair('Content-Type', 'application/json'));
+    });
+
+    test('a 426 on an import is UpgradeRequired, and the upgrade gate fires', () async {
+      final upgrades = <Map>[];
+      api = Api(
+        gateway: 'api.example.com',
+        client: client,
+        onUpgradeRequired: (json) {
+          upgrades.add(json);
+          return (json, 426);
+        },
+      );
+      respond(
+        client: client,
+        method: 'POST',
+        path: Router.workoutImports,
+        query: {'source': 'strong'},
+        statusCode: 426,
+        body: {'error': 'upgrade required'},
+      );
+
+      await expectLater(api.importWorkouts(csv), throwsA(isA<UpgradeRequired>()));
+      expect(upgrades, hasLength(1));
+    });
+
+    test('a refusal on an import keeps the response it came from', () async {
+      respond(
+        client: client,
+        method: 'POST',
+        path: Router.workoutImports,
+        query: {'source': 'strong'},
+        statusCode: 403,
+        body: {'error': 'forbidden', 'code': 'forbidden'},
+      );
+
+      final refusal = await api.importWorkouts(csv).then<Object>((_) => fail('answered'), onError: (Object e) => e);
+      expect(refusal, refused('forbidden'));
+      expect(originOf(refusal)?.statusCode, 403);
     });
 
     test('importWorkouts sends only the source when unit and offset are not given', () async {
@@ -528,7 +566,11 @@ void main() {
         path: Router.workoutImports,
         query: {'source': 'strong'},
         statusCode: 400,
-        body: {'reason': 'not a Strong export: missing "Workout Name" column'},
+        body: {
+          'error': 'bad request',
+          'code': 'bad_request',
+          'reason': 'not a Strong export: missing "Workout Name" column',
+        },
       );
 
       expect(
@@ -634,7 +676,7 @@ void main() {
       ]);
       expect(preview.rowsSkipped, 3);
 
-      // still the raw file — a preview is the same request, minus the write
+      // the same file — a preview is the same request, minus the write
       final [_, body] = verify(
         client.post(
           Uri.https('api.example.com', Router.workoutImports, query),
@@ -642,7 +684,7 @@ void main() {
           body: captureAnyNamed('body'),
         ),
       ).captured;
-      expect(body, same(csv));
+      expect(jsonDecode(body), {'csv': csv});
     });
 
     test('importWorkouts carries the consent allowlist in a JSON envelope', () async {

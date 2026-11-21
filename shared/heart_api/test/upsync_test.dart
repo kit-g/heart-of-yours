@@ -105,11 +105,11 @@ void main() {
 
   test('a unit preference replay fails loudly on anything but success', () async {
     _post(client, Router.exercisePreferences, 200, {'exerciseId': 'e1', 'unitSystem': 'imperial'});
-    await api.replayUnitPreference('e1', .imperial);
+    await api.saveUnitPreference('e1', .imperial);
     expect(sentBody(), {'exerciseId': 'e1', 'unitSystem': 'imperial'});
 
     _post(client, Router.exercisePreferences, 500, {'error': 'server_error', 'code': 'server_error'});
-    expect(() => api.replayUnitPreference('e1', .imperial), throwsA(isA<NetworkException>()));
+    expect(() => api.saveUnitPreference('e1', .imperial), throwsA(isA<NetworkException>()));
   });
 
   group('folders', () {

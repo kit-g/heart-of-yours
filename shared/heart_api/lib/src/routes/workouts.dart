@@ -161,15 +161,13 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
     return WorkoutImportReport.fromJson(json);
   }
 
-  /// The body is raw CSV — except when carrying [createCustom], which rides a
-  /// JSON envelope (`{"csv": …, "createCustom": […]}`), the shape the server
-  /// keys off the content type.
-  ///
-  /// Talks to the [client] directly rather than through [Requests.post],
-  /// which runs every body through jsonEncode — the CSV must arrive as-is,
-  /// not as one quoted JSON string. The trade is the mixin's private
-  /// 401-reauthenticate-and-retry wrapper: an expired token fails the call
-  /// (the token heals on other traffic, and retrying is free).
+  /// The export rides a JSON envelope (`{"csv": …, "createCustom": […]}`),
+  /// which the server reads by its content type; without `createCustom` it
+  /// is the one-shot import that creates every unmatched name. Sent through
+  /// [Requests.post] like every other call, so a failure is read in one
+  /// place ([Api.failure]): the upgrade gate fires on a 426, a refusal keeps
+  /// the response it came from, and an expired token is refreshed and asked
+  /// again.
   Future<Map> _postImport(
     String export, {
     required ImportSource source,
@@ -178,60 +176,33 @@ mixin _WorkoutRoutes on Requests, _ExerciseNaming implements RemoteWorkoutServic
     bool dryRun = false,
     List<String>? createCustom,
   }) async {
-    final url = Uri.https(
-      gateway,
-      Router.workoutImports,
-      {
-        'source': source.name,
-        if (dryRun) 'dryRun': 'true',
-        'unit': ?unit?.name,
-        'tzOffset': ?_formatOffset(tzOffset),
-      },
-    );
-    final (contentType, body) = switch (createCustom) {
-      null => ('text/csv', export),
-      List<String> names => ('application/json', jsonEncode({'csv': export, 'createCustom': names})),
-    };
-    final response = await (client?.post ?? http.post)(
-      url,
-      headers: {...?defaultHeaders, 'Content-Type': contentType},
-      body: body,
-    );
-    final json = _tryDecode(response.body);
-    return switch ((response.statusCode, json)) {
-      (200, Map json) => json,
-      // kept for a manual import, on a dry run and a commit alike
-      (202, Map json) => throw ImportParked(
-        reason: switch (json['reason']) {
-          String reason => reason,
-          _ => null,
+    try {
+      final (json, code) = await post(
+        Router.workoutImports,
+        headers: const {'Content-Type': 'application/json'},
+        body: {'csv': export, 'createCustom': ?createCustom},
+        query: {
+          'source': source.name,
+          if (dryRun) 'dryRun': 'true',
+          'unit': ?unit?.name,
+          'tzOffset': ?_formatOffset(tzOffset),
         },
-      ),
-      (400, {'reason': String reason}) => throw ImportRejected(reason: reason),
-      // read as every other failure is, by [failure]: a named refusal, a
-      // forced upgrade, or a NetworkException without the body
-      (final code, final json) => throw failure(
-        NetworkException(
-          statusCode: code,
-          body: switch (json) {
-            Map m => m,
+      );
+      return switch (code) {
+        // kept for a manual import, on a dry run and a commit alike
+        202 => throw ImportParked(
+          reason: switch (json['reason']) {
+            String reason => reason,
             _ => null,
           },
-          method: 'POST',
-          path: url.path,
         ),
-      ),
-    };
-  }
-
-  /// The gateway rejects a bad auth header with a *plain-text* body (see
-  /// [reauthenticate]) — classify by status instead of letting jsonDecode's
-  /// FormatException escape as the error.
-  static Object? _tryDecode(String body) {
-    try {
-      return jsonDecode(body);
-    } on FormatException {
-      return null;
+        _ => json,
+      };
+    } on ServerRefusal catch (refusal, stacktrace) {
+      if (refusal case ServerRefusal(status: 400, details: {'reason': final String reason})) {
+        Error.throwWithStackTrace(ImportRejected(reason: reason), stacktrace);
+      }
+      rethrow;
     }
   }
 
