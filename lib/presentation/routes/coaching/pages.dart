@@ -47,25 +47,30 @@ class CoachMePage extends StatelessWidget {
           const SizedBox(height: 24),
           // Material 3's tile insets its end by 24, which left the chevron
           // short of where the page's other edges are
-          ListTile(
-            key: AppKeys.coachingSettings,
+          ListTileTheme.merge(
             contentPadding: const .symmetric(horizontal: 16),
-            leading: const Icon(Icons.settings_rounded),
-            title: Text(l.settings),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: onSettings,
-          ),
-          ListTile(
-            key: AppKeys.coachingLogOut,
-            contentPadding: const .symmetric(horizontal: 16),
-            leading: const Icon(Icons.logout_rounded),
-            title: Text(l.logOut),
-            // signed out, the space goes as if it had never been built, and
-            // the frame takes the user back to their own
-            onTap: () {
-              AppTheme.of(context).onSignOut();
-              clearState(context);
-            },
+            child: Column(
+              children: [
+                ListTile(
+                  key: AppKeys.coachingSettings,
+                  leading: const Icon(Icons.settings_rounded),
+                  title: Text(l.settings),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: onSettings,
+                ),
+                ListTile(
+                  key: AppKeys.coachingLogOut,
+                  leading: const Icon(Icons.logout_rounded),
+                  title: Text(l.logOut),
+                  // signed out, the space goes as if it had never been built, and
+                  // the frame takes the user back to their own
+                  onTap: () {
+                    AppTheme.of(context).onSignOut();
+                    clearState(context);
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),

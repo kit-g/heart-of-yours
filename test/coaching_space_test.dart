@@ -166,8 +166,14 @@ void main() {
     final settings = find.byKey(AppKeys.coachingSettings);
     final icon = tester.getRect(find.descendant(of: settings, matching: find.byIcon(Icons.settings_rounded)));
     final chevron = tester.getRect(find.descendant(of: settings, matching: find.byIcon(Icons.chevron_right_rounded)));
+    // the icons' boxes, not their glyphs: the inset is the tile's to set
     expect(icon.left - page.left, 16);
     expect(page.right - chevron.right, 16);
+    final logOut = find.byKey(AppKeys.coachingLogOut);
+    expect(
+      tester.getRect(find.descendant(of: logOut, matching: find.byIcon(Icons.logout_rounded))).left - page.left,
+      16,
+    );
   });
 
   testWidgets('the app opens in the space it was left in', (tester) async {
