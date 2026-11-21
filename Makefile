@@ -132,13 +132,22 @@ $(filter-out test-heart_language,$(TEST_TARGETS)): test-%: codegen-%
 # could start last. SHARD=<k>/<n> runs every n-th file from the k-th (1-based),
 # so CI can spread the suite over n jobs that each compile only their own
 # files; each shard's report is app.<k>-of-<n>, and the summary adds them up.
+# A SHARD that selects nothing is an error: an empty list would make a bare
+# `flutter test`, which runs the whole suite under the shard's name.
 SHARD ?= 1/1
 APP_TEST_FILES = $(shell find test -name '*_test.dart' | LC_ALL=C sort | \
-	awk -v k=$(word 1,$(subst /, ,$(SHARD))) -v n=$(word 2,$(subst /, ,$(SHARD))) '(NR - 1) % n == k - 1')
+	awk -v k=$(word 1,$(subst /, ,$(SHARD))) -v n=$(word 2,$(subst /, ,$(SHARD))) \
+	'n > 0 && k >= 1 && k <= n && (NR - 1) % n == k - 1')
 
 test-app: codegen-app codegen-heart_language
+	$(if $(APP_TEST_FILES),,$(error SHARD=$(SHARD) selects no test files: it is <k>/<n>, k from 1 to n))
 	$(call suite_test,$(APP_TEST_FILES),app$(if $(filter-out 1/1,$(SHARD)),.$(subst /,-of-,$(SHARD))))
 
+# The encryption package (#565): its Rust crate, then its Dart API over the
+# library the build hook compiles. dart test from inside the package, since a
+# test run from the root builds native code only for what the app depends on.
+# Needs Rust (rustup): rust-toolchain.toml pins the toolchain, and the hook adds
+# each target as it builds for it. REPORTS_DIR is made absolute: the recipe cd's.
 test-sealbox:
 	cd shared/sealbox/rust && cargo fmt --check && cargo clippy --all-targets --locked -- -D warnings && cargo test --locked
 	cd shared/sealbox && $(if $(REPORTS_DIR),mkdir -p "$(abspath $(REPORTS_DIR))" && )dart test $(if $(REPORTS_DIR),--file-reporter="json:$(abspath $(REPORTS_DIR))/sealbox.json")

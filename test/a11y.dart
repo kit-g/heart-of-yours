@@ -9,7 +9,7 @@
 //
 // The sweep is over a thousand tests, far longer than any other file, and a
 // file runs on one worker. So it is not a test file itself: `a11y_<n>_test.dart`
-// each run every [a11yShards]th test of it, and the runner spreads them out.
+// each run every [_shards]th test of it, and the runner spreads them out.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -1300,19 +1300,35 @@ final _matrix = <(_Screen, _Guideline, String?)>[
 ];
 
 /// How many `a11y_<n>_test.dart` files split the sweep between them.
-const a11yShards = 4;
+const _shards = 4;
+
+/// A shard file's name and the number it passes: `a11y_2_test.dart` runs
+/// `a11y(shard: 2)`.
+final _shardFile = RegExp(r'^a11y_(\d+)_test\.dart$');
+final _shardCall = RegExp(r'a11y\(shard: (\d+)\)');
 
 /// Registers the tests of the sweep that fall to [shard], one of
-/// `0 ..< a11yShards`: every [a11yShards]th, so each shard gets a share of
+/// `0 ..< _shards`: every [_shards]th, so each shard gets a share of
 /// every screen and guideline rather than a contiguous, unevenly heavy run.
 void a11y({required int shard}) {
-  // A shard file with no number to match would leave its tests unrun, silently.
-  if (shard == 0) {
-    test('there is one shard file per shard', () {
-      final files = Directory('test').listSync().map((file) => file.uri.pathSegments.last);
-      expect(files.where(RegExp(r'^a11y_\d+_test\.dart$').hasMatch), hasLength(a11yShards));
-    });
-  }
+  assert(0 <= shard && shard < _shards, 'shard $shard is not one of 0 ..< $_shards');
+
+  // The cache keeps the first directory it is given for the whole file, so the
+  // file gets one of its own: nothing it writes outlives the run or is shared
+  // with the shards running beside it.
+  final temporary = Directory.systemTemp.createTempSync('a11y');
+  tearDownAll(() => temporary.deleteSync(recursive: true));
+
+  // A shard number with no file, or a file running another's number, leaves
+  // tests unrun, silently. Every shard checks, so losing one still fails.
+  test('each shard has one file, running its own number', () {
+    final files = {
+      for (final file in Directory('test').listSync().whereType<File>())
+        if (_shardFile.firstMatch(file.uri.pathSegments.last) case final name?)
+          int.parse(name[1]!): _shardCall.firstMatch(file.readAsStringSync())?[1],
+    };
+    expect(files, {for (final n in Iterable.generate(_shards)) n: '$n'});
+  });
 
   late MockLocalDatabase db;
   late MockApi api;
@@ -1334,7 +1350,10 @@ void a11y({required int shard}) {
     );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       _pathProviderChannel,
-      (_) async => Directory.systemTemp.path,
+      (call) async => switch (call.method) {
+        'getTemporaryDirectory' || 'getApplicationSupportDirectory' => temporary.path,
+        _ => null,
+      },
     );
     addTearDown(
       () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -2893,7 +2912,7 @@ void a11y({required int shard}) {
       })
         (screen, guideline, reason, preset),
   ];
-  final mine = cases.indexed.where((each) => each.$1 % a11yShards == shard).map((each) => each.$2);
+  final mine = cases.indexed.where((each) => each.$1 % _shards == shard).map((each) => each.$2);
 
   for (final (screen, guideline, reason, preset) in mine) {
     final description = switch (reason) {
