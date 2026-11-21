@@ -1,7 +1,6 @@
 library;
 
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_body_atlas/flutter_body_atlas.dart';

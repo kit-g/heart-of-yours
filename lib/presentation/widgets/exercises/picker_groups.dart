@@ -7,10 +7,11 @@ part of 'exercises.dart';
 Future<void> showPickerGroupingMenu(BuildContext anchor) async {
   const width = 200.0;
   final shown = ShownPickerGrouping.of(Preferences.of(anchor));
+  final (:position, :constraints) = menuEndingUnder(anchor, width: width);
   final picked = await showMenu<PickerGrouping>(
     context: anchor,
-    position: menuEndingUnder(anchor, width: width),
-    constraints: const .tightFor(width: width),
+    position: position,
+    constraints: constraints,
     items: shown.items(L.of(anchor), (each) => each),
   );
   if (!anchor.mounted) return;

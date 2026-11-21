@@ -135,10 +135,8 @@ void main() {
     await tester.tap(find.text(bench.name));
     await tester.pumpTimes();
     final button = tester.getRect(find.byTooltip('Exercise options').first);
-    final pane = switch (find.byType(NavigationRail).evaluate().isEmpty) {
-      true => 0.0,
-      false => tester.getRect(find.byType(NavigationRail)).right,
-    };
+    final rail = find.byType(NavigationRail);
+    final pane = rail.evaluate().isEmpty ? 0.0 : tester.getRect(rail).right;
 
     await openOptions(tester);
 

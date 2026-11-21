@@ -445,10 +445,11 @@ class _BarRowState extends State<_BarRow> {
 
   Future<void> _pick(BuildContext context, String label) async {
     final l = L.of(context);
+    final (:position, :constraints) = menuUnderValue(context, _valueKey, width: _barMenuWidth);
     final picked = await showMenu<_BarChoice>(
       context: context,
-      position: menuUnderValue(context, _valueKey, width: _barMenuWidth),
-      constraints: const BoxConstraints(minWidth: _barMenuWidth, maxWidth: _barMenuWidth),
+      position: position,
+      constraints: constraints,
       items: [
         for (final each in Bar.values)
           PopupMenuItem<_BarChoice>(

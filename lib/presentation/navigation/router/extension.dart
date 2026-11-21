@@ -321,15 +321,3 @@ extension on BuildContext {
     return push(_galleryPath, extra: (media, startingIndex, workoutId));
   }
 }
-
-/// Whether [route] is a page of the exercise archive: the tab's, or the one
-/// over any tab. What unarchiving the last exercise in it steps back past —
-/// identified by route, because whether it is under an exercise's page at
-/// all depends on how the page was reached: the tab's archive opens its
-/// exercises with a `go`, which leaves it out of the stack.
-bool isExerciseArchive(Route<dynamic> route) {
-  return switch (route.settings.name) {
-    _exerciseArchive || _exerciseArchiveOverName => true,
-    _ => false,
-  };
-}

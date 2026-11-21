@@ -2,6 +2,8 @@
 // Exercises tab's and a workout's, not a sheet at the bottom of the screen.
 // The menu closes itself on a pick, so archiving and unarchiving leave the
 // page on their own: off it, past an archive emptied, and a failure said.
+import 'dart:async';
+
 import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoActionSheet;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -242,11 +244,15 @@ void main() {
     });
   });
 
-  // through the app's own routes: the tab's archive opens an exercise with a
-  // `go`, which leaves the archive out of the stack under its page
+  // through the app's own routes, which decide where a page lands: the tab's
+  // archive opens an exercise with a `go` on a tablet, the archive over the
+  // tabs pushes one, and a link can open one with nothing under it
   group('in the app', () {
     final bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
     final shelved = Exercise(name: 'Old Curl', category: .dumbbell, target: .arms, isMine: true).copyWith(
+      isArchived: true,
+    );
+    final shelvedToo = Exercise(name: 'Old Row', category: .dumbbell, target: .back, isMine: true).copyWith(
       isArchived: true,
     );
 
@@ -260,58 +266,126 @@ void main() {
       when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench, shelved]));
     });
 
-    for (final (device, size) in [
-      ('a phone', const Size(390, 844)),
-      ('a tablet\'s two panes', const Size(1194, 834)),
+    Future<void> start(WidgetTester tester, {Size size = const Size(390, 844)}) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await const TestAppHarness().pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: MockCdn(),
+        firebaseAuth: MockFirebaseAuth(signedIn: false),
+        settle: false,
+      );
+      await tester.pumpTimes();
+      // the startup chain never resolves under a widget test's clock
+      await Exercises.of(tester.element(find.byType(MaterialApp))).init();
+      await tester.pumpTimes();
+    }
+
+    Exercises exercises(WidgetTester tester) => Exercises.of(tester.element(find.byType(MaterialApp)));
+
+    GoRouter router(WidgetTester tester) => GoRouter.of(tester.element(find.byType(Scaffold).first));
+
+    Future<void> openFromTheTab(WidgetTester tester, Exercise exercise) async {
+      await tester.tapByKey(AppKeys.exercisesStack);
+      await tester.pumpTimes();
+      await tester.tap(find.byTooltip('Exercise options').first);
+      await tester.pumpTimes();
+      await tester.tap(find.text('Show archived'));
+      await tester.pumpTimes();
+      await tester.tap(find.text(exercise.name));
+      await tester.pumpTimes();
+    }
+
+    Future<void> unarchive(WidgetTester tester) async {
+      await tester.tap(find.byTooltip('Exercise options').last);
+      await tester.pumpTimes();
+      await tester.tap(find.text('Unarchive'));
+      await tester.pumpTimes();
+    }
+
+    testWidgets('on a phone, unarchiving the last one lands on the library', (tester) async {
+      await start(tester);
+      await openFromTheTab(tester, shelved);
+
+      await unarchive(tester);
+
+      expect(exercises(tester).archived, isEmpty);
+      expect(find.text('Archived exercises'), findsNothing);
+      expect(find.byType(ExerciseDetailPage), findsNothing);
+      // the library, still there to use
+      expect(find.text(bench.name), findsOneWidget);
+      expect(find.byTooltip('Exercise options'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('on a phone, unarchiving one of several lands back on the archive', (tester) async {
+      when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench, shelved, shelvedToo]));
+      await start(tester);
+      await openFromTheTab(tester, shelved);
+
+      await unarchive(tester);
+
+      expect(find.byType(ExerciseDetailPage), findsNothing);
+      expect(find.text('Archived exercises'), findsOneWidget);
+      expect(find.text(shelvedToo.name), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('on a tablet\'s two panes, unarchiving the last one keeps the library', (tester) async {
+      await start(tester, size: const Size(1194, 834));
+      await tester.tapByKey(AppKeys.exercisesStack);
+      await tester.pumpTimes();
+      // the tab's archive is not shown beside the library on a tablet (#718):
+      // the page is reached as the archive's rows reach it, with a `go`
+      router(tester).go('/exercises/${shelved.id}');
+      await tester.pumpTimes();
+
+      await unarchive(tester);
+
+      expect(exercises(tester).archived, isEmpty);
+      expect(find.byType(ExerciseDetailPage), findsNothing);
+      expect(find.text(bench.name), findsOneWidget);
+      expect(find.byTooltip('Exercise options'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    // the archive over any tab (#608), an exercise opened over it in turn
+    for (final (outcome, archived) in [
+      ('the last one steps back past the emptied archive too', [shelved]),
+      ('one of several lands back on the archive', [shelved, shelvedToo]),
     ]) {
-      testWidgets('on $device, unarchiving the last one lands on the library', (tester) async {
-        tester.view.physicalSize = size;
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.reset);
-        await const TestAppHarness().pumpHeartApp(
-          tester,
-          db: db,
-          api: api,
-          cdn: MockCdn(),
-          firebaseAuth: MockFirebaseAuth(signedIn: false),
-          settle: false,
-        );
+      testWidgets('over the tabs, unarchiving $outcome', (tester) async {
+        when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench, ...archived]));
+        await start(tester);
+        unawaited(router(tester).push('/archived-exercises'));
         await tester.pumpTimes();
-        await tester.tapByKey(AppKeys.exercisesStack);
-        await tester.pumpTimes();
-        // the startup chain never resolves under a widget test's clock
-        await Exercises.of(tester.element(find.byType(MaterialApp))).init();
+        expect(find.text('Archived exercises'), findsOneWidget);
+        await tester.tap(find.text(shelved.name));
         await tester.pumpTimes();
 
-        switch (size.width >= 600) {
-          // the tab's archive is not shown beside the library on a tablet: the
-          // page is reached as the archive's rows reach it, with a `go`
-          case true:
-            GoRouter.of(tester.element(find.byType(ExercisesPage))).go('/exercises/${shelved.id}');
-            await tester.pumpTimes();
-          case false:
-            await tester.tap(find.byTooltip('Exercise options').first);
-            await tester.pumpTimes();
-            await tester.tap(find.text('Show archived'));
-            await tester.pumpTimes();
-            await tester.tap(find.text(shelved.name));
-            await tester.pumpTimes();
-        }
+        await unarchive(tester);
 
-        await tester.tap(find.byTooltip('Exercise options').last);
-        await tester.pumpTimes();
-        await tester.tap(find.text('Unarchive'));
-        await tester.pumpTimes();
-
-        final exercises = Exercises.of(tester.element(find.byType(MaterialApp)));
-        expect(exercises.archived, isEmpty);
-        expect(find.text('Archived exercises'), findsNothing);
         expect(find.byType(ExerciseDetailPage), findsNothing);
-        // the library, still there to use
-        expect(find.text(bench.name), findsOneWidget);
-        expect(find.byTooltip('Exercise options'), findsOneWidget);
+        expect(find.byType(ExerciseArchive), archived.length == 1 ? findsNothing : findsOneWidget);
         expect(tester.takeException(), isNull);
       });
     }
+
+    testWidgets('a page a link opened with nothing under it leaves for the library', (tester) async {
+      await start(tester);
+      router(tester).go('/exercise/${shelved.id}');
+      await tester.pumpTimes();
+      expect(find.byType(ExerciseDetailPage), findsOneWidget);
+
+      await unarchive(tester);
+
+      expect(exercises(tester).archived, isEmpty);
+      expect(find.byType(ExerciseDetailPage), findsNothing);
+      expect(find.text(bench.name), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

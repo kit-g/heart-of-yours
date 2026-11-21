@@ -838,15 +838,16 @@ class _ExerciseOptionsButtonState extends State<_ExerciseOptionsButton> {
   }
 
   Future<void> _open() async {
-    RelativeRect anchor() => menuUnderValue(context, _anchor, width: _exerciseMenuWidth);
+    MenuPlacement anchor() => menuUnderValue(context, _anchor, width: _exerciseMenuWidth);
+    final (:position, :constraints) = anchor();
     final picked = await showMenu<_ExerciseAction>(
       context: context,
-      position: anchor(),
-      constraints: const BoxConstraints(minWidth: _exerciseMenuWidth, maxWidth: _exerciseMenuWidth),
+      position: position,
+      constraints: constraints,
       items: widget.options(),
     );
     if (!mounted) return;
-    picked?.call(anchor());
+    picked?.call(anchor().position);
   }
 }
 

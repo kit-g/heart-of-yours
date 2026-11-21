@@ -118,21 +118,16 @@ extension on Duration {
 const _optionsMenuWidth = 240.0;
 
 /// Shows [items] in a menu hanging off [button], its right edge on the
-/// button's: [_optionsMenuWidth] wide, or as wide as the room left of the
-/// button where that is less — a master pane at the 600pt breakpoint.
+/// button's: [_optionsMenuWidth] wide where there is room, narrower where
+/// there is not (see [menuEndingUnder]).
 ///
 /// [showMenu] rather than a [PopupMenuButton]: the button's own menu starts at
 /// the button's left edge wherever there is more room to its right than its
 /// left, which, for the trailing button of a narrow master pane, is out over
 /// the detail pane.
 Future<T?> _showOptions<T>(BuildContext button, List<PopupMenuEntry<T>> items) {
-  final width = math.min(_optionsMenuWidth, menuRoomEndingUnder(button));
-  return showMenu<T>(
-    context: button,
-    position: menuEndingUnder(button, width: width),
-    constraints: .tightFor(width: width),
-    items: items,
-  );
+  final (:position, :constraints) = menuEndingUnder(button, width: _optionsMenuWidth);
+  return showMenu<T>(context: button, position: position, constraints: constraints, items: items);
 }
 
 /// What an exercise page's ⋯ offers.
@@ -149,6 +144,8 @@ Future<void> _onExerciseMenu(
   BuildContext button,
   Exercise exercise, {
   void Function(Exercise target)? onHistoryMoved,
+  VoidCallback? onArchived,
+  VoidCallback? onUnarchived,
 }) async {
   final l = L.of(button);
   final options = <_ExerciseOption>[
@@ -156,8 +153,8 @@ Future<void> _onExerciseMenu(
     if (_canMoveHistory(button, exercise, onMoved: onHistoryMoved)) .moveHistory,
     if (exercise.isMine) exercise.isArchived ? .unarchive : .archive,
   ];
-  // the button is shown by what held at the last build, the options by what
-  // holds now: a workout started since can take the move, the only option
+  // a backstop: the button watches what these read, and is not there when
+  // they come to nothing
   if (options.isEmpty) return;
   final picked = await _showOptions<_ExerciseOption>(
     button,
@@ -173,9 +170,9 @@ Future<void> _onExerciseMenu(
     case .moveHistory:
       if (onHistoryMoved case final onMoved?) _onMoveHistory(button, exercise, onMoved: onMoved);
     case .archive:
-      unawaited(_onArchive(button, exercise));
+      unawaited(_onArchive(button, exercise, onArchived: onArchived));
     case .unarchive:
-      unawaited(_onUnarchive(button, exercise));
+      unawaited(_onUnarchive(button, exercise, onUnarchived: onUnarchived));
     case null:
       break;
   }
@@ -202,9 +199,22 @@ PopupMenuItem<T> _optionItem<T>(T value, {required IconData icon, required Strin
   );
 }
 
-Future<void> _onArchive(BuildContext context, Exercise exercise) async {
+/// Asks before archiving; confirmed, leaves the page, then archives.
+///
+/// Everything the answer needs is read now, from the page: the dialog sits on
+/// the root navigator and can outlive the page, as when a link the user
+/// follows meanwhile `go`es elsewhere and replaces what was under it.
+Future<void> _onArchive(BuildContext context, Exercise exercise, {VoidCallback? onArchived}) {
   final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
-  final L(:archiveConfirmTitle, :archiveConfirmBody, :archive, :cancel) = L.of(context);
+  final copy = L.of(context);
+  final L(:archiveConfirmTitle, :archiveConfirmBody, :archive, :cancel) = copy;
+  final root = Navigator.of(context, rootNavigator: true);
+  final leave = _leaving(context, onArchived);
+  final putAway = _putAway(
+    context,
+    (exercises) => exercises.archive(exercise),
+    copy.exerciseArchiveFailed(exercise.name),
+  );
   return showBrandedDialog(
     context,
     title: Text(
@@ -228,9 +238,7 @@ Future<void> _onArchive(BuildContext context, Exercise exercise) async {
             child: Center(
               child: Text(cancel),
             ),
-            onPressed: () {
-              Navigator.of(context, rootNavigator: true).pop();
-            },
+            onPressed: () => root.pop(),
           ),
           PrimaryButton.wide(
             backgroundColor: colorScheme.errorContainer,
@@ -241,7 +249,9 @@ Future<void> _onArchive(BuildContext context, Exercise exercise) async {
               ),
             ),
             onPressed: () {
-              unawaited(_onConfirmArchive(context, exercise));
+              root.pop();
+              leave();
+              unawaited(putAway());
             },
           ),
         ],
@@ -250,50 +260,54 @@ Future<void> _onArchive(BuildContext context, Exercise exercise) async {
   );
 }
 
-/// Out of the dialog and off the page, which has nothing left to show once the
-/// exercise is put away; then the archiving, whose failure is told where the
-/// user has gone.
-Future<void> _onConfirmArchive(BuildContext context, Exercise exercise) async {
-  // read while the page is still here: the pops take its context with it
-  final exercises = Exercises.of(context);
-  final messenger = ScaffoldMessenger.of(context);
-  final copy = L.of(context);
-  Navigator.of(context, rootNavigator: true).pop();
-  _leavePage(context);
-  try {
-    await exercises.archive(exercise);
-  } catch (e, s) {
-    reportToSentry(e, stacktrace: s);
-    messenger.snack(copy.exerciseArchiveFailed(exercise.name));
-  }
+/// Leaves the page, then takes the exercise out of the archive.
+Future<void> _onUnarchive(BuildContext context, Exercise exercise, {VoidCallback? onUnarchived}) {
+  final putAway = _putAway(
+    context,
+    (exercises) => exercises.unarchive(exercise),
+    L.of(context).exerciseUnarchiveFailed(exercise.name),
+  );
+  _leaving(context, onUnarchived)();
+  return putAway();
 }
 
-/// Off the page, and, when the exercise was the last one archived, past the
-/// archive under it too: an empty archive is no place to land. Before the
-/// unarchiving, as an archive leaves before its own: counted afterwards, the
-/// pops would take whatever the user had opened or gone back to meanwhile.
-Future<void> _onUnarchive(BuildContext context, Exercise exercise) async {
-  final exercises = Exercises.of(context);
-  final messenger = ScaffoldMessenger.of(context);
-  final copy = L.of(context);
-  final navigator = Navigator.of(context);
-  final emptied = exercises.archived.every((each) => each.id == exercise.id);
-  if (_leavePage(context) && emptied) navigator.popUntil((route) => !isExerciseArchive(route));
-  try {
-    await exercises.unarchive(exercise);
-  } catch (e, s) {
-    reportToSentry(e, stacktrace: s);
-    messenger.snack(copy.exerciseUnarchiveFailed(exercise.name));
-  }
-}
-
-/// Pops the page [context] is on, if it is still the one on top; says whether
-/// it did. Only that page: whatever is on top instead is the user's.
-bool _leavePage(BuildContext context) {
+/// How the page leaves once its exercise is archived or unarchived, read
+/// while it is here: [onLeave], where the route says, or else back to what
+/// is under the page, if anything is. Before the change, so the leaving is
+/// not counted against whatever the user opens or goes back to while the
+/// account answers; and not at all once the page is gone, as a link the
+/// user followed meanwhile already decided where they are.
+VoidCallback _leaving(BuildContext context, VoidCallback? onLeave) {
   final page = ModalRoute.of(context);
-  if (page == null || !page.isCurrent) return false;
-  Navigator.of(context).pop();
-  return true;
+  return () {
+    if (!context.mounted) return;
+    switch (onLeave) {
+      case final VoidCallback leave:
+        leave();
+      case null:
+        popIfCurrent(page);
+    }
+  };
+}
+
+/// [change] made to the exercises, a failure said with [failure] in a snack
+/// and reported. Read from [context] now, while the page is here: the change
+/// runs once the user has left it, so the snack shows where they went.
+Future<void> Function() _putAway(
+  BuildContext context,
+  Future<void> Function(Exercises) change,
+  String failure,
+) {
+  final exercises = Exercises.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  return () async {
+    try {
+      await change(exercises);
+    } catch (e, s) {
+      reportToSentry(e, stacktrace: s);
+      messenger.snack(failure);
+    }
+  };
 }
 
 /// What the Exercises tab's ⋯ answers with.
