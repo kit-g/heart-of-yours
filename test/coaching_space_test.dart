@@ -154,6 +154,22 @@ void main() {
     expect(Preferences.of(tester.element(find.byType(ProfilePage))).inCoachingSpace, isFalse);
   });
 
+  testWidgets("Me's rows line up with the page's edges: the tile's own inset, not the list's on top", (tester) async {
+    account(coach: true);
+    await pump(tester, {'feature-coachPeople': 'on'});
+    await tester.tapByKey(AppKeys.coachingButton);
+    await tester.pumpTimes();
+    await tester.tapByKey(AppKeys.coachingMeStack);
+    await tester.pumpTimes();
+
+    final page = tester.getRect(find.byType(CoachMePage));
+    final settings = find.byKey(AppKeys.coachingSettings);
+    final icon = tester.getRect(find.descendant(of: settings, matching: find.byIcon(Icons.settings_rounded)));
+    final chevron = tester.getRect(find.descendant(of: settings, matching: find.byIcon(Icons.chevron_right_rounded)));
+    expect(icon.left - page.left, 16);
+    expect(page.right - chevron.right, 16);
+  });
+
   testWidgets('the app opens in the space it was left in', (tester) async {
     account(coach: true);
     await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
