@@ -690,7 +690,10 @@ WITH _recent AS (
         we.exercise_id,
         we.workout_id,
         we.id AS workout_exercise_id,
-        w.start AS last_workout_date
+        w.start AS last_workout_date,
+        -- every finished session with the exercise in it, not only the last:
+        -- a grouped picker's heading pictures the one done most (#711)
+        count(DISTINCT we.workout_id) AS sessions
     FROM workout_exercises we
     JOIN sets s ON s.exercise_id = we.id
     JOIN workouts w ON w.id = we.workout_id
@@ -716,7 +719,8 @@ SELECT
             'distance', s.distance,
             'set_type', s.set_type,
             -- when last time was: the picker ranks search results by it (#135)
-            'workout_start', _recent.last_workout_date
+            'workout_start', _recent.last_workout_date,
+            'sessions', _recent.sessions
         )
     ) AS sets
 FROM _recent
