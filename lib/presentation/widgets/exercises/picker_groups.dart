@@ -49,7 +49,7 @@ class _ExerciseGroupSliver extends StatelessWidget {
     required this.count,
     required this.open,
     this.picture,
-    required this.backgroundColor,
+    this.backgroundColor,
     required this.list,
   });
 
@@ -141,9 +141,7 @@ class _GroupHeading extends StatelessWidget {
             child: Row(
               spacing: 8,
               children: [
-                // decoration: the heading already says which group this is,
-                // and the exercise pictured is not what a tap opens
-                if (picture case final Exercise picture) ExcludeSemantics(child: ExerciseBadge(exercise: picture)),
+                if (picture case final Exercise picture) ExerciseBadge(exercise: picture),
                 Expanded(
                   child: Text(
                     label,
@@ -184,8 +182,9 @@ class _GroupHeading extends StatelessWidget {
   }
 }
 
-/// Fades the list in when the grouping changes (#711) — between grouped and
-/// ungrouped, or from one grouping to another — instead of snapping to the
+/// Fades the list in when the grouping in force changes (#711) — between
+/// grouped and ungrouped, from one grouping to another, or into a search,
+/// which lists by match whatever the grouping — instead of snapping to the
 /// new layout. With reduced motion it snaps, as everything else does.
 ///
 /// A fade in rather than a cross-fade: two whole lists of slivers cannot sit
@@ -230,6 +229,8 @@ class _GroupingTransitionState extends State<_GroupingTransition> with SingleTic
 
   @override
   Widget build(BuildContext context) {
-    return SliverFadeTransition(opacity: _opacity, sliver: widget.child);
+    // the list stays in the semantics tree while it fades in: a reader's
+    // focus is not dropped on every change of grouping
+    return SliverFadeTransition(opacity: _opacity, alwaysIncludeSemantics: true, sliver: widget.child);
   }
 }

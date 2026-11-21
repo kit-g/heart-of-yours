@@ -32,9 +32,6 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
   /// where a new exercise could not answer, and the offer is left out.
   final void Function(String name)? onCreateExercise;
 
-  final _categoryKey = GlobalKey();
-  final _targetKey = GlobalKey();
-
   new({
     super.key,
     required this.exercises,
@@ -68,16 +65,8 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     // once for the list, not once a row (#593)
     final goEasy = goEasyOn(context);
     final previous = PreviousExercises.watch(context);
-    // Grouping already sorts the library by category, target or movement, so
-    // those filters would only be noise beside it (#711): while grouped they
-    // are neither shown nor applied, and kept as they were for the way back.
-    // Mine is not one of them. The grouping chosen decides, typing or not, so
-    // the row above the search results does not come and go with each word.
-    final grouped = preferences.pickerGrouping != .none;
-    final motion = switch (lessMotion(context)) {
-      true => Duration.zero,
-      false => const Duration(milliseconds: 200),
-    };
+    final filters = _Filters.of(preferences.pickerGrouping, askedFor: exercises.filtersAskedFor);
+    final motion = lessMotion(context) ? Duration.zero : const Duration(milliseconds: 200);
 
     return CustomScrollView(
       key: AppKeys.exercisePicker,
@@ -100,13 +89,14 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                     hint: search,
                   ),
                 ),
-                if (!grouped) _MovementFilterButton(exercises: exercises),
+                if (filters.buttons) _MovementFilterButton(exercises: exercises),
               ],
             ),
           ),
         ),
-        // grouped with nothing of the user's own, the row would hold nothing
-        if (!grouped || exercises.hasOwn)
+        // without the filter buttons and nothing of the user's own, the row
+        // would hold nothing
+        if (filters.buttons || exercises.hasOwn)
           SliverPersistentHeader(
             pinned: true,
             delegate: FixedHeightHeaderDelegate(
@@ -115,113 +105,121 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               child: AnimatedSwitcher(
                 duration: motion,
                 // the default stack loosens the header's tight box, and the
-                // buttons shrank to their content's height inside it
+                // buttons shrank to their content's height inside it; the row
+                // on its way out is only a picture of what was there
                 layoutBuilder: (current, previous) => Stack(
                   fit: .expand,
-                  children: [...previous, ?current],
+                  children: [
+                    for (final each in previous) IgnorePointer(child: ExcludeSemantics(child: each)),
+                    ?current,
+                  ],
                 ),
                 child: Row(
-                  key: ValueKey(grouped),
+                  key: ValueKey(filters.buttons),
                   spacing: 8,
                   children: [
-                    if (!grouped) ...[
+                    if (filters.buttons) ...[
                       Expanded(
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 200),
-                          child: PrimaryButton.wide(
-                            backgroundColor: switch (exercises.targets.isEmpty) {
-                              true => colorScheme.surfaceContainer,
-                              false => null,
-                            },
-                            key: _targetKey,
-                            // a Row, not a Stack with a left-pinned icon: a wide
-                            // label (ru «Категория») slid under the icon.
-                            child: _FilterLabel(
-                              label: target,
-                              // an active filter sits on the accent fill,
-                              // where the muted grey blends away
-                              color: switch (exercises.targets.isEmpty) {
-                                true => colorScheme.onSurfaceVariant,
-                                false => colorScheme.onTertiaryContainer,
+                          // anchored on its own context, not a GlobalKey: the
+                          // row switcher can hold two of these rows at once
+                          child: Builder(
+                            builder: (anchor) => PrimaryButton.wide(
+                              backgroundColor: switch (exercises.targets.isEmpty) {
+                                true => colorScheme.surfaceContainer,
+                                false => null,
+                              },
+                              // a Row, not a Stack with a left-pinned icon: a wide
+                              // label (ru «Категория») slid under the icon.
+                              child: _FilterLabel(
+                                label: target,
+                                // an active filter sits on the accent fill,
+                                // where the muted grey blends away
+                                color: switch (exercises.targets.isEmpty) {
+                                  true => colorScheme.onSurfaceVariant,
+                                  false => colorScheme.onTertiaryContainer,
+                                },
+                              ),
+                              onPressed: () async {
+                                return showMenu(
+                                  context: context,
+                                  position: anchor.menuPosition(),
+                                  items: <PopupMenuEntry<ExerciseFilter>>[
+                                    ...Target.values.map(
+                                      (category) {
+                                        return PopupMenuItem<ExerciseFilter>(
+                                          height: 36,
+                                          value: category,
+                                          onTap: () {
+                                            buzz();
+                                            exercises.addFilter(category);
+                                          },
+                                          child: Row(
+                                            spacing: 8,
+                                            children: [
+                                              Text(
+                                                category.icon,
+                                                style: textTheme.titleLarge,
+                                              ),
+                                              Text(
+                                                category.label(L.of(context)),
+                                                style: textTheme.titleSmall,
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                );
                               },
                             ),
-                            onPressed: () async {
-                              return showMenu(
-                                context: context,
-                                position: _targetKey.position(),
-                                items: <PopupMenuEntry<ExerciseFilter>>[
-                                  ...Target.values.map(
-                                    (category) {
-                                      return PopupMenuItem<ExerciseFilter>(
-                                        height: 36,
-                                        value: category,
-                                        onTap: () {
-                                          buzz();
-                                          exercises.addFilter(category);
-                                        },
-                                        child: Row(
-                                          spacing: 8,
-                                          children: [
-                                            Text(
-                                              category.icon,
-                                              style: textTheme.titleLarge,
-                                            ),
-                                            Text(
-                                              category.label(L.of(context)),
-                                              style: textTheme.titleSmall,
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
                           ),
                         ),
                       ),
                       Expanded(
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 200),
-                          child: PrimaryButton.wide(
-                            backgroundColor: switch (exercises.categories.isEmpty) {
-                              true => colorScheme.surfaceContainer,
-                              false => null,
-                            },
-                            key: _categoryKey,
-                            // same shape as the target button above
-                            child: _FilterLabel(
-                              label: category,
-                              color: switch (exercises.categories.isEmpty) {
-                                true => colorScheme.onSurfaceVariant,
-                                false => colorScheme.onTertiaryContainer,
+                          child: Builder(
+                            builder: (anchor) => PrimaryButton.wide(
+                              backgroundColor: switch (exercises.categories.isEmpty) {
+                                true => colorScheme.surfaceContainer,
+                                false => null,
+                              },
+                              // same shape as the target button above
+                              child: _FilterLabel(
+                                label: category,
+                                color: switch (exercises.categories.isEmpty) {
+                                  true => colorScheme.onSurfaceVariant,
+                                  false => colorScheme.onTertiaryContainer,
+                                },
+                              ),
+                              onPressed: () async {
+                                return showMenu(
+                                  context: context,
+                                  position: anchor.menuPosition(),
+                                  items: <PopupMenuEntry<ExerciseFilter>>[
+                                    ...Category.values.map(
+                                      (category) {
+                                        return PopupMenuItem<ExerciseFilter>(
+                                          height: 36,
+                                          value: category,
+                                          onTap: () {
+                                            buzz();
+                                            exercises.addFilter(category);
+                                          },
+                                          child: Text(
+                                            category.label(L.of(context)),
+                                            style: textTheme.titleSmall,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                );
                               },
                             ),
-                            onPressed: () async {
-                              return showMenu(
-                                context: context,
-                                position: _categoryKey.position(),
-                                items: <PopupMenuEntry<ExerciseFilter>>[
-                                  ...Category.values.map(
-                                    (category) {
-                                      return PopupMenuItem<ExerciseFilter>(
-                                        height: 36,
-                                        value: category,
-                                        onTap: () {
-                                          buzz();
-                                          exercises.addFilter(category);
-                                        },
-                                        child: Text(
-                                          category.label(L.of(context)),
-                                          style: textTheme.titleSmall,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
                           ),
                         ),
                       ),
@@ -261,7 +259,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               ),
             ),
           ),
-        if (!grouped && exercises.filters.isNotEmpty)
+        if (filters.applied && exercises.filters.isNotEmpty)
           SliverPersistentHeader(
             pinned: true,
             delegate: FixedHeightHeaderDelegate(
@@ -325,7 +323,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               // own order ([showsRecent]); the library tab shows just that.
               final searching = value.text.trim().isNotEmpty;
               final recent = showsRecent && !searching
-                  ? exercises.recent(previous.lastDone, filters: !grouped, isMine: mine)
+                  ? exercises.recent(previous.lastDone, filters: filters.applied, isMine: mine)
                   : const <Exercise>[];
               final suggestions = switch (searching) {
                 true => const <Exercise>[],
@@ -333,7 +331,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               };
               final found = exercises.search(
                 value.text,
-                filters: !grouped,
+                filters: filters.applied,
                 isMine: mine,
                 lastDone: searching ? previous.lastDone : null,
               );
@@ -342,6 +340,11 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               // grouped here, outside the fold's builder: a fold changes which
               // groups are open, not what is in them
               final groups = groupExercises(found, grouping, patterns: () => exercises.patterns);
+              // and pictured here, once a build rather than once a fold
+              final pictures = {
+                for (final (:group, exercises: members) in groups)
+                  group: representativeOf(members, timesDone: previous.timesDone),
+              };
 
               SliverList list(List<Exercise> exercises) {
                 return SliverList.separated(
@@ -369,7 +372,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               }
 
               return _GroupingTransition(
-                grouping: preferences.pickerGrouping,
+                grouping: grouping,
                 child: SliverMainAxisGroup(
                   slivers: [
                     if (suggestions.isNotEmpty) ...[
@@ -396,7 +399,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                                 group: group,
                                 count: members.length,
                                 open: open.contains(group.id),
-                                picture: representativeOf(members, timesDone: previous.timesDone),
+                                picture: pictures[group],
                                 backgroundColor: backgroundColor,
                                 list: list(members),
                               ),
@@ -566,4 +569,40 @@ class _CreateExercise extends StatelessWidget {
       onTap: () => onCreate(name),
     );
   }
+}
+
+/// What of the filters a picker shows and applies (#711). Grouping already
+/// sorts the library by category, target or movement, so the picker's own
+/// filters beside it would only be noise: while grouped they are neither
+/// shown nor applied, and kept as they were for the way back. The grouping
+/// chosen decides, typing or not, so the row above the search results does
+/// not come and go with each word. Mine is not one of them.
+///
+/// A filter the user asked for by name is ([Exercises.filtersAskedFor]): the
+/// library opened "showing only" something stays showing only that, grouped,
+/// with its chip in view to clear it.
+enum _Filters {
+  /// The buttons, the chips, and the list under them.
+  editable,
+
+  /// The chips and the list under them, and no buttons to add to them.
+  askedFor,
+
+  /// Nothing: set aside while grouped.
+  setAside,
+  ;
+
+  static _Filters of(PickerGrouping grouping, {required bool askedFor}) {
+    return switch ((grouping, askedFor)) {
+      (.none, _) => editable,
+      (.category || .target || .movement, true) => _Filters.askedFor,
+      (.category || .target || .movement, false) => setAside,
+    };
+  }
+
+  /// Whether the filter buttons show, to add to the filters.
+  bool get buttons => this == editable;
+
+  /// Whether the filters in force narrow the list, and their chips show.
+  bool get applied => this != setAside;
 }

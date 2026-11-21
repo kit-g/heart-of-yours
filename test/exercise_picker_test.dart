@@ -91,14 +91,15 @@ void main() {
     when(sets.getPreviousSets(any)).thenAnswer(
       (_) async => {
         incline.id: [
-          {'weight': 60.0, 'reps': 8, 'workout_start': '2026-10-03T08:00:00.000Z', 'sessions': 2},
+          {'weight': 60.0, 'reps': 8, 'workout_start': '2026-10-03T08:00:00.000Z'},
         ],
         squat.id: [
           {'weight': 100.0, 'reps': 5, 'workout_start': '2026-09-30T08:00:00.000Z'},
         ],
       },
     );
-    previous = PreviousExercises(service: sets)..userId = 'u1';
+    // the incline is the chest exercise done most
+    previous = PreviousExercises(service: sets, readSessions: (_) async => {incline.id: 2, squat.id: 1})..userId = 'u1';
     await previous.init();
 
     search = TextEditingController();
@@ -379,6 +380,56 @@ void main() {
       expect(names(tester), isEmpty);
     });
 
+    testWidgets('grouped, a library opened showing only one thing shows only that, with its chip to clear it (#711)', (
+      tester,
+    ) async {
+      tall(tester);
+      preferences
+        ..setPickerGrouping(.target)
+        ..togglePickerGroup('target:chest');
+      // what the profile's pattern lens and an exercise's About chips do
+      exercises.showOnly(Category.dumbbell);
+      await pump(tester, showsRecent: false);
+
+      expect(find.byType(RemovableChip), findsOneWidget);
+      expect(find.descendant(of: find.byType(RemovableChip), matching: find.text('Dumbbell')), findsOneWidget);
+      expect(heading('target:legs'), findsNothing);
+      expect(names(tester), [dumbbell.name]);
+      // no buttons to add to it: grouping stands in for them
+      expect(find.text('Target'), findsNothing);
+      expect(find.byTooltip('Movement'), findsNothing);
+
+      // a search while grouped keeps to it too
+      search.text = 'bench';
+      await tester.pumpAndSettle();
+      expect(names(tester), [dumbbell.name]);
+      search.clear();
+      await tester.pumpAndSettle();
+
+      // cleared from its chip, the grouped library is whole again
+      await tester.tap(find.byTooltip('Remove filter'));
+      await pump(tester, showsRecent: false);
+      await tester.pumpAndSettle();
+      expect(exercises.filters, isEmpty);
+      expect(find.byType(RemovableChip), findsNothing);
+      expect(heading('target:legs'), findsOneWidget);
+      expect(names(tester), [barbell.name, dumbbell.name, incline.name]);
+    });
+
+    testWidgets('grouped, Mine leaves out a group with nothing of the user\'s own in it', (tester) async {
+      tall(tester);
+      final own = Exercise(name: 'Muffin Press', category: .machine, target: .chest, isMine: true);
+      when(service.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
+      when(remoteService.makeExercise(any)).thenAnswer((_) async => own);
+      await exercises.makeExercise(own);
+      exercises.showingMine = true;
+      preferences.setPickerGrouping(.target);
+      await pump(tester, showsRecent: false);
+
+      expect(heading('target:chest'), findsOneWidget);
+      expect(heading('target:legs'), findsNothing);
+    });
+
     testWidgets('grouped with nothing of the user\'s own, the filter row is gone, not left empty', (tester) async {
       preferences.setPickerGrouping(.target);
       await pump(tester, showsRecent: false);
@@ -412,7 +463,7 @@ void main() {
       // a lifter with no history: the barbell bench, a staple, over the rest
       final sets = MockPreviousExerciseService();
       when(sets.getPreviousSets(any)).thenAnswer((_) async => {});
-      previous = PreviousExercises(service: sets)..userId = 'u1';
+      previous = PreviousExercises(service: sets, readSessions: (_) async => {})..userId = 'u1';
       await previous.init();
       await pump(tester, showsRecent: false);
 
@@ -441,6 +492,27 @@ void main() {
       await tester.tap(heading('target:chest'));
       await tester.pump();
       expect(fill(), surface);
+    });
+
+    testWidgets('a search out of a grouped list fades in too: it is a change of layout, not of the grouping chosen', (
+      tester,
+    ) async {
+      tall(tester);
+      preferences.setPickerGrouping(.target);
+      await pump(tester, showsRecent: false);
+      double opacity() => tester.widget<SliverFadeTransition>(find.byType(SliverFadeTransition)).opacity.value;
+
+      search.text = 'bench';
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(opacity(), lessThan(1));
+      await tester.pumpAndSettle();
+
+      // more typing is the same layout: nothing fades
+      search.text = 'bench press';
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(opacity(), 1);
     });
 
     for (final (name, features) in [
