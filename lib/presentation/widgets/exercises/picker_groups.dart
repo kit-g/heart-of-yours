@@ -57,10 +57,11 @@ class _ExerciseGroupSliver extends StatelessWidget {
   /// row's, with the padding a row gives it.
   static const _minHeight = 56.0;
 
-  /// How much of the accent a heading's fill carries over the picker's own.
-  /// Without it an open heading read as one more row of the exercises under
-  /// it (#711). Folded ones share it: a heading looks like a heading whatever
-  /// its state, and a fold changes the chevron, not the bar.
+  /// How much of the accent an open heading's fill carries over the picker's
+  /// own. Without it an open heading read as one more row of the exercises
+  /// under it (#711). Folded ones keep the plain fill: a screen of them tinted
+  /// ran together into one slab, and with nothing under them there is no row
+  /// to tell them from.
   static const _tint = .08;
 
   /// The heading's padding above and below its one line.
@@ -82,7 +83,7 @@ class _ExerciseGroupSliver extends StatelessWidget {
             // blended rather than translucent: rows scroll under a pinned
             // heading, and must not show through it
             backgroundColor: Color.alphaBlend(
-              colorScheme.primary.withValues(alpha: _tint),
+              colorScheme.primary.withValues(alpha: open ? _tint : 0),
               backgroundColor ?? colorScheme.surface,
             ),
             padding: .zero,

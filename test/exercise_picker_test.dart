@@ -419,7 +419,7 @@ void main() {
       expect(pictured(tester, 'target:chest'), barbell);
     });
 
-    testWidgets('an open heading is tinted apart from the rows under it, and opaque over them (#711)', (tester) async {
+    testWidgets('an open heading is tinted apart from the rows under it, a folded one is not (#711)', (tester) async {
       tall(tester);
       preferences
         ..setPickerGrouping(.target)
@@ -435,6 +435,12 @@ void main() {
       expect(fill(), isNot(surface));
       // opaque: rows scroll under a pinned heading
       expect(fill().a, 1);
+
+      // folded, it keeps the plain fill: a screen of tinted headings ran
+      // together into one slab
+      await tester.tap(heading('target:chest'));
+      await tester.pump();
+      expect(fill(), surface);
     });
 
     for (final (name, features) in [
