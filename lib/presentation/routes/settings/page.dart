@@ -514,7 +514,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
 
   void _openFeedback(BuildContext context) {
     Navigator.of(context, rootNavigator: true).pop();
-    final L(:feedbackReceived) = L.of(context);
+    final L(:feedbackReceived, :feedbackFailed) = L.of(context);
     final heart = AppTheme.of(context).heart();
 
     final messenger = ScaffoldMessenger.of(context);
@@ -534,6 +534,11 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                     SnackBar(content: Text('$feedbackReceived $heart')),
                   );
                 }
+              },
+              // what the user wrote did not arrive: said so, and reported
+              onError: (Object error, StackTrace stacktrace) {
+                messenger.snack(feedbackFailed);
+                reportToSentry(error, stacktrace: stacktrace);
               },
             );
       },
