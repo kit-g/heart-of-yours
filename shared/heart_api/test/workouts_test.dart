@@ -33,7 +33,7 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('deleteWorkout returns false for non-204 code', () async {
+    test('deleteWorkout throws a failure', () async {
       respond(
         client: client,
         method: 'DELETE',
@@ -42,8 +42,7 @@ void main() {
         body: {},
       );
 
-      final result = await api.deleteWorkout('abc123');
-      expect(result, isFalse);
+      await expectLater(api.deleteWorkout('abc123'), throwsA(isA<NetworkException>()));
     });
 
     test('getWorkouts returns list of workouts on valid response', () async {
@@ -379,7 +378,7 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('deleteWorkoutImage returns false when code is not 204', () async {
+    test('deleteWorkoutImage throws a failure', () async {
       respond(
         client: client,
         method: 'DELETE',
@@ -389,8 +388,7 @@ void main() {
         body: {'error': 'not found'},
       );
 
-      final result = await api.deleteWorkoutImage('w1', '1');
-      expect(result, isFalse);
+      await expectLater(api.deleteWorkoutImage('w1', '1'), throwsA(isA<NetworkException>()));
     });
 
     test('getWorkoutGallery parses images and cursor (cursor passed as query)', () async {
@@ -749,7 +747,7 @@ void main() {
       expect(jsonDecode(sent as String), {'plan': plan.plan});
     });
 
-    test("saveWorkoutPlan throws the server's refusal whole", () async {
+    test("saveWorkoutPlan throws the server's refusal", () async {
       respond(
         client: client,
         method: 'PUT',
@@ -761,7 +759,7 @@ void main() {
           'reason': 'plan must be {exercises: [{sets: [{weight, setId}]}]}',
         },
       );
-      expect(api.saveWorkoutPlan(workoutId, plan), throwsA(containsPair('code', 'invalid_plan')));
+      expect(api.saveWorkoutPlan(workoutId, plan), throwsA(refused('invalid_plan')));
     });
   });
 }

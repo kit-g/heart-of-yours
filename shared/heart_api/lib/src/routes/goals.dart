@@ -21,13 +21,11 @@ mixin _GoalRoutes on Requests implements GoalService {
         false => null,
       },
     );
-    return switch (json) {
-      // whole or not at all: the caller replaces its synced slice with this,
-      // so a goal skipped here would delete its local copy (see [_readable])
-      // a goal of a kind a newer build added costs that goal, not the list (#277)
-      {'goals': List l} => _readable(l, Goal.fromJson),
-      _ => const <Goal>[],
-    };
+    // A failure is thrown, never answered as no goals: the caller replaces its
+    // synced slice with this list, and an empty one would delete every goal it
+    // holds. A goal of a kind a newer build added costs that goal, not the
+    // list (#277).
+    return _readable(json['goals'] as List, Goal.fromJson);
   }
 
   @override
@@ -35,9 +33,9 @@ mixin _GoalRoutes on Requests implements GoalService {
     return (await replayGoal(goal)).row;
   }
 
-  /// See [replayWorkout]. The body carries a stable `code` on a refusal;
-  /// thrown whole so the caller can tell one from an outage instead of
-  /// retrying both forever.
+  /// See [replayWorkout]. A refusal is a [ServerRefusal] with a stable
+  /// `code`, so the caller can tell one from an outage instead of retrying
+  /// both forever.
   Future<({Goal row, bool created})> replayGoal(Goal goal) async {
     final (json, created) = _created(
       await post(
@@ -52,17 +50,12 @@ mixin _GoalRoutes on Requests implements GoalService {
 
   @override
   Future<Goal> updateGoal(String goalId, Goal goal, String userId) async {
-    final (json, code) = await put(Router.goal(goalId), body: goal.toBody());
-    return switch ((code, json)) {
-      (200, Map json) => Goal.fromJson(json),
-      _ => throw json,
-    };
+    final (json, _) = await put(Router.goal(goalId), body: goal.toBody());
+    return Goal.fromJson(json);
   }
 
   @override
-  Future<void> deleteGoal(String goalId, String userId) {
-    return delete(Router.goal(goalId));
-  }
+  Future<void> deleteGoal(String goalId, String userId) => delete(Router.goal(goalId));
 
   @override
   Future<Goal> markStageAchieved(
@@ -72,7 +65,7 @@ mixin _GoalRoutes on Requests implements GoalService {
     DateTime achievedAt, {
     String? achievedBy,
   }) async {
-    final (json, code) = await put(
+    final (json, _) = await put(
       Router.goalStage(goalId, stageId),
       body: {
         'achievedAt': achievedAt.toUtc().toIso8601String(),
@@ -81,9 +74,6 @@ mixin _GoalRoutes on Requests implements GoalService {
         'achievedBy': ?achievedBy,
       },
     );
-    return switch ((code, json)) {
-      (200, Map json) => Goal.fromJson(json),
-      _ => throw json,
-    };
+    return Goal.fromJson(json);
   }
 }

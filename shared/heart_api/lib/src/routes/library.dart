@@ -5,20 +5,14 @@ part of '../api.dart';
 mixin _LibraryRoutes on Requests {
   /// The library, a page at a time, without bodies.
   Future<({List<CoachProgram> items, String? cursor})> getLibraryPrograms({String? cursor}) async {
-    final (json, code) = await get(Router.libraryPrograms, query: _cursor(cursor));
-    return switch ((code, json)) {
-      (200, {'programs': List l}) => (items: _readable(l, CoachProgram.fromJson), cursor: json['cursor'] as String?),
-      _ => throw json,
-    };
+    final (json, _) = await get(Router.libraryPrograms, query: _cursor(cursor));
+    return (items: _readable(json['programs'] as List, CoachProgram.fromJson), cursor: json['cursor'] as String?);
   }
 
   /// One library program, with its body.
   Future<CoachProgram> getLibraryProgram(String programId) async {
-    final (json, code) = await get(Router.libraryProgram(programId));
-    return switch ((code, json)) {
-      (200, Map json) => CoachProgram.fromJson(json),
-      _ => throw json,
-    };
+    final (json, _) = await get(Router.libraryProgram(programId));
+    return CoachProgram.fromJson(json);
   }
 
   /// Saves [body], the shape `POST /programs` takes, under [programId], a
@@ -26,39 +20,27 @@ mixin _LibraryRoutes on Requests {
   /// after is a new version. The server keeps the ids [body]'s rows carry and
   /// gives one to each row without.
   Future<CoachProgram> saveLibraryProgram(String programId, Map<String, dynamic> body) async {
-    final (json, code) = await put(Router.libraryProgram(programId), body: body);
-    return switch ((code, json)) {
-      (200, Map json) => CoachProgram.fromJson(json),
-      _ => throw json,
-    };
+    final (json, _) = await put(Router.libraryProgram(programId), body: body);
+    return CoachProgram.fromJson(json);
   }
 
   /// Deletes the library program. The copies clients hold stay theirs.
-  Future<void> deleteLibraryProgram(String programId) async {
-    final (json, code) = await delete(Router.libraryProgram(programId));
-    if (code != 204) throw json;
-  }
+  Future<void> deleteLibraryProgram(String programId) => delete(Router.libraryProgram(programId));
 
   /// Which clients hold a copy, and of which version.
   Future<List<CoachProgramHolder>> getLibraryHolders(String programId) async {
-    final (json, code) = await get(Router.libraryHolders(programId));
-    return switch ((code, json)) {
-      (200, Map json) => CoachProgramHolders.fromJson(json).holders,
-      _ => throw json,
-    };
+    final (json, _) = await get(Router.libraryHolders(programId));
+    return CoachProgramHolders.fromJson(json).holders;
   }
 
   /// Copies the program to each of [connectionIds]. Each answers on its own,
   /// delivered or with a reason, and one refusal stops none.
   Future<List<ProgramDelivery>> sendLibraryProgram(String programId, Iterable<String> connectionIds) async {
-    final (json, code) = await post(
+    final (json, _) = await post(
       Router.librarySend(programId),
       body: {'connectionIds': connectionIds.toList()},
     );
-    return switch ((code, json)) {
-      (200, Map json) => ProgramDeliveries.fromJson(json).deliveries,
-      _ => throw json,
-    };
+    return ProgramDeliveries.fromJson(json).deliveries;
   }
 
   /// Brings each of [connectionIds]' copies up to the current version, keeping
@@ -67,13 +49,10 @@ mixin _LibraryRoutes on Requests {
   /// current is left alone, and a connection never sent the program answers
   /// `not_sent`.
   Future<List<ProgramDelivery>> updateLibraryCopies(String programId, Iterable<String> connectionIds) async {
-    final (json, code) = await post(
+    final (json, _) = await post(
       Router.libraryUpdate(programId),
       body: {'connectionIds': connectionIds.toList()},
     );
-    return switch ((code, json)) {
-      (200, Map json) => ProgramDeliveries.fromJson(json).deliveries,
-      _ => throw json,
-    };
+    return ProgramDeliveries.fromJson(json).deliveries;
   }
 }

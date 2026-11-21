@@ -144,7 +144,7 @@ void main() {
       });
     });
 
-    test('getExercises returns empty list when response is invalid', () async {
+    test('getExercises throws an answer it cannot read, never an empty catalog', () async {
       respond(
         client: client,
         method: 'GET',
@@ -153,8 +153,7 @@ void main() {
         body: {'error': 'no data'},
       );
 
-      final result = await api.getExercises();
-      expect(result, isEmpty);
+      await expectLater(api.getExercises(), throwsA(isA<TypeError>()));
     });
   });
 
@@ -230,7 +229,7 @@ void main() {
       expect(result.map((each) => each.note), [null, null, 'Pause', 'Slow']);
     });
 
-    test('getExercisePreferences is empty when the response carries nothing named', () async {
+    test('getExercisePreferences throws an answer that names nothing, never answering none', () async {
       respond(
         client: client,
         method: 'GET',
@@ -239,7 +238,21 @@ void main() {
         body: {'error': 'no data'},
       );
 
-      expect(await api.getExercisePreferences(), isEmpty);
+      // the caller replaces the device's notes with this: none would delete them
+      await expectLater(api.getExercisePreferences(), throwsA(isA<TypeError>()));
+    });
+
+    test('getExercisePreferences throws a failure, never answering none', () async {
+      for (final (status, body) in [
+        (500, <String, dynamic>{}),
+        (429, {'message': 'Too Many Requests'}),
+      ]) {
+        respond(client: client, method: 'GET', path: Router.exercisePreferences, statusCode: status, body: body);
+        await expectLater(
+          api.getExercisePreferences(),
+          throwsA(isA<NetworkException>().having((e) => e.statusCode, 'status', status)),
+        );
+      }
     });
   });
 
@@ -302,7 +315,7 @@ void main() {
       expect(real.queryParameters, isEmpty);
     });
 
-    test('the named refusals are typed, anything else is a NetworkException', () async {
+    test('the named refusals are typed, any other refusal comes as it is', () async {
       answer({'error': 'bad request', 'code': 'same_exercise', 'reason': 'same'}, 400);
       await expectLater(
         api.moveExerciseHistory('source', targetId: 'source'),
@@ -328,7 +341,7 @@ void main() {
       );
 
       answer({'error': 'bad request', 'code': 'bad_request', 'reason': 'targetId missing'}, 400);
-      await expectLater(api.moveExerciseHistory('source', targetId: ''), throwsA(isA<NetworkException>()));
+      await expectLater(api.moveExerciseHistory('source', targetId: ''), throwsA(refused('bad_request')));
     });
   });
 }

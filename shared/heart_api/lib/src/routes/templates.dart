@@ -2,29 +2,25 @@ part of '../api.dart';
 
 /// Templates and their folders, and sharing a folder.
 mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderService, RemoteTemplateService {
+  /// True once deleted; a failure is thrown.
   @override
   Future<bool> deleteTemplate(String templateId) async {
-    final (_, code) = await delete('${Router.templates}/$templateId');
-    return code == 204;
+    await delete(Router.template(templateId));
+    return true;
   }
 
+  /// A failure is thrown, never answered as no templates.
   @override
   Future<Iterable<Template>?> getTemplates() async {
     final (json, _) = await get(Router.templates);
-    return switch (json) {
-      {'templates': List l} => _readable(_namedAll(l, counts: true), Template.fromJson),
-      _ => null,
-    };
+    return _readable(_namedAll(json['templates'] as List, counts: true), Template.fromJson);
   }
 
   /// One of the account's templates: a session of a program a push named
-  /// (#567). Thrown whole when the server has none by that id.
+  /// (#567). A [ServerRefusal] when the server has none by that id.
   Future<Template> getTemplate(String templateId) async {
-    final (json, code) = await get(Router.template(templateId));
-    return switch ((code, json)) {
-      (200, Map json) => Template.fromJson(_named(json)),
-      _ => throw json,
-    };
+    final (json, _) = await get(Router.template(templateId));
+    return Template.fromJson(_named(json));
   }
 
   @override
@@ -45,18 +41,14 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
 
   /// A session of a coach's copy says which revision the edit started from
   /// ([baseRevision]) and names the edit ([changeId]), as [editProgram] does
-  /// (#558): `409 program_changed` when the coach changed it since. Anything
-  /// but the template is thrown whole.
+  /// (#558): `409 program_changed` when the coach changed it since.
   @override
   Future<Template> editTemplate(Template template, {int? baseRevision, String? changeId}) async {
-    final (json, code) = await put(
+    final (json, _) = await put(
       Router.template(template.id),
       body: {...template.toMap(), 'baseRevision': ?baseRevision, 'changeId': ?changeId},
     );
-    return switch ((code, json)) {
-      (200, Map json) => Template.fromJson(_named(json)),
-      _ => throw json,
-    };
+    return Template.fromJson(_named(json));
   }
 
   /// Files [template] into [folderId], or unfiles it when null.
@@ -66,30 +58,24 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
   /// filing alone" — and because the PUT is a full replace, the body must be
   /// the whole template, not the one changed field.
   Future<Template> moveTemplate(Template template, {required String? folderId}) async {
-    final (json, code) = await put(
+    final (json, _) = await put(
       Router.template(template.id),
       body: {
         ...template.toMap(),
         'folderId': folderId,
       },
     );
-    return switch ((code, json)) {
-      (200, Map json) => Template.fromJson(_named(json)),
-      _ => throw json,
-    };
+    return Template.fromJson(_named(json));
   }
 
   /// The interface is owner-scoped for the server's sake; over HTTP the caller
   /// is whoever the auth header says, so [userId] plays no part in the request.
   @override
   Future<Iterable<TemplateFolder>> getFolders({required String userId}) async {
-    final (json, code) = await get(Router.templateFolders);
-    return switch ((code, json)) {
-      // whole or not at all: the caller replaces its folders with these, so a
-      // folder skipped here would delete its local copy (see [_readable])
-      (200, {'folders': List l}) => _readable(l, TemplateFolder.fromJson),
-      _ => throw json,
-    };
+    final (json, _) = await get(Router.templateFolders);
+    // whole or not at all: the caller replaces its folders with these, so a
+    // folder skipped here would delete its local copy (see [_readable])
+    return _readable(json['folders'] as List, TemplateFolder.fromJson);
   }
 
   @override
@@ -117,20 +103,16 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     required String folderId,
     required TemplateFolder folder,
   }) async {
-    final (json, code) = await put(
+    final (json, _) = await put(
       Router.templateFolder(folderId),
       body: {'name': folder.name, 'order': folder.order},
     );
-    return switch ((code, json)) {
-      (200, Map json) => TemplateFolder.fromJson(json),
-      _ => throw json,
-    };
+    return TemplateFolder.fromJson(json);
   }
 
   @override
-  Future<void> deleteFolder({required String userId, required String folderId}) async {
-    final (json, code) = await delete(Router.templateFolder(folderId));
-    if (code >= 400) throw json;
+  Future<void> deleteFolder({required String userId, required String folderId}) {
+    return delete(Router.templateFolder(folderId));
   }
 
   @override
@@ -139,11 +121,8 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     required String targetUserId,
     required String folderId,
   }) async {
-    final (json, code) = await post(Router.folderShare(targetUserId, folderId));
-    return switch ((code, json)) {
-      (200, {'shares': List l}) => _readable(l, _shareFromJson),
-      _ => throw json,
-    };
+    final (json, _) = await post(Router.folderShare(targetUserId, folderId));
+    return _readable(json['shares'] as List, _shareFromJson);
   }
 
   /// [TemplateShare] only knows how to read itself off a database row; this is

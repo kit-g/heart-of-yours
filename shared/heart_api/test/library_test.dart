@@ -81,7 +81,7 @@ void main() {
       body: {'error': 'bad request', 'code': 'bad_request'},
     );
 
-    expect(() => api.getLibraryPrograms(cursor: 'abc'), throwsA(containsPair('code', 'bad_request')));
+    expect(() => api.getLibraryPrograms(cursor: 'abc'), throwsA(refused('bad_request')));
   });
 
   test('one program comes with its body', () async {
@@ -101,7 +101,7 @@ void main() {
       body: {'code': 'not_found'},
     );
 
-    expect(() => api.getLibraryProgram(programId), throwsA(containsPair('code', 'not_found')));
+    expect(() => api.getLibraryProgram(programId), throwsA(refused('not_found')));
   });
 
   test('a save sends the body as it is, and reads the new version back', () async {
@@ -126,7 +126,7 @@ void main() {
       body: {'error': 'forbidden', 'code': 'id_taken'},
     );
 
-    expect(() => api.saveLibraryProgram(programId, body), throwsA(containsPair('code', 'id_taken')));
+    expect(() => api.saveLibraryProgram(programId, body), throwsA(refused('id_taken')));
   });
 
   test('a delete is a 204, and anything else is thrown', () async {
@@ -140,7 +140,7 @@ void main() {
     );
 
     await api.deleteLibraryProgram(programId);
-    expect(() => api.deleteLibraryProgram('nope'), throwsA(containsPair('code', 'not_found')));
+    expect(() => api.deleteLibraryProgram('nope'), throwsA(refused('not_found')));
   });
 
   test('holders say who has which version', () async {

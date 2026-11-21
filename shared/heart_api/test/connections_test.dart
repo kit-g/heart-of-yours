@@ -106,7 +106,7 @@ void main() {
           'reason': 'Only the student of a live coaching connection chooses what it shares.',
         },
       );
-      expect(api.setConnectionShares(id, {'history'}), throwsA(containsPair('code', 'forbidden')));
+      expect(api.setConnectionShares(id, {'history'}), throwsA(refused('forbidden')));
     });
 
     test('setConnectionStatus sends the status by name', () async {
@@ -181,7 +181,7 @@ void main() {
           'message': 'Workout #$workoutId not found',
         },
       );
-      expect(api.hideWorkout(workoutId), throwsA(containsPair('code', 'not_found')));
+      expect(api.hideWorkout(workoutId), throwsA(refused('not_found')));
     });
   });
 }

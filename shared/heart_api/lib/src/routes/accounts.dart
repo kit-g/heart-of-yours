@@ -3,15 +3,12 @@ part of '../api.dart';
 /// The account: registering it, its summary, deleting it and taking that back,
 /// its avatar, feedback, and the developer API's tokens (#271).
 mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
+  /// A deleted account and a forced upgrade are thrown by [Api.failure], as
+  /// [AccountDeleted] and [UpgradeRequired], before anything reads the answer.
   @override
   Future<User> registerAccount(User user) async {
-    final (json, code) = await put(Router.accounts, body: user.toMap());
-    return switch ((code, json)) {
-      (200, Map json) => User.fromJson(json),
-      (400, {'code': 'ACCOUNT_DELETED'}) => throw AccountDeleted(),
-      (426, _) => throw UpgradeRequired(),
-      _ => throw json, // error
-    };
+    final (json, _) = await put(Router.accounts, body: user.toMap());
+    return User.fromJson(json);
   }
 
   /// What the account holds, collection by collection — the yardstick the
@@ -21,33 +18,25 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
   /// Caller-scoped: there is no `:targetUserId` form, so this is never a read
   /// of somebody else's totals.
   ///
-  /// Throws rather than falling back to an empty summary on a refusal. An
+  /// Throws rather than falling back to an empty summary on a failure. An
   /// empty summary is a *claim* — "the account holds nothing" — and it reads
   /// as "your mirror is complete", which is the one answer a failed call must
   /// never give.
   Future<AccountSummary> getAccountSummary() async {
-    final (json, code) = await get('${Router.accounts}/summary');
-    return switch ((code, json)) {
-      (200, Map json) => AccountSummary.fromJson(json),
-      (426, _) => throw UpgradeRequired(),
-      _ => throw json,
-    };
+    final (json, _) = await get(Router.accountSummary);
+    return AccountSummary.fromJson(json);
   }
 
   @override
   Future<String?> deleteAccount({required String accountId, AppleDeletionGrant? appleGrant}) async {
-    final (json, code) = await put(
+    await put(
       Router.accounts,
       body: {
         'action': 'scheduleAccountDeletion',
         ...?appleGrant?.toMap(),
       },
     );
-    return switch (code) {
-      < 400 => null,
-      426 => throw UpgradeRequired(),
-      _ => throw json, // error
-    };
+    return null;
   }
 
   @override
@@ -57,7 +46,7 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
     // matched no route and came back `404 not_found` — while the handler was
     // reading the user off the auth token all along, which is why every
     // sibling call here (upsert, delete, undo) posts to the bare path.
-    final (json, code) = await put(
+    final (json, _) = await put(
       Router.accounts,
       body: {
         'action': 'uploadAvatar',
@@ -82,36 +71,30 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
     return uploadToBucket(cred, file, onProgress: onProgress);
   }
 
+  /// True once removed; a failure is thrown.
   @override
   Future<bool> removeAvatar(String userId) async {
     // See [getAvatarUploadLink] — the same wrong path, and unreported only
     // because removing an avatar needs one to have been uploaded first.
-    final (_, code) = await put(
+    await put(
       Router.accounts,
       body: {'action': 'removeAvatar'},
     );
-    return 200 <= code && code < 300;
+    return true;
   }
 
   @override
-  Future<String?> undoAccountDeletion() {
-    return put(
+  Future<String?> undoAccountDeletion() async {
+    await put(
       Router.accounts,
       body: {'action': 'undoAccountDeletion'},
-    ).then(
-      (response) {
-        final (json, code) = response;
-        return switch (code) {
-          < 400 => null,
-          _ => throw json, // error
-        };
-      },
     );
+    return null;
   }
 
   @override
   Future<bool> submitFeedback({required String mimeType, String? feedback, Uint8List? screenshot}) async {
-    final (json, code) = await post(Router.feedback, body: {'message': feedback});
+    final (json, _) = await post(Router.feedback, body: {'message': feedback});
 
     final link = switch (json) {
       {'url': String url, 'fields': Map fields} => (
@@ -134,38 +117,31 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
   /// Read item by item, like the preferences: a purpose this build has never
   /// heard of is dropped from the token rather than the token from the list,
   /// because a token the app cannot show is one the owner cannot revoke.
+  ///
+  /// A failure is thrown, never answered as no tokens: an empty list says the
+  /// account holds none.
   Future<Iterable<ApiToken>> listApiTokens() async {
     final (json, _) = await get(Router.accountTokens);
-    return switch (json) {
-      {'tokens': List l} => _readable(l, (each) => ApiToken.fromJson(_withKnownPurpose(each))),
-      _ => const <ApiToken>[],
-    };
+    return _readable(json['tokens'] as List, (each) => ApiToken.fromJson(_withKnownPurpose(each)));
   }
 
-  /// Mints a token. `201` with the secret, the one time it exists in
-  /// plaintext; anything else is thrown whole, so the caller can tell the cap
-  /// (`token_limit`) from an outage.
+  /// Mints a token: `201` with the secret, the one time it exists in
+  /// plaintext. The cap is the [ServerRefusal] `token_limit`.
   Future<MintedApiToken> createApiToken({
     required String name,
     required ApiTokenExpiry expiry,
     ApiTokenPurpose? purpose,
   }) async {
-    final (json, code) = await post(
+    final (json, _) = await post(
       Router.accountTokens,
       body: {'name': name, 'expiry': expiry.name, 'purpose': ?purpose?.name},
     );
-    return switch ((code, json)) {
-      (201, Map json) => MintedApiToken.fromJson(json),
-      _ => throw json,
-    };
+    return MintedApiToken.fromJson(json);
   }
 
-  /// Revokes a token. `204`, also for one already revoked; `404` for one the
-  /// account does not own, thrown whole like every refusal.
-  Future<void> revokeApiToken(String tokenId) async {
-    final (json, code) = await delete(Router.accountToken(tokenId));
-    if (code != 204) throw json;
-  }
+  /// Revokes a token. `204`, also for one already revoked; a token the account
+  /// does not own is the [ServerRefusal] `not_found`.
+  Future<void> revokeApiToken(String tokenId) => delete(Router.accountToken(tokenId));
 
   /// [json] with its `purpose` only when it is one this build can name.
   ///

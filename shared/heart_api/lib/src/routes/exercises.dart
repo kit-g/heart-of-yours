@@ -3,22 +3,19 @@ part of '../api.dart';
 /// Exercises: the catalog and the account's own, units, notes and preferences,
 /// and moving an exercise's history.
 mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
+  /// A failure is thrown, never answered as no exercises: the caller stores
+  /// what comes back, and an empty list says the account has none.
   @override
   Future<Iterable<Exercise>> getExercises() async {
-    final (json, code) = await get(Router.exercises);
-    return switch (json) {
-      {'exercises': List l} => _readable(l, Exercise.fromJson),
-      _ => [],
-    };
+    final (json, _) = await get(Router.exercises);
+    return _readable(json['exercises'] as List, Exercise.fromJson);
   }
 
+  /// See [getExercises].
   @override
   Future<Iterable<Exercise>> getOwnExercises() async {
-    final (json, code) = await get(Router.exercises, query: {'owned': 'true'});
-    return switch (json) {
-      {'exercises': List l} => _readable(l, Exercise.fromJson),
-      _ => [],
-    };
+    final (json, _) = await get(Router.exercises, query: {'owned': 'true'});
+    return _readable(json['exercises'] as List, Exercise.fromJson);
   }
 
   @override
@@ -52,13 +49,7 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   /// [saveUnitPreference] that fails loudly: the replay has to know a step
   /// landed before it records it. Always a `200` when it does — the endpoint
   /// is an upsert, and the device's preference is the most recent intent.
-  Future<void> replayUnitPreference(String exerciseId, MeasurementUnit unit) async {
-    final (json, code) = await post(
-      Router.exercisePreferences,
-      body: {'exerciseId': exerciseId, 'unitSystem': unit.name},
-    );
-    if (code >= 300) throw json;
-  }
+  Future<void> replayUnitPreference(String exerciseId, MeasurementUnit unit) => saveUnitPreference(exerciseId, unit);
 
   @override
   Future<Exercise> editExercise(Exercise exercise) => _editExercise(exercise, rename: false);
@@ -71,23 +62,26 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   Future<Exercise> renameExercise(Exercise exercise) => _editExercise(exercise, rename: true);
 
   Future<Exercise> _editExercise(Exercise exercise, {required bool rename}) async {
-    final (json, code) = await put(
-      '${Router.exercises}/${exercise.id}',
-      body: {
-        if (rename) 'name': exercise.name,
-        'category': exercise.category.value,
-        'target': exercise.target.value,
-        'instructions': ?exercise.instructions,
-        'archived': exercise.isArchived,
-        // always sent: null is "none", and clears one the server holds (#616)
-        'pattern': exercise.movement.groups.firstOrNull,
-      },
-    );
-    return switch ((code, json)) {
-      (200, _) => Exercise.fromJson(json),
-      (409, {'code': 'name_taken'}) => throw const ExerciseNameTaken(),
-      _ => throw ArgumentError(json),
-    };
+    try {
+      final (json, _) = await put(
+        Router.exercise(exercise.id),
+        body: {
+          if (rename) 'name': exercise.name,
+          'category': exercise.category.value,
+          'target': exercise.target.value,
+          'instructions': ?exercise.instructions,
+          'archived': exercise.isArchived,
+          // always sent: null is "none", and clears one the server holds (#616)
+          'pattern': exercise.movement.groups.firstOrNull,
+        },
+      );
+      return Exercise.fromJson(json);
+    } on ServerRefusal catch (refusal, stacktrace) {
+      if (refusal case ServerRefusal(status: 409, code: 'name_taken')) {
+        Error.throwWithStackTrace(const ExerciseNameTaken(), stacktrace);
+      }
+      rethrow;
+    }
   }
 
   /// Moves everything the account holds under [sourceId] onto [targetId]
@@ -97,24 +91,29 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   /// rolls it back.
   ///
   /// The refusals the endpoint names are thrown as [ExerciseMoveRefused];
-  /// anything else as a [NetworkException].
+  /// anything else as it came: a [ServerRefusal] or a [NetworkException].
   Future<ExerciseMoveReport> moveExerciseHistory(
     String sourceId, {
     required String targetId,
     bool dryRun = false,
   }) async {
-    final (json, code) = await post(
-      Router.exerciseMoves(sourceId),
-      body: {'targetId': targetId},
-      query: {if (dryRun) 'dryRun': 'true'},
-    );
-    return switch ((code, json)) {
-      (200, Map json) => ExerciseMoveReport.fromJson(json),
-      (400, {'code': 'same_exercise'}) => throw const ExerciseMoveRefused(.sameExercise),
-      (404, {'code': 'unknown_exercise'}) => throw const ExerciseMoveRefused(.unknownExercise),
-      (400, {'code': 'incompatible_exercise'}) => throw const ExerciseMoveRefused(.incompatibleExercise),
-      _ => throw NetworkException(statusCode: code, body: json),
-    };
+    try {
+      final (json, _) = await post(
+        Router.exerciseMoves(sourceId),
+        body: {'targetId': targetId},
+        query: {if (dryRun) 'dryRun': 'true'},
+      );
+      return ExerciseMoveReport.fromJson(json);
+    } on ServerRefusal catch (refusal, stacktrace) {
+      final reason = switch (refusal) {
+        ServerRefusal(status: 400, code: 'same_exercise') => ExerciseMoveRefusal.sameExercise,
+        ServerRefusal(status: 404, code: 'unknown_exercise') => ExerciseMoveRefusal.unknownExercise,
+        ServerRefusal(status: 400, code: 'incompatible_exercise') => ExerciseMoveRefusal.incompatibleExercise,
+        _ => null,
+      };
+      if (reason == null) rethrow;
+      Error.throwWithStackTrace(ExerciseMoveRefused(reason), stacktrace);
+    }
   }
 
   /// Every preference the account holds, on a library exercise as much as on
@@ -122,22 +121,24 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   /// carries them, so they are asked for on their own (heart-api#73).
   ///
   /// Unpaginated — a preference exists only where the user set one.
+  ///
+  /// A failure is thrown, never answered as none: the caller replaces the
+  /// device's notes with what this holds, and an empty answer would delete
+  /// every one of them.
   Future<Iterable<ExercisePreference>> getExercisePreferences() async {
     final (json, _) = await get(Router.exercisePreferences);
-    return switch (json) {
-      {'preferences': List l} => _readable(l, ExercisePreference.fromJson),
-      _ => const <ExercisePreference>[],
+    return _readable(json['preferences'] as List, ExercisePreference.fromJson);
+  }
+
+  Future<void> setExerciseNote(String exerciseId, String? note) {
+    return switch (note) {
+      String text => post(Router.exercisePreferences, body: {'exerciseId': exerciseId, 'note': text}),
+      null => delete(Router.exercisePreference(exerciseId), query: {'pref': 'note'}),
     };
   }
 
-  Future<void> setExerciseNote(String exerciseId, String? note) async {
-    final (body, status) = switch (note) {
-      String text => await post(Router.exercisePreferences, body: {'exerciseId': exerciseId, 'note': text}),
-      null => await delete('${Router.exercisePreferences}/$exerciseId', query: {'pref': 'note'}),
-    };
-    if (status < 200 || status >= 300) throw {'code': body['code'], 'status': status};
-  }
-
+  /// An upsert, so it always lands when the server is reachable; a failure is
+  /// thrown.
   @override
   Future<void> saveUnitPreference(String exerciseId, MeasurementUnit unit) {
     return post(
@@ -147,7 +148,5 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   }
 
   @override
-  Future<void> deleteUnitPreference(String exerciseId) {
-    return delete('${Router.exercisePreferences}/$exerciseId');
-  }
+  Future<void> deleteUnitPreference(String exerciseId) => delete(Router.exercisePreference(exerciseId));
 }

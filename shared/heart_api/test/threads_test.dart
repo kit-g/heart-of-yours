@@ -147,7 +147,7 @@ void main() {
 
     expect(
       api.postThreadItem(_threadId, id: _itemId, content: 'x', commitment: 'y', at: DateTime.now()),
-      throwsA(closed),
+      throwsA(refusedAs(closed)),
     );
   });
 
@@ -259,6 +259,6 @@ void main() {
     const stale = {'error': 'bad request', 'code': 'stale_cursor', 'reason': 'read again without it'};
     respond(client: client, method: 'PUT', path: Router.threadRead(_threadId), statusCode: 400, body: stale);
 
-    expect(api.markThreadRead(_threadId, 'garbage'), throwsA(stale));
+    expect(api.markThreadRead(_threadId, 'garbage'), throwsA(refusedAs(stale)));
   });
 }
