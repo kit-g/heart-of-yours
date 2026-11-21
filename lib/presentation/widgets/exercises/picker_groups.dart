@@ -6,27 +6,57 @@ part of 'exercises.dart';
 /// for every place the picker appears; the others follow it.
 Future<void> showPickerGroupingMenu(BuildContext anchor) async {
   const width = 200.0;
-  final l = L.of(anchor);
-  final grouping = Preferences.of(anchor).pickerGrouping;
+  final shown = ShownPickerGrouping.of(Preferences.of(anchor));
   final picked = await showMenu<PickerGrouping>(
     context: anchor,
     position: menuEndingUnder(anchor, width: width),
     constraints: const .tightFor(width: width),
-    items: [
+    items: shown.items(L.of(anchor), (each) => each),
+  );
+  if (!anchor.mounted) return;
+  if (picked case final PickerGrouping picked) shown.apply(Preferences.of(anchor), picked);
+}
+
+/// The grouping a menu of the groupings showed when it opened, and what was
+/// stored behind it then: Settings' menu and the Exercises tab's options
+/// share both the items and the rule for a pick.
+final class ShownPickerGrouping {
+  /// The one checked.
+  final PickerGrouping grouping;
+
+  /// What was stored when the menu opened; null when nothing was.
+  final ScreenChoiceRecord? stored;
+
+  new of(Preferences preferences)
+    : grouping = preferences.pickerGrouping,
+      stored = preferences.screenChoices[ScreenChoice.pickerGrouping];
+
+  /// The groupings as checked items, [grouping] checked, each answering with
+  /// [value] of itself.
+  List<CheckedPopupMenuItem<T>> items<T>(L l, T Function(PickerGrouping) value) {
+    return [
       for (final each in PickerGrouping.values)
-        CheckedPopupMenuItem<PickerGrouping>(
-          value: each,
+        CheckedPopupMenuItem<T>(
+          value: value(each),
           checked: each == grouping,
           child: Text(each.label(l)),
         ),
-    ],
-  );
-  if (!anchor.mounted) return;
-  // a change from what the menu showed checked, not from what is stored now:
-  // tapping the checked one keeps what the user saw, and must not overwrite
-  // a newer grouping sync adopted from another device while the menu was up
-  if (picked case final PickerGrouping picked when picked != grouping) {
-    Preferences.of(anchor).setPickerGrouping(picked);
+    ];
+  }
+
+  /// Stores [picked] when it is a choice over what the menu showed.
+  ///
+  /// Another grouping than the checked one always is. The checked one is only
+  /// while nothing has been stored since the menu opened: a grouping sync
+  /// adopted from another device while the menu was up is newer than what the
+  /// user saw, and tapping the checked one must not overwrite it. Otherwise
+  /// it goes through too — a newer app's grouping reads as None and shows
+  /// None checked, and picking None over it is a choice, which
+  /// [Preferences.setPickerGrouping] tells apart from what is stored already.
+  void apply(Preferences preferences, PickerGrouping picked) {
+    final changedSince = preferences.screenChoices[ScreenChoice.pickerGrouping] != stored;
+    if (picked == grouping && changedSince) return;
+    preferences.setPickerGrouping(picked);
   }
 }
 

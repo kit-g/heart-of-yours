@@ -351,6 +351,21 @@ RelativeRect menuEndingUnder(BuildContext context, {required double width}) {
   return RelativeRect.fromLTRB(dx + w - width, dy + h, overlay.size.width - (dx + w), dy + h);
 }
 
+/// The widest a menu ending under the widget [context] belongs to can be and
+/// still hang from it: from the overlay's start, short of the popup's own 8pt
+/// margin and the safe area it keeps clear of, to the widget's right edge.
+/// Wider, the popup is pushed right past the widget — at the 600pt
+/// breakpoint, out of the master pane and into the detail.
+double menuRoomEndingUnder(BuildContext context) {
+  final box = context.findRenderObject();
+  final overlay = Navigator.of(context).overlay?.context;
+  final overlayBox = overlay?.findRenderObject();
+  if (box is! RenderBox || overlay == null || overlayBox is! RenderBox) return double.infinity;
+  final Offset(:dx) = box.localToGlobal(Offset.zero, ancestor: overlayBox);
+  final inset = MediaQuery.maybePaddingOf(overlay)?.left ?? 0;
+  return dx + box.size.width - 8 - inset;
+}
+
 /// Where a menu opens over [box]: its rect in the navigator's overlay, which
 /// is where [showMenu] lays the menu out. The window's coordinates are not:
 /// inside the two-pane shell the overlay starts after the rail (see
