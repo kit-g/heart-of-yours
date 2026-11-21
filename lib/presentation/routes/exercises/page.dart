@@ -57,8 +57,8 @@ class _ExercisesPageState extends State<ExercisesPage> {
           centerTitle: true,
         ),
         actions: [
-          // a Builder for the button's own context: the grouping menu, opened
-          // from the options, hangs off the button
+          // a Builder for the button's own context: the options menu hangs
+          // off the button
           Builder(
             builder: (button) => IconButton(
               tooltip: exerciseOptions,

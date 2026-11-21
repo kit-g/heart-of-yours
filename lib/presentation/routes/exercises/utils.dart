@@ -113,48 +113,80 @@ extension on Duration {
   static String _pad(int n) => n.toString().padLeft(2, '0');
 }
 
-/// finds "beautiful" timestamps
+/// One width for both ⋯ menus here, so a long label wraps inside the menu
+/// rather than pushing it off the screen's edge; their right edge hangs from
+/// the button's.
+const _optionsMenuWidth = 240.0;
+
+/// What an exercise page's ⋯ offers.
+enum _ExerciseOption { edit, moveHistory, archive, unarchive }
+
+/// An exercise page's ⋯, hanging off [button] (#710).
 ///
 /// A library exercise has nothing here but the history move: it is not the
 /// user's to edit or archive.
+///
+/// The menu closes itself on a pick, and what follows acts on the answer: there
+/// is no sheet left to pop, and a pop here would take the page instead.
 Future<void> _onExerciseMenu(
-  BuildContext context,
+  BuildContext button,
   Exercise exercise, {
   void Function(Exercise target)? onHistoryMoved,
-}) {
-  final L(:archive, :unarchive, :edit, :moveHistory) = L.of(context);
-  return showBottomMenu(
-    context,
-    [
-      if (exercise.isMine)
-        BottomMenuAction(
-          title: edit,
-          onPressed: () => showNewExerciseDialog(context, editable: exercise),
-          icon: const Icon(Icons.edit_rounded),
-        ),
-      if (onHistoryMoved != null && _canMoveHistory(context, exercise, onMoved: onHistoryMoved))
-        BottomMenuAction(
-          title: moveHistory,
-          onPressed: () {
-            Navigator.of(context).pop();
-            _onMoveHistory(context, exercise, onMoved: onHistoryMoved);
+}) async {
+  final l = L.of(button);
+  final options = <_ExerciseOption>[
+    if (exercise.isMine) .edit,
+    if (_canMoveHistory(button, exercise, onMoved: onHistoryMoved)) .moveHistory,
+    if (exercise.isMine) exercise.isArchived ? .unarchive : .archive,
+  ];
+  final picked = await showMenu<_ExerciseOption>(
+    context: button,
+    position: menuEndingUnder(button, width: _optionsMenuWidth),
+    constraints: const .tightFor(width: _optionsMenuWidth),
+    items: [
+      for (final option in options)
+        _optionItem(
+          option,
+          icon: switch (option) {
+            .edit => Icons.edit_rounded,
+            .moveHistory => Icons.call_merge_rounded,
+            .archive => Icons.archive_rounded,
+            .unarchive => Icons.restore_outlined,
           },
-          icon: const Icon(Icons.call_merge_rounded),
+          title: switch (option) {
+            .edit => l.edit,
+            .moveHistory => l.moveHistory,
+            .archive => l.archive,
+            .unarchive => l.unarchive,
+          },
         ),
-      if (exercise.isMine)
-        if (exercise.isArchived)
-          BottomMenuAction(
-            title: unarchive,
-            onPressed: () => _onUnarchive(context, exercise),
-            icon: const Icon(Icons.restore_outlined),
-          )
-        else
-          BottomMenuAction(
-            title: archive,
-            onPressed: () => _onArchive(context, exercise),
-            icon: const Icon(Icons.archive_rounded),
-          ),
     ],
+  );
+  if (!button.mounted) return;
+  switch (picked) {
+    case .edit:
+      showNewExerciseDialog(button, editable: exercise);
+    case .moveHistory:
+      if (onHistoryMoved case final onMoved?) _onMoveHistory(button, exercise, onMoved: onMoved);
+    case .archive:
+      _onArchive(button, exercise);
+    case .unarchive:
+      _onUnarchive(button, exercise);
+    case null:
+      break;
+  }
+}
+
+/// A choice in one of the ⋯ menus: its icon where a checked choice has its
+/// check, so the two kinds line up.
+PopupMenuItem<T> _optionItem<T>(T value, {required IconData icon, required String title}) {
+  return PopupMenuItem<T>(
+    value: value,
+    child: ListTile(
+      contentPadding: .zero,
+      leading: Icon(icon),
+      title: Text(title),
+    ),
   );
 }
 
@@ -186,7 +218,6 @@ Future<void> _onArchive(BuildContext context, Exercise exercise) async {
             ),
             onPressed: () {
               Navigator.of(context, rootNavigator: true).pop();
-              Navigator.of(context).pop();
             },
           ),
           PrimaryButton.wide(
@@ -207,76 +238,124 @@ Future<void> _onArchive(BuildContext context, Exercise exercise) async {
   );
 }
 
+/// Out of the dialog and off the page, which has nothing left to show once the
+/// exercise is put away.
 Future<void> _onConfirmArchive(BuildContext context, Exercise exercise) async {
-  // close the dialog
+  // read while the page is still here: the pops take its context with it
+  final exercises = Exercises.of(context);
   Navigator.of(context, rootNavigator: true).pop();
-  Navigator.of(context)
-    ..pop()
-    ..pop();
-  // state
-  await Exercises.of(context).archive(exercise);
+  Navigator.of(context).pop();
+  await exercises.archive(exercise);
 }
 
+/// What the Exercises tab's ⋯ answers with.
+sealed class _LibraryOption {
+  const new();
+}
+
+final class _NewExercise extends _LibraryOption {
+  const new();
+}
+
+final class _ShowArchived extends _LibraryOption {
+  const new();
+}
+
+final class _GroupBy extends _LibraryOption {
+  final PickerGrouping grouping;
+
+  const new(this.grouping);
+}
+
+/// The Exercises tab's ⋯, hanging off [button]: a new exercise, how the
+/// library and every picker group (#620), and the archive when it holds
+/// anything. The groupings are in the menu itself, the one in force checked,
+/// so the choice is made where the button is (#710).
 Future<void> _onExerciseOptions(
-  BuildContext context, {
+  BuildContext button, {
   required VoidCallback onShowArchived,
   bool hasArchived = false,
 }) async {
-  return showBottomMenu(
-    context,
-    [
-      BottomMenuAction(
-        title: L.of(context).newExercise,
-        icon: const Icon(Icons.add_circle_outline_rounded),
-        onPressed: () {
-          Navigator.of(context).pop();
-          showNewExerciseDialog(context);
-        },
-      ),
-      // how the library and every exercise picker group the list (#620); the
-      // title names the grouping in force, so it is heard before it is opened
-      BottomMenuAction(
-        title: L.of(context).pickerGroupBy(Preferences.of(context).pickerGrouping.label(L.of(context))),
-        icon: const Icon(Icons.view_agenda_outlined),
-        onPressed: () {
-          Navigator.of(context).pop();
-          showPickerGroupingMenu(context);
-        },
-      ),
-      if (hasArchived)
-        BottomMenuAction(
-          title: L.of(context).showArchived,
-          icon: const Icon(Icons.archive_outlined),
-          onPressed: () {
-            Navigator.of(context).pop();
-            onShowArchived();
-          },
+  final l = L.of(button);
+  final grouping = Preferences.of(button).pickerGrouping;
+  final picked = await showMenu<_LibraryOption>(
+    context: button,
+    position: menuEndingUnder(button, width: _optionsMenuWidth),
+    constraints: const .tightFor(width: _optionsMenuWidth),
+    items: [
+      _optionItem(const _NewExercise(), icon: Icons.add_circle_outline_rounded, title: l.newExercise),
+      const PopupMenuDivider(),
+      _MenuHeading(l.settingsPickerGrouping),
+      for (final each in PickerGrouping.values)
+        CheckedPopupMenuItem<_LibraryOption>(
+          value: _GroupBy(each),
+          checked: each == grouping,
+          child: Text(each.label(l)),
         ),
+      if (hasArchived) ...[
+        const PopupMenuDivider(),
+        _optionItem(const _ShowArchived(), icon: Icons.archive_outlined, title: l.showArchived),
+      ],
     ],
   );
+  if (!button.mounted) return;
+  switch (picked) {
+    case _NewExercise():
+      showNewExerciseDialog(button);
+    case _ShowArchived():
+      onShowArchived();
+    // a change from what the menu showed checked, not from what is stored now:
+    // tapping the checked one keeps what the user saw, and must not overwrite
+    // a newer grouping sync adopted from another device while the menu was up
+    case _GroupBy(grouping: final chosen) when chosen != grouping:
+      Preferences.of(button).setPickerGrouping(chosen);
+    case _GroupBy() || null:
+      break;
+  }
 }
 
+/// A section's title inside a menu: not a choice, so not a [PopupMenuItem],
+/// which would be announced as a dimmed button.
+class _MenuHeading<T> extends PopupMenuEntry<T> {
+  final String title;
+
+  const new(this.title);
+
+  @override
+  double get height => 32;
+
+  @override
+  bool represents(T? value) => false;
+
+  @override
+  State<_MenuHeading<T>> createState() => _MenuHeadingState<T>();
+}
+
+class _MenuHeadingState<T> extends State<_MenuHeading<T>> {
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return Semantics(
+      header: true,
+      child: Padding(
+        padding: const .fromLTRB(12, 8, 12, 4),
+        child: Text(
+          widget.title,
+          style: textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+        ),
+      ),
+    );
+  }
+}
+
+/// Back on the page beneath once the exercise is out of the archive; and past
+/// the archive too, to the very top, when nothing is left in it.
 Future<void> _onUnarchive(BuildContext context, Exercise exercise) async {
   final exercises = Exercises.of(context);
   final navigator = Navigator.of(context);
-  // state
   await exercises.unarchive(exercise);
-
-  // pop
-  if (exercises.archived.isEmpty) {
-    // go to the very top if nothing is left in the archive
-    navigator
-      // out of dialog
-      ..pop()
-      // out of detail page
-      ..pop()
-      // out of archive
-      ..pop();
-  } else {
-    navigator
-      ..pop()
-      ..pop();
-  }
+  navigator.pop();
+  if (exercises.archived.isEmpty) navigator.pop();
 }
 
 extension on Exercise {
