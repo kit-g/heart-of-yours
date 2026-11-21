@@ -519,6 +519,7 @@ class HeartApp extends StatelessWidget {
               analytics: analytics,
               onError: reportToSentry,
               onComplete: () => _resync(context, upsync),
+              answered: RemoteUpsync.answered,
             );
           },
         ),

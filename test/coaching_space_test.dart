@@ -284,7 +284,7 @@ void main() {
     testWidgets("the beta's refusal says so, and shares nothing", (tester) async {
       account(coach: true);
       when(api.createInvitation(any, programId: anyNamed('programId'))).thenAnswer(
-        (_) async => throw {'code': 'coaching_beta'},
+        (_) async => throw const ServerRefusal(status: 400, code: 'coaching_beta', method: 'POST', route: '/v1/test'),
       );
       // wide: under the test font the dialog's buttons overflow a phone
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
@@ -1280,7 +1280,8 @@ void main() {
 
     testWidgets('a refusal says why and offers nothing; a failure that may pass offers Retry (#560)', (tester) async {
       withCopy();
-      when(api.logClientWorkout('sam', any)).thenThrow({'code': 'forbidden'});
+      when(api.logClientWorkout('sam', any))
+          .thenThrow(const ServerRefusal(status: 400, code: 'forbidden', method: 'POST', route: '/v1/test'));
 
       final editor = await logDayA(tester);
       final context = tester.element(find.byType(WorkoutEditor));
@@ -1290,7 +1291,7 @@ void main() {
       expect(find.text("Couldn't log it: Sam is no longer your client"), findsOneWidget);
       expect(find.text('Retry'), findsNothing);
 
-      when(api.logClientWorkout('sam', any)).thenThrow({'code': 'unavailable'});
+      when(api.logClientWorkout('sam', any)).thenThrow(Exception('unavailable'));
       ScaffoldMessenger.of(context).removeCurrentSnackBar();
       await editor.logTo!(context, editor.copy);
       await tester.pumpTimes();
@@ -1411,7 +1412,8 @@ void main() {
     testWidgets('a change is put back, and one built on since says so', (tester) async {
       withCopy();
       when(api.revertClientChange('sam', 'p1', 'ch1')).thenAnswer((_) async {});
-      when(api.revertClientChange('sam', 'p1', 'ch2')).thenThrow({'code': 'conflict'});
+      when(api.revertClientChange('sam', 'p1', 'ch2'))
+          .thenThrow(const ServerRefusal(status: 400, code: 'conflict', method: 'POST', route: '/v1/test'));
       await openCopy(tester);
 
       // asked first, since it changes what they train (#686): no, then yes
@@ -1448,7 +1450,15 @@ void main() {
       ).thenAnswer((invocation) async {
         final base = invocation.namedArguments[#baseRevision] as int;
         bases.add(base);
-        if (base == 0) throw {'code': 'program_changed', 'revision': 1};
+        if (base == 0) {
+          throw const ServerRefusal(
+            status: 409,
+            code: 'program_changed',
+            method: 'PUT',
+            route: '/v1/test',
+            details: {'revision': 1},
+          );
+        }
       });
       await openCopy(tester);
 
@@ -1724,7 +1734,7 @@ void main() {
       await tester.tapByKey(AppKeys.coachingLibraryProgram(programId));
       await tester.pumpTimes();
 
-      when(api.saveLibraryProgram(any, any)).thenThrow({'code': 'offline'});
+      when(api.saveLibraryProgram(any, any)).thenThrow(Exception('offline'));
       await tester.tapByKey(AppKeys.coachingRemoveSession('01a1b7d4-bc59-7ad7-9994-c01207b8fb92'));
       await tester.pumpTimes();
 

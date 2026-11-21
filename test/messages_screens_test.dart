@@ -549,7 +549,9 @@ class _Server implements RemoteThreadService {
   }) async {
     posted.add(content);
     if (subjectId != null) subjects.add('$subjectType $subjectId');
-    if (closed) throw {'error': 'forbidden', 'code': 'thread_closed'};
+    if (closed) {
+      throw const ServerRefusal(status: 403, code: 'thread_closed', method: 'POST', route: '/v1/threads/{id}/items');
+    }
     return ThreadItem(
       id: id,
       threadId: threadId,

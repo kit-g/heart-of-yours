@@ -307,7 +307,8 @@ void main() {
 
     testWidgets('a start the server refuses says so, and it keeps waiting', (tester) async {
       withSent();
-      when(api.startProgram('c1')).thenThrow({'code': 'program_not_found'});
+      when(api.startProgram('c1'))
+          .thenThrow(const ServerRefusal(status: 400, code: 'program_not_found', method: 'POST', route: '/v1/test'));
       await openWorkoutTab(tester);
 
       await tester.tapByKey(AppKeys.programStartSent('c1'));
