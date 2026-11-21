@@ -71,7 +71,7 @@ void main() {
   });
 
   /// Pumps the real app, starts [workout] as the active workout (as
-  /// `test/a11y_test.dart`'s `pumpTo(_Screen.exerciseNoteEditor)` does) and
+  /// `test/a11y.dart`'s `pumpTo(_Screen.exerciseNoteEditor)` does) and
   /// lands on the workout tab. Returns the top-level context, valid for the
   /// rest of the test since it sits above the router.
   Future<BuildContext> startWorkoutOn(WidgetTester tester, Workout workout) async {

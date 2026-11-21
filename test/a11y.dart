@@ -6,6 +6,10 @@
 // are enabled; entries that don't yet are skipped with a reason so the debt
 // stays enumerable instead of silently missing. Do not delete a failing
 // entry — flip its `skip` to null once the underlying issue is fixed.
+//
+// The sweep is over a thousand tests, far longer than any other file, and a
+// file runs on one worker. So it is not a test file itself: `a11y_<n>_test.dart`
+// each run every [a11yShards]th test of it, and the runner spreads them out.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -39,6 +43,12 @@ import 'support/harness.dart';
 /// surfaces as an unhandled error attributed to whichever test happens to be
 /// running when the platform channel gets around to rejecting it.
 const _signInWithAppleChannel = MethodChannel('com.aboutyou.dart_packages.sign_in_with_apple');
+
+/// The same kind of side effect, on the way to LoginPage: flutter_cache_manager
+/// (behind CachedNetworkImage) asks for the temporary directory once per
+/// isolate and keeps the answer. Unmocked, whether its rejection fails a test
+/// depends on which test asks first, so on how the sweep is split into files.
+const _pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
 
 /// A screen the matrix sweeps. Each maps to a path through the real app —
 /// see [_pumpTo] — rather than a page pumped in isolation, so the check sees
@@ -1289,7 +1299,21 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.workoutDone, _Guideline.iosTapTarget, null),
 ];
 
-void main() {
+/// How many `a11y_<n>_test.dart` files split the sweep between them.
+const a11yShards = 4;
+
+/// Registers the tests of the sweep that fall to [shard], one of
+/// `0 ..< a11yShards`: every [a11yShards]th, so each shard gets a share of
+/// every screen and guideline rather than a contiguous, unevenly heavy run.
+void a11y({required int shard}) {
+  // A shard file with no number to match would leave its tests unrun, silently.
+  if (shard == 0) {
+    test('there is one shard file per shard', () {
+      final files = Directory('test').listSync().map((file) => file.uri.pathSegments.last);
+      expect(files.where(RegExp(r'^a11y_\d+_test\.dart$').hasMatch), hasLength(a11yShards));
+    });
+  }
+
   late MockLocalDatabase db;
   late MockApi api;
   late MockCdn cdn;
@@ -1305,6 +1329,16 @@ void main() {
     addTearDown(
       () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
         _signInWithAppleChannel,
+        null,
+      ),
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      _pathProviderChannel,
+      (_) async => Directory.systemTemp.path,
+    );
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        _pathProviderChannel,
         null,
       ),
     );
@@ -2847,40 +2881,46 @@ void main() {
     await tester.pumpTimes();
   }
 
-  for (final (screen, guideline, reason) in _matrix) {
+  // One test per matrix entry and preset. Contrast is a property of a
+  // preset's tokens, so those guidelines sweep every preset; tap targets and
+  // labels are geometry and run once.
+  bool everyPreset(_Guideline guideline, String? reason) => guideline.rule == textContrastGuideline && reason == null;
+  final cases = [
+    for (final (screen, guideline, reason) in _matrix)
+      for (final preset in switch (everyPreset(guideline, reason)) {
+        true => Preset.values,
+        false => const [Preset.forge],
+      })
+        (screen, guideline, reason, preset),
+  ];
+  final mine = cases.indexed.where((each) => each.$1 % a11yShards == shard).map((each) => each.$2);
+
+  for (final (screen, guideline, reason, preset) in mine) {
     final description = switch (reason) {
       String r => '${screen.name} meets ${guideline.name} (skipped: $r)',
       null => '${screen.name} meets ${guideline.name}',
     };
-    // Contrast is a property of a preset's tokens, so those guidelines sweep
-    // every preset; tap targets and labels are geometry and run once.
-    final presets = switch (guideline.rule == textContrastGuideline && reason == null) {
-      true => Preset.values,
-      false => const [Preset.forge],
+    final suffix = switch (everyPreset(guideline, reason)) {
+      true => ' in ${preset.name}',
+      false => '',
     };
-    for (final preset in presets) {
-      final suffix = switch (presets.length > 1) {
-        true => ' in ${preset.name}',
-        false => '',
-      };
-      testWidgets(
-        '$description$suffix',
-        (tester) async {
-          await pumpTo(tester, screen);
+    testWidgets(
+      '$description$suffix',
+      (tester) async {
+        await pumpTo(tester, screen);
 
-          final theme = AppTheme.of(tester.element(find.byType(MaterialApp)));
-          theme.preset = preset;
-          if (guideline.isDark) {
-            theme.toDark();
-          }
-          await tester.pumpTimes();
+        final theme = AppTheme.of(tester.element(find.byType(MaterialApp)));
+        theme.preset = preset;
+        if (guideline.isDark) {
+          theme.toDark();
+        }
+        await tester.pumpTimes();
 
-          final handle = tester.ensureSemantics();
-          await expectLater(tester, meetsGuideline(guideline.rule));
-          handle.dispose();
-        },
-        skip: reason != null,
-      );
-    }
+        final handle = tester.ensureSemantics();
+        await expectLater(tester, meetsGuideline(guideline.rule));
+        handle.dispose();
+      },
+      skip: reason != null,
+    );
   }
 }

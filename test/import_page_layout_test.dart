@@ -29,7 +29,7 @@ void main() {
     cdn = MockCdn();
     harness = const TestAppHarness();
 
-    // same baseline stubs as a11y_test.dart: enough for the profile stack to
+    // same baseline stubs as a11y.dart: enough for the profile stack to
     // render without throwing on an unstubbed call
     when(
       db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
@@ -92,7 +92,7 @@ void main() {
   // No phone-size counterpart: driving to the page crosses the settings
   // screen, whose logo stripe renders wider than any phone under the test
   // environment's fallback font and overflows (the same constraint that has
-  // a11y_test.dart pump a 1200-wide surface). The phone behavior is the
+  // a11y.dart pump a 1200-wide surface). The phone behavior is the
   // degenerate min(paneWidth, readableWidth) branch, verified by screenshot.
   testWidgets('an iPad window caps the import column at readableWidth', (tester) async {
     await pumpImportPageAt(tester, const Size(1194, 834));

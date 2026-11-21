@@ -145,7 +145,7 @@ test-scripts:
 
 # just the screen×guideline accessibility matrix, for quick local runs
 a11y: codegen-app
-	flutter test test/a11y_test.dart
+	flutter test $(wildcard test/a11y_*_test.dart)
 
 # app-only line coverage (lib/, generated code excluded) — the number
 # test coverage tickets are measured against. `coverage/` is gitignored.
