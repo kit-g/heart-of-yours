@@ -679,8 +679,10 @@ class _ProgramGoals extends StatelessWidget {
     }
 
     final finished = position.finished;
+    // a fresh reader whenever the history Stats reads changed, which is when
+    // the rows re-read
+    context.select<Stats, int>((stats) => stats.revision);
     final lensSets = sharedLensSets(Stats.of(context).getLensSets);
-    final workouts = context.select<Stats, WorkoutAggregation>((stats) => stats.workouts);
     final muted = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
 
     return Padding(
@@ -696,7 +698,6 @@ class _ProgramGoals extends StatelessWidget {
             GoalRow(
               key: AppKeys.goalRow(each.goal.id),
               goal: each.goal,
-              workouts: workouts,
               lensSets: lensSets,
               feeds: [feed],
             ),
@@ -714,7 +715,6 @@ class _ProgramGoals extends StatelessWidget {
             GoalRow(
               key: AppKeys.goalRow(goal.id),
               goal: goal,
-              workouts: workouts,
               lensSets: lensSets,
               feeds: [feed],
             ),

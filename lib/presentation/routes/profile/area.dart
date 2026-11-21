@@ -35,7 +35,7 @@ class _ProfileArea extends StatelessWidget {
             false => Column(
               children: [
                 chart,
-                GoalsCard(workouts: workouts, headerHeight: _tileHeaderHeight),
+                const GoalsCard(headerHeight: _tileHeaderHeight),
               ],
             ),
             // Side by side, so the chart stops owning a whole row on its own.
@@ -53,7 +53,7 @@ class _ProfileArea extends StatelessWidget {
                   child: LayoutBuilder(
                     builder: (_, constraints) => ConstrainedBox(
                       constraints: BoxConstraints(minHeight: min(constraints.maxWidth * 4 / 5, _maxChartHeight)),
-                      child: GoalsCard(workouts: workouts, headerHeight: _tileHeaderHeight),
+                      child: const GoalsCard(headerHeight: _tileHeaderHeight),
                     ),
                   ),
                 ),

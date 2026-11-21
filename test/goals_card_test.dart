@@ -88,14 +88,14 @@ void main() {
           ChangeNotifierProvider<Stats>.value(value: stats),
           ChangeNotifierProvider<Preferences>.value(value: settings ?? preferences),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
           // scrollable, as the profile screen always is: unbounded the card
           // grows with its list, and a long one overflows a bare test surface
           home: Scaffold(
             body: SingleChildScrollView(
-              child: GoalsCard(workouts: WorkoutAggregation.empty()),
+              child: GoalsCard(),
             ),
           ),
         ),
@@ -147,6 +147,27 @@ void main() {
     // the count comes from a period-bounded query now rather than off the
     // aggregation, so it is answered even here — the stubbed service says none
     expect(find.text('0 / 4 · per week'), findsOneWidget);
+  });
+
+  // An entry discarded, an older workout deleted or imported: the eight weeks
+  // the chart holds can come back the same, and the count still moved.
+  testWidgets("a row re-reads its count whenever Stats' revision moves, the weeks unchanged or not", (tester) async {
+    await seed([workoutsGoal(target: 4)]);
+    when(
+      statsService.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
+    ).thenAnswer((_) async => WorkoutAggregation.empty());
+    when(statsService.getWorkoutCountBetween(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => 1);
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('1 / 4 · per week'), findsOneWidget);
+
+    when(statsService.getWorkoutCountBetween(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => 3);
+    await tester.runAsync(stats.init);
+    await tester.pumpAndSettle();
+
+    expect(stats.workouts.isEmpty, isTrue, reason: 'the weeks the chart holds did not change');
+    expect(find.text('3 / 4 · per week'), findsOneWidget);
   });
 
   testWidgets('builds before preferences have loaded, rather than throwing', (tester) async {
@@ -464,11 +485,11 @@ void main() {
             ChangeNotifierProvider<Preferences>.value(value: settings),
             ChangeNotifierProvider<Programs>.value(value: programs),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             localizationsDelegates: localizationsDelegates,
             supportedLocales: L.supportedLocales,
             home: Scaffold(
-              body: SingleChildScrollView(child: GoalsCard(workouts: WorkoutAggregation.empty())),
+              body: SingleChildScrollView(child: GoalsCard()),
             ),
           ),
         ),

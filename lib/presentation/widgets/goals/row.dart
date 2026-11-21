@@ -12,7 +12,6 @@ part of 'goals.dart';
 /// teardown (`_dependents.isEmpty`).
 class GoalRow extends StatefulWidget {
   final Goal goal;
-  final WorkoutAggregation workouts;
 
   /// Where a pattern or muscle goal reads its sets: shared by the rows of one
   /// card, so a refresh reads each window once ([sharedLensSets]).
@@ -35,7 +34,6 @@ class GoalRow extends StatefulWidget {
   const new({
     super.key,
     required this.goal,
-    required this.workouts,
     required this.lensSets,
     this.onEdit,
     this.onDelete,
@@ -67,9 +65,9 @@ class _GoalRowState extends State<GoalRow> {
       goal.id,
       exercise?.name,
       goal.cadence,
-      // by identity: [Stats] replaces it whenever what the counts read changed —
-      // a workout finished or deleted, or an entry discarded (#428)
-      widget.workouts,
+      // moves whenever what the counts read changed — a workout finished or
+      // deleted, or an entry discarded (#428)
+      context.select<Stats, int>((stats) => stats.revision),
       settings.firstWeekday,
       // a program's count moves with its own sessions
       widget.feeds.map((feed) => feed.position.thisWeek).join(','),
