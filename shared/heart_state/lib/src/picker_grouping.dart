@@ -121,39 +121,48 @@ List<GroupedExercises> groupExercises(
   ];
 }
 
-/// The exercise a grouped picker pictures [members]' heading by (#711): of
-/// those with a thumbnail, when any has one, the one done most
-/// ([timesDone], finished sessions), then the best known ([_staples]), then
-/// the first in [members]' order. Null for no members.
+/// The exercise a grouped picker pictures [members]' heading by (#711): one
+/// with a [ExercisePicture.picture] over one without, then the one done most
+/// ([timesDone], finished workouts), then the best known ([_staples]), then
+/// the first in [members]' order. Null for no members. One pass, no sort.
 ///
 /// The picture comes first because it is what the heading is for: a custom
 /// exercise done every week has none, and would leave the heading as bare as
 /// before. Someone who has done nothing in the group still gets a familiar
 /// face — the squat over whichever squat sorts first.
-Exercise? representativeOf(List<Exercise> members, {int Function(ExerciseId)? timesDone}) {
-  final pictured = members.where((each) => each.thumbnail != null).toList();
-  final candidates = pictured.isEmpty ? members : pictured;
-  if (candidates.isEmpty) return null;
+Exercise? representativeOf(Iterable<Exercise> members, {int Function(ExerciseId)? timesDone}) {
+  if (members.isEmpty) return null;
 
-  int staple(Exercise exercise) {
-    return switch (_stapleRank[exercise.key]) {
-      int rank => rank,
-      null => _stapleRank.length,
-    };
+  ({Exercise exercise, bool pictured, int done, int staple}) rank(Exercise exercise) {
+    return (
+      exercise: exercise,
+      pictured: exercise.picture != null,
+      done: timesDone?.call(exercise.id) ?? 0,
+      staple: _stapleRank[exercise.key] ?? _stapleRank.length,
+    );
   }
 
-  final ranked = [
-    for (final (order, exercise) in candidates.indexed)
-      (exercise: exercise, done: timesDone?.call(exercise.id) ?? 0, staple: staple(exercise), order: order),
-  ];
-  ranked.sort(
-    (a, b) => [
-      b.done.compareTo(a.done),
-      a.staple.compareTo(b.staple),
-      a.order.compareTo(b.order),
-    ].firstWhere((each) => each != 0, orElse: () => 0),
-  );
-  return ranked.first.exercise;
+  // the earlier keeps a tie, so the group's own order decides last
+  return members.map(rank).reduce((best, each) {
+    final better = switch ((each.pictured, best.pictured)) {
+      (true, false) => true,
+      (false, true) => false,
+      _ => each.done > best.done || (each.done == best.done && each.staple < best.staple),
+    };
+    return better ? each : best;
+  }).exercise;
+}
+
+/// What an exercise is shown by: its thumbnail's link, when it is one an
+/// image can be loaded from. The badge draws exactly these, and a grouped
+/// picker pictures a heading only by one of them (#711).
+extension ExercisePicture on Exercise {
+  String? get picture {
+    return switch (thumbnail?.link) {
+      String url when url.startsWith('https://') => url,
+      _ => null,
+    };
+  }
 }
 
 /// Library slugs ([Exercise.key]) a lifter knows on sight, best known first:

@@ -136,6 +136,21 @@ void main() {
       expect(representativeOf([custom, box], timesDone: (id) => done[id] ?? 0), box);
     });
 
+    test('a thumbnail the badge cannot draw is no picture', () {
+      final local = Exercise.fromJson({
+        'id': 'id-local',
+        'key': 'squat-barbell',
+        'name': 'squat',
+        'category': 'Barbell',
+        'target': 'Legs',
+        // a cached file path, not a link an image loads from
+        'thumbnail': '/var/mobile/squat.png',
+      });
+      expect(local.picture, isNull);
+      expect(box.picture, 'https://cdn.example/box-squat-barbell.png');
+      expect(representativeOf([local, box]), box);
+    });
+
     test('a group with no picture at all still has one, the one done most, and no members have none', () {
       final other = lift('my-lunge', target: 'Legs');
       final done = {other.id: 3};
@@ -145,22 +160,21 @@ void main() {
   });
 
   group('PreviousExercises.timesDone (#711)', () {
-    test('reads the sessions last time carries, and 0 for one never done', () async {
-      final service = _Previous({
-        'id-bench': [
-          {'weight': 100, 'reps': 5, 'workout_start': '2026-10-03T08:00:00.000Z', 'sessions': 7},
-        ],
-        // a row read before the count existed
-        'id-row': [
-          {'weight': 60, 'reps': 8, 'workout_start': '2026-10-01T08:00:00.000Z'},
-        ],
-      });
-      final previous = PreviousExercises(service: service)..userId = 'u1';
+    test('reads the session counts, 0 for one never done, and none for someone else\'s workout', () async {
+      final previous = PreviousExercises(service: _Previous({}), readSessions: (_) async => {'id-bench': 7})
+        ..userId = 'u1';
       await previous.init();
 
       expect(previous.timesDone('id-bench'), 7);
-      expect(previous.timesDone('id-row'), 0);
       expect(previous.timesDone('id-never'), 0);
+
+      final before = previous.before(DateTime.utc(2026, 10));
+      await before.init();
+      expect(before.timesDone('id-bench'), 7);
+
+      final none = previous.none();
+      await none.init();
+      expect(none.timesDone('id-bench'), 0);
     });
   });
 

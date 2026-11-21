@@ -156,6 +156,13 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   bool _showingMine = false;
 
+  /// Whether the filters in force are ones the user asked to be shown — the
+  /// library opened "showing only" something, from a chip or a count
+  /// elsewhere ([showOnly]) — rather than ones set in the picker. A grouped
+  /// picker hides and sets aside its own filters (#711), but never these.
+  bool get filtersAskedFor => _filtersAskedFor;
+  bool _filtersAskedFor = false;
+
   bool get showingMine => _showingMine;
 
   set showingMine(bool value) {
@@ -691,18 +698,33 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     notifyListeners();
   }
 
+  /// The library showing only [filter], replacing whatever was filtered
+  /// before: what the user asked for by name ([filtersAskedFor]).
+  void showOnly(ExerciseFilter filter) {
+    _filters
+      ..clear()
+      ..add(filter);
+    _filtersAskedFor = true;
+    notifyListeners();
+  }
+
+  /// A filter set in the picker: what is in force from then on is the
+  /// picker's own, not what was asked for.
   void addFilter(ExerciseFilter filter) {
     _filters.add(filter);
+    _filtersAskedFor = false;
     notifyListeners();
   }
 
   void removeFilter(ExerciseFilter filter) {
     _filters.remove(filter);
+    _filtersAskedFor = _filtersAskedFor && _filters.isNotEmpty;
     notifyListeners();
   }
 
   void clearFilters() {
     _filters.clear();
+    _filtersAskedFor = false;
     notifyListeners();
   }
 

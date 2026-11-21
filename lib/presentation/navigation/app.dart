@@ -277,6 +277,7 @@ class HeartApp extends StatelessWidget {
             service: db,
             readBefore: db.getPreviousSetsBefore,
             readInTemplate: db.getPreviousSetsInTemplate,
+            readSessions: db.getSessionCounts,
           ),
         ),
         ChangeNotifierProvider<Preferences>(

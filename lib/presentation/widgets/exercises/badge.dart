@@ -14,8 +14,8 @@ class ExerciseBadge extends StatelessWidget {
       width: _size,
       child: ClipRRect(
         borderRadius: const BorderRadius.all(Radius.circular(6)),
-        child: switch (exercise.thumbnail?.link) {
-          String url when url.startsWith('https://') => AppImage(
+        child: switch (exercise.picture) {
+          String url => AppImage(
             url: url,
             fit: BoxFit.cover,
             semanticLabel: L.of(context).exerciseThumbnailLabel(exercise.name),
@@ -26,7 +26,7 @@ class ExerciseBadge extends StatelessWidget {
               return _EmptyBadge(target: exercise.target);
             },
           ),
-          _ => _EmptyBadge(target: exercise.target),
+          null => _EmptyBadge(target: exercise.target),
         },
       ),
     );

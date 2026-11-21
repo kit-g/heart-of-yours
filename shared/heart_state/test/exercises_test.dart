@@ -680,6 +680,29 @@ void main() {
     });
   });
 
+  test('showing only one filter is asked for; a filter set in the picker, or none left, is not (#711)', () {
+    var notified = 0;
+    sut.addListener(() => notified++);
+    sut.addFilter(Category.barbell);
+    expect(sut.filtersAskedFor, isFalse);
+
+    sut.showOnly(const PatternFilter('horizontal_press'));
+    expect(sut.filters, [const PatternFilter('horizontal_press')]);
+    expect(sut.filtersAskedFor, isTrue);
+    expect(notified, 2);
+
+    sut.addFilter(Target.chest);
+    expect(sut.filtersAskedFor, isFalse);
+
+    sut.showOnly(Target.legs);
+    sut.removeFilter(Target.legs);
+    expect(sut.filtersAskedFor, isFalse);
+
+    sut.showOnly(Target.legs);
+    sut.clearFilters();
+    expect(sut.filtersAskedFor, isFalse);
+  });
+
   group('search() ranking (#135)', () {
     Exercise lift(String name, {String? key, List<String>? aliases, String category = 'Barbell'}) {
       return Exercise.fromJson({
