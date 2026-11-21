@@ -123,6 +123,32 @@ void main() {
     });
   }
 
+  testWidgets('at the 600pt breakpoint, the menu narrows to hang under its button inside the master pane', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await openLibrary(tester);
+    // nothing open, the list has the window; an exercise open beside it takes
+    // the list down to two fifths of what the rail leaves
+    await tester.tap(find.text(bench.name));
+    await tester.pumpTimes();
+    final button = tester.getRect(find.byTooltip('Exercise options').first);
+    final rail = find.byType(NavigationRail);
+    final pane = rail.evaluate().isEmpty ? 0.0 : tester.getRect(rail).right;
+
+    await openOptions(tester);
+
+    final menu = tester.getRect(grouping('None'));
+    // the button's box is its 48pt tap target, 4pt past the 40pt the tooltip
+    // covers on either side
+    expect(menu.right, closeTo(button.right, 4.5), reason: 'its right edge on the button\'s');
+    expect(menu.left, greaterThanOrEqualTo(pane), reason: 'inside the master pane, not over the rail');
+    expect(menu.width, lessThan(240), reason: 'narrowed to the room there is');
+    expect(tester.takeException(), isNull);
+  });
+
   void phone(WidgetTester tester) {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -141,6 +167,23 @@ void main() {
     await tester.pumpTimes();
 
     expect(preferences(tester).pickerGrouping, PickerGrouping.movement);
+  });
+
+  testWidgets('None over a newer app\'s grouping, which reads as None, is still a choice', (tester) async {
+    phone(tester);
+    SharedPreferences.setMockInitialValues({
+      ...pastOnboarding(),
+      'screen-pickerGrouping': 'equipment',
+      'screen-pickerGrouping-at': '2026-11-01T10:00:00.000Z',
+    });
+    await openLibrary(tester);
+
+    await openOptions(tester);
+    expect(checked(tester, 'None'), isTrue, reason: 'what this app reads it as');
+    await tester.tap(grouping('None'));
+    await tester.pumpTimes();
+
+    expect(preferences(tester).screenChoices[ScreenChoice.pickerGrouping]?.value, 'none');
   });
 
   testWidgets('New exercise opens the dialog from the menu', (tester) async {
