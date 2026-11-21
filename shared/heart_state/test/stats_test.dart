@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/lens.dart';
@@ -14,9 +16,14 @@ class RecordingStatsService implements LocalStatsService {
   final List<(DateTime, String?)> monthlyCountCalls = [];
   int monthlyCountToReturn = 0;
 
+  /// When set, a read waits on it: what a session change can overtake.
+  Completer<void>? summaryGate;
+
   @override
   Future<WorkoutAggregation> getWorkoutSummary({int? weeksBack, String? userId}) async {
-    return workoutSummary;
+    final summary = workoutSummary;
+    await summaryGate?.future;
+    return summary;
   }
 
   @override
@@ -128,14 +135,37 @@ void main() {
       expect(notifications, 1);
     });
 
-    test('init does nothing and does not notify when local summary is empty', () async {
-      service.workoutSummary = WorkoutAggregation.empty();
+    test("an empty read replaces the last user's chart: a user with no workouts sees none", () async {
+      service.workoutSummary = WorkoutAggregation.fromRows([
+        {'id': '2025-08-01T10:00:00Z', 'name': 'Morning', 'start': '2025-08-01T10:00:00Z'},
+      ]);
+      stats.userId = 'old';
+      await stats.init();
+      expect(stats.workouts.isNotEmpty, isTrue);
 
-      expect(stats.workouts.isNotEmpty, isFalse);
+      stats.userId = 'new';
+      service.workoutSummary = WorkoutAggregation.empty();
       await stats.init();
 
       expect(stats.workouts.isNotEmpty, isFalse);
-      expect(notifications, 0);
+    });
+
+    test("a read the session changed under is dropped: the last user's chart never lands on the next", () async {
+      stats.userId = 'old';
+      service
+        ..workoutSummary = WorkoutAggregation.fromRows([
+          {'id': '2025-08-01T10:00:00Z', 'name': 'Morning', 'start': '2025-08-01T10:00:00Z'},
+        ])
+        ..summaryGate = Completer();
+      final stale = stats.init();
+
+      stats
+        ..onSignOut()
+        ..userId = 'new';
+      service.summaryGate!.complete();
+      await stale;
+
+      expect(stats.workouts.isNotEmpty, isFalse);
     });
 
     test('onSignOut resets workouts to empty and says so', () async {

@@ -98,13 +98,17 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
     return Provider.of<Stats>(context, listen: true);
   }
 
+  /// Reads the weekly counts for the session's user, empty ones included: a
+  /// user with no workouts gets an empty chart, not the last user's.
   Future<void> init() async {
-    final local = await _service.getWorkoutSummary(userId: userId);
-    if (local.isNotEmpty) {
-      workouts = local;
-      notifyListeners();
-      return;
-    }
+    final id = userId;
+    final local = await _service.getWorkoutSummary(userId: id);
+    // the session changed while they were read: the last user's (#671)
+    if (userId != id) return;
+    // nothing to show before or after: no rebuild for it
+    if (local.isEmpty && workouts.isEmpty) return;
+    workouts = local;
+    notifyListeners();
   }
 
   /// Finished workouts in [d]'s week, which starts on [firstWeekday] — the
