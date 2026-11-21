@@ -321,18 +321,17 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
           case false:
             await _send(userId, note);
         }
-      } on ServerRefusal catch (refusal, stacktrace) {
-        // the server's throttle: everything goes again with the next run
-        if (refusal.isThrottle) break;
-        onError?.call(refusal, stacktrace: stacktrace);
-        // refused for this note alone, and for good: the others still go
-        _refused.add(note.id);
       } catch (error, stacktrace) {
-        // no network, no answer, or one without a code (a gateway's 413 or
-        // 502), which says nothing about the note: everything waits for the
-        // next run
-        onError?.call(error, stacktrace: stacktrace);
-        break;
+        final failure = _remote.failureOf(error);
+        // the server's throttle is the one failure not worth a report
+        if (error is! ServerRefusal || !error.isThrottle) onError?.call(error, stacktrace: stacktrace);
+        // no network, a server that failed, its throttle: it says nothing
+        // about this note, and everything goes again with the next run
+        if (failure case .unanswered || .transient) break;
+        // an answer that sending again gets again, named or not (a gateway's
+        // 413 is the same every time): this note is set aside until it is
+        // written again, and the others still go
+        _refused.add(note.id);
       }
       if (userId != _userId) return;
     }
@@ -359,9 +358,9 @@ class CoachNotes with ChangeNotifier implements SignOutStateSentry {
   Future<void> _sendDeletion(String userId, CoachNote note) async {
     try {
       await _service.deleteNote(note.id);
-    } on ServerRefusal catch (refusal) {
+    } catch (error) {
       // never reached the server, or deleted from another device: gone either way
-      if (refusal.code != 'not_found') rethrow;
+      if (!_remote.isGone(error)) rethrow;
     }
     await _inTurn(userId, () async {
       if (_stored[note.id] case (pending: _, deleted: true, note: _)) {

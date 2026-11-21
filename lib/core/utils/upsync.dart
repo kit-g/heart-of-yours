@@ -72,7 +72,7 @@ class RemoteUpsync implements UpsyncService {
 
   @override
   Future<void> replayUnitPreference(String exerciseId, MeasurementUnit unit) {
-    return _api.replayUnitPreference(exerciseId, unit);
+    return _api.saveUnitPreference(exerciseId, unit);
   }
 
   @override
@@ -100,10 +100,4 @@ class RemoteUpsync implements UpsyncService {
 
   @override
   Future<Replayed<TrainingSkip>> replaySkip(TrainingSkip skip) => _api.replaySkip(skip);
-
-  /// Whether [error] was the server's answer rather than none at all: what
-  /// [Upsync] needs to say "the server said no" instead of "check your
-  /// connection", and the one thing about a failure only the transport knows.
-  /// Every failure [Api] throws came from a response.
-  static bool answered(Object error) => originOf(error) != null;
 }

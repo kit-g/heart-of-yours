@@ -39,7 +39,7 @@ void main() {
     server = _Server();
     store = _Store();
     cipher = _Cipher();
-    access = RemoteAccess(hasToken: () => true)..account = true;
+    access = RemoteAccess(hasToken: () => true, failures: testFailures)..account = true;
     errors = [];
     notes = build();
   });
@@ -246,18 +246,41 @@ void main() {
     expect(server.notes.keys, [refused]);
   });
 
-  test("a gateway's refusal without a code (a 413, a 400) holds nothing for good", () async {
-    // heart_api throws it as a NetworkException, which names no refusal: it
-    // says nothing about the note, so the note goes again with the next run
+  test('a server that failed holds the queue for the next run, and nothing is set aside', () async {
+    // a 5xx says nothing about the note: it goes again with the next run
     server.refuse['n0'] = const ServerFailed();
-    final turnedAway = await notes.save(client, 'a long one');
+    final failed = await notes.save(client, 'unlucky');
+    final behind = await notes.save(client, 'behind it');
     await notes.flush();
     expect(server.notes, isEmpty);
 
-    server.refuse.remove(turnedAway);
+    server.refuse.remove(failed);
     await notes.flush();
 
-    expect(server.notes.keys, [turnedAway]);
+    expect(server.notes.keys, [failed, behind]);
+  });
+
+  test("a gateway's refusal without a code (a 413) sets that note aside, and the rest go up", () async {
+    // the same every time it is sent, so it must neither hold the queue for
+    // good nor be marked final on a code it does not have
+    for (final status in [413, 400]) {
+      server
+        ..notes.clear()
+        ..refuse.clear();
+      server.refuse['big-$status'] = ServerFailed(status);
+      final turnedAway = await notes.save(client, 'a long one $status', id: 'big-$status');
+      final fine = await notes.save(client, 'fine $status');
+
+      await notes.flush();
+
+      expect(server.notes.keys, [fine]);
+      expect(errors.last, isA<ServerFailed>().having((e) => e.status, 'status', status));
+      // until it is written again
+      server.refuse.remove(turnedAway);
+      await notes.save(client, 'shorter $status', id: turnedAway);
+      await notes.flush();
+      expect(server.notes.keys, containsAll([fine, turnedAway]));
+    }
   });
 
   test('a refusal for being too quick sends everything again with the next run', () async {
@@ -405,7 +428,7 @@ class _Server implements RemoteNoteService {
   @override
   Future<void> deleteNote(String id) async {
     calls.add('delete $id');
-    if (notes.remove(id) == null) throw refusedAs({'code': 'not_found'});
+    if (notes.remove(id) == null) throw refusedAs({'code': 'not_found'}, status: 404);
   }
 }
 

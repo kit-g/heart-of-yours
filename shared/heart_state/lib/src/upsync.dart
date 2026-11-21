@@ -158,16 +158,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     this.analytics,
     this.onError,
     this.onComplete,
-    bool Function(Object error)? answered,
-  }) : _access = access ?? RemoteAccess(),
-       _answered = answered ?? _refused;
-
-  /// Whether a failure was the server's answer rather than no answer at all:
-  /// told by whoever knows the transport (the app does), since a 5xx is an
-  /// answer with no type of its own here. Without it, only a refusal is.
-  final bool Function(Object error) _answered;
-
-  static bool _refused(Object error) => error is ServerRefusal;
+  }) : _access = access ?? RemoteAccess();
 
   /// Every remote leg is held shut for the length of a run, so how long one
   /// takes and whether it lands is the difference between a new account that
@@ -399,7 +390,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
               ledger.putIfAbsent(step.resource, () => {})[step.id] = .skipped;
               _report = _counting(_report, .skipped);
             } else {
-              _reachedServer = _answered(error);
+              _reachedServer = _access.failureOf(error) != .unanswered;
               _status = .failed;
               _reportReplay(elapsed, ok: false);
               notifyListeners();

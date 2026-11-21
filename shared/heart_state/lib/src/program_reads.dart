@@ -3,29 +3,28 @@ import 'dart:collection';
 
 import 'package:heart_models/heart_models.dart';
 
-import 'refusals.dart';
+import 'remote.dart';
 
 /// What a program call's failure says about asking again, for every program
 /// call, reads and writes alike: one classifier, so a retry and a refusal
 /// never disagree about the same answer.
 enum ProgramFailure {
-  /// Anything but a refusal (#681): the server broke, the gateway in front of
-  /// it was busy or gave up, the server's own throttle, a timeout, or no
-  /// answer at all. Asking again may pass. Offline is among these, since
-  /// nothing here can tell it from a server error: retrying it costs a few
-  /// seconds before the report, which drops it.
+  /// The server broke, the gateway in front of it was busy or gave up, the
+  /// server's own throttle, a deadline: asking again may pass.
   passing,
 
   /// An answer that repeating would only repeat: a rule or key the server
   /// does not take, a cap reached, a row it does not have.
   refused,
 
-  /// Any other refusal: a code this build has no meaning for. Asking again
-  /// the same way gets it again.
+  /// Any other answer: a code this build has no meaning for, a gateway's own
+  /// refusal (a 401 left after a failed reauth, a 413), a forced upgrade, an
+  /// answer this build cannot read. Asking again the same way gets it again.
   answered,
 
-  /// An answer this build cannot read. Asking again gets the same one.
-  unreadable,
+  /// No answer at all: offline, a dropped connection. Retrying while offline
+  /// only delays the report.
+  unanswered,
 }
 
 /// Codes the server refuses with; see [ProgramFailure.refused].
@@ -46,14 +45,18 @@ const _refusals = {
   'skip_limit',
 };
 
-ProgramFailure programFailure(Object? error) {
+/// [error] as a program call reads it: a refusal by its code, anything else by
+/// what [failureOf] (the client's [RemoteAccess.failureOf]) says of it.
+ProgramFailure programFailure(Object? error, {RemoteFailure Function(Object error) failureOf = RemoteAccess.byType}) {
   return switch (error) {
-    ProgramReadFailed(:final error) => programFailure(error),
-    ServerRefusal(:final isThrottle) when isThrottle => .passing,
+    null => .unanswered,
+    ProgramReadFailed(:final error) => programFailure(error, failureOf: failureOf),
     ServerRefusal(:final code) when _refusals.contains(code) => .refused,
-    ServerRefusal() => .answered,
-    TypeError() || FormatException() || ArgumentError() => .unreadable,
-    _ => .passing,
+    final Object error => switch (failureOf(error)) {
+      .transient => .passing,
+      .gone || .answered => .answered,
+      .unanswered => .unanswered,
+    },
   };
 }
 
@@ -110,7 +113,12 @@ class ProgramReads {
   final _running = <(String, String, String), Future<void>>{};
   final _queued = <(String, String, String), Future<void>>{};
 
-  new(this._current);
+  /// What a failure says, as the client reads it: [RemoteAccess.failureOf].
+  final RemoteFailure Function(Object error) _failureOf;
+
+  new(this._current, {this._failureOf = RemoteAccess.byType});
+
+  ProgramFailure _failure(Object? error) => programFailure(error, failureOf: _failureOf);
 
   /// What waits before each retry; as many retries as waits.
   static const _waits = [Duration(seconds: 1), Duration(seconds: 3)];
@@ -136,9 +144,9 @@ class ProgramReads {
     } on ReadDropped {
       rethrow;
     } catch (error, stack) {
-      final wait = switch (programFailure(error)) {
+      final wait = switch (_failure(error)) {
         .passing => _waits.elementAtOrNull(attempt),
-        .refused || .answered || .unreadable => null,
+        .refused || .answered || .unanswered => null,
       };
       if (wait == null) Error.throwWithStackTrace(_named(name, error), stack);
       // the slot is let go while it waits: the burst it was part of drains
@@ -185,10 +193,10 @@ class ProgramReads {
   }
 
   /// The failures of reads run together as one: dropped if any was, else
-  /// the named ones as one naming each call, else the first that would not
-  /// have passed (an answer this build cannot read), else the first, each
-  /// with its own stack.
-  static AsyncError merged(Iterable<AsyncError> failed) {
+  /// the named ones as one naming each call, else the first the server
+  /// answered (a 5xx, say), so an offline leg beside it, which the reporter
+  /// drops, cannot hide it; else the first. Each with its own stack.
+  AsyncError merged(Iterable<AsyncError> failed) {
     if (failed.where((each) => each.error is ReadDropped).firstOrNull case final AsyncError dropped) return dropped;
     final named = [
       for (final each in failed)
@@ -197,7 +205,7 @@ class ProgramReads {
     if (named.firstOrNull case (final ProgramReadFailed first, final StackTrace stack)) {
       return AsyncError(ProgramReadFailed([for (final (read, _) in named) ...read.calls], first.error), stack);
     }
-    return failed.where((each) => programFailure(each.error) != .passing).firstOrNull ?? failed.first;
+    return failed.where((each) => _failure(each.error) != .unanswered).firstOrNull ?? failed.first;
   }
 }
 

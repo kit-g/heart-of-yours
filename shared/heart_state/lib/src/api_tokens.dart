@@ -55,14 +55,7 @@ class ApiTokenRejected implements Exception {
   static ApiTokenRejected? from(Object? error) {
     return switch (error) {
       ServerRefusal(:final isThrottle) when isThrottle => null,
-      ServerRefusal(:final code, :final details) => ApiTokenRejected(
-        code,
-        reason: switch (details) {
-          {'reason': String reason} => reason,
-          {'message': String message} => message,
-          _ => null,
-        },
-      ),
+      ServerRefusal(:final code, :final reason) => ApiTokenRejected(code, reason: reason),
       _ => null,
     };
   }

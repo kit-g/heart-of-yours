@@ -46,10 +46,12 @@ extension GoalStageReach on GoalStage {
 /// 500 are worth retrying forever; a refusal is not — retrying one spends a
 /// request on every launch and leaves a goal that looks saved and never will be.
 ///
-/// The server names every failure with a stable [code] for exactly this, so the
-/// client branches on identity rather than on prose that may be reworded.
-/// `server_error` is the one named failure that is still transient; an unnamed
-/// one — no body, a timeout, a proxy's HTML — never reached the handler at all.
+/// The server names every refusal with a stable [code] for exactly this, as a
+/// `ServerRefusal`, so the client branches on identity rather than on prose
+/// that may be reworded. Its throttle (`429 rate_limited`) is the one named
+/// refusal that is still transient. A server error is a 5xx and never a
+/// refusal, and an unnamed failure — no body, a timeout, a proxy's HTML —
+/// never reached the handler at all.
 class GoalRejected implements Exception {
   /// The server's stable identifier: `goal_limit`, `goal_scope`,
   /// `goal_cadence_stages`, `goal_not_found`, `goal_stage_not_found`, or the
@@ -80,14 +82,7 @@ class GoalRejected implements Exception {
   static GoalRejected? from(Object? error) {
     return switch (error) {
       ServerRefusal(:final isThrottle) when isThrottle => null,
-      ServerRefusal(:final code, :final details) => GoalRejected(
-        code,
-        reason: switch (details) {
-          {'reason': String reason} => reason,
-          {'message': String message} => message,
-          _ => null,
-        },
-      ),
+      ServerRefusal(:final code, :final reason) => GoalRejected(code, reason: reason),
       _ => null,
     };
   }

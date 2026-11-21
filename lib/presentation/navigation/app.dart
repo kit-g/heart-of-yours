@@ -42,6 +42,7 @@ import 'package:heart/core/utils/record_book.dart';
 import 'package:heart/core/utils/charts.dart';
 import 'package:heart/core/utils/stats.dart';
 import 'package:heart/core/utils/templates.dart';
+import 'package:heart/core/utils/remote_failures.dart';
 import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
@@ -123,6 +124,7 @@ class HeartApp extends StatelessWidget {
           create: (_) => RemoteAccess(
             hasToken: () => api.isAuthenticated,
             outdated: () => AppVersionSentry.instance.upgradeRequired,
+            failures: remoteFailure,
           ),
         ),
         ChangeNotifierProvider<AppTheme>(
@@ -519,7 +521,6 @@ class HeartApp extends StatelessWidget {
               analytics: analytics,
               onError: reportToSentry,
               onComplete: () => _resync(context, upsync),
-              answered: RemoteUpsync.answered,
             );
           },
         ),

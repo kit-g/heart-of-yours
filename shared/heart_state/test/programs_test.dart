@@ -51,7 +51,7 @@ void main() {
     remote = _Remote();
     templates = MockTemplateService();
     when(templates.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
-    access = RemoteAccess(hasToken: () => true)..account = true;
+    access = RemoteAccess(hasToken: () => true, failures: testFailures)..account = true;
     errors = [];
     sessionsChanged = 0;
     programs = Programs(
@@ -705,21 +705,62 @@ void main() {
       });
     });
 
-    test('a refusal is not asked again, and is what gets reported', () {
+    test('offline, nothing is asked again, and an answer is what gets reported', () {
       fakeAsync((async) {
         remote.programs = [program()];
-        // offline cannot be told from a server that failed: it is asked again
         remote.failures['getProgramActions p1'] = [Exception('Connection closed')];
         remote.failures['getProgramBases p1'] = [
           refusedAs({'code': 'program_not_found'}, status: 404),
         ];
+        var done = false;
+
+        programs.init().then((_) => done = true);
+        async.flushMicrotasks();
+
+        expect(done, isTrue, reason: 'no retry waits');
+        expect(asked('getProgramActions p1'), 1);
+        expect(asked('getProgramBases p1'), 1);
+        expect('${errors.single}', 'ProgramReadFailed(getProgramBases: program_not_found)');
+      });
+    });
+
+    test("a gateway's 401, left after a reauth that failed, is asked once and reported as itself", () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [const ServerFailed(401)];
 
         programs.init();
         async.elapse(const Duration(seconds: 5));
 
-        expect(asked('getProgramActions p1'), 2);
+        expect(asked('getProgramActions p1'), 1);
+        expect(errors.single, isA<ServerFailed>().having((e) => e.status, 'status', 401));
+      });
+    });
+
+    test('nor is a forced upgrade, a deleted account, or a 413 with no code', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [UpgradeRequired()];
+        remote.failures['getProgramBases p1'] = [const ServerFailed(413)];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(asked('getProgramActions p1'), 1);
         expect(asked('getProgramBases p1'), 1);
-        expect('${errors.single}', 'ProgramReadFailed(getProgramBases: program_not_found)');
+      });
+    });
+
+    test('offline beside a server that failed, the server failure is what gets reported', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [Exception('Connection closed')];
+        remote.failures['getProgramBases p1'] = [const ServerFailed(), const ServerFailed(), const ServerFailed()];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(errors.single, isA<ServerFailed>());
       });
     });
 

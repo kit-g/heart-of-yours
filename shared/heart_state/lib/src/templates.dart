@@ -412,10 +412,8 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
   Future<void> _deleteRemote(String templateId) async {
     try {
       await _remoteService.deleteTemplate(templateId);
-    } on ServerRefusal catch (refusal, stacktrace) {
-      if (refusal.status != 404) onError?.call(refusal, stacktrace: stacktrace);
     } catch (error, stacktrace) {
-      onError?.call(error, stacktrace: stacktrace);
+      if (!_remote.isGone(error)) onError?.call(error, stacktrace: stacktrace);
     }
   }
 

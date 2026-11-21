@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_models/heart_models.dart' as models;
 import 'package:heart_state/src/analytics.dart';
+import 'package:heart_state/src/remote.dart';
 import 'package:heart_state/src/workouts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
@@ -157,7 +158,7 @@ void main() {
         targetUserId: anyNamed('targetUserId'),
         workoutId: anyNamed('workoutId'),
       ),
-    ).thenThrow({'error': 'not found', 'code': 'not_found'});
+    ).thenThrow(refusedAs({'error': 'not found', 'code': 'not_found'}, status: 404));
     when(remote.saveWorkout(any)).thenAnswer((inv) async => inv.positionalArguments.first as Workout);
     when(remote.editWorkout(any)).thenAnswer((inv) async => inv.positionalArguments.first as Workout);
     when(remote.deleteWorkout(any)).thenAnswer((_) async => true);
@@ -167,6 +168,7 @@ void main() {
       service: local,
       remoteService: remote,
       analytics: Analytics(service: reported),
+      remote: RemoteAccess(failures: testFailures),
     )..userId = 'u1';
   });
 
@@ -1434,6 +1436,18 @@ void main() {
 
       verify(local.storeWorkoutHistory([full], 'u1')).called(1);
       expect(sut.lookup('w2'), full);
+    });
+
+    test('skips a workout the gateway says is not there, a 404 with no code, and carries on', () async {
+      // otherwise the pass stalls on it at every visit to History
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('gone'), stripped('w2')]);
+      fails('gone', const ServerFailed(404));
+      final full = detailed('w2');
+      whenServerHas(full);
+
+      await sut.initHistory();
+
+      verify(local.storeWorkoutHistory([full], 'u1')).called(1);
     });
 
     test('skips a workout whose answer this build cannot read, and carries on', () async {

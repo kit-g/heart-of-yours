@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 
 import 'analytics.dart';
 import 'backfill.dart';
-import 'refusals.dart';
 import 'remote.dart';
 import 'set_stopwatch.dart';
 import 'supersets.dart';
@@ -854,10 +853,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (!_remote.allowed) return;
     try {
       await _remoteService.deleteWorkout(workoutId);
-    } on ServerRefusal catch (refusal, stacktrace) {
-      if (refusal.status != 404) onError?.call(refusal, stacktrace: stacktrace);
     } catch (error, stacktrace) {
-      onError?.call(error, stacktrace: stacktrace);
+      if (!_remote.isGone(error)) onError?.call(error, stacktrace: stacktrace);
     }
   }
 
@@ -1450,15 +1447,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         targetUserId: id,
         workoutId: workoutId,
       );
-    } on ServerRefusal catch (refusal) {
-      if (refusal.isThrottle) rethrow;
-      return null;
-    } on ArgumentError {
-      return null;
-    } on TypeError {
-      return null;
-    } on FormatException {
-      return null;
+    } catch (error) {
+      switch (_remote.failureOf(error)) {
+        // a 404 with a code or without, a refusal, an answer this build
+        // cannot read: asking again would get the same one
+        case .gone || .answered:
+          return null;
+        case .transient || .unanswered:
+          rethrow;
+      }
     }
   }
 

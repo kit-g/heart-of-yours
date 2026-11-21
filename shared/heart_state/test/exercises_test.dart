@@ -340,6 +340,20 @@ void main() {
       expect(notes.values, isEmpty);
     });
 
+    test("the account's own exercises failing to read costs the preferences nothing (#681)", () async {
+      final bench = ex('Bench Press');
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
+      when(remote.getOwnExercises()).thenThrow(const ServerFailed());
+      when(preferences.getExercisePreferences()).thenAnswer(
+        (_) async => [ExercisePreference(exerciseId: bench.id, unitSystem: .imperial)],
+      );
+
+      await sut.init();
+
+      expect(sut.unitFor(bench.id), MeasurementUnit.imperial);
+    });
+
     test('a preference read that fails keeps every note, rather than reading as none (#681)', () async {
       final bench = ex('Bench Press');
       when(library.getLibrary(cached: anyNamed('cached')))

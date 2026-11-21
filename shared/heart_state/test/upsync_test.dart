@@ -285,7 +285,7 @@ void main() {
     templates = MockTemplateService();
     workouts = MockWorkoutService();
     goals = MockLocalGoalService();
-    access = RemoteAccess();
+    access = RemoteAccess(failures: testFailures);
     errors = [];
     completions = 0;
     reported = ReportedAnalytics();
@@ -302,8 +302,6 @@ void main() {
       analytics: Analytics(service: reported),
       onError: (error, {stacktrace}) => errors.add(error),
       onComplete: () => completions++,
-      // as the app tells it: the server answered, refusing or failing
-      answered: (error) => error is ServerRefusal || error is ServerFailed,
     );
     when(exercises.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
     when(folders.storeFolder(any, any)).thenAnswer((_) async {});

@@ -15,8 +15,14 @@ int addCounterListener(ChangeNotifier notifier) {
 
 /// What heart_api throws for a 4xx that names its `code` (#681): [body] read
 /// as the [ServerRefusal] it is.
-ServerRefusal refusedAs(Map<String, dynamic> body, {int status = 400}) {
-  return ServerRefusal.tryParse(status: status, method: 'POST', route: '/v1/test', body: body)!;
+ServerRefusal refusedAs(Map<String, dynamic> body, {int? status}) {
+  // the status the server sends with the code, unless a test says otherwise
+  final sent = switch (body['code']) {
+    'not_found' => 404,
+    'rate_limited' => 429,
+    _ => 400,
+  };
+  return ServerRefusal.tryParse(status: status ?? sent, method: 'POST', route: '/v1/test', body: body)!;
 }
 
 /// A [ServerRefusal] naming [code].
@@ -24,9 +30,24 @@ Matcher isRefusal(String code) => isA<ServerRefusal>().having((refusal) => refus
 
 /// A failure heart_state has no type for: a 5xx, a gateway's page, a 4xx
 /// without a code. heart_api throws a `NetworkException`, which this package
-/// never sees by name.
+/// never sees by name; [testFailures] reads it by [status], as the app's
+/// classifier reads the real one.
 class ServerFailed implements Exception {
-  const new();
+  final int status;
+
+  const new([this.status = 500]);
+}
+
+/// The app's reading of a failure (`remoteFailure`), as these tests stand it
+/// in: a [ServerFailed] by its status, anything else by its type.
+RemoteFailure testFailures(Object error) {
+  return switch (error) {
+    ServerFailed(status: 404) => .gone,
+    ServerFailed(status: 408 || 425 || 429) => .transient,
+    ServerFailed(:final status) when status >= 500 => .transient,
+    ServerFailed() => .answered,
+    _ => RemoteAccess.byType(error),
+  };
 }
 
 class ListenerProbe {
