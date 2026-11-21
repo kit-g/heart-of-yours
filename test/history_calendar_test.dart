@@ -476,6 +476,65 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final size in [const Size(390, 844), const Size(1194, 834)]) {
+    testCalendar('the list and the calendar turn into each other under a header that stays put, at $size (#712)', (
+      tester,
+    ) async {
+      await pumpApp(tester, size: size, history: [finished(current, 5)]);
+      // while the two swap, both headers are built: the arriving one is on top
+      Finder header() => find.byKey(AppKeys.historyViewSwitch).last;
+      final at = tester.getRect(header());
+
+      await tester.tap(header());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(find.byKey(AppKeys.historyCalendar), findsOneWidget);
+      expect(find.byType(WorkoutItem), findsOneWidget, reason: 'the list is still leaving');
+      final arriving = tester.widget<SliverFadeTransition>(
+        find.ancestor(of: find.byKey(AppKeys.historyCalendar), matching: find.byType(SliverFadeTransition)).first,
+      );
+      expect(arriving.opacity.value, inExclusiveRange(0, 1));
+      expect(tester.getRect(header()), at);
+      await tester.pumpTimes();
+      expect(find.byType(WorkoutItem), findsNothing);
+      expect(find.byKey(AppKeys.historyViewSwitch), findsOneWidget);
+      expect(tester.getRect(header()), at);
+
+      await tester.tap(header());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(find.byKey(AppKeys.historyCalendar), findsOneWidget, reason: 'the calendar is still leaving');
+      expect(find.byType(WorkoutItem), findsOneWidget);
+      expect(tester.getRect(header()), at);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.historyCalendar), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final (name, features) in [
+    ('Reduce Motion', const FakeAccessibilityFeatures(reduceMotion: true)),
+    ('Remove animations', const FakeAccessibilityFeatures(disableAnimations: true)),
+  ]) {
+    testCalendar('with $name, the switch changes the view at once (#712)', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = features;
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await pumpApp(tester, size: const Size(390, 844), history: [finished(current, 5)]);
+
+      await tester.tap(find.byTooltip('Show as calendar'));
+      await tester.pump();
+      expect(find.byKey(AppKeys.historyCalendar), findsOneWidget);
+      expect(find.byType(WorkoutItem), findsNothing);
+      expect(find.byKey(AppKeys.historyViewSwitch), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Show as list'));
+      await tester.pump();
+      expect(find.byKey(AppKeys.historyCalendar), findsNothing);
+      expect(find.byType(WorkoutItem), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testCalendar("the calendar does not inherit the list's scroll (#609)", (tester) async {
     final history = [for (final day in List.generate(12, (i) => 2 + i * 2)) finished(current, day)];
     await pumpApp(tester, size: const Size(390, 844), history: history);
