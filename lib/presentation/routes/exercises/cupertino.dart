@@ -73,10 +73,13 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
           if (widget.allowOptions) ...[
             if (widget.exercise.isMine ||
                 _canMoveHistory(context, widget.exercise, onMoved: widget.onHistoryMoved, listen: true))
-              IconButton(
-                tooltip: L.of(context).exerciseOptions,
-                onPressed: () => _onExerciseMenu(context, widget.exercise, onHistoryMoved: widget.onHistoryMoved),
-                icon: const Icon(Icons.more_horiz_rounded),
+              // its own context, so the menu hangs off the button (#710)
+              Builder(
+                builder: (button) => IconButton(
+                  tooltip: L.of(context).exerciseOptions,
+                  onPressed: () => _onExerciseMenu(button, widget.exercise, onHistoryMoved: widget.onHistoryMoved),
+                  icon: const Icon(Icons.more_horiz_rounded),
+                ),
               ),
             if (!widget.exercise.isMine)
               IconButton(

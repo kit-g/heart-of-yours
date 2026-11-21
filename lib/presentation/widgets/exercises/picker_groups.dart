@@ -1,9 +1,9 @@
 part of 'exercises.dart';
 
 /// Picks how the picker groups the library (#620): a menu of the groupings,
-/// the one in force checked, hanging off [anchor] — the Exercises tab's
-/// options button, which is where the choice lives, or Settings' row. One
-/// choice for every place the picker appears; the others follow it.
+/// the one in force checked, hanging off [anchor] — Settings' row. The
+/// Exercises tab's options carry the same choices inline (#710). One choice
+/// for every place the picker appears; the others follow it.
 Future<void> showPickerGroupingMenu(BuildContext anchor) async {
   const width = 200.0;
   final l = L.of(anchor);
