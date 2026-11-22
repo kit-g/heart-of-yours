@@ -76,7 +76,7 @@ lib/firebase_options.dart lib/firebase_options_prod.dart:
 	  '  static FirebaseOptions get currentPlatform => throw UnimplementedError();' \
 	  '}' > $@
 
-lint: format-check dates ui-imports lib/firebase_options.dart lib/firebase_options_prod.dart
+lint: format-check dates ui-imports layers lib/firebase_options.dart lib/firebase_options_prod.dart
 	flutter analyze
 
 # The app builds on material_ui and cupertino_ui. The framework's copies still
@@ -88,6 +88,28 @@ ui-imports:
 	@if git ls-files -co --exclude-standard '*.dart' | xargs grep -n "package:flutter/\(material\|cupertino\)\.dart" ; then \
 		echo "" ; \
 		echo "import material_ui / cupertino_ui, not flutter/material.dart or flutter/cupertino.dart" ; \
+		exit 1 ; \
+	fi
+
+# The packages are layers, and a dependency only points down: the app on
+# everything; heart_api on heart_models and the HTTP stack; heart_state and the
+# other shared packages on heart_models, never on HTTP. HTTP types stop at
+# heart_api: a transport failure reaches the state layer as a heart_models type
+# (ServerRefusal, AccountDeleted), never as a NetworkException (#681). One
+# import across a boundary compiles fine and is the start of a tangle, and the
+# analyzer has no rule for it, so this checks every import and pubspec.
+LOWER := heart_state heart_db heart_charts heart_health heart_language sealbox
+layers:
+	@bad=0 ; \
+	for p in $(LOWER) ; do \
+		if git ls-files -co --exclude-standard "shared/$$p/*.dart" | xargs grep -nE "package:(http|network_utils|heart_api)/" ; then bad=1 ; fi ; \
+		if grep -nE "^[[:space:]]+(http|network_utils|heart_api):" shared/$$p/pubspec.yaml ; then echo "shared/$$p/pubspec.yaml" ; bad=1 ; fi ; \
+		if git ls-files -co --exclude-standard "shared/$$p/*.dart" | xargs grep -nE "package:heart/" ; then bad=1 ; fi ; \
+	done ; \
+	if git ls-files -co --exclude-standard "shared/heart_api/*.dart" | xargs grep -nE "package:(heart_state|heart_db|heart)/" ; then bad=1 ; fi ; \
+	if [ $$bad = 1 ] ; then \
+		echo "" ; \
+		echo "an import across layers: HTTP stays in heart_api, shared packages never import the app or heart_api" ; \
 		exit 1 ; \
 	fi
 
