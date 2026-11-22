@@ -308,8 +308,14 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
         await _service.saveClientWorkoutPlan(studentId, workoutId, plan);
         _owedPlans.remove(workoutId);
       } catch (error, stacktrace) {
-        onError?.call(error, stacktrace: stacktrace);
-        if (error case {'code': 'invalid_plan' || 'forbidden' || 'not_found'}) _owedPlans.remove(workoutId);
+        switch (error) {
+          // malformed, or no longer the coach's to plan: let go, as answered
+          case ServerRefusal(code: 'invalid_plan' || 'forbidden' || 'not_found'):
+            _owedPlans.remove(workoutId);
+          // anything else waits for the next try
+          default:
+            onError?.call(error, stacktrace: stacktrace);
+        }
       }
     }
   }

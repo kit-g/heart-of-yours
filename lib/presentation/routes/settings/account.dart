@@ -822,9 +822,9 @@ class _ConversationsStay extends StatelessWidget {
                   dimension: 48,
                   child: Center(child: CircularProgressIndicator.adaptive()),
                 ),
-                false => TextButton(
+                false => QuietButton(
                   key: AppKeys.deleteAccountConversations,
-                  style: TextButton.styleFrom(foregroundColor: colorScheme.error, minimumSize: const .new(64, 48)),
+                  danger: true,
                   onPressed: () => _deleteAll(context),
                   child: Text(l.deleteAccountConversationsDelete),
                 ),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:heart_api/src/api.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:mockito/mockito.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
 import 'package:test/test.dart';
 
 import 'support/http.dart';
@@ -59,7 +60,7 @@ void main() {
         body: {'error': 'unexpected'},
       );
 
-      expect(() => api.registerAccount(user), throwsA(isA<Map>()));
+      expect(() => api.registerAccount(user), throwsA(isA<NetworkException>().having((e) => e.body, 'body', isNull)));
     });
 
     // Scheduling a deletion is an action on `PUT /accounts`, not `DELETE` —
@@ -118,7 +119,10 @@ void main() {
         body: {'error': 'Not Found'},
       );
 
-      expect(() => api.deleteAccount(accountId: '42'), throwsA(isA<Map>()));
+      expect(
+        () => api.deleteAccount(accountId: '42'),
+        throwsA(isA<NetworkException>().having((e) => e.statusCode, 'statusCode', 404)),
+      );
     });
 
     // The path is the assertion here, not decoration: these four stubbed
@@ -169,7 +173,7 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('removeAvatar returns false on failure', () async {
+    test('removeAvatar throws a failure', () async {
       respond(
         client: client,
         method: 'PUT',
@@ -178,8 +182,7 @@ void main() {
         body: {},
       );
 
-      final result = await api.removeAvatar('42');
-      expect(result, isFalse);
+      await expectLater(api.removeAvatar('42'), throwsA(isA<NetworkException>()));
     });
 
     test('undoAccountDeletion returns null on success', () async {
@@ -204,7 +207,10 @@ void main() {
         body: {'error': 'bad request'},
       );
 
-      expect(() => api.undoAccountDeletion(), throwsA(isA<Map>()));
+      expect(
+        () => api.undoAccountDeletion(),
+        throwsA(isA<NetworkException>().having((e) => e.statusCode, 'statusCode', 400)),
+      );
     });
   });
 
@@ -375,7 +381,7 @@ void main() {
       expect(jsonDecode(sent as String), {'name': 'My sheet', 'expiry': 'never'});
     });
 
-    test('createApiToken throws the refusal whole, code included', () async {
+    test('createApiToken throws the cap as a refusal', () async {
       respond(
         client: client,
         method: 'POST',
@@ -390,7 +396,7 @@ void main() {
 
       expect(
         () => api.createApiToken(name: 'one more', expiry: .year),
-        throwsA(isA<Map>().having((m) => m['code'], 'code', 'token_limit')),
+        throwsA(refused('token_limit')),
       );
     });
 
@@ -399,7 +405,7 @@ void main() {
       await expectLater(api.revokeApiToken('t1'), completes);
     });
 
-    test('revokeApiToken throws the 404 whole', () async {
+    test('revokeApiToken throws the 404 as a refusal', () async {
       respond(
         client: client,
         method: 'DELETE',
@@ -407,7 +413,7 @@ void main() {
         statusCode: 404,
         body: {'error': 'not found', 'code': 'not_found', 'message': 'token #nope not found'},
       );
-      expect(() => api.revokeApiToken('nope'), throwsA(isA<Map>().having((m) => m['code'], 'code', 'not_found')));
+      expect(() => api.revokeApiToken('nope'), throwsA(refused('not_found')));
     });
   });
 }

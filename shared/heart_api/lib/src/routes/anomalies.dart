@@ -13,17 +13,15 @@ mixin _AnomalyRoutes on Requests, _ExerciseNaming implements AnomalyService {
     String? cursor,
     int limit = 100,
   }) async {
-    final (json, code) = await get(
+    final response = await get(
       Router.anomalies,
       query: {'limit': '$limit', 'cursor': ?cursor, 'status': ?status?.value},
     );
-    return switch ((code, json)) {
-      (200, {'anomalies': final List l}) => Page(
-        items: _readable(l, (each) => Anomaly.fromJson(_namedAnomaly(each))),
-        hasMore: json['cursor'] != null,
-      ),
-      _ => throw NetworkException(statusCode: code, body: json),
-    };
+    final (anomalies, page) = _listIn(response, 'anomalies', from: Router.anomalies);
+    return Page(
+      items: _readable(anomalies, (each) => Anomaly.fromJson(_namedAnomaly(each))),
+      hasMore: page['cursor'] != null,
+    );
   }
 
   /// What the user made of one anomaly, replacing an earlier decision. Null
@@ -34,11 +32,12 @@ mixin _AnomalyRoutes on Requests, _ExerciseNaming implements AnomalyService {
     required String anomalyId,
     required AnomalyStatus status,
   }) async {
-    final (json, code) = await put(Router.anomaly(anomalyId), body: {'status': status.value});
-    return switch ((code, json)) {
-      (200, Map json) => Anomaly.fromJson(_namedAnomaly(json)),
-      (404, _) => null,
-      _ => throw NetworkException(statusCode: code, body: json),
-    };
+    try {
+      final (json, _) = await put(Router.anomaly(anomalyId), body: {'status': status.value});
+      return Anomaly.fromJson(_namedAnomaly(json));
+    } on Exception catch (error) {
+      if (_gone(error)) return null;
+      rethrow;
+    }
   }
 }

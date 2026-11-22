@@ -72,7 +72,7 @@ class RemoteUpsync implements UpsyncService {
 
   @override
   Future<void> replayUnitPreference(String exerciseId, MeasurementUnit unit) {
-    return _api.replayUnitPreference(exerciseId, unit);
+    return _api.saveUnitPreference(exerciseId, unit);
   }
 
   @override
@@ -89,29 +89,15 @@ class RemoteUpsync implements UpsyncService {
 
   @override
   Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions}) {
-    return _refusedAsBody(() => _api.replayProgram(program, sessions: sessions));
+    return _api.replayProgram(program, sessions: sessions);
   }
 
   @override
-  Future<Replayed<ProgramAction>> replayProgramAction(ProgramAction action) {
-    return _refusedAsBody(() => _api.replayProgramAction(action));
-  }
+  Future<Replayed<ProgramAction>> replayProgramAction(ProgramAction action) => _api.replayProgramAction(action);
 
   @override
-  Future<Replayed<ProgramBase>> replayProgramBase(ProgramBase base) {
-    return _refusedAsBody(() => _api.replayProgramBase(base));
-  }
+  Future<Replayed<ProgramBase>> replayProgramBase(ProgramBase base) => _api.replayProgramBase(base);
 
   @override
-  Future<Replayed<TrainingSkip>> replaySkip(TrainingSkip skip) => _refusedAsBody(() => _api.replaySkip(skip));
-
-  /// The replay reads a refusal's `code` off the body the server sent, as
-  /// every other create throws it; the program routes throw it typed.
-  static Future<T> _refusedAsBody<T>(Future<T> Function() call) async {
-    try {
-      return await call();
-    } on ProgramRefused catch (refused) {
-      throw {'code': refused.reason.code};
-    }
-  }
+  Future<Replayed<TrainingSkip>> replaySkip(TrainingSkip skip) => _api.replaySkip(skip);
 }

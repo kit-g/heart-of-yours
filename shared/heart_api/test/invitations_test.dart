@@ -61,7 +61,7 @@ void main() {
           'reason': 'coaching is open to testers for now',
         },
       );
-      expect(api.createInvitation('Riley'), throwsA(containsPair('code', 'coaching_beta')));
+      expect(api.createInvitation('Riley'), throwsA(refused('coaching_beta')));
     });
 
     test('getInvitations reads the page and its cursor, and never a token', () async {
@@ -164,7 +164,7 @@ void main() {
           'reason': 'this invitation is no longer good',
         },
       );
-      expect(api.acceptInvitation(token, {}), throwsA(containsPair('code', 'invitation_gone')));
+      expect(api.acceptInvitation(token, {}), throwsA(refused('invitation_gone')));
     });
 
     test('a token that is not one the server makes never reaches a path', () {

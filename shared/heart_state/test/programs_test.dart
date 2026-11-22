@@ -8,6 +8,7 @@ import 'package:heart_state/heart_state.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'test_utils.dart';
 
 /// The Programs notifier (#346): local first, the server's copy after, and a
 /// position that is folded on request, never held.
@@ -50,7 +51,7 @@ void main() {
     remote = _Remote();
     templates = MockTemplateService();
     when(templates.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
-    access = RemoteAccess(hasToken: () => true)..account = true;
+    access = RemoteAccess(hasToken: () => true, failures: testFailures)..account = true;
     errors = [];
     sessionsChanged = 0;
     programs = Programs(
@@ -555,7 +556,7 @@ void main() {
   });
 
   group('program reads, a few at a time (#660)', () {
-    const throttled = {'code': 'server_error', 'reason': 'Internal server error'};
+    final throttled = refusedAs({'code': 'rate_limited', 'retryAfter': 1}, status: 429);
 
     int asked(String call) => remote.calls.where((each) => each == call).length;
 
@@ -647,14 +648,12 @@ void main() {
       });
     });
 
-    test("so is the gateway's throttle, but not its refusal", () {
+    test("so is a server that failed, but not a refusal this build doesn't know", () {
       fakeAsync((async) {
         remote.programs = [program()];
-        remote.failures['getProgramBases p1'] = [
-          {'message': 'Internal server error'},
-        ];
+        remote.failures['getProgramBases p1'] = [const ServerFailed()];
         remote.failures['getProgramActions p1'] = [
-          {'message': 'Unauthorized'},
+          refusedAs({'code': 'mystery'}),
         ];
 
         programs.init();
@@ -662,7 +661,20 @@ void main() {
 
         expect(asked('getProgramBases p1'), 2);
         expect(asked('getProgramActions p1'), 1);
-        expect('${errors.single}', 'ProgramReadFailed(getProgramActions: unnamed)');
+        expect('${errors.single}', 'ProgramReadFailed(getProgramActions: mystery)');
+      });
+    });
+
+    test('a server failing every time is reported as itself, by its own status and route', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramBases p1'] = [const ServerFailed(), const ServerFailed(), const ServerFailed()];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(asked('getProgramBases p1'), 3);
+        expect(errors.single, isA<ServerFailed>());
       });
     });
 
@@ -676,7 +688,7 @@ void main() {
 
         expect(asked('getProgramBases p1'), 3);
         expect(errors.single, isA<ProgramReadFailed>());
-        expect('${errors.single}', 'ProgramReadFailed(getProgramBases: server_error)');
+        expect('${errors.single}', 'ProgramReadFailed(getProgramBases: rate_limited)');
       });
     });
 
@@ -689,7 +701,7 @@ void main() {
         programs.init();
         async.elapse(const Duration(seconds: 5));
 
-        expect('${errors.single}', 'ProgramReadFailed(getProgramActions, getProgramBases: server_error)');
+        expect('${errors.single}', 'ProgramReadFailed(getProgramActions, getProgramBases: rate_limited)');
       });
     });
 
@@ -698,7 +710,7 @@ void main() {
         remote.programs = [program()];
         remote.failures['getProgramActions p1'] = [Exception('Connection closed')];
         remote.failures['getProgramBases p1'] = [
-          {'code': 'program_not_found'},
+          refusedAs({'code': 'program_not_found'}, status: 404),
         ];
         var done = false;
 
@@ -712,7 +724,47 @@ void main() {
       });
     });
 
-    test('alone, an offline failure is reported as itself', () {
+    test("a gateway's 401, left after a reauth that failed, is asked once and reported as itself", () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [const ServerFailed(401)];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(asked('getProgramActions p1'), 1);
+        expect(errors.single, isA<ServerFailed>().having((e) => e.status, 'status', 401));
+      });
+    });
+
+    test('nor is a forced upgrade, a deleted account, or a 413 with no code', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [UpgradeRequired()];
+        remote.failures['getProgramBases p1'] = [const ServerFailed(413)];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(asked('getProgramActions p1'), 1);
+        expect(asked('getProgramBases p1'), 1);
+      });
+    });
+
+    test('offline beside a server that failed, the server failure is what gets reported', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [Exception('Connection closed')];
+        remote.failures['getProgramBases p1'] = [const ServerFailed(), const ServerFailed(), const ServerFailed()];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(errors.single, isA<ServerFailed>());
+      });
+    });
+
+    test('alone, an answer this build cannot read is reported as itself, and not asked again', () {
       fakeAsync((async) {
         const dropped = FormatException('empty response');
         remote.programs = [program()];
@@ -2401,11 +2453,11 @@ class _Remote implements RemoteProgramService {
   void _call(String call) {
     calls.add(call);
     if (failing) throw {'error': 'unavailable'};
-    if (refusing case final String code) throw {'code': code};
+    if (refusing case final String code) throw refusedAs({'code': code});
   }
 
   /// What each program read throws before it answers, one per ask: a
-  /// throttled one is the gateway's `server_error` (#660).
+  /// throttled one is the server's `429 rate_limited` (#660, #681).
   final failures = <String, List<Object>>{};
 
   /// Holds program reads open until it completes, to count them: every one,
@@ -2459,7 +2511,7 @@ class _Remote implements RemoteProgramService {
     edits.add((baseRevision, changeId));
     _call('editProgram ${program.id}');
     if (revisions[program.id] case final int current when baseRevision != null) {
-      if (baseRevision != current) throw {'code': 'program_changed', 'revision': current};
+      if (baseRevision != current) throw refusedAs({'code': 'program_changed', 'revision': current});
       revisions[program.id!] = current + 1;
       return Program.fromJson({...program.toMap(), 'revision': current + 1});
     }

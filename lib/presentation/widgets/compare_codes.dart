@@ -27,32 +27,38 @@ void _closed(String id) {
   if (_sheet.value == id) _sheet.value = null;
 }
 
-/// Shows the comparison [id] of a code with another of the account's devices
+/// Shows the comparison [opened] of a code with another of the account's devices
 /// (#555), as [approval] has it, until it is closed. Closed while it runs,
 /// that comparison ends on both devices: walking away from it is saying no.
 /// One that came after it is never touched.
 ///
 /// Shows nothing while another sheet is up.
-Future<void> showCodeComparison(BuildContext context, DeviceApproval approval, String id) async {
+Future<void> showCodeComparison(BuildContext context, DeviceApproval approval, String opened) async {
   if (_sheet.value != null) return;
-  _sheet.value = id;
+  _sheet.value = opened;
   try {
     await showModalBottomSheet<void>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
       constraints: const BoxConstraints(maxWidth: dialogWidth),
-      builder: (_) => _ComparisonSheet(approval: approval, id: id),
+      builder: (_) => _ComparisonSheet(approval: approval, id: opened),
     );
   } finally {
-    _closed(id);
+    _closed(opened);
   }
-  // each a no-op unless [id] is still the one there
+  // the one the sheet ended on: the one it opened for, or the one both
+  // devices kept when they asked each other
+  final last = switch (approval.value) {
+    CodeComparison(:final id, replaced: final String replaced) when replaced == opened => id,
+    _ => opened,
+  };
+  // each a no-op unless it is still the one there
   switch (approval.value?.running) {
     case true:
-      await approval.deny(id: id);
+      await approval.deny(id: last);
     case false:
-      approval.dismiss(id: id);
+      approval.dismiss(id: last);
     case null:
       break;
   }
@@ -135,7 +141,7 @@ class _ComparisonSheetState extends State<_ComparisonSheet> {
 
   CodeComparison? _mine() {
     return switch (widget.approval.value) {
-      final CodeComparison comparison when comparison.id == widget.id => comparison,
+      final CodeComparison comparison when comparison.id == widget.id || comparison.replaced == widget.id => comparison,
       _ => null,
     };
   }
@@ -211,7 +217,7 @@ class _ComparisonSheetState extends State<_ComparisonSheet> {
           key: AppKeys.codesDontMatch,
           backgroundColor: colorScheme.surfaceContainerHighest,
           margin: tallButtonPadding,
-          onPressed: () => widget.approval.deny(id: widget.id),
+          onPressed: () => widget.approval.deny(id: comparison.id),
           child: Center(
             child: Text(
               l.cancel,
@@ -233,10 +239,10 @@ class _ComparisonSheetState extends State<_ComparisonSheet> {
             ButtonPair(
               cancel: l.codesDontMatch,
               cancelKey: AppKeys.codesDontMatch,
-              onCancel: () => widget.approval.deny(id: widget.id),
+              onCancel: () => widget.approval.deny(id: comparison.id),
               action: l.codesMatch,
               actionKey: AppKeys.codesMatch,
-              onAction: () => widget.approval.confirm(id: widget.id),
+              onAction: () => widget.approval.confirm(id: comparison.id),
             ),
           ],
         },

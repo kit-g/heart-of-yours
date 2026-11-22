@@ -44,13 +44,18 @@ void main() {
     expect(find.descendant(of: row, matching: find.text(l.historyView)), findsOneWidget);
     expect(preferences.historyView, HistoryView.list);
 
-    await tester.tap(find.descendant(of: row, matching: find.text(l.calendar)));
-    await tester.pumpTimes();
-    expect(preferences.historyView, HistoryView.calendar);
-
-    await tester.tap(find.descendant(of: row, matching: find.text(l.historyAsList)));
-    await tester.pumpTimes();
-    expect(preferences.historyView, HistoryView.list);
+    for (final (view, name) in [
+      (HistoryView.calendar, l.calendar),
+      (HistoryView.month, l.historyByMonth),
+      (HistoryView.list, l.historyAsList),
+    ]) {
+      await tester.tap(row);
+      await tester.pumpTimes();
+      await tester.tap(find.byKey(AppKeys.historyViewChoice(view.value)));
+      await tester.pumpTimes();
+      expect(preferences.historyView, view);
+      expect(find.descendant(of: row, matching: find.text(name)), findsOneWidget);
+    }
 
     // and beside it, how History's list draws a workout (#611)
     final density = find.byKey(AppKeys.historyDensitySetting);

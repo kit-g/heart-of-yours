@@ -380,24 +380,24 @@ void main() {
     });
 
     testWidgets(
-      'a workout of no time is refused, and the times stay up',
+      'an end put on the start takes it along: there is no workout of no time',
       (tester) async {
         await launch(tester, on: true);
         await openTab(tester, AppKeys.historyStack);
         await tester.tapByKey(AppKeys.logPastWorkout);
         await tester.pumpTimes();
 
+        await tester.tap(find.text('Start time'));
+        await tester.pumpTimes();
+        final start = tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker)).initialDateTime;
         await tester.tap(find.text('End time'));
         await tester.pumpTimes();
-        final wheel = tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker));
-        wheel.onDateTimeChanged(wheel.minimumDate!);
+        tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker)).onDateTimeChanged(start);
         await tester.pumpTimes();
+        expect(find.text('1:00:00'), findsOneWidget);
         await tester.tap(find.text('Next'));
         await tester.pumpTimes();
-
-        expect(find.text('The end has to come after the start.'), findsOneWidget);
-        expect(find.text('When was it?'), findsOneWidget);
-        expect(find.byType(WorkoutEditor), findsNothing);
+        expect(find.byType(WorkoutEditor), findsOneWidget);
       },
       variant: TargetPlatformVariant.only(.iOS),
     );

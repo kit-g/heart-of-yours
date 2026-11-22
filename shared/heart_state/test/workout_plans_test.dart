@@ -4,6 +4,7 @@ import 'package:heart_state/heart_state.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'test_utils.dart';
 
 /// The device's store, in memory: a plan is owed once its workout is synced.
 class _Store implements LocalWorkoutPlanService {
@@ -132,7 +133,7 @@ void main() {
   test('a plan the server refused as malformed is dropped, not retried forever', () async {
     store.plans['w1'] = plan.plan;
     store.synced.add('w1');
-    server.refuse = {'code': 'invalid_plan'};
+    server.refuse = refusedAs({'code': 'invalid_plan'});
 
     await workouts.sendWorkoutPlans();
 
@@ -142,7 +143,7 @@ void main() {
   test('a workout the server does not have yet keeps its plan for later', () async {
     store.plans['w1'] = plan.plan;
     store.synced.add('w1');
-    server.refuse = {'code': 'not_found'};
+    server.refuse = refusedAs({'code': 'not_found'});
 
     await workouts.sendWorkoutPlans();
 

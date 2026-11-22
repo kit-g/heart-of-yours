@@ -81,8 +81,7 @@ class _PushSettingsPageState extends State<PushSettingsPage> {
                               style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                             ),
                             const SizedBox(height: 8),
-                            TextButton(
-                              style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+                            QuietButton(
                               onPressed: Pushes.of(context).load,
                               child: Text(retry),
                             ),
@@ -152,34 +151,119 @@ class _TopicTile extends StatelessWidget {
 
   const new({required this.topic});
 
+  static const _gap = 12.0;
+
+  /// The least the name and description keep beside the switch.
+  static const _wordsWidth = 140.0;
+
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final labels = {
+      for (final option in topic.options)
+        if (_deliveryLabel(l, option) case final String label) option: label,
+    };
+    final words = Column(
+      crossAxisAlignment: .start,
+      children: [
+        Text(topic.name, style: textTheme.bodyLarge),
+        Text(topic.description, style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+      ],
+    );
+    void pick(String? delivery) {
+      if (delivery != null) _change(context, () => Pushes.of(context).set(topic.topic, delivery));
+    }
+
     return Padding(
       key: ValueKey('pushTopic-${topic.topic}'),
       padding: const .symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: .start,
-        children: [
-          Text(topic.name, style: textTheme.bodyLarge),
-          Text(topic.description, style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 8),
-          Align(
-            alignment: .centerLeft,
-            child: SettingSwitcher<String>(
-              value: topic.delivery,
-              onValueChanged: (delivery) {
-                if (delivery != null) _change(context, () => Pushes.of(context).set(topic.topic, delivery));
-              },
-              children: {
-                for (final option in topic.options)
-                  if (_deliveryLabel(l, option) case final String label) option: Text(label),
-              },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final switcher = SettingSwitcher<String>(
+            value: topic.delivery,
+            onValueChanged: pick,
+            children: labels.map((option, label) => MapEntry(option, Text(label))),
+          );
+          final wide = _switcherWidth(context, labels.values);
+          // the floor grows with the text around it, not as a font of its size
+          // would: Android leaves the largest sizes unscaled
+          final floor = _wordsWidth * MediaQuery.textScalerOf(context).scale(14) / 14;
+          return switch (constraints.maxWidth - wide) {
+            // beside the words while they keep enough to read
+            final left when left - _gap >= floor => Row(
+              spacing: _gap,
+              children: [
+                Expanded(child: words),
+                switcher,
+              ],
+            ),
+            // else below them
+            >= 0 => Column(
+              crossAxisAlignment: .start,
+              spacing: 8,
+              children: [words, switcher],
+            ),
+            // more than a row holds: its value, and the choices in a menu
+            _ => _DeliveryMenu(words: words, labels: labels, value: topic.delivery, onPicked: pick),
+          };
+        },
+      ),
+    );
+  }
+
+  /// What the switch takes at the most: on Apple's platforms every segment is
+  /// as wide as the widest, elsewhere each is its own label's.
+  static double _switcherWidth(BuildContext context, Iterable<String> labels) {
+    final widths = labels.map((label) => lineWidth(context, label));
+    return switch (Theme.of(context).platform) {
+      .iOS || .macOS => (widths.fold(0.0, math.max) + 28) * labels.length,
+      .android ||
+      .fuchsia ||
+      .linux ||
+      .windows => widths.map((width) => math.max(48.0, width + 16) + 2).fold(0.0, (sum, width) => sum + width),
+    };
+  }
+}
+
+/// A topic whose deliveries don't fit a row as segments: the one chosen, and
+/// a menu of them.
+class _DeliveryMenu extends StatelessWidget {
+  final Widget words;
+  final Map<String, String> labels;
+  final String value;
+  final ValueChanged<String?> onPicked;
+
+  const new({required this.words, required this.labels, required this.value, required this.onPicked});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: .start,
+      children: [
+        words,
+        Builder(
+          builder: (context) => InkWell(
+            onTap: () async {
+              onPicked(
+                await showMenu<String>(
+                  context: context,
+                  position: menuOver(context, context.findRenderObject()! as RenderBox),
+                  initialValue: value,
+                  items: [
+                    for (final MapEntry(:key, value: label) in labels.entries)
+                      PopupMenuItem(value: key, child: Text(label)),
+                  ],
+                ),
+              );
+            },
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: kMinInteractiveDimension),
+              child: MenuValue(labels[value] ?? '', share: 1),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -263,8 +347,7 @@ class const _People() extends StatelessWidget {
       title: Text(person.name),
       content: _PersonTopics(connectionId: person.id, topics: topics),
       actions: [
-        TextButton(
-          style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+        QuietButton(
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
           child: Text(L.of(context).close),
         ),
@@ -274,7 +357,8 @@ class const _People() extends StatelessWidget {
 }
 
 /// Each topic that can be chosen for one person: the topic's own answer by
-/// default, or one of its deliveries for them alone.
+/// default, or one of its deliveries for them alone. Always below its name:
+/// three segments leave it no room beside them in a dialog's width.
 class _PersonTopics extends StatelessWidget {
   final String connectionId;
   final List<PushSetting> topics;

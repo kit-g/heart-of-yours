@@ -218,7 +218,9 @@ class _Server implements RemoteNoteService {
 
   @override
   Future<void> deleteNote(String id) async {
-    if (notes.remove(id) == null) throw {'code': 'not_found'};
+    if (notes.remove(id) == null) {
+      throw const ServerRefusal(status: 404, code: 'not_found', method: 'DELETE', route: '/v1/notes/{id}');
+    }
   }
 }
 

@@ -15,7 +15,7 @@ const _rise = 16.0;
 /// History's header, open. Pinned, it folds to the toolbar as a view scrolls.
 const _headerHeight = 80.0;
 
-/// History's two views, one turning into the other when the choice changes
+/// History's views, one turning into the other when the choice changes
 /// (#712).
 ///
 /// Each view is its own scrollable. While they swap both are built: the
@@ -95,23 +95,31 @@ class _ViewSwitchState extends State<_ViewSwitch> with SingleTickerProviderState
     if (lessMotion(context) || !TickerMode.valuesOf(context).enabled) return _settleOn(widget.view);
     switch (_views.value) {
       case (final HistoryView top, null):
-        final folded = _headerHeight - (_offsets[top] ?? 0);
-        // never quite the toolbar: a header whose open and folded heights
-        // are the same has nothing to lay its title out between
-        _opening.begin = folded.clamp(kToolbarHeight + .5, _headerHeight);
-        _offsets.remove(widget.view);
-        _views.value = (widget.view, top);
-        _turned.value = false;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _turned.value = true;
-        });
-        _progress.forward(from: 0);
+        _swapFrom(top);
       // back to the one leaving: the same swap, backwards from here
       case (_, final HistoryView under) when under == widget.view:
         _progress.reverse();
-      case (_, HistoryView _):
+      case (final HistoryView top, HistoryView _) when top == widget.view:
         _progress.forward();
+      // a third, with two still swapping: from the one that was arriving,
+      // and from the header as it stands
+      case (final HistoryView top, final HistoryView under):
+        _swapFrom(_progress.status == .reverse ? under : top, height: _header.value);
     }
+  }
+
+  void _swapFrom(HistoryView top, {double? height}) {
+    final folded = height ?? _headerHeight - (_offsets[top] ?? 0);
+    // never quite the toolbar: a header whose open and folded heights
+    // are the same has nothing to lay its title out between
+    _opening.begin = folded.clamp(kToolbarHeight + .5, _headerHeight);
+    _offsets.remove(widget.view);
+    _views.value = (widget.view, top);
+    _turned.value = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _turned.value = true;
+    });
+    _progress.forward(from: 0);
   }
 
   void _settle(AnimationStatus status) {
@@ -360,17 +368,12 @@ class _RenderSliverRise extends RenderProxySliver {
   }
 }
 
-/// The switch's glyph: the view it offers, turning from the one it offered.
+/// The switch's glyph: the view on screen, turning from the one it was.
 class _SwitchGlyph extends StatelessWidget {
   /// The view on screen.
   final HistoryView view;
 
   const new({required this.view});
-
-  static IconData _offering(HistoryView view) => switch (view) {
-    .list => Icons.calendar_month_rounded,
-    .calendar => Icons.view_agenda_outlined,
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -387,7 +390,7 @@ class _SwitchGlyph extends StatelessWidget {
             opacity: animation,
             child: ScaleTransition(scale: animation.drive(Tween(begin: .6, end: 1.0)), child: child),
           ),
-          child: Icon(_offering(shown), key: ValueKey(shown)),
+          child: Icon(shown.icon, key: ValueKey(shown)),
         );
       },
     );

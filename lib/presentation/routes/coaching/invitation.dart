@@ -118,9 +118,9 @@ class _InvitationPageState extends State<InvitationPage> {
         widget.onDone();
       } catch (error) {
         switch (error) {
-          case {'code': 'invitation_gone'}:
+          case ServerRefusal(code: 'invitation_gone'):
             _gone.value = true;
-          case {'code': 'own_invitation'}:
+          case ServerRefusal(code: 'own_invitation'):
             messenger.snack(l.invitationOwn);
           default:
             messenger.snack(l.invitationFailed);
@@ -194,9 +194,9 @@ class _InvitationPageState extends State<InvitationPage> {
                         icon: Icons.cloud_off_rounded,
                         title: l.invitationLoadFailed,
                         body: l.invitationLoadFailedBody,
-                        action: FilledButton(
+                        action: PrimaryButton.shrunk(
                           key: AppKeys.invitationRetry,
-                          style: FilledButton.styleFrom(minimumSize: const Size(64, 48)),
+                          hitHeight: kMinInteractiveDimension,
                           onPressed: () => _preview.value = _read(),
                           child: Text(l.retry),
                         ),
@@ -307,38 +307,45 @@ class _InvitationPageState extends State<InvitationPage> {
                     // coaching needs an account: the one way forward is to make one
                     true => [
                       Text(l.invitationNeedsAccount, style: textTheme.bodyMedium, textAlign: .center),
-                      FilledButton(
+                      PrimaryButton.wide(
                         key: AppKeys.invitationMakeAccount,
-                        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                        margin: tallButtonPadding,
                         onPressed: _makeAccount,
-                        child: Text(l.invitationMakeAccount),
+                        child: Center(child: Text(l.invitationMakeAccount)),
                       ),
                     ],
                     false => [
-                      FilledButton(
+                      PrimaryButton.wide(
                         key: AppKeys.invitationAccept,
-                        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                        margin: tallButtonPadding,
                         onPressed: switch (busy) {
                           true => null,
                           false => () => _accept(name),
                         },
-                        child: Text(l.invitationAccept),
+                        child: Center(child: Text(l.invitationAccept)),
                       ),
-                      OutlinedButton(
+                      PrimaryButton.wide(
                         key: AppKeys.invitationDecline,
-                        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                        backgroundColor: colorScheme.secondaryContainer,
+                        margin: tallButtonPadding,
                         onPressed: switch (busy) {
                           true => null,
                           false => _decline,
                         },
-                        child: Text(l.invitationDecline),
-                      ),
-                      TextButton(
-                        key: AppKeys.invitationBlock,
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
-                          foregroundColor: colorScheme.error,
+                        child: Center(
+                          child: Text(
+                            l.invitationDecline,
+                            style: switch (busy) {
+                              true => null,
+                              false => TextStyle(color: colorScheme.onSecondaryContainer),
+                            },
+                          ),
                         ),
+                      ),
+                      QuietButton(
+                        key: AppKeys.invitationBlock,
+                        danger: true,
+                        plain: true,
                         onPressed: switch (busy) {
                           true => null,
                           false => _block,

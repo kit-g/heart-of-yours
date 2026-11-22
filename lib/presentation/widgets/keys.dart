@@ -15,9 +15,17 @@ abstract final class AppKeys {
   /// test tells it is looking at the compact frame.
   static const navigationRail = Key('AppFrame.navigationRail');
 
-  /// History's switch between the list and the calendar, and the calendar
-  /// itself (#609).
+  /// History's switch between its views, a view in its menu, and the calendar
+  /// itself (#609, #739).
   static const historyViewSwitch = Key('History.view.switch');
+  static Key historyViewChoice(String view) => Key('History.view.$view');
+
+  /// The calendar a month at a time (#739): the month shown, the ways to the
+  /// ones beside it, and the date picker.
+  static const calendarMonthTitle = Key('History.calendar.month');
+  static const calendarPreviousMonth = Key('History.calendar.previous');
+  static const calendarNextMonth = Key('History.calendar.next');
+  static const calendarGoToDate = Key('History.calendar.goToDate');
 
   /// A calendar day's list (#618): start a workout today, log one on the day.
   static const calendarStart = Key('History.calendar.start');

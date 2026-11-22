@@ -3,9 +3,9 @@ part of '../api.dart';
 /// Device keys and key delivery for end-to-end encryption (heart-of-yours#555).
 ///
 /// The server holds public keys and sealed items only: nothing here ever
-/// carries a private key or words in the clear. A refusal is thrown whole, as
-/// everywhere, so a caller branches on its `code` (`device_removed`,
-/// `device_limit`, `rate_limited`, `queue_full`).
+/// carries a private key or words in the clear. A refusal is a
+/// [ServerRefusal], as everywhere, so a caller branches on its `code`
+/// (`device_removed`, `device_limit`, `rate_limited`, `queue_full`).
 /// The most devices one claim may name (heart-api#424).
 const _claimLimit = 10;
 
@@ -20,7 +20,7 @@ mixin _KeyRoutes on Requests {
     required String fallbackKey,
     ({String signature, String vouchedBy})? vouch,
   }) async {
-    final (json, code) = await post(
+    final (json, _) = await post(
       Router.cryptoDevices,
       body: {
         'id': id,
@@ -31,16 +31,13 @@ mixin _KeyRoutes on Requests {
         'vouchedBy': ?vouch?.vouchedBy,
       },
     );
-    return switch ((code, json)) {
-      (200 || 201, Map json) => CryptoDevice.fromJson(json),
-      _ => throw json,
-    };
+    return CryptoDevice.fromJson(json);
   }
 
   /// The account's own devices, or, with [userId], those of someone it has or
   /// had a connection with.
   Future<List<CryptoDevice>> getCryptoDevices({String? userId}) async {
-    final (json, code) = await get(
+    final (json, _) = await get(
       Router.cryptoDevices,
       // null rather than empty: an empty map still leaves a bare `?` on the path
       query: switch (userId) {
@@ -48,10 +45,7 @@ mixin _KeyRoutes on Requests {
         null => null,
       },
     );
-    return switch ((code, json)) {
-      (200, Map json) => CryptoDevices.fromJson(json).devices,
-      _ => throw json,
-    };
+    return CryptoDevices.fromJson(json).devices;
   }
 
   /// Vouches for [deviceId], one of the account's devices that already
@@ -63,22 +57,16 @@ mixin _KeyRoutes on Requests {
     required String vouchedBy,
     required String signature,
   }) async {
-    final (json, code) = await put(
+    final (json, _) = await put(
       Router.cryptoDeviceVouch(deviceId),
       body: {'vouchedBy': vouchedBy, 'signature': signature},
     );
-    return switch ((code, json)) {
-      (200, Map json) => CryptoDevice.fromJson(json),
-      _ => throw json,
-    };
+    return CryptoDevice.fromJson(json);
   }
 
   /// Removes one of the account's devices for good: it can't come back under
   /// its id.
-  Future<void> removeCryptoDevice(String deviceId) async {
-    final (json, code) = await delete(Router.cryptoDevice(deviceId));
-    if (code != 204) throw json;
-  }
+  Future<void> removeCryptoDevice(String deviceId) => delete(Router.cryptoDevice(deviceId));
 
   /// Adds single-use keys, by the name the device knows each by. Answers how
   /// many the server now holds for the device.
@@ -87,7 +75,7 @@ mixin _KeyRoutes on Requests {
   /// would be a field name, and the server refuses a body whose field names
   /// read like health data, which a random id can (heart-api#420).
   Future<int> addOneTimeKeys(String deviceId, Map<String, String> keys) async {
-    final (json, code) = await post(
+    final (json, _) = await post(
       Router.oneTimeKeys(deviceId),
       body: {
         'keys': [
@@ -95,24 +83,17 @@ mixin _KeyRoutes on Requests {
         ],
       },
     );
-    return switch ((code, json)) {
-      (200, Map json) => OneTimeKeyCount.fromJson(json).count,
-      _ => throw json,
-    };
+    return OneTimeKeyCount.fromJson(json).count;
   }
 
   /// How many single-use keys the server still holds for the device.
   Future<int> countOneTimeKeys(String deviceId) async {
-    final (json, code) = await get(Router.oneTimeKeys(deviceId));
-    return switch ((code, json)) {
-      (200, Map json) => OneTimeKeyCount.fromJson(json).count,
-      _ => throw json,
-    };
+    final (json, _) = await get(Router.oneTimeKeys(deviceId));
+    return OneTimeKeyCount.fromJson(json).count;
   }
 
-  Future<void> replaceFallbackKey(String deviceId, String key) async {
-    final (json, code) = await put(Router.fallbackKey(deviceId), body: {'key': key});
-    if (code != 204) throw json;
+  Future<void> replaceFallbackKey(String deviceId, String key) {
+    return put(Router.fallbackKey(deviceId), body: {'key': key});
   }
 
   /// Takes one single-use key from each of [userId]'s devices, or the fallback
@@ -123,11 +104,8 @@ mixin _KeyRoutes on Requests {
     if (deviceIds case final ids? when ids.isEmpty || ids.length > _claimLimit) {
       throw ArgumentError.value(ids.length, 'deviceIds', 'one to $_claimLimit devices a claim');
     }
-    final (json, code) = await post(Router.keyClaims(userId), body: {'deviceIds': ?deviceIds});
-    return switch ((code, json)) {
-      (200, Map json) => CryptoDevices.fromJson(json).devices,
-      _ => throw json,
-    };
+    final (json, _) = await post(Router.keyClaims(userId), body: {'deviceIds': ?deviceIds});
+    return CryptoDevices.fromJson(json).devices;
   }
 
   /// Sends one sealed item to one device. [id] is the sender's, so a retry
@@ -139,8 +117,8 @@ mixin _KeyRoutes on Requests {
     required String senderDeviceId,
     required String kind,
     required String content,
-  }) async {
-    final (json, code) = await post(
+  }) {
+    return post(
       Router.keyQueue,
       body: {
         'id': id,
@@ -150,17 +128,13 @@ mixin _KeyRoutes on Requests {
         'content': content,
       },
     );
-    if (code != 204) throw json;
   }
 
   /// Everything waiting for [deviceId] that it hasn't confirmed, in the
   /// server's order.
   Future<List<QueuedItem>> getKeyQueue(String deviceId) async {
-    final (json, code) = await get(Router.keyQueue, query: {'deviceId': deviceId});
-    return switch ((code, json)) {
-      (200, Map json) => QueuedItems.fromJson(json).items,
-      _ => throw json,
-    };
+    final (json, _) = await get(Router.keyQueue, query: {'deviceId': deviceId});
+    return QueuedItems.fromJson(json).items;
   }
 
   /// Confirms items [deviceId] has taken: they stop being returned. In runs of
@@ -171,8 +145,7 @@ mixin _KeyRoutes on Requests {
       (index) => ids.skip(index * _confirmable).take(_confirmable).toList(),
     );
     for (final run in runs) {
-      final (json, code) = await post(Router.keyQueueConfirmations, body: {'deviceId': deviceId, 'ids': run});
-      if (code != 204) throw json;
+      await post(Router.keyQueueConfirmations, body: {'deviceId': deviceId, 'ids': run});
     }
   }
 

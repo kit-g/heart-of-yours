@@ -5,7 +5,9 @@ library;
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:heart_models/heart_models.dart' show ServerRefusal;
 import 'package:mockito/mockito.dart';
+import 'package:test/test.dart';
 
 export '../mocks.mocks.dart';
 
@@ -41,6 +43,20 @@ void respond({
     _ => throw UnsupportedError('Unsupported HTTP method: $method'),
   };
 }
+
+/// A [ServerRefusal] naming [code], with each of [details] among its own.
+Matcher refused(String code, [Map<String, Object?> details = const {}]) {
+  return isA<ServerRefusal>()
+      .having((refusal) => refusal.code, 'code', code)
+      .having(
+        (refusal) => refusal.details,
+        'details',
+        allOf([for (final MapEntry(:key, :value) in details.entries) containsPair(key, value), anything]),
+      );
+}
+
+/// The [ServerRefusal] [body] reads as: its `code`, and the rest as details.
+Matcher refusedAs(Map<String, Object?> body) => refused(body['code'] as String, {...body}..remove('code'));
 
 /// A response with the request it answers, as the client hands it back.
 class StubResponse(

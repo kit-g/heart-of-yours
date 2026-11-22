@@ -6,7 +6,7 @@ satisfied or explicitly flagged in the handoff.
 
 ## Checklist
 
-1. **Verified** — `make codegen codegen-app` first (a fresh worktree has no
+1. **Verified** — `make codegen` first (a fresh worktree has no
    generated mocks, and `make lint` deliberately does not generate them),
    then `make lint` and `make test` (or the targeted `make test-<pkg>`
    suites) pass; record the exact commands and outcomes. A red lint or test

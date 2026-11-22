@@ -693,6 +693,16 @@ void _screenChoices() {
       expect(preferences.screenChoices[ScreenChoice.historyView]?.value, 'list');
     });
 
+    test('one month at a time is stored and travels as the others do (#739)', () async {
+      await boot();
+      account.arrive(const Settings());
+      await settle();
+      preferences.setHistoryView(.month);
+      await settle();
+      expect(preferences.historyView, HistoryView.month);
+      expect(screenChoicesOf(account.saved.single)[ScreenChoice.historyView]?.value, 'month');
+    });
+
     test('a choice made here goes up, and a newer one from elsewhere comes down', () async {
       await boot();
       account.arrive(const Settings());

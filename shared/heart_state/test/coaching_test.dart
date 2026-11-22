@@ -244,11 +244,11 @@ void main() {
   test('a refused write throws and changes nothing here', () async {
     server.connections.add(_connection('muffin', .coach));
     await coaching.load();
-    server.refuse = {'code': 'forbidden'};
+    server.refuse = refusedAs({'code': 'forbidden'});
 
     await expectLater(
       coaching.setShares(coaching.clients.single, {.goals}),
-      throwsA(containsPair('code', 'forbidden')),
+      throwsA(isRefusal('forbidden')),
     );
     expect(coaching.clients.single.shares, isEmpty);
   });
@@ -292,7 +292,7 @@ void main() {
   });
 
   test('a hide the server refused leaves the workout visible', () async {
-    server.refuse = {'code': 'not_found'};
+    server.refuse = refusedAs({'code': 'not_found'});
     await expectLater(coaching.hide('gone'), throwsA(anything));
     expect(coaching.isHidden('gone'), isFalse);
   });
@@ -327,8 +327,8 @@ void main() {
     });
 
     test('a refused one throws and lists nothing', () async {
-      server.refuse = {'code': 'coaching_beta'};
-      await expectLater(coaching.invite('Muffin'), throwsA(containsPair('code', 'coaching_beta')));
+      server.refuse = refusedAs({'code': 'coaching_beta'});
+      await expectLater(coaching.invite('Muffin'), throwsA(isRefusal('coaching_beta')));
       expect(coaching.invitations, isEmpty);
     });
 
@@ -434,9 +434,9 @@ void main() {
     test('a change the server refused is not counted', () async {
       server.connections.add(_connection('alex', .student));
       await coaching.load();
-      server.refuse = {'code': 'forbidden'};
+      server.refuse = refusedAs({'code': 'forbidden'});
 
-      await expectLater(coaching.pause(coaching.coaches.single), throwsA(isA<Map>()));
+      await expectLater(coaching.pause(coaching.coaches.single), throwsA(isA<ServerRefusal>()));
 
       expect(reported.events, isEmpty);
     });
@@ -468,9 +468,9 @@ void main() {
     });
 
     test('a refused invitation is not counted', () async {
-      server.refuse = {'code': 'coaching_beta'};
+      server.refuse = refusedAs({'code': 'coaching_beta'});
 
-      await expectLater(coaching.invite('Muffin'), throwsA(isA<Map>()));
+      await expectLater(coaching.invite('Muffin'), throwsA(isA<ServerRefusal>()));
 
       expect(reported.names, isNot(contains('invitation_created')));
     });

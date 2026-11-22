@@ -305,7 +305,12 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     if (left()) return false;
     final synced = await _step(_syncLibrary);
     if (left()) return false;
-    if (_remote.allowed) await _step(_syncOwn);
+    if (_remote.allowed) {
+      await _step(_syncOwn);
+      // its own read, run whether or not the list above landed: a failed
+      // list must not cost the preferences of every library exercise
+      if (owner case String id when !left()) await _syncPreferences(id);
+    }
 
     // the app may be gone by the time the catalog is read — a tree torn down
     // mid-init has no one to tell
@@ -448,7 +453,6 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
           await _service.setExerciseUnit(exerciseName: each.id, userId: id, unit: u);
         }
       }
-      await _syncPreferences(id);
     }
   }
 
@@ -644,11 +648,17 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
     if (!_remote.allowed) return;
 
-    switch (unit) {
-      case MeasurementUnit u:
-        await _remoteService.saveUnitPreference(exercise.id, u);
-      case null:
-        await _remoteService.deleteUnitPreference(exercise.id);
+    // the device's choice stands either way: a failure to tell the server is
+    // reported, not thrown at the screen that made it
+    try {
+      switch (unit) {
+        case MeasurementUnit u:
+          await _remoteService.saveUnitPreference(exercise.id, u);
+        case null:
+          await _remoteService.deleteUnitPreference(exercise.id);
+      }
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
     }
   }
 

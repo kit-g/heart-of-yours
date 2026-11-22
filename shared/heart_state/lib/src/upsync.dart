@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'goals.dart';
 import 'programs.dart';
+import 'refusals.dart';
 import 'exercises.dart';
 import 'analytics.dart';
 import 'remote.dart';
@@ -15,8 +16,8 @@ typedef Replayed<T> = ({T row, bool created});
 
 /// The remote half of the replay — `Api` behind an adapter in the app, the way
 /// `RemoteTemplateFilingService` is. One method per resource the replay
-/// order names (heart-api#66); each throws the server's body whole on a
-/// refusal, so [Upsync] can read the `code` off it.
+/// order names (heart-api#66); each throws a [ServerRefusal] on a refusal, so
+/// [Upsync] can read its `code`.
 abstract interface class UpsyncService {
   Future<Replayed<Exercise>> replayExercise(Exercise exercise);
 
@@ -203,11 +204,6 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   /// (heart-of-yours#113).
   bool get reachedServer => _reachedServer;
 
-  /// `Api` throws the decoded body when the server answered and the answer was
-  /// an error; a transport failure arrives as a `SocketException`, a
-  /// `ClientException` or a timeout. So a Map is the server's voice.
-  static bool _isServerAnswer(Object? error) => error is Map;
-
   Future<void>? _running;
 
   /// The gate is left as it stands: a sign-out closes the leg through
@@ -324,7 +320,9 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     final resuming = _status == .failed && userId == uid;
     userId = uid;
     if (!await _local.isOwed(uid)) {
-      _access.replaying = false;
+      // signed out meanwhile: the gate is whoever arrives next's to settle
+      if (userId != uid) return;
+      _open();
       return;
     }
     _access.replaying = true;
@@ -395,7 +393,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
               ledger.putIfAbsent(step.resource, () => {})[step.id] = .skipped;
               _report = _counting(_report, .skipped);
             } else {
-              _reachedServer = _isServerAnswer(error);
+              _reachedServer = _access.failureOf(error) != .unanswered;
               _status = .failed;
               _reportReplay(elapsed, ok: false);
               notifyListeners();
@@ -410,6 +408,8 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
 
     if (userId != uid) return;
     await _local.settle(uid);
+    // signed out meanwhile: nothing opens for the account that left
+    if (userId != uid) return;
     // A sign-in whose store the server already holds has not backed anything
     // up, and a line reporting that is worse than no line. `onComplete` still
     // fires: the remote leg was closed for the length of the run whether or
@@ -419,10 +419,29 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
       0 => .idle,
       _ => .done,
     };
-    _access.replaying = false;
+    _open();
     _reportReplay(elapsed, ok: true);
     notifyListeners();
     onComplete?.call();
+  }
+
+  final _opened = _Opened();
+
+  /// Says the remote leg a replay held closed has opened: what could not
+  /// reach the server meanwhile can. Nothing else is said here, and a
+  /// sign-out never is.
+  Listenable get opened => _opened;
+
+  void _open() {
+    final held = _access.replaying;
+    _access.replaying = false;
+    if (held) _opened.say();
+  }
+
+  @override
+  void dispose() {
+    _opened.dispose();
+    super.dispose();
   }
 
   /// A reply this build cannot read: a value it has never heard of, or a shape
@@ -474,25 +493,16 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   /// backup of 358 with 332 never attempted (heart-of-yours#113).
   static const _refusals = {
     'id_taken',
-    'unknown_exercise',
     'unknown_folder',
     'invalid_reference',
     'duplicate',
-    // the program routes' (heart-api#86): a rule or key this server does not
-    // take, a cap reached, or a reference to a row the account does not have
-    'invalid_rule',
-    'invalid_key',
-    'program_limit',
-    'program_history_limit',
-    'program_not_found',
-    'unknown_program',
-    'unknown_workout',
-    'unknown_action',
+    // the program routes' (heart-api#86), from the one list
+    ...programRefusals,
   };
 
   static bool _isRefusal(Object? error) {
     return switch (error) {
-      {'code': String code} when _refusals.contains(code) => true,
+      ServerRefusal(:final code) when _refusals.contains(code) => true,
       _ => GoalRejected.from(error) != null,
     };
   }
@@ -711,4 +721,9 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     await _goals.reconcileGoalId(goal.id!, row, uid);
     return (row.id!, _outcome(created));
   }
+}
+
+/// [Upsync.opened].
+class _Opened with ChangeNotifier {
+  void say() => notifyListeners();
 }

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'analytics.dart';
 import 'coaching.dart' show CoachingStatus;
 import 'device_keys.dart';
+import 'refusals.dart';
 import 'remote.dart';
 
 /// What the server does with threads (heart-of-yours#556). Like
@@ -684,12 +685,10 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   Future<({List<ThreadItem> items, String? cursor})> _readSince(String threadId, String since) async {
     try {
       return await _service.getThreadItems(threadId, since: since, limit: _page);
-    } on Map catch (refusal) {
-      if (refusal case {'code': 'stale_cursor'}) {
-        final page = await _service.getThreadItems(threadId, limit: _page);
-        return (items: page.items.reversed.toList(), cursor: null);
-      }
-      rethrow;
+    } on ServerRefusal catch (refusal) {
+      if (refusal.code != 'stale_cursor') rethrow;
+      final page = await _service.getThreadItems(threadId, limit: _page);
+      return (items: page.items.reversed.toList(), cursor: null);
     }
   }
 
@@ -814,17 +813,16 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
           await _local.storeThreadItems(userId, [(item: sent, position: held.firstOrNull?.position, pending: false)]);
         });
       }
-    } on Map catch (refusal, stacktrace) {
+    } on ServerRefusal catch (refusal, stacktrace) {
       switch (refusal) {
-        case {'code': 'thread_closed'}:
+        case ServerRefusal(code: 'thread_closed'):
           _view(threadId, closed: true);
-        case {'code': 'rate_limited'}:
-          final wait = switch (refusal['retryAfter']) {
-            final num seconds => Duration(seconds: seconds.ceil()),
-            _ => const Duration(minutes: 1),
-          };
+        case ServerRefusal(:final isThrottle) when isThrottle:
           _retries[threadId]?.cancel();
-          _retries[threadId] = Timer(wait, () => unawaited(flush(threadId)));
+          _retries[threadId] = Timer(
+            refusal.retryAfter ?? const Duration(minutes: 1),
+            () => unawaited(flush(threadId)),
+          );
         default:
           onError?.call(refusal, stacktrace: stacktrace);
       }

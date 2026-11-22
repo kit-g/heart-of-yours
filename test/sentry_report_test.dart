@@ -4,7 +4,8 @@ import 'dart:io' show HandshakeException, OSError, SocketException;
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/sentry.dart';
-import 'package:heart_api/heart_api.dart' show NetworkException;
+import 'package:heart_api/heart_api.dart' show NetworkException, UnreadableAnswer;
+import 'package:heart_models/heart_models.dart' show ServerRefusal;
 import 'package:http/http.dart' as http;
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -115,6 +116,25 @@ void main() {
     test('a status from our server, grouped by status and endpoint', () async {
       await report(const NetworkException(statusCode: 500, method: 'PUT', path: '/v1/accounts'));
       expect(sent.single.fingerprint, ['NetworkException', 'NetworkException(500 PUT /v1/accounts)']);
+    });
+
+    test('a refusal nobody handled, grouped by code and route, never by its details (#681)', () async {
+      await report(
+        const ServerRefusal(
+          status: 404,
+          code: 'goal_not_found',
+          method: 'PUT',
+          route: '/v1/goals/{id}',
+          details: {'message': 'Goal g1 not found'},
+        ),
+      );
+      expect(sent.single.fingerprint, ['ServerRefusal', 'goal_not_found PUT /v1/goals/{id}']);
+      expect('${sent.single.throwable}', isNot(contains('Goal g1')));
+    });
+
+    test('a 2xx that could not be read groups with the other failed requests', () async {
+      await report(const UnreadableAnswer(statusCode: 200, method: 'GET', path: '/v1/templates'));
+      expect(sent.single.fingerprint, ['NetworkException', 'NetworkException(200 GET /v1/templates)']);
     });
 
     test('a handshake that refused the certificate', () async {

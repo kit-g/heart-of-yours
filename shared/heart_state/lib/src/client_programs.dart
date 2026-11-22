@@ -74,11 +74,11 @@ bool _agrees(ProgramPosition local, Map<String, dynamic> server) {
 
 /// The server's refusal of a write because the other person changed the same
 /// thing first.
-bool isProgramChanged(Object? error) => error is Map && error['code'] == 'program_changed';
+bool isProgramChanged(Object? error) => error is ServerRefusal && error.code == 'program_changed';
 
 /// The server's refusal of a write the coach may no longer make: the copy
 /// wasn't sent through their connection, or it ended.
-bool _isForbidden(Object? error) => error is Map && error['code'] == 'forbidden';
+bool _isForbidden(Object? error) => error is ServerRefusal && error.code == 'forbidden';
 
 /// A coach's view of their clients' copies (#558): one open at a time, its
 /// sessions, its history, and the editor on one of its sessions.

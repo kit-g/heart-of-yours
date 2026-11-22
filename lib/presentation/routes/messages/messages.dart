@@ -12,6 +12,7 @@ import 'package:heart/core/utils/message_runs.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/confirm.dart';
 import 'package:heart/presentation/widgets/in_view.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/message_text.dart';
@@ -328,8 +329,7 @@ class _Conversation extends StatelessWidget {
                   ),
                   false => switch (thread.hasOlder) {
                     true => Center(
-                      child: TextButton(
-                        style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+                      child: QuietButton(
                         onPressed: () => messages.older(threadId),
                         child: Text(l.messagesOlder),
                       ),
@@ -659,17 +659,14 @@ class _SubjectLine extends StatelessWidget {
     return Padding(
       padding: const .only(top: 4),
       child: switch (open) {
-        final VoidCallback open => TextButton.icon(
+        final VoidCallback open => QuietButton(
           key: AppKeys.messageSubject,
-          style: TextButton.styleFrom(
-            minimumSize: const Size(0, kMinInteractiveDimension),
-            padding: const .symmetric(horizontal: 8),
-            foregroundColor: colorScheme.onSurfaceVariant,
-            textStyle: style,
-          ),
           onPressed: open,
-          icon: Icon(_subjectIcon(subject), size: 16),
-          label: Text(words, maxLines: 1, overflow: .ellipsis),
+          icon: _subjectIcon(subject),
+          iconSize: 16,
+          plain: true,
+          color: colorScheme.onSurfaceVariant,
+          child: Text(words, maxLines: 1, overflow: .ellipsis, style: style),
         ),
         null => Padding(
           key: AppKeys.messageSubject,

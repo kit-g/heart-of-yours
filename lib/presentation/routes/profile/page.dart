@@ -419,7 +419,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
   /// What the user picked: an (Exercise, ChartPreferenceType) record from the
   /// exercise picker, or a [DashboardChart] of one of the other kinds (#137).
   Future<dynamic> _showNewChartDialog(BuildContext context, TextEditingController controller, FocusNode focus) {
-    final L(:newChart, :exercises, :chartFrequency, :chartAllExercises, :chartAlreadyAdded) = L.of(context);
+    final L(:newChart, :exercises, :chartFrequencyPick, :chartAllExercises, :chartAlreadyAdded) = L.of(context);
     final charts = Charts.of(context);
     final training = charts.whereType<TrainingChart>().map((each) => each.metric).toSet();
     final frequent = charts.whereType<FrequencyChart>().map((each) => each.exerciseId).toSet();
@@ -455,7 +455,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                   return Navigator.of(context, rootNavigator: true).pop(FrequencyChart(exerciseId: exercise.id));
                 }
               },
-              title: Text(chartFrequency),
+              title: Text(chartFrequencyPick),
               trailing: const Icon(Icons.chevron_right_rounded),
             ),
             Padding(

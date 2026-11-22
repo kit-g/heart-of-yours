@@ -227,12 +227,8 @@ class _MoveRow extends StatelessWidget {
               // read after what it keeps: "Keep 100 kg … take back this change"
               child: Semantics(
                 hint: copy.doneProgramUndoMove(exercise.name),
-                child: TextButton(
-                  // compact, but a whole finger's worth of a button
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(48, 48),
-                    padding: const .symmetric(horizontal: 8),
-                  ),
+                child: QuietButton(
+                  plain: true,
                   onPressed: onKeep,
                   child: Text(
                     switch (keeps) {

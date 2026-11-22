@@ -14,17 +14,16 @@
 
 # Packages with a test suite in the CI matrix.
 PACKAGES := heart_api heart_db heart_state heart_charts heart_language heart_health
-# Packages that need build_runner before their tests. heart_language's codegen
-# is the translation import instead (codegen-heart_language, below).
-CODEGEN_PACKAGES := heart_api heart_db heart_state heart_charts heart_health
+# Packages whose tests need generated code (mocks) first. heart_charts has
+# none, and heart_language's is the translation import (codegen-heart_language).
+CODEGEN_PACKAGES := heart_api heart_db heart_state heart_health
 
 TEST_TARGETS := $(addprefix test-,$(PACKAGES))
-CODEGEN_TARGETS := $(addprefix codegen-,$(CODEGEN_PACKAGES))
 
-.PHONY: bootstrap deps hooks codegen codegen-app codegen-heart_language lint format format-check test test-app \
-        test-scripts test-sealbox profiles reclaim wear wear-install wear-test wear-pages $(TEST_TARGETS) $(CODEGEN_TARGETS)
+.PHONY: bootstrap deps hooks codegen codegen-heart_language lint format format-check test test-app \
+        test-scripts test-sealbox profiles reclaim wear wear-install wear-test wear-pages $(TEST_TARGETS)
 
-bootstrap: hooks deps codegen codegen-app
+bootstrap: hooks deps codegen
 	@echo "Ready. Note: lib/firebase_options.dart and lib/firebase_options_prod.dart"
 	@echo "are gitignored and required to build the app (not to run tests) — see README."
 
@@ -46,10 +45,14 @@ hooks:
 	git config merge.l10n-csv.name "row-aware merge of the translations CSV"
 	git config merge.l10n-csv.driver "python3 scripts/l10n_merge.py csv %O %A %B"
 
-codegen: $(CODEGEN_TARGETS) codegen-heart_language
-
-$(CODEGEN_TARGETS): codegen-%:
-	cd shared/$* && dart run build_runner build
+# Everything at once: the translation import, then one build_runner over the
+# whole workspace (every package and the app). One process resolves the shared
+# dependencies once; a build per package took ~30s each, ~3 minutes in all.
+# It is the only codegen target on purpose: a workspace build and a one-package
+# build keep different plans in the same cache, so alternating them rebuilds
+# from scratch each time (deleting the mocks meanwhile).
+codegen: codegen-heart_language
+	dart run build_runner build --workspace
 
 # The other locales' ARBs, the generated Dart and the native permission strings,
 # from scripts/translations.csv and the two intl_en.arb sources. Not committed
@@ -58,13 +61,10 @@ $(CODEGEN_TARGETS): codegen-%:
 codegen-heart_language:
 	cd shared/heart_language && dart run scripts/move.dart import
 
-codegen-app:
-	dart run build_runner build
-
 # `flutter analyze` must resolve the gitignored Firebase options; on machines
 # without Firebase credentials (CI), stub them. `flutterfire configure`
 # produces the real ones (see README) — when present, these are no-ops.
-# Note: analysis also needs generated mocks — CI runs `make codegen codegen-app`
+# Note: analysis also needs generated mocks — CI runs `make codegen`
 # before lint; dev machines have them after bootstrap or any test run.
 lib/firebase_options.dart lib/firebase_options_prod.dart:
 	printf '%s\n' \
@@ -76,7 +76,7 @@ lib/firebase_options.dart lib/firebase_options_prod.dart:
 	  '  static FirebaseOptions get currentPlatform => throw UnimplementedError();' \
 	  '}' > $@
 
-lint: format-check dates ui-imports lib/firebase_options.dart lib/firebase_options_prod.dart
+lint: format-check dates ui-imports layers buttons lib/firebase_options.dart lib/firebase_options_prod.dart
 	flutter analyze
 
 # The app builds on material_ui and cupertino_ui. The framework's copies still
@@ -88,6 +88,37 @@ ui-imports:
 	@if git ls-files -co --exclude-standard '*.dart' | xargs grep -n "package:flutter/\(material\|cupertino\)\.dart" ; then \
 		echo "" ; \
 		echo "import material_ui / cupertino_ui, not flutter/material.dart or flutter/cupertino.dart" ; \
+		exit 1 ; \
+	fi
+
+# a button's height is the house's: QuietButton and PrimaryButton answer taps
+# over a full target without being drawn tall (docs/style.md)
+buttons:
+	@if git ls-files -co --exclude-standard 'lib/*.dart' | grep -v '^lib/core/theme/' | xargs grep -nE "minimumSize:" ; then \
+		echo "" ; \
+		echo "no hand-set button sizes: QuietButton, or PrimaryButton with a hitHeight (docs/style.md)" ; \
+		exit 1 ; \
+	fi
+
+# The packages are layers, and a dependency only points down: the app on
+# everything; heart_api on heart_models and the HTTP stack; heart_state and the
+# other shared packages on heart_models, never on HTTP. HTTP types stop at
+# heart_api: a transport failure reaches the state layer as a heart_models type
+# (ServerRefusal, AccountDeleted), never as a NetworkException (#681). One
+# import across a boundary compiles fine and is the start of a tangle, and the
+# analyzer has no rule for it, so this checks every import and pubspec.
+LOWER := heart_state heart_db heart_charts heart_health heart_language sealbox
+layers:
+	@bad=0 ; \
+	for p in $(LOWER) ; do \
+		if git ls-files -co --exclude-standard "shared/$$p/*.dart" | xargs grep -nE "package:(http|network_utils|heart_api)/" ; then bad=1 ; fi ; \
+		if grep -nE "^[[:space:]]+(http|network_utils|heart_api):" shared/$$p/pubspec.yaml ; then echo "shared/$$p/pubspec.yaml" ; bad=1 ; fi ; \
+		if git ls-files -co --exclude-standard "shared/$$p/*.dart" | xargs grep -nE "package:heart/" ; then bad=1 ; fi ; \
+	done ; \
+	if git ls-files -co --exclude-standard "shared/heart_api/*.dart" | xargs grep -nE "package:(heart_state|heart_db|heart)/" ; then bad=1 ; fi ; \
+	if [ $$bad = 1 ] ; then \
+		echo "" ; \
+		echo "an import across layers: HTTP stays in heart_api, shared packages never import the app or heart_api" ; \
 		exit 1 ; \
 	fi
 
@@ -124,8 +155,11 @@ endef
 test-heart_language: codegen-heart_language
 	$(call suite_test,shared/heart_language,heart_language)
 
-$(filter-out test-heart_language,$(TEST_TARGETS)): test-%: codegen-%
+$(addprefix test-,$(CODEGEN_PACKAGES)): test-%: codegen
 	$(call suite_test,shared/$*,$*)
+
+test-heart_charts:
+	$(call suite_test,shared/heart_charts,heart_charts)
 
 # The app suite runs as an explicit, sorted file list: left to find them itself,
 # flutter test takes files in directory order, and the heavy a11y_<n> shards
@@ -139,7 +173,7 @@ APP_TEST_FILES = $(shell find test -name '*_test.dart' | LC_ALL=C sort | \
 	awk -v k=$(word 1,$(subst /, ,$(SHARD))) -v n=$(word 2,$(subst /, ,$(SHARD))) \
 	'n > 0 && k >= 1 && k <= n && (NR - 1) % n == k - 1')
 
-test-app: codegen-app codegen-heart_language
+test-app: codegen
 	$(if $(APP_TEST_FILES),,$(error SHARD=$(SHARD) selects no test files: it is <k>/<n>, k from 1 to n))
 	$(call suite_test,$(APP_TEST_FILES),app$(if $(filter-out 1/1,$(SHARD)),.$(subst /,-of-,$(SHARD))))
 
@@ -157,12 +191,12 @@ test-scripts:
 	cd scripts && python3 -m unittest discover -p 'test_*.py'
 
 # just the screen×guideline accessibility matrix, for quick local runs
-a11y: codegen-app
+a11y: codegen
 	flutter test $(wildcard test/a11y_*_test.dart)
 
 # app-only line coverage (lib/, generated code excluded) — the number
 # test coverage tickets are measured against. `coverage/` is gitignored.
-coverage: codegen-app
+coverage: codegen
 	flutter test --coverage
 	@python3 scripts/coverage_report.py
 

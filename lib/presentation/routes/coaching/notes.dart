@@ -284,20 +284,18 @@ class _NoteEditorState extends State<_NoteEditor> {
     if (id == null) return;
     final l = L.of(context);
     final navigator = Navigator.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
     final sure = await showBrandedDialog<bool>(
       context,
       title: Text(l.coachingNoteDeleteTitle),
       content: Text(l.coachingNoteDeleteBody),
       actions: [
-        TextButton(
-          style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+        QuietButton(
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
           child: Text(l.cancel),
         ),
-        TextButton(
+        QuietButton(
           key: AppKeys.coachingNoteDeleteConfirm,
-          style: TextButton.styleFrom(minimumSize: const Size(64, 48), foregroundColor: colorScheme.error),
+          danger: true,
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
           child: Text(l.delete),
         ),
@@ -364,12 +362,13 @@ class _NoteEditorState extends State<_NoteEditor> {
               Row(
                 children: [
                   if (widget.id != null)
-                    TextButton.icon(
+                    QuietButton(
                       key: AppKeys.coachingNoteDelete,
-                      style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+                      danger: true,
+                      plain: true,
                       onPressed: _delete,
-                      icon: const Icon(Icons.delete_outline_rounded),
-                      label: Text(l.coachingNoteDelete),
+                      icon: Icons.delete_outline_rounded,
+                      child: Text(l.coachingNoteDelete),
                     ),
                   const Spacer(),
                   // saved once there is something new to keep, and once

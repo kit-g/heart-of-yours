@@ -601,7 +601,7 @@ void main() {
 
     test('a closed thread keeps the message here, unsent, and says so', () async {
       await messages.load();
-      server.refusePost = {'error': 'forbidden', 'code': 'thread_closed', 'reason': '…'};
+      server.refusePost = refusedAs({'error': 'forbidden', 'code': 'thread_closed', 'reason': '…'}, status: 403);
 
       await messages.send(threadId, 'still there?');
 
@@ -614,7 +614,11 @@ void main() {
     testWidgets('too many at once waits as long as the server says, then goes', (tester) async {
       // the test's fake clock: the wait passes without real seconds
       await messages.load();
-      server.refusePost = {'error': 'too many requests', 'code': 'rate_limited', 'retryAfter': 30};
+      server.refusePost = refusedAs({
+        'error': 'too many requests',
+        'code': 'rate_limited',
+        'retryAfter': 30,
+      }, status: 429);
 
       await messages.send(threadId, 'one more');
       expect(messages.thread(threadId).messages.single.delivery, MessageDelivery.waiting);
@@ -812,7 +816,7 @@ class _Server implements RemoteThreadService {
   final posted = <({String id, String content, String? subjectId})>[];
   int pageSize = 50;
   Object? failNextPost;
-  Map<String, Object>? refusePost;
+  ServerRefusal? refusePost;
 
   /// Holds each post, and each page once read, until completed.
   Completer<void>? holdPost;
@@ -852,7 +856,7 @@ class _Server implements RemoteThreadService {
       failNextPost = null;
       throw failure;
     }
-    if (refusePost case final Map<String, Object> refusal) throw refusal;
+    if (refusePost case final ServerRefusal refusal) throw refusal;
     return ThreadItem(
       id: id,
       threadId: threadId,

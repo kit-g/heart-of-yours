@@ -96,6 +96,7 @@ enum _Screen {
   skipPage,
   notTodaySheet,
   calendar,
+  calendarMonth,
   calendarDay,
   pastWorkoutsOffer,
   historyFilterMenu,
@@ -687,6 +688,11 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.calendar, _Guideline.textContrastDark, null),
   (_Screen.calendar, _Guideline.androidTapTarget, null),
   (_Screen.calendar, _Guideline.iosTapTarget, null),
+  (_Screen.calendarMonth, _Guideline.labeledTapTarget, null),
+  (_Screen.calendarMonth, _Guideline.textContrastLight, null),
+  (_Screen.calendarMonth, _Guideline.textContrastDark, null),
+  (_Screen.calendarMonth, _Guideline.androidTapTarget, null),
+  (_Screen.calendarMonth, _Guideline.iosTapTarget, null),
 
   // a day of two workouts (#619): its count, and the list of them it opens
   (_Screen.calendarDay, _Guideline.labeledTapTarget, null),
@@ -763,12 +769,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.pastWorkoutTimes,
     _Guideline.androidTapTarget,
-    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:202; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
+    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:259; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
   ),
   (
     _Screen.pastWorkoutTimes,
     _Guideline.iosTapTarget,
-    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:202; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
+    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:259; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
   ),
   (_Screen.pastWorkoutEditor, _Guideline.labeledTapTarget, null),
   (_Screen.pastWorkoutEditor, _Guideline.textContrastLight, null),
@@ -1300,7 +1306,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
 ];
 
 /// How many `a11y_<n>_test.dart` files split the sweep between them.
-const _shards = 4;
+const _shards = 6;
 
 /// A shard file's name and the number it passes: `a11y_2_test.dart` runs
 /// `a11y(shard: 2)`.
@@ -1328,6 +1334,14 @@ void a11y({required int shard}) {
           int.parse(name[1]!): _shardCall.firstMatch(file.readAsStringSync())?[1],
     };
     expect(files, {for (final n in Iterable.generate(_shards)) n: '$n'});
+  });
+
+  // CI gives each app test job every n-th file, so as many jobs as a11y files
+  // keeps one of these heavy files on each; fewer stacks two on one job.
+  test('CI runs as many app test jobs as there are shards', () {
+    final workflow = File('.github/workflows/unit-tests.yml').readAsStringSync();
+    final matrix = RegExp(r'shard: \[([^\]]*)\]').firstMatch(workflow)![1]!.split(',');
+    expect(matrix, hasLength(_shards));
   });
 
   late MockLocalDatabase db;
@@ -2571,7 +2585,7 @@ void a11y({required int shard}) {
             .thenAnswer((_) async => [older]);
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
-        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
+        Preferences.of(tester.element(find.byType(MaterialApp))).setHistoryView(.calendar);
         await tester.pumpTimes();
         await tester.tap(find.bySemanticsLabel(RegExp(r', log a workout on this day$')).first);
         await tester.pumpTimes();
@@ -2586,7 +2600,7 @@ void a11y({required int shard}) {
             .thenAnswer((_) async => [second, first]);
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
-        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
+        Preferences.of(tester.element(find.byType(MaterialApp))).setHistoryView(.calendar);
         await tester.pumpTimes();
         await tester.tap(find.bySemanticsLabel(RegExp(r', 2 workouts$')));
         await tester.pumpTimes();
@@ -2621,14 +2635,32 @@ void a11y({required int shard}) {
           expect(find.byKey(AppKeys.historyFilterChips), findsOneWidget);
           expect(find.byKey(AppKeys.historyFilterEmpty), findsOneWidget);
         }
-      case _Screen.calendar:
+      case _Screen.calendar || _Screen.calendarMonth:
         final completed = Workout.fromJson(_unsynced().toMap());
-        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
+        // three months, so the paged one's arrows are both there
+        final rows = [
+          completed,
+          for (final days in [31, 62])
+            Workout.fromJson({
+              ..._unsynced().toMap(),
+              'id': 'earlier-$days',
+              'start': completed.start.subtract(Duration(days: days)).toIso8601String(),
+              'end': completed.start.subtract(Duration(days: days)).add(const Duration(hours: 1)).toIso8601String(),
+            }),
+        ];
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => rows);
         when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
-            .thenAnswer((_) async => [completed]);
+            .thenAnswer((_) async => rows);
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
-        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
+        Preferences.of(tester.element(find.byType(MaterialApp))).setHistoryView(
+          screen == .calendarMonth ? .month : .calendar,
+        );
+        await tester.pumpTimes();
+        if (screen == _Screen.calendarMonth) {
+          await tester.tapByKey(AppKeys.calendarPreviousMonth);
+          await tester.pumpTimes();
+        }
       case _Screen.history:
         await tester.tapByKey(AppKeys.historyStack);
       case _Screen.pastWorkoutTimes || _Screen.pastWorkoutEditor:
