@@ -112,6 +112,28 @@ final lifted = switch (exercise.category) {
 };
 ```
 
+**`async`/`await`, not `.then` chains.** An `await` costs about 90 ns more than
+`.then` (measured AOT, 2026-11-21), which is nothing against a request's
+milliseconds. In exchange the VM's async stack traces follow `await` back up
+through every caller, so a Sentry report shows who asked. A `.then` callback runs
+from the microtask queue and its trace starts there. An `async` function also
+turns a synchronous throw into a failed future, so its caller has one error
+path. Keep `.then` only where a sync context starts work it doesn't wait for
+(`unawaited(x.then(...))` in `initState`, say). A future that only ever completes
+with null is `Future<void>`.
+
+```dart
+// no
+Future<String?> undoAccountDeletion() {
+  return put(Router.accounts, body: body).then((_) => null);
+}
+
+// yes
+Future<void> undoAccountDeletion() async {
+  await put(Router.accounts, body: body);
+}
+```
+
 ## Naming and notation
 
 - **Dot-shorthand for constructors**, not only enums, wherever the type is
