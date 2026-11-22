@@ -763,12 +763,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.pastWorkoutTimes,
     _Guideline.androidTapTarget,
-    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:202; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
+    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:259; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
   ),
   (
     _Screen.pastWorkoutTimes,
     _Guideline.iosTapTarget,
-    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:202; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
+    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:259; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
   ),
   (_Screen.pastWorkoutEditor, _Guideline.labeledTapTarget, null),
   (_Screen.pastWorkoutEditor, _Guideline.textContrastLight, null),

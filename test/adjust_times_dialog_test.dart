@@ -300,6 +300,83 @@ void main() {
       expect(saved.end().difference(saved.start()), const Duration(hours: 1));
     });
 
+    testWidgets('the end scrolled back and forward again ends where it would have anyway', (tester) async {
+      final saved = await open(tester, 'End time');
+      final wheel = tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker));
+      final end = wheel.initialDateTime;
+      for (final days in [1, 2, 3, 2, 1, 0]) {
+        wheel.onDateTimeChanged(end.subtract(Duration(days: days)));
+      }
+      for (final minutes in [10, 59, 61, 180, 61, 0]) {
+        wheel.onDateTimeChanged(end.subtract(Duration(minutes: minutes)));
+      }
+      wheel.onDateTimeChanged(end.subtract(const Duration(days: 1)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(saved.end(), end.subtract(const Duration(days: 1)));
+      expect(saved.start(), end.subtract(const Duration(days: 1, hours: 1)));
+    });
+
+    testWidgets('from a past day, the end moved to today takes the start along too', (tester) async {
+      final saved = await open(tester, 'End time');
+      var wheel = tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker));
+      final end = wheel.initialDateTime;
+      wheel.onDateTimeChanged(end.subtract(const Duration(days: 2)));
+      await tester.tap(find.text('End time'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('End time'));
+      await tester.pumpAndSettle();
+      wheel = tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker));
+      wheel.onDateTimeChanged(end);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(saved.end().difference(saved.start()), const Duration(hours: 1));
+    });
+
+    testWidgets('a longer and a shorter workout are still the end moved', (tester) async {
+      final saved = await open(tester, 'End time');
+      final wheel = tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker));
+      wheel.onDateTimeChanged(wheel.initialDateTime.subtract(const Duration(minutes: 20)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(saved.end().difference(saved.start()), const Duration(minutes: 40));
+    });
+
+    testWidgets("the start goes no later than leaves the workout's length before now", (tester) async {
+      await open(tester, 'Start time');
+      final wheel = tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker));
+      expect(DateTime.now().difference(wheel.maximumDate!).inMinutes, inInclusiveRange(59, 61));
+    });
+
+    testWidgets('a workout of no time is refused', (tester) async {
+      await pump(tester, start: start, end: start, needsLength: true, onSave: (_, _) async => fail('saved'));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(find.text('The end has to come after the start.'), findsOneWidget);
+    });
+
+    testWidgets('on Android, the same day and no to a new time change nothing, to the second', (tester) async {
+      final exact = DateTime(2026, 6, 1, 9, 0, 37);
+      DateTime? savedStart;
+      await pump(tester, start: exact, end: end, onSave: (s, _) async => savedStart = s);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Start time'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(savedStart, exact);
+    });
+
     testWidgets('the start scrolled back can be scrolled forward again', (tester) async {
       final saved = await open(tester, 'Start time');
       await scroll(tester, 400);
@@ -323,6 +400,7 @@ void main() {
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
       expect(saved.end().isBefore(saved.start()), isFalse);
+      expect(DateTime.now().difference(saved.start()).inMinutes, inInclusiveRange(59, 61), reason: 'not moved');
     });
 
     testWidgets('on Android, no to a new time keeps the day picked', (tester) async {
