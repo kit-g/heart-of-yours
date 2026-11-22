@@ -1330,6 +1330,14 @@ void a11y({required int shard}) {
     expect(files, {for (final n in Iterable.generate(_shards)) n: '$n'});
   });
 
+  // CI gives each app test job every n-th file, so as many jobs as a11y files
+  // keeps one of these heavy files on each; fewer stacks two on one job.
+  test('CI runs as many app test jobs as there are shards', () {
+    final workflow = File('.github/workflows/unit-tests.yml').readAsStringSync();
+    final matrix = RegExp(r'shard: \[([^\]]*)\]').firstMatch(workflow)![1]!.split(',');
+    expect(matrix, hasLength(_shards));
+  });
+
   late MockLocalDatabase db;
   late MockApi api;
   late MockCdn cdn;

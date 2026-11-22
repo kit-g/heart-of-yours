@@ -98,7 +98,8 @@ jobs:
 
   # Split by file over parallel jobs (`SHARD` in the Makefile): a runner tests
   # two files at a time, and the whole suite on one took ~9 minutes. The shard
-  # count is the matrix's length, so it is said once.
+  # count is the matrix's length; test/a11y.dart splits its sweep into as many
+  # files, one per job, and a test there fails when the two disagree.
   test_app:
     name: "App • tests ${{ matrix.shard }}/${{ strategy.job-total }}"
     runs-on: ubuntu-latest
