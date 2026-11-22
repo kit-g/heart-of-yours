@@ -1300,7 +1300,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
 ];
 
 /// How many `a11y_<n>_test.dart` files split the sweep between them.
-const _shards = 4;
+const _shards = 6;
 
 /// A shard file's name and the number it passes: `a11y_2_test.dart` runs
 /// `a11y(shard: 2)`.
