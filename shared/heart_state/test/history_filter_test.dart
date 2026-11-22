@@ -204,13 +204,17 @@ void main() {
       expect(filter.shows(from('a', at: DateTime(2026, 11, 2), exercises: [squat]), none), isFalse);
     });
 
-    test('pages past the first day have nothing more to find (#740)', () {
-      final filter = HistoryFilter();
-      expect(filter.reaches(DateTime(2020)), isTrue, reason: 'no first day');
-      filter.from = DateTime(2026, 11, 3);
-      expect(filter.reaches(null), isTrue, reason: 'how far the pages go is not known');
-      expect(filter.reaches(DateTime(2026, 11, 3)), isTrue);
-      expect(filter.reaches(DateTime(2026, 11, 2, 23)), isFalse);
+    test('a day set aside shows by its day, and under no group or template (#740)', () {
+      TrainingSkip skip(DateTime at) => TrainingSkip(id: 's', at: at.toUtc());
+      final filter = HistoryFilter()..from = DateTime(2026, 11, 3);
+      expect(filter.showsSkip(skip(DateTime(2026, 11, 3, 1))), isTrue);
+      expect(filter.showsSkip(skip(DateTime(2026, 11, 2, 23))), isFalse);
+      filter.toggleTemplate('a');
+      expect(filter.showsSkip(skip(DateTime(2026, 11, 3, 1))), isFalse);
+      filter
+        ..toggleTemplate('a')
+        ..toggle(.legs);
+      expect(filter.showsSkip(skip(DateTime(2026, 11, 3, 1))), isFalse);
     });
 
     test('clear takes every axis out, and says so once (#740)', () {

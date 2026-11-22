@@ -1130,20 +1130,6 @@ void main() {
       expect(sut.lookup(w1.id), w1);
     });
 
-    test('how far back the pages reach is the oldest id\'s time, and unknown before and after them (#740)', () async {
-      final w1 = Workout(name: 'w1');
-      final w2 = Workout(name: 'w2');
-      whenFirstPage([w1], more: true);
-      whenPageAfter(w1.id, [w2], more: false);
-      expect(sut.pagedBackTo, isNull);
-
-      await sut.initHistory();
-      expect(sut.pagedBackTo, timestampOfUuidV7(w1.id));
-
-      await sut.loadMoreHistory();
-      expect(sut.pagedBackTo, isNull);
-    });
-
     test('coming back reads the newest page, at most once in ten minutes, and paging carries on (#560)', () async {
       final w1 = Workout(name: 'w1');
       final w2 = Workout(name: 'w2');

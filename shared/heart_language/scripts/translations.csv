@@ -1801,4 +1801,3 @@ historyFilterUntil,"Item in History's filter menu, and title of the date picker 
 historyFilterTemplates,Item in History's filter menu that opens the list of templates to show workouts from (#740),Template,Template,Шаблон,Plantilla,Modèle
 historyFilterFromDay,"Chip for History's filter: workouts from {day} on; {day} is a formatted date, 'Nov 3, 2026' (#740)",From {day},From {day},С {day},Desde el {day},À partir du {day}
 historyFilterUntilDay,"Chip for History's filter: workouts up to and including {day}; {day} is a formatted date, 'Nov 3, 2026' (#740)",Until {day},Until {day},По {day},Hasta el {day},Jusqu’au {day}
-historyFilterTemplateGone,Chip for a template in History's filter that has been deleted since it was picked (#740),Deleted template,Deleted template,Удалённый шаблон,Plantilla eliminada,Modèle supprimé

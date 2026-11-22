@@ -2,10 +2,9 @@ part of 'history.dart';
 
 /// History's rows: each month's header, then its workouts and the days set
 /// aside with "Not today" (#312), newest first. While older workouts are still
-/// to be paged down, a skip older than the oldest one shown waits for them, so
-/// it never sits above a gap.
-List<Object> _historyRows(Map<String, List<Workout>> byMonth, Iterable<TrainingSkip> skips, {required bool partial}) {
-  final oldest = byMonth.values.lastOrNull?.lastOrNull?.start;
+/// to be paged down, [since] is the oldest one here, and a skip older than it
+/// waits for them, so it never sits above a gap.
+List<Object> _historyRows(Map<String, List<Workout>> byMonth, Iterable<TrainingSkip> skips, {DateTime? since}) {
   final months = SplayTreeMap<String, List<Object>>((a, b) => b.compareTo(a))
     ..addAll({
       for (final MapEntry(:key, :value) in byMonth.entries) key: [...value],
@@ -13,7 +12,7 @@ List<Object> _historyRows(Map<String, List<Workout>> byMonth, Iterable<TrainingS
 
   for (final skip in [...skips]..sort((a, b) => b.at.compareTo(a.at))) {
     final at = skip.at.toLocal();
-    if (partial && oldest != null && at.isBefore(oldest)) continue;
+    if (since != null && at.isBefore(since)) continue;
     final rows = months.putIfAbsent('${at.year}-${at.month.toString().padLeft(2, '0')}', () => []);
     final before = rows.indexWhere(
       (row) => switch (row) {

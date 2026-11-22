@@ -2113,7 +2113,9 @@ void a11y({required int shard}) {
             .thenAnswer((i) async => (row: i.positionalArguments.single as TrainingSkip, created: true));
         when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
         when(db.getTemplates(any)).thenAnswer(
-          (_) async => switch (screen) {
+          (invocation) async => switch (screen) {
+            // the samples are the rows of no user
+            _Screen.historyFilterTemplates when invocation.positionalArguments.single == null => <Template>[],
             _Screen.programs ||
             _Screen.programPage ||
             _Screen.historyNotToday ||
@@ -2632,7 +2634,8 @@ void a11y({required int shard}) {
         await tester.pumpTimes();
         expect(find.byKey(AppKeys.compactWorkout(completed.id)), findsOneWidget);
       case _Screen.historyFilterMenu || _Screen.historyFilterTemplates || _Screen.historyFiltered:
-        final completed = Workout.fromJson(_unsynced().toMap());
+        // of a template, so there is a way to them
+        final completed = Workout.fromJson({..._unsynced().toMap(), 'templateId': 't1'});
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
         when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
             .thenAnswer((_) async => [completed]);

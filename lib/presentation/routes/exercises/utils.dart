@@ -343,7 +343,7 @@ Future<void> _onExerciseOptions(
   final picked = await _showOptions<_LibraryOption>(button, [
     _optionItem(const _NewExercise(), icon: Icons.add_circle_outline_rounded, title: l.newExercise),
     const PopupMenuDivider(),
-    _MenuHeading(l.settingsPickerGrouping),
+    MenuHeading(l.settingsPickerGrouping),
     ...shown.items<_LibraryOption>(l, _GroupBy.new),
     if (hasArchived) ...[
       const PopupMenuDivider(),
@@ -360,40 +360,6 @@ Future<void> _onExerciseOptions(
       shown.apply(Preferences.of(button), grouping);
     case null:
       break;
-  }
-}
-
-/// A section's title inside a menu: not a choice, so not a [PopupMenuItem],
-/// which would be announced as a dimmed button.
-class _MenuHeading<T> extends PopupMenuEntry<T> {
-  final String title;
-
-  const new(this.title);
-
-  @override
-  double get height => 32;
-
-  @override
-  bool represents(T? value) => false;
-
-  @override
-  State<_MenuHeading<T>> createState() => _MenuHeadingState<T>();
-}
-
-class _MenuHeadingState<T> extends State<_MenuHeading<T>> {
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    return Semantics(
-      header: true,
-      child: Padding(
-        padding: const .fromLTRB(12, 8, 12, 4),
-        child: Text(
-          widget.title,
-          style: textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-        ),
-      ),
-    );
   }
 }
 

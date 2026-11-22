@@ -378,15 +378,15 @@ void main() {
       expect(find.byKey(AppKeys.historyFilterTemplate('gone')), findsNothing);
     });
 
-    testFilter('one deleted after it was picked is still taken out by its chip', (tester) async {
-      await launch(tester, history: [push, gone], stub: stored(own));
-      filterOf(tester).toggleTemplate('gone');
+    testFilter('one deleted after it was picked goes out of the filter', (tester) async {
+      await launch(tester, history: [push, pull], stub: stored(own));
+      await pickTemplate(tester, 'push');
+      final templates = Templates.of(tester.element(find.byType(HistoryPage)));
+      unawaited(templates.delete(templates.lookup('push')!));
       await tester.pumpTimes();
 
-      expect(find.widgetWithText(Chip, 'Deleted template'), findsOneWidget);
-      expect(cards(tester), ['Gone']);
-      await takeOut(tester, AppKeys.historyFilterTemplateChip('gone'));
       expect(filterOf(tester).isOn, isFalse);
+      expect(cards(tester), hasLength(2));
     });
 
     testFilter('no templates, no way to them', (tester) async {
@@ -428,7 +428,7 @@ void main() {
       expect(find.widgetWithText(Chip, 'Day A · Split · Nov 2026'), findsOneWidget);
     });
 
-    testFilter('with Programs off, their sessions are not offered', (tester) async {
+    testFilter('with Programs off, their sessions are plain templates', (tester) async {
       await launch(
         tester,
         history: [push, of('a1', 'Run', DateTime(2026, 9, 2, 9))],
@@ -436,7 +436,10 @@ void main() {
       );
       await axis(tester, 'templates');
       expect(find.byKey(AppKeys.historyFilterTemplate('push')), findsOneWidget);
-      expect(find.byKey(AppKeys.historyFilterTemplate('a1')), findsNothing);
+      await tester.tapByKey(AppKeys.historyFilterTemplate('a1'));
+      await tester.pumpTimes();
+      expect(cards(tester), ['Run']);
+      expect(find.widgetWithText(Chip, 'Day A'), findsOneWidget);
     });
 
     testFilter('a stretch of days, each end picked and taken out by itself', (tester) async {
@@ -515,7 +518,9 @@ void main() {
       });
     }
 
-    testFilter('pages past the first day asked for are waited for no longer', (tester) async {
+    testFilter('a first day asked for still waits for all of the history: one may have been moved into it', (
+      tester,
+    ) async {
       final page = Completer<Iterable<Workout>>();
       await pumpApp(
         tester,
@@ -543,22 +548,149 @@ void main() {
       );
       final context = tester.element(find.byType(HistoryPage));
       unawaited(Backfill.of(context).run('u1'));
-      // the fixtures' ids were made as the test ran: that is how far it reaches
-      final reach = Workouts.of(context).pagedBackTo!.toLocal();
       HistoryFilter.of(context)
         ..toggle(.legs)
-        ..from = reach.subtract(const Duration(days: 2));
+        ..from = DateTime(2030);
       await tester.pumpTimes();
       expect(find.text('Looking through older workouts…'), findsOneWidget);
-
-      HistoryFilter.of(context).from = reach.add(const Duration(days: 2));
-      await tester.pumpTimes();
-      expect(find.text('Looking through older workouts…'), findsNothing);
-      expect(find.byKey(AppKeys.historyFilterEmpty), findsOneWidget);
+      expect(find.byKey(AppKeys.historyFilterEmpty), findsNothing);
 
       page.complete(Page(items: [older], hasMore: false));
       await tester.pumpTimes();
+      expect(find.byKey(AppKeys.historyFilterEmpty), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testFilter('a ticked day is cleared from the menu', (tester) async {
+      await launch(tester, history: [push, pushLegs, pull], stub: stored(own));
+      filterOf(tester)
+        ..from = DateTime(2026, 11, 1)
+        ..until = DateTime(2026, 11, 5);
+      await tester.pumpTimes();
+      await axis(tester, 'from');
+      expect(find.byType(DatePickerDialog), findsNothing);
+      expect((filterOf(tester).from, filterOf(tester).until), (null, DateTime(2026, 11, 5)));
+      await axis(tester, 'until');
+      expect(filterOf(tester).isOn, isFalse);
+    });
+
+    testFilter('with the whole history naming no template, there is no way to them', (tester) async {
+      await launch(tester, history: [loose], stub: stored(own));
+      await tester.tapByKey(AppKeys.historyFilter);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.historyFilterAxis('templates')), findsNothing);
+    });
+
+    testFilter('two of one name are told apart by their folder', (tester) async {
+      Template filed(String id, int order, String folder) {
+        return template(id, order, 'Day 1').copyWith(
+          folder: TemplateFolder.fromJson({'id': 'f-$id', 'name': folder, 'order': order}),
+        );
+      }
+
+      await launch(
+        tester,
+        history: [of('one', 'One', DateTime(2026, 11, 5, 9)), of('two', 'Two', DateTime(2026, 11, 6, 9))],
+        stub: stored([filed('one', 0, 'Block 1'), filed('two', 1, 'Block 2')]),
+      );
+      await axis(tester, 'templates');
+      expect(find.text('Day 1 · Block 1'), findsOneWidget);
+      expect(find.text('Day 1 · Block 2'), findsOneWidget);
+      await tester.tapByKey(AppKeys.historyFilterTemplate('two'));
+      await tester.pumpTimes();
+      expect(find.widgetWithText(Chip, 'Day 1 · Block 2'), findsOneWidget);
+      expect(cards(tester), ['Two']);
+    });
+
+    testFilter("runs begun in one month are told apart by the day, and a program's name is a heading", (tester) async {
+      final semantics = tester.ensureSemantics();
+      await launch(
+        tester,
+        history: [of('a1', 'First', DateTime(2026, 11, 3, 9)), of('a2', 'Second', DateTime(2026, 11, 12, 9))],
+        stub: stored(
+          [template('a1', 0, 'Day A', programId: 'p1'), template('a2', 1, 'Day A', programId: 'p2')],
+          programs: [
+            program('p1', 'Split', ['a1'], began: DateTime(2026, 11, 2)),
+            program('p2', 'Split', ['a2'], began: DateTime(2026, 11, 10)),
+          ],
+        ),
+      );
+      await axis(tester, 'templates');
+      final heading = find.text('Split · Nov 2, 2026');
+      expect(heading, findsOneWidget);
+      expect(find.text('Split · Nov 10, 2026'), findsOneWidget);
+      final data = tester.getSemantics(heading).getSemanticsData();
+      expect(data.flagsCollection.isHeader, isTrue);
+      expect(data.flagsCollection.isButton, isFalse);
+      semantics.dispose();
+    });
+
+    testFilter('samples follow Example templates, in the menu and in the filter', (tester) async {
+      final base = stored(own);
+      await launch(
+        tester,
+        history: [push, of('sample', 'Sampled', DateTime(2026, 11, 9, 9))],
+        stub: (db, api) {
+          base(db, api);
+          when(db.getTemplates(any)).thenAnswer(
+            (i) async => i.positionalArguments.single == null ? [template('sample', 0, 'A sample')] : own,
+          );
+        },
+      );
+      final preferences = Preferences.of(tester.element(find.byType(HistoryPage)));
+      preferences.answerOffer(.sampleTemplates, yes: true);
+      await tester.pumpTimes();
+      await pickTemplate(tester, 'sample');
+      expect(cards(tester), ['Sampled']);
+
+      preferences.answerOffer(.sampleTemplates, yes: false);
+      await tester.pumpTimes();
+      expect(filterOf(tester).isOn, isFalse);
+      await axis(tester, 'templates');
+      expect(find.byKey(AppKeys.historyFilterTemplate('sample')), findsNothing);
+    });
+
+    testFilter('a name longer than the screen keeps its × on it', (tester) async {
+      await launch(
+        tester,
+        history: [push],
+        stub: stored([template('push', 0, 'Upper body, heavy bench and rows, then everything else there is to do')]),
+      );
+      await pickTemplate(tester, 'push');
+      final remove = find.descendant(
+        of: find.byKey(AppKeys.historyFilterTemplateChip('push')),
+        matching: find.byTooltip('Remove filter'),
+      );
+      expect(tester.getRect(remove).right, lessThanOrEqualTo(390));
+    });
+
+    testFilter('days alone keep what was set aside inside them', (tester) async {
+      final base = stored(own);
+      await launch(
+        tester,
+        history: [push, pull],
+        stub: (db, api) {
+          base(db, api);
+          SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-notToday': 'on'});
+          when(db.getSkips(any)).thenAnswer(
+            (_) async => [
+              TrainingSkip(id: 'in', at: DateTime(2026, 11, 4, 9).toUtc()),
+              TrainingSkip(id: 'out', at: DateTime(2026, 9, 4, 9).toUtc()),
+            ],
+          );
+        },
+      );
+      filterOf(tester)
+        ..from = DateTime(2026, 11, 3)
+        ..until = DateTime(2026, 11, 4);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.historySkip('in')), findsOneWidget);
+      expect(find.byKey(AppKeys.historySkip('out')), findsNothing);
+      expect(find.byKey(AppKeys.historyFilterEmpty), findsNothing);
+
+      filterOf(tester).toggle(.legs);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.historySkip('in')), findsNothing);
     });
   });
 }

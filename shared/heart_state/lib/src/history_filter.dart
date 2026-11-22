@@ -87,26 +87,21 @@ class HistoryFilter with ChangeNotifier implements SignOutStateSentry {
   /// started from no template, or from before that was kept, matches no
   /// template, whatever its name.
   bool shows(Workout workout, WorkoutGroups trained) {
-    return _inStretch(workout) &&
+    return _inStretch(workout.start) &&
         (_templates.isEmpty || _templates.contains(workout.templateId)) &&
         (_groups.isEmpty || trained.of(workout).any(_groups.contains));
   }
 
-  /// By the day it started on here, as the list and the calendar place it.
-  bool _inStretch(Workout workout) {
+  /// Whether [skip] shows under the filter: a day set aside is no workout of
+  /// any group or template, but it is a day.
+  bool showsSkip(TrainingSkip skip) => _groups.isEmpty && _templates.isEmpty && _inStretch(skip.at);
+
+  /// By the day [at] is here, as the list and the calendar place it.
+  bool _inStretch(DateTime at) {
     final (from, until) = (_from, _until);
     if (from == null && until == null) return true;
-    final day = _dayOf(workout.start.toLocal())!;
+    final day = _dayOf(at.toLocal())!;
     return !(from != null && day.isBefore(from)) && !(until != null && day.isAfter(until));
-  }
-
-  /// Whether what is older than [paged] (`Workouts.pagedBackTo`) can still
-  /// show: not once the pages are past the first day asked for.
-  bool reaches(DateTime? paged) {
-    return switch ((_from, paged)) {
-      (final DateTime from, final DateTime paged) => !paged.isBefore(from),
-      _ => true,
-    };
   }
 
   static DateTime? _dayOf(DateTime? at) {

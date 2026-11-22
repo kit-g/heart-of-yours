@@ -6272,7 +6272,5 @@
   "historyFilterFromDay": "From {day}",
   "@historyFilterFromDay": {"description": "Chip for History's filter: workouts from {day} on; {day} is a formatted date, 'Nov 3, 2026' (#740)", "type": "text", "placeholders": {"day": {"type": "String"}}},
   "historyFilterUntilDay": "Until {day}",
-  "@historyFilterUntilDay": {"description": "Chip for History's filter: workouts up to and including {day}; {day} is a formatted date, 'Nov 3, 2026' (#740)", "type": "text", "placeholders": {"day": {"type": "String"}}},
-  "historyFilterTemplateGone": "Deleted template",
-  "@historyFilterTemplateGone": {"description": "Chip for a template in History's filter that has been deleted since it was picked (#740)", "type": "text", "placeholders": {}}
+  "@historyFilterUntilDay": {"description": "Chip for History's filter: workouts up to and including {day}; {day} is a formatted date, 'Nov 3, 2026' (#740)", "type": "text", "placeholders": {"day": {"type": "String"}}}
 }

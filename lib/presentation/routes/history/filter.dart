@@ -39,26 +39,56 @@ enum _FilterAxis {
   };
 }
 
-/// A template History can be narrowed to (#740): its name, and the program it
-/// is a session of, which tells two sessions of one name apart.
-typedef _FilterTemplate = ({String id, String name, Program? program});
+/// A template History can be narrowed to (#740): its name, the program it is
+/// a session of, while that is shown, and else the folder it is filed under,
+/// which tell two of one name apart.
+typedef _FilterTemplate = ({String id, String name, Program? program, String? folder});
 
-/// [program] by its name; two runs of one, [among] the rest, by when each
-/// began too.
+/// Whether [templates] still holds [id], a sample only with Example templates
+/// on ([samples]), as they are named nowhere with it off.
+bool _isHere(Templates templates, String id, {required bool samples}) {
+  return switch (templates.lookup(id)) {
+    final Template template => samples || !templates.samples.contains(template),
+    null => false,
+  };
+}
+
+/// [program] by its name; runs of one, [among] the rest, by when each began
+/// too: the month, or the day where that is the same.
 String _programName(L l, Program program, Iterable<Program> among) {
-  final alike = among.any((other) => other.name == program.name && other.id != program.id);
-  return switch ((alike, program.createdAt)) {
-    (true, final DateTime began) => '${program.name} · ${DateFormat.yMMM(l.localeName).format(began.toLocal())}',
-    _ => program.name,
+  final began = program.createdAt?.toLocal();
+  if (began == null) return program.name;
+  final month = DateFormat.yMMM(l.localeName);
+  final alike = among.where((other) => other.name == program.name && other.id != program.id);
+  if (alike.isEmpty) return program.name;
+  final months = {
+    for (final other in alike)
+      if (other.createdAt case final DateTime at) month.format(at.toLocal()),
+  };
+  final when = months.contains(month.format(began)) ? DateFormat.yMMMd(l.localeName) : month;
+  return '${program.name} · ${when.format(began)}';
+}
+
+/// [template] by its name, [among] the rest: with its folder's, where another
+/// plain one has the same.
+String _templateName(_FilterTemplate template, Iterable<_FilterTemplate> among) {
+  final alike = among.any(
+    (other) => other.program == null && other.name == template.name && other.id != template.id,
+  );
+  return switch ((alike, template.folder)) {
+    (true, final String folder) => '${template.name} · $folder',
+    _ => template.name,
   };
 }
 
 /// The templates to offer (#740): the user's own and the sessions of a
 /// program still going, whether or not anything was trained from them, and
 /// any other this device knows that the history names — a finished program's
-/// session, a sample. One since deleted has no name left, and is not guessed
-/// one from its workouts. Plain templates first, then each program's sessions
-/// together.
+/// session, a sample (an account's workout keeps no link to one once it is
+/// saved: the server links only the account's own). A session whose program isn't shown (Programs off) is a
+/// plain template, as it is on the Workout tab. One since deleted has no name
+/// left, and is not guessed one from its workouts. Plain templates first, then
+/// each program's sessions together.
 List<_FilterTemplate> _filterTemplates(BuildContext context) {
   final templates = Templates.of(context);
   final programs = Programs.of(context);
@@ -66,37 +96,26 @@ List<_FilterTemplate> _filterTemplates(BuildContext context) {
   final trained = {for (final workout in Workouts.of(context).history) ?workout.templateId};
   final live = {for (final program in programs.following) program.id};
 
-  // a session with its program put away (Programs off) is not offered, as the
-  // program itself is shown nowhere
-  bool offered(Template template) => switch (template.programId) {
-    final String id =>
-      preferences.programShown(programs.lookup(id)) && (live.contains(id) || trained.contains(template.id)),
+  Program? shown(Template template) => switch (template.programId) {
+    final String id when preferences.programShown(programs.lookup(id)) => programs.lookup(id),
+    _ => null,
+  };
+  bool offered(Template template) => switch (shown(template)) {
+    final Program program => live.contains(program.id) || trained.contains(template.id),
     null => true,
   };
-  final known = [
-    ...templates.where(offered),
-    ...templates.samples.where((sample) => trained.contains(sample.id)),
-  ];
   final entries = [
-    for (final template in known)
+    for (final template in [
+      ...templates.where(offered),
+      if (preferences.isOn(.sampleTemplates)) ...templates.samples.where((sample) => trained.contains(sample.id)),
+    ])
       if (template.name case final String name when name.trim().isNotEmpty)
-        (
-          id: template.id,
-          name: name,
-          program: switch (template.programId) {
-            final String id => programs.lookup(id),
-            null => null,
-          },
-        ),
+        (id: template.id, name: name, program: shown(template), folder: template.folder?.name),
   ];
-  final sessions = <String?, List<_FilterTemplate>>{};
-  for (final entry in entries) {
-    (sessions[entry.program?.id] ??= []).add(entry);
-  }
   return [
-    ...?sessions[null],
-    for (final MapEntry(:key, :value) in sessions.entries)
-      if (key != null) ...value,
+    ...entries.where((entry) => entry.program == null),
+    for (final id in {for (final entry in entries) ?entry.program?.id})
+      ...entries.where((entry) => entry.program?.id == id),
   ];
 }
 
@@ -125,6 +144,7 @@ class _FilterButton extends StatelessWidget {
       false => null,
     };
     final templates = _filterTemplates(context);
+    final used = _usedTemplates(context);
     bool open(MuscleGroupKey group) => filter.groups.contains(group) || (reached?.contains(group) ?? true);
     bool isOn(_FilterAxis axis) => switch (axis) {
       .from => filter.from != null,
@@ -136,8 +156,8 @@ class _FilterButton extends StatelessWidget {
       position: menuOver(context, context.findRenderObject()! as RenderBox),
       items: [
         for (final axis in _FilterAxis.values)
-          // no templates, no way to them
-          if (axis != .templates || templates.isNotEmpty)
+          // no template to pick, no way to them
+          if (axis != .templates || templates.any((each) => _opens(each.id, used)))
             CheckedPopupMenuItem<_FilterAxis>(
               key: AppKeys.historyFilterAxis(axis.name),
               value: axis,
@@ -167,21 +187,33 @@ class _FilterButton extends StatelessWidget {
       case final MuscleGroupKey group:
         filter.toggle(group);
       case _FilterAxis.templates:
-        await _chooseTemplate(context, templates);
+        await _chooseTemplate(context, templates, used);
+      // ticked, it is taken out, as a group is
+      case _FilterAxis.from when filter.from != null:
+        filter.from = null;
+      case _FilterAxis.until when filter.until != null:
+        filter.until = null;
       case _FilterAxis.from:
-        final day = await _pickDay(context, filter.from, last: filter.until, title: l.historyFilterFrom);
+        final day = await _pickDay(context, last: filter.until, title: l.historyFilterFrom);
         if (day != null) filter.from = day;
       case _FilterAxis.until:
-        final day = await _pickDay(context, filter.until, first: filter.from, title: l.historyFilterUntil);
+        final day = await _pickDay(context, first: filter.from, title: l.historyFilterUntil);
         if (day != null) filter.until = day;
     }
   }
 
+  /// The templates the history names, once all of it is here; null before.
+  Set<String>? _usedTemplates(BuildContext context) => switch (whole) {
+    true => {for (final workout in Workouts.of(context).history) ?workout.templateId},
+    false => null,
+  };
+
+  bool _opens(String id, Set<String>? used) => filter.templates.contains(id) || (used?.contains(id) ?? true);
+
   /// Picks one end of the stretch, never past the other: a day of the history,
   /// as far back as it is known to go, up to today.
   Future<DateTime?> _pickDay(
-    BuildContext context,
-    DateTime? held, {
+    BuildContext context, {
     DateTime? first,
     DateTime? last,
     required String title,
@@ -197,29 +229,23 @@ class _FilterButton extends StatelessWidget {
     final start = first ?? oldest;
     return showAdaptiveDatePicker(
       context,
-      initialDate: held ?? end,
+      initialDate: end,
       firstDate: start.isAfter(end) ? end : start,
       lastDate: end,
       title: title,
     );
   }
 
-  Future<void> _chooseTemplate(BuildContext context, List<_FilterTemplate> templates) async {
+  Future<void> _chooseTemplate(BuildContext context, List<_FilterTemplate> templates, Set<String>? used) async {
     final l = L.of(context);
-    final theme = Theme.of(context);
-    final used = switch (whole) {
-      true => {for (final workout in Workouts.of(context).history) ?workout.templateId},
-      false => null,
-    };
-    bool open(String id) => filter.templates.contains(id) || (used?.contains(id) ?? true);
     final programs = {for (final template in templates) ?template.program?.id};
     final among = templates.map((each) => each.program).nonNulls;
     PopupMenuEntry<String> item(_FilterTemplate template) => CheckedPopupMenuItem<String>(
       key: AppKeys.historyFilterTemplate(template.id),
       value: template.id,
       checked: filter.templates.contains(template.id),
-      enabled: open(template.id),
-      child: Text(template.name),
+      enabled: _opens(template.id, used),
+      child: Text(template.program == null ? _templateName(template, templates) : template.name),
     );
     final picked = await showMenu<String>(
       context: context,
@@ -227,15 +253,7 @@ class _FilterButton extends StatelessWidget {
       items: [
         ...templates.where((each) => each.program == null).map(item),
         for (final id in programs) ...[
-          PopupMenuItem<String>(
-            enabled: false,
-            height: 36,
-            child: Text(
-              _programName(l, among.firstWhere((each) => each.id == id), among),
-              // a heading, not a choice greyed out
-              style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-          ),
+          MenuHeading<String>(_programName(l, among.firstWhere((each) => each.id == id), among)),
           ...templates.where((each) => each.program?.id == id).map(item),
         ],
       ],
@@ -270,64 +288,69 @@ class _FilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final days = DateFormat.yMMMd(l.localeName);
-    return SingleChildScrollView(
-      key: AppKeys.historyFilterChips,
-      scrollDirection: .horizontal,
-      padding: const .fromLTRB(16, 4, 16, 8),
-      child: Row(
-        spacing: 8,
-        children: [
-          if (filter.from case final DateTime from)
-            RemovableChip(
-              key: AppKeys.historyFilterFromChip,
-              label: l.historyFilterFromDay(days.format(from)),
-              onDeleted: () => filter.from = null,
-            ),
-          if (filter.until case final DateTime until)
-            RemovableChip(
-              key: AppKeys.historyFilterUntilChip,
-              label: l.historyFilterUntilDay(days.format(until)),
-              onDeleted: () => filter.until = null,
-            ),
-          if (filter.templates.isNotEmpty) ..._templates(context, l),
-          for (final group in _groupOrder.where(filter.groups.contains))
-            RemovableChip(
-              avatar: Center(child: FamilyDot(MuscleFamily.of(group))),
-              label: group.label(l),
-              onDeleted: () => filter.remove(group),
-            ),
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // the longest still leaves its × on screen
+        final widest = math.max(_shortest, constraints.maxWidth - _aroundLabel);
+        return SingleChildScrollView(
+          key: AppKeys.historyFilterChips,
+          scrollDirection: .horizontal,
+          padding: const .fromLTRB(16, 4, 16, 8),
+          child: Row(
+            spacing: 8,
+            children: [
+              if (filter.from case final DateTime from)
+                RemovableChip(
+                  key: AppKeys.historyFilterFromChip,
+                  label: l.historyFilterFromDay(days.format(from)),
+                  maxLabelWidth: widest,
+                  onDeleted: () => filter.from = null,
+                ),
+              if (filter.until case final DateTime until)
+                RemovableChip(
+                  key: AppKeys.historyFilterUntilChip,
+                  label: l.historyFilterUntilDay(days.format(until)),
+                  maxLabelWidth: widest,
+                  onDeleted: () => filter.until = null,
+                ),
+              if (filter.templates.isNotEmpty) ..._templates(context, l, widest),
+              for (final group in _groupOrder.where(filter.groups.contains))
+                RemovableChip(
+                  avatar: Center(child: FamilyDot(MuscleFamily.of(group))),
+                  label: group.label(l),
+                  onDeleted: () => filter.remove(group),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Iterable<Widget> _templates(BuildContext context, L l) {
+  /// The page's gutters, the chip's own, and its ×.
+  static const _aroundLabel = 32.0 + 56.0;
+  static const _shortest = 64.0;
+
+  /// Named as the menu names them, over the same templates.
+  Iterable<Widget> _templates(BuildContext context, L l, double widest) {
+    // what the names are read from
     final templates = Templates.watch(context);
-    final programs = Programs.watch(context);
-    final preferences = Preferences.watch(context);
-    Program? programOf(Template? template) => switch (template?.programId) {
-      final String id => programs.lookup(id),
-      null => null,
+    Programs.watch(context);
+    Preferences.watch(context);
+    final offered = _filterTemplates(context);
+    final among = offered.map((each) => each.program).nonNulls;
+    String label(String id) => switch (offered.where((each) => each.id == id).firstOrNull) {
+      (:final name, program: final Program program, id: _, folder: _) => '$name · ${_programName(l, program, among)}',
+      final _FilterTemplate plain => _templateName(plain, offered),
+      // its name emptied since it was picked
+      null => templates.lookup(id)?.name ?? l.defaultWorkoutName(),
     };
-    String label(String id) {
-      final template = templates.lookup(id);
-      final program = switch (programOf(template)) {
-        final Program program when preferences.programShown(program) => program,
-        _ => null,
-      };
-      return switch ((template?.name, program)) {
-        (final String name, final Program program) when name.trim().isNotEmpty =>
-          '$name · ${_programName(l, program, templates.map(programOf).nonNulls)}',
-        (final String name, null) when name.trim().isNotEmpty => name,
-        // deleted since it was picked: still taken out here
-        _ => l.historyFilterTemplateGone,
-      };
-    }
 
     return filter.templates.map(
       (id) => RemovableChip(
         key: AppKeys.historyFilterTemplateChip(id),
         label: label(id),
+        maxLabelWidth: widest,
         onDeleted: () => filter.removeTemplate(id),
       ),
     );
