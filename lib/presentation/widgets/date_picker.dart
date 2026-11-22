@@ -37,6 +37,7 @@ Future<DateTime?> showAdaptiveDatePicker(
       initialDate: initial,
       firstDate: first,
       lastDate: last,
+      helpText: title,
     ).then(_dayOf),
   };
 }

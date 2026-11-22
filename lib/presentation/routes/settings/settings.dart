@@ -37,6 +37,7 @@ import 'package:heart/presentation/widgets/exercises/exercises.dart' show Exerci
 import 'package:heart/presentation/widgets/exercises/movement_copy.dart' show PickerGroupingCopy;
 import 'package:heart/presentation/widgets/health/settings.dart';
 import 'package:heart/presentation/widgets/image.dart';
+import 'package:heart/presentation/widgets/history_view.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/logo.dart';
 import 'package:heart/presentation/widgets/menu.dart' show MenuValue;
@@ -62,6 +63,7 @@ part 'export_data.dart';
 part 'features.dart';
 part 'your_coach.dart';
 part 'your_devices.dart';
+part 'history_view.dart';
 part 'import_data.dart';
 part 'page.dart';
 part 'picker_grouping.dart';

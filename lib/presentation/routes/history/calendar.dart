@@ -13,6 +13,10 @@ part of 'history.dart';
 /// Past workouts' (#530), so it is there only while that is on; the first
 /// tap of an empty past day while it was never asked about is its one ask.
 ///
+/// [paged], it shows one month at a time instead, swiped sideways (#739): the
+/// same months and days, under a header that names the month and goes to
+/// another. Nothing is later than the current month.
+///
 /// Under History's muscle-group filter (#610) only the workouts [shows] lets
 /// through mark a day. A day whose workouts it all leaves out reads as plain
 /// and does nothing: it is not empty, so it never offers to log as if it were.
@@ -39,6 +43,16 @@ class HistoryCalendar extends StatefulWidget {
   /// the current month back. Without one the calendar keeps its own.
   final ScrollController? controller;
 
+  /// One month at a time (#739), turned by [pages]: History's own controller,
+  /// as [controller] is, and the calendar's own without one.
+  final bool paged;
+  final PageController? pages;
+
+  /// Whether older history can still come, for the paged months, which have a
+  /// page for it: what the server says ([Workouts.hasMoreHistory]), unless
+  /// the page knows better.
+  final bool? older;
+
   /// Logs a workout that already happened, on the given day (#618).
   final void Function(DateTime day)? onLogOn;
 
@@ -53,6 +67,9 @@ class HistoryCalendar extends StatefulWidget {
     this.onTapWorkout,
     this.selectedId,
     this.controller,
+    this.paged = false,
+    this.pages,
+    this.older,
     this.onLogOn,
     this.onStartWorkout,
   });
@@ -65,6 +82,7 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
   // a plain flag: it only debounces a request and must never cause a frame
   bool _pageScheduled = false;
   final _ownController = ScrollController();
+  final _ownPages = PageController();
 
   /// Today, on the user's clock: what a day's tap does turns on it (#618), so
   /// it moves at midnight and on coming back to the app, not only on a build.
@@ -85,6 +103,7 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
     _lifecycle.dispose();
     _today.dispose();
     _ownController.dispose();
+    _ownPages.dispose();
     super.dispose();
   }
 
@@ -172,13 +191,76 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
     final dates = byMonth.keys.map((key) => DateTime.parse('$key-01')).toList()..sort();
     // the page can stay open across a month's end: today moves it on
     final latest = DateTime(today.year, today.month);
-    final newest = dates.isNotEmpty && dates.last.isAfter(latest) ? dates.last : latest;
-    final oldest = dates.firstOrNull ?? newest;
+    // paged, nothing is later than the current month (#739)
+    final newest = !widget.paged && dates.isNotEmpty && dates.last.isAfter(latest) ? dates.last : latest;
+    final oldest = switch (dates.firstOrNull) {
+      final DateTime first when first.isBefore(newest) => first,
+      _ => newest,
+    };
     final count = (newest.year - oldest.year) * 12 + newest.month - oldest.month + 1;
     final locale = L.of(context).localeName;
     // the user's first day (#339), counted the way Material's calendars do:
     // 0 is Sunday, so a DateTime weekday maps over by its remainder
     final firstWeekday = preferences.firstWeekday % 7;
+
+    Widget tail() {
+      return _HistoryTail(
+        loading: workouts.loadingMoreHistory,
+        error: workouts.historyPageError,
+        hasMore: workouts.hasMoreHistory,
+        onRetry: () => workouts.loadMoreHistory(),
+      );
+    }
+
+    Widget month(DateTime month) {
+      final key = DateFormat('yyyy-MM').format(month);
+      // newest first, as byMonth has them; a workout counts on the
+      // day it started, even one that ran past midnight
+      final sessions = byMonth[key] ?? const <Workout>[];
+      final shown = switch (widget.shows) {
+        final bool Function(Workout) shows => sessions.where(shows).toList(),
+        null => sessions,
+      };
+      final days = {
+        for (final day in shown.map(_dayOf).toSet()) day: shown.where((workout) => _dayOf(workout) == day).toList(),
+      };
+      return _CalendarMonth(
+        key: ValueKey(key),
+        month: month,
+        titled: !widget.paged,
+        days: days,
+        families: switch (widget.trained) {
+          final WorkoutGroups trained => {
+            for (final MapEntry(key: day, value: workouts) in days.entries)
+              day: _ranked(trained.setsByFamily(workouts)),
+          },
+          null => const {},
+        },
+        // trained, but none of it under the filter
+        hidden: sessions.map(_dayOf).toSet().difference(days.keys.toSet()),
+        firstWeekday: firstWeekday,
+        selectedId: widget.selectedId,
+        actions: actions,
+        today: today,
+      );
+    }
+
+    final weekdays = Padding(
+      padding: const .symmetric(horizontal: 4, vertical: 12),
+      child: Row(
+        children: List.generate(7, (index) {
+          final day = DateTime(2024, 1, 7 + (firstWeekday + index) % 7);
+          return Expanded(
+            child: Semantics(
+              container: true,
+              label: DateFormat.EEEE(locale).format(day),
+              excludeSemantics: true,
+              child: Text(DateFormat.EEEEE(locale).format(day), textAlign: .center),
+            ),
+          );
+        }),
+      ),
+    );
 
     // Measured and capped: a seven-column grid stretched across a tablet's
     // pane is all gaps, so it keeps phone proportions and centres itself.
@@ -192,72 +274,38 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
               padding: .fromLTRB(12, 8, 12, 0),
               child: FamilyLegend(),
             ),
-            Padding(
-              padding: const .symmetric(horizontal: 4, vertical: 12),
-              child: Row(
-                children: List.generate(7, (index) {
-                  final day = DateTime(2024, 1, 7 + (firstWeekday + index) % 7);
-                  return Expanded(
-                    child: Semantics(
-                      container: true,
-                      label: DateFormat.EEEE(locale).format(day),
-                      excludeSemantics: true,
-                      child: Text(DateFormat.EEEEE(locale).format(day), textAlign: .center),
-                    ),
-                  );
-                }),
-              ),
-            ),
+            // paged, right over the days, under the month's name
+            if (!widget.paged) weekdays,
             Expanded(
-              child: ListView.builder(
-                controller: widget.controller ?? _ownController,
-                reverse: true,
-                // clear of the active workout's button, over the current month
-                padding: const .only(bottom: 72),
-                itemCount: count + 1,
-                itemBuilder: (context, index) {
-                  if (index >= count - 1) _loadOlder(workouts);
-                  if (index == count) {
-                    return _HistoryTail(
-                      loading: workouts.loadingMoreHistory,
-                      error: workouts.historyPageError,
-                      hasMore: workouts.hasMoreHistory,
-                      onRetry: () => workouts.loadMoreHistory(),
-                    );
-                  }
-                  final month = DateTime(newest.year, newest.month - index);
-                  final key = DateFormat('yyyy-MM').format(month);
-                  // newest first, as byMonth has them; a workout counts on the
-                  // day it started, even one that ran past midnight
-                  final sessions = byMonth[key] ?? const <Workout>[];
-                  final shown = switch (widget.shows) {
-                    final bool Function(Workout) shows => sessions.where(shows).toList(),
-                    null => sessions,
-                  };
-                  final days = {
-                    for (final day in shown.map(_dayOf).toSet())
-                      day: shown.where((workout) => _dayOf(workout) == day).toList(),
-                  };
-                  return _CalendarMonth(
-                    key: ValueKey(key),
-                    month: month,
-                    days: days,
-                    families: switch (widget.trained) {
-                      final WorkoutGroups trained => {
-                        for (final MapEntry(key: day, value: workouts) in days.entries)
-                          day: _ranked(trained.setsByFamily(workouts)),
-                      },
-                      null => const {},
-                    },
-                    // trained, but none of it under the filter
-                    hidden: sessions.map(_dayOf).toSet().difference(days.keys.toSet()),
-                    firstWeekday: firstWeekday,
-                    selectedId: widget.selectedId,
-                    actions: actions,
-                    today: today,
-                  );
-                },
-              ),
+              child: switch (widget.paged) {
+                true => _MonthPages(
+                  pages: widget.pages ?? _ownPages,
+                  newest: newest,
+                  count: count,
+                  today: today,
+                  // older ones are still to come: a page after the oldest
+                  // month brings them
+                  more: widget.older ?? workouts.hasMoreHistory,
+                  onOldest: () => _loadOlder(workouts),
+                  weekdays: weekdays,
+                  tail: tail,
+                  month: month,
+                ),
+                false => ListView.builder(
+                  controller: widget.controller ?? _ownController,
+                  reverse: true,
+                  // clear of the active workout's button, over the current month
+                  padding: const .only(bottom: 72),
+                  itemCount: count + 1,
+                  itemBuilder: (context, index) {
+                    if (index >= count - 1) _loadOlder(workouts);
+                    if (index == count) {
+                      return tail();
+                    }
+                    return month(DateTime(newest.year, newest.month - index));
+                  },
+                ),
+              },
             ),
           ],
         ),
@@ -280,8 +328,12 @@ class _CalendarMonth extends StatelessWidget {
   final _DayActions actions;
   final DateTime today;
 
+  /// Whether it says its own name: not where what is around it does (#739).
+  final bool titled;
+
   const new({
     super.key,
+    this.titled = true,
     required this.month,
     required this.days,
     this.families = const {},
@@ -300,14 +352,15 @@ class _CalendarMonth extends StatelessWidget {
     final length = DateTime(month.year, month.month + 1, 0).day;
     final rows = ((offset + length) / 7).ceil();
     return Padding(
-      padding: const .fromLTRB(4, 16, 4, 16),
+      padding: .fromLTRB(4, titled ? 16 : 0, 4, 16),
       child: Column(
         crossAxisAlignment: .start,
         children: [
-          Padding(
-            padding: const .fromLTRB(12, 0, 12, 16),
-            child: Text(DateFormat.yMMM(locale).format(month), style: theme.textTheme.titleLarge),
-          ),
+          if (titled)
+            Padding(
+              padding: const .fromLTRB(12, 0, 12, 16),
+              child: Text(DateFormat.yMMM(locale).format(month), style: theme.textTheme.titleLarge),
+            ),
           ...List.generate(
             rows,
             (row) => Row(

@@ -64,12 +64,9 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :developerApi,
       :yourDevices,
       :screens,
-      :historyView,
-      :historyAsList,
       :historyDensity,
       :historyDensityFull,
       :historyDensityCompact,
-      :calendar,
     ) = L.of(
       context,
     );
@@ -157,16 +154,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                 _Section(
                   title: screens,
                   children: [
-                    _ScreenChoiceRow<HistoryView>(
-                      key: AppKeys.historyViewSetting,
-                      title: historyView,
-                      read: (preferences) => preferences.historyView,
-                      write: (preferences, view) => preferences.setHistoryView(view),
-                      children: {
-                        .list: Text(historyAsList),
-                        .calendar: Text(calendar),
-                      },
-                    ),
+                    const _HistoryViewPicker(),
                     // how History's list draws a workout (#611)
                     _ScreenChoiceRow<HistoryDensity>(
                       key: AppKeys.historyDensitySetting,
