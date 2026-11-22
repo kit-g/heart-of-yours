@@ -1099,18 +1099,16 @@ const _commentsChannel = 'comments';
 const _messagesChannel = 'messages';
 const _coachingChannel = 'coaching';
 
-/// Where a push the app shows itself goes in the payload, so a tap on it can
+/// Where a push the app showed itself went in the payload, so a tap on it can
 /// be told from the app's own notifications.
 const _pushPayloadKey = 'push';
 
-/// The next id for a push the app shows itself: past the fixed ids above, and
-/// one each, so two messages stack rather than replace each other.
-var _nextPushId = 100;
-
-/// Taps on a push the app showed itself (Android, the app in front), for the
-/// push presenter. A notifier rather than a callback because the tap that
-/// launched the app can arrive before the presenter is there to hear it: it
-/// waits here, and the presenter clears it once handled.
+/// Taps on a push the app showed itself, for the push presenter: builds
+/// before #724 posted one on Android for a push with the app in front, and
+/// one may still wait in the tray after an update. A notifier rather than a
+/// callback because the tap that launched the app can arrive before the
+/// presenter is there to hear it: it waits here, and the presenter clears it
+/// once handled.
 final pushTaps = ValueNotifier<Push?>(null);
 
 /// The channels the server's pushes go to, named in the person's language, so
@@ -1138,30 +1136,6 @@ Future<void> deletePushChannels(TargetPlatform platform) async {
   for (final id in [_commentsChannel, _messagesChannel, _coachingChannel]) {
     await _guarded(() async => android?.deleteNotificationChannel(channelId: id));
   }
-}
-
-/// Shows a push that arrived with the app in front, on Android, where FCM
-/// leaves that to the app. [title] is the one the server wrote; a push has no
-/// body, because it says who, never what.
-Future<void> showPush(Push push, {required String title}) {
-  final channel = switch (push.known) {
-    .commentCreated => _commentsChannel,
-    .coachingMessage => _messagesChannel,
-    .invitationAccepted || .programReceived || .workoutDigest => _coachingChannel,
-    // silent ones never reach here; one this build has never heard of goes
-    // with coaching, the only kind the server sends to this client yet
-    .programChanged || .threadCleared || .devicesChanged || .queueWaiting || null => _coachingChannel,
-  };
-  return _guarded(
-    () => _plugin.show(
-      id: _nextPushId++,
-      title: title,
-      notificationDetails: NotificationDetails(
-        android: AndroidNotificationDetails(channel, channel, icon: _androidIcon),
-      ),
-      payload: jsonEncode({_pushPayloadKey: push.toMap()}),
-    ),
-  );
 }
 
 /// The push a notification's [payload] carries, or null for one of the app's

@@ -58,10 +58,6 @@ abstract interface class PushClient {
   /// Takes the channels down again.
   Future<void> deleteChannels();
 
-  /// Shows a push that arrived with the app in front, where the system leaves
-  /// that to the app (Android).
-  Future<void> show(Push push, {required String title});
-
   /// The OS's own ask for notifications, once; answers whether they are
   /// allowed.
   Future<bool> askPermission({Analytics? analytics});
@@ -109,15 +105,6 @@ class FirebasePushClient implements PushClient {
   Future<void> deleteChannels() => deletePushChannels(platform);
 
   @override
-  Future<void> show(Push push, {required String title}) {
-    return switch (platform) {
-      .android => showPush(push, title: title),
-      // iOS shows it itself, told so in [start]
-      .iOS || .fuchsia || .linux || .macOS || .windows => Future.value(),
-    };
-  }
-
-  @override
   Future<bool> askPermission({Analytics? analytics}) => ensureNotificationPermission(platform, analytics: analytics);
 
   @override
@@ -129,9 +116,10 @@ class FirebasePushClient implements PushClient {
     await (await SharedPreferences.getInstance()).setBool(_madeToken, true);
     try {
       await _messaging.setAutoInitEnabled(true);
-      // iOS shows a push that arrives in front only when told to; Android
-      // never does, and the presenter posts it itself
-      await _messaging.setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
+      // a push that arrives in front is the app's own note (#724), so iOS
+      // draws no banner and makes no sound of its own; Android never does.
+      // The badge is the app icon's, where the note has no say
+      await _messaging.setForegroundNotificationPresentationOptions(alert: false, badge: true, sound: false);
       // a registration token, not the installation id `register()` would
       // give: the server sends to tokens (`send_each_for_multicast`), and an
       // installation id is not one. Moving needs the server first

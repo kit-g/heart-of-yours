@@ -533,6 +533,13 @@ final class HeartRouter {
     return config.goNamed(_programName, pathParameters: {'programId': programId});
   }
 
+  /// Whether the page on top is [programId]'s own: news of it would say
+  /// what the page already shows (#724).
+  bool showsProgram(String programId) {
+    final GoRouterState(:name, :pathParameters) = config.state;
+    return name == _programName && pathParameters['programId'] == programId;
+  }
+
   /// The library showing only [filter] — from a count on the profile, the
   /// exercises behind it — the previous filters cleared, as a chip's tap does.
   /// Asked for by name, so a grouped library shows it too (#711).

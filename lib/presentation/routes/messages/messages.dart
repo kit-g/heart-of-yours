@@ -126,6 +126,14 @@ String coachName(BuildContext context, Connection coach) {
 /// Where opening a conversation stands.
 enum _Opening { opening, open, failed }
 
+/// The conversations on screen now, by thread (#724): a push about one says
+/// what the person is reading already. On screen is more than built: a
+/// branch of the shell that isn't showing keeps its pages, with their
+/// tickers off, and a page under another keeps its place, no longer current.
+bool threadInView(String threadId) => _shown[threadId]?.any((each) => each._inView) ?? false;
+
+final _shown = <String, Set<_ThreadViewState>>{};
+
 /// The conversation of [connectionId]: its messages, oldest at the top, and
 /// the box to write in. Opens the thread on the server the first time.
 class ThreadView extends StatefulWidget {
@@ -156,12 +164,29 @@ class _ThreadViewState extends State<ThreadView> {
 
   @override
   void dispose() {
-    if (_threadId case final String id) _messages.close(id);
+    if (_threadId case final String id) {
+      _messages.close(id);
+      _shown[id]?.remove(this);
+    }
     _text
       ..removeListener(_keepDraft)
       ..dispose();
     _opening.dispose();
     super.dispose();
+  }
+
+  /// Whether this conversation is in front of the person: its branch
+  /// showing, and its page the top one of every navigator it sits in.
+  bool get _inView {
+    if (!mounted || !TickerMode.valuesOf(context).enabled) return false;
+    BuildContext? at = context;
+    while (at != null) {
+      final route = ModalRoute.of(at);
+      if (route == null) return true;
+      if (!route.isCurrent) return false;
+      at = route.navigator?.context;
+    }
+    return true;
   }
 
   void _keepDraft() {
@@ -175,6 +200,7 @@ class _ThreadViewState extends State<ThreadView> {
       final thread = await _messages.threadFor(widget.connectionId);
       if (!mounted) return;
       _threadId = thread.id;
+      _shown.putIfAbsent(thread.id, () => {}).add(this);
       // what was being written here before, kept across a fold
       _text.text = _messages.draft(thread.id);
       _opening.value = .open;

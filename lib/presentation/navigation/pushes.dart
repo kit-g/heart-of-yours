@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/semantics.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/push.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
-import 'package:heart_models/heart_models.dart' show Program;
+import 'package:heart/presentation/routes/messages/messages.dart' show threadInView, threadName;
+import 'package:heart/presentation/widgets/push_note.dart';
+import 'package:heart_models/heart_models.dart' show Program, Thread;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -99,6 +102,16 @@ class _PushPresenterState extends State<PushPresenter> {
 
   final _subscriptions = <StreamSubscription<Object>>[];
 
+  /// What a push with the app in front shows (#724), and the push it is
+  /// about, for a tap.
+  final _note = ValueNotifier<PushNote?>(null);
+  Push? _noted;
+  Timer? _noteTimer;
+  var _notes = 0;
+
+  /// How long the note stays: a line or two, read at a glance.
+  static const _noteFor = Duration(seconds: 5);
+
   @override
   void initState() {
     super.initState();
@@ -129,6 +142,8 @@ class _PushPresenterState extends State<PushPresenter> {
     pushTaps.removeListener(_onTap);
     _lifecycle.dispose();
     _cancel();
+    _noteTimer?.cancel();
+    _note.dispose();
     super.dispose();
   }
 
@@ -202,6 +217,7 @@ class _PushPresenterState extends State<PushPresenter> {
     final started = _running == true;
     _running = false;
     _cancel();
+    _withdraw();
     _token = null;
     // the server lets go of the token while it is still the one it knows; a
     // sign-out has already done so, while its session could
@@ -253,12 +269,130 @@ class _PushPresenterState extends State<PushPresenter> {
     _open(push);
   }
 
-  /// A push with the app in front. iOS shows a visible one itself; Android
-  /// leaves that to the app. Either way, what it names is fetched now, so a
-  /// tap finds it there.
+  /// A push with the app in front (#724): what it names is fetched now, so a
+  /// tap finds it there, and then it shows as the app's own note, in the
+  /// app's words, where the system would have drawn a banner. The system
+  /// draws none: iOS is told so in [PushClient.start], and Android never does.
   Future<void> _arrived(Push push, {String? title}) async {
-    if (title case final String title) await widget.client?.show(push, title: title);
-    if (mounted) await _fetch(push);
+    try {
+      await _fetch(push);
+    } finally {
+      if (mounted) _offer(push, title: title);
+    }
+  }
+
+  void _offer(Push push, {String? title}) {
+    final said = _said(push, title: title);
+    if (said == null) return;
+    final (icon, text, line) = said;
+    _noted = push;
+    _note.value = (serial: ++_notes, icon: icon, title: text, line: line);
+    _noteTimer?.cancel();
+    _noteTimer = Timer(_noteFor, _withdraw);
+    // Android reads the note's live region as it lands; iOS is told
+    final platform = Theme.of(context).platform;
+    if ((platform == .iOS || platform == .macOS) && (MediaQuery.maybeSupportsAnnounceOf(context) ?? true)) {
+      SemanticsService.sendAnnouncement(View.of(context), [text, ?line].join('. '), Directionality.of(context));
+    }
+  }
+
+  /// What the note says about [push]: its glyph, its words and a line under
+  /// them. The app's words wherever it can name what arrived, the server's
+  /// [title] where it can't, and nothing for a push that shows nothing (one
+  /// without a title, one silent by its topic) or for what is already on
+  /// screen.
+  (IconData, String, String?)? _said(Push push, {String? title}) {
+    final l = L.of(context);
+    final router = HeartRouter.maybeOf(context);
+    (IconData, String, String?)? titled(IconData icon) {
+      return switch (title) {
+        final String title => (icon, title, null),
+        null => null,
+      };
+    }
+
+    switch (push.known) {
+      case .coachingMessage:
+        final threadId = push.threadId;
+        // the conversation open in front of them shows the message itself
+        if (title == null || threadId == null || threadInView(threadId)) return null;
+        return switch (Messages.of(context).lookup(threadId)) {
+          final Thread thread => (Icons.forum_outlined, l.pushNoteMessage(threadName(context, thread)), null),
+          null => titled(Icons.forum_outlined),
+        };
+      case .programReceived:
+        if (title == null) return null;
+        final program = _program(push);
+        if (program != null && (router?.showsProgram(program.id!) ?? false)) return null;
+        return switch (program) {
+          final Program program => (
+            Icons.event_repeat_rounded,
+            l.pushNoteProgramReceived(_coachOf(program)),
+            program.name,
+          ),
+          null => titled(Icons.event_repeat_rounded),
+        };
+      case .programChanged:
+        // silent by the server's word, since it says nothing: the app can,
+        // for a student whose coach changed what they follow
+        final program = _program(push);
+        if (program == null || !_fromCoach(program)) return null;
+        if (router?.showsProgram(program.id!) ?? false) return null;
+        return (Icons.edit_note_rounded, l.pushNoteProgramChanged(_coachOf(program), program.name), null);
+      case .invitationAccepted:
+        // it carries no id: who accepted is in the server's words alone
+        return titled(Icons.person_add_alt_rounded);
+      case .workoutDigest:
+        return titled(Icons.fitness_center_rounded);
+      case .commentCreated:
+        return titled(Icons.chat_bubble_outline_rounded);
+      case null:
+        // one this build has never heard of: the server words it
+        return titled(Icons.notifications_none_rounded);
+      case .threadCleared || .devicesChanged || .queueWaiting:
+        return null;
+    }
+  }
+
+  /// The program [push] names, as this device holds it once fetched, while
+  /// it is one the app shows.
+  Program? _program(Push push) {
+    final preferences = Preferences.of(context);
+    return switch (push.programId) {
+      final String id => switch (Programs.of(context).lookup(id)) {
+        final Program program when program.id != null && preferences.programShown(program) => program,
+        _ => null,
+      },
+      null => null,
+    };
+  }
+
+  /// Whether [program] is a coach's copy of this person's, under Your coach:
+  /// a change to it came from the coach. A coach's own device hears of a
+  /// student's change too, with no name to put to it.
+  bool _fromCoach(Program program) {
+    final coach = program.coachId;
+    return coach != null && coach != Auth.of(context).user?.id && Preferences.of(context).isOn(.yourCoach);
+  }
+
+  String _coachOf(Program program) {
+    return switch (program.coachName?.trim()) {
+      final String name when name.isNotEmpty => name,
+      _ => L.of(context).yourCoach,
+    };
+  }
+
+  void _withdraw() {
+    _noteTimer?.cancel();
+    _noteTimer = null;
+    _noted = null;
+    _note.value = null;
+  }
+
+  void _tapNote() {
+    final push = _noted;
+    _withdraw();
+    if (push != null) _open(push);
   }
 
   /// Fetches what [push] names, and nothing else.
@@ -346,5 +480,7 @@ class _PushPresenterState extends State<PushPresenter> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    return PushNoteHost(note: _note, onTap: _tapNote, onDismiss: _withdraw, child: widget.child);
+  }
 }

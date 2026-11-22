@@ -27,6 +27,7 @@ import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/part_of_program.dart';
+import 'package:heart/presentation/widgets/push_note.dart' show pushNoteBottom;
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/confetti.dart';
 import 'package:heart/presentation/widgets/countdown.dart';
