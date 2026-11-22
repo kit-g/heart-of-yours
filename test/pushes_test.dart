@@ -170,8 +170,7 @@ void main() {
     );
 
     // the replay over: nothing of the account's changes, so only Upsync says
-    remote.replaying = false;
-    Upsync.of(context).notifyListeners();
+    await Upsync.of(context).run('muffin');
     await tester.pumpTimes();
     verify(
       api.registerDevice(
@@ -180,6 +179,29 @@ void main() {
         utcOffsetMinutes: anyNamed('utcOffsetMinutes'),
       ),
     ).called(1);
+  });
+
+  testWidgets('a log out takes the token back, and nothing registers it again (#734)', (tester) async {
+    await pump(tester, {'feature-yourCoach': 'on'}, keyVault: MemoryKeyVault());
+    final context = tester.element(find.byType(Navigator).first);
+    clearInteractions(api);
+
+    // clearState's order, up to the session's end: the account is still there
+    unawaited(Pushes.of(context).unregister());
+    clearUserState(context);
+    await tester.pumpTimes();
+
+    verify(api.unregisterDevice('fcm-1')).called(1);
+    verifyNever(
+      api.registerDevice(
+        platform: anyNamed('platform'),
+        token: anyNamed('token'),
+        utcOffsetMinutes: anyNamed('utcOffsetMinutes'),
+      ),
+    );
+    // nor are the keys started again for the account that leaves
+    verifyNever(api.getKeyQueue(any));
+    expect(DeviceKeys.of(context).status, DeviceKeysStatus.off);
   });
 
   testWidgets('a new token is registered too', (tester) async {

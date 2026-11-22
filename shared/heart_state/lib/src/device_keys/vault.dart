@@ -72,17 +72,33 @@ class _Run {
     this.device = device;
   }
 
-  Future<_Session?> session(String deviceId) async {
-    return switch (_decode(await read('session.$deviceId'))) {
+  Future<_Session?> session(String deviceId) => _sessionAt('session.$deviceId');
+
+  Future<void> saveSession(String deviceId, _Session session) => _saveSessionAt('session.$deviceId', session);
+
+  /// The session this device held with [deviceId] when the other side started
+  /// one of its own: each may have started one before hearing of the other's,
+  /// and the other side may go on with either (#734).
+  Future<_Session?> spareSession(String deviceId) => _sessionAt('spare.$deviceId');
+
+  Future<void> saveSpareSession(String deviceId, _Session session) => _saveSessionAt('spare.$deviceId', session);
+
+  Future<void> forgetSessions(String deviceId) async {
+    await forget('session.$deviceId');
+    await forget('spare.$deviceId');
+  }
+
+  Future<_Session?> _sessionAt(String name) async {
+    return switch (_decode(await read(name))) {
       {'session': final String session, 'sessionId': final String sessionId, 'identityKey': final String identityKey} =>
         (session: session, sessionId: sessionId, identityKey: identityKey),
       _ => null,
     };
   }
 
-  Future<void> saveSession(String deviceId, _Session session) {
+  Future<void> _saveSessionAt(String name, _Session session) {
     return vault.write(
-      _key('session.$deviceId'),
+      _key(name),
       jsonEncode({'session': session.session, 'sessionId': session.sessionId, 'identityKey': session.identityKey}),
     );
   }

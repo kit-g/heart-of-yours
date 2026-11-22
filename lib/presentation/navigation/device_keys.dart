@@ -30,7 +30,9 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
   Auth? _auth;
 
   /// A sign-in from an anonymous session keeps the server closed until its
-  /// store is replayed: keys start once it opens.
+  /// store is replayed: keys start once it opens. Only its opening is
+  /// listened to: it also speaks at a sign-out, while the account is still
+  /// there to start keys for (#734).
   Upsync? _upsync;
   late final AppLifecycleListener _lifecycle;
 
@@ -46,7 +48,11 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
   @override
   void initState() {
     super.initState();
-    _lifecycle = AppLifecycleListener(onResume: _onResume);
+    _lifecycle = AppLifecycleListener(
+      onResume: _onResume,
+      onShow: () => _approval?.inFront = true,
+      onHide: () => _approval?.inFront = false,
+    );
     // a sheet closing may leave a request waiting that came while it was up
     comparisonSheet.addListener(_asked);
   }
@@ -66,8 +72,9 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
     }
     final upsync = Upsync.of(context);
     if (!identical(upsync, _upsync)) {
-      _upsync?.removeListener(_sync);
-      _upsync = upsync..addListener(_sync);
+      _upsync?.opened.removeListener(_sync);
+      _upsync = upsync;
+      upsync.opened.addListener(_sync);
     }
     final approval = DeviceKeys.of(context).approval;
     if (!identical(approval, _approval)) {
@@ -81,7 +88,7 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
   void dispose() {
     _preferences?.removeListener(_sync);
     _auth?.removeListener(_sync);
-    _upsync?.removeListener(_sync);
+    _upsync?.opened.removeListener(_sync);
     _approval?.removeListener(_asked);
     comparisonSheet.removeListener(_asked);
     _lifecycle.dispose();

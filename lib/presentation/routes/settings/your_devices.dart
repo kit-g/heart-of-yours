@@ -19,15 +19,21 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
   /// The last read failed: said with a way to read again.
   final _failed = ValueNotifier(false);
 
+  /// Stops reading the queue for a comparison asked for elsewhere, which no
+  /// push may tell of (#734).
+  late final void Function() _stopExpecting;
+
   @override
   void initState() {
     super.initState();
+    _stopExpecting = DeviceKeys.of(context).approval.expectAsk();
     // after the first frame: the read notifies, and the page watches it
     WidgetsBinding.instance.addPostFrameCallback((_) => _read());
   }
 
   @override
   void dispose() {
+    _stopExpecting();
     _failed.dispose();
     super.dispose();
   }
@@ -38,7 +44,7 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
     if (userId == null) return;
     _failed.value = false;
     final keys = DeviceKeys.of(context);
-    // a comparison asked for elsewhere, which no push may have told of (#734)
+    // one already asked for shows at once
     unawaited(keys.refresh());
     try {
       await keys.devicesOf(userId);

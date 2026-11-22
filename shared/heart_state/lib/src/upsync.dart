@@ -320,7 +320,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     final resuming = _status == .failed && userId == uid;
     userId = uid;
     if (!await _local.isOwed(uid)) {
-      _access.replaying = false;
+      _open();
       return;
     }
     _access.replaying = true;
@@ -415,10 +415,29 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
       0 => .idle,
       _ => .done,
     };
-    _access.replaying = false;
+    _open();
     _reportReplay(elapsed, ok: true);
     notifyListeners();
     onComplete?.call();
+  }
+
+  final _opened = _Opened();
+
+  /// Says the remote leg a replay held closed has opened: what could not
+  /// reach the server meanwhile can. Nothing else is said here, and a
+  /// sign-out never is.
+  Listenable get opened => _opened;
+
+  void _open() {
+    final held = _access.replaying;
+    _access.replaying = false;
+    if (held) _opened.say();
+  }
+
+  @override
+  void dispose() {
+    _opened.dispose();
+    super.dispose();
   }
 
   /// A reply this build cannot read: a value it has never heard of, or a shape
@@ -698,4 +717,9 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     await _goals.reconcileGoalId(goal.id!, row, uid);
     return (row.id!, _outcome(created));
   }
+}
+
+/// [Upsync.opened].
+class _Opened with ChangeNotifier {
+  void say() => notifyListeners();
 }

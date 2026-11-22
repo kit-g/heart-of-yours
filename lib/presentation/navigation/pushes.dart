@@ -83,7 +83,8 @@ class _PushPresenterState extends State<PushPresenter> {
 
   /// A sign-in from an anonymous session keeps the server closed until its
   /// store is replayed: a token that came meanwhile registers once it opens
-  /// (#734).
+  /// (#734). Only its opening is listened to: it also speaks at a sign-out,
+  /// while the account is still there to register for.
   Upsync? _upsync;
   late final AppLifecycleListener _lifecycle;
 
@@ -126,8 +127,9 @@ class _PushPresenterState extends State<PushPresenter> {
     }
     final upsync = Upsync.of(context);
     if (!identical(upsync, _upsync)) {
-      _upsync?.removeListener(_sync);
-      _upsync = upsync..addListener(_sync);
+      _upsync?.opened.removeListener(_sync);
+      _upsync = upsync;
+      upsync.opened.addListener(_sync);
     }
     _sync();
   }
@@ -136,7 +138,7 @@ class _PushPresenterState extends State<PushPresenter> {
   void dispose() {
     _preferences?.removeListener(_sync);
     _auth?.removeListener(_sync);
-    _upsync?.removeListener(_sync);
+    _upsync?.opened.removeListener(_sync);
     pushTaps.removeListener(_onTap);
     _lifecycle.dispose();
     _cancel();
