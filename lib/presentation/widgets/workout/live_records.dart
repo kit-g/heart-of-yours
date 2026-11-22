@@ -130,8 +130,6 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
         }
     }
 
-    final still = lessMotion(context);
-
     // the same shape whatever the answer, so turning it on from the offer
     // keeps the sheet's scroll where it was
     return RecordMarksScope(
@@ -139,89 +137,68 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
       firstSetId: null,
       child: _LiveRecordAnchor(
         setId: anchored ? live.offeredUnder : null,
-        child: ValueListenableBuilder<double?>(
-          // a push's note over the sheet (#724): this one goes under it
-          valueListenable: pushNoteBottom,
-          builder: (context, pushBottom, _) => _stacked(below: _belowPushNote(pushBottom), still: still),
-        ),
-      ),
-    );
-  }
-
-  /// How far down the push note reaches into this sheet, 0 for not at all.
-  double _belowPushNote(double? pushBottom) {
-    final box = context.findRenderObject();
-    if (pushBottom == null || box is! RenderBox || !box.hasSize) return 0;
-    return max(0, box.globalToLocal(Offset(0, pushBottom)).dy + 8 - _noteTop);
-  }
-
-  /// Under the sheet's 40pt header.
-  static const _noteTop = 48.0;
-
-  Widget _stacked({required double below, required bool still}) {
-    return Stack(
-      children: [
-        widget.child,
-        Positioned(
-          top: _noteTop + below,
-          left: 16,
-          right: 16,
-          child: IgnorePointer(
-            child: Align(
-              alignment: .topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: readableWidth),
-                child: ValueListenableBuilder<_LiveNote?>(
-                  valueListenable: _note,
-                  builder: (context, note, _) {
-                    return AnimatedSwitcher(
-                      // with less motion asked for, the note is simply there
-                      duration: still ? Duration.zero : const Duration(milliseconds: 220),
-                      switchInCurve: Curves.easeOut,
-                      switchOutCurve: Curves.easeIn,
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween(begin: const Offset(0, -.3), end: Offset.zero).animate(animation),
-                          child: child,
-                        ),
+        child: Stack(
+          children: [
+            widget.child,
+            Positioned(
+              // under the sheet's 40pt header
+              top: 48,
+              left: 16,
+              right: 16,
+              child: IgnorePointer(
+                // and under a push's note over the sheet (#724)
+                child: BelowPushNote(
+                  child: Align(
+                    alignment: .topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: readableWidth),
+                      child: ValueListenableBuilder<_LiveNote?>(
+                        valueListenable: _note,
+                        builder: (context, note, _) {
+                          return NoteSwitcher(
+                            child: switch (note) {
+                              final _LiveNote note => _LiveNoteCard(key: ValueKey(note), note: note),
+                              null => const SizedBox.shrink(),
+                            },
+                          );
+                        },
                       ),
-                      child: switch (note) {
-                        final _LiveNote note => _LiveNoteCard(key: ValueKey(note), note: note),
-                        null => const SizedBox.shrink(),
-                      },
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        Positioned(
-          // from the note's middle, over everything and in nobody's way
-          top: 72 + below,
-          left: 0,
-          right: 0,
-          child: IgnorePointer(
-            child: ValueListenableBuilder<_Burst?>(
-              valueListenable: _burst,
-              builder: (context, burst, _) {
-                return switch (burst) {
-                  (:final serial, :final full) => Center(
-                    key: WorkoutDetailKeys.liveGoalBurst,
-                    child: Confetti(
-                      key: ValueKey(serial),
-                      particleCount: full ? 48 : 14,
-                      duration: _burstFor(full: full).inSeconds,
-                    ),
+            Positioned(
+              // from the note's middle, over everything and in nobody's way
+              top: 72,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                // moved as far as the note is
+                child: BelowPushNote(
+                  gap: 8.0 + 72 - 48,
+                  child: ValueListenableBuilder<_Burst?>(
+                    valueListenable: _burst,
+                    builder: (context, burst, _) {
+                      return switch (burst) {
+                        (:final serial, :final full) => Center(
+                          key: WorkoutDetailKeys.liveGoalBurst,
+                          child: Confetti(
+                            key: ValueKey(serial),
+                            particleCount: full ? 48 : 14,
+                            duration: _burstFor(full: full).inSeconds,
+                          ),
+                        ),
+                        null => const SizedBox.shrink(),
+                      };
+                    },
                   ),
-                  null => const SizedBox.shrink(),
-                };
-              },
+                ),
+              ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -428,14 +405,7 @@ class _LiveNoteCard extends StatelessWidget {
       ].join('. '),
       excludeSemantics: true,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHigh,
-          border: .all(color: colorScheme.outlineVariant, width: .5),
-          borderRadius: const .all(.circular(12)),
-          boxShadow: [
-            BoxShadow(color: colorScheme.shadow.withValues(alpha: .08), blurRadius: 12, offset: const Offset(0, 4)),
-          ],
-        ),
+        decoration: noteDecoration(colorScheme),
         child: Padding(
           padding: const .symmetric(horizontal: 14, vertical: 10),
           child: Column(

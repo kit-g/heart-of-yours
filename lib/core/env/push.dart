@@ -58,6 +58,16 @@ abstract interface class PushClient {
   /// Takes the channels down again.
   Future<void> deleteChannels();
 
+  /// Shows a push that arrived with the app in front but not active, as the
+  /// system's notification, where the app can post one (Android). Answers
+  /// whether it did: iOS draws none for the app in front, told so in [start].
+  Future<bool> show(Push push, {required String title});
+
+  /// Whether the person lets a push of [push]'s kind show: notifications
+  /// allowed for the app, and on Android its channel not silenced, on iOS
+  /// its alerts not turned off. What can't be read counts as allowed.
+  Future<bool> allows(Push push);
+
   /// The OS's own ask for notifications, once; answers whether they are
   /// allowed.
   Future<bool> askPermission({Analytics? analytics});
@@ -103,6 +113,39 @@ class FirebasePushClient implements PushClient {
 
   @override
   Future<void> deleteChannels() => deletePushChannels(platform);
+
+  @override
+  Future<bool> show(Push push, {required String title}) async {
+    switch (platform) {
+      case .android:
+        await showPush(push, title: title);
+        return true;
+      case .iOS || .fuchsia || .linux || .macOS || .windows:
+        return false;
+    }
+  }
+
+  @override
+  Future<bool> allows(Push push) async {
+    switch (platform) {
+      case .android:
+        return pushChannelOpen(push);
+      case .iOS || .macOS:
+        try {
+          final NotificationSettings(:authorizationStatus, :alert) = await _messaging.getNotificationSettings();
+          final allowed = switch (authorizationStatus) {
+            .authorized || .provisional => true,
+            .denied || .deniedPermanently || .notDetermined => false,
+          };
+          return allowed && alert != .disabled;
+        } catch (error, stacktrace) {
+          _logger.warning('Notification settings unread', error, stacktrace);
+          return true;
+        }
+      case .fuchsia || .linux || .windows:
+        return true;
+    }
+  }
 
   @override
   Future<bool> askPermission({Analytics? analytics}) => ensureNotificationPermission(platform, analytics: analytics);

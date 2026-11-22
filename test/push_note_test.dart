@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart' show ClientsPage;
 import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage, UnreadBadge;
+import 'package:heart/presentation/widgets/in_view.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -208,7 +211,7 @@ void main() {
 
       await tester.tap(note());
       await tester.pumpTimes();
-      expect(HeartRouter.of(app(tester)).showsProgram('p1'), isTrue);
+      expect(inView((.program, 'p1')), isTrue);
     });
 
     testWidgets("a coach's change to a program, silent by the server's word, is said by the app", (tester) async {
@@ -226,12 +229,160 @@ void main() {
       await arrive(tester, {'topic': 'coaching.program_changed', 'programId': 'p1'});
       await tester.tap(note());
       await tester.pumpTimes();
-      expect(HeartRouter.of(app(tester)).showsProgram('p1'), isTrue);
+      expect(inView((.program, 'p1')), isTrue);
 
       sends(program(name: 'Strength block II'));
       await arrive(tester, {'topic': 'coaching.program_changed', 'programId': 'p1'});
 
       expect(note(), findsNothing);
+    });
+
+    testWidgets('nor for one open over another tab, as a chart or History opens it', (tester) async {
+      sends(program());
+      await pump(tester, on);
+      await arrive(tester, {'topic': 'coaching.program_changed', 'programId': 'p1'});
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pumpTimes();
+      go(tester, '/history');
+      await tester.pumpTimes();
+      HeartRouter.of(app(tester)).pushProgramOver('p1');
+      await tester.pumpTimes();
+      expect(inView((.program, 'p1')), isTrue);
+
+      await arrive(tester, {'topic': 'coaching.program_changed', 'programId': 'p1'});
+
+      expect(note(), findsNothing);
+    });
+
+    testWidgets('a program the switches hide is as if never sent, whichever kind', (tester) async {
+      // not a coach's: with Programs off, Your coach shows only theirs
+      sends(
+        Program(id: 'p1', name: 'Strength block', perWeek: 2, sessions: const [], createdAt: DateTime.utc(2026)),
+      );
+      await pump(tester, {...on, 'feature-programs': 'off'});
+
+      await arrive(tester, {'topic': 'coaching.program_received', 'programId': 'p1'}, title: 'Dana sent you a program');
+      await arrive(tester, {'topic': 'coaching.program_changed', 'programId': 'p1'});
+
+      expect(note(), findsNothing);
+    });
+
+    testWidgets('no note for a kind the person silenced in the system', (tester) async {
+      client.blocked.add('coaching.message');
+      await pump(tester, on);
+
+      await arrive(tester, {'topic': 'coaching.message', 'threadId': 't-dana'}, title: 'Dana messaged you');
+      expect(note(), findsNothing);
+
+      await arrive(tester, {'topic': 'reaction.created'}, title: 'Dana reacted');
+      expect(note(), findsOneWidget, reason: 'another kind still shows');
+    });
+
+    testWidgets('a conversation that failed to open is not on screen', (tester) async {
+      when(api.openThread('c-dana')).thenThrow({'error': 'unavailable'});
+      when(api.getThreads()).thenAnswer((_) async => []);
+      await pump(tester, on);
+      HeartRouter.of(app(tester)).openThread('c-dana');
+      await tester.pumpTimes();
+      conversation('dana', 'Dana');
+
+      await arrive(tester, {'topic': 'coaching.message', 'threadId': 't-dana'}, title: 'Dana messaged you');
+
+      expect(note(), findsOneWidget);
+    });
+
+    testWidgets('a slow fetch for an older push never replaces a newer note', (tester) async {
+      final slow = Completer<Program>();
+      sends(program());
+      when(api.getProgram('p1')).thenAnswer((_) => slow.future);
+      await pump(tester, on);
+
+      client.arrivals.add((
+        push: Push.of({'topic': 'coaching.program_received', 'programId': 'p1'})!,
+        title: 'Program',
+      ));
+      await tester.pump();
+      await arrive(tester, {'topic': 'coaching.message', 'threadId': 't-dana'}, title: 'Dana messaged you');
+      expect(find.text('Dana messaged you'), findsOneWidget);
+
+      slow.complete(program());
+      await tester.pumpTimes(4);
+
+      expect(find.text('Dana messaged you'), findsOneWidget);
+      expect(find.text('Dana sent you a program'), findsNothing);
+    });
+
+    testWidgets('a push whose fetch outlives the switch shows nothing', (tester) async {
+      final slow = Completer<Program>();
+      sends(program());
+      when(api.getProgram('p1')).thenAnswer((_) => slow.future);
+      await pump(tester, on);
+
+      client.arrivals.add((
+        push: Push.of({'topic': 'coaching.program_received', 'programId': 'p1'})!,
+        title: 'Program',
+      ));
+      await tester.pump();
+      Preferences.of(app(tester)).answerOffer(.yourCoach, yes: false);
+      await tester.pumpTimes(2);
+      slow.complete(program());
+      await tester.pumpTimes(4);
+
+      expect(note(), findsNothing);
+    });
+
+    testWidgets('the note on its way out acts on its own push, and leaves the next note be', (tester) async {
+      sends(program());
+      await pump(tester, on);
+
+      await arrive(tester, {'topic': 'coaching.program_received', 'programId': 'p1'}, title: 'Dana sent you a program');
+      client.arrivals.add((push: Push.of({'topic': 'reaction.created'})!, title: 'Dana reacted'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 20));
+      expect(note(), findsNWidgets(2), reason: 'one going, one coming');
+
+      // what a screen reader's actions reach, whichever note is on top
+      final going = tester.widget<Semantics>(find.ancestor(of: find.text('Dana sent you a program'), matching: note()));
+      going.properties.onDismiss!();
+      await tester.pump();
+      expect(find.text('Dana reacted'), findsOneWidget, reason: "putting the old one away isn't putting this one away");
+      going.properties.onTap!();
+      await tester.pumpTimes();
+
+      expect(inView((.program, 'p1')), isTrue);
+      expect(find.text('Dana reacted'), findsOneWidget);
+    });
+
+    group('in front but not active', () {
+      Future<void> inactive(WidgetTester tester) async {
+        tester.binding.handleAppLifecycleStateChanged(.inactive);
+        addTearDown(() => tester.binding.handleAppLifecycleStateChanged(.resumed));
+      }
+
+      testWidgets("Android's shade over it: the system's notification instead", (tester) async {
+        await pump(tester, on);
+        await inactive(tester);
+
+        await arrive(tester, {'topic': 'coaching.message', 'threadId': 't-dana'}, title: 'Dana messaged you');
+
+        expect(client.calls, contains('show coaching.message Dana messaged you'));
+        tester.binding.handleAppLifecycleStateChanged(.resumed);
+        await tester.pumpTimes();
+        expect(note(), findsNothing, reason: 'said once, in the tray');
+      });
+
+      testWidgets("iOS's Control Centre over it: the note waits for the app's return", (tester) async {
+        client.posts = false;
+        await pump(tester, on);
+        await inactive(tester);
+
+        await arrive(tester, {'topic': 'coaching.message', 'threadId': 't-dana'}, title: 'Dana messaged you');
+        expect(note(), findsNothing);
+
+        tester.binding.handleAppLifecycleStateChanged(.resumed);
+        await tester.pumpTimes();
+        expect(find.text('Dana messaged you'), findsOneWidget);
+      });
     });
 
     testWidgets('silent pushes stay silent', (tester) async {
@@ -286,10 +437,12 @@ void main() {
     testWidgets('a screen reader hears it on Android, from its live region', (tester) async {
       final semantics = tester.ensureSemantics();
       await pump(tester, on);
+      tester.takeAnnouncements();
 
       await arrive(tester, {'topic': 'coaching.message', 'threadId': 't-dana'}, title: 'Dana messaged you');
 
       expect(said(tester), 'Dana messaged you');
+      expect(tester.takeAnnouncements(), isEmpty, reason: 'the live region says it, once');
       final data = tester.getSemantics(note()).getSemanticsData();
       expect(data.flagsCollection.isLiveRegion, isTrue);
       expect(data.hasAction(.tap), isTrue);
@@ -297,18 +450,25 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets(
-      'a screen reader hears it on iOS, told as it arrives',
-      (tester) async {
-        await pump(tester, on);
-        tester.takeAnnouncements();
+    testWidgets('a screen reader meets it first, and it waits for them', (tester) async {
+      final semantics = tester.ensureSemantics();
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+        accessibleNavigation: true,
+      );
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await pump(tester, on);
 
-        await arrive(tester, {'topic': 'coaching.message', 'threadId': 't-dana'}, title: 'Dana messaged you');
+      await arrive(tester, {'topic': 'coaching.message', 'threadId': 't-dana'}, title: 'Dana messaged you');
+      final order = tester.semantics.simulatedAccessibilityTraversal().toList();
+      final at = order.indexWhere((node) => node.label == 'Dana messaged you');
+      expect(at, isNonNegative);
+      expect(order.indexWhere((node) => node.label.contains('Profile')), greaterThan(at));
 
-        expect(tester.takeAnnouncements(), contains(isAccessibilityAnnouncement('Dana messaged you')));
-      },
-      variant: TargetPlatformVariant.only(.iOS),
-    );
+      await tester.pump(const Duration(seconds: 30));
+      await tester.pumpTimes();
+      expect(note(), findsOneWidget, reason: 'no clock on it');
+      semantics.dispose();
+    });
 
     testWidgets('with less motion asked for, it is simply there', (tester) async {
       tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(reduceMotion: true);

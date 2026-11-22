@@ -12,6 +12,7 @@ import 'package:heart/core/utils/message_runs.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/in_view.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/message_text.dart';
 import 'package:heart_language/heart_language.dart';
@@ -126,14 +127,6 @@ String coachName(BuildContext context, Connection coach) {
 /// Where opening a conversation stands.
 enum _Opening { opening, open, failed }
 
-/// The conversations on screen now, by thread (#724): a push about one says
-/// what the person is reading already. On screen is more than built: a
-/// branch of the shell that isn't showing keeps its pages, with their
-/// tickers off, and a page under another keeps its place, no longer current.
-bool threadInView(String threadId) => _shown[threadId]?.any((each) => each._inView) ?? false;
-
-final _shown = <String, Set<_ThreadViewState>>{};
-
 /// The conversation of [connectionId]: its messages, oldest at the top, and
 /// the box to write in. Opens the thread on the server the first time.
 class ThreadView extends StatefulWidget {
@@ -164,29 +157,12 @@ class _ThreadViewState extends State<ThreadView> {
 
   @override
   void dispose() {
-    if (_threadId case final String id) {
-      _messages.close(id);
-      _shown[id]?.remove(this);
-    }
+    if (_threadId case final String id) _messages.close(id);
     _text
       ..removeListener(_keepDraft)
       ..dispose();
     _opening.dispose();
     super.dispose();
-  }
-
-  /// Whether this conversation is in front of the person: its branch
-  /// showing, and its page the top one of every navigator it sits in.
-  bool get _inView {
-    if (!mounted || !TickerMode.valuesOf(context).enabled) return false;
-    BuildContext? at = context;
-    while (at != null) {
-      final route = ModalRoute.of(at);
-      if (route == null) return true;
-      if (!route.isCurrent) return false;
-      at = route.navigator?.context;
-    }
-    return true;
   }
 
   void _keepDraft() {
@@ -200,7 +176,6 @@ class _ThreadViewState extends State<ThreadView> {
       final thread = await _messages.threadFor(widget.connectionId);
       if (!mounted) return;
       _threadId = thread.id;
-      _shown.putIfAbsent(thread.id, () => {}).add(this);
       // what was being written here before, kept across a fold
       _text.text = _messages.draft(thread.id);
       _opening.value = .open;
@@ -260,21 +235,27 @@ class _ThreadViewState extends State<ThreadView> {
     return ValueListenableBuilder(
       valueListenable: _opening,
       builder: (context, opening, _) {
-        return switch ((opening, _threadId)) {
-          (.open, final String threadId) => _Conversation(
-            threadId: threadId,
-            connectionId: widget.connectionId,
-            text: _text,
-            onSend: _send,
-            onOpenWorkout: widget.onOpenWorkout,
-          ),
-          (.failed, _) => _Note(
-            icon: Icons.cloud_off_rounded,
-            title: l.messagesFailed,
-            action: OutlinedButton(onPressed: _open, child: Text(l.retry)),
-          ),
-          _ => const Center(child: CircularProgressIndicator.adaptive()),
-        };
+        // on screen from the moment it opens, so a push about it says
+        // nothing (#724), and not at all once opening failed
+        return InView(
+          subject: (.thread, widget.connectionId),
+          shown: opening != .failed,
+          child: switch ((opening, _threadId)) {
+            (.open, final String threadId) => _Conversation(
+              threadId: threadId,
+              connectionId: widget.connectionId,
+              text: _text,
+              onSend: _send,
+              onOpenWorkout: widget.onOpenWorkout,
+            ),
+            (.failed, _) => _Note(
+              icon: Icons.cloud_off_rounded,
+              title: l.messagesFailed,
+              action: OutlinedButton(onPressed: _open, child: Text(l.retry)),
+            ),
+            _ => const Center(child: CircularProgressIndicator.adaptive()),
+          },
+        );
       },
     );
   }

@@ -60,6 +60,23 @@ class FakePushClient implements PushClient {
   @override
   Future<void> deleteChannels() async => calls.add('delete channels');
 
+  /// Whether [show] posts a system notification, as Android's does; iOS's
+  /// cannot.
+  bool posts = true;
+
+  /// Whether the OS lets pushes of a kind show, by topic: all of them unless
+  /// said.
+  final blocked = <String>{};
+
+  @override
+  Future<bool> show(Push push, {required String title}) async {
+    calls.add('show ${push.topic} $title');
+    return posts;
+  }
+
+  @override
+  Future<bool> allows(Push push) async => !blocked.contains(push.topic);
+
   @override
   Future<bool> askPermission({Analytics? analytics}) async {
     calls.add('ask');
