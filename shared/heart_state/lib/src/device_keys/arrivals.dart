@@ -163,16 +163,16 @@ extension _Arrivals on DeviceKeys {
   Future<List<CryptoDevice>?> _senderDevices(_Run run, String from) async {
     try {
       return await _listed(run, from);
-    } on Map catch (refusal) {
-      return switch (refusal) {
+    } on ServerRefusal catch (refusal, stacktrace) {
+      return switch (refusal.code) {
         // someone this account can't read keys of, as under a block: what they
         // sent never opens here
-        {'code': 'forbidden' || 'not_found' || 'bad_request'} => const [],
-        // a rate limit, or the server failing: tried again on the next receive
-        _ => _unreachable(refusal),
+        'forbidden' || 'not_found' || 'bad_request' => const [],
+        // a rate limit: tried again on the next receive
+        _ => _unreachable(refusal, stacktrace),
       };
     } on Exception catch (error, stacktrace) {
-      // no network, or no answer
+      // no network, no answer, or the server failing
       return _unreachable(error, stacktrace);
     }
   }

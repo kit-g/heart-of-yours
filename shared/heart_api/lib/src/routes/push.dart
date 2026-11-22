@@ -13,8 +13,8 @@ mixin _PushRoutes on Requests {
     required DevicePlatform platform,
     required String token,
     int? utcOffsetMinutes,
-  }) async {
-    final (json, code) = await post(
+  }) {
+    return post(
       Router.devices,
       body: {
         'platform': platform.value,
@@ -24,41 +24,33 @@ mixin _PushRoutes on Requests {
         'utcOffsetMinutes': ?utcOffsetMinutes,
       },
     );
-    if (code != 204) throw json;
   }
 
   /// Stops [token] getting the signed-in account's pushes (heart-api#415), on
   /// sign-out or when pushes turn off. Safe to repeat: a token the server holds
   /// for nobody, or for someone else, is already stopped and answers the same.
-  Future<void> unregisterDevice(String token) async {
-    final (json, code) = await post(Router.deviceRemovals, body: {'token': token});
-    if (code != 204) throw json;
-  }
+  Future<void> unregisterDevice(String token) => post(Router.deviceRemovals, body: {'token': token});
 
   /// Every topic the account can change, in the device's language, with what
   /// each is set to, and the answers given for particular people.
   Future<PushSettings> getPushSettings() async {
-    final (json, code) = await get(Router.pushSettings);
-    return switch ((code, json)) {
-      (200, Map json) => PushSettings.fromJson(json),
-      _ => throw json,
-    };
+    final (json, _) = await get(Router.pushSettings);
+    return PushSettings.fromJson(json);
   }
 
   /// Sets how [topic] reaches the account, or, with [connectionId], how it
   /// reaches it from that one person.
-  Future<void> setPushSetting(String topic, String delivery, {String? connectionId}) async {
-    final (json, code) = await put(
+  Future<void> setPushSetting(String topic, String delivery, {String? connectionId}) {
+    return put(
       Router.pushSetting(topic),
       body: {'delivery': delivery, 'connectionId': ?connectionId},
     );
-    if (code != 204) throw json;
   }
 
   /// Puts [topic] back to the server's default, or, with [connectionId], lets
   /// that person follow the topic again.
-  Future<void> clearPushSetting(String topic, {String? connectionId}) async {
-    final (json, code) = await delete(
+  Future<void> clearPushSetting(String topic, {String? connectionId}) {
+    return delete(
       Router.pushSetting(topic),
       // null rather than empty: an empty map still leaves a bare `?` on the path
       query: switch (connectionId) {
@@ -66,6 +58,5 @@ mixin _PushRoutes on Requests {
         null => null,
       },
     );
-    if (code != 204) throw json;
   }
 }

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:heart_api/src/api.dart';
-import 'package:heart_api/src/programs.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
 import 'package:heart_models/heart_models.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
@@ -47,7 +47,7 @@ void main() {
 
       expect(
         api.editTemplate(Template.empty(id: 's1', order: 0), baseRevision: 1, changeId: 'ch2'),
-        throwsA(allOf(containsPair('code', 'program_changed'), containsPair('revision', 4))),
+        throwsA(refused('program_changed', {'revision': 4})),
       );
     });
 
@@ -98,7 +98,7 @@ void main() {
       ).called(1);
     });
 
-    test("someone else's is a refusal, typed", () async {
+    test("someone else's is a refusal", () async {
       respond(
         client: client,
         method: 'POST',
@@ -108,7 +108,7 @@ void main() {
       );
       expect(
         () => api.startProgram(id),
-        throwsA(isA<ProgramRefused>().having((e) => e.reason, 'reason', ProgramRefusal.programNotFound)),
+        throwsA(refused('program_not_found')),
       );
     });
   });
@@ -258,7 +258,7 @@ void main() {
       expect((savedBase.value, created), (100, false));
     });
 
-    test('the named refusals are typed, anything else comes as it was', () async {
+    test('a refusal names its code, and anything else is a NetworkException', () async {
       respond(
         client: client,
         method: 'POST',
@@ -268,7 +268,7 @@ void main() {
       );
       await expectLater(
         api.replayProgram(program, sessions: const []),
-        throwsA(isA<ProgramRefused>().having((e) => e.reason, 'reason', ProgramRefusal.programLimit)),
+        throwsA(refused('program_limit')),
       );
 
       respond(
@@ -280,11 +280,11 @@ void main() {
       );
       await expectLater(
         api.getProgramActions(program.id!),
-        throwsA(isA<ProgramRefused>().having((e) => e.reason, 'reason', ProgramRefusal.programNotFound)),
+        throwsA(refused('program_not_found')),
       );
 
       respond(client: client, method: 'GET', path: Router.programs, statusCode: 500, body: {'error': 'boom'});
-      await expectLater(api.getPrograms(), throwsA(isA<Map>()));
+      await expectLater(api.getPrograms(), throwsA(isA<NetworkException>()));
     });
   });
 
@@ -328,11 +328,11 @@ void main() {
       expect((row.id, created), ('s1', false));
     });
 
-    test('the cap is a typed refusal', () async {
+    test('the cap is a refusal', () async {
       respond(client: client, method: 'POST', path: Router.skips, statusCode: 400, body: {'code': 'skip_limit'});
       await expectLater(
         api.replaySkip(TrainingSkip.fromJson(skip('s1'))),
-        throwsA(isA<ProgramRefused>().having((e) => e.reason, 'reason', ProgramRefusal.skipLimit)),
+        throwsA(refused('skip_limit')),
       );
     });
   });

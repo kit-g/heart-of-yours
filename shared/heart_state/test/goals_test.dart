@@ -5,6 +5,8 @@ import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/goals.dart';
 import 'package:heart_state/src/remote.dart';
 
+import 'test_utils.dart';
+
 void main() {
   late _FakeLocal local;
   late _FakeRemote remote;
@@ -352,6 +354,17 @@ void main() {
     test('tells a refusal apart from the server falling over', () async {
       // named, but not a refusal — the request was fine and the server broke
       remote.refusal = {'error': 'server error', 'code': 'server_error'};
+
+      final created = await sut.create(ladder());
+
+      expect(created.id, local.created.single.id);
+      expect(sut, hasLength(1));
+      expect(local.deleted, isEmpty);
+    });
+
+    test("keeps a goal the server's throttle turned away, to go again", () async {
+      // a refusal of the moment, not of the goal: discarding it would lose it
+      remote.refusal = {'error': 'too many requests', 'code': 'rate_limited', 'retryAfter': 30};
 
       final created = await sut.create(ladder());
 
@@ -830,7 +843,7 @@ class _FakeRemote implements GoalService {
   Map<String, dynamic>? refusalOnAttribution;
 
   void _guard() {
-    if (refusal case Map<String, dynamic> body) throw body;
+    if (refusal case Map<String, dynamic> body) throw _thrown(body);
     if (failing) throw StateError('network is down');
   }
 
@@ -884,7 +897,7 @@ class _FakeRemote implements GoalService {
     if (achievedBy != null) {
       if (refusalOnAttribution case final Map<String, dynamic> body) {
         attributed.add(achievedBy);
-        throw body;
+        throw _thrown(body);
       }
     }
     achieved.add(stageId);
@@ -904,4 +917,15 @@ class _FakeRemote implements GoalService {
       ..add(stamped);
     return stamped;
   }
+}
+
+/// What heart_api throws for an answer of [body] (#681): a server that broke
+/// has no type here, its throttle is a 429, and anything else names its
+/// refusal.
+Exception _thrown(Map<String, dynamic> body) {
+  return switch (body) {
+    {'code': 'server_error'} => const ServerFailed(),
+    {'code': 'rate_limited'} => refusedAs(body, status: 429),
+    _ => refusedAs(body),
+  };
 }

@@ -522,8 +522,13 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         await remote.saveWorkoutPlan(workoutId, WorkoutPlan(plan));
         await local.markWorkoutPlanSent(workoutId);
       } catch (error, stacktrace) {
-        onError?.call(error, stacktrace: stacktrace);
-        if (error case {'code': 'invalid_plan'}) await local.markWorkoutPlanSent(workoutId);
+        switch (error) {
+          // malformed: sending it again can't help
+          case ServerRefusal(code: 'invalid_plan'):
+            await local.markWorkoutPlanSent(workoutId);
+          default:
+            onError?.call(error, stacktrace: stacktrace);
+        }
       }
     }
   }
@@ -841,9 +846,16 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
+  /// Gone here already; the server's copy is asked to follow. One the server
+  /// no longer has is gone either way, and any other failure is reported
+  /// rather than thrown at the screen that deleted it.
   Future<void> _deleteWorkout(String workoutId) async {
     if (!_remote.allowed) return;
-    await _remoteService.deleteWorkout(workoutId);
+    try {
+      await _remoteService.deleteWorkout(workoutId);
+    } catch (error, stacktrace) {
+      if (!_remote.isGone(error)) onError?.call(error, stacktrace: stacktrace);
+    }
   }
 
   Future<void> deleteWorkout(String workoutId) async {
@@ -1423,10 +1435,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// The server's copy of one of the user's own workouts, or null when the
-  /// server answered with anything but the workout — a 404 body, whatever its
-  /// shape, is still an answer about this one, and so is a workout this build
-  /// cannot read: asking again would get the same one. Not reaching it at all
-  /// throws.
+  /// server answered with anything but the workout — a refusal is still an
+  /// answer about this one, and so is a workout this build cannot read, the
+  /// whole answer or its shape: asking again would get the same one. Not
+  /// reaching it, or a server that failed or asked to wait, throws, and the
+  /// pass is tried again later.
   Future<Workout?> _detailOf(String id, String workoutId) async {
     try {
       return await _remoteService.getTargetWorkout(
@@ -1434,14 +1447,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         targetUserId: id,
         workoutId: workoutId,
       );
-    } on Map {
-      return null;
-    } on ArgumentError {
-      return null;
-    } on TypeError {
-      return null;
-    } on FormatException {
-      return null;
+    } catch (error) {
+      switch (_remote.failureOf(error)) {
+        // a 404 with a code or without, a refusal, an answer this build
+        // cannot read: asking again would get the same one
+        case .gone || .answered:
+          return null;
+        case .transient || .unanswered:
+          rethrow;
+      }
     }
   }
 
@@ -1641,7 +1655,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   ) async {
     if (!_remote.allowed) return null;
     // destinationUrl is where the image will be available once saved
-    final (cred, destinationUrl) = await _remoteService.getWorkoutUploadLink(workout.id);
+    final (PreSignedUrl?, String?) link;
+    try {
+      link = await _remoteService.getWorkoutUploadLink(workout.id);
+    } catch (error, stacktrace) {
+      // no link: the photo stays off the workout, and the failure is reported
+      onError?.call(error, stacktrace: stacktrace);
+      return null;
+    }
+    final (cred, destinationUrl) = link;
     if (cred != null) {
       // upload file
       final upload = ('file', image.$1, contentType: image.mimeType, filename: image.name);
@@ -1674,7 +1696,14 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> detachImageFromWorkout(Workout workout, WorkoutImage image) async {
     if (!_remote.allowed) return;
-    final detached = await _remoteService.deleteWorkoutImage(workout.id, image.key);
+    final bool detached;
+    try {
+      detached = await _remoteService.deleteWorkoutImage(workout.id, image.key);
+    } catch (error, stacktrace) {
+      // still on the server, so still on the workout: reported, not thrown
+      onError?.call(error, stacktrace: stacktrace);
+      return;
+    }
     if (detached) {
       _workouts[workout.id]?.images?.remove(image.id);
       _progress.removeWhere((each) => each.id == image.id);

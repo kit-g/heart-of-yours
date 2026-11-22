@@ -853,10 +853,10 @@ packages:
     description:
       path: "shared/heart_models"
       ref: main
-      resolved-ref: "593c546481508f2afb081df9db49b4a4687120b5"
+      resolved-ref: ce2d47e5ea0807725c4a21202c7c007c72003387
       url: "https://github.com/kit-g/heart-api.git"
     source: git
-    version: "2.59.0"
+    version: "2.61.0"
   highlight:
     dependency: transitive
     description:
@@ -1195,10 +1195,10 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: "18381c08a2dc8712df3e37c873e716516098ccff"
+      resolved-ref: cb3404f3ef77c43c6458e2e95784ab1748e9a815
       url: "https://github.com/kit-g/dart-network-utils.git"
     source: git
-    version: "0.4.5"
+    version: "0.7.0"
   node_preamble:
     dependency: transitive
     description:

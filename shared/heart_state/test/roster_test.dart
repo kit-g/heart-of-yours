@@ -182,8 +182,8 @@ void main() {
     await roster.load();
 
     await roster.markReviewed(roster.clients.single);
-    server.refuse = {'code': 'not_found'};
-    await expectLater(roster.markReviewed(roster.clients.single), throwsA(isA<Map>()));
+    server.refuse = refusedAs({'code': 'not_found'});
+    await expectLater(roster.markReviewed(roster.clients.single), throwsA(isA<ServerRefusal>()));
 
     expect(reported.names, ['client_reviewed']);
   });
@@ -191,16 +191,16 @@ void main() {
   test('a refused look changes nothing here', () async {
     server.clients.add(_client('muffin', reasons: ['note']));
     await roster.load();
-    server.refuse = {'code': 'not_found'};
+    server.refuse = refusedAs({'code': 'not_found'});
 
-    await expectLater(roster.markReviewed(roster.clients.single), throwsA(containsPair('code', 'not_found')));
+    await expectLater(roster.markReviewed(roster.clients.single), throwsA(isRefusal('not_found')));
     expect(roster.clients.single.reasons, ['note']);
   });
 
   test('a failed read reports the error and says so', () async {
     final errors = [];
     roster = Roster(service: server, onError: (error, {stacktrace}) => errors.add(error));
-    server.refuse = {'code': 'server_error'};
+    server.refuse = const ServerFailed();
 
     await roster.load();
 
@@ -373,13 +373,13 @@ void main() {
       roster = Roster(service: server, onError: (error, {stacktrace}) => errors.add(error));
       final workout = Workout(name: 'Day A')..start = DateTime.utc(2026, 11, 9);
       const plan = WorkoutPlan({'exercises': <Map<String, dynamic>>[]});
-      server.refusePlan = {'code': 'unavailable'};
+      server.refusePlan = const ServerFailed();
 
       await roster.logFor('muffin', workout, plan: plan);
 
       expect(server.logged['muffin'], [workout], reason: 'a comparison lost, never a workout');
       expect(server.loggedPlans, isEmpty);
-      expect(errors, [containsPair('code', 'unavailable')]);
+      expect(errors, [isA<ServerFailed>()]);
 
       server.refusePlan = null;
       await roster.loadRecord('muffin');
@@ -389,7 +389,7 @@ void main() {
 
     test('a plan refused as malformed is let go: sending it again cannot help', () async {
       final workout = Workout(name: 'Day A')..start = DateTime.utc(2026, 11, 9);
-      server.refusePlan = {'code': 'invalid_plan'};
+      server.refusePlan = refusedAs({'code': 'invalid_plan'});
       await roster.logFor('muffin', workout, plan: const WorkoutPlan({'exercises': <Map<String, dynamic>>[]}));
 
       server.refusePlan = null;
@@ -398,15 +398,15 @@ void main() {
     });
 
     test('a log refused is thrown, and changes nothing here', () async {
-      server.refuseLog = {'code': 'forbidden'};
+      server.refuseLog = refusedAs({'code': 'forbidden'});
 
-      expect(roster.logFor('muffin', Workout()), throwsA(containsPair('code', 'forbidden')));
+      expect(roster.logFor('muffin', Workout()), throwsA(isRefusal('forbidden')));
       await pumpEventQueue();
       expect(roster.workoutsOf('muffin'), isEmpty);
     });
 
     test('a refusal leaves it failed, and sign-out forgets it', () async {
-      server.refuse = {'code': 'forbidden'};
+      server.refuse = refusedAs({'code': 'forbidden'});
       await roster.loadRecord('muffin');
       expect(roster.recordStatus('muffin'), CoachingStatus.failed);
 

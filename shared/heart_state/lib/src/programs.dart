@@ -108,7 +108,7 @@ abstract interface class RemoteProgramService {
   Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions});
 
   /// A coach's copy's edit says the revision it started from and names
-  /// itself (#558); `{'code': 'program_changed'}` when the coach changed the
+  /// itself (#558); the `ServerRefusal` `program_changed` when the coach changed the
   /// same fields since.
   Future<Program> editProgram(Program program, {int? baseRevision, String? changeId});
 
@@ -190,7 +190,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// Every program read: a launch with many programs asks a few at a time,
   /// not in one burst the gateway's concurrency limit answers with a 500
   /// (#660); only while [uid] is the account, with its remote leg open.
-  late final _reads = ProgramReads((uid) => userId == uid && _remote.allowed);
+  late final _reads = ProgramReads((uid) => userId == uid && _remote.allowed, failureOf: _remote.failureOf);
 
   /// When each program was last read because the user asked: a push, a pull
   /// to refresh, coming back to the app. [growLogged] does not read it again
@@ -702,7 +702,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
         _reads(uid, 'getProgramBases', () => _remoteService.getProgramBases(programId), asked: asked),
       ).wait;
     } on ParallelWaitError<(List<ProgramAction>?, List<ProgramBase>?), (AsyncError?, AsyncError?)> catch (e) {
-      final AsyncError(:error, :stackTrace) = ProgramReads.merged([e.errors.$1, e.errors.$2].nonNulls);
+      final AsyncError(:error, :stackTrace) = _reads.merged([e.errors.$1, e.errors.$2].nonNulls);
       Error.throwWithStackTrace(error, stackTrace);
     }
     if (userId != uid) return;

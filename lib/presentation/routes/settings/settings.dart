@@ -11,6 +11,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/sentry.dart' show reportToSentry;
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:heart/core/env/watch.dart';

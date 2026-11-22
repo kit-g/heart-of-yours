@@ -82,7 +82,7 @@ void main() {
         templates.shared = shared;
         when(
           filing.editSharedTemplate(any, baseRevision: anyNamed('baseRevision'), changeId: anyNamed('changeId')),
-        ).thenThrow({'code': 'program_changed', 'revision': 5});
+        ).thenThrow(refusedAs({'code': 'program_changed', 'revision': 5}));
         when(filing.getTemplate('c1')).thenAnswer((_) async => day('Day A (coach)'));
 
         templates.editable = day('Day A (mine)');
@@ -795,10 +795,10 @@ void main() {
 
       test('a rejected createFolder throws and keeps nothing', () async {
         when(remoteFolders.createFolder(userId: 'u1', folder: anyNamed('folder'))).thenThrow(
-          {'code': 'bad_request', 'reason': 'you already have a folder called "Push"'},
+          refusedAs({'code': 'bad_request', 'reason': 'you already have a folder called "Push"'}),
         );
 
-        await expectLater(templates.createFolder('Push'), throwsA(isA<Map>()));
+        await expectLater(templates.createFolder('Push'), throwsA(isA<ServerRefusal>()));
         expect(templates.folders, isEmpty);
         verifyNever(localFolders.storeFolder(any, any));
       });

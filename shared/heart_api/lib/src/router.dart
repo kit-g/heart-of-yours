@@ -2,6 +2,7 @@ part of 'api.dart';
 
 abstract final class Router {
   static const accounts = 'v1/accounts';
+  static const accountSummary = '$accounts/summary';
   static const exercises = 'v1/exercises';
   static const exercisePreferences = 'v1/exercise-preferences';
   static const feedback = 'v1/feedback';
@@ -146,6 +147,7 @@ abstract final class Router {
 
   static String block(String userId) => '$blocks/$userId';
   static const hiddenWorkouts = '$workouts/hidden';
+  static const workoutGallery = '$workouts/images';
 
   /// A connection by its `connectionId`, a UUID.
   static String connection(String connectionId) {
@@ -240,6 +242,10 @@ abstract final class Router {
   static String accountToken(String tokenId) {
     return '$accountTokens/$tokenId';
   }
+
+  static String exercise(String exerciseId) => '$exercises/$exerciseId';
+
+  static String exercisePreference(String exerciseId) => '$exercisePreferences/$exerciseId';
 
   static String exerciseMoves(String exerciseId) {
     return '$exercises/$exerciseId/moves';

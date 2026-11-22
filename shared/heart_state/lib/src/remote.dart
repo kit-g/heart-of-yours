@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -48,17 +51,70 @@ class RemoteAccess {
   /// The server no longer serves this build.
   final bool Function() outdated;
 
-  new({bool allowed = true, bool Function()? hasToken, bool Function()? outdated})
-    : account = allowed,
-      replaying = false,
-      hasToken = hasToken ?? _always,
-      outdated = outdated ?? _never;
+  /// What a failed remote call says (#681), asked of the client that made it,
+  /// as [hasToken] and [outdated] are: only it knows whether a failure it
+  /// threw came with an answer, and of what status. Without a client, a
+  /// failure is read by its type alone ([byType]).
+  final RemoteFailure Function(Object error) _failures;
+
+  new({
+    bool allowed = true,
+    bool Function()? hasToken,
+    bool Function()? outdated,
+    RemoteFailure Function(Object error)? failures,
+  }) : account = allowed,
+       replaying = false,
+       hasToken = hasToken ?? _always,
+       outdated = outdated ?? _never,
+       _failures = failures ?? byType;
 
   bool get allowed => account && !replaying && hasToken() && !outdated();
+
+  /// What [error], thrown by a remote call, says about asking again.
+  RemoteFailure failureOf(Object error) => _failures(error);
+
+  /// Whether [error] says the thing asked about is not there: a 404, named
+  /// or not. For a delete, done; for a read, none.
+  bool isGone(Object error) => failureOf(error) == .gone;
+
+  /// [error] read by what this package can see of it: a [ServerRefusal] by
+  /// its status, a parse failure as an answer this build cannot read, a
+  /// deadline as passing, and anything else as no answer at all.
+  static RemoteFailure byType(Object error) {
+    return switch (error) {
+      ServerRefusal(status: 404) => .gone,
+      ServerRefusal(status: 429) => .transient,
+      ServerRefusal() || UpgradeRequired() || AccountDeleted() => .answered,
+      TimeoutException() => .transient,
+      FormatException() || TypeError() || ArgumentError() => .answered,
+      _ => .unanswered,
+    };
+  }
 
   static RemoteAccess of(BuildContext context) {
     return Provider.of<RemoteAccess>(context, listen: false);
   }
+}
+
+/// What a failed remote call says about asking again (#681): the one reading
+/// of a failure, so a retry, a queue and a "check your connection" never
+/// disagree about the same answer.
+enum RemoteFailure {
+  /// No answer at all: offline, a dropped connection. Asked again on the next
+  /// run, never in a loop.
+  unanswered,
+
+  /// An answer that may be different next time: a server error, a throttle,
+  /// a gateway that gave up, a deadline. Asked again later.
+  transient,
+
+  /// The thing asked about is not there: a 404, named or not. Gone, as far
+  /// as a delete or a read about it goes.
+  gone,
+
+  /// Any other answer, which asking again gets again: a refusal, a 4xx with
+  /// no code (a gateway's 401, 413), an answer this build cannot read.
+  answered,
 }
 
 bool _always() => true;

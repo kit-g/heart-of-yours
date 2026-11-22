@@ -1289,7 +1289,15 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     _firebase.currentUser?.updateProfile(photoURL: null);
 
     if (user?.id case String userId) {
-      _service.removeAvatar(userId);
+      // not waited on, so a failure is reported here rather than left loose
+      unawaited(
+        _service
+            .removeAvatar(userId)
+            .then<void>(
+              (_) {},
+              onError: (Object error, StackTrace stacktrace) => onError?.call(error, stacktrace: stacktrace),
+            ),
+      );
     }
 
     notifyListeners();

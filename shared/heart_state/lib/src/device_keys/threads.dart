@@ -419,11 +419,11 @@ extension _Threads on DeviceKeys {
         to: (device) => device.trusted || (!own && fingerprint == null),
       );
       return reached.isNotEmpty;
-    } on Map catch (refusal, stacktrace) {
-      switch (refusal) {
+    } on ServerRefusal catch (refusal, stacktrace) {
+      switch (refusal.code) {
         // someone this account can no longer reach, as under a block or after
         // their account went: nothing to report
-        case {'code': 'forbidden' || 'not_found' || 'bad_request'}:
+        case 'forbidden' || 'not_found' || 'bad_request':
           break;
         default:
           _report(refusal, stacktrace);

@@ -1668,6 +1668,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "feedbackFailed": "Couldn't send your feedback. Try again.",
+  "@feedbackFailed": {
+    "description": "Snack message when sending feedback failed",
+    "type": "text",
+    "placeholders": {}
+  },
   "toFeedback": "To feedback!",
   "@toFeedback": {
     "description": "Action button on a dialog",
