@@ -413,6 +413,17 @@ class _Health extends Health {
   void onSignOut() => calls++;
 }
 
+/// A go-easy list that reads and stores nothing: it is only ever keyed here.
+GoEasy _goEasy() {
+  return GoEasy(
+    fetch: ({etag}) async => null,
+    readContent: (_) async => null,
+    storeContent: (_, {required body, etag}) async {},
+    read: (_) async => {},
+    store: (_, _) async {},
+  );
+}
+
 /// Resolves the heart_state package root whether the runner's working
 /// directory is the package itself or the repository root.
 Directory _packageRoot() {
@@ -516,6 +527,7 @@ void main() {
             ChangeNotifierProvider<Charts>.value(value: charts),
             ChangeNotifierProvider<Exercises>.value(value: exercises),
             ChangeNotifierProvider<Goals>.value(value: goals),
+            ChangeNotifierProvider<GoEasy>(create: (_) => _goEasy()),
             ChangeNotifierProvider<Health>.value(value: health),
             ChangeNotifierProvider<HistoryFilter>(create: (_) => HistoryFilter()),
             ChangeNotifierProvider<PreviousExercises>.value(value: previous),
@@ -589,6 +601,38 @@ void main() {
       await clearState(capturedContext);
 
       expect(log, ['unregister fcm-1', 'sign out']);
+    });
+
+    // #719: the log out awaits the push unregister between the clear and the
+    // next key, and a read in flight for the account that left would land on
+    // a class still keyed on its uid
+    testWidgets('leaves every class that reads by uid keyed on none', (tester) async {
+      await pumpProviders(tester);
+      keyUserState(capturedContext, 'u1');
+      expect(Stats.of(capturedContext).userId, 'u1');
+
+      clearUserState(capturedContext);
+
+      expect(
+        [
+          exercises.userId,
+          charts.userId,
+          goals.userId,
+          anomalies.userId,
+          health.userId,
+          previous.userId,
+          stats.userId,
+          templates.userId,
+          programs.userId,
+          timers.userId,
+          workouts.userId,
+          messages.userId,
+          notes.userId,
+        ],
+        everyElement(isNull),
+        reason: 'the stand-ins only count their sign-outs: the clear itself unkeys them',
+      );
+      expect(keyedUserId(capturedContext), isNull);
     });
 
     testWidgets('is not memoized: a second sign-out dispatches again', (tester) async {
@@ -684,6 +728,7 @@ void main() {
             ChangeNotifierProvider<Charts>.value(value: charts),
             ChangeNotifierProvider<Exercises>.value(value: exercises),
             ChangeNotifierProvider<Goals>.value(value: goals),
+            ChangeNotifierProvider<GoEasy>(create: (_) => _goEasy()),
             ChangeNotifierProvider<Health>.value(value: health),
             ChangeNotifierProvider<HistoryFilter>(create: (_) => HistoryFilter()),
             ChangeNotifierProvider<PreviousExercises>.value(value: previous),

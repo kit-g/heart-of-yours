@@ -69,9 +69,16 @@ Future<void> eraseState(BuildContext context) async {
 /// account's lists or, worse, get pushed to its server as pending writes.
 ///
 /// Memory only: the rows stay in the store under the uid they belong to.
+///
+/// Every class that reads by uid is keyed on none once it has forgotten: a
+/// read still in flight for the session that ended then lands on no uid and
+/// is dropped, rather than on the uid it was started for, which a class that
+/// left its own unchanged would still hold until [keyUserState] — the log
+/// out's push unregister is awaited in between (#719).
 void clearUserState(BuildContext context) {
-  for (final (:clear, key: _) in _sessionState(context)) {
+  for (final (:clear, :key) in _sessionState(context)) {
     clear?.call();
+    key?.call(null);
   }
 }
 

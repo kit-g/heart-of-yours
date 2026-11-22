@@ -23,7 +23,7 @@ class const _MuscleMapSection({
     final preferences = Preferences.watch(context);
 
     final Widget? child = switch (preferences) {
-      _ when _parts.any(preferences.isOptionOn) => _MuscleMapCard(workouts: workouts),
+      _ when _parts.any(preferences.isOptionOn) => const _MuscleMapCard(),
       _ when preferences.owesDeclineNotice(_feature) => FeatureDeclinedNotice(
         onDismiss: () => preferences.acknowledgeDeclineNotice(_feature),
       ),
@@ -61,11 +61,7 @@ class const _MuscleMapSection({
 /// which neither a screen reader nor a color-blind eye can read; the list says
 /// the same thing in words.
 class _MuscleMapCard extends StatefulWidget {
-  /// Only its identity is read: [Stats] replaces it whenever a workout is
-  /// finished or deleted, which is when the counts behind the map go stale.
-  final WorkoutAggregation workouts;
-
-  const new({required this.workouts});
+  const new();
 
   @override
   State<_MuscleMapCard> createState() => _MuscleMapCardState();
@@ -109,14 +105,8 @@ class _MuscleMapCardState extends State<_MuscleMapCard> {
   /// One read covers every window and week the card shows, so flipping the
   /// switcher filters in memory: nothing to wait for, and the list can animate
   /// between the two instead of blinking through a spinner. Kept until the
-  /// history changes.
-  Future<List<MuscleSets>>? _rows;
-
-  @override
-  void didUpdateWidget(covariant _MuscleMapCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.workouts, widget.workouts)) _rows = null;
-  }
+  /// history changes: until [Stats.revision] moves.
+  ({int revision, Future<List<MuscleSets>> rows})? _rows;
 
   @override
   void dispose() {
@@ -124,16 +114,17 @@ class _MuscleMapCardState extends State<_MuscleMapCard> {
     super.dispose();
   }
 
-  Future<List<MuscleSets>> _read(DateTime now) {
-    return _rows ??= () {
-      final monthAgo = DateTime(now.year, now.month, now.day - (_windows.last - 1));
-      final firstWeek = _HeatmapRange.quarter.buckets(now, firstWeekday: Preferences.of(context).firstWeekday).first;
-      final from = switch (firstWeek.isBefore(monthAgo)) {
-        true => firstWeek,
-        false => monthAgo,
-      };
-      return Stats.of(context).getMuscleSets(from, DateTime(now.year, now.month, now.day + 1));
-    }();
+  Future<List<MuscleSets>> _read(DateTime now, int revision) {
+    if (_rows case (revision: final at, :final rows) when at == revision) return rows;
+    final monthAgo = DateTime(now.year, now.month, now.day - (_windows.last - 1));
+    final firstWeek = _HeatmapRange.quarter.buckets(now, firstWeekday: Preferences.of(context).firstWeekday).first;
+    final from = switch (firstWeek.isBefore(monthAgo)) {
+      true => firstWeek,
+      false => monthAgo,
+    };
+    final rows = Stats.of(context).getMuscleSets(from, DateTime(now.year, now.month, now.day + 1));
+    _rows = (revision: revision, rows: rows);
+    return rows;
   }
 
   @override
@@ -141,8 +132,9 @@ class _MuscleMapCardState extends State<_MuscleMapCard> {
     final l = L.of(context);
     final ThemeData(:textTheme) = Theme.of(context);
     final now = DateTime.now();
-    // the parts the user kept (#213); the section rebuilds this when they change
-    final preferences = Preferences.of(context);
+    // the parts the user kept (#213), watched here: the card is const, so the
+    // section's rebuild for them no longer reaches it
+    final preferences = Preferences.watch(context);
     final parts = (
       figures: preferences.isOptionOn(.muscleMapFigures),
       breakdown: preferences.isOptionOn(.muscleMapBreakdown),
@@ -182,7 +174,7 @@ class _MuscleMapCardState extends State<_MuscleMapCard> {
         ),
         const SizedBox(height: 8),
         FutureBuilder<List<MuscleSets>>(
-          future: _read(now),
+          future: _read(now, context.select<Stats, int>((stats) => stats.revision)),
           builder: (context, snapshot) {
             return switch (snapshot.data) {
               List<MuscleSets> rows => ValueListenableBuilder<int>(

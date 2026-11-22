@@ -13,16 +13,12 @@ const _recapDays = 7;
 /// no, or the feature: last month's card in a month's first days, and the way
 /// to every past month.
 class _RecapsSection extends StatefulWidget {
-  /// Only its identity is read: [Stats] replaces it whenever a workout is
-  /// finished or deleted, which is when the months behind the slot go stale.
-  final WorkoutAggregation workouts;
-
   /// Every past month, with one of them open beside the list when the page
   /// has room for both.
   final ValueChanged<DateTime?> onRecaps;
   final ValueChanged<DateTime> onMonth;
 
-  const new({required this.workouts, required this.onRecaps, required this.onMonth});
+  const new({required this.onRecaps, required this.onMonth});
 
   @override
   State<_RecapsSection> createState() => _RecapsSectionState();
@@ -31,25 +27,28 @@ class _RecapsSection extends StatefulWidget {
 class _RecapsSectionState extends State<_RecapsSection> {
   static const _feature = Feature.recaps;
 
-  Future<Map<DateTime, int>>? _months;
+  /// The months as read at a [Stats.revision]: they go stale when it moves.
+  ({int revision, Future<Map<DateTime, int>> months})? _months;
 
-  @override
-  void didUpdateWidget(covariant _RecapsSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.workouts, widget.workouts)) _months = null;
+  Future<Map<DateTime, int>> _readMonths(int revision) {
+    if (_months case (revision: final at, :final months) when at == revision) return months;
+    final months = Stats.of(context).getRecapMonths();
+    _months = (revision: revision, months: months);
+    return months;
   }
 
   @override
   Widget build(BuildContext context) {
     final preferences = Preferences.watch(context);
     final on = preferences.isOn(_feature);
+    final revision = context.select<Stats, int>((stats) => stats.revision);
 
     final Widget? child = switch (preferences) {
       _ when preferences.owesDeclineNotice(_feature) => FeatureDeclinedNotice(
         onDismiss: () => preferences.acknowledgeDeclineNotice(_feature),
       ),
       _ when on || preferences.shouldOffer(_feature) => FutureBuilder<Map<DateTime, int>>(
-        future: _months ??= Stats.of(context).getRecapMonths(),
+        future: _readMonths(revision),
         builder: (context, snapshot) => switch (snapshot.data) {
           final months? => _slot(context, preferences, months, on: on),
           null => const SizedBox.shrink(),
@@ -82,7 +81,6 @@ class _RecapsSectionState extends State<_RecapsSection> {
       if (fresh)
         _RecapCard(
           month: lastMonth,
-          workouts: widget.workouts,
           onTap: switch (recapsSideBySide(band + 32)) {
             true => () => widget.onRecaps(lastMonth),
             false => () => widget.onMonth(lastMonth),
@@ -138,31 +136,30 @@ class _RecapsSectionState extends State<_RecapsSection> {
 /// opens the month.
 class _RecapCard extends StatefulWidget {
   final DateTime month;
-  final WorkoutAggregation workouts;
   final VoidCallback onTap;
 
-  const new({required this.month, required this.workouts, required this.onTap});
+  const new({required this.month, required this.onTap});
 
   @override
   State<_RecapCard> createState() => _RecapCardState();
 }
 
 class _RecapCardState extends State<_RecapCard> {
-  Future<Recap>? _recap;
+  /// The recap as read for a month at a [Stats.revision]: stale when either
+  /// moves.
+  ({(DateTime, int) key, Future<Recap> recap})? _recap;
 
-  @override
-  void didUpdateWidget(covariant _RecapCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.workouts, widget.workouts) || oldWidget.month != widget.month) _recap = null;
-  }
-
-  Future<Recap> _read() {
+  Future<Recap> _read(int revision) {
+    final key = (widget.month, revision);
+    if (_recap case (key: final at, :final recap) when at == key) return recap;
     final preferences = Preferences.of(context);
-    return _recap ??= Stats.of(context).getRecap(
+    final recap = Stats.of(context).getRecap(
       RecapPeriod.month(widget.month),
       firstWeekday: preferences.firstWeekday,
       weightUnit: preferences.weightUnit,
     );
+    _recap = (key: key, recap: recap);
+    return recap;
   }
 
   @override
@@ -199,7 +196,7 @@ class _RecapCardState extends State<_RecapCard> {
                         style: textTheme.titleMedium,
                       ),
                       FutureBuilder<Recap>(
-                        future: _read(),
+                        future: _read(context.select<Stats, int>((stats) => stats.revision)),
                         builder: (context, snapshot) => Text(
                           switch (snapshot.data) {
                             final recap? => recapSummary(l, recap),
