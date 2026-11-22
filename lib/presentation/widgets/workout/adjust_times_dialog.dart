@@ -103,6 +103,17 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
     }
   }
 
+  /// And carries its start along when its end moves to or before it, keeping
+  /// the length: held at the start instead, the wheel went back by itself to
+  /// the day it was scrolled away from (#738).
+  void _moveEnd(DateTime end) {
+    final previous = _end.value;
+    if ((widget.needsLength, previous) case (true, final DateTime previous) when !end.isAfter(_start.value)) {
+      _start.value = end.subtract(previous.difference(_start.value));
+    }
+    _end.value = end;
+  }
+
   /// The day and time in the reader's language, "Wed, Nov 4, 1:26 AM":
   /// never an ISO date, which reads as a database's.
   String _formatValue(DateTime dt) => DateFormat.MMMEd(L.of(context).localeName).add_jm().format(dt);
@@ -165,8 +176,10 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
       lastDate: DateUtils.dateOnly(maximum ?? DateTime.now()),
     );
     if (date == null || !context.mounted) return;
-    final time = await showTimePicker(context: context, initialTime: .fromDateTime(initial));
-    if (time == null) return;
+    // the day is picked by now: no to a new time keeps the old one, and not
+    // the old day with it (#738)
+    final time = await showTimePicker(context: context, initialTime: .fromDateTime(initial)) ?? .fromDateTime(initial);
+    if (!mounted) return;
     final picked = DateTime(date.year, date.month, date.day, time.hour, time.minute);
     onChanged(_clamp(picked, minimum, maximum));
   }
@@ -248,8 +261,13 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
             ListenableBuilder(
               listenable: Listenable.merge([_start, _end, _unfolded]),
               builder: (context, _) {
-                // start can't land after the end (nor in the future when open)
-                final maximum = _end.value ?? DateTime.now();
+                // start can't land after the end (nor in the future when open),
+                // unless the end goes with it: held there, the wheel couldn't
+                // come forward again from a day it was scrolled back to (#738)
+                final maximum = switch (widget.needsLength) {
+                  true => DateTime.now(),
+                  false => _end.value ?? DateTime.now(),
+                };
                 final expanded = cupertino && _unfolded.value == .start;
                 return Column(
                   mainAxisSize: .min,
@@ -287,6 +305,10 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                 final end = _end.value;
                 if (end == null) return const SizedBox.shrink();
                 final expanded = cupertino && _unfolded.value == .end;
+                final minimum = switch (widget.needsLength) {
+                  true => null,
+                  false => _start.value,
+                };
                 return Column(
                   mainAxisSize: .min,
                   crossAxisAlignment: .stretch,
@@ -300,9 +322,9 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                         false => () => _pickMaterial(
                           context,
                           initial: end,
-                          minimum: _start.value,
+                          minimum: minimum,
                           maximum: DateTime.now(),
-                          onChanged: (value) => _end.value = value,
+                          onChanged: _moveEnd,
                         ),
                       },
                     ),
@@ -311,9 +333,9 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                         expanded: expanded,
                         brightness: brightness,
                         initial: end,
-                        minimum: _start.value,
+                        minimum: minimum,
                         maximum: DateTime.now(),
-                        onChanged: (value) => _end.value = value,
+                        onChanged: _moveEnd,
                       ),
                   ],
                 );

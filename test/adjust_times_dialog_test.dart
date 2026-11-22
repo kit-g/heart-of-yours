@@ -255,4 +255,100 @@ void main() {
     expect(savedStart, earlier);
     expect(savedEnd, end.subtract(const Duration(days: 1)), reason: 'the same length, a day earlier');
   });
+
+  group('"When was it?" (#738)', () {
+    /// The dialog for a workout of the last hour, [row]'s wheel open.
+    Future<({DateTime Function() start, DateTime Function() end})> open(
+      WidgetTester tester,
+      String row, {
+      bool needsLength = true,
+    }) async {
+      late DateTime savedStart;
+      late DateTime savedEnd;
+      final now = DateTime.now();
+      await pump(
+        tester,
+        start: now.subtract(const Duration(hours: 1)),
+        end: now,
+        needsLength: needsLength,
+        platform: .iOS,
+        onSave: (s, e) async => (savedStart, savedEnd) = (s, e!),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(row));
+      await tester.pumpAndSettle();
+      return (start: () => savedStart, end: () => savedEnd);
+    }
+
+    Future<void> scroll(WidgetTester tester, double days) async {
+      await tester.timedDrag(
+        find.byType(CupertinoPicker).first,
+        Offset(0, days),
+        const Duration(milliseconds: 300),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('the end scrolled to a past day stays there, and takes the start along', (tester) async {
+      final saved = await open(tester, 'End time');
+      await scroll(tester, 96);
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(DateTime.now().difference(saved.end()).inDays, greaterThanOrEqualTo(1));
+      expect(saved.end().difference(saved.start()), const Duration(hours: 1));
+    });
+
+    testWidgets('the start scrolled back can be scrolled forward again', (tester) async {
+      final saved = await open(tester, 'Start time');
+      await scroll(tester, 400);
+      await scroll(tester, -96);
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      final forward = saved.start();
+
+      await tester.pumpWidget(const SizedBox());
+      final back = await open(tester, 'Start time');
+      await scroll(tester, 400);
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(forward.isAfter(back.start()), isTrue);
+      expect(saved.end().difference(forward), const Duration(hours: 1));
+    });
+
+    testWidgets("a finished workout's end still can't go before its start", (tester) async {
+      final saved = await open(tester, 'End time', needsLength: false);
+      await scroll(tester, 96);
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(saved.end().isBefore(saved.start()), isFalse);
+    });
+
+    testWidgets('on Android, no to a new time keeps the day picked', (tester) async {
+      DateTime? savedStart;
+      await pump(
+        tester,
+        start: start,
+        end: end,
+        needsLength: true,
+        onSave: (s, _) async => savedStart = s,
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Start time'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('15'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(savedStart, DateTime(2026, 5, 15, 9));
+    });
+  });
 }
