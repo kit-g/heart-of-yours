@@ -110,6 +110,8 @@ class CodeComparison {
 /// said the same.
 ///
 /// Everything travels through the queue, sealed, one device to one device.
+/// While one runs, each side reads its queue every two seconds, whether or
+/// not a push says to (#734).
 /// The device that will see the other's key first commits to its own before
 /// it sees it, so whoever moves the keys can't grind a key until the codes
 /// match ([Comparison]).
@@ -133,6 +135,10 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
   static const _context = 'heart-of.me/compare/v1';
 
   static const _life = Duration(minutes: 5);
+
+  /// How often a running comparison reads the queue for itself: a push may
+  /// be late or never come, and then both sides would wait for the other.
+  static const _every = Duration(seconds: 2);
 
   /// How long two refusals of the same device keep it from asking again.
   static const _quiet = Duration(minutes: 10);
@@ -252,10 +258,28 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       comparison: comparison,
       theirCommitment: theirCommitment,
     );
-    comparing.timer = Timer(_life, () => _expire(comparing));
+    comparing
+      ..timer = Timer(_life, () => _expire(comparing))
+      ..poll = Timer.periodic(_every, (_) => unawaited(_poll(comparing)));
     _current = comparing;
     _show(comparing, const ComparisonWaiting());
     return comparing;
+  }
+
+  /// Reads what waits for this device, one read at a time.
+  Future<void> _poll(_Comparing comparing) async {
+    if (comparing.polling || !_live(comparing)) return;
+    comparing.polling = true;
+    try {
+      await _keys.receive();
+    } catch (error, stacktrace) {
+      // the next one reads again, and the timeout ends what never gets
+      // through: told once, or an outage would be told every two seconds
+      if (!comparing.pollFailed) _keys._report(error, stacktrace);
+      comparing.pollFailed = true;
+    } finally {
+      comparing.polling = false;
+    }
   }
 
   /// Whether [comparing] is still the one running here: every step that
@@ -278,6 +302,7 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     comparing
       ..ended = true
       ..timer?.cancel()
+      ..poll?.cancel()
       ..retry?.cancel();
     try {
       comparing.comparison.end();
@@ -652,6 +677,12 @@ class _Comparing {
   bool vouchFailed = false;
   bool ended = false;
   Timer? timer;
+
+  /// Reading the queue while it runs, whether a read is on its way, and
+  /// whether one failed.
+  Timer? poll;
+  bool polling = false;
+  bool pollFailed = false;
 
   /// Reading the account's devices again, for a proof.
   Timer? retry;

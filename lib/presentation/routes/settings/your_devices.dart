@@ -37,8 +37,11 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
     final userId = Auth.of(context).user?.id;
     if (userId == null) return;
     _failed.value = false;
+    final keys = DeviceKeys.of(context);
+    // a comparison asked for elsewhere, which no push may have told of (#734)
+    unawaited(keys.refresh());
     try {
-      await DeviceKeys.of(context).devicesOf(userId);
+      await keys.devicesOf(userId);
     } catch (_) {
       // offline, or keys not running yet: the page offers to read again
       _failed.value = true;

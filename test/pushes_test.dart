@@ -150,6 +150,38 @@ void main() {
     expect(client.calls, isNot(contains('ask')), reason: 'the permission is asked in context, never at launch');
   });
 
+  testWidgets('a token that came while a replay held the server closed is registered once it opens (#734)', (
+    tester,
+  ) async {
+    client.tokenMade = Completer<void>();
+    await pump(tester, {'feature-yourCoach': 'on'});
+    final context = tester.element(find.byType(Navigator).first);
+    final remote = RemoteAccess.of(context);
+
+    remote.replaying = true;
+    client.tokenMade!.complete();
+    await tester.pumpTimes();
+    verifyNever(
+      api.registerDevice(
+        platform: anyNamed('platform'),
+        token: anyNamed('token'),
+        utcOffsetMinutes: anyNamed('utcOffsetMinutes'),
+      ),
+    );
+
+    // the replay over: nothing of the account's changes, so only Upsync says
+    remote.replaying = false;
+    Upsync.of(context).notifyListeners();
+    await tester.pumpTimes();
+    verify(
+      api.registerDevice(
+        platform: anyNamed('platform'),
+        token: 'fcm-1',
+        utcOffsetMinutes: anyNamed('utcOffsetMinutes'),
+      ),
+    ).called(1);
+  });
+
   testWidgets('a new token is registered too', (tester) async {
     await pump(tester, {'feature-yourCoach': 'on'});
 

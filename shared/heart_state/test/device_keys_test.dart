@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -1764,6 +1765,61 @@ void main() {
 
       expect((await tablet.open(thread, [message])).single, isA<Opened>());
       expect(errors, isEmpty);
+    });
+
+    test('a comparison moves on both sides with no push to say so (#734)', () {
+      fakeAsync((async) {
+        final phone = device('dana');
+        final tablet = device('dana');
+        unawaited(phone.start('dana'));
+        unawaited(tablet.start('dana'));
+        async.flushMicrotasks();
+
+        unawaited(phone.approval.start(tablet.deviceId!));
+        // the tablet is asked once, as by opening the app
+        async.flushMicrotasks();
+        unawaited(tablet.receive());
+        async.elapse(const Duration(seconds: 6));
+        expect(phaseOf(phone), isA<ComparisonCode>());
+        expect(phaseOf(tablet), isA<ComparisonCode>());
+
+        unawaited(phone.approval.confirm());
+        unawaited(tablet.approval.confirm());
+        async.elapse(const Duration(seconds: 8));
+        expect(phaseOf(phone), isA<ComparisonDone>());
+        expect(phaseOf(tablet), isA<ComparisonDone>());
+        expect(errors, isEmpty);
+
+        // and reads no more once it is over
+        final reads = server.calls.where((each) => each == 'queue dana').length;
+        async.elapse(const Duration(minutes: 1));
+        expect(server.calls.where((each) => each == 'queue dana'), hasLength(reads));
+      });
+    });
+
+    test('a queue that cannot be read while comparing is told once, and read again (#734)', () {
+      fakeAsync((async) {
+        final phone = device('dana');
+        final tablet = device('dana');
+        unawaited(phone.start('dana'));
+        unawaited(tablet.start('dana'));
+        async.flushMicrotasks();
+        unawaited(phone.approval.start(tablet.deviceId!));
+        async.flushMicrotasks();
+
+        server.refuseNext['queue'] = TimeoutException('no answer');
+        async.elapse(const Duration(seconds: 2));
+        server.refuseNext['queue'] = TimeoutException('no answer');
+        async.elapse(const Duration(seconds: 2));
+        expect(errors, hasLength(1));
+
+        unawaited(tablet.receive());
+        async.elapse(const Duration(seconds: 6));
+        expect(phaseOf(phone), isA<ComparisonCode>());
+        expect(phaseOf(tablet), isA<ComparisonCode>());
+        unawaited(phone.approval.deny());
+        async.elapse(const Duration(seconds: 4));
+      });
     });
 
     test('the one that asked is done only once the other said it let it in too', () async {

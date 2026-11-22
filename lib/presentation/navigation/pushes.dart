@@ -80,6 +80,11 @@ Future<void> askForPushes(BuildContext context) async {
 class _PushPresenterState extends State<PushPresenter> {
   Preferences? _preferences;
   Auth? _auth;
+
+  /// A sign-in from an anonymous session keeps the server closed until its
+  /// store is replayed: a token that came meanwhile registers once it opens
+  /// (#734).
+  Upsync? _upsync;
   late final AppLifecycleListener _lifecycle;
 
   /// Whether the client should be running: null before the first look.
@@ -119,6 +124,11 @@ class _PushPresenterState extends State<PushPresenter> {
       _auth?.removeListener(_sync);
       _auth = auth..addListener(_sync);
     }
+    final upsync = Upsync.of(context);
+    if (!identical(upsync, _upsync)) {
+      _upsync?.removeListener(_sync);
+      _upsync = upsync..addListener(_sync);
+    }
     _sync();
   }
 
@@ -126,6 +136,7 @@ class _PushPresenterState extends State<PushPresenter> {
   void dispose() {
     _preferences?.removeListener(_sync);
     _auth?.removeListener(_sync);
+    _upsync?.removeListener(_sync);
     pushTaps.removeListener(_onTap);
     _lifecycle.dispose();
     _cancel();
