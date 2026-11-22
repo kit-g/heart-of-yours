@@ -9,8 +9,9 @@ class WorkoutEditor extends StatefulWidget {
   final VoidCallback? onClose;
 
   /// Where [copy] goes on Save when it is a workout being logged after the
-  /// fact (#530), not yet in History: Save creates it there, and its sets
-  /// start out done. Null for one already in History, which Save edits.
+  /// fact (#530), not yet in History: Save creates it there, and the sets
+  /// added to it start out done. One made from a template or a copy (#737)
+  /// comes with its sets to tick. Null for one already in History, which Save edits.
   final LogTo? logTo;
 
   /// Who [copy] is being logged for, by name, when it is someone else's: a
@@ -44,7 +45,11 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     super.initState();
 
     _notifier = _WorkoutNotifier(widget.copy, logging: _logging);
+    _open = this;
   }
+
+  /// The editor on screen, for [leaveUnsavedLog].
+  static _WorkoutEditorState? _open;
 
   bool get _logging => widget.logTo != null;
 
@@ -54,12 +59,16 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
 
     // navigated to a different workout
     if (widget.copy.id != oldWidget.copy.id) {
+      _notifier.dispose();
       _notifier = _WorkoutNotifier(widget.copy, logging: _logging);
+      // its own name, not the last one's
+      _controller.text = widget.copy.name ?? '';
     }
   }
 
   @override
   void dispose() {
+    if (identical(_open, this)) _open = null;
     _focusNode.dispose();
     _controller.dispose();
     _notifier.dispose();
@@ -82,10 +91,9 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       builder: (_, _) {
         return PopScope(
           canPop: !_notifier.hasChanged,
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) {
-              _showDiscardTemplateDialog(context);
-            }
+          onPopInvokedWithResult: (didPop, _) async {
+            if (didPop || !await _discards(context) || !context.mounted) return;
+            Navigator.of(context).pop();
           },
           child: Scaffold(
             appBar: AppBar(
@@ -152,7 +160,8 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                   builder: (_, _) {
                     final enabled = switch (widget.logTo) {
                       // a new one is named on Save if it has no name, and
-                      // holds something once a set does
+                      // holds something once a set does, ticked or not: Save
+                      // asks about those that aren't
                       LogTo _ => _keepsAnything(workout),
                       null => workout.isNotEmpty && _controller.text.isNotEmpty,
                     };
@@ -165,14 +174,17 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                           backgroundColor: colorScheme.secondaryContainer,
                           onPressed: switch (enabled) {
                             // an edit saves as it stands: nothing is
-                            // discarded or ticked, so there is nothing to ask
+                            // discarded or ticked, so there is nothing to ask.
+                            // A new one keeps only what is ticked, and asks
                             true => () {
                               // named for when it was, which a past one is not now
                               workout.resolveName(defaultWorkoutName(workout.start));
                               switch (widget.logTo) {
                                 case LogTo logTo:
-                                  unawaited(logTo(context, workout));
-                                  _leave(context);
+                                  saveAskingUnticked(context, workout, () {
+                                    unawaited(logTo(context, workout));
+                                    _leave(context);
+                                  });
                                 case null:
                                   Workouts.of(context).editWorkout(workout);
                                   Navigator.of(context).pop();
@@ -313,9 +325,9 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     );
   }
 
-  /// Whether a Save would keep anything: a set done, with something in it.
+  /// Whether a Save could keep anything: a set with something in it.
   static bool _keepsAnything(Workout workout) {
-    return workout.expand((exercise) => exercise).any((set) => set.isCompleted && set.canBeCompleted);
+    return workout.expand((exercise) => exercise).any((set) => set.canBeCompleted);
   }
 
   /// Leaves after a Save: the pushed route pops, the pane empties.
@@ -331,19 +343,14 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
   /// Dismisses the pane, routing through the same unsaved-changes guard that
   /// [PopScope] gives the pushed route — closing must not be a quiet way to
   /// throw edits away.
-  void _close(BuildContext context) {
+  Future<void> _close(BuildContext context) async {
     final close = widget.onClose;
     if (close == null) return;
-
-    switch (_notifier.hasChanged) {
-      case true:
-        _showDiscardTemplateDialog(context, onQuit: close);
-      case false:
-        close();
-    }
+    if (!_notifier.hasChanged || await _discards(context)) close();
   }
 
-  Future<void> _showDiscardTemplateDialog(BuildContext context, {VoidCallback? onQuit}) {
+  /// Asks whether what was changed here may be lost.
+  Future<bool> _discards(BuildContext context) async {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
     final L(
       :quitEditing,
@@ -354,7 +361,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       context,
     );
 
-    return showBrandedDialog(
+    final quits = await showBrandedDialog<bool>(
       context,
       title: Text(
         quitEditing,
@@ -390,22 +397,14 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 ),
               ),
               onPressed: () {
-                Navigator.of(context, rootNavigator: true).pop();
-                switch (onQuit) {
-                  // pushed route: leaving means popping it
-                  case null:
-                    Navigator.of(context).pop();
-                  // persistent pane: there is no route to pop, only a
-                  // selection to clear
-                  case VoidCallback quit:
-                    quit();
-                }
+                Navigator.of(context, rootNavigator: true).pop(true);
               },
             ),
           ],
         ),
       ],
     );
+    return quits ?? false;
   }
 
   /// Photos live in the server's bucket, so there is nowhere to put one
@@ -749,4 +748,15 @@ class _RecordsOf extends StatelessWidget {
       },
     );
   }
+}
+
+/// Whether another workout may be logged now: one being logged in the pane, and
+/// changed, would be replaced without a word, so it is asked about first.
+Future<bool> leaveUnsavedLog() async {
+  return switch (_WorkoutEditorState._open) {
+    final _WorkoutEditorState open when open.mounted && open._logging && open._notifier.hasChanged => open._discards(
+      open.context,
+    ),
+    _ => true,
+  };
 }

@@ -46,6 +46,9 @@ PlannedWorkout planSession(
 /// stages [actions] reached feed [planSession]. The user's own device plans
 /// from what it holds (`Programs.plan`), a coach's from what it can read of a
 /// client's (`ClientPrograms.plan`), so the two lay a session out alike.
+///
+/// [at] lays out one that already happened, logged after the fact: from what
+/// happened before then, whatever came since.
 PlannedWorkout planProgramSession(
   Template session, {
   required Program program,
@@ -53,15 +56,27 @@ PlannedWorkout planProgramSession(
   required Iterable<ProgramAction> actions,
   required Iterable<ProgramBase> bases,
   required DateTime now,
+  DateTime? at,
   int firstWeekday = DateTime.monday,
   required RoundWeight round,
 }) {
+  Iterable<T> before<T>(Iterable<T> all, DateTime Function(T) when) => switch (at) {
+    final DateTime at => all.where((each) => when(each).isBefore(at)),
+    null => all,
+  };
+  final taken = before(actions, (action) => action.at);
   return planSession(
     session,
     program: program,
-    position: ProgramPosition.of(program, marks: marks, actions: actions, now: now, firstWeekday: firstWeekday),
-    bases: currentBases(bases),
-    stages: currentStages(actions),
+    position: ProgramPosition.of(
+      program,
+      marks: before(marks, (mark) => mark.at),
+      actions: taken,
+      now: at ?? now,
+      firstWeekday: firstWeekday,
+    ),
+    bases: currentBases(before(bases, (base) => base.at)),
+    stages: currentStages(taken),
     round: round,
   );
 }

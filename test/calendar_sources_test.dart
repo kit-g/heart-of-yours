@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/visual.dart' show dialogWidth;
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/widgets/keys.dart';
-import 'package:heart/presentation/widgets/workout/workout_detail.dart' show repeatOf;
+import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetailKeys, repeatOf;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -65,6 +65,7 @@ void main() {
     WidgetTester tester, {
     Size size = phone,
     bool logs = true,
+    bool programs = false,
     List<Workout> history = const [],
     List<Template> templates = const [],
   }) async {
@@ -74,6 +75,7 @@ void main() {
     SharedPreferences.setMockInitialValues({
       ...pastOnboarding(),
       'feature-pastWorkouts': logs ? 'on' : 'off',
+      if (programs) 'feature-programs': 'on',
       'screen-historyView': 'calendar',
       'screen-historyView-at': '2026-11-01T00:00:00.000Z',
     });
@@ -276,5 +278,162 @@ void main() {
     final l = L.of(tester.element(find.byType(HistoryPage)));
     expect(find.text(l.cancelCurrentWorkoutTitle), findsOneWidget);
     expect(workouts.activeWorkout?.name, 'Other');
+  });
+
+  group('a past day made from a source', () {
+    /// A row with a target and nothing in it: a ghost to tick.
+    Template ghosts() => Template.fromJson({
+      ...template('Ghosts').toMap(),
+      'exercises': [
+        {
+          'id': 'slot',
+          'exercise': row.toMap(),
+          'sets': [
+            for (final id in ['s1', 's2'])
+              {
+                'id': id,
+                'target': {
+                  'weight': {'min': 60},
+                  'reps': {'min': 8, 'max': 8},
+                },
+              },
+          ],
+        },
+      ],
+    });
+
+    Future<void> logFrom(WidgetTester tester, Key way, Key choice) async {
+      await choose(tester, past(), way);
+      await tester.tap(find.byKey(choice));
+      await tester.pumpTimes();
+      await next(tester);
+    }
+
+    Future<void> save(WidgetTester tester) async {
+      await tester.tap(find.text(L.of(tester.element(find.byType(WorkoutEditor))).save));
+      await tester.pumpTimes();
+    }
+
+    Workout saved() => verify(db.finishWorkout(captureAny, any)).captured.single as Workout;
+
+    testDay('ticking a row takes its target', (tester) async {
+      await launch(tester, size: tablet, templates: [ghosts()]);
+      await logFrom(tester, AppKeys.calendarFromTemplate, AppKeys.makeFromTemplate('t-Ghosts'));
+      await tester.tap(find.byKey(WorkoutDetailKeys.doneFor(row.id, 1)));
+      await tester.pumpTimes();
+
+      final set = logging(tester).single.first;
+      expect((set.weight, set.reps, set.isCompleted), (60, 8, true));
+    });
+
+    testDay('a save asks about sets that hold something and are not ticked, and keeps them on a yes', (tester) async {
+      final done = fifth();
+      await launch(tester, size: tablet, history: [done]);
+      await logFrom(tester, AppKeys.calendarFromWorkout, AppKeys.makeFromWorkout(done.id));
+      await save(tester);
+
+      final l = L.of(tester.element(find.byType(WorkoutEditor)));
+      expect(find.text(l.untickedSetsTitle), findsOneWidget);
+      expect(
+        find.byKey(WorkoutDetailKeys.discardUnticked),
+        findsNothing,
+        reason: 'nothing ticked to save without them',
+      );
+      await tester.tap(find.byKey(WorkoutDetailKeys.saveUnticked));
+      await tester.pumpTimes();
+      expect(saved().single, hasLength(2));
+    });
+
+    testDay('and saves without them on a no', (tester) async {
+      final done = fifth();
+      await launch(tester, size: tablet, history: [done]);
+      await logFrom(tester, AppKeys.calendarFromWorkout, AppKeys.makeFromWorkout(done.id));
+      await tester.tap(find.byKey(WorkoutDetailKeys.doneFor(bench.id, 1)));
+      await tester.pumpTimes();
+      await save(tester);
+      await tester.tap(find.byKey(WorkoutDetailKeys.discardUnticked));
+      await tester.pumpTimes();
+      expect(saved().single, hasLength(1));
+    });
+
+    testDay('brings the pinned notes', (tester) async {
+      when(db.getExerciseNotes(any)).thenAnswer((_) async => {row.id: 'Elbows in'});
+      await launch(tester, size: tablet, templates: [template('Pull')]);
+      await logFrom(tester, AppKeys.calendarFromTemplate, AppKeys.makeFromTemplate('t-Pull'));
+      expect(logging(tester).single.note, 'Elbows in');
+    });
+
+    testDay('another one in the pane asks before it replaces what was changed, and comes under its own name', (
+      tester,
+    ) async {
+      final done = fifth();
+      await launch(tester, size: tablet, history: [done], templates: [template('Pull')]);
+      await logFrom(tester, AppKeys.calendarFromTemplate, AppKeys.makeFromTemplate('t-Pull'));
+      await tester.tap(find.byKey(WorkoutDetailKeys.doneFor(row.id, 1)));
+      await tester.pumpTimes();
+
+      final l = L.of(tester.element(find.byType(HistoryPage)));
+      await choose(tester, past(), AppKeys.calendarFromWorkout);
+      await tester.tap(find.byKey(AppKeys.makeFromWorkout(done.id)));
+      await tester.pumpTimes();
+      expect(find.text(l.changesWillBeLost), findsOneWidget);
+      await tester.tap(find.text(l.stayHere));
+      await tester.pumpTimes();
+      expect(logging(tester).name, 'Pull');
+      expect(find.text(l.whenWasIt), findsNothing);
+
+      await choose(tester, past(), AppKeys.calendarFromWorkout);
+      await tester.tap(find.byKey(AppKeys.makeFromWorkout(done.id)));
+      await tester.pumpTimes();
+      await tester.tap(find.text(l.quitPage));
+      await tester.pumpTimes();
+      await next(tester);
+      expect(logging(tester).name, 'Push');
+      expect(
+        find.descendant(of: find.byType(WorkoutEditor), matching: find.widgetWithText(TextField, 'Push')),
+        findsOneWidget,
+      );
+    });
+
+    testDay("a program's session keeps its program and plan, and moves it on", (tester) async {
+      final program = Program.fromJson({
+        'id': 'p1',
+        'name': 'Split',
+        'sessions': ['t-Pull'],
+        'createdAt': '2026-11-01T00:00:00.000Z',
+        'rules': {
+          row.id: {'kind': 'addWeight', 'step': 2.5},
+        },
+      });
+      when(db.getPrograms(any)).thenAnswer((_) async => [program]);
+      when(db.getProgramBases(any, programId: anyNamed('programId'))).thenAnswer((_) async => []);
+      when(db.getProgramMarks(any, any)).thenAnswer((_) async => []);
+      when(db.getProgramWorkouts(any, any)).thenAnswer((_) async => []);
+      await launch(
+        tester,
+        size: tablet,
+        templates: [template('Pull', programId: 'p1')],
+        programs: true,
+      );
+      final context = tester.element(find.byType(MaterialApp));
+      await Programs.of(context).init();
+      await tester.pumpTimes();
+      await logFrom(tester, AppKeys.calendarFromTemplate, AppKeys.makeFromTemplate('t-Pull'));
+      expect((logging(tester).templateId, logging(tester).programId), ('t-Pull', 'p1'));
+
+      for (final index in [1, 2]) {
+        await tester.tap(find.byKey(WorkoutDetailKeys.doneFor(row.id, index)).first);
+        await tester.pumpTimes();
+      }
+      final id = logging(tester).id;
+      final programs = Programs.of(context);
+      await save(tester);
+      if (find.byKey(WorkoutDetailKeys.saveUnticked).evaluate().isNotEmpty) {
+        await tester.tap(find.byKey(WorkoutDetailKeys.saveUnticked));
+        await tester.pumpTimes();
+      }
+      verify(db.storeWorkoutPlan(id, any, any)).called(1);
+      expect(programs.grownBy(id), isNotNull);
+    });
   });
 }

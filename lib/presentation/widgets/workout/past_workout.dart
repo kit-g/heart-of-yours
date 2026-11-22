@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:heart/core/utils/goals.dart';
+import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart' show runningPrograms;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
@@ -101,8 +102,21 @@ Future<void> logToHistory(BuildContext context, Workout workout, {WorkoutPlan? p
   final exercises = Exercises.of(context);
   final firstWeekday = Preferences.of(context).firstWeekday;
   final running = runningPrograms(context);
+  final programs = Programs.of(context);
+  final grows = programIdShown(context, workout.programId);
+  final session = switch (workout.templateId) {
+    final String id => Templates.of(context).lookup(id),
+    null => null,
+  };
+  // read before the save drops the exercises nobody ticked, as a finish's are
+  final slots = slotsOf(workout, session);
+  final among = [...workouts.history];
 
-  final saved = await workouts.logWorkout(workout, plan: plan);
+  final saving = workouts.logWorkout(workout, plan: plan);
+  // a program moves by a session logged after the fact too, unless something
+  // moved it since (#737)
+  if (grows) unawaited(programs.growPast(workout, among: among, session: session, slots: slots, after: saving));
+  final saved = await saving;
 
   // "last time" and the picker's recency read the mirror
   unawaited(previous.init());

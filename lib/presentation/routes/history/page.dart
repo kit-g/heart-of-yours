@@ -391,11 +391,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                         pages: Scrolls.of(context).historyMonthController,
                         // not while everything is on the device already, nor
                         // while the server can't be asked
-                        older:
-                            !whole &&
-                            (RemoteAccess.of(context).allowed ||
-                                workouts.loadingMoreHistory ||
-                                workouts.historyPageError),
+                        older: _olderToCome(workouts, backfill, RemoteAccess.of(context)),
                         onLogOn: switch (widget.onLogPastWorkout) {
                           final log? => (day) => log(on: day),
                           null => null,
@@ -473,13 +469,19 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
 
   Future<void> _makeFromTemplate(Template template, DateTime? on) async {
     if (on != null) {
+      // read now: this page may be gone by the time the times are picked
+      final layout = layoutOf(context, template);
+      final exercises = Exercises.of(context);
       return widget.onLogPastWorkout?.call(
         on: on,
-        // laid out once its time is known: a program's session as it stands,
-        // with the plan it was asked to be
+        // laid out once its time is known: a program's session as it stood
+        // then, with the plan it was asked to be
         fill: (past) {
-          if (!mounted) return past;
-          final (:workout, :plan) = startingWorkout(context, template, at: past.workout.start.toLocal());
+          final (:workout, :plan) = layout(past.workout.start);
+          // the pinned notes a start brings
+          for (final exercise in workout) {
+            exercise.note ??= exercises.noteFor(exercise.exercise.id);
+          }
           return past.holding(workout, logTo: (context, workout) => logToHistory(context, workout, plan: plan));
         },
       );

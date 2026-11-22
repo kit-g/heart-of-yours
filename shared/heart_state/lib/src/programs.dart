@@ -438,10 +438,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// [session] as the workout to start (#349): [planSession] with its
   /// program's position, bases and stages, and what it was asked to be. A
   /// template no followed program holds starts as [Template.toWorkout] does,
-  /// with no plan.
+  /// with no plan. [at] lays out one logged after the fact, as it stood then.
   PlannedWorkout plan(
     Template session, {
     required DateTime now,
+    DateTime? at,
     required int firstWeekday,
     required RoundWeight round,
   }) {
@@ -458,6 +459,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
       actions: _actions[id] ?? const [],
       bases: basesOf(id),
       now: now,
+      at: at,
       firstWeekday: firstWeekday,
       round: round,
     );
@@ -1411,6 +1413,25 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
       }
       await grow(workout, session: session);
     }
+  }
+
+  /// Moves this person's program by a session of it they logged after the fact
+  /// themselves (#737), as [growLogged] does by one their coach logged: not
+  /// once something moved the program since it was, when the rules would read
+  /// a history it wasn't part of. [among] are the workouts already in their
+  /// history, and [slots] and [after] are [grow]'s.
+  Future<void> growPast(
+    Workout workout, {
+    required Iterable<Workout> among,
+    Template? session,
+    Map<String, String>? slots,
+    Future<void>? after,
+  }) async {
+    final programId = workout.programId;
+    if (programId == null) return;
+    final starts = {for (final each in among) each.id: each.start};
+    if (!_waits(workout, programId, starts, shown: _every)) return;
+    await grow(workout, session: session, slots: slots, after: after);
   }
 
   /// Whether [workout], logged in [programId], still has its program to move:

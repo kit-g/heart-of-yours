@@ -158,11 +158,6 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
     :finishWorkoutWarningBody,
     :readyToFinish,
     :notReadyToFinish,
-    :untickedSetsTitle,
-    :untickedSetsBody,
-    :saveUntickedSets,
-    :discardUntickedSets,
-    :untickedPlanBody,
   ) = L.of(
     context,
   );
@@ -226,67 +221,16 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
   // Nothing done at all is no finish to name sets for: that is a cancel.
   final unticked = _untickedInPlan(context, activeWorkout);
   if (unticked.isNotEmpty && workouts.activeWorkoutHasContent) {
-    final typed =
-        workouts.hasTypedButUntickedSets && unticked.every((each) => each.$2.every((set) => set.canBeCompleted));
-    return showBrandedDialog(
+    return showUntickedSetsDialog(
       context,
-      title: Text(untickedSetsTitle),
-      titleTextStyle: textTheme.titleMedium,
-      icon: Icon(Icons.checklist_rounded, color: colorScheme.error),
-      content: Column(
-        mainAxisSize: .min,
-        crossAxisAlignment: .start,
-        spacing: 4,
-        children: [
-          Text(untickedPlanBody),
-          for (final (exercise, sets) in unticked)
-            Text(
-              L
-                  .of(context)
-                  .untickedSetsOf(
-                    exercise.exercise.name,
-                    sets.length,
-                    sets.map((set) => _setLabel(L.of(context), exercise, set)).join(', '),
-                  ),
-              style: textTheme.bodyMedium?.copyWith(fontWeight: .w600),
-            ),
-        ],
-      ),
-      actions: [
-        Builder(
-          builder: (context) {
-            final ThemeData(:colorScheme) = Theme.of(context);
-            return Column(
-              spacing: 8,
-              children: [
-                PrimaryButton.wide(
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-                  child: Center(child: Text(notReadyToFinish)),
-                ),
-                // as below: nothing ticked, nothing to finish without them
-                if (isStarted)
-                  PrimaryButton.wide(
-                    backgroundColor: switch (typed) {
-                      true => colorScheme.surfaceContainerHighest,
-                      false => null,
-                    },
-                    onPressed: finishNow,
-                    child: Center(child: Text(discardUntickedSets)),
-                  ),
-                if (typed)
-                  PrimaryButton.wide(
-                    child: Center(child: Text(saveUntickedSets)),
-                    onPressed: () {
-                      workouts.completeTypedSets();
-                      finishNow();
-                    },
-                  ),
-              ],
-            );
-          },
-        ),
-      ],
+      planned: unticked,
+      canSave: workouts.hasTypedButUntickedSets && unticked.every((each) => each.$2.every((set) => set.canBeCompleted)),
+      canDiscard: isStarted,
+      onDiscard: finishNow,
+      onSave: () {
+        workouts.completeTypedSets();
+        finishNow();
+      },
     );
   }
 
@@ -296,52 +240,14 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
   // set used to vanish. So the finish asks, in as many words, and the two
   // answers are both spelled out.
   if (workouts.hasTypedButUntickedSets) {
-    return showBrandedDialog(
+    return showUntickedSetsDialog(
       context,
-      title: Text(untickedSetsTitle),
-      titleTextStyle: textTheme.titleMedium,
-      icon: Icon(
-        Icons.checklist_rounded,
-        color: colorScheme.error,
-      ),
-      content: Text(
-        untickedSetsBody,
-        textAlign: .center,
-      ),
-      actions: [
-        Builder(
-          builder: (context) {
-            final ThemeData(:colorScheme) = Theme.of(context);
-            return Column(
-              spacing: 8,
-              children: [
-                PrimaryButton.wide(
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  onPressed: () {
-                    Navigator.of(context, rootNavigator: true).pop();
-                  },
-                  child: Center(child: Text(notReadyToFinish)),
-                ),
-                // with nothing ticked, finishing without them would save an
-                // empty workout: the answer is absent, not a trap
-                if (isStarted)
-                  PrimaryButton.wide(
-                    backgroundColor: colorScheme.surfaceContainerHighest,
-                    onPressed: finishNow,
-                    child: Center(child: Text(discardUntickedSets)),
-                  ),
-                PrimaryButton.wide(
-                  child: Center(child: Text(saveUntickedSets)),
-                  onPressed: () {
-                    workouts.completeTypedSets();
-                    finishNow();
-                  },
-                ),
-              ],
-            );
-          },
-        ),
-      ],
+      canDiscard: isStarted,
+      onDiscard: finishNow,
+      onSave: () {
+        workouts.completeTypedSets();
+        finishNow();
+      },
     );
   }
 
@@ -366,6 +272,111 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
   }
 
   return showCancelWorkoutDialog(context, onFinish: onFinish);
+}
+
+/// Asks about sets that hold something and aren't ticked, which a save drops:
+/// keep them, or save without them. [planned] names a program session's, by
+/// exercise; without it they are only said to be there. [canSave] when all of
+/// them hold a set to keep, and [canDiscard] when something ticked is left
+/// without them: an answer that makes no sense is absent, not a trap.
+Future<void> showUntickedSetsDialog(
+  BuildContext context, {
+  List<(WorkoutExercise, List<ExerciseSet>)> planned = const [],
+  bool canSave = true,
+  required bool canDiscard,
+  required VoidCallback onDiscard,
+  required VoidCallback onSave,
+}) {
+  final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+  final l = L.of(context);
+  return showBrandedDialog(
+    context,
+    title: Text(l.untickedSetsTitle),
+    titleTextStyle: textTheme.titleMedium,
+    icon: Icon(Icons.checklist_rounded, color: colorScheme.error),
+    content: switch (planned) {
+      [] => Text(l.untickedSetsBody, textAlign: .center),
+      final planned => Column(
+        mainAxisSize: .min,
+        crossAxisAlignment: .start,
+        spacing: 4,
+        children: [
+          Text(l.untickedPlanBody),
+          for (final (exercise, sets) in planned)
+            Text(
+              l.untickedSetsOf(
+                exercise.exercise.name,
+                sets.length,
+                sets.map((set) => _setLabel(l, exercise, set)).join(', '),
+              ),
+              style: textTheme.bodyMedium?.copyWith(fontWeight: .w600),
+            ),
+        ],
+      ),
+    },
+    actions: [
+      // its colors read inside the dialog, as the finish's are
+      Builder(
+        builder: (context) {
+          final ThemeData(:colorScheme) = Theme.of(context);
+          return Column(
+            spacing: 8,
+            children: [
+              PrimaryButton.wide(
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+                child: Center(child: Text(l.notReadyToFinish)),
+              ),
+              if (canDiscard)
+                PrimaryButton.wide(
+                  key: WorkoutDetailKeys.discardUnticked,
+                  backgroundColor: canSave ? colorScheme.surfaceContainerHighest : null,
+                  onPressed: onDiscard,
+                  child: Center(child: Text(l.discardUntickedSets)),
+                ),
+              if (canSave)
+                PrimaryButton.wide(
+                  key: WorkoutDetailKeys.saveUnticked,
+                  onPressed: onSave,
+                  child: Center(child: Text(l.saveUntickedSets)),
+                ),
+            ],
+          );
+        },
+      ),
+    ],
+  );
+}
+
+/// Asks, before a workout logged after the fact is saved, about the sets in it
+/// that hold something and aren't ticked, as the finish does, then runs
+/// [save]; with none, at once. A copy or a template comes filled in, and the
+/// save keeps only what is ticked.
+void saveAskingUnticked(BuildContext context, Workout workout, VoidCallback save) {
+  final holding = workout
+      .expand((exercise) => exercise)
+      .where((set) => !set.isCompleted && set.canBeCompleted)
+      .toList();
+  final planned = _untickedInPlan(context, workout);
+  if (holding.isEmpty && planned.isEmpty) return save();
+  void answer(VoidCallback first) {
+    Navigator.of(context, rootNavigator: true).pop();
+    first();
+    save();
+  }
+
+  showUntickedSetsDialog(
+    context,
+    planned: planned,
+    canSave: planned.every((each) => each.$2.every((set) => set.canBeCompleted)),
+    canDiscard: workout.expand((exercise) => exercise).any((set) => set.isCompleted && set.canBeCompleted),
+    onDiscard: () => answer(() {}),
+    onSave: () => answer(() {
+      for (final set in holding) {
+        set.isCompleted = true;
+      }
+    }),
+  );
 }
 
 Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFinish}) {
@@ -760,16 +771,17 @@ Future<void> startPlanned(
 /// with its targets as the program has them this time (#349):
 /// a share of a base as a weight on the user's plates, a lighter cycle
 /// lighter. Anything else starts as it was written, with no plan.
-///
-/// [at] lays it out as one that began then, for one logged after the fact.
-PlannedWorkout startingWorkout(BuildContext context, Template template, {DateTime? at}) {
-  if (!programIdShown(context, template.programId)) return (workout: template.toWorkout(), plan: null);
-  return Programs.of(context).plan(
-    template,
-    now: at ?? DateTime.now(),
-    firstWeekday: firstWeekdayOf(context),
-    round: roundToPlates(context),
-  );
+PlannedWorkout startingWorkout(BuildContext context, Template template) => layoutOf(context, template)();
+
+/// [startingWorkout], for later: what it needs is read now, so it can be laid
+/// out once [context] is gone. With a time, as one that began then, for one
+/// logged after the fact.
+PlannedWorkout Function([DateTime? at]) layoutOf(BuildContext context, Template template) {
+  if (!programIdShown(context, template.programId)) return ([_]) => (workout: template.toWorkout(), plan: null);
+  final programs = Programs.of(context);
+  final firstWeekday = firstWeekdayOf(context);
+  final round = roundToPlates(context);
+  return ([at]) => programs.plan(template, now: DateTime.now(), at: at, firstWeekday: firstWeekday, round: round);
 }
 
 /// The sets a program's session leaves unticked, by exercise (#349): those

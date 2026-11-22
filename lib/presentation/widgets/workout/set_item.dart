@@ -328,8 +328,8 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                           margin: EdgeInsets.zero,
                           onPressed: () {
                             if (!widget.isLocked) {
-                              if (widget.onSetDone != null) {
-                                widget.onSetDone?.call(exercise, set);
+                              if (widget.onSetDone case final onSetDone?) {
+                                _toggle(onSetDone);
                               } else {
                                 switch ((_timing, _canStartStopwatch)) {
                                   // ■ brings the running stopwatch back
@@ -769,20 +769,33 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     };
   }
 
+  /// A tick on a ghost row takes its target as the set (#173); the fields
+  /// follow the set, and a focused one would be left out.
+  Future<void> _takeTarget() async {
+    _repsFocus.unfocus();
+    _weightFocus.unfocus();
+    _distanceFocus.unfocus();
+    _durationFocus.unfocus();
+    await workouts.acceptTarget(set);
+  }
+
+  /// A tick on a screen with its own ([_ExerciseSetItem.onSetDone]).
+  Future<void> _toggle(void Function(WorkoutExercise, ExerciseSet) onSetDone) async {
+    if (!set.isCompleted && set.target != null) {
+      await _takeTarget();
+      if (!mounted) return;
+    }
+    onSetDone(exercise, set);
+  }
+
   Future<void> _onDone(BuildContext context) async {
     final workouts = Workouts.of(context);
     if (set.isCompleted) {
       return workouts.markSetAsIncomplete(exercise, set);
     }
 
-    // a tick on a ghost row takes its target as the set (#173); the fields
-    // follow the set, and a focused one would be left out
     if (set.target != null) {
-      _repsFocus.unfocus();
-      _weightFocus.unfocus();
-      _distanceFocus.unfocus();
-      _durationFocus.unfocus();
-      await workouts.acceptTarget(set);
+      await _takeTarget();
       if (!context.mounted) return;
       // the set now holds the target as stored; reading it back out of the
       // fields would put it through display rounding, and a carry's 40 m

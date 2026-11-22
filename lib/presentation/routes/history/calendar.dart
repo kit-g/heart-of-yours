@@ -143,7 +143,7 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
   }
 
   /// The first tap of an empty past day while Past workouts was never asked
-  /// about: the ask. On yes the day goes straight on to logging.
+  /// about: the ask. On yes the day goes on to logging, or to the ways to.
   Future<bool> _ask() {
     final L(:pastWorkoutsOfferTitle, :pastWorkoutsOfferBody) = L.of(context);
     return askInSheet(
@@ -174,7 +174,10 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
       },
       // one workout at a time: with one going, its button is the way there
       start: workouts.hasActiveWorkout ? null : widget.onStartWorkout,
-      sources: widget.onMakeFrom == null ? const <DaySource>{} : widget.sources,
+      sources: switch (widget.onMakeFrom) {
+        Function _ => widget.sources,
+        null => const <DaySource>{},
+      },
       makeFrom: widget.onMakeFrom,
       // while older pages are still to come, a day before the oldest workout
       // here may hold one not fetched yet: not a day to log on as if empty

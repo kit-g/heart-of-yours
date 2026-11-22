@@ -24,7 +24,7 @@ Future<Template?> _pickTemplate(BuildContext context) {
       final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
       return ListView(
         controller: scroll,
-        padding: const .only(bottom: 16),
+        padding: _choicesPadding(context),
         children: [
           for (final (:name, :templates) in folders) ...[
             if (name case final String name)
@@ -56,22 +56,24 @@ Future<Template?> _pickTemplate(BuildContext context) {
 Future<Workout?> _pickWorkout(BuildContext context) {
   final l = L.of(context);
   final workouts = Workouts.of(context);
+  final backfill = Backfill.of(context);
+  final remote = RemoteAccess.of(context);
   final days = DateFormat.yMMMEd(l.localeName);
   return _showChoices<Workout>(
     context,
     key: AppKeys.workoutChoices,
     title: l.calendarFromWorkout,
     list: (context, scroll) => ListenableBuilder(
-      listenable: workouts,
+      listenable: Listenable.merge([workouts, backfill]),
       builder: (context, _) {
         final past = workouts.byMonth.values.expand((month) => month).where(_fills).toList();
         return ListView.builder(
           controller: scroll,
-          padding: const .only(bottom: 16),
+          padding: _choicesPadding(context),
           itemCount: past.length + 1,
           itemBuilder: (context, index) {
             if (index == past.length) {
-              return _OlderWorkouts(workouts: workouts);
+              return _OlderWorkouts(workouts: workouts, older: _olderToCome(workouts, backfill, remote));
             }
             final workout = past[index];
             return _Choice(
@@ -93,12 +95,15 @@ Future<Workout?> _pickWorkout(BuildContext context) {
 class _OlderWorkouts extends StatelessWidget {
   final Workouts workouts;
 
-  const new({required this.workouts});
+  /// Whether anything older is still to come ([_olderToCome]).
+  final bool older;
+
+  const new({required this.workouts, required this.older});
 
   @override
   Widget build(BuildContext context) {
-    final Workouts(:loadingMoreHistory, :historyPageError, :hasMoreHistory) = workouts;
-    if (hasMoreHistory && !loadingMoreHistory && !historyPageError) {
+    final Workouts(:loadingMoreHistory, :historyPageError) = workouts;
+    if (older && !loadingMoreHistory && !historyPageError) {
       // after the frame: the read notifies, and the list listens
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) workouts.loadMoreHistory();
@@ -107,11 +112,23 @@ class _OlderWorkouts extends StatelessWidget {
     return _HistoryTail(
       loading: loadingMoreHistory,
       error: historyPageError,
-      hasMore: hasMoreHistory,
+      hasMore: older,
       onRetry: workouts.loadMoreHistory,
     );
   }
 }
+
+/// Whether older history can still come: not once all of it is on the device,
+/// whatever the server's pages say on a launch, nor while the server can't be
+/// asked.
+bool _olderToCome(Workouts workouts, Backfill backfill, RemoteAccess remote) {
+  if (!workouts.hasMoreHistory || backfill.isWhole) return false;
+  return remote.allowed || workouts.loadingMoreHistory || workouts.historyPageError;
+}
+
+/// The list's last row clears the system's bar: the sheet's safe area leaves
+/// the bottom out.
+EdgeInsets _choicesPadding(BuildContext context) => .only(bottom: 16 + MediaQuery.paddingOf(context).bottom);
 
 /// A sheet of things to pick one of, which its drag makes taller. No wider
 /// than a dialog on a tablet.

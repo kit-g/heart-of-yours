@@ -1634,6 +1634,79 @@ void main() {
         expect(programs.basesOf('p1').where((each) => each.workoutId == 'w1'), hasLength(1));
       });
 
+      test('a session logged after the fact moves it once, and not once something moved it since (#737)', () async {
+        await follow(
+          growing({'squat': const AddWeight(step: 5)}),
+          bases: [base(100, at: DateTime.utc(2026, 10, 2))],
+        );
+        Workout past(String id, DateTime start) => done(
+          id,
+          start: start,
+          exercises: [
+            squats([5, 5, 5], weight: 105),
+          ],
+        );
+        final mine = past('mine', DateTime.utc(2026, 10, 5));
+
+        await programs.growPast(mine, among: const []);
+        await programs.growPast(mine, among: const []);
+        expect(programs.basesOf('p1').where((each) => each.workoutId == 'mine'), hasLength(1));
+
+        // older than that one, whose growth counts from when it was
+        await programs.growPast(past('older', DateTime.utc(2026, 10, 4)), among: [mine]);
+        expect(programs.basesOf('p1').where((each) => each.workoutId == 'older'), isEmpty);
+        // newer, though that one's growth was only written now
+        await programs.growPast(past('newer', DateTime.utc(2026, 10, 7)), among: [mine]);
+        expect(programs.basesOf('p1').where((each) => each.workoutId == 'newer'), hasLength(1));
+      });
+
+      test('a session logged after the fact is laid out as it stood then (#737)', () async {
+        await follow(
+          growing({'squat': const AddWeight(step: 5)}),
+          bases: [
+            base(100, at: DateTime.utc(2026, 10, 2)),
+            base(120, at: DateTime.utc(2026, 10, 20)),
+          ],
+        );
+        final day = Template.fromJson({
+          'id': 's1',
+          'name': 'Day A',
+          'order': 0,
+          'programId': 'p1',
+          'exercises': [
+            {
+              'id': 'slot',
+              'exercise': squat,
+              'sets': [
+                {
+                  'id': 'ts1',
+                  'target': {
+                    'reps': {'min': 5, 'max': 5},
+                    'weight': {'percent': 100},
+                  },
+                },
+              ],
+            },
+          ],
+        });
+        num? baseThen(DateTime? at) {
+          final planned = programs.plan(
+            day,
+            now: DateTime.utc(2026, 10, 25),
+            at: at,
+            firstWeekday: 1,
+            round: (_, kg) => kg,
+          );
+          return switch (planned.plan?.plan['exercises']) {
+            [{'base': final num base}] => base,
+            _ => null,
+          };
+        }
+
+        expect(baseThen(null), 120);
+        expect(baseThen(DateTime.utc(2026, 10, 10)), 100);
+      });
+
       test("one of their own, or one older than the program's last move, moves nothing", () async {
         await follow(
           growing({'squat': const AddWeight(step: 5)}),
