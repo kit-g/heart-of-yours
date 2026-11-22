@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/visual.dart' show dialogWidth;
@@ -290,6 +291,88 @@ void main() {
 
     expect(find.text(l(tester).compareCodesCancelled), findsOneWidget);
     expect(sent.last.kind, 'compare_cancel');
+    await tester.tap(find.byKey(AppKeys.closeComparison));
+    await tester.pumpTimes();
+    expect(DeviceKeys.of(root(tester)).approval.value, isNull);
+  });
+
+  /// Puts [payload] in the app's queue as [kind], as [reply] does, with
+  /// nothing to say it is there.
+  void enqueue(String kind, Map<String, String> payload) {
+    final session =
+        tabletSession ??
+        tabletBox
+            .startSession(account: tabletAccount, identityKey: phone.identityKey, oneTimeKey: phoneKeys.values.first)
+            .session;
+    final sealed = tabletBox.encrypt(session, jsonEncode(payload));
+    tabletSession = sealed.session;
+    queue.add(
+      QueuedItem(
+        id: uuidV7(),
+        recipientDeviceId: phone.id,
+        senderDeviceId: tablet.id,
+        senderUserId: 'muffin',
+        kind: kind,
+        content: 'v1.${sealed.message.type}.${sealed.message.body}',
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  testWidgets('one already asked for shows as the page opens, with no push (#734)', (tester) async {
+    await pump(tester);
+    final comparison = Comparison.start();
+    addTearDown(comparison.end);
+    enqueue('compare_start', {'c': uuidV7(), 'commitment': comparison.commitment});
+
+    await openDevices(tester);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byKey(AppKeys.codesDontMatch), findsOneWidget);
+  });
+
+  testWidgets('one asked for while the page is open shows too, with no push (#734)', (tester) async {
+    await pump(tester);
+    await openDevices(tester);
+    final comparison = Comparison.start();
+    addTearDown(comparison.end);
+    enqueue('compare_start', {'c': uuidV7(), 'commitment': comparison.commitment});
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpTimes();
+    expect(find.byKey(AppKeys.codesDontMatch), findsOneWidget);
+  });
+
+  testWidgets('on another tab, the page reads no queue (#734)', (tester) async {
+    await pump(tester);
+    await openDevices(tester);
+    GoRouter.of(root(tester)).go('/history');
+    await tester.pumpTimes();
+    clearInteractions(api);
+    await tester.pump(const Duration(seconds: 10));
+    verifyNever(api.getKeyQueue(any));
+  });
+
+  testWidgets('asked on both at once, the sheet goes on with the one both keep (#734)', (tester) async {
+    await pump(tester);
+    await openDevices(tester);
+    // made first: the smaller id
+    final theirs = uuidV7();
+    await tester.tap(find.byKey(AppKeys.compareCodes(tablet.id)));
+    await tester.pumpTimes();
+    final comparison = Comparison.start();
+    addTearDown(comparison.end);
+    opened('compare_start');
+
+    await reply(tester, 'compare_start', {'c': theirs, 'commitment': comparison.commitment});
+    expect(find.text(l(tester).compareCodesCancelled), findsNothing);
+    comparison.establish(opened('compare_key')['key']! as String);
+    await reply(tester, 'compare_key', {'c': theirs, 'key': comparison.publicKey});
+    final info = 'heart-of.me/compare/v1\n${tablet.id}\n${phone.id}';
+    expect(find.text(comparison.code(info).decimals.join('   ')), findsOneWidget);
+
+    await tester.tap(find.byKey(AppKeys.codesDontMatch));
+    await tester.pumpTimes();
+    expect(find.text(l(tester).compareCodesCancelled), findsOneWidget);
     await tester.tap(find.byKey(AppKeys.closeComparison));
     await tester.pumpTimes();
     expect(DeviceKeys.of(root(tester)).approval.value, isNull);

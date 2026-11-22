@@ -84,12 +84,18 @@ class CodeComparison {
   /// hasn't yet.
   final bool confirmed;
 
+  /// The comparison this one took the place of: both devices asked each
+  /// other, and this is the one they both keep. A screen opened for that one
+  /// goes on with this one.
+  final String? replaced;
+
   const new({
     required this.id,
     required this.deviceId,
     required this.role,
     required this.phase,
     this.confirmed = false,
+    this.replaced,
   });
 
   /// Whether it is still on its way.
@@ -110,6 +116,9 @@ class CodeComparison {
 /// said the same.
 ///
 /// Everything travels through the queue, sealed, one device to one device.
+/// While one runs, and for a while after it is done, each side reads its
+/// queue every two seconds, whether or not a push says to (#734). So does one
+/// that may be asked ([expectAsk]).
 /// The device that will see the other's key first commits to its own before
 /// it sees it, so whoever moves the keys can't grind a key until the codes
 /// match ([Comparison]).
@@ -133,6 +142,14 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
   static const _context = 'heart-of.me/compare/v1';
 
   static const _life = Duration(minutes: 5);
+
+  /// How often the queue is read without a push: one may be late or never
+  /// come, and then both sides would wait for the other.
+  static const _every = Duration(seconds: 2);
+
+  /// How many more reads once this side is done: what the other side holds,
+  /// its thread and note keys, is sent after it says it is done.
+  static const _after = 15;
 
   /// How long two refusals of the same device keep it from asking again.
   static const _quiet = Duration(minutes: 10);
@@ -202,7 +219,8 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     final comparing = _current;
     if (comparing == null || comparing.ended || comparing.completing) return;
     if (id != null && comparing.id != id) return;
-    if (comparing.role == .responder) _declined(comparing.deviceId);
+    // one it asked for itself, and went on with as the other's, is not refused
+    if (comparing.role == .responder && comparing.replaced == null) _declined(comparing.deviceId);
     _finish(comparing, const ComparisonCancelled());
     await _cancel(comparing.run, comparing.deviceId, comparing.id);
   }
@@ -220,17 +238,22 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
   /// is sent.
   @override
   void dispose() {
+    if (_disposed) return;
     if (_current case final _Comparing comparing when !comparing.ended) _end(comparing);
     _current = null;
     _value = null;
+    _disposed = true;
+    _pace();
     super.dispose();
   }
 
   /// The run ended: whatever was on its way is dropped.
   void _abandon() {
     final comparing = _current;
+    if (comparing != null && !comparing.ended) _end(comparing);
+    _remaining = 0;
+    _pace();
     if (comparing == null) return;
-    if (!comparing.ended) _end(comparing);
     _current = null;
     _value = null;
     notifyListeners();
@@ -243,6 +266,7 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     required ComparisonRole role,
     required Comparison comparison,
     String? theirCommitment,
+    String? replaced,
   }) {
     final comparing = _Comparing(
       run: run,
@@ -251,11 +275,105 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       role: role,
       comparison: comparison,
       theirCommitment: theirCommitment,
+      replaced: replaced,
     );
     comparing.timer = Timer(_life, () => _expire(comparing));
     _current = comparing;
+    _remaining = 0;
+    _pace();
     _show(comparing, const ComparisonWaiting());
     return comparing;
+  }
+
+  /// Reading the queue every so often, while there is something to wait for.
+  Timer? _poll;
+  bool _polling = false;
+
+  /// Reads left after a comparison ended here.
+  int _remaining = 0;
+
+  /// Screens another device may be about to ask.
+  int _expecting = 0;
+
+  /// What went wrong since the reading began, each told once: an outage would
+  /// be told every two seconds.
+  final _told = <Object>{};
+
+  /// Whether the read on its way told of something.
+  bool _failed = false;
+
+  bool _disposed = false;
+
+  /// Whether the app is in front. Behind, nothing is read: coming back reads
+  /// what arrived.
+  bool inFront = true;
+
+  /// Reads the queue until the returned callback is called: a screen where
+  /// another device asking is what the person is there for.
+  void Function() expectAsk() {
+    _expecting++;
+    _pace();
+    var over = false;
+    return () {
+      if (over) return;
+      over = true;
+      _expecting--;
+      _pace();
+    };
+  }
+
+  /// Starts the reads, or stops them, as something waits for them or nothing
+  /// does.
+  void _pace() {
+    final running = switch (_current) {
+      _Comparing(ended: false) => true,
+      _ => false,
+    };
+    switch ((!_disposed && (running || _expecting > 0 || _remaining > 0), _poll)) {
+      case (true, null):
+        _told.clear();
+        _poll = Timer.periodic(_every, (_) => unawaited(_read()));
+      case (false, final Timer poll):
+        poll.cancel();
+        _poll = null;
+      case _:
+        break;
+    }
+  }
+
+  /// Reads what waits for this device, one read at a time.
+  Future<void> _read() async {
+    if (_polling || !inFront) return;
+    if (_remaining > 0) _remaining--;
+    final run = _keys._run;
+    if (run == null) return _pace();
+    _polling = true;
+    _failed = false;
+    try {
+      await _keys._receive(run, polled: true, report: _reportOnce);
+      // the rest of the keys may follow
+      if (run.received && _remaining > 0) _remaining = _after;
+      // through again: what goes wrong next is told again
+      if (!_failed) _told.clear();
+    } on _Stopped {
+      // stopped on the way: nothing is left to read for
+    } catch (error, stacktrace) {
+      // the next one reads again, and the timeout ends what never gets through
+      _reportOnce(error, stacktrace);
+    } finally {
+      _polling = false;
+      _pace();
+    }
+  }
+
+  void _reportOnce(Object error, [StackTrace? stacktrace]) {
+    final kind = switch (error) {
+      ServerRefusal(:final code) => code,
+      KeyFailure(:final code) => code,
+      _ => error.runtimeType,
+    };
+    _failed = true;
+    if (_told.add(kind)) _keys._report(error, stacktrace);
   }
 
   /// Whether [comparing] is still the one running here: every step that
@@ -270,6 +388,7 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       role: comparing.role,
       phase: phase,
       confirmed: comparing.confirmed,
+      replaced: comparing.replaced,
     );
     notifyListeners();
   }
@@ -279,6 +398,8 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       ..ended = true
       ..timer?.cancel()
       ..retry?.cancel();
+    if (comparing.completed) _remaining = _after;
+    _pace();
     try {
       comparing.comparison.end();
     } on SealboxException {
@@ -398,6 +519,9 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     // that ended, here or on the other side, or never was, and says nothing
     final comparing = _current;
     if (comparing == null || comparing.ended || comparing.id != id || comparing.deviceId != delivery.fromDeviceId) {
+      // an answer to one this device no longer runs, as after a restart: the
+      // other side would wait for the rest until it timed out
+      if (delivery.kind == _keyKind && !_disposed) await _cancel(run, delivery.fromDeviceId, id);
       return;
     }
     switch ((delivery.kind, payload)) {
@@ -430,13 +554,28 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     // gave up: dropped
     final at = _timeOf(id);
     if (commitment == null || at == null || _keys._now().difference(at).abs() > _life) return;
+    // both asked each other: both keep the same one, the one with the smaller
+    // id, and the other is dropped without a word
+    final crossed = switch (_current) {
+      final _Comparing mine
+          when !mine.ended && mine.role == .initiator && mine.info == null && mine.deviceId == delivery.fromDeviceId =>
+        mine,
+      _ => null,
+    };
+    if (crossed != null) {
+      if (crossed.id.compareTo(id) <= 0 || await _cancelled(run, id) || !_live(crossed)) return;
+      _end(crossed);
+      // the other side runs [id], unless it ended it: then it may have taken
+      // this device's
+      await _cancel(run, crossed.deviceId, crossed.id);
+    }
     // said no to twice just now: no again, without asking the person, or
     // busy with another, which goes on
     final busy = switch (_current) {
       _Comparing(ended: false) => true,
       _ => false,
     };
-    if (busy || _throttled(delivery.fromDeviceId)) {
+    if (busy || (crossed == null && _throttled(delivery.fromDeviceId))) {
       await _cancel(run, delivery.fromDeviceId, id);
       return;
     }
@@ -447,8 +586,15 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       role: .responder,
       comparison: _guard(Comparison.start),
       theirCommitment: commitment,
+      replaced: crossed?.id,
     );
     await _send(comparing, _keyKind, {'key': comparing.comparison.publicKey});
+  }
+
+  /// Whether the other side's end of [id] already waits to be handed over.
+  Future<bool> _cancelled(_Run run, String id) async {
+    final waiting = await _keys._serial(run, run.inbox);
+    return waiting.any((each) => each.kind == _cancelKind && _decodeMap(each.payload)?['c'] == id);
   }
 
   /// The other device's key: the code is ready.
@@ -552,11 +698,7 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       await _tell(run, comparing.deviceId, _doneKind, comparing.id);
       comparing.completed = true;
       _settle(comparing);
-      await _keys.devicesOf(run.userId);
-      // what this device holds reaches the one it just let in, without
-      // waiting for the next message or note
-      await _keys._shareThreadsWithOwn(run);
-      if (_keys.sharesNoteKeys?.call() ?? true) await _keys._shareNoteKeys();
+      unawaited(_shareAfter(run));
     } on _Stopped {
       // stopped on the way: what was saved stands
     } catch (error, stacktrace) {
@@ -566,6 +708,21 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
         _finish(comparing, const ComparisonCancelled());
         await _cancel(run, comparing.deviceId, comparing.id);
       }
+    }
+  }
+
+  /// What this device holds reaches the one it just let in, without waiting
+  /// for the next message or note. Nothing waits for it: it may be many
+  /// requests, and what the other side says meanwhile is taken.
+  Future<void> _shareAfter(_Run run) async {
+    try {
+      await _keys.devicesOf(run.userId);
+      await _keys._shareThreadsWithOwn(run);
+      if (_keys.sharesNoteKeys?.call() ?? true) await _keys._shareNoteKeys();
+    } on _Stopped {
+      // stopped on the way: what was saved stands
+    } catch (error, stacktrace) {
+      _keys._report(error, stacktrace);
     }
   }
 }
@@ -630,6 +787,10 @@ class _Comparing {
   /// against.
   final String? theirCommitment;
 
+  /// The one this device asked for, when the two asked each other and this
+  /// one was kept.
+  final String? replaced;
+
   /// What the code and proofs are bound to, once both keys are in.
   String? info;
 
@@ -663,6 +824,7 @@ class _Comparing {
     required this.role,
     required this.comparison,
     this.theirCommitment,
+    this.replaced,
   });
 }
 
