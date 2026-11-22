@@ -466,10 +466,11 @@ String _patternLabel(String? pattern, L l) {
 Future<void> _pickPattern(BuildContext context, GlobalKey key, ValueNotifier<String?> pattern) {
   final l = L.of(context);
   HapticFeedback.selectionClick();
+  final (:position, :constraints) = menuUnderValue(context, key, width: _patternMenuWidth);
   return showMenu<void>(
     context: context,
-    position: menuUnderValue(context, key, width: _patternMenuWidth),
-    constraints: const BoxConstraints(minWidth: _patternMenuWidth, maxWidth: _patternMenuWidth),
+    position: position,
+    constraints: constraints,
     items: [
       for (final each in <String?>[null, ...Exercises.of(context).patterns])
         PopupMenuItem<void>(

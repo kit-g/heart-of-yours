@@ -3,8 +3,6 @@ part of 'goals.dart';
 /// One card listing every goal, rather than one card per goal — a handful of
 /// goals would otherwise fill the dashboard with near-empty tiles.
 class GoalsCard extends StatefulWidget {
-  final WorkoutAggregation workouts;
-
   /// Whether the card has been given a fixed height and must scroll its list
   /// rather than grow. True in the tablet row, false in the phone column.
   final bool bounded;
@@ -16,7 +14,6 @@ class GoalsCard extends StatefulWidget {
 
   const new({
     super.key,
-    required this.workouts,
     this.bounded = false,
     this.headerHeight = 44,
   });
@@ -26,15 +23,19 @@ class GoalsCard extends StatefulWidget {
 }
 
 class _GoalsCardState extends State<GoalsCard> {
-  ({WorkoutAggregation workouts, LensSetsReader read})? _lens;
+  ({int revision, LensSetsReader read})? _lens;
+
+  /// [Stats.revision] as of the last build: read there, since the rows are
+  /// also built from the flip's own builder, where nothing may be watched.
+  int _revision = 0;
 
   /// One reader for every row, renewed when the rows re-read — on the same
-  /// signal [GoalRow] re-reads on, a new aggregation from [Stats].
+  /// signal [GoalRow] re-reads on, [Stats.revision].
   LensSetsReader _lensSets() {
-    final workouts = widget.workouts;
-    if (_lens case (workouts: final shared, :final read) when identical(shared, workouts)) return read;
+    final revision = _revision;
+    if (_lens case (revision: final shared, :final read) when shared == revision) return read;
     final read = sharedLensSets(Stats.of(context).getLensSets);
-    _lens = (workouts: workouts, read: read);
+    _lens = (revision: revision, read: read);
     return read;
   }
 
@@ -71,6 +72,7 @@ class _GoalsCardState extends State<GoalsCard> {
       context,
     );
     final state = Goals.watch(context);
+    _revision = context.select<Stats, int>((stats) => stats.revision);
     // what a running program implies, beside what the user set (#353)
     final feeds = programFeeds(context);
     final implied = impliedBy(feeds, state.all);
@@ -261,7 +263,6 @@ class _GoalsCardState extends State<GoalsCard> {
         GoalRow(
           key: AppKeys.goalRow(goal.id),
           goal: goal,
-          workouts: widget.workouts,
           lensSets: lensSets,
           feeds: feeds,
           onEdit: () => _openGoal(goal),
@@ -271,7 +272,6 @@ class _GoalsCardState extends State<GoalsCard> {
         GoalRow(
           key: AppKeys.goalRow(goal.id),
           goal: goal,
-          workouts: widget.workouts,
           lensSets: lensSets,
           feeds: feeds,
           from: program.name,
@@ -338,7 +338,6 @@ class _GoalsCardState extends State<GoalsCard> {
                 backgroundColor: Colors.transparent,
                 body: GoalDetail(
                   goal: goal,
-                  workouts: widget.workouts,
                   scrollController: controller,
                   onClose: () => Navigator.of(context).pop(),
                 ),

@@ -5,7 +5,9 @@ part of 'exercises.dart';
 /// workout in progress, if any, does not hold [source]. That workout lives on
 /// the device alone: its sets would save under [source] once the history had
 /// left it, and fail outright where the move deleted it. [listen] is for a
-/// build, so adding [source] to the workout takes the offer away.
+/// build, and watches what it reads: adding [source] to the workout, or the
+/// account going, takes the offer away, and the button with it when the move
+/// is all the menu has (#710).
 bool _canMoveHistory(
   BuildContext context,
   Exercise source, {
@@ -18,7 +20,8 @@ bool _canMoveHistory(
     null => false,
     final workout => workout.any((each) => each.exercise.id == source.id),
   };
-  return Exercises.of(context).canMoveHistory && !holdsSource;
+  final exercises = listen ? Exercises.watch(context) : Exercises.of(context);
+  return exercises.canMoveHistory && !holdsSource;
 }
 
 /// Moves [source]'s history onto an exercise the user picks: the target, then

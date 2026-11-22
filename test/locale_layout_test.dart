@@ -4,7 +4,7 @@
 // Russian/Spanish/French labels run well past their English siblings, and a
 // button that fits "Save" does not necessarily fit "Сохранить".
 //
-// The screen list and baseline stubs mirror a11y_test.dart (which mirrors
+// The screen list and baseline stubs mirror a11y.dart (which mirrors
 // router_test.dart); a third consumer means the shared harness is the next
 // home for them when any of this changes again.
 //

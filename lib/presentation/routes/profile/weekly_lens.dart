@@ -35,9 +35,9 @@ class const _WeeklyLensSection({
     final shown = workouts.isNotEmpty && Preferences.watch(context).isOn(.weeklySets);
     return SliverToBoxAdapter(
       child: switch (shown) {
-        true => Padding(
-          padding: const .only(left: 16, right: 16, bottom: 8),
-          child: _WeeklyLensCard(workouts: workouts),
+        true => const Padding(
+          padding: .only(left: 16, right: 16, bottom: 8),
+          child: _WeeklyLensCard(),
         ),
         false => const SizedBox.shrink(),
       },
@@ -49,11 +49,7 @@ class const _WeeklyLensSection({
 /// week trained, across exercises. It does not matter that you bench six sets
 /// a week; it matters whether you press, and how often.
 class _WeeklyLensCard extends StatefulWidget {
-  /// Only its identity is read: [Stats] replaces it whenever a workout is
-  /// finished or deleted, which is when the counts go stale.
-  final WorkoutAggregation workouts;
-
-  const new({required this.workouts});
+  const new();
 
   @override
   State<_WeeklyLensCard> createState() => _WeeklyLensCardState();
@@ -65,14 +61,8 @@ class _WeeklyLensCardState extends State<_WeeklyLensCard> {
   late final _choice = Listenable.merge([_key, _unfolded]);
 
   /// One read serves both keys, so switching between them counts in memory.
-  /// Kept until the history changes.
-  Future<List<LensSets>>? _rows;
-
-  @override
-  void didUpdateWidget(covariant _WeeklyLensCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.workouts, widget.workouts)) _rows = null;
-  }
+  /// Kept until the history changes: until [Stats.revision] moves.
+  ({int revision, Future<List<LensSets>> rows})? _rows;
 
   @override
   void dispose() {
@@ -81,11 +71,14 @@ class _WeeklyLensCardState extends State<_WeeklyLensCard> {
     super.dispose();
   }
 
-  Future<List<LensSets>> _read(DateTime now, int firstWeekday) {
-    return _rows ??= Stats.of(context).getLensSets(
+  Future<List<LensSets>> _read(DateTime now, int firstWeekday, int revision) {
+    if (_rows case (revision: final at, :final rows) when at == revision) return rows;
+    final rows = Stats.of(context).getLensSets(
       lastWeeksOf(_lensWeeks, now: now, firstWeekday: firstWeekday).first,
       DateTime(now.year, now.month, now.day + 1),
     );
+    _rows = (revision: revision, rows: rows);
+    return rows;
   }
 
   @override
@@ -132,7 +125,7 @@ class _WeeklyLensCardState extends State<_WeeklyLensCard> {
         ),
         const SizedBox(height: 8),
         FutureBuilder<List<LensSets>>(
-          future: _read(now, firstWeekday),
+          future: _read(now, firstWeekday, context.select<Stats, int>((stats) => stats.revision)),
           builder: (context, snapshot) {
             return switch (snapshot.data) {
               List<LensSets> rows => ListenableBuilder(

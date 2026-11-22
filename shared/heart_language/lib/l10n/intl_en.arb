@@ -6250,5 +6250,9 @@
   "coachingClientEarlier": "Earlier",
   "@coachingClientEarlier": {"description": "Heading over a client's workouts before the latest one, on a tablet where the latest is shown in full (#693)", "type": "text", "placeholders": {}},
   "coachingClientBeside": "Beside the client",
-  "@coachingClientBeside": {"description": "Screen-reader label of the switch between the conversation, the program and the notes shown beside a client on a tablet (#693)", "type": "text", "placeholders": {}}
+  "@coachingClientBeside": {"description": "Screen-reader label of the switch between the conversation, the program and the notes shown beside a client on a tablet (#693)", "type": "text", "placeholders": {}},
+  "exerciseArchiveFailed": "Couldn't archive {exerciseName}. Nothing changed.",
+  "@exerciseArchiveFailed": {"description": "Snack when archiving one of the user's exercises failed, as offline, and it stays in the library; the user has already left its page (#710)", "type": "text", "placeholders": {"exerciseName": {}}},
+  "exerciseUnarchiveFailed": "Couldn't unarchive {exerciseName}. Nothing changed.",
+  "@exerciseUnarchiveFailed": {"description": "Snack when taking one of the user's exercises out of the archive failed, as offline, and it stays archived; the user has already left its page (#710)", "type": "text", "placeholders": {"exerciseName": {}}}
 }

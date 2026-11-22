@@ -664,6 +664,8 @@ RouteBase _exercisesRoute() {
                     onTapAlternative: (alternative) {
                       context.goToExerciseDetail(alternative.id);
                     },
+                    onArchived: context.closeExerciseDetail,
+                    onUnarchived: () => _leaveUnarchivedInTab(context, exercise),
                   );
                 },
                 name: _exerciseArchivedDetailName,
@@ -709,6 +711,8 @@ RouteBase _exercisesRoute() {
                   context.goToExerciseDetail(alternative.id);
                 },
                 onAddToWorkout: (exercise) => _onAddToWorkout(context, exercise),
+                onArchived: context.closeExerciseDetail,
+                onUnarchived: () => _leaveUnarchivedInTab(context, exercise),
               );
             },
             // Resolves before deciding, like the history route: a deep link
@@ -1220,7 +1224,13 @@ RouteBase _exerciseArchiveOverRoute() {
             child: SizedBox(
               width: math.min(constraints.maxWidth, readableWidth),
               child: ExerciseArchive(
-                onExercise: (exercise, _) => context.pushExerciseOver(exercise.id),
+                onExercise: (exercise, _) async {
+                  final left = await context.pushNamed<Object?>(
+                    _exerciseOverName,
+                    pathParameters: {'exerciseId': exercise.id},
+                  );
+                  if (left == _LeftExercise.emptiedArchive && context.mounted) _leaveOver(context);
+                },
               ),
             ),
           ),
@@ -1228,6 +1238,38 @@ RouteBase _exerciseArchiveOverRoute() {
       );
     },
   );
+}
+
+/// What an exercise's page over the tabs hands back to the page under it as
+/// it leaves.
+enum _LeftExercise {
+  /// It was the last one archived, and is out: the archive it was opened
+  /// from has nothing left to show.
+  emptiedArchive,
+}
+
+/// Whether taking [exercise] out of the archive leaves the archive empty.
+/// Asked as the page leaves, which is before the account has the change.
+bool _lastArchived(BuildContext context, Exercise exercise) {
+  return Exercises.of(context).archived.every((each) => each.id == exercise.id);
+}
+
+/// Off a page over the tabs, handing [result] to the page under it; with
+/// nothing under it — a link opened it on its own — to the library. Not at
+/// all when the page is not the one on top: what is, the user opened.
+void _leaveOver(BuildContext context, [Object? result]) {
+  final page = ModalRoute.of(context);
+  if (page == null || !page.isCurrent) return;
+  if (!popIfCurrent(page, result)) context.go(_exercisesPath);
+}
+
+/// Where an exercise's page in the tab lands once [exercise] is out of the
+/// archive: the archive while it holds others, which is where the page was
+/// most likely opened from, and the library once it is empty. A `go`, not a
+/// pop: the tab's archive opens its exercises with one on a tablet, so it may
+/// not be under the page at all.
+void _leaveUnarchivedInTab(BuildContext context, Exercise exercise) {
+  return _lastArchived(context, exercise) ? context.closeExerciseDetail() : context.goToExerciseArchive();
 }
 
 /// A library program over any tab: its next programs and the user's copy
@@ -1280,6 +1322,12 @@ RouteBase _exerciseOverRoute() {
           ),
           onTapAlternative: (alternative) => context.pushExerciseOver(alternative.id),
           onAddToWorkout: (exercise) => _onAddToWorkout(context, exercise),
+          onArchived: () => _leaveOver(context),
+          // the archive it was opened from leaves too, once there is nothing in it
+          onUnarchived: () => _leaveOver(
+            context,
+            _lastArchived(context, exercise) ? _LeftExercise.emptiedArchive : null,
+          ),
         ),
       );
     },

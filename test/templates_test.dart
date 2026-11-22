@@ -4,7 +4,7 @@
 // library, so — unlike `GalleryPage` or the standalone adjust-times dialog —
 // there is no way to pump them directly; every test here drives the real app
 // through the router, the same way `workout_start_test.dart` and
-// `a11y_test.dart` reach the workout tab.
+// `a11y.dart` reach the workout tab.
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -113,7 +113,7 @@ void main() {
   /// `app.dart`), which a widget test's fake-time zone never pumps, so
   /// anything behind it — `Templates.init()` several turns deep, behind
   /// exercises and workouts init — never resolves no matter how many frames
-  /// are pumped. `a11y_test.dart` hits the same wall for `Upsync`/`Backfill`
+  /// are pumped. `a11y.dart` hits the same wall for `Upsync`/`Backfill`
   /// and works around it the same way: calling the notifier directly.
   Future<void> openWorkoutTab(WidgetTester tester, {bool signedIn = true}) async {
     final firebase = signedIn

@@ -256,7 +256,6 @@ class _NoteEditorState extends State<_NoteEditor> {
     final text = _controller.text.trim();
     if (text.isEmpty || _saving.value) return;
     final l = L.of(context);
-    final navigator = Navigator.of(context);
     final route = ModalRoute.of(context);
     _failed.value = null;
     _saving.value = true;
@@ -277,7 +276,7 @@ class _NoteEditorState extends State<_NoteEditor> {
       return;
     }
     // closed meanwhile by the person: popping now would close what is under it
-    if (mounted && (route?.isCurrent ?? false)) navigator.pop();
+    if (mounted) popIfCurrent(route);
   }
 
   Future<void> _delete() async {

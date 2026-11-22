@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/rendering.dart';
 import 'package:heart/core/utils/image_picker.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/record_book.dart';
@@ -52,5 +53,6 @@ part 'skip_item.dart';
 part 'skip_page.dart';
 part 'calendar.dart';
 part 'utils.dart';
+part 'view_switch.dart';
 part 'workout_editor.dart';
 part 'workout_item.dart';

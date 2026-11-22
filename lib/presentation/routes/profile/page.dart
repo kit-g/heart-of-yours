@@ -229,7 +229,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                 emptyState: emptyState,
               ),
               // opt-in (#154): off, an empty sliver that reads nothing
-              _RecapsSection(workouts: workouts, onRecaps: widget.onRecaps, onMonth: widget.onMonthlyReport),
+              _RecapsSection(onRecaps: widget.onRecaps, onMonth: widget.onMonthlyReport),
               // opt-in (#136): off, this is an empty sliver and nothing else
               _MuscleMapSection(workouts: workouts),
               // on by default, a switch since #526: sets and sessions a week by pattern or muscle (#341)

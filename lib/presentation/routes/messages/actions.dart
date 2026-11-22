@@ -247,7 +247,6 @@ class _ReportSheetState extends State<_ReportSheet> {
     final reason = _reason.value;
     if (reason == null) return;
     final l = L.of(context);
-    final navigator = Navigator.of(context);
     final route = ModalRoute.of(context);
     final _ReportSheet(:thread, :theirs, :connection, :messenger, :name) = widget;
     _sending.value = true;
@@ -265,7 +264,7 @@ class _ReportSheetState extends State<_ReportSheet> {
       return;
     }
     // closed meanwhile by the person: popping now would close what is under it
-    if (mounted && (route?.isCurrent ?? false)) navigator.pop();
+    if (mounted) popIfCurrent(route);
     // a block that failed is no block
     var blocked = false;
     switch ((_block.value, connection)) {

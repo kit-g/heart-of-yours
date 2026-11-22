@@ -524,10 +524,11 @@ class _NewApiTokenPageState extends State<NewApiTokenPage>
   Future<void> _pickPurpose(BuildContext context) {
     final l = L.of(context);
     buzz();
+    final (:position, :constraints) = menuUnderValue(context, _purposeKey, width: _purposeMenuWidth);
     return showMenu<ApiTokenPurpose?>(
       context: context,
-      position: menuUnderValue(context, _purposeKey, width: _purposeMenuWidth),
-      constraints: const BoxConstraints(minWidth: _purposeMenuWidth, maxWidth: _purposeMenuWidth),
+      position: position,
+      constraints: constraints,
       items: [
         for (final purpose in [null, ...ApiTokenPurpose.values])
           PopupMenuItem<ApiTokenPurpose?>(

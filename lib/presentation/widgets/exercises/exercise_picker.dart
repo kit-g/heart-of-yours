@@ -32,9 +32,6 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
   /// where a new exercise could not answer, and the offer is left out.
   final void Function(String name)? onCreateExercise;
 
-  final _categoryKey = GlobalKey();
-  final _targetKey = GlobalKey();
-
   new({
     super.key,
     required this.exercises,
@@ -68,6 +65,8 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     // once for the list, not once a row (#593)
     final goEasy = goEasyOn(context);
     final previous = PreviousExercises.watch(context);
+    final filters = _Filters.of(preferences.pickerGrouping, askedFor: exercises.filtersAskedFor);
+    final motion = lessMotion(context) ? Duration.zero : const Duration(milliseconds: 200);
 
     return CustomScrollView(
       key: AppKeys.exercisePicker,
@@ -90,154 +89,177 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                     hint: search,
                   ),
                 ),
-                _MovementFilterButton(exercises: exercises),
+                if (filters.buttons) _MovementFilterButton(exercises: exercises),
               ],
             ),
           ),
         ),
-        SliverPersistentHeader(
-          pinned: true,
-          delegate: FixedHeightHeaderDelegate(
-            height: 44,
-            backgroundColor: backgroundColor,
-            child: Row(
-              spacing: 8,
-              children: [
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: PrimaryButton.wide(
-                      backgroundColor: switch (exercises.targets.isEmpty) {
-                        true => colorScheme.surfaceContainer,
-                        false => null,
-                      },
-                      key: _targetKey,
-                      // a Row, not a Stack with a left-pinned icon: a wide
-                      // label (ru «Категория») slid under the icon.
-                      child: _FilterLabel(
-                        label: target,
-                        // an active filter sits on the accent fill,
-                        // where the muted grey blends away
-                        color: switch (exercises.targets.isEmpty) {
-                          true => colorScheme.onSurfaceVariant,
-                          false => colorScheme.onTertiaryContainer,
-                        },
-                      ),
-                      onPressed: () async {
-                        return showMenu(
-                          context: context,
-                          position: _targetKey.position(),
-                          items: <PopupMenuEntry<ExerciseFilter>>[
-                            ...Target.values.map(
-                              (category) {
-                                return PopupMenuItem<ExerciseFilter>(
-                                  height: 36,
-                                  value: category,
-                                  onTap: () {
-                                    buzz();
-                                    exercises.addFilter(category);
-                                  },
-                                  child: Row(
-                                    spacing: 8,
-                                    children: [
-                                      Text(
-                                        category.icon,
-                                        style: textTheme.titleLarge,
-                                      ),
-                                      Text(
-                                        category.label(L.of(context)),
-                                        style: textTheme.titleSmall,
-                                      ),
-                                    ],
-                                  ),
+        // without the filter buttons and nothing of the user's own, the row
+        // would hold nothing
+        if (filters.buttons || exercises.hasOwn)
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: FixedHeightHeaderDelegate(
+              height: 44,
+              backgroundColor: backgroundColor,
+              child: AnimatedSwitcher(
+                duration: motion,
+                // the default stack loosens the header's tight box, and the
+                // buttons shrank to their content's height inside it; the row
+                // on its way out is only a picture of what was there
+                layoutBuilder: (current, previous) => Stack(
+                  fit: .expand,
+                  children: [
+                    for (final each in previous) IgnorePointer(child: ExcludeSemantics(child: each)),
+                    ?current,
+                  ],
+                ),
+                child: Row(
+                  key: ValueKey(filters.buttons),
+                  spacing: 8,
+                  children: [
+                    if (filters.buttons) ...[
+                      Expanded(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          // anchored on its own context, not a GlobalKey: the
+                          // row switcher can hold two of these rows at once
+                          child: Builder(
+                            builder: (anchor) => PrimaryButton.wide(
+                              backgroundColor: switch (exercises.targets.isEmpty) {
+                                true => colorScheme.surfaceContainer,
+                                false => null,
+                              },
+                              // a Row, not a Stack with a left-pinned icon: a wide
+                              // label (ru «Категория») slid under the icon.
+                              child: _FilterLabel(
+                                label: target,
+                                // an active filter sits on the accent fill,
+                                // where the muted grey blends away
+                                color: switch (exercises.targets.isEmpty) {
+                                  true => colorScheme.onSurfaceVariant,
+                                  false => colorScheme.onTertiaryContainer,
+                                },
+                              ),
+                              onPressed: () async {
+                                return showMenu(
+                                  context: context,
+                                  position: anchor.menuPosition(),
+                                  items: <PopupMenuEntry<ExerciseFilter>>[
+                                    ...Target.values.map(
+                                      (category) {
+                                        return PopupMenuItem<ExerciseFilter>(
+                                          height: 36,
+                                          value: category,
+                                          onTap: () {
+                                            buzz();
+                                            exercises.addFilter(category);
+                                          },
+                                          child: Row(
+                                            spacing: 8,
+                                            children: [
+                                              Text(
+                                                category.icon,
+                                                style: textTheme.titleLarge,
+                                              ),
+                                              Text(
+                                                category.label(L.of(context)),
+                                                style: textTheme.titleSmall,
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 );
                               },
                             ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: PrimaryButton.wide(
-                      backgroundColor: switch (exercises.categories.isEmpty) {
-                        true => colorScheme.surfaceContainer,
-                        false => null,
-                      },
-                      key: _categoryKey,
-                      // same shape as the target button above
-                      child: _FilterLabel(
-                        label: category,
-                        color: switch (exercises.categories.isEmpty) {
-                          true => colorScheme.onSurfaceVariant,
-                          false => colorScheme.onTertiaryContainer,
-                        },
+                          ),
+                        ),
                       ),
-                      onPressed: () async {
-                        return showMenu(
-                          context: context,
-                          position: _categoryKey.position(),
-                          items: <PopupMenuEntry<ExerciseFilter>>[
-                            ...Category.values.map(
-                              (category) {
-                                return PopupMenuItem<ExerciseFilter>(
-                                  height: 36,
-                                  value: category,
-                                  onTap: () {
-                                    buzz();
-                                    exercises.addFilter(category);
-                                  },
-                                  child: Text(
-                                    category.label(L.of(context)),
-                                    style: textTheme.titleSmall,
-                                  ),
+                      Expanded(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: Builder(
+                            builder: (anchor) => PrimaryButton.wide(
+                              backgroundColor: switch (exercises.categories.isEmpty) {
+                                true => colorScheme.surfaceContainer,
+                                false => null,
+                              },
+                              // same shape as the target button above
+                              child: _FilterLabel(
+                                label: category,
+                                color: switch (exercises.categories.isEmpty) {
+                                  true => colorScheme.onSurfaceVariant,
+                                  false => colorScheme.onTertiaryContainer,
+                                },
+                              ),
+                              onPressed: () async {
+                                return showMenu(
+                                  context: context,
+                                  position: anchor.menuPosition(),
+                                  items: <PopupMenuEntry<ExerciseFilter>>[
+                                    ...Category.values.map(
+                                      (category) {
+                                        return PopupMenuItem<ExerciseFilter>(
+                                          height: 36,
+                                          value: category,
+                                          onTap: () {
+                                            buzz();
+                                            exercises.addFilter(category);
+                                          },
+                                          child: Text(
+                                            category.label(L.of(context)),
+                                            style: textTheme.titleSmall,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 );
                               },
                             ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    // in the row only when there is something of the user's to
+                    // show: an empty slot here still took the row's 8pt gap and
+                    // pushed Target and Category off-centre (#488)
+                    if (exercises.hasOwn)
+                      ChoiceChip(
+                        selectedColor: colorScheme.tertiaryContainer,
+                        // the tick is a second foreground on that fill, with its
+                        // own colour slot the chip theme leaves unset — so it
+                        // stayed dark while the label went light
+                        checkmarkColor: colorScheme.onTertiaryContainer,
+                        // The accent fill needs the accent's own ink. The chip
+                        // theme sets no label style at all, so a selected chip
+                        // keeps the unselected one and reads as dark text on the
+                        // accent — while the two filter buttons beside it switch
+                        // to onTertiaryContainer for exactly this reason.
+                        //
+                        // Set here rather than on the theme because the three
+                        // selectable chips in the app do not agree on a selected
+                        // fill: this one overrides to the accent, while the
+                        // movement sheet's and the new-exercise dialog's take
+                        // Material's secondaryContainer. One label colour across
+                        // all of them would be wrong for two.
+                        labelStyle: switch (exercises.showingMine) {
+                          true => textTheme.labelLarge?.copyWith(color: colorScheme.onTertiaryContainer),
+                          false => null,
+                        },
+                        label: Text(mine),
+                        selected: exercises.showingMine,
+                        onSelected: (v) => exercises.showingMine = v,
+                      ),
+                  ],
                 ),
-                // in the row only when there is something of the user's to
-                // show: an empty slot here still took the row's 8pt gap and
-                // pushed Target and Category off-centre (#488)
-                if (exercises.hasOwn)
-                  ChoiceChip(
-                    selectedColor: colorScheme.tertiaryContainer,
-                    // the tick is a second foreground on that fill, with its
-                    // own colour slot the chip theme leaves unset — so it
-                    // stayed dark while the label went light
-                    checkmarkColor: colorScheme.onTertiaryContainer,
-                    // The accent fill needs the accent's own ink. The chip
-                    // theme sets no label style at all, so a selected chip
-                    // keeps the unselected one and reads as dark text on the
-                    // accent — while the two filter buttons beside it switch
-                    // to onTertiaryContainer for exactly this reason.
-                    //
-                    // Set here rather than on the theme because the three
-                    // selectable chips in the app do not agree on a selected
-                    // fill: this one overrides to the accent, while the
-                    // movement sheet's and the new-exercise dialog's take
-                    // Material's secondaryContainer. One label colour across
-                    // all of them would be wrong for two.
-                    labelStyle: switch (exercises.showingMine) {
-                      true => textTheme.labelLarge?.copyWith(color: colorScheme.onTertiaryContainer),
-                      false => null,
-                    },
-                    label: Text(mine),
-                    selected: exercises.showingMine,
-                    onSelected: (v) => exercises.showingMine = v,
-                  ),
-              ],
+              ),
             ),
           ),
-        ),
-        if (exercises.filters.isNotEmpty)
+        if (filters.applied && exercises.filters.isNotEmpty)
           SliverPersistentHeader(
             pinned: true,
             delegate: FixedHeightHeaderDelegate(
@@ -301,7 +323,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               // own order ([showsRecent]); the library tab shows just that.
               final searching = value.text.trim().isNotEmpty;
               final recent = showsRecent && !searching
-                  ? exercises.recent(previous.lastDone, filters: true, isMine: mine)
+                  ? exercises.recent(previous.lastDone, filters: filters.applied, isMine: mine)
                   : const <Exercise>[];
               final suggestions = switch (searching) {
                 true => const <Exercise>[],
@@ -309,7 +331,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               };
               final found = exercises.search(
                 value.text,
-                filters: true,
+                filters: filters.applied,
                 isMine: mine,
                 lastDone: searching ? previous.lastDone : null,
               );
@@ -318,6 +340,11 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               // grouped here, outside the fold's builder: a fold changes which
               // groups are open, not what is in them
               final groups = groupExercises(found, grouping, patterns: () => exercises.patterns);
+              // and pictured here, once a build rather than once a fold
+              final pictures = {
+                for (final (:group, exercises: members) in groups)
+                  group: representativeOf(members, timesDone: previous.timesDone),
+              };
 
               SliverList list(List<Exercise> exercises) {
                 return SliverList.separated(
@@ -344,44 +371,48 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                 );
               }
 
-              return SliverMainAxisGroup(
-                slivers: [
-                  if (suggestions.isNotEmpty) ...[
-                    SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerSuggested)),
-                    list(suggestions),
-                  ],
-                  if (recent.isNotEmpty) ...[
-                    SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerRecent)),
-                    list(recent),
-                  ],
-                  if (suggestions.isNotEmpty || recent.isNotEmpty)
-                    SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerAllExercises)),
-                  switch (grouping) {
-                    .none => list(found),
-                    .category || .target || .movement => ValueListenableBuilder<Set<String>>(
-                      // its own listenable: a fold rebuilds this list, not
-                      // everything that watches the preferences
-                      valueListenable: preferences.openPickerGroups,
-                      builder: (_, open, _) => SliverMainAxisGroup(
-                        slivers: [
-                          for (final (:group, exercises: members) in groups)
-                            _ExerciseGroupSliver(
-                              key: ValueKey(group.id),
-                              group: group,
-                              count: members.length,
-                              open: open.contains(group.id),
-                              backgroundColor: backgroundColor,
-                              list: list(members),
-                            ),
-                        ],
+              return _GroupingTransition(
+                grouping: grouping,
+                child: SliverMainAxisGroup(
+                  slivers: [
+                    if (suggestions.isNotEmpty) ...[
+                      SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerSuggested)),
+                      list(suggestions),
+                    ],
+                    if (recent.isNotEmpty) ...[
+                      SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerRecent)),
+                      list(recent),
+                    ],
+                    if (suggestions.isNotEmpty || recent.isNotEmpty)
+                      SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerAllExercises)),
+                    switch (grouping) {
+                      .none => list(found),
+                      .category || .target || .movement => ValueListenableBuilder<Set<String>>(
+                        // its own listenable: a fold rebuilds this list, not
+                        // everything that watches the preferences
+                        valueListenable: preferences.openPickerGroups,
+                        builder: (_, open, _) => SliverMainAxisGroup(
+                          slivers: [
+                            for (final (:group, exercises: members) in groups)
+                              _ExerciseGroupSliver(
+                                key: ValueKey(group.id),
+                                group: group,
+                                count: members.length,
+                                open: open.contains(group.id),
+                                picture: pictures[group],
+                                backgroundColor: backgroundColor,
+                                list: list(members),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  },
-                  if (onCreateExercise case final create? when searching && found.isEmpty)
-                    SliverToBoxAdapter(
-                      child: _CreateExercise(name: value.text.trim(), onCreate: create),
-                    ),
-                ],
+                    },
+                    if (onCreateExercise case final create? when searching && found.isEmpty)
+                      SliverToBoxAdapter(
+                        child: _CreateExercise(name: value.text.trim(), onCreate: create),
+                      ),
+                  ],
+                ),
               );
             },
           ),
@@ -538,4 +569,40 @@ class _CreateExercise extends StatelessWidget {
       onTap: () => onCreate(name),
     );
   }
+}
+
+/// What of the filters a picker shows and applies (#711). Grouping already
+/// sorts the library by category, target or movement, so the picker's own
+/// filters beside it would only be noise: while grouped they are neither
+/// shown nor applied, and kept as they were for the way back. The grouping
+/// chosen decides, typing or not, so the row above the search results does
+/// not come and go with each word. Mine is not one of them.
+///
+/// A filter the user asked for by name is ([Exercises.filtersAskedFor]): the
+/// library opened "showing only" something stays showing only that, grouped,
+/// with its chip in view to clear it.
+enum _Filters {
+  /// The buttons, the chips, and the list under them.
+  editable,
+
+  /// The chips and the list under them, and no buttons to add to them.
+  askedFor,
+
+  /// Nothing: set aside while grouped.
+  setAside,
+  ;
+
+  static _Filters of(PickerGrouping grouping, {required bool askedFor}) {
+    return switch ((grouping, askedFor)) {
+      (.none, _) => editable,
+      (.category || .target || .movement, true) => _Filters.askedFor,
+      (.category || .target || .movement, false) => setAside,
+    };
+  }
+
+  /// Whether the filter buttons show, to add to the filters.
+  bool get buttons => this == editable;
+
+  /// Whether the filters in force narrow the list, and their chips show.
+  bool get applied => this != setAside;
 }

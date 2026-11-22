@@ -127,8 +127,21 @@ test-heart_language: codegen-heart_language
 $(filter-out test-heart_language,$(TEST_TARGETS)): test-%: codegen-%
 	$(call suite_test,shared/$*,$*)
 
+# The app suite runs as an explicit, sorted file list: left to find them itself,
+# flutter test takes files in directory order, and the heavy a11y_<n> shards
+# could start last. SHARD=<k>/<n> runs every n-th file from the k-th (1-based),
+# so CI can spread the suite over n jobs that each compile only their own
+# files; each shard's report is app.<k>-of-<n>, and the summary adds them up.
+# A SHARD that selects nothing is an error: an empty list would make a bare
+# `flutter test`, which runs the whole suite under the shard's name.
+SHARD ?= 1/1
+APP_TEST_FILES = $(shell find test -name '*_test.dart' | LC_ALL=C sort | \
+	awk -v k=$(word 1,$(subst /, ,$(SHARD))) -v n=$(word 2,$(subst /, ,$(SHARD))) \
+	'n > 0 && k >= 1 && k <= n && (NR - 1) % n == k - 1')
+
 test-app: codegen-app codegen-heart_language
-	$(call suite_test,,app)
+	$(if $(APP_TEST_FILES),,$(error SHARD=$(SHARD) selects no test files: it is <k>/<n>, k from 1 to n))
+	$(call suite_test,$(APP_TEST_FILES),app$(if $(filter-out 1/1,$(SHARD)),.$(subst /,-of-,$(SHARD))))
 
 # The encryption package (#565): its Rust crate, then its Dart API over the
 # library the build hook compiles. dart test from inside the package, since a
@@ -145,7 +158,7 @@ test-scripts:
 
 # just the screen×guideline accessibility matrix, for quick local runs
 a11y: codegen-app
-	flutter test test/a11y_test.dart
+	flutter test $(wildcard test/a11y_*_test.dart)
 
 # app-only line coverage (lib/, generated code excluded) — the number
 # test coverage tickets are measured against. `coverage/` is gitignored.
