@@ -70,6 +70,10 @@ void main() {
     void Function(DateTime)? onLogOn,
     VoidCallback? onStartWorkout,
     Map<String, Object> stored = const {},
+    bool paged = false,
+    PageController? pages,
+    TargetPlatform platform = .android,
+    bool Function(Workout)? shows,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -84,6 +88,7 @@ void main() {
           ChangeNotifierProvider<Preferences>.value(value: preferences),
         ],
         child: MaterialApp(
+          theme: ThemeData(platform: platform),
           locale: locale,
           localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
@@ -91,6 +96,9 @@ void main() {
             body: Builder(
               builder: (context) => HistoryCalendar(
                 byMonth: Workouts.watch(context).byMonth,
+                paged: paged,
+                pages: pages,
+                shows: shows,
                 onTapWorkout: switch (opens) {
                   true => onTapWorkout ?? (_) {},
                   false => null,
@@ -413,6 +421,199 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  group('a month at a time (#739)', () {
+    String named(WidgetTester tester) => tester.widget<Text>(find.byKey(AppKeys.calendarMonthTitle)).data!;
+    String name(DateTime month, [String locale = 'en']) => DateFormat.yMMM(locale).format(month);
+    _Workouts three() => _Workouts()
+      ..rows[key(current)] = [workout(current, 5)]
+      ..rows[key(previous)] = [workout(previous, 6)]
+      ..rows[key(before)] = [workout(before, 7)];
+
+    Future<void> swipe(WidgetTester tester, double dx) async {
+      await tester.fling(find.byType(PageView), Offset(dx, 0), 1000);
+      await tester.pumpAndSettle();
+    }
+
+    /// Onto the page still to come, whose spinner never settles.
+    Future<void> swipeOn(WidgetTester tester) async {
+      await tester.fling(find.byType(PageView), const Offset(300, 0), 1000);
+      await tester.pumpTimes();
+    }
+
+    testCalendar('a swipe turns the months, no further than the current one and the oldest', (tester) async {
+      await pump(tester, three(), paged: true);
+      expect(named(tester), name(current));
+      expect(find.byKey(ValueKey(key(current))), findsOneWidget);
+      expect(find.byKey(ValueKey(key(previous))), findsNothing);
+
+      await swipe(tester, -300);
+      expect(named(tester), name(current), reason: 'nothing is later');
+      await swipe(tester, 300);
+      expect(named(tester), name(previous));
+      await swipe(tester, 300);
+      expect(named(tester), name(before));
+      await swipe(tester, 300);
+      expect(named(tester), name(before), reason: 'nothing is older');
+      await swipe(tester, -300);
+      expect(named(tester), name(previous));
+      expect(tester.takeException(), isNull);
+    });
+
+    testCalendar('a workout dated past the current month adds no later one', (tester) async {
+      final next = DateTime(now.year, now.month + 1);
+      await pump(tester, _Workouts()..rows[key(next)] = [workout(next, 3)], paged: true);
+      expect(named(tester), name(current));
+      expect(find.byKey(AppKeys.calendarNextMonth).hitTestable(), findsNothing);
+      expect(find.byKey(AppKeys.calendarPreviousMonth).hitTestable(), findsNothing);
+    });
+
+    testCalendar('the buttons turn the months, each gone where there is none, the other not moving', (tester) async {
+      await pump(tester, three(), paged: true);
+      final back = tester.getRect(find.byKey(AppKeys.calendarPreviousMonth));
+      expect(find.byKey(AppKeys.calendarNextMonth).hitTestable(), findsNothing);
+      await tester.tap(find.byKey(AppKeys.calendarPreviousMonth));
+      await tester.pumpAndSettle();
+      expect(named(tester), name(previous));
+      expect(tester.getRect(find.byKey(AppKeys.calendarPreviousMonth)), back);
+      await tester.tap(find.byKey(AppKeys.calendarPreviousMonth));
+      await tester.pumpAndSettle();
+      expect(named(tester), name(before));
+      expect(find.byKey(AppKeys.calendarPreviousMonth).hitTestable(), findsNothing);
+      await tester.tap(find.byKey(AppKeys.calendarNextMonth));
+      await tester.pumpAndSettle();
+      expect(named(tester), name(previous));
+    });
+
+    for (final locale in const ['en', 'ru', 'es', 'fr']) {
+      testCalendar('the month is announced as it changes, in $locale', (tester) async {
+        final semantics = tester.ensureSemantics();
+        await pump(tester, three(), paged: true, locale: Locale(locale));
+        await swipe(tester, 300);
+        final said = DateFormat.yMMMM(locale).format(previous);
+        final node = tester.getSemantics(find.bySemanticsLabel(said)).getSemanticsData();
+        expect(node.flagsCollection.isLiveRegion, isTrue);
+        semantics.dispose();
+      });
+    }
+
+    for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+      testCalendar('a date picked goes to its month, on $platform', (tester) async {
+        final far = DateTime(now.year - 2, 3);
+        await pump(
+          tester,
+          _Workouts()
+            ..rows[key(current)] = [workout(current, 5)]
+            ..rows[key(far)] = [workout(far, 9)],
+          paged: true,
+          platform: platform,
+        );
+        await tester.tap(find.byKey(AppKeys.calendarGoToDate));
+        await tester.pumpAndSettle();
+        switch (platform) {
+          case TargetPlatform.iOS:
+            // month, day, year: two years back, and it stays there
+            await tester.drag(find.text('${now.year}'), const Offset(0, 64), touchSlopY: 0);
+            await tester.pumpAndSettle(const Duration(milliseconds: 100));
+            await tester.tap(find.text('OK'));
+          case _:
+            await tester.tap(find.text('November ${now.year}'));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text('${now.year - 2}'));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text('10').last);
+            await tester.pumpAndSettle();
+            await tester.tap(find.text('OK'));
+        }
+        await tester.pumpAndSettle();
+        expect(named(tester), name(DateTime(now.year - 2, now.month)));
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testCalendar('the oldest month asks for what is older, once, and the page after it fills in', (tester) async {
+      final workouts = _Workouts()
+        ..rows[key(current)] = [workout(current, 5)]
+        ..more = true;
+      await pump(tester, workouts, paged: true);
+      await tester.pump();
+      expect(workouts.calls, 1);
+      await swipeOn(tester);
+      expect(named(tester), name(current), reason: 'the page still to come is no month');
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      workouts
+        ..rows[key(previous)] = [workout(previous, 6)]
+        ..loading = false
+        ..more = false
+        ..notifyListeners();
+      await tester.pumpAndSettle();
+      expect(named(tester), name(previous));
+      expect(find.byKey(ValueKey(key(previous))), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testCalendar('a tail with nothing older goes back to the oldest month', (tester) async {
+      final workouts = _Workouts()
+        ..rows[key(current)] = [workout(current, 5)]
+        ..more = true;
+      await pump(tester, workouts, paged: true);
+      await tester.pump();
+      await swipeOn(tester);
+      workouts
+        ..loading = false
+        ..more = false
+        ..notifyListeners();
+      await tester.pumpAndSettle();
+      expect(find.byKey(ValueKey(key(current))), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a month beginning with the page open leaves the one looked at', (tester) async {
+      var at = DateTime(2026, 11, 30, 23, 59);
+      await withClock(Clock(() => at), () async {
+        await pump(tester, three(), paged: true);
+        await swipe(tester, 300);
+        expect(named(tester), name(previous));
+        at = DateTime(2026, 12, 1, 0, 1);
+        await tester.pump(const Duration(minutes: 2));
+        await tester.pumpAndSettle();
+        expect(named(tester), name(previous));
+        expect(find.byKey(ValueKey(key(previous))), findsOneWidget);
+      });
+    });
+
+    testCalendar('a day opens its workout, and the filter marks as it does in the scrolling months', (tester) async {
+      final opened = <Workout>[];
+      await pump(
+        tester,
+        _Workouts()..rows[key(current)] = [workout(current, 5)..name = 'Legs', workout(current, 8)],
+        paged: true,
+        onTapWorkout: opened.add,
+        shows: (workout) => workout.name == 'Legs',
+      );
+      expect(find.byIcon(Icons.check), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.check));
+      await tester.pumpAndSettle();
+      expect(opened.single.name, 'Legs');
+    });
+
+    testCalendar('wider than a phone, the month keeps its width', (tester) async {
+      await pump(tester, three(), paged: true, size: const Size(1194, 834));
+      expect(tester.getSize(find.byType(PageView)).width, calendarWidth);
+    });
+
+    testCalendar('on a short screen a month of six weeks scrolls to its end', (tester) async {
+      final six = DateTime(2026, 8);
+      await pump(tester, _Workouts()..rows[key(six)] = [workout(six, 31)], paged: true, size: const Size(390, 420));
+      for (final _ in [1, 2, 3]) {
+        await swipe(tester, 300);
+      }
+      await tester.drag(find.byType(PageView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.check).hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   Future<MockLocalDatabase> pumpApp(
     WidgetTester tester, {
     required Size size,
@@ -452,6 +653,15 @@ void main() {
     return workout..finish(workout.start.add(const Duration(hours: 1)));
   }
 
+  /// Picks [view] off the menu of them: the menu is gone, and the swap not
+  /// begun, when this returns.
+  Future<void> show(WidgetTester tester, HistoryView view) async {
+    await tester.tap(find.byKey(AppKeys.historyViewSwitch).last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.byKey(AppKeys.historyViewChoice(view.value)));
+  }
+
   testCalendar('the switch turns History into the calendar and back, and History opens on the last one (#609)', (
     tester,
   ) async {
@@ -460,15 +670,15 @@ void main() {
     final preferences = Preferences.of(tester.element(find.byType(HistoryPage)));
     expect(preferences.historyView, HistoryView.list);
 
-    await tester.tap(find.byTooltip('Show as calendar'));
+    await show(tester, .calendar);
     await tester.pumpTimes();
     expect(find.byKey(AppKeys.historyCalendar), findsOneWidget);
     expect(find.byType(WorkoutItem), findsNothing);
     expect(preferences.historyView, HistoryView.calendar);
     // the list's actions stay in the calendar's header
-    expect(find.byTooltip('Show as list'), findsOneWidget);
+    expect(find.byTooltip('Change view'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Show as list'));
+    await show(tester, .list);
     await tester.pumpTimes();
     expect(find.byKey(AppKeys.historyCalendar), findsNothing);
     expect(find.byType(WorkoutItem), findsOneWidget);
@@ -485,7 +695,7 @@ void main() {
       Finder header() => find.byKey(AppKeys.historyViewSwitch).last;
       final at = tester.getRect(header());
 
-      await tester.tap(header());
+      await show(tester, .calendar);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 150));
       expect(find.byKey(AppKeys.historyCalendar), findsOneWidget);
@@ -500,7 +710,7 @@ void main() {
       expect(find.byKey(AppKeys.historyViewSwitch), findsOneWidget);
       expect(tester.getRect(header()), at);
 
-      await tester.tap(header());
+      await show(tester, .list);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 150));
       expect(find.byKey(AppKeys.historyCalendar), findsOneWidget, reason: 'the calendar is still leaving');
@@ -521,13 +731,13 @@ void main() {
       addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
       await pumpApp(tester, size: const Size(390, 844), history: [finished(current, 5)]);
 
-      await tester.tap(find.byTooltip('Show as calendar'));
+      await show(tester, .calendar);
       await tester.pump();
       expect(find.byKey(AppKeys.historyCalendar), findsOneWidget);
       expect(find.byType(WorkoutItem), findsNothing);
       expect(find.byKey(AppKeys.historyViewSwitch), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Show as list'));
+      await show(tester, .list);
       await tester.pump();
       expect(find.byKey(AppKeys.historyCalendar), findsNothing);
       expect(find.byType(WorkoutItem), findsOneWidget);
@@ -553,7 +763,7 @@ void main() {
     expect(folded.height, kToolbarHeight);
     final button = tester.getRect(find.byKey(AppKeys.historyViewSwitch));
 
-    await tester.tap(find.byTooltip('Show as calendar'));
+    await show(tester, .calendar);
     await tester.pump();
     expect(tester.getRect(header()).height, closeTo(folded.height, 1));
     expect(tester.getRect(find.byKey(AppKeys.historyViewSwitch).last), button);
@@ -573,13 +783,14 @@ void main() {
 
   testCalendar('changed back mid-swap, the views turn back from where they are (#712)', (tester) async {
     await pumpApp(tester, size: const Size(390, 844), history: [finished(current, 5)]);
-    await tester.tap(find.byTooltip('Show as calendar'));
+    await show(tester, .calendar);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 60));
     final leaving = faded(tester, .list);
     expect(leaving, inExclusiveRange(0, 1));
 
-    await tester.tap(find.byTooltip('Show as list'));
+    // changed elsewhere, as from another device: the menu outlasts the swap
+    Preferences.of(tester.element(find.byType(HistoryPage))).setHistoryView(.list);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));
     // coming back, not snapped to whole or to gone
@@ -589,13 +800,31 @@ void main() {
     expect(find.byKey(AppKeys.historyCalendar), findsNothing);
     expect(find.byType(WorkoutItem), findsOneWidget);
     expect(find.byKey(AppKeys.historyViewSwitch), findsOneWidget);
-    expect(find.byTooltip('Show as calendar'), findsOneWidget);
+    expect(find.byTooltip('Change view'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testCalendar('changed to a third view mid-swap, it arrives over the one that was arriving (#739)', (tester) async {
+    await pumpApp(tester, size: const Size(390, 844), history: [finished(current, 5)]);
+    final preferences = Preferences.of(tester.element(find.byType(HistoryPage)));
+    preferences.setHistoryView(.calendar);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+    preferences.setHistoryView(.month);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(find.byType(WorkoutItem), findsNothing);
+    expect(faded(tester, .calendar), inExclusiveRange(0, 1));
+    await tester.pumpTimes();
+    expect(find.byType(PageView), findsOneWidget);
+    expect(find.byKey(AppKeys.historyCalendar), findsOneWidget);
+    expect(find.byKey(AppKeys.historyViewSwitch), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   testCalendar('off screen mid-swap, the swap ends where it was going (#712)', (tester) async {
     await pumpApp(tester, size: const Size(390, 844), history: [finished(current, 5)]);
-    await tester.tap(find.byTooltip('Show as calendar'));
+    await show(tester, .calendar);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 60));
     await tester.tapByKey(AppKeys.profileStack);
@@ -611,7 +840,7 @@ void main() {
     final card = tester.getCenter(find.byType(WorkoutItem));
     expect(find.semantics.byLabel(RegExp('Session')), findsWidgets);
 
-    await tester.tap(find.byTooltip('Show as calendar'));
+    await show(tester, .calendar);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 40));
     expect(find.byType(WorkoutItem), findsOneWidget, reason: 'still leaving');
@@ -630,7 +859,7 @@ void main() {
     list.position.jumpTo(300);
     await tester.pumpTimes();
 
-    await tester.tap(find.byTooltip('Show as calendar'));
+    await show(tester, .calendar);
     await tester.pumpTimes();
     final frame = tester.state<ScrollableState>(
       find.ancestor(of: find.byKey(AppKeys.historyCalendar), matching: find.byType(Scrollable)).first,
@@ -744,6 +973,36 @@ void main() {
     expect(tester.getSemantics(day(label)).getSemanticsData().flagsCollection.isSelected, Tristate.isTrue);
     expect(tester.takeException(), isNull);
     semantics.dispose();
+  });
+
+  testCalendar('a re-tap on the tab brings the current month back, from however far (#739)', (tester) async {
+    final history = [
+      finished(current, 5),
+      for (final back in List.generate(8, (i) => i + 1)) finished(DateTime(current.year, current.month - back), 5),
+    ];
+    await pumpApp(tester, size: const Size(390, 844), history: history);
+    Preferences.of(tester.element(find.byType(HistoryPage))).setHistoryView(.month);
+    await tester.pumpTimes();
+    String named() => tester.widget<Text>(find.byKey(AppKeys.calendarMonthTitle)).data!;
+    for (final _ in List.generate(5, (i) => i)) {
+      await tester.tap(find.byKey(AppKeys.calendarPreviousMonth));
+      await tester.pumpTimes();
+    }
+    expect(named(), DateFormat.yMMM('en').format(DateTime(current.year, current.month - 5)));
+    await tester.tapByKey(AppKeys.historyStack);
+    await tester.pumpTimes();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpTimes();
+    expect(named(), DateFormat.yMMM('en').format(current));
+    // and a later visit opens on the current month
+    await tester.tap(find.byKey(AppKeys.calendarPreviousMonth));
+    await tester.pumpTimes();
+    await show(tester, .list);
+    await tester.pumpTimes();
+    await show(tester, .month);
+    await tester.pumpTimes();
+    expect(named(), DateFormat.yMMM('en').format(current));
+    expect(tester.takeException(), isNull);
   });
 
   testCalendar('a marked day on a phone pushes its workout over the calendar (#609)', (tester) async {

@@ -159,22 +159,18 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
             icon: const Icon(Icons.more_time_rounded),
             onPressed: () => log(),
           ),
-        // the switch between the two views (#609), remembered as the
-        // view History opens on
-        IconButton(
-          key: AppKeys.historyViewSwitch,
-          tooltip: switch (view) {
-            .list => L.of(context).showAsCalendar,
-            .calendar => L.of(context).showAsList,
-          },
-          icon: _SwitchGlyph(view: view),
-          onPressed: () {
-            buzz();
-            Preferences.of(context).setHistoryView(switch (view) {
-              .list => .calendar,
-              .calendar => .list,
-            });
-          },
+        // the menu of the views (#609, #739), remembered as the view
+        // History opens on
+        Builder(
+          builder: (context) => IconButton(
+            key: AppKeys.historyViewSwitch,
+            tooltip: L.of(context).historyChangeView,
+            icon: _SwitchGlyph(view: view),
+            onPressed: () {
+              buzz();
+              showHistoryViewMenu(context);
+            },
+          ),
         ),
       ],
       scrolledUnderElevation: 0,
@@ -358,12 +354,12 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
       );
     }
 
-    // The same header over the calendar (#609), whose months scroll by
-    // themselves. The calendar takes what is left under the header and any
-    // offer; when that is too little for a month (a small phone, large text,
+    // The same header over the calendar, whose months scroll by themselves
+    // (#609), or turn one at a time when [paged] (#739). The calendar takes
+    // what is left under the header and any offer; when that is too little for a month (a small phone, large text,
     // an offer showing), it takes the screen under the collapsed bar instead,
     // and the header and offer scroll away to make room.
-    Widget calendar() {
+    Widget calendar({required bool paged}) {
       return CustomScrollView(
         physics: const ClampingScrollPhysics(),
         slivers: [
@@ -389,7 +385,9 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                         trained: exercises.isInitialized ? trained : null,
                         onTapWorkout: widget.onTapWorkout,
                         selectedId: widget.selectedId,
+                        paged: paged,
                         controller: Scrolls.of(context).historyCalendarScrollController,
+                        pages: Scrolls.of(context).historyMonthController,
                         onLogOn: switch (widget.onLogPastWorkout) {
                           final void Function({DateTime? on}) log => (day) => log(on: day),
                           null => null,
@@ -414,12 +412,13 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
       );
     }
 
-    // the two views turn into each other under a header that stays put (#712)
+    // the views turn into each other under a header that stays put (#712)
     final page = _ViewSwitch(
       view: view,
       builder: (view) => switch (view) {
         .list => listview(),
-        .calendar => calendar(),
+        .calendar => calendar(paged: false),
+        .month => calendar(paged: true),
       },
     );
 
