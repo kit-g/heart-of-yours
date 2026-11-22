@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -108,7 +109,7 @@ void main() {
     expect(written.value, 102.5);
 
     // on the change's own line, saying what it takes back
-    final keep = find.ancestor(of: find.textContaining('Keep'), matching: find.byType(TextButton));
+    final keep = find.ancestor(of: find.textContaining('Keep'), matching: find.byType(QuietButton));
     expect(tester.getCenter(keep).dy, closeTo(tester.getCenter(find.textContaining('next time')).dy, 16));
     expect(
       tester.widgetList<Tooltip>(find.byType(Tooltip)).map((tip) => tip.message),

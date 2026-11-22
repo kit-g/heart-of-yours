@@ -559,11 +559,10 @@ class _HistoryTail extends StatelessWidget {
         spacing: 4,
         children: [
           Text(historyLoadMoreError, style: muted, textAlign: .center),
-          TextButton.icon(
-            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+          QuietButton(
             onPressed: onRetry,
-            icon: const Icon(Icons.refresh, size: 18),
-            label: Text(retry),
+            icon: Icons.refresh,
+            child: Text(retry),
           ),
         ],
       ),

@@ -28,6 +28,7 @@ import 'package:heart/presentation/navigation/router/router.dart' show HeartRout
 import 'package:heart/presentation/routes/coaching/coaching.dart' show coachingSpaceOn;
 import 'package:heart/presentation/widgets/avatar.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/confirm.dart';
 import 'package:heart/presentation/widgets/compare_codes.dart';
 import 'package:heart/presentation/widgets/feature_copy.dart';
 import 'package:heart/presentation/widgets/feature_offer.dart';

@@ -618,7 +618,7 @@ class _FormerClients extends StatelessWidget {
         (.failed, _) => [
           ListTile(
             title: Text(l.coachingRosterFailed),
-            trailing: TextButton(onPressed: roster.loadFormer, child: Text(l.retry)),
+            trailing: QuietButton(onPressed: roster.loadFormer, child: Text(l.retry)),
           ),
         ],
         (.loaded, []) => [ListTile(title: Text(l.coachingNoFormerClients))],

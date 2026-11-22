@@ -194,6 +194,11 @@ row at a time. A literal in a widget is a finding.
   shapes get called out in review; contrast and affordance are chosen. Buttons
   are the `PrimaryButton` family and the theme's tokens, not ad-hoc
   `ElevatedButton`s with inline colours.
+- **No tall text button.** A `TextButton` stretched to 48pt with `minimumSize`
+  is not drawn anywhere: a dialog's way out, a Retry, a page's side action is
+  `QuietButton`, and the action beside it `PrimaryButton.shrunk` with a
+  `hitHeight`: the Goals header's pair. Both draw 32pt and answer taps over 48.
+  `make lint` fails on a hand-set `minimumSize`.
 - **Pick-one-of-a-few is `SettingSwitcher`** (`widgets/setting_picker.dart`):
   the native-ish sliding control Settings uses for Imperial/Metric, Cupertino
   on Apple platforms. Not Material's rounded `SegmentedButton`, which reads as

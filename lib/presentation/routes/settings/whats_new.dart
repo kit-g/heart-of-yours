@@ -219,15 +219,15 @@ class const _FeatureButton(final Feature feature, {required final VoidCallback o
     final on = Preferences.watch(context).isOn(feature);
     return Padding(
       padding: const .only(top: 4),
-      child: TextButton.icon(
+      child: QuietButton(
+        plain: true,
         key: ValueKey('whats-new-feature-${feature.value}'),
-        style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
         onPressed: onPressed,
-        icon: Icon(switch (on) {
+        icon: switch (on) {
           true => Icons.check_rounded,
           false => feature.icon,
-        }),
-        label: Text(switch (on) {
+        },
+        child: Text(switch (on) {
           true => whatsNewFeatureOn,
           false => whatsNewFeatureOff,
         }),

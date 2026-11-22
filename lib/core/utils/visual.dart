@@ -184,38 +184,6 @@ Future<T?> showBrandedDialog<T>(
   );
 }
 
-/// Asks before something that can't be undone: [cancel] and [confirm], the
-/// latter in the error colour under [key]. Answers whether it was confirmed.
-Future<bool> confirmDestructive(
-  BuildContext context, {
-  required String title,
-  required String body,
-  required String confirm,
-  required String cancel,
-  required Key key,
-}) async {
-  final colorScheme = Theme.of(context).colorScheme;
-  final sure = await showBrandedDialog<bool>(
-    context,
-    title: Text(title),
-    content: Text(body),
-    actions: [
-      TextButton(
-        style: TextButton.styleFrom(minimumSize: const .new(64, 48)),
-        onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
-        child: Text(cancel),
-      ),
-      TextButton(
-        key: key,
-        style: TextButton.styleFrom(minimumSize: const .new(64, 48), foregroundColor: colorScheme.error),
-        onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
-        child: Text(confirm),
-      ),
-    ],
-  );
-  return sure ?? false;
-}
-
 class BottomMenuAction {
   final String title;
   final Widget? icon;

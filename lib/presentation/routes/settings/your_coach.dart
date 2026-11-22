@@ -84,18 +84,19 @@ class _CoachCard extends StatelessWidget {
           if ((coach.connectionId, Preferences.watch(context).isOn(.yourCoach)) case (final String id, true))
             Align(
               alignment: .centerLeft,
-              child: TextButton.icon(
+              child: QuietButton(
+                plain: true,
                 key: AppKeys.yourCoachMessage(id),
-                style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
                 onPressed: () => HeartRouter.of(context).openThread(id),
-                icon: const Icon(Icons.forum_outlined),
-                label: Text(l.messagesWith(name ?? l.yourCoach)),
+                icon: Icons.forum_outlined,
+                child: Text(l.messagesWith(name ?? l.yourCoach)),
               ),
             ),
           Align(
             alignment: .centerLeft,
-            child: TextButton(
-              style: TextButton.styleFrom(minimumSize: const Size(64, 48), foregroundColor: colorScheme.error),
+            child: QuietButton(
+              plain: true,
+              danger: true,
               onPressed: () => _leave(context, name ?? l.yourCoach),
               child: Text(l.yourCoachLeave),
             ),
@@ -113,14 +114,13 @@ class _CoachCard extends StatelessWidget {
       title: Text(l.yourCoachLeaveTitle(name)),
       content: Text(l.yourCoachLeaveBody),
       actions: [
-        TextButton(
-          style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+        QuietButton(
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
           child: Text(l.cancel),
         ),
-        TextButton(
+        QuietButton(
+          danger: true,
           key: AppKeys.yourCoachLeaveConfirm,
-          style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
           child: Text(l.yourCoachLeave),
         ),
@@ -169,9 +169,8 @@ class _BlockedState extends State<_Blocked> {
               contentPadding: .zero,
               leading: Avatar(remote: person.avatar, radius: 16),
               title: Text(person.name ?? ''),
-              trailing: TextButton(
+              trailing: QuietButton(
                 key: AppKeys.yourCoachUnblock(person.id),
-                style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
                 onPressed: () => _try(context, () => Coaching.of(context).lift(person)),
                 child: Text(l.yourCoachUnblock),
               ),

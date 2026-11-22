@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/message_text.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/messages/messages.dart';
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart_language/heart_language.dart';
@@ -90,7 +91,10 @@ void main() {
     expect(find.text('About a set'), findsOneWidget);
     expect(find.text('About a workout'), findsOneWidget);
     expect(find.byKey(AppKeys.messageSubject), findsNWidgets(2), reason: "a kind this build doesn't know shows none");
-    expect(find.descendant(of: find.byKey(AppKeys.messageSubject), matching: find.byType(TextButton)), findsNothing);
+    expect(
+      find.descendant(of: find.byKey(AppKeys.messageSubject), matching: find.byType(QuietButton), matchRoot: true),
+      findsNothing,
+    );
     expect(opened, 0);
   });
 

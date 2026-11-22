@@ -231,10 +231,8 @@ class _ChangeTile extends StatelessWidget {
       title: Text(what),
       subtitle: Text([when, if (change.stale) l.coachingCopyOldApp].join(' · ')),
       trailing: switch (mayPutBack) {
-        true => TextButton(
+        true => QuietButton(
           key: AppKeys.coachingCopyPutBack(change.id),
-          // the theme's compact text button is under the tap-target minimum
-          style: TextButton.styleFrom(minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension)),
           onPressed: () async {
             final messenger = ScaffoldMessenger.of(context);
             final programs = ClientPrograms.of(context);
