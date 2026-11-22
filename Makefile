@@ -76,7 +76,7 @@ lib/firebase_options.dart lib/firebase_options_prod.dart:
 	  '  static FirebaseOptions get currentPlatform => throw UnimplementedError();' \
 	  '}' > $@
 
-lint: format-check dates ui-imports layers lib/firebase_options.dart lib/firebase_options_prod.dart
+lint: format-check dates ui-imports layers buttons lib/firebase_options.dart lib/firebase_options_prod.dart
 	flutter analyze
 
 # The app builds on material_ui and cupertino_ui. The framework's copies still
@@ -99,6 +99,15 @@ ui-imports:
 # import across a boundary compiles fine and is the start of a tangle, and the
 # analyzer has no rule for it, so this checks every import and pubspec.
 LOWER := heart_state heart_db heart_charts heart_health heart_language sealbox
+# a button's height is the house's: QuietButton and PrimaryButton answer taps
+# over a full target without being drawn tall (docs/style.md)
+buttons:
+	@if git ls-files -co --exclude-standard 'lib/*.dart' | grep -v '^lib/core/theme/' | xargs grep -nE "minimumSize:" ; then \
+		echo "" ; \
+		echo "no hand-set button sizes: QuietButton, or PrimaryButton with a hitHeight (docs/style.md)" ; \
+		exit 1 ; \
+	fi
+
 layers:
 	@bad=0 ; \
 	for p in $(LOWER) ; do \

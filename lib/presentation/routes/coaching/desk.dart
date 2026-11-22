@@ -626,10 +626,7 @@ class _LatestWorkoutState extends State<_LatestWorkout> {
                     child: Row(
                       children: [
                         Expanded(child: Text(l.coachingReviewFailed, style: muted)),
-                        TextButton(
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension),
-                          ),
+                        QuietButton(
                           onPressed: () => _review.value = _read(),
                           child: Text(l.retry),
                         ),

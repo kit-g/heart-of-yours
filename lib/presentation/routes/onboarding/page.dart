@@ -82,11 +82,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 alignment: .centerRight,
                 child: Padding(
                   padding: const .symmetric(horizontal: 8, vertical: 4),
-                  child: TextButton(
+                  child: QuietButton(
+                    plain: true,
                     key: AppKeys.onboardingSkip,
-                    // the theme's text button is dialog-footer sized; a lone
-                    // control in a corner gets a full tap target
-                    style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
                     onPressed: widget.onContinue,
                     child: Text(skip),
                   ),

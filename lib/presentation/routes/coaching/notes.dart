@@ -284,20 +284,18 @@ class _NoteEditorState extends State<_NoteEditor> {
     if (id == null) return;
     final l = L.of(context);
     final navigator = Navigator.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
     final sure = await showBrandedDialog<bool>(
       context,
       title: Text(l.coachingNoteDeleteTitle),
       content: Text(l.coachingNoteDeleteBody),
       actions: [
-        TextButton(
-          style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+        QuietButton(
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
           child: Text(l.cancel),
         ),
-        TextButton(
+        QuietButton(
           key: AppKeys.coachingNoteDeleteConfirm,
-          style: TextButton.styleFrom(minimumSize: const Size(64, 48), foregroundColor: colorScheme.error),
+          danger: true,
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
           child: Text(l.delete),
         ),

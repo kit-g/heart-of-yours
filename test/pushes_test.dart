@@ -7,6 +7,7 @@ import 'package:heart/core/env/push.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart' show ClientsPage;
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/setting_picker.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -451,6 +452,36 @@ void main() {
       await tester.pumpTimes();
 
       verify(api.setPushSetting('coaching.message', 'off')).called(1);
+    });
+
+    testWidgets('a topic has its switch at the end of its row (#735)', (tester) async {
+      await pump(tester, {'feature-yourCoach': 'on'});
+      go(tester, '/profile/settings/notifications');
+      await tester.pumpTimes();
+      final topic = find.byKey(const ValueKey('pushTopic-coaching.message'));
+      final title = tester.getRect(find.descendant(of: topic, matching: find.text('Messages')));
+      final pick = tester.getRect(find.descendant(of: topic, matching: find.byType(SettingSwitcher<String>)));
+      expect(pick.left, greaterThan(title.right));
+      expect(pick.right, closeTo(tester.getRect(topic).right - 16, 1));
+      expect(pick.top, lessThan(title.bottom + 24));
+    });
+
+    testWidgets('with no room beside its name, the switch goes below (#735)', (tester) async {
+      await pump(tester, {'feature-yourCoach': 'on'});
+      go(tester, '/profile/settings/notifications');
+      await tester.pumpTimes();
+      tester.view.physicalSize = const Size(360, 2400);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpTimes();
+      // what else is on the page overflows at this size in the test font
+      tester.takeException();
+      final topic = find.byKey(const ValueKey('pushTopic-coaching.message'));
+      final words = tester.getRect(
+        find.descendant(of: topic, matching: find.text('When someone you train with writes to you')),
+      );
+      final pick = tester.getRect(find.descendant(of: topic, matching: find.byType(SettingSwitcher<String>)));
+      expect(pick.top, greaterThanOrEqualTo(words.bottom));
     });
 
     testWidgets('the list keeps to a readable width on a tablet', (tester) async {

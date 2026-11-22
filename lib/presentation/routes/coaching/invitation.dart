@@ -194,9 +194,9 @@ class _InvitationPageState extends State<InvitationPage> {
                         icon: Icons.cloud_off_rounded,
                         title: l.invitationLoadFailed,
                         body: l.invitationLoadFailedBody,
-                        action: FilledButton(
+                        action: PrimaryButton.shrunk(
                           key: AppKeys.invitationRetry,
-                          style: FilledButton.styleFrom(minimumSize: const Size(64, 48)),
+                          hitHeight: kMinInteractiveDimension,
                           onPressed: () => _preview.value = _read(),
                           child: Text(l.retry),
                         ),
@@ -307,38 +307,35 @@ class _InvitationPageState extends State<InvitationPage> {
                     // coaching needs an account: the one way forward is to make one
                     true => [
                       Text(l.invitationNeedsAccount, style: textTheme.bodyMedium, textAlign: .center),
-                      FilledButton(
+                      PrimaryButton.wide(
                         key: AppKeys.invitationMakeAccount,
-                        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                        hitHeight: kMinInteractiveDimension,
                         onPressed: _makeAccount,
-                        child: Text(l.invitationMakeAccount),
+                        child: Center(child: Text(l.invitationMakeAccount)),
                       ),
                     ],
                     false => [
-                      FilledButton(
+                      PrimaryButton.wide(
                         key: AppKeys.invitationAccept,
-                        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                        hitHeight: kMinInteractiveDimension,
                         onPressed: switch (busy) {
                           true => null,
                           false => () => _accept(name),
                         },
-                        child: Text(l.invitationAccept),
+                        child: Center(child: Text(l.invitationAccept)),
                       ),
-                      OutlinedButton(
+                      QuietButton(
                         key: AppKeys.invitationDecline,
-                        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                         onPressed: switch (busy) {
                           true => null,
                           false => _decline,
                         },
                         child: Text(l.invitationDecline),
                       ),
-                      TextButton(
+                      QuietButton(
                         key: AppKeys.invitationBlock,
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
-                          foregroundColor: colorScheme.error,
-                        ),
+                        danger: true,
+                        plain: true,
                         onPressed: switch (busy) {
                           true => null,
                           false => _block,

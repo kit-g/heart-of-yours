@@ -548,12 +548,8 @@ class _Holders extends StatelessWidget {
                 // only a copy behind has anything to bring up
                 trailing: switch (holder.version < latest) {
                   true => Builder(
-                    builder: (context) => TextButton(
+                    builder: (context) => QuietButton(
                       key: AppKeys.coachingUpdateCopy(holder.connectionId),
-                      // the theme's compact text button is under the tap-target minimum
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension),
-                      ),
                       onPressed: () => _update(context, holder, name(holder)),
                       child: Text(l.coachingUpdateCopy),
                     ),
