@@ -73,7 +73,11 @@ Future<Workout?> _pickWorkout(BuildContext context) {
           itemCount: past.length + 1,
           itemBuilder: (context, index) {
             if (index == past.length) {
-              return _OlderWorkouts(workouts: workouts, older: _olderToCome(workouts, backfill, remote));
+              return _OlderWorkouts(
+                workouts: workouts,
+                asks: _olderToCome(workouts, backfill, remote),
+                more: workouts.hasMoreHistory && !backfill.isWhole,
+              );
             }
             final workout = past[index];
             return _Choice(
@@ -95,15 +99,19 @@ Future<Workout?> _pickWorkout(BuildContext context) {
 class _OlderWorkouts extends StatelessWidget {
   final Workouts workouts;
 
-  /// Whether anything older is still to come ([_olderToCome]).
-  final bool older;
+  /// Whether to ask for what is older ([_olderToCome]).
+  final bool asks;
 
-  const new({required this.workouts, required this.older});
+  /// Whether there is anything older than the list, asked for or not: with the
+  /// server out of reach the list's end is not the history's.
+  final bool more;
+
+  const new({required this.workouts, required this.asks, required this.more});
 
   @override
   Widget build(BuildContext context) {
     final Workouts(:loadingMoreHistory, :historyPageError) = workouts;
-    if (older && !loadingMoreHistory && !historyPageError) {
+    if (asks && !loadingMoreHistory && !historyPageError) {
       // after the frame: the read notifies, and the list listens
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) workouts.loadMoreHistory();
@@ -112,7 +120,7 @@ class _OlderWorkouts extends StatelessWidget {
     return _HistoryTail(
       loading: loadingMoreHistory,
       error: historyPageError,
-      hasMore: older,
+      hasMore: more,
       onRetry: workouts.loadMoreHistory,
     );
   }

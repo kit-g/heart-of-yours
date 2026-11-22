@@ -779,13 +779,32 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     await workouts.acceptTarget(set);
   }
 
-  /// A tick on a screen with its own ([_ExerciseSetItem.onSetDone]).
+  /// A tick on a screen with its own ([_ExerciseSetItem.onSetDone]). A target
+  /// that leaves the set short of what it takes ticks nothing, and says what is
+  /// missing, as [_onDone] does.
   Future<void> _toggle(void Function(WorkoutExercise, ExerciseSet) onSetDone) async {
     if (!set.isCompleted && set.target != null) {
       await _takeTarget();
       if (!mounted) return;
+      if (!set.canBeCompleted) return _showErrors();
+      _clearErrors();
     }
     onSetDone(exercise, set);
+  }
+
+  void _clearErrors() {
+    _hasWeightError.value = false;
+    _hasRepsError.value = false;
+    _hasDistanceError.value = false;
+    _hasDurationError.value = false;
+  }
+
+  /// Marks the fields that hold nothing a set can take.
+  void _showErrors() {
+    _hasRepsError.value = int.tryParse(_repsController.text) == null;
+    _hasWeightError.value = double.tryParse(_weightController.text) == null;
+    _hasDistanceError.value = double.tryParse(_distanceController.text) == null;
+    _hasDurationError.value = _parseDuration() <= 0;
   }
 
   Future<void> _onDone(BuildContext context) async {
@@ -801,10 +820,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       // fields would put it through display rounding, and a carry's 40 m
       // through a field that shows 0.04 km as "0"
       if (set.canBeCompleted) {
-        _hasWeightError.value = false;
-        _hasRepsError.value = false;
-        _hasDistanceError.value = false;
-        _hasDurationError.value = false;
+        _clearErrors();
         workouts.markEdited(set);
         workouts.markSetAsComplete(exercise, set);
         _startTimer(context);
@@ -879,15 +895,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       _distanceFocus.unfocus();
       _durationFocus.unfocus();
     } on FormatException {
-      final repsCorrect = int.tryParse(_repsController.text) != null;
-      final weightCorrect = double.tryParse(_weightController.text) != null;
-      final distanceCorrect = double.tryParse(_distanceController.text) != null;
-      final durationCorrect = _parseDuration() > 0;
-
-      _hasRepsError.value = !repsCorrect;
-      _hasWeightError.value = !weightCorrect;
-      _hasDistanceError.value = !distanceCorrect;
-      _hasDurationError.value = !durationCorrect;
+      _showErrors();
     }
   }
 

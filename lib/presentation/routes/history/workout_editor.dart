@@ -45,11 +45,29 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     super.initState();
 
     _notifier = _WorkoutNotifier(widget.copy, logging: _logging);
-    _open = this;
+    _workouts = Workouts.of(context)..addListener(_onWorkouts);
+    _keepTrack();
   }
 
-  /// The editor on screen, for [leaveUnsavedLog].
-  static _WorkoutEditorState? _open;
+  /// The logs being filled in, for [leavingUnsavedLog].
+  static final _logs = <_WorkoutEditorState>{};
+
+  late final Workouts _workouts;
+
+  void _keepTrack() {
+    switch (_logging) {
+      case true:
+        _logs.add(this);
+      case false:
+        _logs.remove(this);
+    }
+  }
+
+  /// A set row writes what is typed, and what a column fills, into the set and
+  /// tells [Workouts], not this editor.
+  void _onWorkouts() {
+    if (_logging) _notifier.noticeChange();
+  }
 
   bool get _logging => widget.logTo != null;
 
@@ -64,11 +82,13 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       // its own name, not the last one's
       _controller.text = widget.copy.name ?? '';
     }
+    _keepTrack();
   }
 
   @override
   void dispose() {
-    if (identical(_open, this)) _open = null;
+    _logs.remove(this);
+    _workouts.removeListener(_onWorkouts);
     _focusNode.dispose();
     _controller.dispose();
     _notifier.dispose();
@@ -178,14 +198,16 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                             // A new one keeps only what is ticked, and asks
                             true => () {
                               // named for when it was, which a past one is not now
-                              workout.resolveName(defaultWorkoutName(workout.start));
+                              void name() => workout.resolveName(defaultWorkoutName(workout.start));
                               switch (widget.logTo) {
                                 case LogTo logTo:
                                   saveAskingUnticked(context, workout, () {
+                                    name();
                                     unawaited(logTo(context, workout));
                                     _leave(context);
                                   });
                                 case null:
+                                  name();
                                   Workouts.of(context).editWorkout(workout);
                                   Navigator.of(context).pop();
                               }
@@ -544,7 +566,10 @@ class _WorkoutNotifier with ChangeNotifier {
 
   bool get hasChanged => _hasChanged;
 
-  new(this.workout, {this.logging = false});
+  new(this.workout, {this.logging = false}) {
+    // read now, before anything is typed
+    if (logging) _opened;
+  }
 
   void addSet(WorkoutExercise exercise) {
     // a plain set, whatever the last one was: a warm-up is not what comes
@@ -637,7 +662,16 @@ class _WorkoutNotifier with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Reflects times that were just persisted via PATCH back onto the local copy.
+  /// What a log holds as it was opened, to tell what was typed into it: that
+  /// goes into the set, and never through here.
+  late final _opened = jsonEncode(workout.toMap());
+
+  void noticeChange() {
+    if (!_hasChanged && jsonEncode(workout.toMap()) != _opened) notifyListeners();
+  }
+
+  /// Reflects times that were just persisted via PATCH back onto the local copy;
+  /// a workout being logged has none persisted, so there it is a change.
   /// Notifies without flipping [hasChanged] — the change is already saved, so it
   /// must not arm the "discard changes?" guard or require another Save.
   ///
@@ -648,6 +682,7 @@ class _WorkoutNotifier with ChangeNotifier {
     if (start != null) workout.start = start;
     if (end != null) workout.end = end;
     if (pauses != null) workout.pauses = [...pauses];
+    if (logging) return notifyListeners();
     super.notifyListeners();
   }
 
@@ -750,13 +785,15 @@ class _RecordsOf extends StatelessWidget {
   }
 }
 
-/// Whether another workout may be logged now: one being logged in the pane, and
-/// changed, would be replaced without a word, so it is asked about first.
-Future<bool> leaveUnsavedLog() async {
-  return switch (_WorkoutEditorState._open) {
-    final _WorkoutEditorState open when open.mounted && open._logging && open._notifier.hasChanged => open._discards(
-      open.context,
-    ),
-    _ => true,
-  };
+/// [go]es somewhere that puts something else where a log may be being filled
+/// in: at once, or after asking when one was changed, which would be gone
+/// without a word. The one guard for every such way.
+void leavingUnsavedLog(VoidCallback go) {
+  final changed = _WorkoutEditorState._logs.where((log) => log.mounted && log._notifier.hasChanged).firstOrNull;
+  if (changed == null) return go();
+  unawaited(_askAndGo(changed, go));
+}
+
+Future<void> _askAndGo(_WorkoutEditorState log, VoidCallback go) async {
+  if (await log._discards(log.context)) go();
 }

@@ -395,45 +395,132 @@ void main() {
       );
     });
 
-    testDay("a program's session keeps its program and plan, and moves it on", (tester) async {
+    testDay("a program's session keeps its program and plan, moves it on, and says so", (tester) async {
       final program = Program.fromJson({
         'id': 'p1',
         'name': 'Split',
-        'sessions': ['t-Pull'],
+        'sessions': ['t-Ghosts'],
         'createdAt': '2026-11-01T00:00:00.000Z',
         'rules': {
           row.id: {'kind': 'addWeight', 'step': 2.5},
         },
       });
+      final base = ProgramBase(
+        id: 'b1',
+        programId: 'p1',
+        exerciseId: row.id,
+        value: 60,
+        at: DateTime.utc(2026, 11, 2),
+      );
       when(db.getPrograms(any)).thenAnswer((_) async => [program]);
-      when(db.getProgramBases(any, programId: anyNamed('programId'))).thenAnswer((_) async => []);
+      when(db.getProgramBases(any, programId: anyNamed('programId'))).thenAnswer((_) async => [base]);
       when(db.getProgramMarks(any, any)).thenAnswer((_) async => []);
       when(db.getProgramWorkouts(any, any)).thenAnswer((_) async => []);
-      await launch(
-        tester,
-        size: tablet,
-        templates: [template('Pull', programId: 'p1')],
-        programs: true,
-      );
+      final session = Template.fromJson({...ghosts().toMap(), 'programId': 'p1'});
+      await launch(tester, size: tablet, templates: [session], programs: true);
       final context = tester.element(find.byType(MaterialApp));
       await Programs.of(context).init();
       await tester.pumpTimes();
-      await logFrom(tester, AppKeys.calendarFromTemplate, AppKeys.makeFromTemplate('t-Pull'));
-      expect((logging(tester).templateId, logging(tester).programId), ('t-Pull', 'p1'));
+      await logFrom(tester, AppKeys.calendarFromTemplate, AppKeys.makeFromTemplate('t-Ghosts'));
+      expect((logging(tester).templateId, logging(tester).programId), ('t-Ghosts', 'p1'));
 
       for (final index in [1, 2]) {
         await tester.tap(find.byKey(WorkoutDetailKeys.doneFor(row.id, index)).first);
         await tester.pumpTimes();
       }
+      expect(logging(tester).single.every((set) => set.isCompleted), isTrue);
       final id = logging(tester).id;
       final programs = Programs.of(context);
+      final l = L.of(tester.element(find.byType(WorkoutEditor)));
       await save(tester);
-      if (find.byKey(WorkoutDetailKeys.saveUnticked).evaluate().isNotEmpty) {
-        await tester.tap(find.byKey(WorkoutDetailKeys.saveUnticked));
-        await tester.pumpTimes();
-      }
+      expect(find.byKey(WorkoutDetailKeys.saveUnticked), findsNothing, reason: 'all of it is ticked');
       verify(db.storeWorkoutPlan(id, any, any)).called(1);
-      expect(programs.grownBy(id), isNotNull);
+
+      final moves = await programs.grownBy(id);
+      await tester.pumpTimes();
+      // written, whatever this mirror, which keeps nothing, reads back
+      final written = verify(db.storeProgramBase(captureAny)).captured.single as ProgramBase;
+      expect((written.value, written.workoutId), (62.5, id));
+      expect(moves?.single.base?.id, written.id);
+      expect(find.text(l.pastLogMovedProgram('Split')), findsOneWidget);
+      expect(find.text(l.programOpen), findsOneWidget);
+    });
+
+    testDay('a target that leaves a set short ticks nothing', (tester) async {
+      final short = Template.fromJson({
+        ...template('Short').toMap(),
+        'exercises': [
+          {
+            'id': 'slot',
+            'exercise': row.toMap(),
+            'sets': [
+              {
+                'id': 's1',
+                'target': {
+                  'weight': {'min': 60},
+                },
+              },
+            ],
+          },
+        ],
+      });
+      await launch(tester, size: tablet, templates: [short]);
+      await logFrom(tester, AppKeys.calendarFromTemplate, AppKeys.makeFromTemplate('t-Short'));
+      await tester.tap(find.byKey(WorkoutDetailKeys.doneFor(row.id, 1)));
+      await tester.pumpTimes();
+      expect(logging(tester).single.single.isCompleted, isFalse);
+    });
+
+    testDay('typing into it, or moving its time, is a change to ask about; opening it is none', (tester) async {
+      final done = fifth();
+      await launch(tester, size: tablet, history: [done]);
+      final l = L.of(tester.element(find.byType(HistoryPage)));
+      await logFrom(tester, AppKeys.calendarFromWorkout, AppKeys.makeFromWorkout(done.id));
+
+      // untouched: another workout simply takes its place
+      var elsewhere = false;
+      leavingUnsavedLog(() => elsewhere = true);
+      expect(elsewhere, isTrue);
+
+      await tester.enterText(find.byKey(WorkoutDetailKeys.repsFor(bench.id, 1)), '7');
+      await tester.pumpTimes();
+      elsewhere = false;
+      leavingUnsavedLog(() => elsewhere = true);
+      await tester.pumpTimes();
+      expect(elsewhere, isFalse);
+      expect(find.text(l.changesWillBeLost), findsOneWidget);
+      await tester.tap(find.text(l.quitPage));
+      await tester.pumpTimes();
+      expect(elsewhere, isTrue);
+    });
+
+    testDay('opening a workout of the calendar asks too', (tester) async {
+      final done = fifth();
+      await launch(tester, size: tablet, history: [done], templates: [template('Pull')]);
+      final l = L.of(tester.element(find.byType(HistoryPage)));
+      await logFrom(tester, AppKeys.calendarFromTemplate, AppKeys.makeFromTemplate('t-Pull'));
+      await tester.tap(find.byKey(WorkoutDetailKeys.doneFor(row.id, 1)));
+      await tester.pumpTimes();
+
+      tester.widget<HistoryPage>(find.byType(HistoryPage)).onTapWorkout!(done);
+      await tester.pumpTimes();
+      expect(find.text(l.changesWillBeLost), findsOneWidget);
+      await tester.tap(find.text(l.stayHere));
+      await tester.pumpTimes();
+      expect(logging(tester).name, 'Pull');
+    });
+
+    testDay('asked about and not answered, nothing is named', (tester) async {
+      final nameless = Template.fromJson({...template('Nameless').toMap(), 'name': null});
+      await launch(tester, size: tablet, templates: [nameless]);
+      await logFrom(tester, AppKeys.calendarFromTemplate, AppKeys.makeFromTemplate('t-Nameless'));
+      final name = logging(tester).name;
+      await save(tester);
+      final l = L.of(tester.element(find.byType(WorkoutEditor)));
+      expect(find.text(l.untickedLogBody), findsOneWidget);
+      await tester.tap(find.text(l.stayHere));
+      await tester.pumpTimes();
+      expect(logging(tester).name, name);
     });
   });
 }

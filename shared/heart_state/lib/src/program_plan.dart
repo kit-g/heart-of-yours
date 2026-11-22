@@ -1,5 +1,7 @@
 import 'package:heart_models/heart_models.dart';
 
+import 'program_growth.dart' show movedAt;
+
 /// Rounds [kilograms] of [exercise] to a weight the user can load: the step
 /// their unit counts in. The caller knows the unit; this library does not.
 typedef RoundWeight = num Function(Exercise exercise, num kilograms);
@@ -48,7 +50,8 @@ PlannedWorkout planSession(
 /// client's (`ClientPrograms.plan`), so the two lay a session out alike.
 ///
 /// [at] lays out one that already happened, logged after the fact: from what
-/// happened before then, whatever came since.
+/// happened before then, whatever came since. What a workout moved counts from
+/// that workout, in [starts] ([movedAt]).
 PlannedWorkout planProgramSession(
   Template session, {
   required Program program,
@@ -57,6 +60,7 @@ PlannedWorkout planProgramSession(
   required Iterable<ProgramBase> bases,
   required DateTime now,
   DateTime? at,
+  Map<String, DateTime> starts = const {},
   int firstWeekday = DateTime.monday,
   required RoundWeight round,
 }) {
@@ -64,7 +68,7 @@ PlannedWorkout planProgramSession(
     final DateTime at => all.where((each) => when(each).isBefore(at)),
     null => all,
   };
-  final taken = before(actions, (action) => action.at);
+  final taken = before(actions, (action) => movedAt(action.workoutId, action.at, starts));
   return planSession(
     session,
     program: program,
@@ -75,7 +79,7 @@ PlannedWorkout planProgramSession(
       now: at ?? now,
       firstWeekday: firstWeekday,
     ),
-    bases: currentBases(before(bases, (base) => base.at)),
+    bases: currentBases(before(bases, (base) => movedAt(base.workoutId, base.at, starts))),
     stages: currentStages(taken),
     round: round,
   );

@@ -214,17 +214,23 @@ extension on BuildContext {
   }
 
   void goToWorkoutEditor(String workoutId) {
-    return go('$_historyPath/$workoutId');
+    leavingUnsavedLog(() {
+      if (mounted) go('$_historyPath/$workoutId');
+    });
   }
 
   /// A day set aside with "Not today" (#312), in History.
   void goToSkip(String skipId) {
-    return goNamed(_historySkipName, pathParameters: {'skipId': skipId});
+    leavingUnsavedLog(() {
+      if (mounted) goNamed(_historySkipName, pathParameters: {'skipId': skipId});
+    });
   }
 
   /// The suspicious entries (#428), in History.
   void goToEntryReview() {
-    return goNamed(_historyReviewName);
+    leavingUnsavedLog(() {
+      if (mounted) goNamed(_historyReviewName);
+    });
   }
 
   /// A workout that already happened, being filled in (#530), in History:
@@ -236,9 +242,10 @@ extension on BuildContext {
   /// Asks when a past workout was, then opens it to fill in (#530): by default
   /// the last hour, or the same hour [on] another day (#618), as [fill] makes
   /// it once its times are known (#737).
-  Future<void> logPast({DateTime? on, PastWorkout Function(PastWorkout past)? fill}) async {
-    if (!await leaveUnsavedLog() || !mounted) return;
-    await logPastWorkout(this, open: (past) => goToLogWorkout(fill?.call(past) ?? past), on: on);
+  void logPast({DateTime? on, PastWorkout Function(PastWorkout past)? fill}) {
+    leavingUnsavedLog(() {
+      if (mounted) logPastWorkout(this, open: (past) => goToLogWorkout(fill?.call(past) ?? past), on: on);
+    });
   }
 
   /// A workout from the suspicious entries' list (#428), within History:

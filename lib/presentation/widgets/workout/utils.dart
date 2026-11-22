@@ -221,7 +221,7 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
   // Nothing done at all is no finish to name sets for: that is a cancel.
   final unticked = _untickedInPlan(context, activeWorkout);
   if (unticked.isNotEmpty && workouts.activeWorkoutHasContent) {
-    return showUntickedSetsDialog(
+    return _showUntickedSetsDialog(
       context,
       planned: unticked,
       canSave: workouts.hasTypedButUntickedSets && unticked.every((each) => each.$2.every((set) => set.canBeCompleted)),
@@ -240,7 +240,7 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
   // set used to vanish. So the finish asks, in as many words, and the two
   // answers are both spelled out.
   if (workouts.hasTypedButUntickedSets) {
-    return showUntickedSetsDialog(
+    return _showUntickedSetsDialog(
       context,
       canDiscard: isStarted,
       onDiscard: finishNow,
@@ -278,24 +278,28 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
 /// keep them, or save without them. [planned] names a program session's, by
 /// exercise; without it they are only said to be there. [canSave] when all of
 /// them hold a set to keep, and [canDiscard] when something ticked is left
-/// without them: an answer that makes no sense is absent, not a trap.
-Future<void> showUntickedSetsDialog(
+/// without them: an answer that makes no sense is absent, not a trap. [words]
+/// are the live finish's, unless given.
+Future<void> _showUntickedSetsDialog(
   BuildContext context, {
   List<(WorkoutExercise, List<ExerciseSet>)> planned = const [],
   bool canSave = true,
   required bool canDiscard,
   required VoidCallback onDiscard,
   required VoidCallback onSave,
+  ({String body, String back, String discard})? words,
 }) {
   final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
   final l = L.of(context);
+  final (:body, :back, :discard) =
+      words ?? (body: l.untickedSetsBody, back: l.notReadyToFinish, discard: l.discardUntickedSets);
   return showBrandedDialog(
     context,
     title: Text(l.untickedSetsTitle),
     titleTextStyle: textTheme.titleMedium,
     icon: Icon(Icons.checklist_rounded, color: colorScheme.error),
     content: switch (planned) {
-      [] => Text(l.untickedSetsBody, textAlign: .center),
+      [] => Text(body, textAlign: .center),
       final planned => Column(
         mainAxisSize: .min,
         crossAxisAlignment: .start,
@@ -325,14 +329,14 @@ Future<void> showUntickedSetsDialog(
               PrimaryButton.wide(
                 backgroundColor: colorScheme.surfaceContainerHighest,
                 onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-                child: Center(child: Text(l.notReadyToFinish)),
+                child: Center(child: Text(back)),
               ),
               if (canDiscard)
                 PrimaryButton.wide(
                   key: WorkoutDetailKeys.discardUnticked,
                   backgroundColor: canSave ? colorScheme.surfaceContainerHighest : null,
                   onPressed: onDiscard,
-                  child: Center(child: Text(l.discardUntickedSets)),
+                  child: Center(child: Text(discard)),
                 ),
               if (canSave)
                 PrimaryButton.wide(
@@ -359,16 +363,19 @@ void saveAskingUnticked(BuildContext context, Workout workout, VoidCallback save
       .toList();
   final planned = _untickedInPlan(context, workout);
   if (holding.isEmpty && planned.isEmpty) return save();
+  final l = L.of(context);
   void answer(VoidCallback first) {
     Navigator.of(context, rootNavigator: true).pop();
     first();
     save();
   }
 
-  showUntickedSetsDialog(
+  _showUntickedSetsDialog(
     context,
     planned: planned,
-    canSave: planned.every((each) => each.$2.every((set) => set.canBeCompleted)),
+    words: (body: l.untickedLogBody, back: l.stayHere, discard: l.saveWithoutUnticked),
+    // those that hold nothing are named too, and go either way
+    canSave: holding.isNotEmpty,
     canDiscard: workout.expand((exercise) => exercise).any((set) => set.isCompleted && set.canBeCompleted),
     onDiscard: () => answer(() {}),
     onSave: () => answer(() {

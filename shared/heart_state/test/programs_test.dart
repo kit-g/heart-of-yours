@@ -1660,6 +1660,73 @@ void main() {
         expect(programs.basesOf('p1').where((each) => each.workoutId == 'newer'), hasLength(1));
       });
 
+      test('two days filled in one after the other: the second starts where the first left it (#737)', () async {
+        await follow(growing({'squat': const AddWeight(step: 5)}), bases: [base(100)]);
+        final monday = done(
+          'monday',
+          start: DateTime.utc(2026, 10, 5),
+          exercises: [
+            squats([5, 5, 5]),
+          ],
+        );
+        final tuesday = DateTime.utc(2026, 10, 6);
+        await programs.growPast(monday, among: const []);
+        // written now, weeks after either
+        expect(programs.currentBasesOf('p1')['squat']?.value, 105);
+
+        final planned = planProgramSession(
+          Template.fromJson({
+            'id': 's1',
+            'name': 'Day A',
+            'order': 0,
+            'programId': 'p1',
+            'exercises': [
+              squats([5], id: 'slot'),
+            ],
+          }),
+          program: programs.lookup('p1')!,
+          marks: const [],
+          actions: programs.actionsOf('p1'),
+          bases: programs.basesOf('p1'),
+          now: DateTime.utc(2026, 10, 20),
+          at: tuesday,
+          starts: startsOf([monday]),
+          round: (_, kg) => kg,
+        );
+        expect(
+          switch (planned.plan?.plan['exercises']) {
+            [{'base': final num base}] => base,
+            _ => null,
+          },
+          105,
+        );
+      });
+
+      test('misses on days filled in after a growth still add up to a cut (#737)', () async {
+        await follow(
+          growing({'squat': const AddWeight(step: 5, miss: MissRule(after: 2, cut: 0.1))}),
+          bases: [base(100)],
+        );
+        Workout on(String id, int day, List<int> reps, num weight) {
+          final workout = done(
+            id,
+            start: DateTime.utc(2026, 10, day),
+            exercises: [squats(reps, weight: weight)],
+          );
+          (local.workouts['p1'] ??= []).add(workout);
+          return workout;
+        }
+
+        final monday = on('monday', 5, [5, 5, 5], 100);
+        await programs.growPast(monday, among: const []);
+        final tuesday = on('tuesday', 6, [3, 3, 3], 105);
+        await programs.growPast(tuesday, among: [monday]);
+        expect(programs.currentBasesOf('p1')['squat']?.value, 105);
+        final thursday = on('thursday', 8, [3, 3, 3], 105);
+        final moves = await programs.growPast(thursday, among: [monday, tuesday]);
+        expect(moves.single.step, isA<Cut>());
+      });
+
       test('a session logged after the fact is laid out as it stood then (#737)', () async {
         await follow(
           growing({'squat': const AddWeight(step: 5)}),

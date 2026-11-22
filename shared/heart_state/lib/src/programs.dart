@@ -460,6 +460,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
       bases: basesOf(id),
       now: now,
       at: at,
+      starts: startsOf(_workouts?.history ?? const []),
       firstWeekday: firstWeekday,
       round: round,
     );
@@ -1377,9 +1378,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   }) async {
     final uid = userId;
     if (uid == null) return;
-    // a move a finish wrote counts from when that workout was, not from when
-    // a device got round to writing it: a session logged later still follows
-    final starts = {for (final workout in workouts) workout.id: workout.start};
+    // a session logged later than another's growth was written still follows
+    final starts = startsOf(workouts);
     List<(Workout, String)> waiting() => [
       for (final workout in workouts)
         if ((workout.loggedBy, workout.programId) case (final String by, final String programId)
@@ -1419,8 +1419,12 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// themselves (#737), as [growLogged] does by one their coach logged: not
   /// once something moved the program since it was, when the rules would read
   /// a history it wasn't part of. [among] are the workouts already in their
-  /// history, and [slots] and [after] are [grow]'s.
-  Future<void> growPast(
+  /// history, and [slots] and [after] are [grow]'s. Answers what it wrote.
+  ///
+  /// [after] is the whole save, the server's part too, as a finish's is: a base
+  /// names its workout, the server refuses one it hasn't got, and a refused row
+  /// is never sent again.
+  Future<List<GrowthMove>> growPast(
     Workout workout, {
     required Iterable<Workout> among,
     Template? session,
@@ -1428,10 +1432,9 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     Future<void>? after,
   }) async {
     final programId = workout.programId;
-    if (programId == null) return;
-    final starts = {for (final each in among) each.id: each.start};
-    if (!_waits(workout, programId, starts, shown: _every)) return;
-    await grow(workout, session: session, slots: slots, after: after);
+    if (programId == null) return const [];
+    if (!_waits(workout, programId, startsOf(among), shown: _every)) return const [];
+    return grow(workout, session: session, slots: slots, after: after);
   }
 
   /// Whether [workout], logged in [programId], still has its program to move:
@@ -1454,11 +1457,10 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     return !_movedSince(programId, workout.start, starts);
   }
 
-  /// Whether a base or an action of [programId]'s came after [start]: one a
-  /// workout caused by that workout's start, in [starts], and one by hand by
-  /// when it was made.
+  /// Whether a base or an action of [programId]'s came after [start], by
+  /// [movedAt].
   bool _movedSince(String programId, DateTime start, Map<String, DateTime> starts) {
-    bool after(String? workoutId, DateTime at) => (starts[workoutId] ?? at).isAfter(start);
+    bool after(String? workoutId, DateTime at) => movedAt(workoutId, at, starts).isAfter(start);
     return basesOf(programId).any((base) => after(base.workoutId, base.at)) ||
         actionsOf(programId).any((action) => after(action.workoutId, action.at));
   }
@@ -1496,13 +1498,16 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
         _service.getProgramWorkouts(uid, id),
       ).wait;
       final start = workout.start;
+      final starts = startsOf(workouts);
 
       // the position as it stood at [moment], and with [plus] marked in it
       ProgramPosition at(DateTime moment, {ProgramMark? plus}) {
         return ProgramPosition.of(
           program,
           marks: [...marks.where((mark) => mark.at.isBefore(moment)), ?plus],
-          actions: actionsOf(id).where((action) => action.at.isBefore(moment)),
+          actions: actionsOf(id).where(
+            (action) => movedAt(action.workoutId, action.at, starts).isBefore(moment),
+          ),
           now: moment,
         );
       }

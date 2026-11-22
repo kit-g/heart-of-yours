@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/shown_programs.dart';
+import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
 import 'package:heart/presentation/widgets/goals/goals.dart' show runningPrograms;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
@@ -114,8 +116,23 @@ Future<void> logToHistory(BuildContext context, Workout workout, {WorkoutPlan? p
 
   final saving = workouts.logWorkout(workout, plan: plan);
   // a program moves by a session logged after the fact too, unless something
-  // moved it since (#737)
-  if (grows) unawaited(programs.growPast(workout, among: among, session: session, slots: slots, after: saving));
+  // moved it since (#737), and says so: no Done page does here
+  if (grows) {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final l = L.of(context);
+    final router = HeartRouter.of(context);
+    Future<void> grow() async {
+      final moves = await programs.growPast(workout, among: among, session: session, slots: slots, after: saving);
+      final program = programs.lookup(workout.programId ?? '');
+      if (program == null || moves.every((move) => move.base == null && move.action == null)) return;
+      messenger?.snack(
+        l.pastLogMovedProgram(program.name),
+        action: SnackBarAction(label: l.programOpen, onPressed: () => router.pushProgramOver(program.id!)),
+      );
+    }
+
+    unawaited(grow());
+  }
   final saved = await saving;
 
   // "last time" and the picker's recency read the mirror
