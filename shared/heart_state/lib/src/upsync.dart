@@ -320,6 +320,8 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     final resuming = _status == .failed && userId == uid;
     userId = uid;
     if (!await _local.isOwed(uid)) {
+      // signed out meanwhile: the gate is whoever arrives next's to settle
+      if (userId != uid) return;
       _open();
       return;
     }
@@ -406,6 +408,8 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
 
     if (userId != uid) return;
     await _local.settle(uid);
+    // signed out meanwhile: nothing opens for the account that left
+    if (userId != uid) return;
     // A sign-in whose store the server already holds has not backed anything
     // up, and a line reporting that is worse than no line. `onComplete` still
     // fires: the remote leg was closed for the length of the run whether or

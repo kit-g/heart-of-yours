@@ -219,7 +219,8 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     final comparing = _current;
     if (comparing == null || comparing.ended || comparing.completing) return;
     if (id != null && comparing.id != id) return;
-    if (comparing.role == .responder) _declined(comparing.deviceId);
+    // one it asked for itself, and went on with as the other's, is not refused
+    if (comparing.role == .responder && comparing.replaced == null) _declined(comparing.deviceId);
     _finish(comparing, const ComparisonCancelled());
     await _cancel(comparing.run, comparing.deviceId, comparing.id);
   }
@@ -237,11 +238,12 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
   /// is sent.
   @override
   void dispose() {
+    if (_disposed) return;
     if (_current case final _Comparing comparing when !comparing.ended) _end(comparing);
     _current = null;
     _value = null;
-    _poll?.cancel();
-    _poll = null;
+    _disposed = true;
+    _pace();
     super.dispose();
   }
 
@@ -297,6 +299,11 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
   /// be told every two seconds.
   final _told = <Object>{};
 
+  /// Whether the read on its way told of something.
+  bool _failed = false;
+
+  bool _disposed = false;
+
   /// Whether the app is in front. Behind, nothing is read: coming back reads
   /// what arrived.
   bool inFront = true;
@@ -322,7 +329,7 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       _Comparing(ended: false) => true,
       _ => false,
     };
-    switch ((running || _expecting > 0 || _remaining > 0, _poll)) {
+    switch ((!_disposed && (running || _expecting > 0 || _remaining > 0), _poll)) {
       case (true, null):
         _told.clear();
         _poll = Timer.periodic(_every, (_) => unawaited(_read()));
@@ -337,15 +344,17 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
   /// Reads what waits for this device, one read at a time.
   Future<void> _read() async {
     if (_polling || !inFront) return;
-    if (_remaining > 0) {
-      _remaining--;
-      _pace();
-    }
+    if (_remaining > 0) _remaining--;
     final run = _keys._run;
-    if (run == null) return;
+    if (run == null) return _pace();
     _polling = true;
+    _failed = false;
     try {
       await _keys._receive(run, polled: true, report: _reportOnce);
+      // the rest of the keys may follow
+      if (run.received && _remaining > 0) _remaining = _after;
+      // through again: what goes wrong next is told again
+      if (!_failed) _told.clear();
     } on _Stopped {
       // stopped on the way: nothing is left to read for
     } catch (error, stacktrace) {
@@ -353,6 +362,7 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       _reportOnce(error, stacktrace);
     } finally {
       _polling = false;
+      _pace();
     }
   }
 
@@ -362,6 +372,7 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       KeyFailure(:final code) => code,
       _ => error.runtimeType,
     };
+    _failed = true;
     if (_told.add(kind)) _keys._report(error, stacktrace);
   }
 
@@ -508,6 +519,9 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
     // that ended, here or on the other side, or never was, and says nothing
     final comparing = _current;
     if (comparing == null || comparing.ended || comparing.id != id || comparing.deviceId != delivery.fromDeviceId) {
+      // an answer to one this device no longer runs, as after a restart: the
+      // other side would wait for the rest until it timed out
+      if (delivery.kind == _keyKind && !_disposed) await _cancel(run, delivery.fromDeviceId, id);
       return;
     }
     switch ((delivery.kind, payload)) {
@@ -549,8 +563,11 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       _ => null,
     };
     if (crossed != null) {
-      if (crossed.id.compareTo(id) <= 0) return;
+      if (crossed.id.compareTo(id) <= 0 || await _cancelled(run, id) || !_live(crossed)) return;
       _end(crossed);
+      // the other side runs [id], unless it ended it: then it may have taken
+      // this device's
+      await _cancel(run, crossed.deviceId, crossed.id);
     }
     // said no to twice just now: no again, without asking the person, or
     // busy with another, which goes on
@@ -572,6 +589,12 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       replaced: crossed?.id,
     );
     await _send(comparing, _keyKind, {'key': comparing.comparison.publicKey});
+  }
+
+  /// Whether the other side's end of [id] already waits to be handed over.
+  Future<bool> _cancelled(_Run run, String id) async {
+    final waiting = await _keys._serial(run, run.inbox);
+    return waiting.any((each) => each.kind == _cancelKind && _decodeMap(each.payload)?['c'] == id);
   }
 
   /// The other device's key: the code is ready.
@@ -675,11 +698,7 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
       await _tell(run, comparing.deviceId, _doneKind, comparing.id);
       comparing.completed = true;
       _settle(comparing);
-      await _keys.devicesOf(run.userId);
-      // what this device holds reaches the one it just let in, without
-      // waiting for the next message or note
-      await _keys._shareThreadsWithOwn(run);
-      if (_keys.sharesNoteKeys?.call() ?? true) await _keys._shareNoteKeys();
+      unawaited(_shareAfter(run));
     } on _Stopped {
       // stopped on the way: what was saved stands
     } catch (error, stacktrace) {
@@ -689,6 +708,21 @@ class DeviceApproval with ChangeNotifier implements ValueListenable<CodeComparis
         _finish(comparing, const ComparisonCancelled());
         await _cancel(run, comparing.deviceId, comparing.id);
       }
+    }
+  }
+
+  /// What this device holds reaches the one it just let in, without waiting
+  /// for the next message or note. Nothing waits for it: it may be many
+  /// requests, and what the other side says meanwhile is taken.
+  Future<void> _shareAfter(_Run run) async {
+    try {
+      await _keys.devicesOf(run.userId);
+      await _keys._shareThreadsWithOwn(run);
+      if (_keys.sharesNoteKeys?.call() ?? true) await _keys._shareNoteKeys();
+    } on _Stopped {
+      // stopped on the way: what was saved stands
+    } catch (error, stacktrace) {
+      _keys._report(error, stacktrace);
     }
   }
 }

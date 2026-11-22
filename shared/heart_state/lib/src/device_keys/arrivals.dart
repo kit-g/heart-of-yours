@@ -66,43 +66,51 @@ extension _Arrivals on DeviceKeys {
   /// held here would otherwise be tried again, network and all, at each poll.
   /// [report] is told what went wrong, [_report] when not given.
   Future<void> _receive(_Run run, {bool polled = false, void Function(Object, [StackTrace?])? report}) async {
-    final arrived = await _serial(run, () async {
-      final device = run.device;
-      if (device == null || !device.published || !_remote.allowed) return false;
-      // with a deadline: every step waits for this one, so a read that hung
-      // would hold up what this device has to send
-      final items = await run.service.getKeyQueue(device.id).timeout(_readTime);
-      if (items.isEmpty) return false;
-      final inbox = await run.inbox();
-      final kept = {for (final each in inbox) each.id};
-      // whose devices sent what, read once per sender
-      final senders = <String, List<CryptoDevice>?>{};
-      final later = <String>{};
-      for (final item in items.where((each) => !kept.contains(each.id))) {
-        switch (await _open(run, item, senders, report ?? _report)) {
-          case _Delivered(:final delivery):
-            // kept before it is confirmed: a pairwise message opens once
-            await run.saveInbox([...inbox, delivery]);
-            inbox.add(delivery);
-          case _Unreadable():
-            // confirmed with the rest: no later receive opens it either
-            break;
-          case _Later():
-            later.add(item.id);
-        }
-      }
-      final confirmed = [
-        for (final each in items)
-          if (!later.contains(each.id)) each.id,
-      ];
-      if (confirmed.isNotEmpty) await run.service.confirmKeyItems(device.id, confirmed).timeout(_readTime);
-      return confirmed.isNotEmpty;
-    });
-    if (arrived || !polled) await _dispatch(run);
+    var read = false;
+    try {
+      await _serial(run, () => _readQueue(run, report ?? _report));
+      read = true;
+    } finally {
+      // what opened is handed over even when it could not be confirmed: it is
+      // kept, and the server may hold it no longer
+      if (run.arrived || (read && !polled)) await _dispatch(run);
+    }
   }
 
-  /// What a read of the queue, or of a sender's devices on the way, may take.
-  static const _readTime = Duration(seconds: 10);
+  /// [_receive]'s turn: what waits, opened, kept and confirmed.
+  Future<void> _readQueue(_Run run, void Function(Object, [StackTrace?]) report) async {
+    run.received = false;
+    final device = run.device;
+    if (device == null || !device.published || !_remote.allowed) return;
+    // with a deadline: every step waits for this one, so a read that hung
+    // would hold up what this device has to send
+    final items = await run.service.getKeyQueue(device.id).timeout(DeviceKeys._answerTime);
+    if (items.isEmpty) return;
+    final inbox = await run.inbox();
+    final kept = {for (final each in inbox) each.id};
+    // whose devices sent what, read once per sender
+    final senders = <String, List<CryptoDevice>?>{};
+    final later = <String>{};
+    for (final item in items.where((each) => !kept.contains(each.id))) {
+      switch (await _open(run, item, senders, report)) {
+        case _Delivered(:final delivery):
+          // kept before it is confirmed: a pairwise message opens once
+          await run.saveInbox([...inbox, delivery]);
+          inbox.add(delivery);
+          run.arrived = run.received = true;
+        case _Unreadable():
+          // confirmed with the rest: no later receive opens it either
+          break;
+        case _Later():
+          later.add(item.id);
+      }
+    }
+    final confirmed = [
+      for (final each in items)
+        if (!later.contains(each.id)) each.id,
+    ];
+    if (confirmed.isNotEmpty) await run.service.confirmKeyItems(device.id, confirmed).timeout(DeviceKeys._answerTime);
+  }
 
   Future<_Arrival> _open(
     _Run run,
@@ -202,7 +210,7 @@ extension _Arrivals on DeviceKeys {
     }
 
     try {
-      return await _listed(run, from).timeout(_readTime);
+      return await _listed(run, from);
     } on ServerRefusal catch (refusal, stacktrace) {
       return switch (refusal.code) {
         // someone this account can't read keys of, as under a block: what they
@@ -255,6 +263,7 @@ extension _Arrivals on DeviceKeys {
   Future<void> _dispatch(_Run run) {
     final done = _dispatching.then((_) async {
       try {
+        run.arrived = false;
         final waiting = await _serial(run, run.inbox);
         final handled = <String>{};
         for (final delivery in waiting) {

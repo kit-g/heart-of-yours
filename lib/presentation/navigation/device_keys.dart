@@ -110,7 +110,7 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
         _running = null;
         keys.stop();
       case (final String userId, _) when userId != _running || keys.status != .published:
-        // again on every word from Auth or Upsync until the server has the
+        // again on every word from Auth, and as Upsync opens the leg, until the server has the
         // keys: the token, and the end of a replay, may come after the account
         _running = userId;
         unawaited(keys.start(userId));
@@ -128,7 +128,15 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
 
   void _show() {
     final approval = _approval;
-    if (!mounted || approval == null || comparisonSheet.value != null) return;
+    if (!mounted || approval == null) return;
+    if (comparisonSheet.value case final String sheet) {
+      // the sheet that is up shows it, or went on with it: closed, it isn't
+      // shown again
+      if (approval.value case CodeComparison(:final id, :final replaced) when id == sheet || replaced == sheet) {
+        _shown = id;
+      }
+      return;
+    }
     final asked = switch (approval.value) {
       CodeComparison(role: .responder, running: true, :final id) => id,
       _ => null,

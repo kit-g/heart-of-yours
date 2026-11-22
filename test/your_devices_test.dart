@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/visual.dart' show dialogWidth;
@@ -339,6 +340,16 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpTimes();
     expect(find.byKey(AppKeys.codesDontMatch), findsOneWidget);
+  });
+
+  testWidgets('on another tab, the page reads no queue (#734)', (tester) async {
+    await pump(tester);
+    await openDevices(tester);
+    GoRouter.of(root(tester)).go('/history');
+    await tester.pumpTimes();
+    clearInteractions(api);
+    await tester.pump(const Duration(seconds: 10));
+    verifyNever(api.getKeyQueue(any));
   });
 
   testWidgets('asked on both at once, the sheet goes on with the one both keep (#734)', (tester) async {

@@ -19,21 +19,47 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
   /// The last read failed: said with a way to read again.
   final _failed = ValueNotifier(false);
 
-  /// Stops reading the queue for a comparison asked for elsewhere, which no
-  /// push may tell of (#734).
-  late final void Function() _stopExpecting;
+  /// Reading the queue for a comparison asked for elsewhere, which no push may
+  /// tell of (#734): while the page is on screen, for as long as one lives.
+  VoidCallback? _stopExpecting;
+  Timer? _expecting;
+  ValueListenable<TickerModeData>? _visible;
+
+  static const _expectsFor = Duration(minutes: 5);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // off on another tab, whose pages stay built, and under another page
+    final visible = TickerMode.getValuesNotifier(context);
+    if (identical(visible, _visible)) return;
+    _visible?.removeListener(_expect);
+    _visible = visible..addListener(_expect);
+    _expect();
+  }
+
+  void _expect() {
+    _expecting?.cancel();
+    _stopExpecting?.call();
+    _expecting = null;
+    _stopExpecting = null;
+    if (!(_visible?.value.enabled ?? false)) return;
+    final stop = _stopExpecting = DeviceKeys.of(context).approval.expectAsk();
+    _expecting = Timer(_expectsFor, stop);
+  }
 
   @override
   void initState() {
     super.initState();
-    _stopExpecting = DeviceKeys.of(context).approval.expectAsk();
     // after the first frame: the read notifies, and the page watches it
     WidgetsBinding.instance.addPostFrameCallback((_) => _read());
   }
 
   @override
   void dispose() {
-    _stopExpecting();
+    _visible?.removeListener(_expect);
+    _expecting?.cancel();
+    _stopExpecting?.call();
     _failed.dispose();
     super.dispose();
   }
@@ -50,7 +76,7 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
       await keys.devicesOf(userId);
     } catch (_) {
       // offline, or keys not running yet: the page offers to read again
-      _failed.value = true;
+      if (mounted) _failed.value = true;
     }
   }
 

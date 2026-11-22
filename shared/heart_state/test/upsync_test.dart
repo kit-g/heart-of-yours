@@ -43,7 +43,13 @@ class _Ledger extends Fake implements LocalUpsyncService {
   }
 
   @override
-  Future<void> settle(String userId) async => owed.remove(userId);
+  Future<void> settle(String userId) async {
+    owed.remove(userId);
+    onSettle?.call();
+  }
+
+  /// Runs as a settled run is written down.
+  void Function()? onSettle;
 
   @override
   Future<void> mergeExercise(String userId, {required String from, required String to}) async {
@@ -336,6 +342,25 @@ void main() {
   });
 
   group('claim', () {
+    test('the leg opening is said once, and a sign-out never is (#734)', () async {
+      var opened = 0;
+      sut.opened.addListener(() => opened++);
+      await sut.claim(from: uid, to: uid);
+      await sut.run(uid);
+      expect(opened, 1);
+      await sut.run(uid);
+      expect(opened, 1, reason: 'it was open already');
+
+      sut.onSignOut();
+      expect(opened, 1);
+
+      // signed out as the run is settled: nothing opens for the account leaving
+      await sut.claim(from: uid, to: uid);
+      ledger.onSettle = sut.onSignOut;
+      await sut.run(uid);
+      expect(opened, 1);
+    });
+
     test('link: the uid stays, nothing moves, the replay is owed and the leg held', () async {
       await sut.claim(from: uid, to: uid);
 

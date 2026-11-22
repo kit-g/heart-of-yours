@@ -26,6 +26,12 @@ class _Run {
 
   DeviceKeysStatus status = .off;
 
+  /// Something was kept in the inbox since it was last handed over.
+  bool arrived = false;
+
+  /// The last read of the queue brought something.
+  bool received = false;
+
   final peers = <String, Peer>{};
 
   /// When each thread last shared its keys with every device it knew of.

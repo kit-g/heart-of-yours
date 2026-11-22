@@ -22,7 +22,7 @@ void main() {
     DateTime Function()? now,
     bool Function()? sharesNoteKeys,
   }) {
-    return DeviceKeys(
+    final keys = DeviceKeys(
       service: server.as(userId),
       vault: vault ?? _Vault(),
       remote: remote ?? (RemoteAccess(hasToken: () => true)..account = true),
@@ -30,6 +30,9 @@ void main() {
       now: now,
       sharesNoteKeys: sharesNoteKeys,
     );
+    // what it left running reads no more
+    addTearDown(keys.dispose);
+    return keys;
   }
 
   /// [a] and [b], two devices of one account, let each other in as a
@@ -1952,6 +1955,68 @@ void main() {
       });
     });
 
+    test('what opened is handed over though it could not be confirmed (#734)', () {
+      fakeAsync((async) {
+        final (phone, tablet) = asking(async);
+        unawaited(tablet.receive());
+        async.flushMicrotasks();
+        // the server took the confirmation, and its answer was lost
+        server.refuseNext['confirmed'] = TimeoutException('no answer');
+        async.elapse(const Duration(seconds: 6));
+        expect(server.refuseNext, isEmpty);
+        expect(phaseOf(phone), isA<ComparisonCode>());
+        expect(phaseOf(tablet), isA<ComparisonCode>());
+        unawaited(phone.approval.deny());
+        async.elapse(const Duration(seconds: 4));
+      });
+    });
+
+    test('an answer to a comparison no longer run here ends it on the other side (#734)', () {
+      fakeAsync((async) {
+        final (phone, tablet) = asking(async);
+        // a restart abandons it, and says nothing
+        phone.stop();
+        unawaited(phone.start('dana'));
+        async.flushMicrotasks();
+        unawaited(tablet.receive());
+        async.flushMicrotasks();
+        expect(phaseOf(tablet), isA<ComparisonWaiting>());
+        unawaited(phone.receive());
+        async.elapse(const Duration(seconds: 4));
+        expect(phaseOf(tablet), isA<ComparisonCancelled>());
+      });
+    });
+
+    test('ending one both asked for is not a refusal of the other device (#734)', () {
+      fakeAsync((async) {
+        final phone = device('dana');
+        final tablet = device('dana');
+        unawaited(phone.start('dana'));
+        unawaited(tablet.start('dana'));
+        async.flushMicrotasks();
+        for (final _ in [1, 2]) {
+          unawaited(phone.approval.start(tablet.deviceId!));
+          unawaited(tablet.approval.start(phone.deviceId!));
+          async.elapse(const Duration(seconds: 10));
+          final gaveUp = [phone, tablet].singleWhere((each) => each.approval.value!.replaced != null);
+          unawaited(gaveUp.approval.deny());
+          async.elapse(const Duration(seconds: 6));
+        }
+        final stop = tablet.approval.expectAsk();
+        final stopToo = phone.approval.expectAsk();
+        for (final (asks, asked) in [(phone, tablet), (tablet, phone)]) {
+          unawaited(asks.approval.start(asked.deviceId!));
+          async.elapse(const Duration(seconds: 6));
+          expect(phaseOf(asked), isA<ComparisonCode>());
+          unawaited(asks.approval.deny());
+          async.elapse(const Duration(seconds: 6));
+        }
+        stop();
+        stopToo();
+        async.elapse(const Duration(minutes: 1));
+      });
+    });
+
     test('a device let in reads the keys sent after the other was done (#734)', () {
       fakeAsync((async) {
         final (phone, tablet) = asking(async);
@@ -2473,5 +2538,6 @@ class _As implements RemoteKeyService {
     await _answer('confirm');
     _mine(deviceId);
     server.queue.removeWhere((each) => each.recipientDeviceId == deviceId && ids.contains(each.id));
+    await _answer('confirmed');
   }
 }
