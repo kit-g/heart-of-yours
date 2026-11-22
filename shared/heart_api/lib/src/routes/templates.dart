@@ -12,7 +12,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
   /// A failure is thrown, never answered as no templates.
   @override
   Future<Iterable<Template>?> getTemplates() async {
-    final (templates, _) = await _listAt(Router.templates, 'templates');
+    final (templates, _) = _listIn(await get(Router.templates), 'templates', from: Router.templates);
     return _readable(_namedAll(templates, counts: true), Template.fromJson);
   }
 
@@ -72,7 +72,7 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
   /// is whoever the auth header says, so [userId] plays no part in the request.
   @override
   Future<Iterable<TemplateFolder>> getFolders({required String userId}) async {
-    final (folders, _) = await _listAt(Router.templateFolders, 'folders');
+    final (folders, _) = _listIn(await get(Router.templateFolders), 'folders', from: Router.templateFolders);
     // whole or not at all: the caller replaces its folders with these, so a
     // folder skipped here would delete its local copy (see [_readable])
     return _readable(folders, TemplateFolder.fromJson);
@@ -121,13 +121,9 @@ mixin _TemplateRoutes on Requests, _ExerciseNaming implements ApiTemplateFolderS
     required String targetUserId,
     required String folderId,
   }) async {
-    // the one list that answers a POST, so its shape is read here
     final path = Router.folderShare(targetUserId, folderId);
-    final (json, status) = await post(path);
-    return switch (json['shares']) {
-      final List shares => _readable(shares, _shareFromJson),
-      _ => throw UnreadableAnswer(statusCode: status, method: 'POST', path: '/$path'),
-    };
+    final (shares, _) = _listIn(await post(path), 'shares', from: path);
+    return _readable(shares, _shareFromJson);
   }
 
   /// [TemplateShare] only knows how to read itself off a database row; this is

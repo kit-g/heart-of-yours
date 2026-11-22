@@ -14,14 +14,14 @@ mixin _NoteRoutes on Requests {
   /// One page of this coach's notes, on [connectionId] or on every client.
   /// `cursor` is there only when more follow.
   Future<({List<CoachNote> notes, String? cursor})> getNotes({String? connectionId, String? cursor}) async {
-    final (notes, page) = await _listAt(
+    final response = await get(
       Router.notes,
-      'notes',
       query: switch ({'connectionId': ?connectionId, 'cursor': ?cursor}) {
         final Map<String, String> query when query.isNotEmpty => query,
         _ => null,
       },
     );
+    final (notes, page) = _listIn(response, 'notes', from: Router.notes);
     return (
       notes: [
         for (final each in notes)

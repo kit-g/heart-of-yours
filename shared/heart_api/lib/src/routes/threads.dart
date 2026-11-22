@@ -28,7 +28,7 @@ mixin _ThreadRoutes on Requests {
   /// The inbox: every thread, last arrival first. Read whole or not at all:
   /// it replaces the device's inbox, where a thread skipped would be deleted.
   Future<List<Thread>> getThreads() async {
-    final (threads, _) = await _listAt(Router.threads, 'threads');
+    final (threads, _) = _listIn(await get(Router.threads), 'threads', from: Router.threads);
     return [for (final each in threads) Thread.fromJson(each as Map)];
   }
 
@@ -69,14 +69,15 @@ mixin _ThreadRoutes on Requests {
     String? before,
     int? limit,
   }) async {
-    final (items, page) = await _listAt(
-      Router.threadItems(threadId),
-      'items',
+    final path = Router.threadItems(threadId);
+    final response = await get(
+      path,
       query: switch ({'since': ?since, 'before': ?before, 'limit': ?limit?.toString()}) {
         final Map<String, String> query when query.isNotEmpty => query,
         _ => null,
       },
     );
+    final (items, page) = _listIn(response, 'items', from: path);
     return (
       items: [
         for (final each in items)

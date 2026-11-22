@@ -7,14 +7,18 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   /// what comes back, and an empty list says the account has none.
   @override
   Future<Iterable<Exercise>> getExercises() async {
-    final (exercises, _) = await _listAt(Router.exercises, 'exercises');
+    final (exercises, _) = _listIn(await get(Router.exercises), 'exercises', from: Router.exercises);
     return _readable(exercises, Exercise.fromJson);
   }
 
   /// See [getExercises].
   @override
   Future<Iterable<Exercise>> getOwnExercises() async {
-    final (exercises, _) = await _listAt(Router.exercises, 'exercises', query: {'owned': 'true'});
+    final (exercises, _) = _listIn(
+      await get(Router.exercises, query: {'owned': 'true'}),
+      'exercises',
+      from: Router.exercises,
+    );
     return _readable(exercises, Exercise.fromJson);
   }
 
@@ -121,7 +125,11 @@ mixin _ExerciseRoutes on Requests implements RemoteExerciseService {
   /// device's notes with what this holds, and an empty answer would delete
   /// every one of them.
   Future<Iterable<ExercisePreference>> getExercisePreferences() async {
-    final (preferences, _) = await _listAt(Router.exercisePreferences, 'preferences');
+    final (preferences, _) = _listIn(
+      await get(Router.exercisePreferences),
+      'preferences',
+      from: Router.exercisePreferences,
+    );
     return _readable(preferences, ExercisePreference.fromJson);
   }
 

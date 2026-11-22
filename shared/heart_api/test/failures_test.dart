@@ -224,7 +224,7 @@ void main() {
       throwsA(
         isA<UnreadableAnswer>()
             .having((e) => e.statusCode, 'status', 200)
-            .having((e) => '$e', 'message', 'NetworkException(200 GET /v1/accounts/u1/goals)'),
+            .having((e) => '$e', 'message', 'NetworkException(200 /v1/accounts/u1/goals)'),
       ),
     );
   });

@@ -17,7 +17,11 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
       if (former) 'former': 'true',
       'cursor': ?cursor,
     };
-    final (clients, page) = await _listAt(Router.coachClients, 'clients', query: query.isEmpty ? null : query);
+    final (clients, page) = _listIn(
+      await get(Router.coachClients, query: query.isEmpty ? null : query),
+      'clients',
+      from: Router.coachClients,
+    );
     return (items: _readable(clients, ClientSummary.fromJson), cursor: page['cursor'] as String?);
   }
 
@@ -33,7 +37,7 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
 
   /// Workouts, skips and endings of every client, newest first.
   Future<({List<CoachFeedItem> items, String? cursor})> getCoachFeed({String? cursor}) async {
-    final (items, page) = await _listAt(Router.coachFeed, 'items', query: _cursor(cursor));
+    final (items, page) = _listIn(await get(Router.coachFeed, query: _cursor(cursor)), 'items', from: Router.coachFeed);
     return (items: _readable(items, CoachFeedItem.fromJson), cursor: page['cursor'] as String?);
   }
 
@@ -42,7 +46,8 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
   /// started during a pause, no photos. A [ServerRefusal] `403` once the
   /// connection ends.
   Future<({List<Workout> items, String? cursor})> getClientWorkouts(String studentId, {String? cursor}) async {
-    final (workouts, page) = await _listAt(Router.clientWorkouts(studentId), 'workouts', query: _cursor(cursor));
+    final path = Router.clientWorkouts(studentId);
+    final (workouts, page) = _listIn(await get(path, query: _cursor(cursor)), 'workouts', from: path);
     return (
       items: _readable(_namedAll(workouts), Workout.fromJson),
       cursor: page['cursor'] as String?,
@@ -51,7 +56,8 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
 
   /// When a client skipped a session, never why.
   Future<List<TrainingSkip>> getClientSkips(String studentId) async {
-    final (skips, _) = await _listAt(Router.clientSkips(studentId), 'skips');
+    final path = Router.clientSkips(studentId);
+    final (skips, _) = _listIn(await get(path), 'skips', from: path);
     return _readable(skips, TrainingSkip.fromJson);
   }
 
@@ -86,7 +92,8 @@ mixin _RosterRoutes on Requests, _ExerciseNaming {
 
   /// The copies the coach manages for a client.
   Future<List<Program>> getClientPrograms(String studentId) async {
-    final (programs, _) = await _listAt(Router.clientPrograms(studentId), 'programs');
+    final path = Router.clientPrograms(studentId);
+    final (programs, _) = _listIn(await get(path), 'programs', from: path);
     return _readable(programs, Program.fromJson);
   }
 

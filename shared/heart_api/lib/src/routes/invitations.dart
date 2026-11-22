@@ -16,7 +16,11 @@ mixin _InvitationRoutes on Requests {
 
   /// The coach's links, newest first, however they ended. Never a token.
   Future<({List<Invitation> items, String? cursor})> getInvitations({String? cursor}) async {
-    final (invitations, page) = await _listAt(Router.invitations, 'invitations', query: _cursor(cursor));
+    final (invitations, page) = _listIn(
+      await get(Router.invitations, query: _cursor(cursor)),
+      'invitations',
+      from: Router.invitations,
+    );
     return (items: _readable(invitations, Invitation.fromJson), cursor: page['cursor'] as String?);
   }
 
@@ -65,7 +69,7 @@ mixin _InvitationRoutes on Requests {
 
   /// Who the account has blocked, newest first.
   Future<({List<BlockedPerson> items, String? cursor})> getBlocks({String? cursor}) async {
-    final (blocks, page) = await _listAt(Router.blocks, 'blocks', query: _cursor(cursor));
+    final (blocks, page) = _listIn(await get(Router.blocks, query: _cursor(cursor)), 'blocks', from: Router.blocks);
     return (items: _readable(blocks, BlockedPerson.fromJson), cursor: page['cursor'] as String?);
   }
 

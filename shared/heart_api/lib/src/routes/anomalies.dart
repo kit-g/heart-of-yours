@@ -13,11 +13,11 @@ mixin _AnomalyRoutes on Requests, _ExerciseNaming implements AnomalyService {
     String? cursor,
     int limit = 100,
   }) async {
-    final (anomalies, page) = await _listAt(
+    final response = await get(
       Router.anomalies,
-      'anomalies',
       query: {'limit': '$limit', 'cursor': ?cursor, 'status': ?status?.value},
     );
+    final (anomalies, page) = _listIn(response, 'anomalies', from: Router.anomalies);
     return Page(
       items: _readable(anomalies, (each) => Anomaly.fromJson(_namedAnomaly(each))),
       hasMore: page['cursor'] != null,

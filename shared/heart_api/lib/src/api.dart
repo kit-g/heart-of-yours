@@ -189,19 +189,21 @@ class Api
 /// a meaning for none, none.
 bool _gone(Object error) => originOf(error)?.statusCode == 404;
 
-extension on Requests {
-  /// The list under [key] in what a GET of [path] answered, and the page it
-  /// came in, for its cursor. A 2xx without that list is an
-  /// [UnreadableAnswer] on the route, reported and grouped like any other
-  /// failed request; never a bare cast error, and never an empty list, which
-  /// a caller that syncs would read as "the account holds none".
-  Future<(List, Json)> _listAt(String path, String key, {Map<String, dynamic>? query}) async {
-    final (json, status) = await get(path, query: query);
-    return switch (json[key]) {
-      final List list => (list, json),
-      _ => throw UnreadableAnswer(statusCode: status, method: 'GET', path: '/$path'),
-    };
-  }
+/// The list under [key] in [response], what the call to [from] answered, and
+/// the page it came in, for its cursor. Only reads: the call is the route's.
+///
+/// A 2xx without that list is an [UnreadableAnswer] on [from], reported and
+/// grouped like any other failed request; never a bare cast error, and never
+/// an empty list, which a caller that syncs would read as "the account holds
+/// none". The record a call answers carries no request, so the route is the
+/// one thing the caller names; the verb is left out, as the route says which
+/// call it was.
+(List, Json) _listIn(Response response, String key, {required String from}) {
+  final (json, status) = response;
+  return switch (json[key]) {
+    final List list => (list, json),
+    _ => throw UnreadableAnswer(statusCode: status, path: '/$from'),
+  };
 }
 
 /// [body] with its `id` only when it is one the server will take.

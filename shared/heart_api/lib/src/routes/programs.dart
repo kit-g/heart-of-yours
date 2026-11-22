@@ -10,7 +10,7 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
   /// templates in order. Read whole or not at all: the caller replaces its
   /// programs with these, and one skipped would delete its local copy.
   Future<List<Program>> getPrograms() async {
-    final (programs, _) = await _listAt(Router.programs, 'programs');
+    final (programs, _) = _listIn(await get(Router.programs), 'programs', from: Router.programs);
     return [for (final each in programs) Program.fromJson(each as Map)];
   }
 
@@ -79,7 +79,8 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
   }
 
   Future<List<ProgramAction>> getProgramActions(String programId) async {
-    final (actions, _) = await _listAt(Router.programActions(programId), 'actions');
+    final path = Router.programActions(programId);
+    final (actions, _) = _listIn(await get(path), 'actions', from: path);
     return _readable(actions, ProgramAction.fromJson);
   }
 
@@ -95,7 +96,8 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
   }
 
   Future<List<ProgramBase>> getProgramBases(String programId) async {
-    final (bases, _) = await _listAt(Router.programBases(programId), 'bases');
+    final path = Router.programBases(programId);
+    final (bases, _) = _listIn(await get(path), 'bases', from: path);
     return _readable(bases, ProgramBase.fromJson);
   }
 
@@ -117,7 +119,11 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     final skips = <TrainingSkip>[];
     String? cursor;
     do {
-      final (page, json) = await _listAt(Router.skips, 'skips', query: {'limit': '100', 'cursor': ?cursor});
+      final (page, json) = _listIn(
+        await get(Router.skips, query: {'limit': '100', 'cursor': ?cursor}),
+        'skips',
+        from: Router.skips,
+      );
       skips.addAll(_readable(page, TrainingSkip.fromJson));
       cursor = json['cursor'] as String?;
     } while (cursor != null);

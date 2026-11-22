@@ -7,7 +7,7 @@ mixin _ConnectionRoutes on Requests {
   /// Read whole: a connection this build can't read is dropped, not fatal,
   /// since the server's roles and domains may grow ahead of the app.
   Future<List<Connection>> getConnections() async {
-    final (connections, _) = await _listAt(Router.connections, 'connections');
+    final (connections, _) = _listIn(await get(Router.connections), 'connections', from: Router.connections);
     return _readable(connections, Connection.fromJson);
   }
 
@@ -39,7 +39,7 @@ mixin _ConnectionRoutes on Requests {
 
   /// The workouts the account has hidden from every connection, and since when.
   Future<List<HiddenWorkout>> getHiddenWorkouts() async {
-    final (workouts, _) = await _listAt(Router.hiddenWorkouts, 'workouts');
+    final (workouts, _) = _listIn(await get(Router.hiddenWorkouts), 'workouts', from: Router.hiddenWorkouts);
     return [for (final each in workouts.cast<Map>()) HiddenWorkout.fromJson(each)];
   }
 
