@@ -1300,7 +1300,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
 ];
 
 /// How many `a11y_<n>_test.dart` files split the sweep between them.
-const _shards = 4;
+const _shards = 6;
 
 /// A shard file's name and the number it passes: `a11y_2_test.dart` runs
 /// `a11y(shard: 2)`.
@@ -1328,6 +1328,14 @@ void a11y({required int shard}) {
           int.parse(name[1]!): _shardCall.firstMatch(file.readAsStringSync())?[1],
     };
     expect(files, {for (final n in Iterable.generate(_shards)) n: '$n'});
+  });
+
+  // CI gives each app test job every n-th file, so as many jobs as a11y files
+  // keeps one of these heavy files on each; fewer stacks two on one job.
+  test('CI runs as many app test jobs as there are shards', () {
+    final workflow = File('.github/workflows/unit-tests.yml').readAsStringSync();
+    final matrix = RegExp(r'shard: \[([^\]]*)\]').firstMatch(workflow)![1]!.split(',');
+    expect(matrix, hasLength(_shards));
   });
 
   late MockLocalDatabase db;
