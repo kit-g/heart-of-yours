@@ -276,4 +276,289 @@ void main() {
     expect(cards(tester), ['Old leg day']);
     expect(tester.takeException(), isNull);
   });
+
+  group('by template and by date (#740)', () {
+    Template template(String id, int order, String name, {String? programId}) {
+      final draft = Template.empty(id: id, order: order)
+        ..name = name
+        ..add(bench);
+      return Template.fromJson({...draft.toMap(), 'programId': ?programId});
+    }
+
+    Program program(String id, String name, List<String> sessions, {DateTime? began}) {
+      return Program(id: id, name: name, perWeek: 3, weeks: 8, sessions: sessions, createdAt: began ?? now);
+    }
+
+    Workout of(String? templateId, String name, DateTime start, [Exercise? exercise]) {
+      return Workout.fromJson({...finished(name, exercise ?? bench, start).toMap(), 'templateId': ?templateId});
+    }
+
+    final push = of('push', 'Push one', DateTime(2026, 11, 5, 9));
+    final pushLegs = of('push', 'Push and legs', DateTime(2026, 11, 6, 9), squat);
+    final pull = of('pull', 'Pull one', DateTime(2026, 10, 3, 9));
+    final loose = of(null, 'Push', DateTime(2026, 11, 7, 9));
+    final gone = of('gone', 'Gone', DateTime(2026, 11, 8, 9));
+
+    void Function(MockLocalDatabase, MockApi) stored(List<Template> templates, {List<Program> programs = const []}) {
+      return (db, api) {
+        SharedPreferences.setMockInitialValues({
+          ...pastOnboarding(),
+          'feature-programs': programs.isEmpty ? 'off' : 'on',
+        });
+        // the samples are the rows of no user
+        when(db.getTemplates(any)).thenAnswer((i) async => i.positionalArguments.single == null ? [] : templates);
+        when(db.getPrograms(any)).thenAnswer((_) async => programs);
+        when(db.getProgramActions(any, programId: anyNamed('programId'))).thenAnswer((_) async => []);
+        when(db.getProgramBases(any, programId: anyNamed('programId'))).thenAnswer((_) async => []);
+        when(db.getProgramMarks(any, any)).thenAnswer((_) async => []);
+      };
+    }
+
+    /// The app with its templates and programs read, which a test's startup
+    /// doesn't wait for.
+    Future<void> launch(
+      WidgetTester tester, {
+      required List<Workout> history,
+      required void Function(MockLocalDatabase, MockApi) stub,
+      Size size = const Size(390, 844),
+    }) async {
+      await pumpApp(tester, history: history, size: size, stub: stub);
+      final context = tester.element(find.byType(HistoryPage));
+      final (templates, programs) = (Templates.of(context), Programs.of(context));
+      await templates.init();
+      await programs.init();
+      await tester.pumpTimes();
+    }
+
+    final own = [template('push', 0, 'Push'), template('pull', 1, 'Pull'), template('rest', 2, 'Never done')];
+
+    Future<void> axis(WidgetTester tester, String name) async {
+      await tester.tapByKey(AppKeys.historyFilter);
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.historyFilterAxis(name));
+      await tester.pumpTimes();
+    }
+
+    Future<void> pickTemplate(WidgetTester tester, String id) async {
+      await axis(tester, 'templates');
+      await tester.tapByKey(AppKeys.historyFilterTemplate(id));
+      await tester.pumpTimes();
+    }
+
+    Future<void> takeOut(WidgetTester tester, Key chip) async {
+      await tester.tap(find.descendant(of: find.byKey(chip), matching: find.byTooltip('Remove filter')));
+      await tester.pumpTimes();
+    }
+
+    HistoryFilter filterOf(WidgetTester tester) => HistoryFilter.of(tester.element(find.byType(HistoryPage)));
+
+    testFilter('the list shows the workouts of any template picked, and no one guessed by name', (tester) async {
+      await launch(tester, history: [push, pull, loose, gone], stub: stored(own));
+
+      await pickTemplate(tester, 'push');
+      expect(cards(tester), ['Push one']);
+      await pickTemplate(tester, 'pull');
+      expect(cards(tester), ['Push one', 'Pull one']);
+
+      await takeOut(tester, AppKeys.historyFilterTemplateChip('push'));
+      expect(cards(tester), ['Pull one']);
+      expect(tester.takeException(), isNull);
+    });
+
+    testFilter('a template nothing was done from is greyed, and a deleted one is not offered', (tester) async {
+      await launch(tester, history: [push, gone], stub: stored(own));
+      await axis(tester, 'templates');
+
+      bool enabled(String id) {
+        return tester.widget<CheckedPopupMenuItem<String>>(find.byKey(AppKeys.historyFilterTemplate(id))).enabled;
+      }
+
+      expect(enabled('push'), isTrue);
+      expect(enabled('rest'), isFalse);
+      expect(find.byKey(AppKeys.historyFilterTemplate('gone')), findsNothing);
+    });
+
+    testFilter('one deleted after it was picked is still taken out by its chip', (tester) async {
+      await launch(tester, history: [push, gone], stub: stored(own));
+      filterOf(tester).toggleTemplate('gone');
+      await tester.pumpTimes();
+
+      expect(find.widgetWithText(Chip, 'Deleted template'), findsOneWidget);
+      expect(cards(tester), ['Gone']);
+      await takeOut(tester, AppKeys.historyFilterTemplateChip('gone'));
+      expect(filterOf(tester).isOn, isFalse);
+    });
+
+    testFilter('no templates, no way to them', (tester) async {
+      await launch(tester, history: [loose], stub: stored(const []));
+      await tester.tapByKey(AppKeys.historyFilter);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.historyFilterAxis('templates')), findsNothing);
+      expect(find.byKey(AppKeys.historyFilterAxis('from')), findsOneWidget);
+    });
+
+    testFilter("sessions are under their program's name, and two runs of one are told apart", (tester) async {
+      final sessions = [
+        template('push', 0, 'Push'),
+        template('a1', 1, 'Day A', programId: 'p1'),
+        template('a2', 2, 'Day A', programId: 'p2'),
+      ];
+      await launch(
+        tester,
+        history: [
+          push,
+          of('a1', 'First run', DateTime(2026, 9, 2, 9)),
+          of('a2', 'Second run', DateTime(2026, 11, 2, 9)),
+        ],
+        stub: stored(
+          sessions,
+          programs: [
+            program('p1', 'Split', ['a1'], began: DateTime(2026, 9)),
+            program('p2', 'Split', ['a2'], began: DateTime(2026, 11)),
+          ],
+        ),
+      );
+      await axis(tester, 'templates');
+      expect(find.text('Split · Sep 2026'), findsOneWidget);
+      expect(find.text('Split · Nov 2026'), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.historyFilterTemplate('a2'));
+      await tester.pumpTimes();
+      expect(cards(tester), ['Second run']);
+      expect(find.widgetWithText(Chip, 'Day A · Split · Nov 2026'), findsOneWidget);
+    });
+
+    testFilter('with Programs off, their sessions are not offered', (tester) async {
+      await launch(
+        tester,
+        history: [push, of('a1', 'Run', DateTime(2026, 9, 2, 9))],
+        stub: stored([template('push', 0, 'Push'), template('a1', 1, 'Day A', programId: 'p1')]),
+      );
+      await axis(tester, 'templates');
+      expect(find.byKey(AppKeys.historyFilterTemplate('push')), findsOneWidget);
+      expect(find.byKey(AppKeys.historyFilterTemplate('a1')), findsNothing);
+    });
+
+    testFilter('a stretch of days, each end picked and taken out by itself', (tester) async {
+      await launch(tester, history: [push, pushLegs, pull], stub: stored(own));
+
+      await axis(tester, 'from');
+      await tester.tap(find.text('6'));
+      await tester.pumpTimes();
+      await tester.tap(find.text('OK'));
+      await tester.pumpTimes();
+      expect(filterOf(tester).from, DateTime(2026, 11, 6));
+      expect(cards(tester), ['Push and legs']);
+      expect(find.widgetWithText(Chip, 'From Nov 6, 2026'), findsOneWidget);
+
+      // the other end goes no further back than it
+      await axis(tester, 'until');
+      expect(tester.widget<DatePickerDialog>(find.byType(DatePickerDialog)).firstDate, DateTime(2026, 11, 6));
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpTimes();
+      expect(filterOf(tester).until, isNull);
+
+      filterOf(tester)
+        ..from = null
+        ..until = DateTime(2026, 11, 5);
+      await tester.pumpTimes();
+      expect(cards(tester), ['Push one', 'Pull one']);
+      await takeOut(tester, AppKeys.historyFilterUntilChip);
+      expect(cards(tester), hasLength(3));
+    });
+
+    testFilter('across axes all of them have to match, and Clear takes them all out', (tester) async {
+      await launch(tester, history: [push, pushLegs, pull, legDay], stub: stored(own));
+      final filter = filterOf(tester)
+        ..toggle(.legs)
+        ..toggleTemplate('push');
+      await tester.pumpTimes();
+      expect(cards(tester), ['Push and legs']);
+
+      filter.until = DateTime(2026, 11, 5);
+      await tester.pumpTimes();
+      expect(cards(tester), isEmpty);
+      expect(find.byType(Chip), findsNWidgets(3));
+      await tester.tapByKey(AppKeys.historyFilterClear);
+      await tester.pumpTimes();
+      expect(filter.isOn, isFalse);
+      expect(cards(tester), hasLength(4));
+    });
+
+    for (final view in [HistoryView.calendar, HistoryView.month]) {
+      testFilter('the ${view.value} view marks only the days that match', (tester) async {
+        final semantics = tester.ensureSemantics();
+        await launch(
+          tester,
+          history: [push, pushLegs, loose],
+          size: const Size(1194, 834),
+          stub: stored(own),
+        );
+        Preferences.of(tester.element(find.byType(HistoryPage))).setHistoryView(view);
+        filterOf(tester)
+          ..toggleTemplate('push')
+          ..from = DateTime(2026, 11, 6);
+        await tester.pumpTimes();
+
+        String label(DateTime day) => DateFormat.yMMMMEEEEd('en').format(day);
+        Finder day(String label) {
+          return find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.label == label);
+        }
+
+        expect(day('${label(pushLegs.start)}, edit workout'), findsOneWidget);
+        // trained, and left out: plain, and it does nothing
+        expect(tester.widget<Semantics>(day(label(push.start))).properties.onTap, isNull);
+        expect(tester.widget<Semantics>(day(label(loose.start))).properties.onTap, isNull);
+        expect(find.byKey(AppKeys.historyFilterChips), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        semantics.dispose();
+      });
+    }
+
+    testFilter('pages past the first day asked for are waited for no longer', (tester) async {
+      final page = Completer<Iterable<Workout>>();
+      await pumpApp(
+        tester,
+        history: recent,
+        account: true,
+        stub: (db, api) {
+          when(db.isHistoryBackfilled(any)).thenAnswer((_) async => false);
+          when(db.mirrorSummary(any)).thenAnswer(
+            (_) async => const AccountSummary(
+              collections: {ExportableCollection.workouts: CollectionSummary(count: 12)},
+            ),
+          );
+          when(api.getAccountSummary()).thenAnswer(
+            (_) async => const AccountSummary(
+              collections: {ExportableCollection.workouts: CollectionSummary(count: 13)},
+            ),
+          );
+          when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since'))).thenAnswer(
+            (invocation) => switch (invocation.namedArguments[#since]) {
+              null => Future.value(Page(items: recent.reversed.toList(), hasMore: true)),
+              _ => page.future,
+            },
+          );
+        },
+      );
+      final context = tester.element(find.byType(HistoryPage));
+      unawaited(Backfill.of(context).run('u1'));
+      // the fixtures' ids were made as the test ran: that is how far it reaches
+      final reach = Workouts.of(context).pagedBackTo!.toLocal();
+      HistoryFilter.of(context)
+        ..toggle(.legs)
+        ..from = reach.subtract(const Duration(days: 2));
+      await tester.pumpTimes();
+      expect(find.text('Looking through older workouts…'), findsOneWidget);
+
+      HistoryFilter.of(context).from = reach.add(const Duration(days: 2));
+      await tester.pumpTimes();
+      expect(find.text('Looking through older workouts…'), findsNothing);
+      expect(find.byKey(AppKeys.historyFilterEmpty), findsOneWidget);
+
+      page.complete(Page(items: [older], hasMore: false));
+      await tester.pumpTimes();
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

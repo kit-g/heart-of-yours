@@ -89,8 +89,9 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final L(:myProgression) = L.of(context);
     final workouts = Workouts.watch(context);
     final byMonth = workouts.byMonth;
-    // History narrowed to some muscle groups (#610). What a workout trained is
-    // read off the library, so the page hears when it loads or changes.
+    // History narrowed to some muscle groups (#610), templates or days (#740).
+    // What a workout trained is read off the library, so the page hears when
+    // it loads or changes.
     final filter = HistoryFilter.watch(context);
     final exercises = Exercises.watch(context);
     final trained = _workoutGroups;
@@ -104,7 +105,9 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     // the one bringing it down; the filter never pages for itself.
     final backfill = Backfill.watch(context);
     final whole = !workouts.hasMoreHistory || backfill.isWhole;
-    final (searching, stalled) = switch (whole) {
+    // and pages past the first day asked for (#740) hold nothing more to find
+    final searched = whole || !filter.reaches(workouts.pagedBackTo);
+    final (searching, stalled) = switch (searched) {
       true => (false, false),
       false => (backfill.status == .running, backfill.status == .failed),
     };
@@ -125,7 +128,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final view = preferences.historyView;
     final compact = preferences.historyDensity == .compact;
     SliverAppBar appBar(double height) => SliverAppBar(
-      // Narrows both views to some muscle groups (#610). On the leading side,
+      // Narrows every view to some workouts (#610, #740). On the leading side,
       // which the centred title leaves free: the actions already reach the
       // title on a phone with Copy for AI and Past workouts on, and in a
       // tablet's narrow list pane.
@@ -133,8 +136,9 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
         true => _FilterButton(
           filter: filter,
           trained: trained,
-          // greyed only off the whole history, read with the library's tags
-          whole: whole && exercises.isInitialized,
+          whole: whole,
+          // a group is greyed only off the library's tags
+          tagged: exercises.isInitialized,
         ),
         false => null,
       },
@@ -187,7 +191,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     // notifies every second of an active workout
     Widget listview() {
       final items = switch (shows) {
-        // the days set aside are no workout of any group
+        // the days set aside are no workout of any group or template
         final bool Function(Workout) shows => _historyRows(
           {
             for (final MapEntry(:key, :value) in byMonth.entries)
@@ -337,7 +341,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                     true => _HistoryTail(
                       loading: searching,
                       error: stalled,
-                      hasMore: !whole,
+                      hasMore: !searched,
                       onRetry: () => Backfill.of(context).retry(),
                     ),
                     false => _HistoryTail(

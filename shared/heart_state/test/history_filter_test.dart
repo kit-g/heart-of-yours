@@ -129,8 +129,111 @@ void main() {
       expect(heard, 1);
     });
 
+    Workout from(String? templateId, {DateTime? at, List<Exercise>? exercises}) {
+      final workout = Workout.fromExercises((exercises ?? [bench]).map((each) => wEx(each)), templateId: templateId);
+      return workout
+        ..completeAllSets()
+        ..start = (at ?? DateTime(2026, 11, 5, 9)).toUtc();
+    }
+
+    test('lets through a workout of any of its templates, and none without one (#740)', () {
+      final filter = HistoryFilter()
+        ..toggleTemplate('push')
+        ..toggleTemplate('pull');
+      expect(filter.isOn, isTrue);
+      expect(filter.shows(from('push'), none), isTrue);
+      expect(filter.shows(from('pull'), none), isTrue);
+      expect(filter.shows(from('legs'), none), isFalse);
+      expect(filter.shows(from(null)..name = 'push', none), isFalse, reason: 'never by its name');
+
+      filter.toggleTemplate('push');
+      expect(filter.templates, {'pull'});
+      filter.removeTemplate('pull');
+      expect(filter.isOn, isFalse);
+    });
+
+    test('lets through the days of its stretch, both ends with them (#740)', () {
+      final filter = HistoryFilter()
+        ..from = DateTime(2026, 11, 3, 15)
+        ..until = DateTime(2026, 11, 5);
+      expect(filter.from, DateTime(2026, 11, 3), reason: 'a day, not a time');
+      bool shows(DateTime at) => filter.shows(from(null, at: at), none);
+      // the day here, whatever day it is in UTC: one of these two is another
+      // there, anywhere but on Greenwich
+      expect(shows(DateTime(2026, 11, 3)), isTrue);
+      expect(shows(DateTime(2026, 11, 5, 23, 59)), isTrue);
+      expect(shows(DateTime(2026, 11, 2, 23, 59)), isFalse);
+      expect(shows(DateTime(2026, 11, 6)), isFalse);
+    });
+
+    test('either end may be open (#740)', () {
+      final filter = HistoryFilter()..from = DateTime(2026, 11, 3);
+      expect(filter.shows(from(null, at: DateTime(2030)), none), isTrue);
+      expect(filter.shows(from(null, at: DateTime(2020)), none), isFalse);
+      filter
+        ..from = null
+        ..until = DateTime(2026, 11, 3);
+      expect(filter.shows(from(null, at: DateTime(2030)), none), isFalse);
+      expect(filter.shows(from(null, at: DateTime(2020)), none), isTrue);
+    });
+
+    test('an end past the other drops it, and the same day says nothing (#740)', () {
+      final filter = HistoryFilter()
+        ..from = DateTime(2026, 11, 3)
+        ..until = DateTime(2026, 11, 5);
+      var heard = 0;
+      filter.addListener(() => heard++);
+      filter.from = DateTime(2026, 11, 3, 20);
+      expect(heard, 0);
+      filter.from = DateTime(2026, 11, 9);
+      expect((filter.from, filter.until), (DateTime(2026, 11, 9), null));
+      filter.until = DateTime(2026, 11, 1);
+      expect((filter.from, filter.until), (null, DateTime(2026, 11, 1)));
+      expect(heard, 2);
+    });
+
+    test('groups, templates and days all have to let it through (#740)', () {
+      final filter = HistoryFilter()
+        ..toggle(.legs)
+        ..toggleTemplate('a')
+        ..from = DateTime(2026, 11, 3);
+      final at = DateTime(2026, 11, 5);
+      expect(filter.shows(from('a', at: at, exercises: [squat]), none), isTrue);
+      expect(filter.shows(from('a', at: at), none), isFalse);
+      expect(filter.shows(from('b', at: at, exercises: [squat]), none), isFalse);
+      expect(filter.shows(from('a', at: DateTime(2026, 11, 2), exercises: [squat]), none), isFalse);
+    });
+
+    test('pages past the first day have nothing more to find (#740)', () {
+      final filter = HistoryFilter();
+      expect(filter.reaches(DateTime(2020)), isTrue, reason: 'no first day');
+      filter.from = DateTime(2026, 11, 3);
+      expect(filter.reaches(null), isTrue, reason: 'how far the pages go is not known');
+      expect(filter.reaches(DateTime(2026, 11, 3)), isTrue);
+      expect(filter.reaches(DateTime(2026, 11, 2, 23)), isFalse);
+    });
+
+    test('clear takes every axis out, and says so once (#740)', () {
+      final filter = HistoryFilter()
+        ..toggle(.legs)
+        ..toggleTemplate('a')
+        ..from = DateTime(2026)
+        ..until = DateTime(2027);
+      var heard = 0;
+      filter.addListener(() => heard++);
+      filter.clear();
+      expect(filter.isOn, isFalse);
+      expect(filter.groups.isEmpty && filter.templates.isEmpty, isTrue);
+      expect((filter.from, filter.until), (null, null));
+      filter.clear();
+      expect(heard, 1);
+    });
+
     test('a sign-out clears it', () {
-      final filter = HistoryFilter()..toggle(.chest);
+      final filter = HistoryFilter()
+        ..toggle(.chest)
+        ..toggleTemplate('a')
+        ..until = DateTime(2026);
       filter.onSignOut();
       expect(filter.isOn, isFalse);
     });

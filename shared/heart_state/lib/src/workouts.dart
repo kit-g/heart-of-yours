@@ -156,6 +156,18 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   bool get hasMoreHistory => _hasMoreHistory;
 
+  /// How far back the pages read so far reach: nothing older than this was
+  /// read, and nothing not yet read started after it. A page is ordered by its
+  /// workouts' ids, whose time is when each was made, and a workout is made as
+  /// it starts or later. Null before the first page, once there is no more, or
+  /// for an id with no time in it.
+  DateTime? get pagedBackTo {
+    return switch (_historyCursor) {
+      final String id => timestampOfUuidV7(id),
+      null => null,
+    };
+  }
+
   bool _loadingMoreHistory = false;
 
   bool get loadingMoreHistory => _loadingMoreHistory;
