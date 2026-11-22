@@ -79,7 +79,7 @@ void main() {
 
     // Real startup loads these from `_initApp`, which runs in `Zone.root` —
     // a zone the fake-async clock this binding uses never drives (see
-    // a11y_test.dart's restTimers case for the same workaround). `userId` is
+    // a11y.dart's restTimers case for the same workaround). `userId` is
     // already set by `onUserChange`, which runs outside that zone.
     final context = tester.element(find.byType(MaterialApp));
     await Charts.of(context).init();

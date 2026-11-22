@@ -167,7 +167,7 @@ row at a time. A literal in a widget is a finding.
   prevents.
 - **Every control announces itself** — a `tooltip` or a `Semantics` label, and
   it is copy, so it is an `L` getter. Screens keep their row in the
-  `test/a11y_test.dart` matrix honest (`docs/a11y.md`).
+  `test/a11y.dart` matrix honest (`docs/a11y.md`).
 - **Material defaults are not decisions.** Stock colours, densities and
   shapes get called out in review; contrast and affordance are chosen. Buttons
   are the `PrimaryButton` family and the theme's tokens, not ad-hoc

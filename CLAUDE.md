@@ -58,7 +58,7 @@ cached by `ModalRoute` — changes to either need a hot restart, not a reload.
 ## Accessibility
 Every interactive control announces itself — tooltip or semantic label, and
 labels are copy, so they go through the translations flow like any string.
-Screens keep their entries in `test/a11y_test.dart`'s screen×guideline
+Screens keep their entries in `test/a11y.dart`'s screen×guideline
 matrix honest: enable what passes, skip what doesn't with a file:line
 reason. Patterns, the adoption rule, and what maps to WCAG: `docs/a11y.md`.
 

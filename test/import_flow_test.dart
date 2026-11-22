@@ -42,7 +42,7 @@ void main() {
     harness = const TestAppHarness();
     requests = [];
 
-    // same baseline stubs as a11y_test.dart
+    // same baseline stubs as a11y.dart
     when(
       db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
     ).thenAnswer((_) async => WorkoutAggregation.empty());
@@ -87,7 +87,7 @@ void main() {
 
   Future<void> pumpImportPage(WidgetTester tester, {MockFirebaseAuth? firebase}) async {
     // wide enough for the logo stripe under the test environment's fallback
-    // font — see a11y_test.dart
+    // font — see a11y.dart
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
