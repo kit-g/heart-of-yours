@@ -54,7 +54,7 @@ is always a finding, filed under *beyond the ticket*, never buried in the summar
 Run the checks yourself. Do not accept "621 passed" from the handoff.
 
 ```sh
-make codegen codegen-app        # first: a fresh worktree has no generated mocks, and lint does not make them
+make codegen                    # first: a fresh worktree has no generated mocks, and lint does not make them
 make lint                       # format-check + analyze (+ firebase stubs)
 make test-<pkg>                 # once per shared/<pkg> the diff touches
 make test-app                   # if lib/ or test/ changed

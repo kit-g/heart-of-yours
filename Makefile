@@ -24,7 +24,7 @@ CODEGEN_TARGETS := $(addprefix codegen-,$(CODEGEN_PACKAGES))
 .PHONY: bootstrap deps hooks codegen codegen-app codegen-heart_language lint format format-check test test-app \
         test-scripts test-sealbox profiles reclaim wear wear-install wear-test wear-pages $(TEST_TARGETS) $(CODEGEN_TARGETS)
 
-bootstrap: hooks deps codegen codegen-app
+bootstrap: hooks deps codegen
 	@echo "Ready. Note: lib/firebase_options.dart and lib/firebase_options_prod.dart"
 	@echo "are gitignored and required to build the app (not to run tests) — see README."
 
@@ -46,7 +46,12 @@ hooks:
 	git config merge.l10n-csv.name "row-aware merge of the translations CSV"
 	git config merge.l10n-csv.driver "python3 scripts/l10n_merge.py csv %O %A %B"
 
-codegen: $(CODEGEN_TARGETS) codegen-heart_language
+# Everything at once: the translation import, then one build_runner over the
+# whole workspace (every package and the app). One process resolves the shared
+# dependencies once; a build per package took ~30s each, ~3 minutes in all.
+# The per-package targets stay for running one package's tests.
+codegen: codegen-heart_language
+	dart run build_runner build --workspace
 
 $(CODEGEN_TARGETS): codegen-%:
 	cd shared/$* && dart run build_runner build
@@ -64,7 +69,7 @@ codegen-app:
 # `flutter analyze` must resolve the gitignored Firebase options; on machines
 # without Firebase credentials (CI), stub them. `flutterfire configure`
 # produces the real ones (see README) — when present, these are no-ops.
-# Note: analysis also needs generated mocks — CI runs `make codegen codegen-app`
+# Note: analysis also needs generated mocks — CI runs `make codegen`
 # before lint; dev machines have them after bootstrap or any test run.
 lib/firebase_options.dart lib/firebase_options_prod.dart:
 	printf '%s\n' \
