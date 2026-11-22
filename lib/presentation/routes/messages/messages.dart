@@ -656,6 +656,7 @@ class _SubjectLine extends StatelessWidget {
           key: AppKeys.messageSubject,
           onPressed: open,
           icon: _subjectIcon(subject),
+          iconSize: 16,
           plain: true,
           color: colorScheme.onSurfaceVariant,
           child: Text(words, maxLines: 1, overflow: .ellipsis, style: style),

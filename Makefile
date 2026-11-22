@@ -91,14 +91,6 @@ ui-imports:
 		exit 1 ; \
 	fi
 
-# The packages are layers, and a dependency only points down: the app on
-# everything; heart_api on heart_models and the HTTP stack; heart_state and the
-# other shared packages on heart_models, never on HTTP. HTTP types stop at
-# heart_api: a transport failure reaches the state layer as a heart_models type
-# (ServerRefusal, AccountDeleted), never as a NetworkException (#681). One
-# import across a boundary compiles fine and is the start of a tangle, and the
-# analyzer has no rule for it, so this checks every import and pubspec.
-LOWER := heart_state heart_db heart_charts heart_health heart_language sealbox
 # a button's height is the house's: QuietButton and PrimaryButton answer taps
 # over a full target without being drawn tall (docs/style.md)
 buttons:
@@ -108,6 +100,14 @@ buttons:
 		exit 1 ; \
 	fi
 
+# The packages are layers, and a dependency only points down: the app on
+# everything; heart_api on heart_models and the HTTP stack; heart_state and the
+# other shared packages on heart_models, never on HTTP. HTTP types stop at
+# heart_api: a transport failure reaches the state layer as a heart_models type
+# (ServerRefusal, AccountDeleted), never as a NetworkException (#681). One
+# import across a boundary compiles fine and is the start of a tangle, and the
+# analyzer has no rule for it, so this checks every import and pubspec.
+LOWER := heart_state heart_db heart_charts heart_health heart_language sealbox
 layers:
 	@bad=0 ; \
 	for p in $(LOWER) ; do \

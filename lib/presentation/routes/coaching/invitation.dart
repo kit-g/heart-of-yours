@@ -309,7 +309,7 @@ class _InvitationPageState extends State<InvitationPage> {
                       Text(l.invitationNeedsAccount, style: textTheme.bodyMedium, textAlign: .center),
                       PrimaryButton.wide(
                         key: AppKeys.invitationMakeAccount,
-                        hitHeight: kMinInteractiveDimension,
+                        margin: tallButtonPadding,
                         onPressed: _makeAccount,
                         child: Center(child: Text(l.invitationMakeAccount)),
                       ),
@@ -317,20 +317,30 @@ class _InvitationPageState extends State<InvitationPage> {
                     false => [
                       PrimaryButton.wide(
                         key: AppKeys.invitationAccept,
-                        hitHeight: kMinInteractiveDimension,
+                        margin: tallButtonPadding,
                         onPressed: switch (busy) {
                           true => null,
                           false => () => _accept(name),
                         },
                         child: Center(child: Text(l.invitationAccept)),
                       ),
-                      QuietButton(
+                      PrimaryButton.wide(
                         key: AppKeys.invitationDecline,
+                        backgroundColor: colorScheme.secondaryContainer,
+                        margin: tallButtonPadding,
                         onPressed: switch (busy) {
                           true => null,
                           false => _decline,
                         },
-                        child: Text(l.invitationDecline),
+                        child: Center(
+                          child: Text(
+                            l.invitationDecline,
+                            style: switch (busy) {
+                              true => null,
+                              false => TextStyle(color: colorScheme.onSecondaryContainer),
+                            },
+                          ),
+                        ),
                       ),
                       QuietButton(
                         key: AppKeys.invitationBlock,

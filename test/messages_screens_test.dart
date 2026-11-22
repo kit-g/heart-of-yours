@@ -91,7 +91,10 @@ void main() {
     expect(find.text('About a set'), findsOneWidget);
     expect(find.text('About a workout'), findsOneWidget);
     expect(find.byKey(AppKeys.messageSubject), findsNWidgets(2), reason: "a kind this build doesn't know shows none");
-    expect(find.descendant(of: find.byKey(AppKeys.messageSubject), matching: find.byType(QuietButton)), findsNothing);
+    expect(
+      find.descendant(of: find.byKey(AppKeys.messageSubject), matching: find.byType(QuietButton), matchRoot: true),
+      findsNothing,
+    );
     expect(opened, 0);
   });
 

@@ -466,6 +466,39 @@ void main() {
       expect(pick.top, lessThan(title.bottom + 24));
     });
 
+    testWidgets('segments that fit no row are a menu (#735)', (tester) async {
+      when(api.getPushSettings()).thenAnswer(
+        (_) async => PushSettings(
+          topics: [
+            PushSetting(
+              topic: 'coaching.message',
+              group: 'coaching',
+              name: 'Messages',
+              description: 'When someone you train with writes to you',
+              delivery: 'instant',
+              options: ['instant', 'daily', 'off'],
+            ),
+          ],
+        ),
+      );
+      await pump(tester, {'feature-yourCoach': 'on'});
+      go(tester, '/profile/settings/notifications');
+      await tester.pumpTimes();
+      tester.view.physicalSize = const Size(360, 2400);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpTimes();
+      tester.takeException();
+      final topic = find.byKey(const ValueKey('pushTopic-coaching.message'));
+      expect(find.descendant(of: topic, matching: find.byType(SettingSwitcher<String>)), findsNothing);
+
+      await tester.tap(find.descendant(of: topic, matching: find.text('Instant')));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Off').last);
+      await tester.pumpTimes();
+      verify(api.setPushSetting('coaching.message', 'off', connectionId: null)).called(1);
+    });
+
     testWidgets('with no room beside its name, the switch goes below (#735)', (tester) async {
       await pump(tester, {'feature-yourCoach': 'on'});
       go(tester, '/profile/settings/notifications');

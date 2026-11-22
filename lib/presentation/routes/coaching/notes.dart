@@ -362,12 +362,13 @@ class _NoteEditorState extends State<_NoteEditor> {
               Row(
                 children: [
                   if (widget.id != null)
-                    TextButton.icon(
+                    QuietButton(
                       key: AppKeys.coachingNoteDelete,
-                      style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+                      danger: true,
+                      plain: true,
                       onPressed: _delete,
-                      icon: const Icon(Icons.delete_outline_rounded),
-                      label: Text(l.coachingNoteDelete),
+                      icon: Icons.delete_outline_rounded,
+                      child: Text(l.coachingNoteDelete),
                     ),
                   const Spacer(),
                   // saved once there is something new to keep, and once

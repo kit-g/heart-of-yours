@@ -526,7 +526,7 @@ class _Holders extends StatelessWidget {
           (.failed, []) => [
             ListTile(
               title: Text(l.coachingProgramHoldersFailed, style: muted),
-              trailing: TextButton(onPressed: onRetry, child: Text(l.retry)),
+              trailing: QuietButton(onPressed: onRetry, child: Text(l.retry)),
             ),
           ],
           (_, []) => [
