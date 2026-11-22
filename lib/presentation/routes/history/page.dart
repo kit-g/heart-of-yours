@@ -388,6 +388,13 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                         paged: paged,
                         controller: Scrolls.of(context).historyCalendarScrollController,
                         pages: Scrolls.of(context).historyMonthController,
+                        // not while everything is on the device already, nor
+                        // while the server can't be asked
+                        older:
+                            !whole &&
+                            (RemoteAccess.of(context).allowed ||
+                                workouts.loadingMoreHistory ||
+                                workouts.historyPageError),
                         onLogOn: switch (widget.onLogPastWorkout) {
                           final void Function({DateTime? on}) log => (day) => log(on: day),
                           null => null,

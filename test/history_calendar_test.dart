@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui' show Tristate;
 
+import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoDatePicker;
 import 'package:clock/clock.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/semantics.dart';
@@ -579,6 +580,94 @@ void main() {
         expect(named(tester), name(previous));
         expect(find.byKey(ValueKey(key(previous))), findsOneWidget);
       });
+    });
+
+    testWidgets('a month beginning on the current one goes on being on the current one', (tester) async {
+      var at = DateTime(2026, 11, 30, 23, 59);
+      await withClock(Clock(() => at), () async {
+        await pump(tester, three(), paged: true);
+        at = DateTime(2026, 12, 1, 0, 1);
+        await tester.pump(const Duration(minutes: 2));
+        await tester.pumpAndSettle();
+        expect(named(tester), name(DateTime(2026, 12)));
+        expect(find.byKey(const ValueKey('2026-12')), findsOneWidget);
+      });
+    });
+
+    testCalendar('two quick taps turn two months', (tester) async {
+      await pump(tester, three(), paged: true);
+      await tester.tap(find.byKey(AppKeys.calendarPreviousMonth));
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.tap(find.byKey(AppKeys.calendarPreviousMonth));
+      await tester.pumpAndSettle();
+      expect(named(tester), name(before));
+    });
+
+    testCalendar('one month and nothing more to come: nowhere to go to', (tester) async {
+      await pump(tester, _Workouts()..rows[key(current)] = [workout(current, 5)], paged: true);
+      expect(find.byKey(AppKeys.calendarGoToDate), findsNothing);
+    });
+
+    testCalendar('a month not read yet is gone to as its history comes', (tester) async {
+      final workouts = _Workouts()
+        ..rows[key(current)] = [workout(current, 5)]
+        ..more = true;
+      await pump(tester, workouts, paged: true, platform: .iOS);
+      await tester.pump();
+      await tester.tap(find.byKey(AppKeys.calendarGoToDate));
+      await tester.pumpTimes();
+      final wheel = tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker));
+      expect(wheel.initialDateTime, current);
+      wheel.onDateTimeChanged(before);
+      await tester.pumpTimes();
+      await tester.tap(find.text('OK'));
+      await tester.pumpTimes();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget, reason: 'the page still to come');
+
+      // one month of it, and more to come: asked for again
+      final calls = workouts.calls;
+      workouts
+        ..rows[key(previous)] = [workout(previous, 6)]
+        ..loading = false
+        ..notifyListeners();
+      await tester.pumpTimes();
+      expect(workouts.calls, greaterThan(calls));
+      workouts
+        ..rows[key(before)] = [workout(before, 7)]
+        ..loading = false
+        ..notifyListeners();
+      await tester.pumpTimes();
+      expect(named(tester), name(before));
+    });
+
+    testCalendar('swiping lets go of a month still being read for', (tester) async {
+      final workouts = _Workouts()
+        ..rows[key(current)] = [workout(current, 5)]
+        ..more = true;
+      await pump(tester, workouts, paged: true, platform: .iOS);
+      await tester.pump();
+      await tester.tap(find.byKey(AppKeys.calendarGoToDate));
+      await tester.pumpTimes();
+      tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker)).onDateTimeChanged(before);
+      await tester.tap(find.text('OK'));
+      await tester.pumpTimes();
+      await tester.fling(find.byType(PageView), const Offset(-300, 0), 1000);
+      await tester.pumpTimes();
+      workouts
+        ..rows[key(previous)] = [workout(previous, 6)]
+        ..rows[key(before)] = [workout(before, 7)]
+        ..loading = false
+        ..more = false
+        ..notifyListeners();
+      await tester.pumpAndSettle();
+      expect(named(tester), name(current));
+    });
+
+    testCalendar('a narrow pane keeps the name whole, on a row of its own', (tester) async {
+      await pump(tester, three(), paged: true, size: const Size(208, 780));
+      tester.takeException();
+      final title = tester.getRect(find.byKey(AppKeys.calendarMonthTitle));
+      expect(title.bottom, lessThanOrEqualTo(tester.getRect(find.byKey(AppKeys.calendarGoToDate)).top));
     });
 
     testCalendar('a day opens its workout, and the filter marks as it does in the scrolling months', (tester) async {

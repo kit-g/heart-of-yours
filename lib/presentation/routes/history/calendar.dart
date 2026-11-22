@@ -48,6 +48,11 @@ class HistoryCalendar extends StatefulWidget {
   final bool paged;
   final PageController? pages;
 
+  /// Whether older history can still come, for the paged months, which have a
+  /// page for it: what the server says ([Workouts.hasMoreHistory]), unless
+  /// the page knows better.
+  final bool? older;
+
   /// Logs a workout that already happened, on the given day (#618).
   final void Function(DateTime day)? onLogOn;
 
@@ -64,6 +69,7 @@ class HistoryCalendar extends StatefulWidget {
     this.controller,
     this.paged = false,
     this.pages,
+    this.older,
     this.onLogOn,
     this.onStartWorkout,
   });
@@ -279,7 +285,7 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
                   today: today,
                   // older ones are still to come: a page after the oldest
                   // month brings them
-                  more: workouts.hasMoreHistory,
+                  more: widget.older ?? workouts.hasMoreHistory,
                   onOldest: () => _loadOlder(workouts),
                   weekdays: weekdays,
                   tail: tail,

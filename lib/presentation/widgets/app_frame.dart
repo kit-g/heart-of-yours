@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:heart/core/utils/visual.dart' show lessMotion;
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
 import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
@@ -180,7 +181,7 @@ Future<void> _customCallbacks(BuildContext context, int branch) async {
 
       await Future.wait([
         scrolls.scrollEditableWorkoutToTop(),
-        scrolls.resetHistoryStack(),
+        scrolls.resetHistoryStack(lessMotion: lessMotion(context)),
       ]);
 
       return;

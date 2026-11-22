@@ -101,14 +101,15 @@ class _ViewSwitchState extends State<_ViewSwitch> with SingleTickerProviderState
         _progress.reverse();
       case (final HistoryView top, HistoryView _) when top == widget.view:
         _progress.forward();
-      // a third, with two still swapping: from the one that was arriving
-      case (final HistoryView top, HistoryView _):
-        _swapFrom(top);
+      // a third, with two still swapping: from the one that was arriving,
+      // and from the header as it stands
+      case (final HistoryView top, final HistoryView under):
+        _swapFrom(_progress.status == .reverse ? under : top, height: _header.value);
     }
   }
 
-  void _swapFrom(HistoryView top) {
-    final folded = _headerHeight - (_offsets[top] ?? 0);
+  void _swapFrom(HistoryView top, {double? height}) {
+    final folded = height ?? _headerHeight - (_offsets[top] ?? 0);
     // never quite the toolbar: a header whose open and folded heights
     // are the same has nothing to lay its title out between
     _opening.begin = folded.clamp(kToolbarHeight + .5, _headerHeight);

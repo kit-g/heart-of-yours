@@ -1,6 +1,7 @@
 library;
 
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:collection';
 
 import 'package:clock/clock.dart';

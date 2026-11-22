@@ -2637,17 +2637,30 @@ void a11y({required int shard}) {
         }
       case _Screen.calendar || _Screen.calendarMonth:
         final completed = Workout.fromJson(_unsynced().toMap());
-        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
+        // three months, so the paged one's arrows are both there
+        final rows = [
+          completed,
+          for (final days in [31, 62])
+            Workout.fromJson({
+              ..._unsynced().toMap(),
+              'id': 'earlier-$days',
+              'start': completed.start.subtract(Duration(days: days)).toIso8601String(),
+              'end': completed.start.subtract(Duration(days: days)).add(const Duration(hours: 1)).toIso8601String(),
+            }),
+        ];
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => rows);
         when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
-            .thenAnswer((_) async => [completed]);
+            .thenAnswer((_) async => rows);
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
         Preferences.of(tester.element(find.byType(MaterialApp))).setHistoryView(
-          switch (screen) {
-            .calendarMonth => .month,
-            _ => .calendar,
-          },
+          screen == .calendarMonth ? .month : .calendar,
         );
+        await tester.pumpTimes();
+        if (screen == _Screen.calendarMonth) {
+          await tester.tapByKey(AppKeys.calendarPreviousMonth);
+          await tester.pumpTimes();
+        }
       case _Screen.history:
         await tester.tapByKey(AppKeys.historyStack);
       case _Screen.pastWorkoutTimes || _Screen.pastWorkoutEditor:

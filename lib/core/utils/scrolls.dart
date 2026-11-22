@@ -78,10 +78,12 @@ class Scrolls {
 
   /// Whichever view History is on: the list's top, or either calendar's
   /// current month — the reversed months' start.
-  Future<void> resetHistoryStack() async {
+  Future<void> resetHistoryStack({bool lessMotion = false}) async {
     final months = _historyMonthController;
     // from far back straight to the month before, not through every one between
     if (months.hasClients && months.position.hasContentDimensions && (months.page ?? 0) > 1) months.jumpToPage(1);
+    // a month sliding by is for show
+    if (lessMotion && months.hasClients) months.jumpToPage(0);
     await Future.wait([
       _scrollToTop(_historyScrollController),
       _scrollToTop(_historyCalendarScrollController),
