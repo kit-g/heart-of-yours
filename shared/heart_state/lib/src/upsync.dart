@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'goals.dart';
 import 'programs.dart';
+import 'refusals.dart';
 import 'exercises.dart';
 import 'analytics.dart';
 import 'remote.dart';
@@ -469,20 +470,11 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   /// backup of 358 with 332 never attempted (heart-of-yours#113).
   static const _refusals = {
     'id_taken',
-    'unknown_exercise',
     'unknown_folder',
     'invalid_reference',
     'duplicate',
-    // the program routes' (heart-api#86): a rule or key this server does not
-    // take, a cap reached, or a reference to a row the account does not have
-    'invalid_rule',
-    'invalid_key',
-    'program_limit',
-    'program_history_limit',
-    'program_not_found',
-    'unknown_program',
-    'unknown_workout',
-    'unknown_action',
+    // the program routes' (heart-api#86), from the one list
+    ...programRefusals,
   };
 
   static bool _isRefusal(Object? error) {

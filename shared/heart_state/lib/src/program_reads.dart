@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:heart_models/heart_models.dart';
 
+import 'refusals.dart';
 import 'remote.dart';
 
 /// What a program call's failure says about asking again, for every program
@@ -27,31 +28,13 @@ enum ProgramFailure {
   unanswered,
 }
 
-/// Codes the server refuses with; see [ProgramFailure.refused].
-const _refusals = {
-  'invalid_rule',
-  'invalid_key',
-  'invalid_deload',
-  'invalid_phase',
-  'invalid_test',
-  'invalid_target',
-  'program_limit',
-  'program_history_limit',
-  'program_not_found',
-  'unknown_program',
-  'unknown_exercise',
-  'unknown_workout',
-  'unknown_action',
-  'skip_limit',
-};
-
 /// [error] as a program call reads it: a refusal by its code, anything else by
 /// what [failureOf] (the client's [RemoteAccess.failureOf]) says of it.
 ProgramFailure programFailure(Object? error, {RemoteFailure Function(Object error) failureOf = RemoteAccess.byType}) {
   return switch (error) {
     null => .unanswered,
     ProgramReadFailed(:final error) => programFailure(error, failureOf: failureOf),
-    ServerRefusal(:final code) when _refusals.contains(code) => .refused,
+    ServerRefusal(:final code) when programRefusals.contains(code) => .refused,
     final Object error => switch (failureOf(error)) {
       .transient => .passing,
       .gone || .answered => .answered,

@@ -997,18 +997,19 @@ void main() {
       expect(errors, isEmpty);
     });
 
-    test('a program the server refuses is skipped, and its sessions go up as plain templates', () async {
-      server.refused['p1'] = refusedAs({'code': 'program_limit'});
+    for (final code in ['program_limit', 'invalid_phase', 'invalid_plan']) {
+      test('a program the server refuses ($code) is skipped, and its sessions go up as plain templates', () async {
+        server.refused['p1'] = refusedAs({'code': code});
 
-      await sut.claim(from: uid, to: uid);
-      await sut.run(uid);
+        await sut.claim(from: uid, to: uid);
+        await sut.run(uid);
 
-      expect(sut.status, UpsyncStatus.done);
-      expect(ledger.entries[uid]![UpsyncResource.program], {'p1': UpsyncOutcome.skipped});
-      // backed up all the same, filed under nothing the server lacks
-      expect(ledger.entries[uid]![UpsyncResource.template], containsPair('s1', UpsyncOutcome.created));
-      expect(server.filedUnder, containsPair('s1', null));
-    });
+        expect(sut.status, UpsyncStatus.done);
+        expect(ledger.entries[uid]![UpsyncResource.program], {'p1': UpsyncOutcome.skipped});
+        expect(ledger.entries[uid]![UpsyncResource.template], containsPair('s1', UpsyncOutcome.created));
+        expect(server.filedUnder, containsPair('s1', null));
+      });
+    }
 
     test('what the account pull brought down is written off, not offered back', () async {
       access.account = true;
