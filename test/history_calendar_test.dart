@@ -70,6 +70,8 @@ void main() {
     bool opens = true,
     void Function(DateTime)? onLogOn,
     VoidCallback? onStartWorkout,
+    Set<DaySource> sources = const {},
+    void Function(DaySource source, {DateTime? on})? onMakeFrom,
     Map<String, Object> stored = const {},
     bool paged = false,
     PageController? pages,
@@ -106,6 +108,8 @@ void main() {
                 },
                 onLogOn: onLogOn,
                 onStartWorkout: onStartWorkout,
+                sources: sources,
+                onMakeFrom: onMakeFrom,
               ),
             ),
           ),
@@ -363,6 +367,173 @@ void main() {
       expect(find.byKey(AppKeys.calendarLog), findsOneWidget);
       semantics.dispose();
     });
+
+    for (final paged in [false, true]) {
+      group('made from something${paged ? ', a month at a time' : ''} (#737)', () {
+        const both = {DaySource.template, DaySource.workout};
+        late List<(DaySource, DateTime?)> made;
+        setUp(() => made = []);
+        void make(DaySource source, {DateTime? on}) => made.add((source, on));
+
+        Future<void> tapDay(WidgetTester tester, String label) async {
+          await tester.tap(find.bySemanticsLabel(label));
+          await tester.pumpAndSettle();
+        }
+
+        testCalendar('an empty past day asks how: logged empty, from a template or from a workout', (tester) async {
+          final semantics = tester.ensureSemantics();
+          final logged = <DateTime>[];
+          await pump(
+            tester,
+            _Workouts(),
+            onLogOn: logged.add,
+            sources: both,
+            onMakeFrom: make,
+            stored: on,
+            paged: paged,
+          );
+          final tenth = DateTime(now.year, now.month, 10);
+          for (final (key, source) in [
+            (AppKeys.calendarFromTemplate, DaySource.template),
+            (AppKeys.calendarFromWorkout, DaySource.workout),
+          ]) {
+            await tapDay(tester, '${said(10)}, log a workout on this day');
+            expect(find.byType(PopupMenuItem<Object>), findsNWidgets(3));
+            expect(find.byKey(AppKeys.calendarStart), findsNothing);
+            await tester.tap(find.byKey(key));
+            await tester.pumpAndSettle();
+            expect(made.last, (source, tenth));
+          }
+          expect(logged, isEmpty);
+          await tapDay(tester, '${said(10)}, log a workout on this day');
+          await tester.tap(find.byKey(AppKeys.calendarLog));
+          await tester.pumpAndSettle();
+          expect(logged, [tenth]);
+          semantics.dispose();
+        });
+
+        testCalendar('only what there is any of is offered', (tester) async {
+          final semantics = tester.ensureSemantics();
+          await pump(
+            tester,
+            _Workouts(),
+            onLogOn: (_) {},
+            sources: {DaySource.template},
+            onMakeFrom: make,
+            stored: on,
+            paged: paged,
+          );
+          await tapDay(tester, '${said(10)}, log a workout on this day');
+          expect(find.byKey(AppKeys.calendarFromTemplate), findsOneWidget);
+          expect(find.byKey(AppKeys.calendarFromWorkout), findsNothing);
+          semantics.dispose();
+        });
+
+        testCalendar('never asked, an empty past day asks first; yes opens the ways', (tester) async {
+          final semantics = tester.ensureSemantics();
+          await pump(
+            tester,
+            _Workouts(),
+            onLogOn: (_) => fail('logged'),
+            sources: both,
+            onMakeFrom: make,
+            paged: paged,
+          );
+          await tapDay(tester, '${said(10)}, log a workout on this day');
+          expect(find.byKey(AppKeys.pastWorkoutsOffer), findsOneWidget);
+          expect(find.byType(PopupMenuItem<Object>), findsNothing);
+          await tester.tap(find.byKey(AppKeys.pastWorkoutsAccept));
+          await tester.pumpAndSettle();
+          expect(find.byType(PopupMenuItem<Object>), findsNWidgets(3));
+          await tester.tap(find.byKey(AppKeys.calendarFromWorkout));
+          await tester.pumpAndSettle();
+          expect(made, [(DaySource.workout, DateTime(now.year, now.month, 10))]);
+          semantics.dispose();
+        });
+
+        testCalendar('with Past workouts off, a past day offers neither, trained or not', (tester) async {
+          final semantics = tester.ensureSemantics();
+          final opened = <Workout>[];
+          await pump(
+            tester,
+            _Workouts()..rows[key(current)] = [workout(current, 5)],
+            onTapWorkout: opened.add,
+            onLogOn: (_) => fail('logged'),
+            sources: both,
+            onMakeFrom: make,
+            stored: off,
+            paged: paged,
+          );
+          final day = tester.getSemantics(find.bySemanticsLabel(said(10)));
+          expect(day.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
+          await tapDay(tester, '${said(5)}, edit workout');
+          expect(opened, hasLength(1));
+          semantics.dispose();
+        });
+
+        testCalendar('today makes one that starts, with Past workouts off too', (tester) async {
+          final semantics = tester.ensureSemantics();
+          await pump(
+            tester,
+            _Workouts(),
+            onLogOn: (_) => fail('logged'),
+            onStartWorkout: () {},
+            sources: both,
+            onMakeFrom: make,
+            stored: off,
+            paged: paged,
+          );
+          for (final (key, source) in [
+            (AppKeys.calendarFromTemplate, DaySource.template),
+            (AppKeys.calendarFromWorkout, DaySource.workout),
+          ]) {
+            await tapDay(tester, '${said(20)}, today');
+            expect(find.byKey(AppKeys.calendarLog), findsNothing);
+            await tester.tap(find.byKey(key));
+            await tester.pumpAndSettle();
+            expect(made.last, (source, null));
+          }
+          semantics.dispose();
+        });
+
+        testCalendar('today with a workout going starts nothing, and so makes nothing', (tester) async {
+          final semantics = tester.ensureSemantics();
+          await pump(
+            tester,
+            _Workouts(),
+            onLogOn: (_) {},
+            sources: both,
+            onMakeFrom: make,
+            stored: on,
+            paged: paged,
+          );
+          await tapDay(tester, '${said(20)}, today');
+          expect(find.byKey(AppKeys.calendarLog), findsOneWidget);
+          expect(find.byKey(AppKeys.calendarFromTemplate), findsNothing);
+          expect(find.byKey(AppKeys.calendarFromWorkout), findsNothing);
+          semantics.dispose();
+        });
+
+        testCalendar('a trained past day offers them after another', (tester) async {
+          final semantics = tester.ensureSemantics();
+          await pump(
+            tester,
+            _Workouts()..rows[key(current)] = [workout(current, 5)],
+            onLogOn: (_) {},
+            sources: both,
+            onMakeFrom: make,
+            stored: on,
+            paged: paged,
+          );
+          await tapDay(tester, '${said(5)}, 1 workout');
+          expect(find.byType(PopupMenuItem<Object>), findsNWidgets(4));
+          await tester.tap(find.byKey(AppKeys.calendarFromTemplate));
+          await tester.pumpAndSettle();
+          expect(made, [(DaySource.template, DateTime(now.year, now.month, 5))]);
+          semantics.dispose();
+        });
+      });
+    }
 
     testCalendar('a future day does nothing', (tester) async {
       final semantics = tester.ensureSemantics();

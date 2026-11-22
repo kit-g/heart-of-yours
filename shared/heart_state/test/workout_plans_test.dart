@@ -112,6 +112,23 @@ void main() {
     expect(store.sent, {id});
   });
 
+  test('one logged after the fact keeps its plan, and sends it (#737)', () async {
+    final end = DateTime.timestamp();
+    final bench = ex('Bench Press');
+    final past = Workout(name: 'Day A')
+      ..start = end.subtract(const Duration(hours: 1))
+      ..end = end;
+    past.add(bench).first
+      ..setMeasurements(reps: 8)
+      ..isCompleted = true;
+
+    final saved = await workouts.logWorkout(past, plan: plan);
+
+    expect(store.plans[saved.id], plan.plan);
+    expect(server.received[saved.id]?.plan, plan.plan);
+    expect(store.sent, {saved.id});
+  });
+
   test('a plan that missed the finish goes with the next sync', () async {
     await workouts.startWorkout(
       source: .program,

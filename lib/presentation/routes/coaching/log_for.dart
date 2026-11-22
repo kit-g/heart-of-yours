@@ -136,14 +136,7 @@ class _LogForButtonState extends State<_LogForButton> {
     required RoundWeight round,
   }) {
     final (:workout, :plan) = programs.plan(session, at: past.workout.start, now: clock.now(), round: round);
-    workout
-      ..start = past.workout.start
-      ..end = past.workout.end;
-    return PastWorkout(
-      workout: workout,
-      logTo: _logFor(widget.client.studentId, name, plan: plan),
-      loggingFor: past.loggingFor,
-    );
+    return past.holding(workout, logTo: _logFor(widget.client.studentId, name, plan: plan));
   }
 
   /// The sessions of the program they follow, the next one marked: read

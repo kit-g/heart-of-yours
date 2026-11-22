@@ -26,6 +26,14 @@ class PastWorkout {
   final String? loggingFor;
 
   const new({required this.workout, this.logTo = logToHistory, this.loggingFor});
+
+  /// [filled] at this one's times, and for whom it is.
+  PastWorkout holding(Workout filled, {LogTo? logTo}) {
+    filled
+      ..start = workout.start
+      ..end = workout.end;
+    return PastWorkout(workout: filled, logTo: logTo ?? this.logTo, loggingFor: loggingFor);
+  }
 }
 
 /// Asks when a past workout was, then hands [open] the workout to fill in
@@ -80,7 +88,9 @@ Future<void> logPastWorkout(
 /// device's health store under the finish's own rules
 /// (`docs/2026-09-05.health-data.md`): written only where the write is granted,
 /// asked only of a user who has engaged with health. Nothing waits on any of it.
-Future<void> logToHistory(BuildContext context, Workout workout) async {
+///
+/// [plan] is what a program's session was asked to be, kept as a start keeps it.
+Future<void> logToHistory(BuildContext context, Workout workout, {WorkoutPlan? plan}) async {
   // read now: the editor this context belongs to is on its way out
   final workouts = Workouts.of(context);
   final health = Health.of(context);
@@ -92,7 +102,7 @@ Future<void> logToHistory(BuildContext context, Workout workout) async {
   final firstWeekday = Preferences.of(context).firstWeekday;
   final running = runningPrograms(context);
 
-  final saved = await workouts.logWorkout(workout);
+  final saved = await workouts.logWorkout(workout, plan: plan);
 
   // "last time" and the picker's recency read the mirror
   unawaited(previous.init());

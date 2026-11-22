@@ -1796,3 +1796,5 @@ historyChangeView,"Tooltip on History's app-bar button that opens the menu of it
 calendarPreviousMonth,Tooltip on the calendar's button to the month before the one shown (#739),Previous month,Previous month,Предыдущий месяц,Mes anterior,Mois précédent
 calendarNextMonth,Tooltip on the calendar's button to the month after the one shown (#739),Next month,Next month,Следующий месяц,Mes siguiente,Mois suivant
 calendarGoToDate,"Tooltip on the calendar's button that picks a date to show the month of, and the title of the picker (#739)",Go to date,Go to date,Перейти к дате,Ir a una fecha,Aller à une date
+calendarFromTemplate,"History calendar: in a day's menu, makes a workout from one of the user's templates, and the title of the list of them (#737)",From a template,From a template,Из шаблона,Desde una plantilla,À partir d’un modèle
+calendarFromWorkout,"History calendar: in a day's menu, makes a workout by copying one from the history, and the title of the list of them (#737)",Copy a past workout,Copy a past workout,Скопировать прошлую тренировку,Copiar un entrenamiento anterior,Copier une séance passée

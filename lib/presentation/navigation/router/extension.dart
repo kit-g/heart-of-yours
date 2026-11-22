@@ -234,8 +234,11 @@ extension on BuildContext {
   }
 
   /// Asks when a past workout was, then opens it to fill in (#530): by default
-  /// the last hour, or the same hour [on] another day (#618).
-  void logPast({DateTime? on}) => logPastWorkout(this, open: goToLogWorkout, on: on);
+  /// the last hour, or the same hour [on] another day (#618), as [fill] makes
+  /// it once its times are known (#737).
+  void logPast({DateTime? on, PastWorkout Function(PastWorkout past)? fill}) {
+    logPastWorkout(this, open: (past) => goToLogWorkout(fill?.call(past) ?? past), on: on);
+  }
 
   /// A workout from the suspicious entries' list (#428), within History:
   /// pushed on a phone, so Back returns to the list; in the pane on a tablet,

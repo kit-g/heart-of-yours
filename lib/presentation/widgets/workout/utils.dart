@@ -738,6 +738,11 @@ Future<void> showDeleteImageDialog(
   );
 }
 
+/// [workout] to do again: its exercises, their notes and supersets, and its
+/// sets to fill in, under an id of its own. Not its photos, which a copy keeps:
+/// they are of that day.
+Workout repeatOf(Workout workout) => workout.copy()..images?.clear();
+
 /// Starts [template] as [startingWorkout] lays it out, pinned notes and all,
 /// with the plan a program's session carries (#566).
 Future<void> startPlanned(
@@ -755,11 +760,13 @@ Future<void> startPlanned(
 /// with its targets as the program has them this time (#349):
 /// a share of a base as a weight on the user's plates, a lighter cycle
 /// lighter. Anything else starts as it was written, with no plan.
-PlannedWorkout startingWorkout(BuildContext context, Template template) {
+///
+/// [at] lays it out as one that began then, for one logged after the fact.
+PlannedWorkout startingWorkout(BuildContext context, Template template, {DateTime? at}) {
   if (!programIdShown(context, template.programId)) return (workout: template.toWorkout(), plan: null);
   return Programs.of(context).plan(
     template,
-    now: DateTime.now(),
+    now: at ?? DateTime.now(),
     firstWeekday: firstWeekdayOf(context),
     round: roundToPlates(context),
   );

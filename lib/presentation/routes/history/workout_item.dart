@@ -514,7 +514,7 @@ class WorkoutItem extends StatelessWidget {
         if (!Workouts.of(context).hasActiveWorkout) return _showStartNewWorkoutDialog(context, workout);
         await startWorkoutOverActive(context, () {
           onStartNewWorkout?.call();
-          return Workouts.of(context).startWorkout(source: .repeat, template: workout.copy());
+          return Workouts.of(context).startWorkout(source: .repeat, template: repeatOf(workout));
         });
       case _WorkoutOption.saveAsTemplate:
         return onSaveAsTemplate?.call(workout);
@@ -714,7 +714,7 @@ class WorkoutItem extends StatelessWidget {
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
                 onStartNewWorkout?.call();
-                Workouts.of(context).startWorkout(source: .repeat, template: workout.copy());
+                Workouts.of(context).startWorkout(source: .repeat, template: repeatOf(workout));
               },
             ),
           ],

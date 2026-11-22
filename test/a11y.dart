@@ -98,6 +98,8 @@ enum _Screen {
   calendar,
   calendarMonth,
   calendarDay,
+  calendarTemplates,
+  calendarWorkouts,
   pastWorkoutsOffer,
   historyFilterMenu,
   historyFiltered,
@@ -700,6 +702,18 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.calendarDay, _Guideline.textContrastDark, null),
   (_Screen.calendarDay, _Guideline.androidTapTarget, null),
   (_Screen.calendarDay, _Guideline.iosTapTarget, null),
+
+  // the lists a day's workout is made from (#737): templates, past workouts
+  (_Screen.calendarTemplates, _Guideline.labeledTapTarget, null),
+  (_Screen.calendarTemplates, _Guideline.textContrastLight, null),
+  (_Screen.calendarTemplates, _Guideline.textContrastDark, null),
+  (_Screen.calendarTemplates, _Guideline.androidTapTarget, null),
+  (_Screen.calendarTemplates, _Guideline.iosTapTarget, null),
+  (_Screen.calendarWorkouts, _Guideline.labeledTapTarget, null),
+  (_Screen.calendarWorkouts, _Guideline.textContrastLight, null),
+  (_Screen.calendarWorkouts, _Guideline.textContrastDark, null),
+  (_Screen.calendarWorkouts, _Guideline.androidTapTarget, null),
+  (_Screen.calendarWorkouts, _Guideline.iosTapTarget, null),
 
   // the one ask for Past workouts (#618), on the first tap of an empty past
   // day in the calendar
@@ -2590,7 +2604,7 @@ void a11y({required int shard}) {
         await tester.tap(find.bySemanticsLabel(RegExp(r', log a workout on this day$')).first);
         await tester.pumpTimes();
         expect(find.byKey(AppKeys.pastWorkoutsOffer), findsOneWidget);
-      case _Screen.calendarDay:
+      case _Screen.calendarDay || _Screen.calendarTemplates || _Screen.calendarWorkouts:
         // both early today, so the two can never fall either side of midnight
         final today = DateTime.now();
         final first = _unsynced()..start = DateTime(today.year, today.month, today.day, 0, 1);
@@ -2600,14 +2614,28 @@ void a11y({required int shard}) {
             .thenAnswer((_) async => [second, first]);
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
+        when(db.getTemplates(any)).thenAnswer((_) async => [_session('t1', 0, 'Push')]);
+        await Templates.of(tester.element(find.byType(MaterialApp))).init();
+        await tester.pumpTimes();
         Preferences.of(tester.element(find.byType(MaterialApp))).setHistoryView(.calendar);
         await tester.pumpTimes();
         await tester.tap(find.bySemanticsLabel(RegExp(r', 2 workouts$')));
         await tester.pumpTimes();
         // the screen is only honest if the list is open on it: today's two
-        // workouts, and starting another (#618)
-        expect(find.byType(PopupMenuItem<Object>), findsNWidgets(3));
+        // workouts, and starting another (#618), from a template or a past
+        // workout too (#737)
+        expect(find.byType(PopupMenuItem<Object>), findsNWidgets(5));
         expect(find.byKey(AppKeys.calendarStart), findsOneWidget);
+        if (screen == .calendarTemplates) {
+          await tester.tap(find.byKey(AppKeys.calendarFromTemplate));
+          await tester.pumpTimes();
+          expect(find.byKey(AppKeys.makeFromTemplate('t1')), findsOneWidget);
+        }
+        if (screen == .calendarWorkouts) {
+          await tester.tap(find.byKey(AppKeys.calendarFromWorkout));
+          await tester.pumpTimes();
+          expect(find.byKey(AppKeys.makeFromWorkout(first.id)), findsOneWidget);
+        }
       case _Screen.historyCompact:
         final completed = Workout.fromJson(_unsynced().toMap());
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);

@@ -697,12 +697,17 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// for an account (an anonymous session keeps it for [syncPendingWorkouts]),
   /// and every reader of [historyRevision]. Returns it as it ended up.
   ///
-  /// Only what was done goes in: see [LoggedAfter.keepDone].
-  Future<Workout> logWorkout(Workout workout) async {
+  /// Only what was done goes in: see [LoggedAfter.keepDone]. [plan] is what a
+  /// program's session was asked to be, kept and sent as [startWorkout]'s is.
+  Future<Workout> logWorkout(Workout workout, {WorkoutPlan? plan}) async {
     assert(workout.end != null, 'A workout logged after the fact has ended');
     assert(workout.id != _activeWorkoutId, 'The active workout finishes, it is not logged');
     workout.keepDone();
     final saved = await saveWorkout(workout);
+    if ((userId, plan) case (final String uid, final WorkoutPlan plan)) {
+      await _keepPlan(saved.id, uid, plan);
+      await sendWorkoutPlans();
+    }
     // counted after the save, as a finish is: what history holds
     analytics?.workoutLogged(
       exerciseCount: saved.length,
