@@ -106,6 +106,9 @@ class DeviceHealthStore implements HealthService {
     }
   }
 
+  /// Whether this run has said that reads are not authorized.
+  bool _toldUnauthorized = false;
+
   @override
   Future<List<HealthSample>> read({
     required Set<HealthMetric> metrics,
@@ -131,9 +134,10 @@ class DeviceHealthStore implements HealthService {
         // Not a failure: this is what every launch looks like before the user
         // has been asked, and what it keeps looking like if they say no. iOS
         // will not answer [access] honestly, so attempting the read *is* how we
-        // find out — six of these at WARNING on a first run is us logging the
-        // normal case as a fault.
-        _logger.fine('Health read unauthorized', error);
+        // find out, six times a sync. Said once a run, and without the error,
+        // which a debug console prints in red like a fault.
+        if (!_toldUnauthorized) _logger.fine('Health read unauthorized');
+        _toldUnauthorized = true;
         return const [];
       }
 
@@ -257,7 +261,7 @@ class DeviceHealthStore implements HealthService {
       // part the user can live without, and a refused permission arrives here
       // looking exactly like a real failure.
       if (_isUnauthorized(error)) {
-        _logger.fine('Health write unauthorized', error);
+        _logger.fine('Health write unauthorized');
         return false;
       }
 
