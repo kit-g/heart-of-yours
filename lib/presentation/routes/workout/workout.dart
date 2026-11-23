@@ -24,6 +24,7 @@ import 'package:heart/presentation/widgets/in_view.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/muscle_figures.dart';
 import 'package:heart/presentation/widgets/part_of_program.dart';
+import 'package:heart/presentation/widgets/program_progress.dart';
 import 'package:heart/presentation/widgets/appbar_textfield.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/date_picker.dart';

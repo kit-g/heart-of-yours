@@ -367,20 +367,34 @@ class _ProgramBand extends StatelessWidget {
                   Expanded(
                     child: Text(program.name, style: textTheme.titleMedium, maxLines: 1, overflow: .ellipsis),
                   ),
-                  // the week over its projected end, on a line each: a phone's
-                  // card is too narrow for both beside a name, and the date is
-                  // never the part cut short
+                  // the status over its projected end, on a line each: a
+                  // phone's card is too narrow for both beside a name, and the
+                  // date is never the part cut short. A week of so many is the
+                  // bar's to say
                   if (_statusParts(context, program, position) case (final status, final end))
                     Column(
                       key: AppKeys.programBandStatus(program.id),
                       crossAxisAlignment: .end,
                       children: [
-                        Text(status, style: muted, textAlign: .end),
+                        if (program.weeks == null || finished || paused) Text(status, style: muted, textAlign: .end),
                         if (end != null) Text(end, style: muted, textAlign: .end),
                       ],
                     ),
                 ],
               ),
+              if ((program.weeks, finished) case (final int weeks, false))
+                ProgramWeeksBar(
+                  key: AppKeys.programBandWeeks(program.id),
+                  week: position.week,
+                  weeks: weeks,
+                  done: switch (sessions) {
+                    [] => 0,
+                    _ =>
+                      sessions.where((each) => done.contains(each.id) || skipped.contains(each.id)).length /
+                          sessions.length,
+                  },
+                  paused: paused,
+                ),
               ?_coachChanges(context, program),
               if (!finished && sessions.isNotEmpty)
                 Wrap(
@@ -409,7 +423,11 @@ class _ProgramBand extends StatelessWidget {
                   children: [
                     Flexible(
                       child: switch ((program.perWeek, paused)) {
-                        (final int target, false) => Text(copy.programThisWeek(thisWeek, target), style: muted),
+                        (final int target, false) => WeekCount(
+                          key: AppKeys.programBandCount(program.id),
+                          done: thisWeek,
+                          target: target,
+                        ),
                         _ => const SizedBox.shrink(),
                       },
                     ),

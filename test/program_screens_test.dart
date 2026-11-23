@@ -14,6 +14,7 @@ import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show ProgramPage;
 import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/program_progress.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetailKeys, startingWorkout;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -183,9 +184,15 @@ void main() {
       // the week, and on a line of its own when the program would end at
       // this pace (#F33, #F42): never cut short
       final status = find.byKey(AppKeys.programBandStatus('p1'));
-      expect(find.descendant(of: status, matching: find.text('Week 1 of 8')), findsOneWidget);
+      // of so many weeks is the bar's to say, and the count the rings'
+      expect(find.text('Week 1 of 8'), findsNothing);
+      final weeks = tester.widget<ProgramWeeksBar>(find.byKey(AppKeys.programBandWeeks('p1')));
+      expect((weeks.week, weeks.weeks, weeks.done), (1, 8, 0));
+      expect(find.bySemanticsLabel(RegExp('Week 1 of 8')), findsWidgets);
       expect(find.descendant(of: status, matching: find.textContaining(RegExp(r'^ends '))), findsOneWidget);
-      expect(find.descendant(of: band, matching: find.text('0 of 3 this week')), findsOneWidget);
+      final count = tester.widget<WeekCount>(find.descendant(of: band, matching: find.byType(WeekCount)));
+      expect((count.done, count.target), (0, 3));
+      expect(find.bySemanticsLabel(RegExp('0 of 3 this week')), findsWidgets);
 
       await tester.tapByKey(AppKeys.programStart('p1'));
       await tester.pumpTimes();
@@ -694,7 +701,7 @@ void main() {
       final start = tester.getRect(find.byKey(AppKeys.programStart('p1')));
       final card = tester.getRect(band);
 
-      final week = tester.getRect(find.descendant(of: band, matching: find.textContaining('Week')));
+      final week = tester.getRect(find.byKey(AppKeys.programBandWeeks('p1')));
       expect(start.right, closeTo(card.right - 12, 1));
       expect(start.right, closeTo(week.right, 1));
     });
