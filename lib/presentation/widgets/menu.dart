@@ -107,3 +107,37 @@ class _RenderShareOfWidth extends RenderProxyBox {
     }
   }
 }
+
+/// A section's title inside a menu: not a choice, so not a [PopupMenuItem],
+/// which would be announced as a dimmed button.
+class MenuHeading<T> extends PopupMenuEntry<T> {
+  final String title;
+
+  const new(this.title, {super.key});
+
+  @override
+  double get height => 32;
+
+  @override
+  bool represents(T? value) => false;
+
+  @override
+  State<MenuHeading<T>> createState() => _MenuHeadingState<T>();
+}
+
+class _MenuHeadingState<T> extends State<MenuHeading<T>> {
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return Semantics(
+      header: true,
+      child: Padding(
+        padding: const .fromLTRB(12, 8, 12, 4),
+        child: Text(
+          widget.title,
+          style: textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+        ),
+      ),
+    );
+  }
+}

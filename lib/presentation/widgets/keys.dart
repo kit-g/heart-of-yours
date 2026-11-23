@@ -52,6 +52,11 @@ abstract final class AppKeys {
   /// the chips of the groups set, and the empty state with its way out.
   static const historyFilter = Key('History.filter');
   static Key historyFilterGroup(String group) => Key('History.filter.$group');
+  static Key historyFilterAxis(String axis) => Key('History.filter.axis.$axis');
+  static Key historyFilterTemplate(String id) => Key('History.filter.template.$id');
+  static Key historyFilterTemplateChip(String id) => Key('History.filter.template.chip.$id');
+  static const historyFilterFromChip = Key('History.filter.from.chip');
+  static const historyFilterUntilChip = Key('History.filter.until.chip');
   static const historyFilterChips = Key('History.filter.chips');
   static const historyFilterEmpty = Key('History.filter.empty');
   static const historyFilterClear = Key('History.filter.clear');

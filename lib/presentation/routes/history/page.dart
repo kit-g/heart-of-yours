@@ -59,6 +59,8 @@ const _calendarMinHeight = 460.0;
 
 class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage>, HasHaptic {
   late final Exercises _exercises;
+  late final Templates _templates;
+  late final Preferences _preferences;
 
   /// What workouts trained (#610, #617), kept across builds — the page
   /// rebuilds every second of an active workout — and read afresh whenever
@@ -73,11 +75,25 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
   void initState() {
     super.initState();
     _exercises = Exercises.of(context)..addListener(_forgetGroups);
+    _templates = Templates.of(context)..addListener(_dropTemplates);
+    _preferences = Preferences.of(context)..addListener(_dropTemplates);
+  }
+
+  /// Takes out of the filter a template that is here no more (#740): deleted,
+  /// or a sample with Example templates off. The history lets go of a deleted
+  /// one too, so the page would only empty under it.
+  void _dropTemplates() {
+    if (!mounted) return;
+    final filter = HistoryFilter.of(context);
+    final samples = _preferences.isOn(.sampleTemplates);
+    [...filter.templates].where((id) => !_isHere(_templates, id, samples: samples)).forEach(filter.removeTemplate);
   }
 
   @override
   void dispose() {
     _exercises.removeListener(_forgetGroups);
+    _templates.removeListener(_dropTemplates);
+    _preferences.removeListener(_dropTemplates);
     super.dispose();
   }
 
@@ -90,8 +106,9 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final L(:myProgression) = L.of(context);
     final workouts = Workouts.watch(context);
     final byMonth = workouts.byMonth;
-    // History narrowed to some muscle groups (#610). What a workout trained is
-    // read off the library, so the page hears when it loads or changes.
+    // History narrowed to some muscle groups (#610), templates or days (#740).
+    // What a workout trained is read off the library, so the page hears when
+    // it loads or changes.
     final filter = HistoryFilter.watch(context);
     final exercises = Exercises.watch(context);
     final trained = _workoutGroups;
@@ -126,7 +143,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final view = preferences.historyView;
     final compact = preferences.historyDensity == .compact;
     SliverAppBar appBar(double height) => SliverAppBar(
-      // Narrows both views to some muscle groups (#610). On the leading side,
+      // Narrows every view to some workouts (#610, #740). On the leading side,
       // which the centred title leaves free: the actions already reach the
       // title on a phone with Copy for AI and Past workouts on, and in a
       // tablet's narrow list pane.
@@ -134,8 +151,9 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
         true => _FilterButton(
           filter: filter,
           trained: trained,
-          // greyed only off the whole history, read with the library's tags
-          whole: whole && exercises.isInitialized,
+          whole: whole,
+          // a group is greyed only off the library's tags
+          tagged: exercises.isInitialized,
         ),
         false => null,
       },
@@ -187,17 +205,17 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     // two swap: the rows are a pass over all of history, and Workouts
     // notifies every second of an active workout
     Widget listview() {
+      final oldest = byMonth.values.lastOrNull?.lastOrNull?.start;
       final items = switch (shows) {
-        // the days set aside are no workout of any group
         final bool Function(Workout) shows => _historyRows(
           {
             for (final MapEntry(:key, :value) in byMonth.entries)
               if (value.where(shows).toList() case final shown when shown.isNotEmpty) key: shown,
           },
-          const [],
-          partial: workouts.hasMoreHistory,
+          skips.where(filter.showsSkip),
+          since: whole ? null : oldest,
         ),
-        null => _historyRows(byMonth, skips, partial: workouts.hasMoreHistory),
+        null => _historyRows(byMonth, skips, since: workouts.hasMoreHistory ? oldest : null),
       };
       return CustomScrollView(
         physics: const ClampingScrollPhysics(),

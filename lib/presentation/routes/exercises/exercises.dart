@@ -9,6 +9,7 @@ import 'package:heart/core/utils/column_fill.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/widgets/menu.dart' show MenuHeading;
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/chart_dimension.dart';
 import 'package:heart/presentation/widgets/copy_for_ai.dart';

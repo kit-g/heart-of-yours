@@ -6,14 +6,18 @@ import 'package:provider/provider.dart';
 
 import 'muscle_family.dart';
 
-/// The muscle groups History is narrowed to (#610): a workout shows while it
-/// trained any of them, by [WorkoutGroups]. Empty is no filter, and History
-/// as it always was.
+/// What History is narrowed to: muscle groups (#610), templates and a stretch
+/// of days (#740). Within each, any of what is picked lets a workout through;
+/// across them, all of them have to. Empty is no filter, and History as it
+/// always was.
 ///
 /// Kept for the app's run and nowhere else: a launch, or a session changing
 /// hands, starts with the whole history again.
 class HistoryFilter with ChangeNotifier implements SignOutStateSentry {
   final _groups = <MuscleGroupKey>{};
+  final _templates = <String>{};
+  DateTime? _from;
+  DateTime? _until;
 
   static HistoryFilter of(BuildContext context) => Provider.of<HistoryFilter>(context, listen: false);
 
@@ -21,7 +25,34 @@ class HistoryFilter with ChangeNotifier implements SignOutStateSentry {
 
   Set<MuscleGroupKey> get groups => UnmodifiableSetView(_groups);
 
-  bool get isOn => _groups.isNotEmpty;
+  /// The templates, by id: those workouts name as what they were started from.
+  Set<String> get templates => UnmodifiableSetView(_templates);
+
+  /// The first and the last day that show, local calendar days at midnight,
+  /// each open without one.
+  DateTime? get from => _from;
+
+  DateTime? get until => _until;
+
+  /// [until], before [from], would let nothing through, and so would [from]
+  /// past [until]: the other end is dropped then.
+  set from(DateTime? day) {
+    final from = _dayOf(day);
+    if (from == _from) return;
+    _from = from;
+    if ((from, _until) case (final DateTime from, final DateTime until) when until.isBefore(from)) _until = null;
+    notifyListeners();
+  }
+
+  set until(DateTime? day) {
+    final until = _dayOf(day);
+    if (until == _until) return;
+    _until = until;
+    if ((_from, until) case (final DateTime from, final DateTime until) when until.isBefore(from)) _from = null;
+    notifyListeners();
+  }
+
+  bool get isOn => _groups.isNotEmpty || _templates.isNotEmpty || _from != null || _until != null;
 
   /// Adds [group] to the filter, or takes it out if it is in.
   void toggle(MuscleGroupKey group) {
@@ -33,15 +64,51 @@ class HistoryFilter with ChangeNotifier implements SignOutStateSentry {
     if (_groups.remove(group)) notifyListeners();
   }
 
-  void clear() {
-    if (_groups.isEmpty) return;
-    _groups.clear();
+  /// Adds the template [id] to the filter, or takes it out if it is in.
+  void toggleTemplate(String id) {
+    if (!_templates.remove(id)) _templates.add(id);
     notifyListeners();
   }
 
-  /// Whether [workout] shows under the filter: always, with none set.
+  void removeTemplate(String id) {
+    if (_templates.remove(id)) notifyListeners();
+  }
+
+  void clear() {
+    if (!isOn) return;
+    _groups.clear();
+    _templates.clear();
+    _from = null;
+    _until = null;
+    notifyListeners();
+  }
+
+  /// Whether [workout] shows under the filter: always, with none set. One
+  /// started from no template, or from before that was kept, matches no
+  /// template, whatever its name.
   bool shows(Workout workout, WorkoutGroups trained) {
-    return _groups.isEmpty || trained.of(workout).any(_groups.contains);
+    return _inStretch(workout.start) &&
+        (_templates.isEmpty || _templates.contains(workout.templateId)) &&
+        (_groups.isEmpty || trained.of(workout).any(_groups.contains));
+  }
+
+  /// Whether [skip] shows under the filter: a day set aside is no workout of
+  /// any group or template, but it is a day.
+  bool showsSkip(TrainingSkip skip) => _groups.isEmpty && _templates.isEmpty && _inStretch(skip.at);
+
+  /// By the day [at] is here, as the list and the calendar place it.
+  bool _inStretch(DateTime at) {
+    final (from, until) = (_from, _until);
+    if (from == null && until == null) return true;
+    final day = _dayOf(at.toLocal())!;
+    return !(from != null && day.isBefore(from)) && !(until != null && day.isAfter(until));
+  }
+
+  static DateTime? _dayOf(DateTime? at) {
+    return switch (at) {
+      DateTime(:final year, :final month, :final day) => DateTime(year, month, day),
+      null => null,
+    };
   }
 
   @override

@@ -102,6 +102,7 @@ enum _Screen {
   calendarWorkouts,
   pastWorkoutsOffer,
   historyFilterMenu,
+  historyFilterTemplates,
   historyFiltered,
   historyCompact,
   exercises,
@@ -738,6 +739,11 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.historyFilterMenu, _Guideline.textContrastDark, null),
   (_Screen.historyFilterMenu, _Guideline.androidTapTarget, null),
   (_Screen.historyFilterMenu, _Guideline.iosTapTarget, null),
+  (_Screen.historyFilterTemplates, _Guideline.labeledTapTarget, null),
+  (_Screen.historyFilterTemplates, _Guideline.textContrastLight, null),
+  (_Screen.historyFilterTemplates, _Guideline.textContrastDark, null),
+  (_Screen.historyFilterTemplates, _Guideline.androidTapTarget, null),
+  (_Screen.historyFilterTemplates, _Guideline.iosTapTarget, null),
   (_Screen.historyFiltered, _Guideline.labeledTapTarget, null),
   (_Screen.historyFiltered, _Guideline.textContrastLight, null),
   (_Screen.historyFiltered, _Guideline.textContrastDark, null),
@@ -2095,6 +2101,7 @@ void a11y({required int shard}) {
           _Screen.libraryStartDays ||
           _Screen.goEasy ||
           _Screen.skipPage ||
+          _Screen.historyFilterTemplates ||
           _Screen.notTodaySheet:
         // things to go easy on (#396): the whole map, a knee listed
         when(cdn.getGoEasy(etag: anyNamed('etag'))).thenAnswer((_) async => (body: _goEasy, etag: null));
@@ -2120,8 +2127,14 @@ void a11y({required int shard}) {
             .thenAnswer((i) async => (row: i.positionalArguments.single as TrainingSkip, created: true));
         when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
         when(db.getTemplates(any)).thenAnswer(
-          (_) async => switch (screen) {
-            _Screen.programs || _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [
+          (invocation) async => switch (screen) {
+            // the samples are the rows of no user
+            _Screen.historyFilterTemplates when invocation.positionalArguments.single == null => <Template>[],
+            _Screen.programs ||
+            _Screen.programPage ||
+            _Screen.historyNotToday ||
+            _Screen.historyFilterTemplates ||
+            _Screen.skipPage => [
               _session('t1', 0, 'Push', programId: 'p1'),
               _session('t2', 1, 'Pull', programId: 'p1'),
               if (screen == _Screen.programs) _session('t3', 2, 'Day A', programId: 'c1'),
@@ -2137,7 +2150,10 @@ void a11y({required int shard}) {
         final programs = switch (screen) {
           // the tab with a coach's program waiting beside it (#557)
           _Screen.programs => [_program, _sent],
-          _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [_program],
+          _Screen.programPage ||
+          _Screen.historyNotToday ||
+          _Screen.historyFilterTemplates ||
+          _Screen.skipPage => [_program],
           _ => <Program>[],
         };
         final skips = switch (screen) {
@@ -2645,8 +2661,9 @@ void a11y({required int shard}) {
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
         expect(find.byKey(AppKeys.compactWorkout(completed.id)), findsOneWidget);
-      case _Screen.historyFilterMenu || _Screen.historyFiltered:
-        final completed = Workout.fromJson(_unsynced().toMap());
+      case _Screen.historyFilterMenu || _Screen.historyFilterTemplates || _Screen.historyFiltered:
+        // of a template, so there is a way to them
+        final completed = Workout.fromJson({..._unsynced().toMap(), 'templateId': 't1'});
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
         when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
             .thenAnswer((_) async => [completed]);
@@ -2656,9 +2673,24 @@ void a11y({required int shard}) {
           await tester.tapByKey(AppKeys.historyFilter);
           await tester.pumpTimes();
           expect(find.byType(CheckedPopupMenuItem<MuscleGroupKey>), findsNWidgets(10));
+        } else if (screen == _Screen.historyFilterTemplates) {
+          final context = tester.element(find.byType(MaterialApp));
+          final (templates, programs) = (Templates.of(context), Programs.of(context));
+          await templates.init();
+          await programs.init();
+          await tester.pumpTimes();
+          await tester.tapByKey(AppKeys.historyFilter);
+          await tester.pumpTimes();
+          await tester.tapByKey(AppKeys.historyFilterAxis('templates'));
+          await tester.pumpTimes();
+          expect(find.byKey(AppKeys.historyFilterTemplate('t1')), findsOneWidget);
         } else {
           // a group nothing here trained: the chips, and nothing matches
-          HistoryFilter.of(tester.element(find.byType(MaterialApp))).toggle(.neck);
+          HistoryFilter.of(tester.element(find.byType(MaterialApp)))
+            ..toggle(.neck)
+            ..toggleTemplate('t1')
+            ..from = DateTime(2026)
+            ..until = DateTime(2026, 2);
           await tester.pumpTimes();
           expect(find.byKey(AppKeys.historyFilterChips), findsOneWidget);
           expect(find.byKey(AppKeys.historyFilterEmpty), findsOneWidget);
