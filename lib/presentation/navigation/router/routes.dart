@@ -172,10 +172,7 @@ GoRoute _settingsRoute({required String parent, String prefix = ''}) {
         path: _yourDevicesPath,
         // only where device keys run (#555): off, a link here is one the
         // app has no screen for (`docs/opt-in.md`)
-        redirect: (context, _) => switch (pushesOn(context) && DeviceKeys.of(context).supported) {
-          true => null,
-          false => settings,
-        },
+        redirect: (context, _) => _yourDevicesOr(context, settings),
         builder: (_, _) => const YourDevicesPage(onError: reportToSentry),
         name: named(_yourDevicesName),
       ),
@@ -1734,21 +1731,6 @@ GoRoute _coachingLibraryRoute(
 /// A student's conversation with their coach (#556), over whatever is on
 /// screen. There only while coaching runs: off, a link to it is one the app
 /// has no screen for.
-/// Your devices over whatever asked for it, a conversation say: Back returns
-/// there rather than to Settings.
-RouteBase _yourDevicesOverRoute() {
-  return GoRoute(
-    parentNavigatorKey: _rootNavigatorKey,
-    path: _yourDevicesOverPath,
-    name: _yourDevicesOverName,
-    redirect: (context, _) => switch (pushesOn(context) && DeviceKeys.of(context).supported) {
-      true => null,
-      false => _profilePath,
-    },
-    builder: (context, _) => const YourDevicesPage(onError: reportToSentry),
-  );
-}
-
 RouteBase _threadRoute() {
   return GoRoute(
     parentNavigatorKey: _rootNavigatorKey,
@@ -1771,6 +1753,34 @@ RouteBase _threadRoute() {
       );
     },
   );
+}
+
+/// Your devices over whatever asked for it, a conversation say: Back returns
+/// there rather than to Settings. Pushed only where it runs
+/// ([HeartRouter.pushYourDevices]): off, a link here is one the app has no
+/// screen for.
+RouteBase _yourDevicesOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _yourDevicesOverPath,
+    name: _yourDevicesOverName,
+    redirect: (context, _) => _yourDevicesOr(context, _profilePath),
+    builder: (_, _) => const YourDevicesPage(onError: reportToSentry),
+  );
+}
+
+/// [instead] where device keys (#555) don't run. A link that starts the app is
+/// decided once the session and what the account may do are known: before
+/// that, it reads as off to anyone.
+FutureOr<String?> _yourDevicesOr(BuildContext context, String instead) async {
+  if (!DeviceKeys.of(context).supported) return instead;
+  await pushesSettled(context);
+  // a tree torn down mid-wait (a test's) has nowhere left to go
+  if (!context.mounted) return null;
+  return switch (pushesOn(context)) {
+    true => null,
+    false => instead,
+  };
 }
 
 /// A coach's invitation link (#553), whichever switch is on: the page is Your

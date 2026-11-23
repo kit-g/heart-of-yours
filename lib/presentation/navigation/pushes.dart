@@ -71,6 +71,36 @@ bool _pushesDecided(Preferences preferences, Auth auth) {
   return !account || auth.entitlementsKnown || !preferences.isOn(.coachPeople) || preferences.isOn(.yourCoach);
 }
 
+/// Waits until [pushesOn] answers for the session there is, rather than for
+/// one not read yet, or for a coach whose entitlements haven't arrived. Not
+/// for longer than [_settlesWithin]: offline, they may never arrive.
+Future<void> pushesSettled(BuildContext context) async {
+  final preferences = Preferences.of(context);
+  final auth = Auth.of(context);
+  bool settled() {
+    // no user yet, before Firebase's first answer: not the same as none
+    final session = auth.user != null || auth.isInitialized;
+    return preferences.isInitialized && session && _pushesDecided(preferences, auth);
+  }
+
+  if (settled()) return;
+  final answered = Completer<void>();
+  void look() {
+    if (settled() && !answered.isCompleted) answered.complete();
+  }
+
+  auth.addListener(look);
+  preferences.addListener(look);
+  try {
+    await answered.future.timeout(_settlesWithin, onTimeout: () {});
+  } finally {
+    auth.removeListener(look);
+    preferences.removeListener(look);
+  }
+}
+
+const _settlesWithin = Duration(seconds: 5);
+
 /// Asks for the notification permission, in context: from the first thing
 /// that would push, after the person's own yes to the feature, never at
 /// launch (`docs/opt-in.md`). Does nothing where the push client cannot run,

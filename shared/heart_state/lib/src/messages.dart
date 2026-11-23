@@ -198,13 +198,21 @@ class MessageThread {
   /// this person.
   final bool closed;
 
+  /// The locked messages whose keys were looked for, by id: any other may be
+  /// open in a moment.
+  final Set<String> lookedFor;
+
   const new({
     required this.threadId,
     this.messages = const [],
     this.status = .idle,
     this.hasOlder = false,
     this.closed = false,
+    this.lookedFor = const {},
   });
+
+  /// The messages that stay locked: their keys were looked for, and none came.
+  Iterable<Message> get locked => messages.where((each) => each.opened is Locked && lookedFor.contains(each.id));
 }
 
 /// Coaching messages (heart-of-yours#556): the inbox, each thread, and sending.
@@ -606,7 +614,9 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> _pull(String threadId) async {
     final userId = _userId;
-    if (userId == null || !_remote.allowed) return;
+    if (userId == null) return;
+    // nothing can be asked: what is locked stays so
+    if (!_remote.allowed) return _lookedFor(threadId);
     _view(threadId, status: .loading);
     try {
       final stored = await _local.getThreadItems(userId, threadId);
@@ -668,6 +678,10 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       if (locked.isNotEmpty) {
         await _cipher.receive();
         if (userId != _userId) return;
+        // what it opened is shown before the rest counts as locked
+        await _show(threadId);
+        if (userId != _userId) return;
+        _lookedFor(threadId);
         // nothing here waits on it: the answer comes as a key, whenever it does
         if (lookup(threadId) case final Thread thread) {
           unawaited(_cipher.ask(threadId, locked, fingerprint: fingerprintFor?.call(thread)));
@@ -676,6 +690,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     } catch (error, stacktrace) {
       if (userId != _userId) return;
       _view(threadId, status: .failed);
+      _lookedFor(threadId);
       onError?.call(error, stacktrace: stacktrace);
     }
   }
@@ -712,6 +727,8 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       ]);
       _older[threadId] = page.cursor != null;
       await _show(threadId);
+      // asked for with the rest, at the next read
+      _lookedFor(threadId);
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
     }
@@ -974,7 +991,25 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  void _view(String threadId, {List<Message>? messages, CoachingStatus? status, bool? closed}) {
+  /// Every message locked in [threadId] now is one whose key was looked for.
+  void _lookedFor(String threadId) {
+    if (!_views.containsKey(threadId)) return;
+    _view(
+      threadId,
+      lookedFor: {
+        for (final each in thread(threadId).messages)
+          if (each.opened is Locked) each.id,
+      },
+    );
+  }
+
+  void _view(
+    String threadId, {
+    List<Message>? messages,
+    CoachingStatus? status,
+    bool? closed,
+    Set<String>? lookedFor,
+  }) {
     final was = thread(threadId);
     _views[threadId] = MessageThread(
       threadId: threadId,
@@ -982,6 +1017,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       status: status ?? was.status,
       hasOlder: _older[threadId] ?? false,
       closed: closed ?? was.closed,
+      lookedFor: lookedFor ?? was.lookedFor,
     );
     notifyListeners();
   }
