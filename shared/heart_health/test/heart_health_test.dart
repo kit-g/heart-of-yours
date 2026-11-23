@@ -354,6 +354,8 @@ void main() {
 
       expect(records.where((each) => each.level >= Level.WARNING), isEmpty);
       expect(records, isNotEmpty, reason: 'still worth a trace when chasing why nothing arrived');
+      // a debug console prints an error in red, like a fault
+      expect(records.map((each) => each.error), everyElement(isNull));
     });
 
     test('anything else still is', () async {
