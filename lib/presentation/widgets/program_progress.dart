@@ -104,7 +104,8 @@ class _Segment extends StatelessWidget {
 }
 
 /// This calendar week's workouts against the target, a ring each: ticked for
-/// one done, empty for one still to do, and one more for each past the target.
+/// one done, empty for one still to do, and one more for each past the target,
+/// then the words that say which week.
 /// Says itself in words on a long press and to a screen reader.
 class WeekCount extends StatelessWidget {
   final int done;
@@ -116,32 +117,42 @@ class WeekCount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:colorScheme) = Theme.of(context);
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
     final words = L.of(context).programThisWeek(done, target);
     return Semantics(
       label: words,
       excludeSemantics: true,
       child: Tooltip(
         message: words,
+        // the words go below the rings where there isn't room beside them
         child: Wrap(
-          spacing: 4,
+          spacing: 8,
           runSpacing: 4,
+          crossAxisAlignment: .center,
           children: [
-            ...List.generate(
-              done > target ? done : target,
-              (index) => Container(
-                width: _size,
-                height: _size,
-                decoration: BoxDecoration(
-                  shape: .circle,
-                  color: index < done ? colorScheme.primary : null,
-                  border: Border.all(color: index < done ? colorScheme.primary : colorScheme.outline, width: 1.5),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: List.generate(
+                done > target ? done : target,
+                (index) => Container(
+                  width: _size,
+                  height: _size,
+                  decoration: BoxDecoration(
+                    shape: .circle,
+                    color: index < done ? colorScheme.primary : null,
+                    border: Border.all(color: index < done ? colorScheme.primary : colorScheme.outline, width: 1.5),
+                  ),
+                  child: switch (index < done) {
+                    true => Icon(Icons.check_rounded, size: 12, color: colorScheme.onPrimary),
+                    false => null,
+                  },
                 ),
-                child: switch (index < done) {
-                  true => Icon(Icons.check_rounded, size: 12, color: colorScheme.onPrimary),
-                  false => null,
-                },
               ),
+            ),
+            Text(
+              L.of(context).programThisWeekLabel,
+              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
             ),
           ],
         ),

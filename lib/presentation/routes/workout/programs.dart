@@ -344,6 +344,41 @@ class _ProgramBand extends StatelessWidget {
     final ProgramPosition(:done, :next, :paused, :finished, :thisWeek) = position;
     final upNext = sessions.where((session) => session.id == next).firstOrNull;
     final muted = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
+    final count = switch ((program.perWeek, paused)) {
+      (final int target, false) => WeekCount(
+        key: AppKeys.programBandCount(program.id),
+        done: thisWeek,
+        target: target,
+      ),
+      _ => null,
+    };
+    final actions = Row(
+      mainAxisSize: .min,
+      spacing: 8,
+      children: [
+        // nothing is due while paused, so there is nothing to set aside
+        if ((upNext, paused) case (final Template session, false))
+          TextButton(
+            key: AppKeys.programNotToday(program.id),
+            onPressed: () => _notToday(context, program, session, fromBand: true),
+            child: Text(copy.programNotToday),
+          ),
+        // a paused program can still be started: a program workout resumes it,
+        // so the button is never a dead end
+        if (upNext case final Template session)
+          Flexible(
+            child: PrimaryButton.shrunk(
+              key: AppKeys.programStart(program.id),
+              onPressed: () => onStart(session),
+              child: Text(
+                copy.programStartSession(_sessionName(copy, session)),
+                maxLines: 1,
+                overflow: .ellipsis,
+              ),
+            ),
+          ),
+      ],
+    );
 
     return Material(
       key: AppKeys.programBand(program.id),
@@ -415,54 +450,28 @@ class _ProgramBand extends StatelessWidget {
                 ),
               // the count on the left, the actions flush with the card's right
               // inset: both sides loose, so what neither uses goes between
-              // them rather than after the button
+              // them rather than after the button. Large text gives each a row
+              // of its own, or the button is cut to nothing
               if (!finished)
-                Row(
-                  mainAxisAlignment: .spaceBetween,
-                  spacing: 8,
-                  children: [
-                    Flexible(
-                      child: switch ((program.perWeek, paused)) {
-                        (final int target, false) => WeekCount(
-                          key: AppKeys.programBandCount(program.id),
-                          done: thisWeek,
-                          target: target,
-                        ),
-                        _ => const SizedBox.shrink(),
-                      },
-                    ),
-                    Flexible(
-                      flex: 2,
-                      child: Row(
-                        mainAxisSize: .min,
-                        spacing: 8,
-                        children: [
-                          // nothing is due while paused, so there is nothing to set aside
-                          if ((upNext, paused) case (final Template session, false))
-                            TextButton(
-                              key: AppKeys.programNotToday(program.id),
-                              onPressed: () => _notToday(context, program, session, fromBand: true),
-                              child: Text(copy.programNotToday),
-                            ),
-                          // a paused program can still be started: a program
-                          // workout resumes it, so the button is never a dead end
-                          if (upNext case final Template session)
-                            Flexible(
-                              child: PrimaryButton.shrunk(
-                                key: AppKeys.programStart(program.id),
-                                onPressed: () => onStart(session),
-                                child: Text(
-                                  copy.programStartSession(_sessionName(copy, session)),
-                                  maxLines: 1,
-                                  overflow: .ellipsis,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                switch ((count, MediaQuery.textScalerOf(context).scale(14) > 17)) {
+                  (null, _) => Align(alignment: .centerRight, child: actions),
+                  (final Widget count, true) => Column(
+                    crossAxisAlignment: .stretch,
+                    spacing: 8,
+                    children: [
+                      count,
+                      Align(alignment: .centerRight, child: actions),
+                    ],
+                  ),
+                  (final Widget count, false) => Row(
+                    mainAxisAlignment: .spaceBetween,
+                    spacing: 8,
+                    children: [
+                      Flexible(flex: 2, child: count),
+                      Flexible(flex: 3, child: actions),
+                    ],
+                  ),
+                },
             ],
           ),
         ),

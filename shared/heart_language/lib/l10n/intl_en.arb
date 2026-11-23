@@ -4653,6 +4653,8 @@
   "@programFinished": {"description": "State of a program whose last week has passed", "type": "text", "placeholders": {}},
   "programThisWeek": "{done} of {target} this week",
   "@programThisWeek": {"description": "A program's sessions done this calendar week against its weekly target; never an accusation", "type": "text", "placeholders": {"done": {}, "target": {}}},
+  "programThisWeekLabel": "this week",
+  "@programThisWeekLabel": {"description": "Beside the rings that count a program's sessions done this calendar week (the card on the Workout tab)", "type": "text", "placeholders": {}},
   "programStartSession": "Start {session}",
   "@programStartSession": {"description": "Button on a program's band: starts the next session", "type": "text", "placeholders": {"session": {}}},
   "programSessionDone": "{session}, done",

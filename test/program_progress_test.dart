@@ -47,12 +47,18 @@ void main() {
     await pump(tester, const WeekCount(done: 1, target: 3));
     expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('1 of 3 this week')), findsWidgets);
+    expect(find.text('this week'), findsOneWidget);
 
     await pump(tester, const WeekCount(done: 3, target: 2));
     expect(find.byIcon(Icons.check_rounded), findsNWidgets(3));
   });
 
   testWidgets('the words are there on a long press', (tester) async {
+    await pump(tester, const ProgramWeeksBar(week: 3, weeks: 8, done: .5));
+    await tester.longPress(find.byType(ProgramWeeksBar));
+    await tester.pumpAndSettle();
+    expect(find.text('Week 3 of 8'), findsOneWidget);
+
     await pump(tester, const WeekCount(done: 2, target: 2));
     await tester.longPress(find.byType(WeekCount));
     await tester.pumpAndSettle();
