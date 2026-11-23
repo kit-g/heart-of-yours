@@ -113,6 +113,7 @@ class _LogForButtonState extends State<_LogForButton> {
         start = const _Blank();
     }
     final programs = ClientPrograms.of(context);
+    final starts = startsOf(Roster.of(context).workoutsOf(client.studentId));
     final round = roundToPlates(context);
     await logPastWorkout(
       context,
@@ -120,7 +121,7 @@ class _LogForButtonState extends State<_LogForButton> {
       loggingFor: name,
       // a session is laid out once its time is known: as it stood then
       open: (past) => widget.onLog(switch (start) {
-        _FromSession(:final session) => _planned(programs, session, past, name: name, round: round),
+        _FromSession(:final session) => _planned(programs, session, past, name: name, round: round, starts: starts),
         _Blank() => past,
       }),
     );
@@ -134,16 +135,16 @@ class _LogForButtonState extends State<_LogForButton> {
     PastWorkout past, {
     required String name,
     required RoundWeight round,
+    required Map<String, DateTime> starts,
   }) {
-    final (:workout, :plan) = programs.plan(session, at: past.workout.start, now: clock.now(), round: round);
-    workout
-      ..start = past.workout.start
-      ..end = past.workout.end;
-    return PastWorkout(
-      workout: workout,
-      logTo: _logFor(widget.client.studentId, name, plan: plan),
-      loggingFor: past.loggingFor,
+    final (:workout, :plan) = programs.plan(
+      session,
+      at: past.workout.start,
+      now: clock.now(),
+      round: round,
+      starts: starts,
     );
+    return past.holding(workout, logTo: _logFor(widget.client.studentId, name, plan: plan));
   }
 
   /// The sessions of the program they follow, the next one marked: read

@@ -187,7 +187,9 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
   /// [session] laid out as the client's own device would have started it
   /// [at] (#560, heart-api#439): their bases, stages and position from what
   /// happened before then, with the plan it was asked to be. As far as the
-  /// coach can see: a workout hidden from them moves none of these.
+  /// coach can see: a workout hidden from them moves none of these. [starts]
+  /// are when the workouts the coach has read of theirs began: what one moved
+  /// counts from then ([movedAt]).
   ///
   /// Only from a copy [open] just read: one whose last read failed is stale.
   /// And only when that read can be trusted to plan from, its history folding
@@ -195,7 +197,13 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
   /// history (from before heart-api#439) doesn't. Otherwise, or for a program
   /// not running, the session as it was written, with no plan: a plan kept is
   /// kept for good, so none is better than a wrong one.
-  PlannedWorkout plan(Template session, {required DateTime at, required DateTime now, required RoundWeight round}) {
+  PlannedWorkout plan(
+    Template session, {
+    required DateTime at,
+    required DateTime now,
+    required RoundWeight round,
+    Map<String, DateTime> starts = const {},
+  }) {
     final unplanned = (workout: session.toWorkout(), plan: null);
     final id = session.programId;
     if (id == null || status(id) != .loaded) return unplanned;
@@ -206,10 +214,12 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
         planProgramSession(
           session,
           program: program,
-          marks: marks.where((mark) => mark.at.isBefore(at)),
-          actions: actions.where((action) => action.at.isBefore(at)),
-          bases: bases.where((base) => base.at.isBefore(at)),
-          now: at,
+          marks: marks,
+          actions: actions,
+          bases: bases,
+          now: now,
+          at: at,
+          starts: starts,
           round: round,
         ),
       _ => unplanned,

@@ -525,7 +525,7 @@ final class HeartRouter {
   /// Opens one past session — what a goal rung links back to, crediting the
   /// workout that met it.
   void goToWorkoutEditor(String workoutId) {
-    return config.go('$_historyPath/$workoutId');
+    leavingUnsavedLog(() => config.go('$_historyPath/$workoutId'));
   }
 
   /// A program's page, from outside it: a calendar event's link (#391).
@@ -565,7 +565,7 @@ final class HeartRouter {
 
   /// A day set aside with "Not today" (#312), in History.
   void goToSkip(String skipId) {
-    return config.goNamed(_historySkipName, pathParameters: {'skipId': skipId});
+    leavingUnsavedLog(() => config.goNamed(_historySkipName, pathParameters: {'skipId': skipId}));
   }
 }
 
