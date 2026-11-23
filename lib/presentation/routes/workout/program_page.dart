@@ -36,7 +36,12 @@ class ProgramPage extends StatelessWidget {
     // deleted, here or on another device, while the page is open
     if (program == null) return Scaffold(appBar: AppBar());
 
-    return _ProgramsOnly(program: program, child: _page(context, programs, program));
+    // whichever way it was opened: news of it would say what the page shows
+    // (#724)
+    return InView(
+      subject: (.program, programId),
+      child: _ProgramsOnly(program: program, child: _page(context, programs, program)),
+    );
   }
 
   Widget _page(BuildContext context, Programs programs, Program program) {

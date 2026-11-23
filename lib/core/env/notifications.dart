@@ -1107,10 +1107,11 @@ const _pushPayloadKey = 'push';
 /// one each, so two messages stack rather than replace each other.
 var _nextPushId = 100;
 
-/// Taps on a push the app showed itself (Android, the app in front), for the
-/// push presenter. A notifier rather than a callback because the tap that
-/// launched the app can arrive before the presenter is there to hear it: it
-/// waits here, and the presenter clears it once handled.
+/// Taps on a push the app showed itself (Android, the app in front but not
+/// active), for the push presenter. A notifier rather than a callback
+/// because the tap that launched the app can arrive before the presenter is
+/// there to hear it: it waits here, and the presenter clears it once
+/// handled.
 final pushTaps = ValueNotifier<Push?>(null);
 
 /// The channels the server's pushes go to, named in the person's language, so
@@ -1140,18 +1141,24 @@ Future<void> deletePushChannels(TargetPlatform platform) async {
   }
 }
 
-/// Shows a push that arrived with the app in front, on Android, where FCM
-/// leaves that to the app. [title] is the one the server wrote; a push has no
-/// body, because it says who, never what.
-Future<void> showPush(Push push, {required String title}) {
-  final channel = switch (push.known) {
+/// The channel each kind of push goes to.
+String _pushChannel(Push push) {
+  return switch (push.known) {
     .commentCreated => _commentsChannel,
     .coachingMessage => _messagesChannel,
     .invitationAccepted || .programReceived || .workoutDigest => _coachingChannel,
-    // silent ones never reach here; one this build has never heard of goes
-    // with coaching, the only kind the server sends to this client yet
+    // a silent one has no channel of its own: what the app says of it goes
+    // with coaching, as does one this build has never heard of
     .programChanged || .threadCleared || .devicesChanged || .queueWaiting || null => _coachingChannel,
   };
+}
+
+/// Shows a push that arrived with the app in front but not active (the
+/// shade pulled over it, the other half of a split screen), on Android,
+/// where FCM leaves that to the app (#724). [title] is the one the server
+/// wrote; a push has no body, because it says who, never what.
+Future<void> showPush(Push push, {required String title}) {
+  final channel = _pushChannel(push);
   return _guarded(
     () => _plugin.show(
       id: _nextPushId++,
@@ -1162,6 +1169,22 @@ Future<void> showPush(Push push, {required String title}) {
       payload: jsonEncode({_pushPayloadKey: push.toMap()}),
     ),
   );
+}
+
+/// Whether Android lets [push]'s kind show (#724): the app's notifications
+/// on, and its channel not set to none. What the plugin can't say counts as
+/// open.
+Future<bool> pushChannelOpen(Push push) async {
+  final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+  if (android == null) return true;
+  try {
+    if (await android.areNotificationsEnabled() == false) return false;
+    final id = _pushChannel(push);
+    final channel = (await android.getNotificationChannels())?.where((each) => each.id == id).firstOrNull;
+    return channel?.importance != Importance.none;
+  } catch (_) {
+    return true;
+  }
 }
 
 /// The push a notification's [payload] carries, or null for one of the app's

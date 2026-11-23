@@ -13,6 +13,7 @@ import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/confirm.dart';
+import 'package:heart/presentation/widgets/in_view.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/message_text.dart';
 import 'package:heart_language/heart_language.dart';
@@ -235,21 +236,27 @@ class _ThreadViewState extends State<ThreadView> {
     return ValueListenableBuilder(
       valueListenable: _opening,
       builder: (context, opening, _) {
-        return switch ((opening, _threadId)) {
-          (.open, final String threadId) => _Conversation(
-            threadId: threadId,
-            connectionId: widget.connectionId,
-            text: _text,
-            onSend: _send,
-            onOpenWorkout: widget.onOpenWorkout,
-          ),
-          (.failed, _) => _Note(
-            icon: Icons.cloud_off_rounded,
-            title: l.messagesFailed,
-            action: OutlinedButton(onPressed: _open, child: Text(l.retry)),
-          ),
-          _ => const Center(child: CircularProgressIndicator.adaptive()),
-        };
+        // on screen from the moment it opens, so a push about it says
+        // nothing (#724), and not at all once opening failed
+        return InView(
+          subject: (.thread, widget.connectionId),
+          shown: opening != .failed,
+          child: switch ((opening, _threadId)) {
+            (.open, final String threadId) => _Conversation(
+              threadId: threadId,
+              connectionId: widget.connectionId,
+              text: _text,
+              onSend: _send,
+              onOpenWorkout: widget.onOpenWorkout,
+            ),
+            (.failed, _) => _Note(
+              icon: Icons.cloud_off_rounded,
+              title: l.messagesFailed,
+              action: OutlinedButton(onPressed: _open, child: Text(l.retry)),
+            ),
+            _ => const Center(child: CircularProgressIndicator.adaptive()),
+          },
+        );
       },
     );
   }
