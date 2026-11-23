@@ -600,6 +600,36 @@ void main() {
         );
       }
 
+      testWidgets('each person is named as everywhere else', (tester) async {
+        Connection coach(String id, {String? name}) => Connection(
+          targetId: 'coach-$id',
+          role: .student,
+          domain: .fitness,
+          status: .active,
+          createdAt: DateTime.utc(2026, 11, 8),
+          connectionId: id,
+          acceptedAt: DateTime.utc(2026, 11, 8),
+          name: name,
+        );
+        when(api.getConnections()).thenAnswer(
+          (_) async => [coach('c1', name: 'Kit G.'), coach('c2'), coach('c3')],
+        );
+        when(api.getPushSettings()).thenAnswer(
+          (_) async => PushSettings(
+            topics: [
+              setting('coaching.message', ['coach', 'student', 'peer']),
+            ],
+          ),
+        );
+        await pump(tester, {'feature-yourCoach': 'on', 'coachName-c1': 'Old name', 'coachName-c2': 'Alex'});
+        go(tester, '/profile/settings/notifications');
+        await tester.pumpTimes();
+
+        expect(find.text('Kit G.'), findsOneWidget, reason: "their profile's, over the invitation's");
+        expect(find.text('Alex'), findsOneWidget);
+        expect(find.text('Your coach'), findsOneWidget);
+      });
+
       testWidgets("a coach is offered only the topics a student's side can choose for them", (tester) async {
         when(api.getPushSettings()).thenAnswer(
           (_) async => PushSettings(

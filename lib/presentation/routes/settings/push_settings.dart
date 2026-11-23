@@ -294,11 +294,11 @@ class const _People() extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    final preferences = Preferences.watch(context);
+    // a name an invitation showed is kept there
+    Preferences.watch(context);
     final coaches = <_Person>[
       for (final coach in Coaching.watch(context).coaches)
-        if (coach.connectionId case final String id)
-          (id: id, name: preferences.coachName(id) ?? l.yourCoach, role: coach.role),
+        if (coach.connectionId case final String id) (id: id, name: coachName(context, coach), role: coach.role),
     ];
     final clients = switch (coachingSpaceOn(context, listen: true)) {
       true => <_Person>[

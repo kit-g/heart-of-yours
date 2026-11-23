@@ -41,13 +41,9 @@ class _CoachCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    // their name as their profile says it now (heart-api#409), else as their
-    // invitation showed it on this device
-    final name = switch ((coach.name?.trim(), coach.connectionId)) {
-      (final String name, _) when name.isNotEmpty => name,
-      (_, final String id) => Preferences.watch(context).coachName(id),
-      _ => null,
-    };
+    // a name an invitation showed is kept there
+    Preferences.watch(context);
+    final name = coachName(context, coach);
     final paused = coach.status == .paused;
     final shares = {
       for (final share in coach.shares)
@@ -74,7 +70,7 @@ class _CoachCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: .stretch,
         children: [
-          Text(name ?? l.yourCoach, style: textTheme.titleMedium),
+          Text(name, style: textTheme.titleMedium),
           if (paused)
             Text(l.yourCoachPaused, style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
           share(.history, l.invitationShareHistory),
@@ -89,7 +85,7 @@ class _CoachCard extends StatelessWidget {
                 key: AppKeys.yourCoachMessage(id),
                 onPressed: () => HeartRouter.of(context).openThread(id),
                 icon: Icons.forum_outlined,
-                child: Text(l.messagesWith(name ?? l.yourCoach)),
+                child: Text(l.messagesWith(name)),
               ),
             ),
           Align(
@@ -97,7 +93,7 @@ class _CoachCard extends StatelessWidget {
             child: QuietButton(
               plain: true,
               danger: true,
-              onPressed: () => _leave(context, name ?? l.yourCoach),
+              onPressed: () => _leave(context, name),
               child: Text(l.yourCoachLeave),
             ),
           ),
