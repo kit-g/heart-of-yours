@@ -79,7 +79,7 @@ class _ClientsPageState extends State<ClientsPage> {
   /// A coach shares a link from another app and comes back to see whether it
   /// was taken: the tab stays alive the whole time, so opening it once is
   /// not enough.
-  late final _lifecycle = AppLifecycleListener(onResume: _resumed);
+  late final _lifecycle = AppReturns(_returned);
 
   /// When the roster was last read, so coming back to the app often doesn't
   /// read it each time.
@@ -97,7 +97,7 @@ class _ClientsPageState extends State<ClientsPage> {
   /// Reads the roster again on coming back, but only while it's what's on
   /// screen and it's more than [_fresh] old: another tab, a page over it, or
   /// a quick switch away and back reads nothing.
-  void _resumed() {
+  void _returned() {
     if (!mounted) return;
     final shown = TickerMode.valuesOf(context).enabled && (ModalRoute.of(context)?.isCurrent ?? true);
     final stale = switch (_readAt) {

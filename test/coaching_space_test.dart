@@ -469,8 +469,9 @@ void main() {
 
       clients([sam]);
       void comeBack() {
-        tester.binding.handleAppLifecycleStateChanged(.inactive);
-        tester.binding.handleAppLifecycleStateChanged(.resumed);
+        for (final AppLifecycleState state in [.inactive, .hidden, .paused, .hidden, .inactive, .resumed]) {
+          tester.binding.handleAppLifecycleStateChanged(state);
+        }
       }
 
       // a quick switch away and back reads nothing

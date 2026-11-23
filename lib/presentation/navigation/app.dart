@@ -45,6 +45,7 @@ import 'package:heart/core/utils/templates.dart';
 import 'package:heart/core/utils/remote_failures.dart';
 import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
+import 'package:heart/core/utils/lifecycle.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/coaching.dart';
 import 'package:heart/presentation/navigation/entry_review.dart';
@@ -694,13 +695,13 @@ class _App extends StatefulWidget {
 class _AppState extends State<_App> with WidgetsBindingObserver {
   /// The app's only lifecycle hook, and it sits here because [_App] is the
   /// highest widget that can still read the providers above it.
-  late final AppLifecycleListener _lifecycle;
+  late final AppReturns _lifecycle;
 
   @override
   void initState() {
     super.initState();
-    _lifecycle = AppLifecycleListener(onResume: _onResume);
-    // for didChangeLocales; the AppLifecycleListener above cannot carry it
+    _lifecycle = AppReturns(_onReturn, onResume: _onResume);
+    // for didChangeLocales; the listener above cannot carry it
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -721,8 +722,14 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
   void _onResume() {
     if (!mounted) return;
     Health.of(context).onResume();
+    Auth.of(context).ensureSession();
+  }
+
+  /// Back from elsewhere: what may have changed meanwhile is read again. Not
+  /// after a photo picker or a permission, which resume the app too.
+  void _onReturn() {
+    if (!mounted) return;
     final auth = Auth.of(context);
-    auth.ensureSession();
     // an account whose launch could not reach the server, now perhaps online
     auth.registerAgain();
     // the sweep that flags entries runs nightly: a phone left open overnight
