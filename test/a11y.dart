@@ -475,7 +475,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     (
       _Screen.programs,
       guideline,
-      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:101), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:424) and its Start (programs.dart:433) at the house 32pt, and a waiting coach program\'s Start (40pt FilledButton, lib/presentation/routes/workout/program_sent.dart) (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:101), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:374) and its Start (programs.dart:383) at the house 32pt, and a waiting coach program\'s Start (40pt FilledButton, lib/presentation/routes/workout/program_sent.dart) (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.programPage,

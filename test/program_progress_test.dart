@@ -32,6 +32,33 @@ void main() {
     expect(find.bySemanticsLabel(RegExp('Week 3 of 5')), findsWidgets);
   });
 
+  testWidgets('it is as wide as it is let be, in a column that asks nothing of it', (tester) async {
+    for (final week in [1, 27]) {
+      await pump(
+        tester,
+        Column(
+          crossAxisAlignment: .start,
+          children: [ProgramWeeksBar(week: week, weeks: 52, done: 0)],
+        ),
+        width: 200,
+      );
+      expect(tester.getSize(find.byType(ClipRRect)).width, 200);
+    }
+  });
+
+  testWidgets('a press a little off the bar still says the week', (tester) async {
+    await pump(tester, const ProgramWeeksBar(week: 3, weeks: 8, done: .5));
+    await tester.longPressAt(tester.getRect(find.byType(ClipRRect).first).centerRight + const Offset(0, 7));
+    await tester.pumpAndSettle();
+    expect(find.text('Week 3 of 8'), findsOneWidget);
+  });
+
+  testWidgets('more than a week has days are counted in words', (tester) async {
+    await pump(tester, const WeekCount(done: 3, target: 28));
+    expect(find.text('3 of 28 this week'), findsOneWidget);
+    expect(find.byIcon(Icons.check_rounded), findsNothing);
+  });
+
   testWidgets('weeks too many to tell apart are one bar', (tester) async {
     await pump(tester, const ProgramWeeksBar(week: 27, weeks: 52, done: 0), width: 200);
     expect(fills(tester), [.5]);

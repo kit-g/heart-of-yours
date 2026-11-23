@@ -1,3 +1,4 @@
+import 'package:heart/core/utils/visual.dart' show lineWidth;
 import 'package:heart_language/heart_language.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -19,6 +20,9 @@ class ProgramWeeksBar extends StatelessWidget {
   static const _height = 6.0;
   static const _gap = 3.0;
 
+  /// Around the bar, so a long press needn't find its six points.
+  static const _reach = 5.0;
+
   /// Narrower than this, weeks stop being told apart: they are one bar.
   static const _narrowest = 6.0;
 
@@ -32,40 +36,50 @@ class ProgramWeeksBar extends StatelessWidget {
       excludeSemantics: true,
       child: Tooltip(
         message: words,
-        child: SizedBox(
-          height: _height,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final segment = (constraints.maxWidth - _gap * (weeks - 1)) / weeks;
-              return switch (segment >= _narrowest) {
-                true => Row(
-                  spacing: _gap,
-                  children: [
-                    ...List.generate(
-                      weeks,
-                      (index) => Expanded(
-                        child: _Segment(
-                          filled: switch (index + 1 - week) {
-                            < 0 => 1,
-                            0 => done.clamp(0, 1).toDouble(),
-                            _ => 0,
-                          },
-                          ink: ink,
-                          here: index + 1 == week,
+        child: Container(
+          // as wide as the card, whatever the column offers
+          width: double.infinity,
+          color: Colors.transparent,
+          padding: const .symmetric(vertical: _reach),
+          child: SizedBox(
+            height: _height * _growth(context),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final segment = (constraints.maxWidth - _gap * (weeks - 1)) / weeks;
+                return switch (segment >= _narrowest) {
+                  true => Row(
+                    spacing: _gap,
+                    children: [
+                      ...List.generate(
+                        weeks,
+                        (index) => Expanded(
+                          child: _Segment(
+                            filled: switch (index + 1 - week) {
+                              < 0 => 1,
+                              0 => done.clamp(0, 1).toDouble(),
+                              _ => 0,
+                            },
+                            ink: ink,
+                            here: index + 1 == week,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                false => _Segment(filled: ((week - 1 + done) / weeks).clamp(0, 1).toDouble(), ink: ink),
-              };
-            },
+                    ],
+                  ),
+                  false => _Segment(filled: ((week - 1 + done) / weeks).clamp(0, 1).toDouble(), ink: ink),
+                };
+              },
+            ),
           ),
         ),
       ),
     );
   }
 }
+
+/// How much larger than at the standard text size these are drawn: with the
+/// words beside them, up to a point.
+double _growth(BuildContext context) => (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1, 1.6).toDouble();
 
 class _Segment extends StatelessWidget {
   final double filled;
@@ -85,18 +99,15 @@ class _Segment extends StatelessWidget {
       position: .foreground,
       decoration: BoxDecoration(
         borderRadius: _corners,
-        border: here ? Border.all(color: ink) : null,
+        border: .all(color: here || filled == 1 ? ink : colorScheme.outline),
       ),
       child: ClipRRect(
         borderRadius: _corners,
-        child: ColoredBox(
-          color: colorScheme.outlineVariant,
-          child: FractionallySizedBox(
-            alignment: AlignmentDirectional.centerStart,
-            widthFactor: filled,
-            heightFactor: 1,
-            child: ColoredBox(color: ink),
-          ),
+        child: FractionallySizedBox(
+          alignment: AlignmentDirectional.centerStart,
+          widthFactor: filled,
+          heightFactor: 1,
+          child: ColoredBox(color: ink),
         ),
       ),
     );
@@ -114,11 +125,37 @@ class WeekCount extends StatelessWidget {
   const new({super.key, required this.done, required this.target});
 
   static const _size = 18.0;
+  static const _between = 4.0;
+  static const _beforeWords = 8.0;
+
+  /// More than these are counted in words: a wall of rings says less.
+  static const _most = 7;
+
+  bool get _ringed => done <= _most && target <= _most;
+
+  int get _rings => done > target ? done : target;
+
+  /// How wide this is on one line.
+  double widthIn(BuildContext context) {
+    final l = L.of(context);
+    final style = Theme.of(context).textTheme.bodyMedium;
+    return switch (_ringed) {
+      true =>
+        _rings * _size * _growth(context) +
+            (_rings - 1) * _between +
+            _beforeWords +
+            lineWidth(context, l.programThisWeekLabel, style: style),
+      false => lineWidth(context, l.programThisWeek(done, target), style: style),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
     final words = L.of(context).programThisWeek(done, target);
+    final muted = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
+    if (!_ringed) return Text(words, style: muted);
+    final size = _size * _growth(context);
     return Semantics(
       label: words,
       excludeSemantics: true,
@@ -126,34 +163,31 @@ class WeekCount extends StatelessWidget {
         message: words,
         // the words go below the rings where there isn't room beside them
         child: Wrap(
-          spacing: 8,
+          spacing: _beforeWords,
           runSpacing: 4,
           crossAxisAlignment: .center,
           children: [
             Wrap(
-              spacing: 4,
+              spacing: _between,
               runSpacing: 4,
               children: List.generate(
-                done > target ? done : target,
+                _rings,
                 (index) => Container(
-                  width: _size,
-                  height: _size,
+                  width: size,
+                  height: size,
                   decoration: BoxDecoration(
                     shape: .circle,
                     color: index < done ? colorScheme.primary : null,
-                    border: Border.all(color: index < done ? colorScheme.primary : colorScheme.outline, width: 1.5),
+                    border: .all(color: index < done ? colorScheme.primary : colorScheme.outline, width: 1.5),
                   ),
                   child: switch (index < done) {
-                    true => Icon(Icons.check_rounded, size: 12, color: colorScheme.onPrimary),
+                    true => Icon(Icons.check_rounded, size: size * 2 / 3, color: colorScheme.onPrimary),
                     false => null,
                   },
                 ),
               ),
             ),
-            Text(
-              L.of(context).programThisWeekLabel,
-              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-            ),
+            Text(L.of(context).programThisWeekLabel, style: muted),
           ],
         ),
       ),

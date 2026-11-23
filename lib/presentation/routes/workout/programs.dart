@@ -316,8 +316,9 @@ class _FromFolderButton extends StatelessWidget {
 /// One program as the Workout tab shows it: where you are, this cycle's
 /// sessions, this week against the target, and the next session to start.
 ///
-/// The week count encourages and never accuses: "1 of 3", and a paused
-/// program shows no count at all, so being ill never reads as falling behind.
+/// The week count encourages and never accuses: a ring ticked for each done,
+/// and a paused program shows no count at all, so being ill never reads as
+/// falling behind.
 class _ProgramBand extends StatelessWidget {
   final Program program;
   final ProgramPosition position;
@@ -352,6 +353,18 @@ class _ProgramBand extends StatelessWidget {
       ),
       _ => null,
     };
+    final start = switch (upNext) {
+      final Template session => copy.programStartSession(_sessionName(copy, session)),
+      null => null,
+    };
+    double actionsWidth(BuildContext context) {
+      double of(String? label) => switch (label) {
+        final String label => lineWidth(context, label, style: textTheme.bodyMedium) + primaryButtonPadding.horizontal,
+        null => 0,
+      };
+      return of(start) + 8 + (paused ? 0 : of(copy.programNotToday));
+    }
+
     final actions = Row(
       mainAxisSize: .min,
       spacing: 8,
@@ -371,7 +384,7 @@ class _ProgramBand extends StatelessWidget {
               key: AppKeys.programStart(program.id),
               onPressed: () => onStart(session),
               child: Text(
-                copy.programStartSession(_sessionName(copy, session)),
+                start ?? '',
                 maxLines: 1,
                 overflow: .ellipsis,
               ),
@@ -422,11 +435,10 @@ class _ProgramBand extends StatelessWidget {
                   key: AppKeys.programBandWeeks(program.id),
                   week: position.week,
                   weeks: weeks,
-                  done: switch (sessions) {
-                    [] => 0,
-                    _ =>
-                      sessions.where((each) => done.contains(each.id) || skipped.contains(each.id)).length /
-                          sessions.length,
+                  // of the cycle's own sessions: a phase's, as it began
+                  done: switch (done.length + position.remaining.length) {
+                    0 => 0,
+                    final int cycle => done.length / cycle,
                   },
                   paused: paused,
                 ),
@@ -449,29 +461,37 @@ class _ProgramBand extends StatelessWidget {
                   ],
                 ),
               // the count on the left, the actions flush with the card's right
-              // inset: both sides loose, so what neither uses goes between
-              // them rather than after the button. Large text gives each a row
-              // of its own, or the button is cut to nothing
+              // inset; the actions on a row of their own where the two don't
+              // fit one whole, or the button is cut to nothing
               if (!finished)
-                switch ((count, MediaQuery.textScalerOf(context).scale(14) > 17)) {
-                  (null, _) => Align(alignment: .centerRight, child: actions),
-                  (final Widget count, true) => Column(
-                    crossAxisAlignment: .stretch,
-                    spacing: 8,
-                    children: [
-                      count,
-                      Align(alignment: .centerRight, child: actions),
-                    ],
-                  ),
-                  (final Widget count, false) => Row(
-                    mainAxisAlignment: .spaceBetween,
-                    spacing: 8,
-                    children: [
-                      Flexible(flex: 2, child: count),
-                      Flexible(flex: 3, child: actions),
-                    ],
-                  ),
-                },
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final beside = switch (count) {
+                      final WeekCount count =>
+                        count.widthIn(context) + 8 + actionsWidth(context) <= constraints.maxWidth,
+                      null => true,
+                    };
+                    return switch ((count, beside)) {
+                      (null, _) => Align(alignment: .centerRight, child: actions),
+                      (final Widget count, false) => Column(
+                        crossAxisAlignment: .stretch,
+                        spacing: 8,
+                        children: [
+                          count,
+                          Align(alignment: .centerRight, child: actions),
+                        ],
+                      ),
+                      (final Widget count, true) => Row(
+                        mainAxisAlignment: .spaceBetween,
+                        spacing: 8,
+                        children: [
+                          count,
+                          Flexible(child: actions),
+                        ],
+                      ),
+                    };
+                  },
+                ),
             ],
           ),
         ),

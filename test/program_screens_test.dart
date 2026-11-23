@@ -202,6 +202,32 @@ void main() {
       expect(started.programId, 'p1');
     });
 
+    testWidgets('a paused one says so over a quiet bar, with no count', (tester) async {
+      answer(.on);
+      withProgram();
+      final pause = ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime.utc(2026, 10, 2));
+      when(db.getProgramActions(userId, programId: anyNamed('programId'))).thenAnswer((_) async => [pause]);
+      when(api.getProgramActions(any)).thenAnswer((_) async => [pause]);
+      await openWorkoutTab(tester);
+
+      expect(find.text('Paused'), findsOneWidget);
+      expect(tester.widget<ProgramWeeksBar>(find.byKey(AppKeys.programBandWeeks('p1'))).paused, isTrue);
+      expect(find.byType(WeekCount), findsNothing);
+    });
+
+    testWidgets('one with no set length keeps its week in words, with no bar', (tester) async {
+      answer(.on);
+      withProgram();
+      final open = Program.fromJson({...program.toMap(), 'weeks': null});
+      when(db.getPrograms(userId)).thenAnswer((_) async => [open]);
+      when(api.getPrograms()).thenAnswer((_) async => [open]);
+      await openWorkoutTab(tester);
+
+      expect(find.text('Week 1'), findsOneWidget);
+      expect(find.byType(ProgramWeeksBar), findsNothing);
+      expect(find.byType(WeekCount), findsOneWidget);
+    });
+
     testWidgets('its sessions stay in their folder, as they were', (tester) async {
       answer(.on);
       withProgram();
