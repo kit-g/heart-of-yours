@@ -6262,5 +6262,11 @@
   "exerciseArchiveFailed": "Couldn't archive {exerciseName}. Nothing changed.",
   "@exerciseArchiveFailed": {"description": "Snack when archiving one of the user's exercises failed, as offline, and it stays in the library; the user has already left its page (#710)", "type": "text", "placeholders": {"exerciseName": {}}},
   "exerciseUnarchiveFailed": "Couldn't unarchive {exerciseName}. Nothing changed.",
-  "@exerciseUnarchiveFailed": {"description": "Snack when taking one of the user's exercises out of the archive failed, as offline, and it stays archived; the user has already left its page (#710)", "type": "text", "placeholders": {"exerciseName": {}}}
+  "@exerciseUnarchiveFailed": {"description": "Snack when taking one of the user's exercises out of the archive failed, as offline, and it stays archived; the user has already left its page (#710)", "type": "text", "placeholders": {"exerciseName": {}}},
+  "pushNoteMessage": "{name} messaged you",
+  "@pushNoteMessage": {"description": "The in-app note for a message that arrived with the app open (#724). {name} is who wrote: a coach, or a client", "type": "text", "placeholders": {"name": {}}},
+  "pushNoteProgramReceived": "{name} sent you a program",
+  "@pushNoteProgramReceived": {"description": "The in-app note for a program a coach sent, arriving with the app open (#724), over the program's name. {name} is the coach", "type": "text", "placeholders": {"name": {}}},
+  "pushNoteProgramChanged": "{name} changed {program}",
+  "@pushNoteProgramChanged": {"description": "The in-app note when a coach changed a program they sent, arriving with the app open (#724). {name} is the coach, {program} the program's name", "type": "text", "placeholders": {"name": {}, "program": {}}}
 }

@@ -166,6 +166,9 @@ abstract final class AppKeys {
   /// there is a timer on it.
   static const restTimers = Key('Settings.restTimers');
   static const pushSettings = Key('Settings.pushSettings');
+
+  /// The note a push shows with the app open (#724).
+  static const pushNote = Key('Push.note');
   static const features = Key('Settings.features');
 
   /// The export page's two actions, one per format.
