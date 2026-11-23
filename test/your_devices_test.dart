@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/visual.dart' show dialogWidth;
+import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -318,6 +319,30 @@ void main() {
       ),
     );
   }
+
+  testWidgets('it opens over a conversation that needs it, and Back returns there', (tester) async {
+    await pump(tester);
+    final router = HeartRouter.of(root(tester));
+    router.pushYourDevices();
+    await tester.pumpTimes();
+    expect(find.byKey(AppKeys.compareCodes(tablet.id)), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpTimes();
+    expect(find.byKey(AppKeys.compareCodes(tablet.id)), findsNothing);
+    expect(find.byIcon(Icons.settings_rounded), findsOneWidget);
+  });
+
+  testWidgets('its link is the page in Settings', (tester) async {
+    expect(
+      '${HeartRouter.yourDevicesLink('heart-of.me')}',
+      'https://heart-of.me/profile/settings/devices',
+    );
+    await pump(tester);
+    GoRouter.of(root(tester)).go(HeartRouter.yourDevicesLink('heart-of.me').path);
+    await tester.pumpTimes();
+    expect(find.byKey(AppKeys.compareCodes(tablet.id)), findsOneWidget);
+  });
 
   testWidgets('one already asked for shows as the page opens, with no push (#734)', (tester) async {
     await pump(tester);

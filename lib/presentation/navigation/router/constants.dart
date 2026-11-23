@@ -110,6 +110,8 @@ const _coachingClientNotesName = 'coachingClientNotes';
 // a workout a coach logs for a client (#560)
 const _coachingClientLogName = 'coachingClientLog';
 const _threadName = 'thread';
+const _yourDevicesOverName = 'yourDevicesOver';
+const _yourDevicesOverPath = '/yourDevices';
 const _threadPath = '/messages/:connectionId';
 const _coachingProgramsName = 'coachingPrograms';
 const _coachingProgramsPath = '$_coachingPath/programs';

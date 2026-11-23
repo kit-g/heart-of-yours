@@ -92,6 +92,7 @@ final class HeartRouter {
           _coachingRoute(),
           _invitationRoute(),
           _threadRoute(),
+          _yourDevicesOverRoute(),
           _upgradeRequiredRoute(),
           _onboardingRoute(),
           _activeWorkoutRoute(),
@@ -465,6 +466,12 @@ final class HeartRouter {
   void openThread(String connectionId) {
     config.pushNamed(_threadName, pathParameters: {'connectionId': connectionId});
   }
+
+  /// Your devices (#555), over what asked for it.
+  void pushYourDevices() => config.pushNamed(_yourDevicesOverName);
+
+  /// The link to Your devices, to open on another device.
+  static Uri yourDevicesLink(String domain) => Uri.https(domain, '$_profilePath/$_settingsPath/$_yourDevicesPath');
 
   /// A coach's invitation (#553), as its link would open it.
   void openInvitation(String token, {String? fingerprint}) {

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/core/env/config.dart';
 import 'package:heart/presentation/widgets/message_text.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/messages/messages.dart';
@@ -139,7 +140,7 @@ void main() {
     expect(first.dy, lessThan(second.dy));
     // under the test font each letter is as wide as it is tall: short words keep the bubbles apart
     expect(second.dx, lessThan(first.dx), reason: "theirs sit left, the coach's own right");
-    expect(_message("Locked until the sender's device has been online"), findsOneWidget);
+    expect(_message('Locked message'), findsOneWidget);
     expect(server.calls, contains('read t1 c3'));
   });
 
@@ -148,7 +149,43 @@ void main() {
 
     await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
 
-    expect(_message('Written on another device. Opens once that device lets this one in'), findsOneWidget);
+    expect(_message('Locked message'), findsOneWidget);
+    expect(find.textContaining('Approve it from another device'), findsOneWidget);
+  });
+
+  testWidgets('what opens locked messages is said once under them, and not where there are none', (tester) async {
+    server.items = [
+      _item('i1', 'locked', sender: 'muffin', cursor: 'c1'),
+      _item('i2', 'locked', sender: 'muffin', cursor: 'c2'),
+    ];
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+    expect(find.byKey(AppKeys.messagesLockedLine), findsOneWidget);
+  });
+
+  testWidgets('the link to Your devices can be copied, for the other device', (tester) async {
+    server.items = [_item('i1', 'locked', sender: 'muffin', cursor: 'c1')];
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') copied.add((call.arguments as Map)['text'] as String);
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    await pump(
+      tester,
+      Provider<AppConfig?>.value(
+        value: AppConfig.test(appLink: 'heart-of.me'),
+        child: const ThreadPage(connectionId: 'c-muffin'),
+      ),
+    );
+    await tester.tap(find.byKey(AppKeys.messagesCopyDevicesLink));
+    await tester.pumpAndSettle();
+    expect(copied, ['https://heart-of.me/profile/settings/devices']);
+  });
+
+  testWidgets('a conversation that opens says nothing of it', (tester) async {
+    server.items = [_item('i1', 'Squats?', sender: 'whiskers', cursor: 'c1')];
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+    expect(find.byKey(AppKeys.messagesLockedLine), findsNothing);
   });
 
   testWidgets('a long press copies what was said; one that never opened offers nothing', (tester) async {
@@ -164,7 +201,7 @@ void main() {
     addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
     await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
 
-    await tester.longPress(_message("Locked until the sender's device has been online"));
+    await tester.longPress(_message('Locked message'));
     await tester.pumpAndSettle();
     expect(find.text('Copy'), findsNothing);
 

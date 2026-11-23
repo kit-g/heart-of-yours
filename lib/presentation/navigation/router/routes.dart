@@ -1734,6 +1734,21 @@ GoRoute _coachingLibraryRoute(
 /// A student's conversation with their coach (#556), over whatever is on
 /// screen. There only while coaching runs: off, a link to it is one the app
 /// has no screen for.
+/// Your devices over whatever asked for it, a conversation say: Back returns
+/// there rather than to Settings.
+RouteBase _yourDevicesOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _yourDevicesOverPath,
+    name: _yourDevicesOverName,
+    redirect: (context, _) => switch (pushesOn(context) && DeviceKeys.of(context).supported) {
+      true => null,
+      false => _profilePath,
+    },
+    builder: (context, _) => const YourDevicesPage(onError: reportToSentry),
+  );
+}
+
 RouteBase _threadRoute() {
   return GoRoute(
     parentNavigatorKey: _rootNavigatorKey,

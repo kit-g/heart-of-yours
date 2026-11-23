@@ -8,9 +8,11 @@ import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/core/env/config.dart';
 import 'package:heart/core/utils/message_runs.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/confirm.dart';
 import 'package:heart/presentation/widgets/in_view.dart';
@@ -352,11 +354,97 @@ class _Conversation extends StatelessWidget {
             ),
           },
         ),
+        if (shown.any((each) => each.opened is Locked))
+          _LockedLine(
+            // the other person's, or only one's own
+            theirs: shown.any((each) => each.opened is Locked && !each.mine),
+            name: switch (messages.lookup(threadId)) {
+              final Thread thread => threadName(context, thread),
+              null => null,
+            },
+          ),
         switch (closed) {
           true => _Closed(),
           false => _Composer(connectionId: connectionId, text: text, onSend: onSend),
         },
       ],
+    );
+  }
+}
+
+/// What opens the messages this device has no key for: approving it, from a
+/// device of the account's that hasn't let it in, with the way there and its
+/// link to open on that device; or else whoever wrote them opening the app.
+class _LockedLine extends StatelessWidget {
+  final bool theirs;
+  final String? name;
+
+  const new({required this.theirs, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final keys = Provider.of<DeviceKeys?>(context);
+    final others = switch (Messages.of(context).userId) {
+      final String userId => keys?.peer(userId)?.devices.where((each) => each.id != keys.deviceId),
+      null => null,
+    };
+    // not read yet counts as not approved: the page it leads to knows
+    final approve = others?.any((each) => !each.trusted) ?? true;
+    final words = switch ((approve, theirs, name)) {
+      (true, _, _) => l.messagesLockedApprove,
+      (false, true, final String name) => l.messagesLockedOthers(name),
+      (false, _, _) => l.messagesLockedGone,
+    };
+    final router = HeartRouter.maybeOf(context);
+    final domain = Provider.of<AppConfig?>(context, listen: false)?.appDomain;
+    return Container(
+      key: AppKeys.messagesLockedLine,
+      width: double.infinity,
+      color: colorScheme.surfaceContainerHighest,
+      padding: const .fromLTRB(16, 8, 8, 8),
+      child: Column(
+        crossAxisAlignment: .start,
+        children: [
+          Row(
+            spacing: 12,
+            children: [
+              Icon(Icons.key_rounded, size: 20, color: colorScheme.onSurfaceVariant),
+              Expanded(child: Text(words, style: textTheme.bodyMedium)),
+            ],
+          ),
+          if (approve)
+            Padding(
+              // under the words, past the key
+              padding: const .only(left: 24),
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  if (router != null)
+                    QuietButton(
+                      key: AppKeys.messagesYourDevices,
+                      plain: true,
+                      onPressed: router.pushYourDevices,
+                      child: Text(l.yourDevices),
+                    ),
+                  if (domain != null)
+                    QuietButton(
+                      key: AppKeys.messagesCopyDevicesLink,
+                      plain: true,
+                      icon: Icons.link_rounded,
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.maybeOf(context);
+                        await Clipboard.setData(ClipboardData(text: '${HeartRouter.yourDevicesLink(domain)}'));
+                        messenger?.snack(l.copiedToClipboard);
+                      },
+                      child: Text(l.messagesCopyDevicesLink),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -426,12 +514,10 @@ class _Bubble extends StatelessWidget {
     final words = textTheme.bodyLarge?.copyWith(color: foreground) ?? TextStyle(color: foreground);
     final (text, style, leading) = switch (message.opened) {
       Opened(:final text) => (text, words, null),
-      // says what opens it: the device has already asked for its key
+      // a line under the conversation says what opens it: the device has
+      // already asked for its key
       Locked() => (
-        switch (mine) {
-          true => l.messagesLockedYours,
-          false => l.messagesLocked,
-        },
+        l.messagesLocked,
         words.copyWith(fontStyle: .italic),
         Icons.key_rounded,
       ),

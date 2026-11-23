@@ -510,6 +510,9 @@ abstract final class AppKeys {
   static const thread = Key('Messages.thread');
   static const messageBox = Key('Messages.box');
   static const messageSend = Key('Messages.send');
+  static const messagesLockedLine = Key('Messages.locked');
+  static const messagesYourDevices = Key('Messages.locked.devices');
+  static const messagesCopyDevicesLink = Key('Messages.locked.copyLink');
   static const coachingClientMessages = Key('Coaching.clientMessages');
   // a coach's notes on a client (#556)
   static const coachingClientNotes = Key('Coaching.clientNotes');
