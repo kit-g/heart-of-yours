@@ -30,6 +30,15 @@ abstract final class AppKeys {
   /// A calendar day's list (#618): start a workout today, log one on the day.
   static const calendarStart = Key('History.calendar.start');
   static const calendarLog = Key('History.calendar.log');
+
+  /// And what either is made from (#737): the ways in, the lists they open,
+  /// and a row of one.
+  static const calendarFromTemplate = Key('History.calendar.fromTemplate');
+  static const calendarFromWorkout = Key('History.calendar.fromWorkout');
+  static const templateChoices = Key('History.calendar.templates');
+  static const workoutChoices = Key('History.calendar.workouts');
+  static Key makeFromTemplate(String id) => Key('History.calendar.template.$id');
+  static Key makeFromWorkout(String id) => Key('History.calendar.workout.$id');
   static const historyCalendar = Key('History.calendar');
   static const historyViewSetting = Key('Settings.historyView');
   static const historyDensitySetting = Key('Settings.historyDensity');

@@ -15,9 +15,10 @@ class HistoryPage extends StatefulWidget {
   final VoidCallback? onEntryReview;
 
   /// Logs a workout that already happened (#530), by default in the last
-  /// hour, or [on] a day tapped in the calendar (#618). Without it, or with
-  /// the feature off, History has no way in.
-  final void Function({DateTime? on})? onLogPastWorkout;
+  /// hour, or [on] a day tapped in the calendar (#618), empty or as [fill]
+  /// makes it once its times are known (#737). Without it, or with the feature
+  /// off, History has no way in.
+  final void Function({DateTime? on, PastWorkout Function(PastWorkout past)? fill})? onLogPastWorkout;
   final VoidCallback onOpenActiveWorkout;
   final Widget? detail;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
@@ -390,13 +391,9 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                         pages: Scrolls.of(context).historyMonthController,
                         // not while everything is on the device already, nor
                         // while the server can't be asked
-                        older:
-                            !whole &&
-                            (RemoteAccess.of(context).allowed ||
-                                workouts.loadingMoreHistory ||
-                                workouts.historyPageError),
+                        older: _olderToCome(workouts, backfill, RemoteAccess.of(context)),
                         onLogOn: switch (widget.onLogPastWorkout) {
-                          final void Function({DateTime? on}) log => (day) => log(on: day),
+                          final log? => (day) => log(on: day),
                           null => null,
                         },
                         onStartWorkout: () async {
@@ -408,6 +405,11 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                           }
                           if (mounted && workouts.hasActiveWorkout) widget.onNewWorkout();
                         },
+                        sources: {
+                          if (Templates.watch(context).any(_fills)) .template,
+                          if (byMonth.values.any((month) => month.any(_fills))) .workout,
+                        },
+                        onMakeFrom: _makeFrom,
                       ),
                     ),
                   );
@@ -450,6 +452,61 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
         floatingActionButtonLocation: .endFloat,
       ),
     );
+  }
+
+  /// Makes a workout from what is picked of [source] (#737): started now, or
+  /// logged [on] a past day.
+  Future<void> _makeFrom(DaySource source, {DateTime? on}) async {
+    switch (source) {
+      case .template:
+        final template = await _pickTemplate(context);
+        if (template != null && mounted) await _makeFromTemplate(template, on);
+      case .workout:
+        final workout = await _pickWorkout(context);
+        if (workout != null && mounted) await _makeFromWorkout(workout, on);
+    }
+  }
+
+  Future<void> _makeFromTemplate(Template template, DateTime? on) async {
+    if (on != null) {
+      // read now: this page may be gone by the time the times are picked
+      final layout = layoutOf(context, template);
+      final exercises = Exercises.of(context);
+      return widget.onLogPastWorkout?.call(
+        on: on,
+        // laid out once its time is known: a program's session as it stood
+        // then, with the plan it was asked to be
+        fill: (past) {
+          final (:workout, :plan) = layout(past.workout.start);
+          // the pinned notes a start brings
+          for (final exercise in workout) {
+            exercise.note ??= exercises.noteFor(exercise.exercise.id);
+          }
+          return past.holding(workout, logTo: (context, workout) => logToHistory(context, workout, plan: plan));
+        },
+      );
+    }
+    final started = await startWorkoutOverActive(
+      context,
+      () => startPlanned(
+        context,
+        Workouts.of(context),
+        template,
+        source: programIdShown(context, template.programId) ? .program : .template,
+      ),
+    );
+    if (started && mounted) widget.onNewWorkout();
+  }
+
+  Future<void> _makeFromWorkout(Workout workout, DateTime? on) async {
+    if (on != null) {
+      return widget.onLogPastWorkout?.call(on: on, fill: (past) => past.holding(repeatOf(workout)));
+    }
+    final started = await startWorkoutOverActive(
+      context,
+      () => Workouts.of(context).startWorkout(source: .repeat, template: repeatOf(workout)),
+    );
+    if (started && mounted) widget.onNewWorkout();
   }
 
   @override

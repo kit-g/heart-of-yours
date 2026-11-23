@@ -116,7 +116,8 @@ ticket doesn't say:
   an offer has to come at the moment the feature would help, and nothing in
   ordinary use marked a lifter who logs after the fact. History's calendar
   (#618) made that moment: **tapping an empty past day is the signal**. The
-  first such tap asks; yes goes straight on to logging that day, and after a
+  first such tap asks; yes goes on to logging that day (straight on, or through the ways to: empty,
+  from a template, as a copy of a past workout, #737), and after a
   no the tap does nothing. Off, the Workout tab and History have no way in;
   a workout already logged this way is an ordinary workout.
 - Coaching (#566) is two features, because it is two people's choices. **Coach

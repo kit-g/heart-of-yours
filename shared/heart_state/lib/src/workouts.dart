@@ -660,11 +660,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// With the remote leg closed the local copy is the result, left unsynced
   /// exactly like a save that met a dead network — [syncPendingWorkouts] picks
   /// it up once there is an account to push it to.
-  Future<Workout> saveWorkout(Workout active) async {
+  ///
+  /// [plan] is kept with the mirror's row, before anything is sent: it is the
+  /// account's that saved it, however long the server takes.
+  Future<Workout> saveWorkout(Workout active, {WorkoutPlan? plan}) async {
     final uid = userId;
     if (uid == null) return active;
     active.removeEmptySets();
     await _localService.finishWorkout(active, uid);
+    if (plan != null) await _keepPlan(active.id, uid, plan);
 
     _workouts[active.id] = active;
     _historyWritten();
@@ -697,12 +701,13 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// for an account (an anonymous session keeps it for [syncPendingWorkouts]),
   /// and every reader of [historyRevision]. Returns it as it ended up.
   ///
-  /// Only what was done goes in: see [LoggedAfter.keepDone].
-  Future<Workout> logWorkout(Workout workout) async {
+  /// Only what was done goes in: see [LoggedAfter.keepDone]. [plan] is what a
+  /// program's session was asked to be, kept and sent as [startWorkout]'s is.
+  Future<Workout> logWorkout(Workout workout, {WorkoutPlan? plan}) async {
     assert(workout.end != null, 'A workout logged after the fact has ended');
     assert(workout.id != _activeWorkoutId, 'The active workout finishes, it is not logged');
     workout.keepDone();
-    final saved = await saveWorkout(workout);
+    final saved = await saveWorkout(workout, plan: plan);
     // counted after the save, as a finish is: what history holds
     analytics?.workoutLogged(
       exerciseCount: saved.length,

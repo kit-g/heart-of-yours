@@ -12,6 +12,8 @@ part of 'history.dart';
 /// today starts or logs one, and a trained day can take another. Logging is
 /// Past workouts' (#530), so it is there only while that is on; the first
 /// tap of an empty past day while it was never asked about is its one ask.
+/// Either can be made from a template, or from a past workout (#737): from
+/// those of [sources].
 ///
 /// [paged], it shows one month at a time instead, swiped sideways (#739): the
 /// same months and days, under a header that names the month and goes to
@@ -59,6 +61,12 @@ class HistoryCalendar extends StatefulWidget {
   /// Starts a new workout now (#618). Offered on today, while none is going.
   final VoidCallback? onStartWorkout;
 
+  /// What a workout can be made from (#737): only what there is any of.
+  final Set<DaySource> sources;
+
+  /// Makes a workout from a source: started now, or logged [on] a past day.
+  final void Function(DaySource source, {DateTime? on})? onMakeFrom;
+
   const new({
     super.key,
     required this.byMonth,
@@ -72,6 +80,8 @@ class HistoryCalendar extends StatefulWidget {
     this.older,
     this.onLogOn,
     this.onStartWorkout,
+    this.sources = const {},
+    this.onMakeFrom,
   });
 
   @override
@@ -133,11 +143,10 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
   }
 
   /// The first tap of an empty past day while Past workouts was never asked
-  /// about: the ask, and on yes straight on to logging that day.
-  Future<void> _askThenLog(DateTime day) async {
+  /// about: the ask. On yes the day goes on to logging, or to the ways to.
+  Future<bool> _ask() {
     final L(:pastWorkoutsOfferTitle, :pastWorkoutsOfferBody) = L.of(context);
-    final log = widget.onLogOn;
-    final yes = await askInSheet(
+    return askInSheet(
       context,
       .pastWorkouts,
       icon: Icons.more_time_rounded,
@@ -147,7 +156,6 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
       acceptKey: AppKeys.pastWorkoutsAccept,
       declineKey: AppKeys.pastWorkoutsDecline,
     );
-    if (yes && mounted) log?.call(day);
   }
 
   @override
@@ -158,13 +166,19 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
     final logs = preferences.isOn(.pastWorkouts);
     final actions = (
       open: widget.onTapWorkout,
-      log: logs ? widget.onLogOn : null,
+      log: widget.onLogOn,
+      logs: logs && widget.onLogOn != null,
       askToLog: switch ((widget.onLogOn, !logs && preferences.shouldOffer(.pastWorkouts))) {
-        (void Function(DateTime) _, true) => _askThenLog,
+        (void Function(DateTime) _, true) => _ask,
         _ => null,
       },
       // one workout at a time: with one going, its button is the way there
       start: workouts.hasActiveWorkout ? null : widget.onStartWorkout,
+      sources: switch (widget.onMakeFrom) {
+        Function _ => widget.sources,
+        null => const <DaySource>{},
+      },
+      makeFrom: widget.onMakeFrom,
       // while older pages are still to come, a day before the oldest workout
       // here may hold one not fetched yet: not a day to log on as if empty
       loadedFrom: switch ((workouts.hasMoreHistory, byMonth.values.lastOrNull?.lastOrNull)) {
@@ -420,26 +434,40 @@ const _dotsADay = 3;
 /// What a day can do besides show what it holds (#618), the same for every
 /// day of the calendar:
 /// - [open]: open one of its workouts;
-/// - [log]: log a workout on it, while Past workouts is on;
-/// - [askToLog]: the one ask for Past workouts, then logging, while it was
-///   never asked about — offered only by an empty past day;
+/// - [log]: log a workout on it, while [logs]: Past workouts is on;
+/// - [askToLog]: the one ask for Past workouts, while it was never asked
+///   about — offered only by an empty past day, which logs on a yes;
 /// - [start]: start a workout now, while none is going — offered only today;
+/// - [makeFrom]: either, from one of [sources] (#737): what starts today, and
+///   is logged on a day past, so it is there where starting or logging is;
 /// - [loadedFrom]: while older history is still to come, the first day known
 ///   whole. A day before it may hold workouts not fetched yet, so it never
 ///   offers logging as if it were empty.
 typedef _DayActions = ({
   void Function(Workout)? open,
   void Function(DateTime day)? log,
-  Future<void> Function(DateTime day)? askToLog,
+  bool logs,
+  Future<bool> Function()? askToLog,
   VoidCallback? start,
+  Set<DaySource> sources,
+  void Function(DaySource source, {DateTime? on})? makeFrom,
   DateTime? loadedFrom,
 });
 
 /// Where a day falls, against today.
 enum _When { past, today, future }
 
+/// What a workout can be made from, on a calendar day (#737).
+enum DaySource {
+  /// One of the lifter's own templates.
+  template,
+
+  /// A workout already in their history, copied into a new one.
+  workout,
+}
+
 /// What a day's list offers after its workouts.
-enum _Extra { start, log }
+enum _Extra { start, log, fromTemplate, fromWorkout }
 
 /// One day of the calendar.
 ///
@@ -451,7 +479,9 @@ enum _Extra { start, log }
 /// - one workout, and nothing else to offer: opens it;
 /// - anything more — several workouts, today's start, another to log — opens
 ///   a short list: the workouts earliest first, then the rest;
-/// - an empty past day logs a workout on it, or asks first (see [_DayActions]);
+/// - an empty past day logs a workout on it, or asks first (see [_DayActions]):
+///   straight away, unless there is something to make it from (#737), which
+///   opens the list too;
 /// - a future day does nothing: planned days are #430's.
 class _CalendarDay extends StatelessWidget {
   final DateTime date;
@@ -495,11 +525,40 @@ class _CalendarDay extends StatelessWidget {
     null => true,
   };
 
-  List<_Extra> get _extras {
-    return [
-      if (when == .today && actions.start != null) .start,
-      if (when != .future && _known && actions.log != null) .log,
+  /// What the day offers beside its workouts, logging among it while [logs].
+  List<_Extra> _extras({required bool logs}) {
+    final starts = when == .today && actions.start != null;
+    final takesLog = logs && when != .future && _known;
+    // today it starts, whether or not today takes a log too
+    final makes = switch (when) {
+      .today => starts,
+      .past => takesLog,
+      .future => false,
+    };
+    final sources = [
+      if (makes && actions.sources.contains(DaySource.template)) _Extra.fromTemplate,
+      if (makes && actions.sources.contains(DaySource.workout)) _Extra.fromWorkout,
     ];
+    // right after what they are another way to do
+    return [
+      if (starts) ...[.start, ...sources],
+      if (takesLog) .log,
+      if (!starts) ...sources,
+    ];
+  }
+
+  /// An empty past day taking a log: at once, or from a list of the ways to.
+  void _log(BuildContext context) {
+    switch (_extras(logs: true)) {
+      case [.log]:
+        actions.log?.call(date);
+      case final extras:
+        _choose(context, extras);
+    }
+  }
+
+  Future<void> _askThenLog(BuildContext context, Future<bool> Function() ask) async {
+    if (await ask() && context.mounted) _log(context);
   }
 
   Future<void> _choose(BuildContext context, List<_Extra> extras) async {
@@ -557,11 +616,15 @@ class _CalendarDay extends StatelessWidget {
             key: switch (extra) {
               .start => AppKeys.calendarStart,
               .log => AppKeys.calendarLog,
+              .fromTemplate => AppKeys.calendarFromTemplate,
+              .fromWorkout => AppKeys.calendarFromWorkout,
             },
             Text(switch ((extra, sessions.isEmpty)) {
               (.start, _) => l.startNewWorkout,
               (.log, true) => l.calendarLogOnDay,
               (.log, false) => l.calendarAddAnother,
+              (.fromTemplate, _) => l.calendarFromTemplate,
+              (.fromWorkout, _) => l.calendarFromWorkout,
             }),
           ),
       ],
@@ -573,7 +636,21 @@ class _CalendarDay extends StatelessWidget {
         actions.start?.call();
       case _Extra.log:
         actions.log?.call(date);
+      case _Extra.fromTemplate:
+        _makeFrom(.template);
+      case _Extra.fromWorkout:
+        _makeFrom(.workout);
     }
+  }
+
+  void _makeFrom(DaySource source) {
+    actions.makeFrom?.call(
+      source,
+      on: switch (when) {
+        .past => date,
+        .today || .future => null,
+      },
+    );
   }
 
   @override
@@ -583,7 +660,7 @@ class _CalendarDay extends StatelessWidget {
       .today => l.calendarDayToday(label),
       .past || .future => label,
     };
-    final extras = _extras;
+    final extras = _extras(logs: actions.logs);
     final open = actions.open;
     // one choice of what the day says and does
     final (String spoken, VoidCallback? onTap) = switch ((sessions, extras)) {
@@ -597,10 +674,10 @@ class _CalendarDay extends StatelessWidget {
       ([], _) when filteredOut => (day, null),
       ([], _) => switch (when) {
         .past when !_known => (day, null),
-        .past => switch ((actions.log, actions.askToLog)) {
-          (final log?, _) => (l.calendarDayLog(day), () => log(date)),
-          (null, final ask?) => (l.calendarDayLog(day), () => ask(date)),
-          (null, null) => (day, null),
+        .past => switch ((actions.logs, actions.askToLog)) {
+          (true, _) => (l.calendarDayLog(day), () => _log(context)),
+          (false, final ask?) => (l.calendarDayLog(day), () => _askThenLog(context, ask)),
+          (false, null) => (day, null),
         },
         .today when extras.isNotEmpty => (day, () => _choose(context, extras)),
         .today || .future => (day, null),

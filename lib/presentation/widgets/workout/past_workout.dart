@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:heart/core/utils/goals.dart';
+import 'package:heart/core/utils/shown_programs.dart';
+import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
 import 'package:heart/presentation/widgets/goals/goals.dart' show runningPrograms;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
@@ -26,6 +29,14 @@ class PastWorkout {
   final String? loggingFor;
 
   const new({required this.workout, this.logTo = logToHistory, this.loggingFor});
+
+  /// [filled] at this one's times, and for whom it is.
+  PastWorkout holding(Workout filled, {LogTo? logTo}) {
+    filled
+      ..start = workout.start
+      ..end = workout.end;
+    return PastWorkout(workout: filled, logTo: logTo ?? this.logTo, loggingFor: loggingFor);
+  }
 }
 
 /// Asks when a past workout was, then hands [open] the workout to fill in
@@ -80,7 +91,9 @@ Future<void> logPastWorkout(
 /// device's health store under the finish's own rules
 /// (`docs/2026-09-05.health-data.md`): written only where the write is granted,
 /// asked only of a user who has engaged with health. Nothing waits on any of it.
-Future<void> logToHistory(BuildContext context, Workout workout) async {
+///
+/// [plan] is what a program's session was asked to be, kept as a start keeps it.
+Future<void> logToHistory(BuildContext context, Workout workout, {WorkoutPlan? plan}) async {
   // read now: the editor this context belongs to is on its way out
   final workouts = Workouts.of(context);
   final health = Health.of(context);
@@ -91,8 +104,36 @@ Future<void> logToHistory(BuildContext context, Workout workout) async {
   final exercises = Exercises.of(context);
   final firstWeekday = Preferences.of(context).firstWeekday;
   final running = runningPrograms(context);
+  final programs = Programs.of(context);
+  final grows = programIdShown(context, workout.programId);
+  final session = switch (workout.templateId) {
+    final String id => Templates.of(context).lookup(id),
+    null => null,
+  };
+  // read before the save drops the exercises nobody ticked, as a finish's are
+  final slots = slotsOf(workout, session);
+  final among = [...workouts.history];
 
-  final saved = await workouts.logWorkout(workout);
+  final saving = workouts.logWorkout(workout, plan: plan);
+  // a program moves by a session logged after the fact too, unless something
+  // moved it since (#737), and says so: no Done page does here
+  if (grows) {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final l = L.of(context);
+    final router = HeartRouter.of(context);
+    Future<void> grow() async {
+      final moves = await programs.growPast(workout, among: among, session: session, slots: slots, after: saving);
+      final program = programs.lookup(workout.programId ?? '');
+      if (program == null || moves.every((move) => move.base == null && move.action == null)) return;
+      messenger?.snack(
+        l.pastLogMovedProgram(program.name),
+        action: SnackBarAction(label: l.programOpen, onPressed: () => router.pushProgramOver(program.id!)),
+      );
+    }
+
+    unawaited(grow());
+  }
+  final saved = await saving;
 
   // "last time" and the picker's recency read the mirror
   unawaited(previous.init());

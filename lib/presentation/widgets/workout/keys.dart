@@ -37,6 +37,8 @@ class WorkoutDetailKeys {
   /// Past workouts (#530): the way in beside an empty workout.
   static const logPastWorkout = Key('WorkoutDetail.logPastWorkout');
   static const finishWorkout = Key('WorkoutDetail.finishWorkout');
+  static const saveUnticked = Key('WorkoutDetail.saveUnticked');
+  static const discardUnticked = Key('WorkoutDetail.discardUnticked');
   static const timer = Key('WorkoutDetail.timer');
   static const resume = Key('WorkoutDetail.resume');
   static const keepGoing = Key('WorkoutDetail.keepGoing');
