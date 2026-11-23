@@ -15,6 +15,9 @@ on:
       # what the phone sends, which WatchTests reads (#466)
       - 'lib/core/env/watch.dart'
       - 'test/fixtures/watch/**'
+      # the Rust library the app's build compiles, on a Mac only here and in a
+      # tag's TestFlight deploy
+      - 'shared/sealbox/**'
       - '.github/workflows/watch.yml'
   workflow_dispatch: { }
 
