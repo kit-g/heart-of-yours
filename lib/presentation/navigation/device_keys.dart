@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:heart/core/utils/lifecycle.dart';
 import 'package:heart/presentation/navigation/pushes.dart';
 import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
 import 'package:heart/presentation/widgets/compare_codes.dart';
@@ -34,7 +35,7 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
   /// listened to: it also speaks at a sign-out, while the account is still
   /// there to start keys for (#734).
   Upsync? _upsync;
-  late final AppLifecycleListener _lifecycle;
+  late final AppReturns _lifecycle;
 
   /// The account keys run for, or null while they don't.
   String? _running;
@@ -48,8 +49,8 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
   @override
   void initState() {
     super.initState();
-    _lifecycle = AppLifecycleListener(
-      onResume: _onResume,
+    _lifecycle = AppReturns(
+      _onReturn,
       onShow: () => _approval?.inFront = true,
       onHide: () => _approval?.inFront = false,
     );
@@ -147,7 +148,7 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
     unawaited(showCodeComparison(root, approval, asked));
   }
 
-  void _onResume() {
+  void _onReturn() {
     if (_running != null) unawaited(DeviceKeys.of(context).refresh());
   }
 
