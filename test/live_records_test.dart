@@ -9,6 +9,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/push_note.dart' show pushNoteBottom;
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -221,6 +222,26 @@ void main() {
       await tester.pumpTimes(40);
       expect(note, findsNothing);
       expect(pills, findsOneWidget);
+    });
+
+    testWidgets("with a push's note over the sheet (#724), the note sits under it, and back once it goes", (
+      tester,
+    ) async {
+      await start(tester, answer: .on);
+      await tester.tapByKey(WorkoutDetailKeys.doneFor(bench.id, 2));
+      await tester.pumpTimes();
+      final alone = tester.getRect(note).top;
+
+      // where a push's note reaches down to: well into the sheet
+      final reach = alone + 60;
+      pushNoteBottom.value = reach;
+      addTearDown(() => pushNoteBottom.value = null);
+      await tester.pumpTimes(2);
+      expect(tester.getRect(note).top, moreOrLessEquals(reach + 8, epsilon: 1));
+
+      pushNoteBottom.value = null;
+      await tester.pumpTimes(2);
+      expect(tester.getRect(note).top, moreOrLessEquals(alone, epsilon: 1));
     });
 
     testWidgets('off: as if never built, and nothing read', (tester) async {

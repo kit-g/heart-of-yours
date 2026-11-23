@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:heart/core/env/push.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart' show ClientsPage;
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -15,6 +14,7 @@ import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
 import 'support/harness.dart';
+import 'support/push_client.dart';
 
 /// The push client (#567) and its settings (#554): opt-in through the
 /// coaching switches, so with both off nothing reaches FCM or the server, and
@@ -23,13 +23,13 @@ void main() {
   late MockLocalDatabase db;
   late MockApi api;
   late MockCdn cdn;
-  late _FakeClient client;
+  late FakePushClient client;
 
   setUp(() {
     db = MockLocalDatabase();
     api = MockApi();
     cdn = MockCdn();
-    client = _FakeClient();
+    client = FakePushClient();
     stubStartup(db, api);
     when(api.getConnections()).thenAnswer((_) async => []);
     when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
@@ -378,7 +378,7 @@ void main() {
 
     verify(api.getProgram('p1')).called(1);
     verifyNever(api.getPrograms());
-    expect(client.calls, isNot(contains('show')), reason: 'a silent push shows nothing');
+    expect(find.byKey(AppKeys.pushNote), findsNothing, reason: 'a silent push shows nothing');
   });
 
   testWidgets("a silent push that someone's devices changed reads that person's devices (#555)", (tester) async {
@@ -390,7 +390,7 @@ void main() {
     await tester.pumpTimes();
 
     verify(api.getCryptoDevices(userId: 'dana')).called(1);
-    expect(client.calls, isNot(contains('show')), reason: 'a silent push shows nothing');
+    expect(find.byKey(AppKeys.pushNote), findsNothing, reason: 'a silent push shows nothing');
   });
 
   testWidgets(
@@ -434,18 +434,9 @@ void main() {
       await tester.pumpTimes();
 
       verify(api.getKeyQueue(deviceId)).called(1);
-      expect(client.calls, isNot(contains('show')), reason: 'a silent push shows nothing');
+      expect(find.byKey(AppKeys.pushNote), findsNothing, reason: 'a silent push shows nothing');
     },
   );
-
-  testWidgets('a visible push in front is shown by the app, with its title alone', (tester) async {
-    await pump(tester, {'feature-yourCoach': 'on'});
-
-    client.arrivals.add((push: Push.of({'topic': 'coaching.message', 'threadId': 't1'})!, title: 'Dana messaged you'));
-    await tester.pumpTimes();
-
-    expect(client.calls, contains('show coaching.message Dana messaged you'));
-  });
 
   testWidgets("a coach's tap on an accepted invitation opens Coaching's clients", (tester) async {
     // the server's copy of the account, with the entitlement: it arrives
@@ -666,68 +657,4 @@ void main() {
       expect(find.text('Retry'), findsOneWidget);
     });
   });
-}
-
-class _FakeClient implements PushClient {
-  final calls = <String>[];
-  final newTokens = StreamController<String>.broadcast();
-  final arrivals = StreamController<({Push push, String? title})>.broadcast();
-  final taps = StreamController<Push>.broadcast();
-  final pending = <Push>[];
-
-  /// Holds [createChannels] until completed, when set.
-  Completer<void>? channelsMade;
-
-  /// Holds [start] until completed, when set.
-  Completer<void>? tokenMade;
-
-  @override
-  Stream<String> get tokens => newTokens.stream;
-
-  @override
-  Stream<({Push push, String? title})> get arrived => arrivals.stream;
-
-  @override
-  Stream<Push> get opened => taps.stream;
-
-  @override
-  Future<String?> start() async {
-    calls.add('start');
-    await tokenMade?.future;
-    return 'fcm-1';
-  }
-
-  @override
-  Future<bool> stop() async {
-    calls.add('stop');
-    return true;
-  }
-
-  @override
-  Future<Push?> launchedBy() async => null;
-
-  @override
-  Future<List<Push>> takePending() async {
-    final taken = [...pending];
-    pending.clear();
-    return taken;
-  }
-
-  @override
-  Future<void> createChannels({required String comments, required String messages, required String coaching}) async {
-    calls.add('channels $comments $messages $coaching');
-    await channelsMade?.future;
-  }
-
-  @override
-  Future<void> deleteChannels() async => calls.add('delete channels');
-
-  @override
-  Future<void> show(Push push, {required String title}) async => calls.add('show ${push.topic} $title');
-
-  @override
-  Future<bool> askPermission({Analytics? analytics}) async {
-    calls.add('ask');
-    return true;
-  }
 }

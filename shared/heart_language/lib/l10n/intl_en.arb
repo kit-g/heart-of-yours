@@ -6272,5 +6272,11 @@
   "historyFilterFromDay": "From {day}",
   "@historyFilterFromDay": {"description": "Chip for History's filter: workouts from {day} on; {day} is a formatted date, 'Nov 3, 2026' (#740)", "type": "text", "placeholders": {"day": {"type": "String"}}},
   "historyFilterUntilDay": "Until {day}",
-  "@historyFilterUntilDay": {"description": "Chip for History's filter: workouts up to and including {day}; {day} is a formatted date, 'Nov 3, 2026' (#740)", "type": "text", "placeholders": {"day": {"type": "String"}}}
+  "@historyFilterUntilDay": {"description": "Chip for History's filter: workouts up to and including {day}; {day} is a formatted date, 'Nov 3, 2026' (#740)", "type": "text", "placeholders": {"day": {"type": "String"}}},
+  "pushNoteMessage": "{name} messaged you",
+  "@pushNoteMessage": {"description": "The in-app note for a message that arrived with the app open (#724). {name} is who wrote: a coach, or a client", "type": "text", "placeholders": {"name": {}}},
+  "pushNoteProgramReceived": "{name} sent you a program",
+  "@pushNoteProgramReceived": {"description": "The in-app note for a program a coach sent, arriving with the app open (#724), over the program's name. {name} is the coach", "type": "text", "placeholders": {"name": {}}},
+  "pushNoteProgramChanged": "{name} changed {program}",
+  "@pushNoteProgramChanged": {"description": "The in-app note when a coach changed a program they sent, arriving with the app open (#724). {name} is the coach, {program} the program's name", "type": "text", "placeholders": {"name": {}, "program": {}}}
 }
