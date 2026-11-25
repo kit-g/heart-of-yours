@@ -392,11 +392,11 @@ abstract final class AppKeys {
   static const musclePickerRole = Key('MusclePicker.role');
   static const musclePickerFigures = Key('MusclePicker.figures');
 
-  /// The picker's offer to create an exercise named after a search that
-  /// found nothing (#529).
   /// The line above the exercise list when the library couldn't be loaded.
   static const libraryUnavailable = ValueKey('libraryUnavailable');
 
+  /// The picker's offer to create an exercise named after a search that
+  /// found nothing (#529).
   static const pickerCreateExercise = Key('ExercisePicker.createExercise');
   static const settingsPickerGrouping = Key('Settings.pickerGrouping');
 

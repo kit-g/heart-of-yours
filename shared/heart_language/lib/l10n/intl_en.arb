@@ -6303,6 +6303,6 @@
   "@pushNoteProgramReceived": {"description": "The in-app note for a program a coach sent, arriving with the app open (#724), over the program's name. {name} is the coach", "type": "text", "placeholders": {"name": {}}},
   "pushNoteProgramChanged": "{name} changed {program}",
   "@pushNoteProgramChanged": {"description": "The in-app note when a coach changed a program they sent, arriving with the app open (#724). {name} is the coach, {program} the program's name", "type": "text", "placeholders": {"name": {}, "program": {}}},
-  "exerciseLibraryUnavailable": "The exercise library couldn't be loaded. Your own exercises are here.",
-  "@exerciseLibraryUnavailable": {"description": "Above the exercise list when the exercise library failed to download: only the user's own exercises are shown, with a button to try again (#723)", "type": "text", "placeholders": {}}
+  "exerciseLibraryUnavailable": "The exercise library couldn't be loaded.",
+  "@exerciseLibraryUnavailable": {"description": "Above the exercise list when the exercise library failed to download: only the user's own exercises, if any, are shown under it, with a button to try again (#723)", "type": "text", "placeholders": {}}
 }

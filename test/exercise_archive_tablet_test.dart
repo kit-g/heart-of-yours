@@ -2,11 +2,14 @@
 // archive where the library was, an exercise of it opens beside it, and taking
 // one out of the archive lands back in a library that has it. Drives the real
 // app, as exercises_tab_switch_test.dart does.
+import 'dart:io' show SocketException;
+
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -34,7 +37,7 @@ void main() {
     when(db.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
   });
 
-  Future<HeartRouter> launch(WidgetTester tester, Size size) async {
+  Future<HeartRouter> launch(WidgetTester tester, Size size, {bool openTab = true}) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -52,8 +55,10 @@ void main() {
     // the startup chain never resolves under a widget test's clock
     await Exercises.of(tester.element(find.byType(MaterialApp))).init();
     await tester.pumpTimes();
-    await tester.tapByKey(AppKeys.exercisesStack);
-    await tester.pumpTimes();
+    if (openTab) {
+      await tester.tapByKey(AppKeys.exercisesStack);
+      await tester.pumpTimes();
+    }
     return router;
   }
 
@@ -105,6 +110,45 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('a re-tap of the tab backs out a step: the exercise, then the archive', (tester) async {
+        final router = await launch(tester, size);
+        await showArchived(tester);
+        await tester.tap(find.text(curl.name));
+        await tester.pumpTimes();
+
+        await tester.tapByKey(AppKeys.exercisesStack);
+        await tester.pumpTimes();
+        expect(router.config.state.uri.path, '/exercises/archived');
+        expect(find.byType(ExerciseDetailPage), findsNothing);
+
+        await tester.tapByKey(AppKeys.exercisesStack);
+        await tester.pumpTimes();
+        expect(router.config.state.uri.path, '/exercises');
+        expect(find.byType(ExerciseArchive), findsNothing);
+      });
+
+      testWidgets('an archived exercise this device lacks falls back to the archive', (tester) async {
+        final router = await launch(tester, size);
+
+        router.config.go('/exercises/archived/someone-elses-lift');
+        await tester.pumpTimes();
+
+        expect(router.config.state.uri.path, '/exercises/archived');
+        expect(find.byType(ExerciseArchive), findsOneWidget);
+        expect(find.byType(ExerciseDetailPage), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets("the archive keeps the library's way into the workout under way", (tester) async {
+        await launch(tester, size);
+        await showArchived(tester);
+
+        expect(
+          find.descendant(of: find.byType(ExerciseArchive), matching: find.byType(WorkoutTimerFloatingButton)),
+          findsOneWidget,
+        );
+      });
+
       testWidgets('taking out one of several returns to the archive, the last to the library', (tester) async {
         await launch(tester, size);
         await showArchived(tester);
@@ -140,5 +184,23 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpTimes();
     expect(find.byType(ExerciseArchive), findsOneWidget);
+  });
+
+  testWidgets('without the library, a link to an own exercise opens at once, not after the wait for it', (
+    tester,
+  ) async {
+    final mine = Exercise(name: 'My Press', category: .dumbbell, target: .arms, isMine: true);
+    when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [mine]));
+    when(cdn.getExerciseLibrary(cached: anyNamed('cached'))).thenThrow(const SocketException('offline'));
+    final router = await launch(tester, const Size(390, 844), openTab: false);
+    final exercises = Exercises.of(tester.element(find.byType(MaterialApp)));
+    expect(exercises.libraryUnavailable, isTrue);
+
+    router.config.go('/exercises/${mine.id}');
+    // well under the ten seconds the route would otherwise wait
+    await tester.pumpTimes(5);
+
+    expect(find.byType(ExerciseDetailPage), findsOneWidget);
+    expect(router.config.state.uri.path, '/exercises/${mine.id}');
   });
 }

@@ -681,6 +681,17 @@ void main() {
       expect(probe.notifications, 1);
     });
 
+    test('init keeps a workout started before it ran, rather than the stored one (#723)', () async {
+      await sut.startWorkout(source: .blank, name: 'Live');
+      final live = sut.activeWorkout;
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => Workout(name: 'Stored'));
+
+      await sut.init();
+
+      expect(sut.activeWorkout, same(live));
+      expect(sut.hasResolvedActiveWorkout, isTrue);
+    });
+
     test('init resolves the active workout even when there is none, and a sign-out forgets it', () async {
       when(local.getActiveWorkout('u1')).thenAnswer((_) async => null);
       expect(sut.hasResolvedActiveWorkout, isFalse, reason: 'not loaded yet is not "none"');

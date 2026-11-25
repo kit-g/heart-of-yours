@@ -1458,18 +1458,21 @@ void main() {
       'own': true,
     });
     final bench = ex('Bench Press');
+    final arrived = ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp);
 
-    void stalls() {
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) => Completer<Never>().future);
+    /// The next download, answered when the test says.
+    Completer<(CatalogLibrary?, CatalogStamp)> held() {
+      final download = Completer<(CatalogLibrary?, CatalogStamp)>();
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) => download.future);
+      return download;
     }
 
-    void answers() {
-      when(library.getLibrary(cached: anyNamed('cached')))
-          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
-    }
+    void fails() => when(library.getLibrary(cached: anyNamed('cached'))).thenThrow(const ServerFailed());
 
-    test('is given up on, reported, and the own exercises are read all the same', () async {
-      stalls();
+    void answers() => when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => arrived);
+
+    test('is waited for no longer than the wait, reported, and the own exercises are read all the same', () async {
+      held();
       when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[curl]);
       final errors = <Object?>[];
       final exercises = build(libraryWait: wait, onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
@@ -1483,8 +1486,28 @@ void main() {
       expect(errors.single, isA<LibraryStalled>());
     });
 
+    test('a download that lands after the wait is taken, with the own leg read again over it', () async {
+      final download = held();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      var ran = 0;
+      exercises.whenInitialized('u1', () => ran++);
+      clearInteractions(remote);
+      clearInteractions(preferences);
+
+      download.complete(arrived);
+      await pumpEventQueue();
+
+      expect(exercises.isInitialized, isTrue);
+      expect(exercises.libraryUnavailable, isFalse);
+      expect(exercises.lookup(bench.id), isNotNull);
+      expect(ran, 1);
+      verify(remote.getOwnExercises()).called(1);
+      verify(preferences.getExercisePreferences()).called(1);
+    });
+
     test('one that fails outright reads the same, and is not a stall', () async {
-      when(library.getLibrary(cached: anyNamed('cached'))).thenThrow(const ServerFailed());
+      fails();
       final errors = <Object?>[];
       final exercises = build(libraryWait: wait, onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
 
@@ -1494,17 +1517,18 @@ void main() {
       expect(errors.whereType<LibraryStalled>(), isEmpty);
     });
 
-    test('a retry that brings it puts the catalog in, and says so', () async {
-      stalls();
+    test('a retry after a failure downloads afresh, reads the own leg, and puts the catalog in', () async {
+      fails();
       final exercises = build(libraryWait: wait)..userId = 'u1';
       await exercises.init();
       answers();
+      clearInteractions(remote);
       var told = 0;
       exercises.addListener(() => told++);
 
       final retry = exercises.retryLibrary();
       expect(exercises.retryingLibrary, isTrue);
-      expect(identical(exercises.retryLibrary(), retry), isTrue, reason: 'one download at a time');
+      expect(identical(exercises.retryLibrary(), retry), isTrue, reason: 'one retry at a time');
 
       expect(await retry, isTrue);
       expect(exercises.isInitialized, isTrue);
@@ -1512,73 +1536,108 @@ void main() {
       expect(exercises.retryingLibrary, isFalse);
       expect(exercises.lookup(bench.id), isNotNull);
       expect(told, greaterThanOrEqualTo(2));
-      verify(library.getLibrary(cached: anyNamed('cached'))).called(2);
+      verify(remote.getOwnExercises()).called(1);
     });
 
-    test('a retry that stalls again leaves it unavailable', () async {
-      stalls();
+    test('a retry joins the download under way rather than start another', () async {
+      final download = held();
+      final exercises = build(libraryWait: const Duration(seconds: 5))..userId = 'u1';
+      final init = exercises.init();
+      await pumpEventQueue();
+      final retry = exercises.retryLibrary();
+
+      download.complete(arrived);
+      expect(await init, isTrue);
+      expect(await retry, isTrue);
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
+    });
+
+    test('a retry that waits out the download lets go of it, and the next starts afresh', () async {
+      final first = held();
       final exercises = build(libraryWait: wait)..userId = 'u1';
       await exercises.init();
 
-      expect(await exercises.retryLibrary(), isFalse);
+      expect(await exercises.retryLibrary(), isFalse, reason: 'joined the hung one, and waited it out');
       expect(exercises.libraryUnavailable, isTrue);
       expect(exercises.retryingLibrary, isFalse);
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
+
+      answers();
+      expect(await exercises.retryLibrary(), isTrue);
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
+      // the first landing late changes nothing more
+      first.complete(arrived);
+      await pumpEventQueue();
+      expect(exercises.isInitialized, isTrue);
     });
 
     test('a retry the session ended under changes nothing for the next one', () async {
-      stalls();
+      fails();
       final exercises = build(libraryWait: wait)..userId = 'u1';
       await exercises.init();
-      final download = Completer<(CatalogLibrary?, CatalogStamp)>();
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) => download.future);
+      final download = held();
 
       final retry = exercises.retryLibrary();
       exercises
         ..onSignOut()
         ..userId = 'u2';
-      download.complete(((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
+      download.complete(arrived);
 
       expect(await retry, isFalse);
       expect(exercises.isInitialized, isFalse);
+      expect(exercises.lookup(bench.id), isNull, reason: "the last session's download is not the next one's");
       expect(exercises.libraryUnavailable, isFalse, reason: "the next session's init hasn't run");
       expect(exercises.retryingLibrary, isFalse);
     });
 
-    test('what waits for the catalog runs when a retry brings it, once, and not for another session', () async {
-      stalls();
+    test(
+      'what waits for the catalog runs once, the first asked of a session only, and never another session',
+      () async {
+        fails();
+        final exercises = build(libraryWait: wait)..userId = 'u1';
+        await exercises.init();
+        var first = 0;
+        var second = 0;
+        var stale = 0;
+        exercises
+          ..whenInitialized('u1', () => first++)
+          // the same session asking again, as a resync does
+          ..whenInitialized('u1', () => second++)
+          // asked by a session that has ended
+          ..whenInitialized('u0', () => stale++);
+        expect(first, 0);
+
+        answers();
+        await exercises.retryLibrary();
+        expect(first, 1);
+        // a later notification runs nothing again
+        exercises.showingMine = true;
+        expect(first, 1);
+        expect(second, 0);
+        expect(stale, 0);
+        // once in, a new ask runs at once
+        exercises.whenInitialized('u1', () => second++);
+        expect(second, 1);
+      },
+    );
+
+    test('what waits is dropped when the session ends first, and the next session may wait', () async {
+      fails();
       final exercises = build(libraryWait: wait)..userId = 'u1';
       await exercises.init();
       var ran = 0;
-      var stale = 0;
-      exercises
-        ..whenInitialized(owner: 'u1', () => ran++)
-        // asked by a session that has ended
-        ..whenInitialized(owner: 'u0', () => stale++);
-      expect(ran, 0);
-
-      answers();
-      await exercises.retryLibrary();
-      expect(ran, 1);
-      // a later notification runs nothing again
-      exercises.showingMine = true;
-      expect(ran, 1);
-      expect(stale, 0);
-    });
-
-    test('what waits is dropped when the session ends first', () async {
-      stalls();
-      final exercises = build(libraryWait: wait)..userId = 'u1';
-      await exercises.init();
-      var ran = 0;
-      exercises.whenInitialized(owner: 'u1', () => ran++);
+      exercises.whenInitialized('u1', () => ran++);
 
       exercises
         ..onSignOut()
         ..userId = 'u2';
-      answers();
       await exercises.init();
-      expect(exercises.isInitialized, isTrue);
+      var next = 0;
+      exercises.whenInitialized('u2', () => next++);
+      answers();
+      await exercises.retryLibrary();
       expect(ran, 0);
+      expect(next, 1);
     });
 
     test('nothing to retry once the catalog is in', () async {

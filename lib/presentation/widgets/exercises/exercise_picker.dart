@@ -547,9 +547,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-/// The way out of a search that found nothing: an exercise of the user's own
-/// by that name, through the new-exercise dialog with the name filled in
-/// (#529).
 /// Above the list when the library couldn't be downloaded (#723): what is
 /// missing, and a way to try again; while that runs, a spinner in its place.
 class _LibraryUnavailable extends StatelessWidget {
@@ -595,6 +592,9 @@ class _LibraryUnavailable extends StatelessWidget {
   }
 }
 
+/// The way out of a search that found nothing: an exercise of the user's own
+/// by that name, through the new-exercise dialog with the name filled in
+/// (#529).
 class _CreateExercise extends StatelessWidget {
   final String name;
   final void Function(String name) onCreate;

@@ -15,12 +15,17 @@ class ExerciseArchive extends StatelessWidget {
   /// over it.
   final Widget? leading;
 
+  /// Into the workout under way, where the archive is the tab's page on a
+  /// tablet: its button stays, as on the library it took the place of.
+  final VoidCallback? onOpenActiveWorkout;
+
   const new({
     super.key,
     required this.onExercise,
     this.selectedId,
     this.detail,
     this.leading,
+    this.onOpenActiveWorkout,
   });
 
   @override
@@ -60,6 +65,11 @@ class ExerciseArchive extends StatelessWidget {
             detail: detail,
           ),
         ),
+        floatingActionButton: switch (onOpenActiveWorkout) {
+          final VoidCallback open => WorkoutTimerFloatingButton(onPressed: open),
+          null => null,
+        },
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     };
   }

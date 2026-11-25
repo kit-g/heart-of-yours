@@ -639,6 +639,10 @@ RouteBase _exercisesRoute() {
                   detail: opened,
                   leading: BackButton(onPressed: context.closeExerciseDetail),
                   onExercise: (exercise, _) => context.goToArchivedExerciseDetail(exercise.id),
+                  onOpenActiveWorkout: () {
+                    HapticFeedback.mediumImpact();
+                    context.goToActiveWorkout();
+                  },
                 ),
             ],
           ),
@@ -677,11 +681,24 @@ RouteBase _exercisesRoute() {
             routes: [
               GoRoute(
                 path: ':exerciseId',
+                // one this device doesn't have (a link from elsewhere, a
+                // catalog still loading) falls back to the archive, as the
+                // library's detail falls back to the library
+                redirect: (context, state) async {
+                  final exercises = Exercises.of(context);
+                  await _exercisesReady(exercises);
+                  return switch (state.pathParameters['exerciseId']) {
+                    String id when exercises.lookup(id) != null => null,
+                    _ => _exerciseArchivePath,
+                  };
+                },
                 builder: (context, state) {
                   final exerciseId = state.pathParameters['exerciseId']!;
+                  // gone since the redirect: the archive's own page shows
                   final exercise = Exercises.of(context).lookup(exerciseId);
+                  if (exercise == null) return const SizedBox.shrink();
                   return ExerciseDetailPage(
-                    exercise: exercise!,
+                    exercise: exercise,
                     // in a pane beside the archive, as the library's is
                     leading: switch (LayoutProvider.of(context)) {
                       .compact => null,
@@ -692,8 +709,15 @@ RouteBase _exercisesRoute() {
                         icon: const Icon(Icons.close),
                       ),
                     },
-                    onTapWorkout: (_) async {},
                     initialTab: state.uri.queryParameters['tab'],
+                    // as the library's detail does: a workout of its history,
+                    // a history moved, and adding it to the workout under way
+                    onHistoryMoved: (target) => context.replaceExerciseDetail(target.id),
+                    onTapWorkout: (workoutId) {
+                      return Workouts.of(context).fetchWorkout(workoutId).then<void>((_) {
+                        if (context.mounted) context.goToExerciseWorkout(exerciseId, workoutId);
+                      });
+                    },
                     onShareExercise: (exercise, {tab}) {
                       _onShareExercise(context, exercise, tab);
                     },
@@ -701,6 +725,7 @@ RouteBase _exercisesRoute() {
                     onTapAlternative: (alternative) {
                       context.goToExerciseDetail(alternative.id);
                     },
+                    onAddToWorkout: (exercise) => _onAddToWorkout(context, exercise),
                     onArchived: context.closeExerciseDetail,
                     onUnarchived: () => _leaveUnarchivedInTab(context, exercise),
                   );
@@ -1106,16 +1131,19 @@ RouteBase _galleryRoute() {
 /// Resolves once the exercise catalog is initialized, or gives up after a
 /// timeout so a failed init (no network, empty catalog) cannot hold the
 /// navigation forever — the caller then falls back to the exercise list.
+/// A catalog that went on without the library (#723) is as ready as it will
+/// be: the user's own exercises are in it.
 Future<void> _exercisesReady(Exercises exercises) {
-  if (exercises.isInitialized) return Future<void>.value();
+  bool ready() => exercises.isInitialized || exercises.libraryUnavailable;
+  if (ready()) return Future<void>.value();
 
-  final ready = Completer<void>();
+  final done = Completer<void>();
   void onChange() {
-    if (exercises.isInitialized && !ready.isCompleted) ready.complete();
+    if (ready() && !done.isCompleted) done.complete();
   }
 
   exercises.addListener(onChange);
-  return ready.future
+  return done.future
       .timeout(const Duration(seconds: 10), onTimeout: () {})
       .whenComplete(() => exercises.removeListener(onChange));
 }

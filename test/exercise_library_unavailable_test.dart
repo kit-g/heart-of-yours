@@ -2,6 +2,7 @@
 // own exercises under a line that says so, instead of a spinner for good, and
 // trying again brings the library in.
 import 'dart:async';
+import 'dart:io' show SocketException;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/scrolls.dart';
@@ -35,7 +36,8 @@ void main() {
     when(service.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [curl]));
     when(service.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
     library = MockExerciseLibraryService();
-    when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) => Completer<Never>().future);
+    // failed outright: no download left running for a retry to join
+    when(library.getLibrary(cached: anyNamed('cached'))).thenThrow(const SocketException('offline'));
     final catalog = MockLocalCatalogService();
     when(catalog.getCatalogStamp()).thenAnswer((_) async => null);
     when(catalog.getSearchGlossary()).thenAnswer((_) async => null);

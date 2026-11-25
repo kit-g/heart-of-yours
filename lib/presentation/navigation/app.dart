@@ -1189,7 +1189,7 @@ Future<void> _initApp(
         // templates and workouts persist rows with a foreign key onto
         // `exercises.name`. Running them against an empty catalog trades a
         // reported failure for a constraint violation, so they wait for one.
-        (_) => exercises.whenInitialized(owner: owner, () {
+        (_) => exercises.whenInitialized(owner, () {
           // since workouts initialization looks up exercises
           // in `Exercises`, we must chain these calls this way
           workouts.init().then<void>(
@@ -1405,7 +1405,7 @@ void _resync(BuildContext context, Upsync upsync) {
   exercises
       .init(locale: languageTag())
       .then<void>(
-        (_) => exercises.whenInitialized(owner: owner, () {
+        (_) => exercises.whenInitialized(owner, () {
           _initTrainingData(
             workouts: workouts,
             previous: previous,
