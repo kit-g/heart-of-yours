@@ -144,6 +144,40 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
     }
   }
 
+  /// Reads what changed in each of [programIds], copies of [studentId]'s, for
+  /// what the client did to them since the coach last looked (#745). Reported,
+  /// not thrown: a copy whose read failed reads as unchanged.
+  Future<void> readChanges(String studentId, Iterable<String> programIds) async {
+    if (!_remote.allowed) return;
+    Future<void> read(String programId) async {
+      try {
+        _changes[programId] = await _service.getClientProgramChanges(studentId, programId);
+      } catch (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+      }
+    }
+
+    await programIds.map(read).wait;
+    notifyListeners();
+  }
+
+  /// When [studentId] last changed [programId] themselves, as far as its
+  /// changes were read: a change of the coach's never counts. Null with none.
+  DateTime? changedBy(String studentId, String programId) {
+    return (_changes[programId] ?? const <ProgramChange>[])
+        .where((change) => change.actorId == studentId && _byHand.contains(change.kind))
+        .map((change) => change.at)
+        .fold<DateTime?>(null, (latest, at) {
+          return switch (latest) {
+            final DateTime latest when !at.isAfter(latest) => latest,
+            _ => at,
+          };
+        });
+  }
+
+  /// What a person does to a copy by hand, as heart-api#476 counts it.
+  static const _byHand = {'edit', 'create', 'delete', 'revert'};
+
   /// Whether the coach may change [programId]: a copy they sent, while the
   /// connection lasts. Their client's own program they only see.
   bool mayChange(String programId) => !_refused.contains(programId) && (_editable[programId] ?? false);

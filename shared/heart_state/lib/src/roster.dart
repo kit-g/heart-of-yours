@@ -69,7 +69,11 @@ enum ClientReason {
   gap,
 
   /// The program is near its end.
-  ending;
+  ending,
+
+  /// Changed a program the coach sent them (heart-api#476). Never the
+  /// coach's own change.
+  changed;
 
   static ClientReason? of(String name) {
     return values.where((each) => each.name == name).firstOrNull;
@@ -77,7 +81,7 @@ enum ClientReason {
 
   /// Reasons a look clears, since they count only what came after it. The
   /// others clear when they stop being true, which only the server knows.
-  bool get clearsOnReview => this == lighter || this == note;
+  bool get clearsOnReview => this == lighter || this == note || this == changed;
 }
 
 /// What a client of the coach did, by the `kind` the server gives it, open
@@ -397,9 +401,9 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
   /// counting. Throws what the service threw, and changes nothing here until
   /// the server has agreed.
   ///
-  /// A note or a lighter session clears at once; a gap or an ending holds
-  /// until it stops being true, and a reason this build doesn't know is left
-  /// to the server too. The client moves down among those without reasons.
+  /// A note, a lighter session or a changed program clears at once; a gap or
+  /// an ending holds until it stops being true, and a reason this build
+  /// doesn't know is left to the server too. The client moves down among those without reasons.
   Future<void> markReviewed(ClientSummary client) async {
     await _service.markReviewed(client.connectionId, at: DateTime.timestamp());
     analytics?.clientReviewed();
@@ -409,7 +413,7 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
       for (final reason in _clients[index].reasons)
         if (!(ClientReason.of(reason)?.clearsOnReview ?? false)) reason,
     ];
-    _clients[index] = _withReasons(_clients[index], reasons);
+    _clients[index] = _copy(_clients[index], reasons: reasons);
     // the server's order, but those with reasons first, as it sorts them
     final sorted = [
       ..._clients.where((each) => each.reasons.isNotEmpty),
@@ -462,12 +466,30 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
     return all;
   }
 
-  static ClientSummary _withReasons(ClientSummary client, List<String> reasons) {
+  /// [named], the connection as the server names it now, on the row of the
+  /// client it is with, live, paused or former (#753).
+  void renamed(Connection named) {
+    var changed = false;
+    for (final list in [_clients, _former]) {
+      final index = list.indexWhere((each) => each.connectionId == named.connectionId);
+      if (index == -1) continue;
+      list[index] = _copy(list[index], name: named.name, namedByYou: named.namedByYou);
+      changed = true;
+    }
+    if (changed) notifyListeners();
+  }
+
+  /// [client] with what is given changed, and everything else as it was.
+  static ClientSummary _copy(ClientSummary client, {List<String>? reasons, String? name, bool? namedByYou}) {
     return ClientSummary(
       connectionId: client.connectionId,
       studentId: client.studentId,
-      name: client.name,
+      name: switch (namedByYou) {
+        null => client.name,
+        bool() => name,
+      },
       avatar: client.avatar,
+      namedByYou: namedByYou ?? client.namedByYou,
       status: client.status,
       acceptedAt: client.acceptedAt,
       programId: client.programId,
@@ -476,7 +498,8 @@ class Roster with ChangeNotifier implements SignOutStateSentry {
       programWeeks: client.programWeeks,
       recent: client.recent,
       lastTrainedAt: client.lastTrainedAt,
-      reasons: reasons,
+      reasons: reasons ?? client.reasons,
+      assistant: client.assistant,
     );
   }
 }

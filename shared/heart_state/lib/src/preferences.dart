@@ -30,6 +30,7 @@ const _watchReadings = 'watchReadings';
 const _coachingSpace = 'coachingSpace';
 const _coachName = 'coachName';
 const _programSeen = 'programSeen';
+const _programChanged = 'programChanged';
 const _coachFingerprint = 'coachFingerprint';
 const _pendingInvitation = 'pendingInvitation';
 const _coachPauseOwed = 'coachPauseOwed';
@@ -143,6 +144,24 @@ class Preferences with ChangeNotifier {
 
   Future<bool>? setProgramSeen(String programId, DateTime at) {
     final write = _prefs?.setString('$_programSeen-$programId', at.toUtc().toIso8601String());
+    notifyListeners();
+    return write;
+  }
+
+  /// When a coach's client last changed [programId], a copy the coach sent
+  /// them, as far as this device has read (#745): with [programSeen] later,
+  /// the coach has looked since. Per device, and null until a change is read.
+  DateTime? programChanged(String programId) {
+    return switch (_prefs?.getString('$_programChanged-$programId')) {
+      final String at => DateTime.tryParse(at),
+      null => null,
+    };
+  }
+
+  /// Keeps [at] for [programId], unless what is kept is later already.
+  Future<bool>? setProgramChanged(String programId, DateTime at) {
+    if (programChanged(programId) case final DateTime kept when !at.isAfter(kept)) return null;
+    final write = _prefs?.setString('$_programChanged-$programId', at.toUtc().toIso8601String());
     notifyListeners();
     return write;
   }

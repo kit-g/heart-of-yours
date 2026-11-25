@@ -771,4 +771,21 @@ void main() {
       expect(notified, 1);
     });
   });
+
+  group("when a coach's client last changed a copy (#745)", () {
+    test('keeps the latest, per program, and an older one changes nothing', () async {
+      await sut.init(locale: const Locale('en', 'US'));
+      var notified = 0;
+      sut.addListener(() => notified++);
+
+      expect(sut.programChanged('p1'), isNull);
+      await sut.setProgramChanged('p1', DateTime.utc(2026, 11, 20));
+      await sut.setProgramChanged('p1', DateTime.utc(2026, 11, 18));
+      await sut.setProgramChanged('p1', DateTime.utc(2026, 11, 20));
+
+      expect(sut.programChanged('p1'), DateTime.utc(2026, 11, 20));
+      expect(sut.programChanged('p2'), isNull);
+      expect(notified, 1);
+    });
+  });
 }

@@ -30,7 +30,7 @@ class _ClientNotesPageState extends State<ClientNotesPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(switch (client) {
-          final ClientSummary client => l.coachingNotesOn(_clientName(l, client)),
+          final ClientSummary client => l.coachingNotesOn(clientName(l, client)),
           null => l.coachingNotes,
         }),
         actions: [

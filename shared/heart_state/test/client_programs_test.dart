@@ -93,6 +93,13 @@ class _Server implements ClientProgramService {
   }
 }
 
+class _FailingChanges extends _Server {
+  @override
+  Future<List<ProgramChange>> getClientProgramChanges(String studentId, String programId, {String? since}) async {
+    throw const ServerFailed();
+  }
+}
+
 void main() {
   late _Server server;
   late ClientPrograms programs;
@@ -113,6 +120,42 @@ void main() {
     expect(programs.status('p1'), CoachingStatus.loaded);
     expect(programs.view('p1')?.sessions.single.id, 's1');
     expect(programs.changes('p1').map((each) => each.id), ['c2', 'c1']);
+  });
+
+  test("when the client last changed a copy by hand: never the coach's change, nor the library's (#745)", () async {
+    ProgramChange change(String id, String? actor, String kind, int day) {
+      return ProgramChange(
+        id: id,
+        programId: 'p1',
+        actorId: actor,
+        kind: kind,
+        revision: day,
+        at: DateTime.utc(2026, 11, day),
+      );
+    }
+
+    server.changes.addAll([
+      change('c1', 'sam', 'edit', 1),
+      change('c2', 'sam', 'create', 3),
+      change('c3', 'coach', 'edit', 5),
+      change('c4', null, 'library_update', 6),
+    ]);
+    expect(programs.changedBy('sam', 'p1'), isNull, reason: 'nothing read yet');
+
+    await programs.readChanges('sam', ['p1']);
+
+    expect(programs.changedBy('sam', 'p1'), DateTime.utc(2026, 11, 3));
+    expect(programs.changedBy('sam', 'p2'), isNull);
+  });
+
+  test('a copy whose changes fail to read reads as unchanged, and is reported', () async {
+    final errors = <Object>[];
+    programs = ClientPrograms(service: _FailingChanges(), onError: (error, {stacktrace}) => errors.add(error));
+
+    await programs.readChanges('sam', ['p1']);
+
+    expect(programs.changedBy('sam', 'p1'), isNull);
+    expect(errors, hasLength(1));
   });
 
   test("a session saved from the revision read lands, and the next starts from the server's", () async {

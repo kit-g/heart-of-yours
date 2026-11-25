@@ -454,6 +454,11 @@ abstract final class AppKeys {
   /// sessions, a save that didn't land and its answers, and its history.
   static const coachingClientProgram = Key('Coaching.clientProgram');
   static Key coachingClientCopy(String programId) => Key('Coaching.clientCopy.$programId');
+  static Key coachingCopyChanged(String programId) => Key('Coaching.copyChanged.$programId');
+  static const coachingClientRename = Key('Coaching.clientRename');
+  static const coachingClientNameField = Key('Coaching.clientNameField');
+  static const coachingClientNameSave = Key('Coaching.clientNameSave');
+  static const coachingClientNameRemove = Key('Coaching.clientNameRemove');
   static Key coachingCopySession(String id) => Key('Coaching.copySession.$id');
   static Key coachingCopySessionMenu(String id) => Key('Coaching.copySessionMenu.$id');
   static const coachingCopyAddSession = Key('Coaching.copyAddSession');

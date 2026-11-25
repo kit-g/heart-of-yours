@@ -34,6 +34,17 @@ mixin _ConnectionRoutes on Requests {
     return Connection.fromJson(json);
   }
 
+  /// The coach's own name for the client of a coach connection, which only the
+  /// coach reads; null takes it back, to the invitation's name or the client's
+  /// own. Answers the connection as the coach now reads it.
+  Future<Connection> nameConnection(String connectionId, String? name) async {
+    final (json, _) = switch (name) {
+      final String name => await put(Router.connectionName(connectionId), body: {'name': name}),
+      null => await delete(Router.connectionName(connectionId)),
+    };
+    return Connection.fromJson(json);
+  }
+
   /// Ends a connection for both people. The row stays, as `severed`.
   Future<void> endConnection(String connectionId) => delete(Router.connection(connectionId));
 

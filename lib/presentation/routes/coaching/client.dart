@@ -38,7 +38,7 @@ class ClientPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(switch (client) {
-          final ClientSummary client => _clientName(l, client),
+          final ClientSummary client => clientName(l, client),
           null => '',
         }),
       ),
@@ -145,6 +145,19 @@ class _ClientViewState extends State<_ClientView> {
     }
   }
 
+  /// Reads the copies of a client whose row says they changed one, and keeps
+  /// on this device when they last did, per copy, for its card (#745).
+  Future<void> _keepChanges(Roster roster, ClientPrograms programs) async {
+    final client = roster.client(widget.connectionId);
+    if (client == null || !client.reasons.contains(ClientReason.changed.name)) return;
+    final preferences = Preferences.of(context);
+    final ids = [for (final (id, _, _) in _programsOf(client, programs.managed(client.studentId))) id];
+    await programs.readChanges(client.studentId, ids);
+    for (final id in ids) {
+      if (programs.changedBy(client.studentId, id) case final DateTime at) await preferences.setProgramChanged(id, at);
+    }
+  }
+
   Future<void> _load() async {
     if (!mounted) return;
     final roster = Roster.of(context);
@@ -173,6 +186,9 @@ class _ClientViewState extends State<_ClientView> {
         if (messages.status == .idle) await messages.load();
       case final ClientSummary client:
         await (roster.load(), roster.loadRecord(client.studentId), programs.loadManaged(client.studentId)).wait;
+        // what they changed, kept for the cards until each is opened (#745):
+        // read while the row still says so, before the look below clears it
+        if (mounted) await _keepChanges(roster, programs);
         // opening them is looking at them (#686): what a look clears goes,
         // decided on the row as just read, once what they did is on screen.
         // Not from under a workout opened over them, which they never saw
@@ -274,6 +290,7 @@ class _ClientViewState extends State<_ClientView> {
                     false => AppKeys.coachingClientCopy(id),
                   },
                   client: client,
+                  id: id,
                   name: name,
                   following: id == client.programId,
                   waiting: waiting,
@@ -382,7 +399,7 @@ class _ClientHeader extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final reasons = _reasonsInWords(l, client);
     return Padding(
-      padding: const .fromLTRB(16, 16, 16, 0),
+      padding: const .fromLTRB(16, 16, 4, 0),
       child: Row(
         crossAxisAlignment: .start,
         spacing: 16,
@@ -393,7 +410,7 @@ class _ClientHeader extends StatelessWidget {
               crossAxisAlignment: .start,
               spacing: 6,
               children: [
-                if (named) Text(_clientName(l, client), style: textTheme.titleLarge),
+                if (named) Text(clientName(l, client), style: textTheme.titleLarge),
                 ...switch (former) {
                   true => [
                     Text(
@@ -411,6 +428,13 @@ class _ClientHeader extends StatelessWidget {
                 },
               ],
             ),
+          ),
+          // the coach's own name for them, current or former (#753)
+          IconButton(
+            key: AppKeys.coachingClientRename,
+            tooltip: l.coachingClientRename,
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => _rename(context, client),
           ),
         ],
       ),
@@ -694,6 +718,7 @@ class _ClientActions extends StatelessWidget {
 /// its name, and for the one they follow, where in it they are (#686).
 class _ProgramCard extends StatelessWidget {
   final ClientSummary client;
+  final String id;
   final String name;
 
   /// The one they follow, rather than a copy waiting or put aside.
@@ -704,6 +729,7 @@ class _ProgramCard extends StatelessWidget {
   const new({
     super.key,
     required this.client,
+    required this.id,
     required this.name,
     required this.following,
     required this.waiting,
@@ -718,6 +744,13 @@ class _ProgramCard extends StatelessWidget {
       // weeks behind them: the week they are in is still to train
       ClientSummary(programWeek: final int week, programWeeks: final int weeks) when following && weeks > 0 =>
         ((week - 1) / weeks).clamp(0.0, 1.0),
+      _ => null,
+    };
+    // what they changed since the coach last opened it here (#745)
+    final preferences = Preferences.watch(context);
+    final changed = switch ((preferences.programChanged(id), preferences.programSeen(id))) {
+      (final DateTime at, final DateTime seen) when !at.isAfter(seen) => null,
+      (final DateTime at, _) => at,
       _ => null,
     };
     return Padding(
@@ -751,6 +784,22 @@ class _ProgramCard extends StatelessWidget {
                         Text(
                           l.coachingCopyWaiting,
                           style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      if (changed case final DateTime at)
+                        Row(
+                          key: AppKeys.coachingCopyChanged(id),
+                          spacing: 6,
+                          children: [
+                            Icon(Icons.edit_note_rounded, size: 18, color: colorScheme.tertiary),
+                            Expanded(
+                              child: Text(
+                                l.coachingCopyChangedByThem(
+                                  DateFormat.MMMEd(l.localeName).add_jm().format(at.toLocal()),
+                                ),
+                                style: textTheme.bodyMedium?.copyWith(color: colorScheme.tertiary),
+                              ),
+                            ),
+                          ],
                         ),
                       if (progress case final double progress)
                         LinearProgressIndicator(value: progress, borderRadius: const .all(.circular(4))),

@@ -304,7 +304,7 @@ class _CoachProgramPageState extends State<CoachProgramPage> {
       final deliveries = await library.send(program.id, picked);
       String name(String connectionId) {
         return switch (roster.clients.where((each) => each.connectionId == connectionId).firstOrNull) {
-          final ClientSummary client => _clientName(l, client),
+          final ClientSummary client => clientName(l, client),
           null => l.coachingClientUnnamed,
         };
       }
@@ -504,7 +504,7 @@ class _Holders extends StatelessWidget {
       final client = roster.clients.where((each) => each.connectionId == holder.connectionId).firstOrNull;
       return switch ((holder.studentName?.trim(), client)) {
         (final String name, _) when name.isNotEmpty => name,
-        (_, final ClientSummary client) => _clientName(l, client),
+        (_, final ClientSummary client) => clientName(l, client),
         _ => l.coachingClientUnnamed,
       };
     }
@@ -620,7 +620,7 @@ class _SendPickerState extends State<_SendPicker> {
                         key: AppKeys.coachingSendTo(client.connectionId),
                         contentPadding: const .symmetric(horizontal: 4),
                         secondary: Avatar(remote: client.avatar, radius: 18),
-                        title: Text(_clientName(l, client), maxLines: 1, overflow: .ellipsis),
+                        title: Text(clientName(l, client), maxLines: 1, overflow: .ellipsis),
                         subtitle: switch (held[client.connectionId]) {
                           final int version => Text(l.coachingProgramHasIt(version)),
                           null => null,

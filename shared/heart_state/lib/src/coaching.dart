@@ -24,6 +24,10 @@ abstract interface class CoachingService {
 
   Future<Connection> setConnectionStatus(String connectionId, ConnectionStatus status);
 
+  /// Gives the client of a coach connection the coach's own name for them, or
+  /// with null takes it back. Only the coach of it may.
+  Future<Connection> nameConnection(String connectionId, String? name);
+
   /// Ends it for both people. The server keeps the row, as `severed`.
   Future<void> endConnection(String connectionId);
 
@@ -212,6 +216,16 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
     final known = {for (final share in ConnectionShare.values) share.name};
     final kept = coach.shares.where((share) => !known.contains(share));
     _replace(await _service.setConnectionShares(_idOf(coach), {for (final share in shares) share.name, ...kept}));
+  }
+
+  /// Gives the client of [connectionId] the coach's own name for them (#753),
+  /// or with null takes it back: to the invitation's name, or else theirs.
+  /// Only the coach reads it. Throws what the service threw; answers the
+  /// connection as the server now names it, which [Roster.renamed] takes too.
+  Future<Connection> name(String connectionId, String? name) async {
+    final named = await _service.nameConnection(connectionId, name);
+    _replace(named);
+    return named;
   }
 
   /// Stops [connection]'s coach reading anything logged from now on. Either

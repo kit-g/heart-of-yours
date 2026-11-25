@@ -87,9 +87,10 @@ class UnreadBadge extends StatelessWidget {
 /// read as a back and forth.
 const threadWidth = 720.0;
 
-/// Who a conversation is with: the name the server holds for them, else the
-/// one [fallback] gives, else the one their connection carries, else the role
-/// they play for this person. Before the thread is read, [connectionId] says
+/// Who a conversation is with: the name their connection carries, which a
+/// name given since the threads were read changes at once (#753), else the
+/// one the thread holds, else the one [fallback] gives, else the role they
+/// play for this person. Before the thread is read, [connectionId] says
 /// which conversation it is.
 String threadName(BuildContext context, Thread? thread, {String? connectionId, String? fallback}) {
   final l = L.of(context);
@@ -111,7 +112,7 @@ bool _isCoach(BuildContext context, String? connectionId) {
 String? _knownName(BuildContext context, Thread? thread, {String? connectionId, String? fallback}) {
   final connection = thread?.connectionId ?? connectionId;
   final named = _connectionOf(context, connection)?.name;
-  return switch ((thread?.otherName?.trim(), fallback?.trim(), named?.trim())) {
+  return switch ((named?.trim(), thread?.otherName?.trim(), fallback?.trim())) {
     (final String name, _, _) when name.isNotEmpty => name,
     (_, final String name, _) when name.isNotEmpty => name,
     (_, _, final String name) when name.isNotEmpty => name,
@@ -131,8 +132,10 @@ List<Connection> coachesToWrite(Coaching coaching) {
   ];
 }
 
-/// A coach as their student names them: as their profile does now, else as
-/// their invitation did on this device.
+/// A coach as their student names them: as their connection does, which
+/// carries a name the student gave once the server keeps one (heart-api#480)
+/// and else what the coach goes by in Heart, else as their invitation did on
+/// this device. The one place a coach's name is decided.
 String coachName(BuildContext context, Connection coach) {
   return switch ((coach.name?.trim(), coach.connectionId)) {
     (final String name, _) when name.isNotEmpty => name,

@@ -38,6 +38,7 @@ import 'package:share_plus/share_plus.dart';
 
 part 'activity.dart';
 part 'client.dart';
+part 'client_name.dart';
 part 'client_program.dart';
 part 'clients.dart';
 part 'desk.dart';

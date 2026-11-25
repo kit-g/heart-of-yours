@@ -57,9 +57,14 @@ class _ClientProgramBodyState extends State<_ClientProgramBody> {
     if (!mounted) return;
     final roster = Roster.of(context);
     final programs = ClientPrograms.of(context);
+    final preferences = Preferences.of(context);
     if (roster.client(widget.connectionId) == null) await roster.load();
     if (roster.client(widget.connectionId) case final ClientSummary client) {
       await programs.open(client.studentId, widget.programId);
+      // the coach has seen what the client changed in it (#745)
+      if (programs.status(widget.programId) == .loaded) {
+        await preferences.setProgramSeen(widget.programId, DateTime.now());
+      }
     }
   }
 
@@ -130,7 +135,7 @@ class _CopyView extends StatelessWidget {
         if (programs.conflict(program.id!) case final ProgramConflict conflict)
           ProgramConflictCard(
             conflict: conflict,
-            name: _clientName(l, client),
+            name: clientName(l, client),
             onKeepTheirs: () => programs.dropMine(conflict.programId),
             onKeepMine: () => programs.keepMine(client.studentId, conflict.programId),
           ),
@@ -221,7 +226,7 @@ class _ChangeTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final who = switch (change.actorId) {
-      final String id when id == client.studentId => _clientName(l, client),
+      final String id when id == client.studentId => clientName(l, client),
       _ => l.coachingCopyYou,
     };
     final what = describeProgramChange(l, change, who: who);
@@ -237,7 +242,7 @@ class _ChangeTile extends StatelessWidget {
             final messenger = ScaffoldMessenger.of(context);
             final programs = ClientPrograms.of(context);
             // it changes what the client trains, so it says so first (#686)
-            if (!await _confirmPutBack(context, what: what, name: _clientName(l, client))) return;
+            if (!await _confirmPutBack(context, what: what, name: clientName(l, client))) return;
             try {
               await programs.revert(client.studentId, change.programId, change);
             } catch (error, stacktrace) {

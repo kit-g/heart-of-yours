@@ -630,6 +630,85 @@ void main() {
       when(api.getClientWorkoutPlan('sam', 'w1')).thenAnswer((_) async => plan);
     }
 
+    testWidgets('the coach names a client, and takes the name back (#753)', (tester) async {
+      withSam();
+      Connection named(String name, {required bool byYou}) => Connection(
+        targetId: 'sam',
+        role: .coach,
+        domain: .fitness,
+        status: .active,
+        createdAt: DateTime.utc(2026, 11, 1),
+        connectionId: 'c-sam',
+        name: name,
+        namedByYou: byYou,
+      );
+      when(api.nameConnection('c-sam', 'Sammy')).thenAnswer((_) async => named('Sammy', byYou: true));
+      when(api.nameConnection('c-sam', null)).thenAnswer((_) async => named('Sam', byYou: false));
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.coachingClientRename);
+      await tester.pumpTimes();
+      expect(find.text('Only you see this name.'), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientNameRemove), findsNothing, reason: 'Sam is the name they go by');
+      await tester.enterText(find.byKey(AppKeys.coachingClientNameField), '  Sammy ');
+      await tester.pump();
+      await tester.tapByKey(AppKeys.coachingClientNameSave);
+      await tester.pumpTimes();
+
+      verify(api.nameConnection('c-sam', 'Sammy')).called(1);
+      expect(find.text('Sammy'), findsWidgets, reason: 'the page and the roster under it');
+
+      await tester.tapByKey(AppKeys.coachingClientRename);
+      await tester.pumpTimes();
+      expect(
+        tester.widget<TextField>(find.byKey(AppKeys.coachingClientNameField)).controller?.text,
+        'Sammy',
+      );
+      await tester.tapByKey(AppKeys.coachingClientNameRemove);
+      await tester.pumpTimes();
+
+      verify(api.nameConnection('c-sam', null)).called(1);
+      expect(find.text('Sammy'), findsNothing);
+    });
+
+    testWidgets('a name that fails to save says so, and the dialog stays', (tester) async {
+      withSam();
+      when(api.nameConnection('c-sam', 'Sammy')).thenThrow(Exception('unavailable'));
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.coachingClientRename);
+      await tester.pumpTimes();
+      await tester.enterText(find.byKey(AppKeys.coachingClientNameField), 'Sammy');
+      await tester.pump();
+      await tester.tapByKey(AppKeys.coachingClientNameSave);
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingClientNameField), findsOneWidget);
+      expect(find.text('Unknown error occurred'), findsOneWidget);
+    });
+
+    testWidgets('two clients with no name at all are told apart by when they joined (#753)', (tester) async {
+      account(coach: true);
+      ClientSummary nameless(String id, DateTime since) {
+        return ClientSummary(connectionId: id, studentId: id, status: 'active', acceptedAt: since, reasons: const []);
+      }
+
+      when(api.getClients(former: false, cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          items: [nameless('a', DateTime.utc(2026, 11, 1, 12)), nameless('b', DateTime.utc(2026, 11, 8, 12))],
+          cursor: null,
+        ),
+      );
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      expect(find.text('Client since Nov 1, 2026'), findsOneWidget);
+      expect(find.text('Client since Nov 8, 2026'), findsOneWidget);
+    });
+
     testWidgets('on a phone, a client opens over the roster: their week, their workouts and skips', (tester) async {
       withSam();
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
@@ -1478,6 +1557,65 @@ void main() {
 
       expect(bases, [0, 1]);
       expect(find.byKey(AppKeys.coachingCopyConflict), findsNothing);
+    });
+    testWidgets("a copy they changed says so on its card, by when, until it's opened (#745)", (tester) async {
+      withCopy(
+        client: ClientSummary(
+          connectionId: 'c-sam',
+          studentId: 'sam',
+          name: 'Sam',
+          status: 'active',
+          programId: 'p1',
+          programName: 'Strength block',
+          programWeek: 2,
+          programWeeks: 4,
+          reasons: ['changed'],
+        ),
+      );
+      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      expect(
+        find.descendant(of: find.byKey(AppKeys.coachingClient('c-sam')), matching: find.text('Changed their program')),
+        findsOneWidget,
+        reason: 'the roster says why, as it says the rest',
+      );
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      // Sam's change, not the coach's later one
+      final at = DateFormat.MMMEd('en').add_jm().format(DateTime.utc(2026, 11, 9, 18).toLocal());
+      expect(find.text('Changed by them, $at'), findsOneWidget);
+      verify(api.markReviewed('c-sam', at: anyNamed('at'))).called(1);
+
+      await tester.tapByKey(AppKeys.coachingClientProgram);
+      await tester.pumpTimes();
+      await tester.pageBack();
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingCopyChanged('p1')), findsNothing, reason: 'opened since');
+    });
+
+    testWidgets("the coach's own change marks nothing, and with no reason the changes aren't read", (tester) async {
+      withCopy();
+      when(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since'))).thenAnswer(
+        (_) async => [
+          ProgramChange(
+            id: 'ch2',
+            programId: 'p1',
+            actorId: 'coach',
+            kind: 'edit',
+            revision: 1,
+            at: DateTime.utc(2026),
+          ),
+        ],
+      );
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingCopyChanged('p1')), findsNothing);
+      verifyNever(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since')));
     });
   });
 
