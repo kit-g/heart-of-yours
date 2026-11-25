@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/exercises.dart';
@@ -26,8 +28,12 @@ void main() {
 
   const stamp = (version: 'run-1', locale: 'en', etag: null);
 
-  Exercises build({void Function(dynamic error, {dynamic stacktrace})? onError}) {
+  Exercises build({
+    void Function(dynamic error, {dynamic stacktrace})? onError,
+    Duration libraryWait = const Duration(seconds: 30),
+  }) {
     return Exercises(
+      libraryWait: libraryWait,
       remoteService: remote,
       noteService: notes,
       remote: access,
@@ -1439,6 +1445,148 @@ void main() {
       final sut = withMoves();
       await expectLater(sut.moveHistory(ex('Squat'), bench), throwsStateError);
       expect(moves.mirrored, isEmpty);
+    });
+  });
+
+  group('a library that does not come (#723)', () {
+    const wait = Duration(milliseconds: 50);
+    final curl = Exercise.fromJson({
+      'id': 'id-curl',
+      'name': 'My Curl',
+      'category': 'Dumbbell',
+      'target': 'Arms',
+      'own': true,
+    });
+    final bench = ex('Bench Press');
+
+    void stalls() {
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) => Completer<Never>().future);
+    }
+
+    void answers() {
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
+    }
+
+    test('is given up on, reported, and the own exercises are read all the same', () async {
+      stalls();
+      when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[curl]);
+      final errors = <Object?>[];
+      final exercises = build(libraryWait: wait, onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
+
+      final populated = await exercises.init();
+
+      expect(populated, isFalse, reason: 'nothing the chained start-up can write against');
+      expect(exercises.isInitialized, isFalse);
+      expect(exercises.libraryUnavailable, isTrue);
+      expect(exercises.map((each) => each.id), [curl.id]);
+      expect(errors.single, isA<LibraryStalled>());
+    });
+
+    test('one that fails outright reads the same, and is not a stall', () async {
+      when(library.getLibrary(cached: anyNamed('cached'))).thenThrow(const ServerFailed());
+      final errors = <Object?>[];
+      final exercises = build(libraryWait: wait, onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
+
+      await exercises.init();
+
+      expect(exercises.libraryUnavailable, isTrue);
+      expect(errors.whereType<LibraryStalled>(), isEmpty);
+    });
+
+    test('a retry that brings it puts the catalog in, and says so', () async {
+      stalls();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      answers();
+      var told = 0;
+      exercises.addListener(() => told++);
+
+      final retry = exercises.retryLibrary();
+      expect(exercises.retryingLibrary, isTrue);
+      expect(identical(exercises.retryLibrary(), retry), isTrue, reason: 'one download at a time');
+
+      expect(await retry, isTrue);
+      expect(exercises.isInitialized, isTrue);
+      expect(exercises.libraryUnavailable, isFalse);
+      expect(exercises.retryingLibrary, isFalse);
+      expect(exercises.lookup(bench.id), isNotNull);
+      expect(told, greaterThanOrEqualTo(2));
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(2);
+    });
+
+    test('a retry that stalls again leaves it unavailable', () async {
+      stalls();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+
+      expect(await exercises.retryLibrary(), isFalse);
+      expect(exercises.libraryUnavailable, isTrue);
+      expect(exercises.retryingLibrary, isFalse);
+    });
+
+    test('a retry the session ended under changes nothing for the next one', () async {
+      stalls();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      final download = Completer<(CatalogLibrary?, CatalogStamp)>();
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) => download.future);
+
+      final retry = exercises.retryLibrary();
+      exercises
+        ..onSignOut()
+        ..userId = 'u2';
+      download.complete(((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
+
+      expect(await retry, isFalse);
+      expect(exercises.isInitialized, isFalse);
+      expect(exercises.libraryUnavailable, isFalse, reason: "the next session's init hasn't run");
+      expect(exercises.retryingLibrary, isFalse);
+    });
+
+    test('what waits for the catalog runs when a retry brings it, once, and not for another session', () async {
+      stalls();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      var ran = 0;
+      var stale = 0;
+      exercises
+        ..whenInitialized(owner: 'u1', () => ran++)
+        // asked by a session that has ended
+        ..whenInitialized(owner: 'u0', () => stale++);
+      expect(ran, 0);
+
+      answers();
+      await exercises.retryLibrary();
+      expect(ran, 1);
+      // a later notification runs nothing again
+      exercises.showingMine = true;
+      expect(ran, 1);
+      expect(stale, 0);
+    });
+
+    test('what waits is dropped when the session ends first', () async {
+      stalls();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      var ran = 0;
+      exercises.whenInitialized(owner: 'u1', () => ran++);
+
+      exercises
+        ..onSignOut()
+        ..userId = 'u2';
+      answers();
+      await exercises.init();
+      expect(exercises.isInitialized, isTrue);
+      expect(ran, 0);
+    });
+
+    test('nothing to retry once the catalog is in', () async {
+      await sut.init();
+      clearInteractions(library);
+
+      expect(await sut.retryLibrary(), isTrue);
+      verifyNever(library.getLibrary(cached: anyNamed('cached')));
     });
   });
 }

@@ -20,6 +20,19 @@ class const CatalogLanguageMismatch(final String stamped, final String? device) 
   String toString() => 'CatalogLanguageMismatch: library stamped $stamped holds no $stamped names (device $device)';
 }
 
+/// A download of the library that gave no answer within
+/// [Exercises.libraryWait] (#723). Its own type, not a `TimeoutException`:
+/// a request that fails outright offline is not worth a report, but one that
+/// hangs is what leaves a user with no library and nothing said.
+class LibraryStalled implements Exception {
+  final Duration waited;
+
+  const new(this.waited);
+
+  @override
+  String toString() => 'LibraryStalled: no answer in ${waited.inSeconds} s';
+}
+
 /// One locale file of the library: its exercises, and the words lifters search
 /// them by — abbreviations and muscle names — in that locale (#135).
 typedef CatalogLibrary = ({Iterable<Exercise> exercises, SearchGlossary glossary});
@@ -149,6 +162,20 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   bool isInitialized = false;
   String? userId;
 
+  /// How long a download of the library is waited for before [init] goes on
+  /// without it (#723): a network that never answers must not hold the user's
+  /// own exercises, or the start-up behind them, for good.
+  final Duration libraryWait;
+
+  /// Whether [init] ran and ended without the library: the user's own
+  /// exercises are all there is until [retryLibrary] brings it.
+  bool get libraryUnavailable => _libraryUnavailable;
+  bool _libraryUnavailable = false;
+
+  /// Whether [retryLibrary] is under way.
+  bool get retryingLibrary => _retry != null;
+  Future<bool>? _retry;
+
   /// The `Accept-Language` tag the catalog was last requested under. Localized
   /// copy is only as fresh as this tag — it is the cache key [onLocaleChanged]
   /// compares against.
@@ -183,6 +210,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     required this._preferenceService,
     this.analytics,
     RemoteAccess? remote,
+    this.libraryWait = const Duration(seconds: 30),
   }) : _remote = remote ?? RemoteAccess();
 
   /// Whether people outgrow the catalog. Absent in tests.
@@ -192,6 +220,8 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   void onSignOut() {
     userId = null;
     isInitialized = false;
+    _libraryUnavailable = false;
+    _retry = null;
     _catalogLocale = null;
     _exercises.clear();
     _glossary = .empty();
@@ -275,6 +305,10 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// from syncing. Populated means the library is in, or its sync went
   /// through — the user's own exercises alone are not a catalog the chained
   /// init can write against.
+  ///
+  /// The library is waited for no longer than [libraryWait] (#723). Without
+  /// it, the user's own exercises are still read and shown, and
+  /// [libraryUnavailable] says so until [retryLibrary] brings it.
   Future<bool> init({String? locale}) async {
     _catalogLocale = locale;
     // A session that ends mid-init (#671) has had its state cleared for the
@@ -315,9 +349,53 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     // the app may be gone by the time the catalog is read — a tree torn down
     // mid-init has no one to tell
     if (left()) return false;
-    isInitialized = synced || _exercises.values.any((each) => !each.isMine);
-    notifyListeners();
+    _settle(synced);
     return isInitialized;
+  }
+
+  /// Whether the catalog is one the chained start-up can write against, and
+  /// whether the library is missing from it.
+  void _settle(bool synced) {
+    isInitialized = synced || _exercises.values.any((each) => !each.isMine);
+    _libraryUnavailable = !isInitialized;
+    notifyListeners();
+  }
+
+  /// Runs [then] once the catalog of the session [owner] began is one the
+  /// chained start-up can write against: at once if it is, else when
+  /// [retryLibrary] or another [init] brings the library (#723). Never once
+  /// that session has ended.
+  void whenInitialized(VoidCallback then, {required String? owner}) {
+    if (_disposed || userId != owner) return;
+    if (isInitialized) return then();
+    void check() {
+      if (_disposed || userId != owner) return removeListener(check);
+      if (!isInitialized) return;
+      removeListener(check);
+      then();
+    }
+
+    addListener(check);
+  }
+
+  /// Downloads the library again, after [init] went on without it (#723).
+  /// Answers whether the catalog is in now; a second call while one runs
+  /// waits for that one. Nothing to do once the catalog is in.
+  Future<bool> retryLibrary() {
+    if (isInitialized) return Future.value(true);
+    if (_retry case final Future<bool> running) return running;
+    final owner = userId;
+    bool left() => _disposed || userId != owner;
+    final retry = () async {
+      final synced = await _step(_syncLibrary);
+      if (left()) return false;
+      _retry = null;
+      _settle(synced);
+      return isInitialized;
+    }();
+    _retry = retry;
+    notifyListeners();
+    return retry;
   }
 
   bool _disposed = false;
@@ -415,7 +493,11 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     };
     final cached = _vouched(stored);
 
-    final (library, stamp) = await _libraryService.getLibrary(cached: cached);
+    // bounded: a download that never answers is reported, and what it brings
+    // late is left for the next try
+    final (library, stamp) = await _libraryService
+        .getLibrary(cached: cached)
+        .timeout(libraryWait, onTimeout: () => throw LibraryStalled(libraryWait));
     switch (library) {
       case (:final exercises, :final glossary):
         final sorted = exercises.toList()..sort();

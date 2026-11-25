@@ -762,7 +762,9 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     }
     // a language change whose library fetch failed is retried here; the same
     // tag as the catalog's is a no-op (heart-of-yours#612)
-    Exercises.of(context).onLocaleChanged(languageTag());
+    final exercises = Exercises.of(context)..onLocaleChanged(languageTag());
+    // and a library start-up went on without (#723)
+    if (exercises.libraryUnavailable) exercises.retryLibrary();
   }
 
   /// Localized backend content (the exercise catalog) is served per request
@@ -1121,7 +1123,8 @@ Future<void> _initApp(
       },
     );
 
-    final Exercises(:isInitialized, :init) = Exercises.of(context);
+    final exercises = Exercises.of(context);
+    final Exercises(:isInitialized, :init) = exercises;
 
     final templates = Templates.of(context);
     final programs = Programs.of(context);
@@ -1180,14 +1183,13 @@ Future<void> _initApp(
       // never-granted permission simply yields nothing.
       health.init();
 
+      final owner = exercises.userId;
       init(locale: languageTag()).then<void>(
-        (hasExercises) {
-          // everything below reads or writes against the exercise catalog —
-          // templates and workouts persist rows with a foreign key onto
-          // `exercises.name`. Running them against an empty catalog trades a
-          // reported failure for a constraint violation, so stop here instead.
-          if (!hasExercises) return;
-
+        // everything below reads or writes against the exercise catalog —
+        // templates and workouts persist rows with a foreign key onto
+        // `exercises.name`. Running them against an empty catalog trades a
+        // reported failure for a constraint violation, so they wait for one.
+        (_) => exercises.whenInitialized(owner: owner, () {
           // since workouts initialization looks up exercises
           // in `Exercises`, we must chain these calls this way
           workouts.init().then<void>(
@@ -1209,7 +1211,7 @@ Future<void> _initApp(
             },
           );
           timers.init();
-        },
+        }),
       );
     }
   });
@@ -1399,21 +1401,23 @@ void _resync(BuildContext context, Upsync upsync) {
   final backfill = Backfill.of(context);
   Goals.of(context).init();
   Anomalies.of(context).init();
-  exercises.init(locale: languageTag()).then<void>(
-    (hasExercises) {
-      if (!hasExercises) return;
-      _initTrainingData(
-        workouts: workouts,
-        previous: previous,
-        stats: stats,
-        templates: templates,
-        programs: programs,
-        backfill: backfill,
-        upsync: upsync,
-        preferences: preferences,
+  final owner = exercises.userId;
+  exercises
+      .init(locale: languageTag())
+      .then<void>(
+        (_) => exercises.whenInitialized(owner: owner, () {
+          _initTrainingData(
+            workouts: workouts,
+            previous: previous,
+            stats: stats,
+            templates: templates,
+            programs: programs,
+            backfill: backfill,
+            upsync: upsync,
+            preferences: preferences,
+          );
+        }),
       );
-    },
-  );
 }
 
 Future<void> _initAppInfo(BuildContext context) {

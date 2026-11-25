@@ -307,13 +307,17 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               ),
             ),
           ),
-        switch (exercises.isInitialized) {
-          false => const SliverFillRemaining(
+        // without the library, the user's own exercises are listed under a
+        // line that says so and tries again (#723)
+        if (exercises case Exercises(isInitialized: false, libraryUnavailable: true))
+          SliverToBoxAdapter(child: _LibraryUnavailable(retrying: exercises.retryingLibrary)),
+        switch (exercises) {
+          Exercises(isInitialized: false, libraryUnavailable: false) => const SliverFillRemaining(
             child: Center(
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
           ),
-          true => ValueListenableBuilder<TextEditingValue>(
+          _ => ValueListenableBuilder<TextEditingValue>(
             valueListenable: searchController,
             builder: (_, value, _) {
               final mine = exercises.showingMine;
@@ -546,6 +550,51 @@ class _SectionHeader extends StatelessWidget {
 /// The way out of a search that found nothing: an exercise of the user's own
 /// by that name, through the new-exercise dialog with the name filled in
 /// (#529).
+/// Above the list when the library couldn't be downloaded (#723): what is
+/// missing, and a way to try again; while that runs, a spinner in its place.
+class _LibraryUnavailable extends StatelessWidget {
+  final bool retrying;
+
+  const new({required this.retrying});
+
+  @override
+  Widget build(BuildContext context) {
+    final L(:exerciseLibraryUnavailable, :retry) = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return Padding(
+      key: AppKeys.libraryUnavailable,
+      padding: const .fromLTRB(16, 12, 16, 12),
+      // the button under the words, which keep the width at any text size
+      child: Row(
+        crossAxisAlignment: .start,
+        spacing: 12,
+        children: [
+          Icon(Icons.cloud_off_rounded, size: 20, color: colorScheme.onSurfaceVariant),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: .start,
+              spacing: 8,
+              children: [
+                Text(
+                  exerciseLibraryUnavailable,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
+                switch (retrying) {
+                  true => const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  false => QuietButton(
+                    onPressed: () => Exercises.of(context).retryLibrary(),
+                    child: Text(retry),
+                  ),
+                },
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CreateExercise extends StatelessWidget {
   final String name;
   final void Function(String name) onCreate;

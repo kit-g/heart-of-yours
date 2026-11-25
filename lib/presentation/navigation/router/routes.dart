@@ -594,24 +594,53 @@ RouteBase _exercisesRoute() {
     navigatorKey: navigatorKey,
     builder: (context, state, detail) {
       final selectedExerciseId = state.pathParameters['exerciseId'];
+      // on a tablet the archive takes the library's place, an exercise of it
+      // opening beside it (#718)
+      final archive = switch (state.uri.pathSegments) {
+        [_exercisesName, _exerciseArchivedSegment, ...] => true,
+        _ => false,
+      };
+      final opened = switch (selectedExerciseId) {
+        null => null,
+        _ => detail,
+      };
+      // the library's own pick, none while the archive is up
+      final (String? picked, Widget? pickedPage) = switch (archive) {
+        true => (null, null),
+        false => (selectedExerciseId, opened),
+      };
 
       return switch (LayoutProvider.of(context)) {
         .compact => detail,
         .wide => _withNavigator(
           detail,
           shown: selectedExerciseId != null,
-          page: ExercisesPage(
-            selectedId: selectedExerciseId,
-            detail: switch (selectedExerciseId) {
-              null => null,
-              _ => detail,
-            },
-            onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
-            onOpenActiveWorkout: () {
-              HapticFeedback.mediumImpact();
-              context.goToActiveWorkout();
-            },
-            onShowArchived: context.goToExerciseArchive,
+          page: Stack(
+            fit: .expand,
+            children: [
+              // kept while the archive is up: its search and place stay
+              Visibility(
+                visible: !archive,
+                maintainState: true,
+                child: ExercisesPage(
+                  selectedId: picked,
+                  detail: pickedPage,
+                  onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
+                  onOpenActiveWorkout: () {
+                    HapticFeedback.mediumImpact();
+                    context.goToActiveWorkout();
+                  },
+                  onShowArchived: context.goToExerciseArchive,
+                ),
+              ),
+              if (archive)
+                ExerciseArchive(
+                  selectedId: selectedExerciseId,
+                  detail: opened,
+                  leading: BackButton(onPressed: context.closeExerciseDetail),
+                  onExercise: (exercise, _) => context.goToArchivedExerciseDetail(exercise.id),
+                ),
+            ],
           ),
         ),
       };
@@ -637,11 +666,12 @@ RouteBase _exercisesRoute() {
           GoRoute(
             path: _exerciseArchivedSegment,
             builder: (context, _) {
-              return ExerciseArchive(
-                onExercise: (exercise, _) {
-                  context.goToExerciseDetail(exercise.id);
-                },
-              );
+              return switch (LayoutProvider.of(context)) {
+                .wide => const SizedBox.shrink(), // already rendered by the builder
+                .compact => ExerciseArchive(
+                  onExercise: (exercise, _) => context.goToArchivedExerciseDetail(exercise.id),
+                ),
+              };
             },
             name: _exerciseArchive,
             routes: [
@@ -652,6 +682,16 @@ RouteBase _exercisesRoute() {
                   final exercise = Exercises.of(context).lookup(exerciseId);
                   return ExerciseDetailPage(
                     exercise: exercise!,
+                    // in a pane beside the archive, as the library's is
+                    leading: switch (LayoutProvider.of(context)) {
+                      .compact => null,
+                      .wide => IconButton(
+                        key: AppKeys.closeDetail,
+                        tooltip: L.of(context).close,
+                        onPressed: context.goToExerciseArchive,
+                        icon: const Icon(Icons.close),
+                      ),
+                    },
                     onTapWorkout: (_) async {},
                     initialTab: state.uri.queryParameters['tab'],
                     onShareExercise: (exercise, {tab}) {
