@@ -38,7 +38,7 @@ class ClientPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(switch (client) {
-          final ClientSummary client => clientName(l, client),
+          final ClientSummary client => clientLabel(l, client),
           null => '',
         }),
       ),
@@ -133,10 +133,13 @@ class _ClientViewState extends State<_ClientView> {
     if (old.connectionId != widget.connectionId) WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
-  /// Clears what a look clears for the client as the roster now has them.
-  Future<void> _look(Roster roster) async {
-    final client = roster.client(widget.connectionId);
+  /// Clears what a look clears for the client of [connectionId] as the
+  /// roster now has them. Not a changed program that wasn't [placed] on a
+  /// card: the look would clear it, and nothing would say it any more.
+  Future<void> _look(String connectionId, Roster roster, {required bool placed}) async {
+    final client = roster.client(connectionId);
     if (client == null || _former(client) || !_lookClears(client)) return;
+    if (!placed && client.reasons.contains(ClientReason.changed.name)) return;
     try {
       await roster.markReviewed(client);
     } catch (error, stacktrace) {
@@ -145,21 +148,44 @@ class _ClientViewState extends State<_ClientView> {
     }
   }
 
-  /// Reads the copies of a client whose row says they changed one, and keeps
-  /// on this device when they last did, per copy, for its card (#745).
-  Future<void> _keepChanges(Roster roster, ClientPrograms programs) async {
-    final client = roster.client(widget.connectionId);
-    if (client == null || !client.reasons.contains(ClientReason.changed.name)) return;
+  /// Reads the copies of the client of [connectionId] when their row says
+  /// they changed one, and keeps on this device when they last did, per copy,
+  /// for its card (#745). Answers whether what the row says was placed on a
+  /// card: not when a read failed, [managed] among them, nor when no copy
+  /// holds a change the coach hasn't seen. The roster also counts a session
+  /// the client added that is in no history, which no copy's changes show.
+  /// TODO(#745): once the roster says which copies changed and when (the
+  /// heart-api request for it), read that here instead of every copy's
+  /// changes.
+  Future<bool> _keepChanges(
+    String connectionId,
+    Roster roster,
+    ClientPrograms programs, {
+    required bool managed,
+  }) async {
+    final client = roster.client(connectionId);
+    if (client == null || !client.reasons.contains(ClientReason.changed.name)) return true;
+    if (!managed) return false;
     final preferences = Preferences.of(context);
     final ids = [for (final (id, _, _) in _programsOf(client, programs.managed(client.studentId))) id];
-    await programs.readChanges(client.studentId, ids);
+    final read = await programs.readChanges(client.studentId, ids);
+    var placed = false;
     for (final id in ids) {
-      if (programs.changedBy(client.studentId, id) case final DateTime at) await preferences.setProgramChanged(id, at);
+      if (programs.changedBy(client.studentId, id) case final DateTime at) {
+        await preferences.setProgramChanged(id, at);
+        if (preferences.programSeen(id) case final DateTime seen when !at.isAfter(seen)) continue;
+        placed = true;
+      }
     }
+    return read && placed;
   }
 
   Future<void> _load() async {
     if (!mounted) return;
+    // on a tablet another client may open in this view while this reads:
+    // what comes back is about this one, and nothing is done to the next
+    final connectionId = widget.connectionId;
+    bool current() => mounted && widget.connectionId == connectionId;
     final roster = Roster.of(context);
     // the row they were opened from may be stale, and opened from a link
     // the roster may never have been read
@@ -169,30 +195,36 @@ class _ClientViewState extends State<_ClientView> {
     final notes = CoachNotes.of(context);
     if (DeviceKeys.of(context).supported && notes.status == .idle) unawaited(notes.load());
     final messages = Messages.of(context);
-    var client = roster.client(widget.connectionId);
+    var client = roster.client(connectionId);
     if (client == null) {
       await roster.load();
-      client = roster.client(widget.connectionId);
+      client = roster.client(connectionId);
     }
     // opened from a link, someone no longer coached is only on the other list
     if (client == null && roster.formerStatus == .idle) {
       await roster.loadFormer();
-      client = roster.client(widget.connectionId);
+      client = roster.client(connectionId);
     }
+    if (!current()) return;
     switch (client) {
       // no longer coached: their training isn't the coach's to read, only
       // the coach's own notes and what the two of them wrote
       case final ClientSummary client when _former(client):
         if (messages.status == .idle) await messages.load();
       case final ClientSummary client:
-        await (roster.load(), roster.loadRecord(client.studentId), programs.loadManaged(client.studentId)).wait;
+        final (_, _, managed) = await (
+          roster.load(),
+          roster.loadRecord(client.studentId),
+          programs.loadManaged(client.studentId),
+        ).wait;
         // what they changed, kept for the cards until each is opened (#745):
         // read while the row still says so, before the look below clears it
-        if (mounted) await _keepChanges(roster, programs);
+        if (!current()) return;
+        final placed = await _keepChanges(connectionId, roster, programs, managed: managed);
         // opening them is looking at them (#686): what a look clears goes,
         // decided on the row as just read, once what they did is on screen.
         // Not from under a workout opened over them, which they never saw
-        if (widget.looks && mounted) await _look(roster);
+        if (widget.looks && current()) await _look(connectionId, roster, placed: placed);
       case null:
         break;
     }
@@ -410,7 +442,7 @@ class _ClientHeader extends StatelessWidget {
               crossAxisAlignment: .start,
               spacing: 6,
               children: [
-                if (named) Text(clientName(l, client), style: textTheme.titleLarge),
+                if (named) Text(clientLabel(l, client), style: textTheme.titleLarge),
                 ...switch (former) {
                   true => [
                     Text(

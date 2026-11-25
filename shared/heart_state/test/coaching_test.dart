@@ -299,6 +299,26 @@ void main() {
     expect(coaching.all.single.name, 'Muffin');
   });
 
+  test('a name reaches every connection with the same client, and outlives a read already out (#753)', () async {
+    Connection sam(String id, ConnectionDomain domain) => Connection(
+      targetId: 'sam',
+      role: .coach,
+      domain: domain,
+      status: .active,
+      createdAt: DateTime.utc(2026),
+      connectionId: id,
+      name: 'Muffin',
+    );
+    server.connections.addAll([sam('c-fit', .fitness), sam('c-run', ConnectionDomain.values.last)]);
+    await coaching.load();
+
+    final reading = coaching.load();
+    await coaching.name('c-fit', 'Sam');
+    await reading;
+
+    expect(coaching.all.map((each) => (each.name, each.namedByYou)), [('Sam', true), ('Sam', true)]);
+  });
+
   test('pausing keeps a connection current, and ending takes it out', () async {
     server.connections.add(_connection('alex', .student));
     await coaching.load();

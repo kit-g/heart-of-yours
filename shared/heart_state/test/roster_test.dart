@@ -204,7 +204,7 @@ void main() {
     roster.addListener(() => told++);
 
     Connection named(String id, String? name, {required bool byYou}) => Connection(
-      targetId: 'x',
+      targetId: id.substring(2),
       role: .coach,
       domain: .fitness,
       status: .active,
@@ -223,6 +223,53 @@ void main() {
 
     roster.renamed(named('c-muffin', 'muffin', byYou: false));
     expect((roster.clients.single.name, roster.clients.single.namedByYou), ('muffin', false));
+  });
+
+  test('a name is the coach\'s for the person: every row of theirs takes it, in any domain (#753)', () async {
+    server.clients.addAll([
+      ClientSummary(connectionId: 'c-fit', studentId: 'muffin', name: 'muffin', status: 'active', reasons: const []),
+      ClientSummary(connectionId: 'c-run', studentId: 'muffin', name: 'muffin', status: 'active', reasons: const []),
+      _client('pepper'),
+    ]);
+    await roster.load();
+
+    roster.renamed(
+      Connection(
+        targetId: 'muffin',
+        role: .coach,
+        domain: .fitness,
+        status: .active,
+        createdAt: DateTime.utc(2026),
+        connectionId: 'c-fit',
+        name: 'Muff',
+        namedByYou: true,
+      ),
+    );
+
+    expect(roster.clients.map((each) => each.name), ['Muff', 'Muff', 'pepper']);
+  });
+
+  test('a read already out when a name was given keeps the name (#753)', () async {
+    server.clients.add(_client('muffin'));
+    await roster.load();
+    final reading = roster.load();
+    roster.renamed(
+      Connection(
+        targetId: 'muffin',
+        role: .coach,
+        domain: .fitness,
+        status: .active,
+        createdAt: DateTime.utc(2026),
+        connectionId: 'c-muffin',
+        name: 'Muff',
+        namedByYou: true,
+      ),
+    );
+    await reading;
+    expect(roster.clients.single.name, 'Muff', reason: 'the read began before the name');
+
+    await roster.load();
+    expect(roster.clients.single.name, 'muffin', reason: "a read after it is the server's word");
   });
 
   test('a look is counted once the server took it, and a refused one is not (#568)', () async {

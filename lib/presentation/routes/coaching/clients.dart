@@ -416,7 +416,7 @@ class _ClientTile extends StatelessWidget {
       },
       selected: opener?.selected == client.connectionId,
       leading: Avatar(remote: client.avatar, radius: 20),
-      title: Text(clientName(l, client), maxLines: 1, overflow: .ellipsis),
+      title: Text(clientLabel(l, client), maxLines: 1, overflow: .ellipsis),
       subtitle: Column(
         crossAxisAlignment: .start,
         children: [
@@ -517,7 +517,7 @@ class _ClientRow extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          clientName(l, client),
+                          clientLabel(l, client),
                           style: textTheme.bodyLarge,
                           maxLines: 1,
                           overflow: .ellipsis,
@@ -632,12 +632,12 @@ class _FormerClients extends StatelessWidget {
               (null, _) || (_, false) => ListTile(
                 key: AppKeys.coachingClient(client.connectionId),
                 leading: Avatar(remote: client.avatar, radius: 20),
-                title: Text(clientName(l, client)),
+                title: Text(clientLabel(l, client)),
               ),
               (final opener?, true) => ListTile(
                 key: AppKeys.coachingClient(client.connectionId),
                 leading: Avatar(remote: client.avatar, radius: 20),
-                title: Text(clientName(l, client)),
+                title: Text(clientLabel(l, client)),
                 selected: opener.selected == client.connectionId,
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => opener.onOpenClient(client.connectionId),
@@ -660,10 +660,19 @@ bool _lookClears(ClientSummary client) {
 /// Whether [client] is no longer coached: the connection was severed.
 bool _former(ClientSummary client) => client.status == 'severed';
 
-/// What a coach calls [client]: the name the server gives them, the coach's
-/// own or else theirs, and for someone with none, since when they are a
-/// client, so two such can be told apart (#753).
+/// What a coach calls [client] in a sentence: the name the server gives
+/// them, the coach's own or else theirs, or the word for someone they coach.
 String clientName(L l, ClientSummary client) {
+  return switch (client.name?.trim()) {
+    final String name when name.isNotEmpty => name,
+    _ => l.coachingClientUnnamed,
+  };
+}
+
+/// [client]'s name where it stands alone, as a row's or a page's title: for
+/// someone with none, since when they are a client, so two such can be told
+/// apart (#753).
+String clientLabel(L l, ClientSummary client) {
   return switch ((client.name?.trim(), client.acceptedAt)) {
     (final String name, _) when name.isNotEmpty => name,
     (_, final DateTime since) => l.coachingClientSince(DateFormat.yMMMd(l.localeName).format(since.toLocal())),

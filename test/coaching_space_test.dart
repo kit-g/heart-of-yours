@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -630,9 +632,9 @@ void main() {
       when(api.getClientWorkoutPlan('sam', 'w1')).thenAnswer((_) async => plan);
     }
 
-    testWidgets('the coach names a client, and takes the name back (#753)', (tester) async {
+    testWidgets('the coach names a client, and renames them again (#753)', (tester) async {
       withSam();
-      Connection named(String name, {required bool byYou}) => Connection(
+      Connection named(String name) => Connection(
         targetId: 'sam',
         role: .coach,
         domain: .fitness,
@@ -640,10 +642,11 @@ void main() {
         createdAt: DateTime.utc(2026, 11, 1),
         connectionId: 'c-sam',
         name: name,
-        namedByYou: byYou,
+        namedByYou: true,
       );
-      when(api.nameConnection('c-sam', 'Sammy')).thenAnswer((_) async => named('Sammy', byYou: true));
-      when(api.nameConnection('c-sam', null)).thenAnswer((_) async => named('Sam', byYou: false));
+      when(api.nameConnection('c-sam', any)).thenAnswer((invocation) async {
+        return named(invocation.positionalArguments.last as String);
+      });
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
       await tester.tapByKey(AppKeys.coachingClient('c-sam'));
       await tester.pumpTimes();
@@ -651,26 +654,68 @@ void main() {
       await tester.tapByKey(AppKeys.coachingClientRename);
       await tester.pumpTimes();
       expect(find.text('Only you see this name.'), findsOneWidget);
-      expect(find.byKey(AppKeys.coachingClientNameRemove), findsNothing, reason: 'Sam is the name they go by');
+      expect(
+        tester.widget<TextField>(find.byKey(AppKeys.coachingClientNameField)).controller?.text,
+        isEmpty,
+        reason: 'Sam is the name they go by',
+      );
       await tester.enterText(find.byKey(AppKeys.coachingClientNameField), '  Sammy ');
       await tester.pump();
       await tester.tapByKey(AppKeys.coachingClientNameSave);
       await tester.pumpTimes();
 
       verify(api.nameConnection('c-sam', 'Sammy')).called(1);
+      expect(find.byType(ClientPage), findsOneWidget, reason: 'the dialog closed, and only the dialog');
       expect(find.text('Sammy'), findsWidgets, reason: 'the page and the roster under it');
 
       await tester.tapByKey(AppKeys.coachingClientRename);
       await tester.pumpTimes();
-      expect(
-        tester.widget<TextField>(find.byKey(AppKeys.coachingClientNameField)).controller?.text,
-        'Sammy',
-      );
-      await tester.tapByKey(AppKeys.coachingClientNameRemove);
+      expect(tester.widget<TextField>(find.byKey(AppKeys.coachingClientNameField)).controller?.text, 'Sammy');
+      await tester.enterText(find.byKey(AppKeys.coachingClientNameField), 'S.');
+      await tester.pump();
+      await tester.tapByKey(AppKeys.coachingClientNameSave);
       await tester.pumpTimes();
 
-      verify(api.nameConnection('c-sam', null)).called(1);
+      expect(find.text('S.'), findsWidgets);
       expect(find.text('Sammy'), findsNothing);
+    });
+
+    testWidgets('while a name saves, nothing closes the dialog, and the page under it stays', (tester) async {
+      withSam();
+      final answer = Completer<Connection>();
+      when(api.nameConnection('c-sam', 'Sammy')).thenAnswer((_) => answer.future);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClientRename);
+      await tester.pumpTimes();
+      await tester.enterText(find.byKey(AppKeys.coachingClientNameField), 'Sammy');
+      await tester.pump();
+      await tester.tapByKey(AppKeys.coachingClientNameSave);
+      await tester.pump();
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpTimes();
+      await tester.binding.handlePopRoute();
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.coachingClientNameField), findsOneWidget, reason: 'still saving');
+
+      answer.complete(
+        Connection(
+          targetId: 'sam',
+          role: .coach,
+          domain: .fitness,
+          status: .active,
+          createdAt: DateTime.utc(2026, 11, 1),
+          connectionId: 'c-sam',
+          name: 'Sammy',
+          namedByYou: true,
+        ),
+      );
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingClientNameField), findsNothing);
+      expect(find.byType(ClientPage), findsOneWidget);
     });
 
     testWidgets('a name that fails to save says so, and the dialog stays', (tester) async {
@@ -1572,6 +1617,29 @@ void main() {
           reasons: ['changed'],
         ),
       );
+      when(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since'))).thenAnswer(
+        (_) async => [
+          ProgramChange(
+            id: 'ch1',
+            programId: 'p1',
+            sessionId: 's1',
+            actorId: 'sam',
+            kind: 'edit',
+            revision: 1,
+            before: const {'name': 'Day A'},
+            after: const {'name': 'Legs'},
+            at: DateTime.utc(2026, 11, 9, 18),
+          ),
+          ProgramChange(
+            id: 'ch2',
+            programId: 'p1',
+            actorId: 'coach',
+            kind: 'edit',
+            revision: 2,
+            at: DateTime.utc(2026, 11, 10, 18),
+          ),
+        ],
+      );
       when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
 
@@ -1594,6 +1662,61 @@ void main() {
       await tester.pumpTimes();
 
       expect(find.byKey(AppKeys.coachingCopyChanged('p1')), findsNothing, reason: 'opened since');
+    });
+
+    ClientSummary changedSam() {
+      return ClientSummary(
+        connectionId: 'c-sam',
+        studentId: 'sam',
+        name: 'Sam',
+        status: 'active',
+        programId: 'p1',
+        programName: 'Strength block',
+        programWeek: 2,
+        programWeeks: 4,
+        reasons: ['changed', 'note'],
+      );
+    }
+
+    testWidgets("a change that couldn't be read isn't looked away: the row keeps it", (tester) async {
+      withCopy(client: changedSam());
+      when(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since'))).thenThrow(Exception('unavailable'));
+      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingCopyChanged('p1')), findsNothing);
+      verifyNever(api.markReviewed('c-sam', at: anyNamed('at')));
+    });
+
+    testWidgets('a change no copy shows, as a session added, is kept until a copy is opened', (tester) async {
+      withCopy(client: changedSam());
+      // only the coach's change in the history: what the roster counted is
+      // elsewhere
+      when(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since'))).thenAnswer(
+        (_) async => [
+          ProgramChange(
+            id: 'ch2',
+            programId: 'p1',
+            actorId: 'coach',
+            kind: 'edit',
+            revision: 1,
+            at: DateTime.utc(2026),
+          ),
+        ],
+      );
+      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingCopyChanged('p1')), findsNothing);
+      verifyNever(api.markReviewed('c-sam', at: anyNamed('at')));
+
+      await tester.tapByKey(AppKeys.coachingClientProgram);
+      await tester.pumpTimes();
+      verify(api.markReviewed('c-sam', at: anyNamed('at'))).called(1);
     });
 
     testWidgets("the coach's own change marks nothing, and with no reason the changes aren't read", (tester) async {

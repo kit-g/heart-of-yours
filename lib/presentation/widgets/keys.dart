@@ -458,7 +458,6 @@ abstract final class AppKeys {
   static const coachingClientRename = Key('Coaching.clientRename');
   static const coachingClientNameField = Key('Coaching.clientNameField');
   static const coachingClientNameSave = Key('Coaching.clientNameSave');
-  static const coachingClientNameRemove = Key('Coaching.clientNameRemove');
   static Key coachingCopySession(String id) => Key('Coaching.copySession.$id');
   static Key coachingCopySessionMenu(String id) => Key('Coaching.copySessionMenu.$id');
   static const coachingCopyAddSession = Key('Coaching.copyAddSession');

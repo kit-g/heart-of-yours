@@ -1,7 +1,10 @@
 part of 'coaching.dart';
 
 /// Asks the coach for their own name for [client] (#753), which only they
-/// read: given, changed, or taken back to the invitation's name or theirs.
+/// read: given, or changed.
+///
+/// No way to take one back yet: an invitation's name reads as one the coach
+/// gave too, so taking it back would answer the same name.
 Future<void> _rename(BuildContext context, ClientSummary client) {
   final ThemeData(:colorScheme) = Theme.of(context);
   return showBrandedDialog(
@@ -47,15 +50,16 @@ class _ClientNameFormState extends State<_ClientNameForm> {
 
   String get _name => _controller.text.trim();
 
-  /// Gives [name], or with null takes the coach's name back.
-  Future<void> _save(String? name) async {
+  Future<void> _save(String name) async {
     if (_saving.value) return;
     _saving.value = true;
     final coaching = Coaching.of(context);
     final roster = Roster.of(context);
     try {
       roster.renamed(await coaching.name(widget.client.connectionId, name));
-      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      // only the dialog itself: nothing closes it while it saves, but a pop
+      // here must never take the page under it
+      if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) Navigator.of(context, rootNavigator: true).pop();
     } catch (error, stacktrace) {
       reportToSentry(error, stacktrace: stacktrace);
       if (!mounted) return;
@@ -72,67 +76,71 @@ class _ClientNameFormState extends State<_ClientNameForm> {
       listenable: Listenable.merge([_controller, _failed, _saving]),
       builder: (context, _) {
         final saving = _saving.value;
-        // the server takes a name of up to 100 characters
-        final fits = _name.isNotEmpty && _name.runes.length <= _maxName;
-        return Column(
-          mainAxisSize: .min,
-          spacing: 8,
-          children: [
-            Padding(
-              padding: const .symmetric(vertical: 8),
-              child: TextField(
-                key: AppKeys.coachingClientNameField,
-                controller: _controller,
-                autofocus: true,
-                enabled: !saving,
-                maxLength: _maxName,
-                textCapitalization: .words,
-                decoration: InputDecoration(
-                  hintText: l.coachingClientNameHint,
-                  helperText: l.coachingClientNameOnlyYou,
-                  helperMaxLines: 2,
-                  // the limit holds the field; a count beside the line is noise
-                  counterText: '',
-                  errorText: _failed.value,
-                  errorMaxLines: 2,
+        // while a save is out, neither Cancel, the barrier nor Back closes it
+        return PopScope(
+          canPop: !saving,
+          child: Column(
+            mainAxisSize: .min,
+            spacing: 8,
+            children: [
+              Padding(
+                padding: const .symmetric(vertical: 8),
+                child: TextField(
+                  key: AppKeys.coachingClientNameField,
+                  controller: _controller,
+                  autofocus: true,
+                  enabled: !saving,
+                  // the server counts a name's length in code points
+                  inputFormatters: [_atMost(_maxName)],
+                  textCapitalization: .words,
+                  decoration: InputDecoration(
+                    hintText: l.coachingClientNameHint,
+                    helperText: l.coachingClientNameOnlyYou,
+                    helperMaxLines: 2,
+                    errorText: _failed.value,
+                    errorMaxLines: 2,
+                  ),
+                  onChanged: (_) => _failed.value = null,
+                  onSubmitted: (_) {
+                    // the keyboard's done key bypasses the disabled button
+                    if (_name.isNotEmpty) _save(_name);
+                  },
                 ),
-                onChanged: (_) => _failed.value = null,
-                onSubmitted: (_) {
-                  // the keyboard's done key bypasses the disabled button
-                  if (fits) _save(_name);
-                },
               ),
-            ),
-            PrimaryButton.wide(
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-              child: Center(child: Text(l.cancel)),
-            ),
-            // only a name the coach gave can be taken back
-            if (widget.client.namedByYou)
               PrimaryButton.wide(
-                key: AppKeys.coachingClientNameRemove,
                 backgroundColor: colorScheme.surfaceContainerHighest,
                 onPressed: switch (saving) {
                   true => null,
-                  false => () => _save(null),
+                  false => () => Navigator.of(context, rootNavigator: true).pop(),
                 },
-                child: Center(child: Text(l.coachingClientNameRemove)),
+                child: Center(child: Text(l.cancel)),
               ),
-            PrimaryButton.wide(
-              key: AppKeys.coachingClientNameSave,
-              onPressed: switch (fits && !saving) {
-                true => () => _save(_name),
-                false => null,
-              },
-              child: Center(child: Text(l.save, style: textTheme.bodyMedium)),
-            ),
-          ],
+              PrimaryButton.wide(
+                key: AppKeys.coachingClientNameSave,
+                onPressed: switch (_name.isNotEmpty && !saving) {
+                  true => () => _save(_name),
+                  false => null,
+                },
+                child: Center(child: Text(l.save, style: textTheme.bodyMedium)),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 }
 
-/// The longest name the server takes for a person.
+/// The longest name the server takes for a person, in code points.
 const _maxName = 100;
+
+/// Keeps what is typed to [max] code points, as the server counts them: an
+/// edit past it is not taken.
+TextInputFormatter _atMost(int max) {
+  return TextInputFormatter.withFunction((old, value) {
+    return switch (value.text.runes.length <= max) {
+      true => value,
+      false => old,
+    };
+  });
+}

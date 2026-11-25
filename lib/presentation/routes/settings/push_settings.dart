@@ -303,7 +303,7 @@ class const _People() extends StatelessWidget {
     final clients = switch (coachingSpaceOn(context, listen: true)) {
       true => <_Person>[
         for (final client in Roster.watch(context).clients)
-          (id: client.connectionId, name: clientName(l, client), role: .coach),
+          (id: client.connectionId, name: clientLabel(l, client), role: .coach),
       ],
       false => const <_Person>[],
     };

@@ -61,9 +61,24 @@ class _ClientProgramBodyState extends State<_ClientProgramBody> {
     if (roster.client(widget.connectionId) == null) await roster.load();
     if (roster.client(widget.connectionId) case final ClientSummary client) {
       await programs.open(client.studentId, widget.programId);
-      // the coach has seen what the client changed in it (#745)
-      if (programs.status(widget.programId) == .loaded) {
-        await preferences.setProgramSeen(widget.programId, DateTime.now());
+      if (programs.status(widget.programId) != .loaded) return;
+      // the coach has seen what the client changed in it (#745): by the
+      // server's clock as well as this device's, which may run behind it
+      final newest = programs.changes(widget.programId).firstOrNull?.at;
+      final now = DateTime.now();
+      await preferences.setProgramSeen(widget.programId, switch (newest) {
+        final DateTime newest when newest.isAfter(now) => newest,
+        _ => now,
+      });
+      // and their row's changed program, which a look at them leaves when it
+      // couldn't say which copy changed, is seen here
+      if (roster.client(widget.connectionId) case final ClientSummary client
+          when client.reasons.contains(ClientReason.changed.name)) {
+        try {
+          await roster.markReviewed(client);
+        } catch (error, stacktrace) {
+          reportToSentry(error, stacktrace: stacktrace);
+        }
       }
     }
   }

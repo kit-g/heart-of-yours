@@ -45,7 +45,7 @@ class ThreadPage extends StatelessWidget {
     final thread = Messages.watch(context).threadOf(connectionId);
     return Scaffold(
       appBar: AppBar(
-        title: Text(threadName(context, thread, connectionId: connectionId, fallback: name)),
+        title: Text(threadName(context, thread, connectionId: connectionId, fallback: name, listen: true)),
         actions: [ThreadMenu(connectionId: connectionId)],
       ),
       body: SafeArea(
@@ -87,15 +87,24 @@ class UnreadBadge extends StatelessWidget {
 /// read as a back and forth.
 const threadWidth = 720.0;
 
-/// Who a conversation is with: the name their connection carries, which a
-/// name given since the threads were read changes at once (#753), else the
-/// one the thread holds, else the one [fallback] gives, else the role they
-/// play for this person. Before the thread is read, [connectionId] says
-/// which conversation it is.
-String threadName(BuildContext context, Thread? thread, {String? connectionId, String? fallback}) {
+/// Who a conversation is with: a name this person gave them, which a rename
+/// since the threads were read changes at once (#753), else the name the
+/// thread holds, else the one [fallback] gives, else the one their connection
+/// carries, else the role they play for this person. Before the thread is
+/// read, [connectionId] says which conversation it is.
+///
+/// [listen] where it is built, so a rename shows there at once; never from a
+/// callback.
+String threadName(
+  BuildContext context,
+  Thread? thread, {
+  String? connectionId,
+  String? fallback,
+  bool listen = false,
+}) {
   final l = L.of(context);
   final connection = thread?.connectionId ?? connectionId;
-  return switch (_knownName(context, thread, connectionId: connectionId, fallback: fallback)) {
+  return switch (_knownName(context, thread, connectionId: connectionId, fallback: fallback, listen: listen)) {
     final String name => name,
     null when _isCoach(context, connection) => l.yourCoach,
     null => l.coachingClientUnnamed,
@@ -109,14 +118,25 @@ bool _isCoach(BuildContext context, String? connectionId) {
 
 /// A name for who a conversation is with, as [threadName] has it, or null
 /// where only the role they play is known.
-String? _knownName(BuildContext context, Thread? thread, {String? connectionId, String? fallback}) {
-  final connection = thread?.connectionId ?? connectionId;
-  final named = _connectionOf(context, connection)?.name;
-  return switch ((named?.trim(), thread?.otherName?.trim(), fallback?.trim())) {
-    (final String name, _, _) when name.isNotEmpty => name,
-    (_, final String name, _) when name.isNotEmpty => name,
-    (_, _, final String name) when name.isNotEmpty => name,
-    _ => switch (connection) {
+String? _knownName(
+  BuildContext context,
+  Thread? thread, {
+  String? connectionId,
+  String? fallback,
+  bool listen = false,
+}) {
+  final id = thread?.connectionId ?? connectionId;
+  final connection = _connectionOf(context, id, listen: listen);
+  final given = switch (connection) {
+    Connection(namedByYou: true, :final name?) => name,
+    _ => null,
+  };
+  return switch ((given?.trim(), thread?.otherName?.trim(), fallback?.trim(), connection?.name?.trim())) {
+    (final String name, _, _, _) when name.isNotEmpty => name,
+    (_, final String name, _, _) when name.isNotEmpty => name,
+    (_, _, final String name, _) when name.isNotEmpty => name,
+    (_, _, _, final String name) when name.isNotEmpty => name,
+    _ => switch (id) {
       final String id when _isCoach(context, id) => Preferences.of(context).coachName(id),
       _ => null,
     },

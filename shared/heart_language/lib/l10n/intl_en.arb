@@ -5703,8 +5703,6 @@
   "@coachingClientNameHint": {"description": "Hint in the field where a coach names a client (#753)", "type": "text", "placeholders": {}},
   "coachingClientNameOnlyYou": "Only you see this name.",
   "@coachingClientNameOnlyYou": {"description": "Under the field where a coach names a client: the client never sees it (#753)", "type": "text", "placeholders": {}},
-  "coachingClientNameRemove": "Remove this name",
-  "@coachingClientNameRemove": {"description": "Button in the dialog where a coach names a client: take back the name the coach gave, back to the invitation's or the client's own (#753)", "type": "text", "placeholders": {}},
   "coachingReasonOther": "Needs a word",
   "@coachingReasonOther": {"description": "Why a client may need a word, for a reason this version of the app has no words for (#559)", "type": "text", "placeholders": {}},
   "coachingClientWeek": "{program} · week {week} of {weeks}",

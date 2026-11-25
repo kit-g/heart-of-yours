@@ -500,11 +500,16 @@ class _Holders extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final roster = Roster.watch(context);
     final muted = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
-    String name(CoachProgramHolder holder) {
+
+    /// As the roster names them now, a name given since the holders were
+    /// read included (#753); standing [alone] as a row's title, or in a
+    /// sentence.
+    String name(CoachProgramHolder holder, {bool alone = false}) {
       final client = roster.clients.where((each) => each.connectionId == holder.connectionId).firstOrNull;
-      return switch ((holder.studentName?.trim(), client)) {
-        (final String name, _) when name.isNotEmpty => name,
-        (_, final ClientSummary client) => clientName(l, client),
+      return switch ((client, holder.studentName?.trim())) {
+        (final ClientSummary client, _) when alone => clientLabel(l, client),
+        (final ClientSummary client, _) => clientName(l, client),
+        (null, final String name) when name.isNotEmpty => name,
         _ => l.coachingClientUnnamed,
       };
     }
@@ -540,7 +545,7 @@ class _Holders extends StatelessWidget {
               ListTile(
                 key: AppKeys.coachingHolder(holder.connectionId),
                 leading: Avatar(remote: holder.studentAvatar, radius: 20),
-                title: Text(name(holder), maxLines: 1, overflow: .ellipsis),
+                title: Text(name(holder, alone: true), maxLines: 1, overflow: .ellipsis),
                 subtitle: Text(switch (holder.version) {
                   final version when version < latest => l.coachingProgramHolderBehind(version, latest),
                   final version => l.coachingProgramHolderVersion(version),
@@ -620,7 +625,7 @@ class _SendPickerState extends State<_SendPicker> {
                         key: AppKeys.coachingSendTo(client.connectionId),
                         contentPadding: const .symmetric(horizontal: 4),
                         secondary: Avatar(remote: client.avatar, radius: 18),
-                        title: Text(clientName(l, client), maxLines: 1, overflow: .ellipsis),
+                        title: Text(clientLabel(l, client), maxLines: 1, overflow: .ellipsis),
                         subtitle: switch (held[client.connectionId]) {
                           final int version => Text(l.coachingProgramHasIt(version)),
                           null => null,

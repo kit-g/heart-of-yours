@@ -140,7 +140,7 @@ class _ThreadHeader extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              threadName(context, thread, connectionId: connectionId),
+              threadName(context, thread, connectionId: connectionId, listen: true),
               maxLines: 1,
               overflow: .ellipsis,
               style: Theme.of(context).textTheme.titleMedium,
@@ -211,7 +211,7 @@ class _InboxRow extends StatelessWidget {
       selected: selected,
       leading: Avatar(remote: thread.otherAvatar, radius: 20),
       title: Text(
-        threadName(context, thread),
+        threadName(context, thread, listen: true),
         maxLines: 1,
         overflow: .ellipsis,
         style: switch (thread.unread > 0) {
