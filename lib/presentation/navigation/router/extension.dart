@@ -313,6 +313,18 @@ extension on BuildContext {
     return goNamed(_exerciseArchive);
   }
 
+  /// An exercise of the tab's archive: pushed over it on a phone; beside it
+  /// on a tablet, where the list stays the archive (#718).
+  Future<Object?> goToArchivedExerciseDetail(String exerciseId) {
+    switch (LayoutProvider.of(this)) {
+      case .compact:
+        return push('$_exercisesPath/$exerciseId');
+      case .wide:
+        goNamed(_exerciseArchivedDetailName, pathParameters: {'exerciseId': exerciseId});
+        return Future<Object?>.value();
+    }
+  }
+
   /// Opens the library showing only [filter], replacing whatever was filtered
   /// before — arriving from a chip means "show me these", not "narrow what I
   /// had", and the previous filters are not visible from where the chip was

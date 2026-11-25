@@ -392,6 +392,9 @@ abstract final class AppKeys {
   static const musclePickerRole = Key('MusclePicker.role');
   static const musclePickerFigures = Key('MusclePicker.figures');
 
+  /// The line above the exercise list when the library couldn't be loaded.
+  static const libraryUnavailable = ValueKey('libraryUnavailable');
+
   /// The picker's offer to create an exercise named after a search that
   /// found nothing (#529).
   static const pickerCreateExercise = Key('ExercisePicker.createExercise');
@@ -451,6 +454,10 @@ abstract final class AppKeys {
   /// sessions, a save that didn't land and its answers, and its history.
   static const coachingClientProgram = Key('Coaching.clientProgram');
   static Key coachingClientCopy(String programId) => Key('Coaching.clientCopy.$programId');
+  static Key coachingCopyChanged(String programId) => Key('Coaching.copyChanged.$programId');
+  static const coachingClientRename = Key('Coaching.clientRename');
+  static const coachingClientNameField = Key('Coaching.clientNameField');
+  static const coachingClientNameSave = Key('Coaching.clientNameSave');
   static Key coachingCopySession(String id) => Key('Coaching.copySession.$id');
   static Key coachingCopySessionMenu(String id) => Key('Coaching.copySessionMenu.$id');
   static const coachingCopyAddSession = Key('Coaching.copyAddSession');

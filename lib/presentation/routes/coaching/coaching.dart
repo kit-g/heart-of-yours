@@ -30,6 +30,7 @@ import 'package:heart/presentation/widgets/setting_picker.dart';
 import 'package:heart/presentation/widgets/tab_frame.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:flutter/semantics.dart' show CustomSemanticsAction;
+import 'package:flutter/services.dart' show TextInputFormatter;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
@@ -38,6 +39,7 @@ import 'package:share_plus/share_plus.dart';
 
 part 'activity.dart';
 part 'client.dart';
+part 'client_name.dart';
 part 'client_program.dart';
 part 'clients.dart';
 part 'desk.dart';

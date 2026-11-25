@@ -37,6 +37,26 @@ class _Server implements CoachingService {
   }
 
   @override
+  Future<Connection> nameConnection(String connectionId, String? name) async {
+    return _write(
+      connectionId,
+      (each) => Connection(
+        targetId: each.targetId,
+        role: each.role,
+        domain: each.domain,
+        status: each.status,
+        createdAt: each.createdAt,
+        connectionId: each.connectionId,
+        acceptedAt: each.acceptedAt,
+        shares: each.shares,
+        // taken back: to what the client goes by in Heart
+        name: name ?? 'Muffin',
+        namedByYou: name != null,
+      ),
+    );
+  }
+
+  @override
   Future<void> endConnection(String connectionId) async {
     _write(connectionId, (each) => _with(each, status: .severed));
   }
@@ -251,6 +271,52 @@ void main() {
       throwsA(isRefusal('forbidden')),
     );
     expect(coaching.clients.single.shares, isEmpty);
+  });
+
+  test("a coach's name for a client replaces the connection once the server agrees (#753)", () async {
+    server.connections.add(
+      Connection(
+        targetId: 'sam',
+        role: .coach,
+        domain: .fitness,
+        status: .active,
+        createdAt: DateTime.utc(2026),
+        connectionId: 'c-sam',
+        name: 'Muffin',
+      ),
+    );
+    await coaching.load();
+
+    final named = await coaching.name('c-sam', 'Sam');
+    expect((named.name, named.namedByYou), ('Sam', true));
+    expect(coaching.all.single.name, 'Sam');
+
+    await coaching.name('c-sam', null);
+    expect((coaching.all.single.name, coaching.all.single.namedByYou), ('Muffin', false));
+
+    server.refuse = refusedAs({'code': 'forbidden'});
+    await expectLater(coaching.name('c-sam', 'Pip'), throwsA(isA<ServerRefusal>()));
+    expect(coaching.all.single.name, 'Muffin');
+  });
+
+  test('a name reaches every connection with the same client, and outlives a read already out (#753)', () async {
+    Connection sam(String id, ConnectionDomain domain) => Connection(
+      targetId: 'sam',
+      role: .coach,
+      domain: domain,
+      status: .active,
+      createdAt: DateTime.utc(2026),
+      connectionId: id,
+      name: 'Muffin',
+    );
+    server.connections.addAll([sam('c-fit', .fitness), sam('c-run', ConnectionDomain.values.last)]);
+    await coaching.load();
+
+    final reading = coaching.load();
+    await coaching.name('c-fit', 'Sam');
+    await reading;
+
+    expect(coaching.all.map((each) => (each.name, each.namedByYou)), [('Sam', true), ('Sam', true)]);
   });
 
   test('pausing keeps a connection current, and ending takes it out', () async {

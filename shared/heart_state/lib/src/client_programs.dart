@@ -133,15 +133,74 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
   List<Program> managed(String studentId) => List.unmodifiable(_managed[studentId] ?? const <Program>[]);
 
   /// Reads which copies the coach sent [studentId]: they're the coach's to
-  /// change, waiting or followed.
-  Future<void> loadManaged(String studentId) async {
-    if (!_remote.allowed) return;
+  /// change, waiting or followed. Answers whether they were read.
+  Future<bool> loadManaged(String studentId) async {
+    if (!_remote.allowed) return false;
     try {
       _managed[studentId] = (await _service.getClientPrograms(studentId)).where((each) => !each.archived).toList();
       notifyListeners();
+      return true;
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
+      return false;
     }
+  }
+
+  /// Reads what changed in each of [programIds], copies of [studentId]'s, and
+  /// the steps their ladders took, for what the client did to them since the
+  /// coach last looked (#745). Answers whether every one was read: one whose
+  /// read failed is reported, and reads as unchanged.
+  Future<bool> readChanges(String studentId, Iterable<String> programIds) async {
+    if (!_remote.allowed) return false;
+    Future<bool> readOne(String programId) async {
+      try {
+        final (changes, view) = await (
+          _service.getClientProgramChanges(studentId, programId),
+          _service.getClientProgram(studentId, programId),
+        ).wait;
+        _changes[programId] = changes;
+        _advances[programId] = [
+          for (final action in view.actions)
+            if ((action.kind, action.from, action.to) case (.advance, final String from, final String to))
+              (from: from, to: to),
+        ];
+        return true;
+      } catch (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+        return false;
+      }
+    }
+
+    final read = await programIds.map(readOne).wait;
+    notifyListeners();
+    return read.every((each) => each);
+  }
+
+  /// The exercises each copy's ladders stepped from and to, as
+  /// [readChanges] read them.
+  final _advances = <String, List<({String from, String to})>>{};
+
+  /// When [studentId] last changed [programId] themselves, as far as its
+  /// changes were read, counted as the roster's `changed` counts them
+  /// (heart-api#476): what the coach did never, nor where it was filed, its
+  /// archiving, or what a ladder stepping up wrote. Null with none.
+  ///
+  /// A session the client added that is in no history isn't here, though the
+  /// roster counts it. TODO(#745): once the roster says which copies changed
+  /// and when (the heart-api request for it), read that here instead.
+  DateTime? changedBy(String studentId, String programId) {
+    final advances = _advances[programId] ?? const <({String from, String to})>[];
+    return (_changes[programId] ?? const <ProgramChange>[])
+        .where((change) => change.actorId == studentId)
+        .where((change) => !_same(_said(change.before), _said(change.after)))
+        .where((change) => !advances.any((step) => _advanced(change.before, change.after, step)))
+        .map((change) => change.at)
+        .fold<DateTime?>(null, (latest, at) {
+          return switch (latest) {
+            final DateTime latest when !at.isAfter(latest) => latest,
+            _ => at,
+          };
+        });
   }
 
   /// Whether the coach may change [programId]: a copy they sent, while the
@@ -157,6 +216,7 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
     _editable.clear();
     _refused.clear();
     _managed.clear();
+    _advances.clear();
     _drafting = null;
     editable = null;
     notifyListeners();
@@ -355,4 +415,86 @@ class ClientPrograms with ChangeNotifier, TemplateDrafting implements SignOutSta
     if (!changed) onError?.call(error, stacktrace: stacktrace);
     _conflicts[programId] = kept(unsent: !changed, refused: false);
   }
+}
+
+/// What a snapshot of a session or a program holds besides what it says, as
+/// heart-api leaves it out of `changed`: where it is filed, whether it is
+/// archived, who sent it, and its revisions.
+const _unsaid = {'archived', 'folder', 'assignedBy', 'revision', 'sessionRevisions'};
+
+Map<String, dynamic>? _said(Map<String, dynamic>? snapshot) {
+  return switch (snapshot) {
+    final Map<String, dynamic> snapshot => {
+      for (final MapEntry(:key, :value) in snapshot.entries)
+        if (!_unsaid.contains(key)) key: value,
+    },
+    null => null,
+  };
+}
+
+/// [snapshot] without [keys].
+Map<String, dynamic> _without(Map<String, dynamic> snapshot, Set<String> keys) {
+  return {
+    for (final MapEntry(:key, :value) in snapshot.entries)
+      if (!keys.contains(key)) key: value,
+  };
+}
+
+/// Whether two snapshots differ only as a ladder's [step] from one exercise
+/// to the next makes them, as heart-api tells one: in a session, that
+/// exercise swapped for the next in place; in a program, its rule moved to
+/// the next exercise.
+bool _advanced(Map<String, dynamic>? before, Map<String, dynamic>? after, ({String from, String to}) step) {
+  if (before == null || after == null) return false;
+  List<String?>? ids(Map<String, dynamic> snapshot) {
+    return switch (snapshot['exercises']) {
+      final List exercises => [
+        for (final each in exercises)
+          switch (each) {
+            {'exercise': {'id': final String id}} => id,
+            _ => null,
+          },
+      ],
+      _ => null,
+    };
+  }
+
+  final session = switch ((ids(before), ids(after))) {
+    (final List<String?> was, final List<String?> became) =>
+      was.contains(step.from) &&
+          _same([for (final id in was) _stepped(id, step)], became) &&
+          _same(
+            _without(before, const {'exercises', 'folder', 'assignedBy'}),
+            _without(after, const {'exercises', 'folder', 'assignedBy'}),
+          ),
+    _ => false,
+  };
+  final rules = switch ((before['rules'], after['rules'])) {
+    (final Map was, final Object? became) when was.containsKey(step.from) =>
+      _same({for (final MapEntry(:key, :value) in was.entries) _stepped(key, step): value}, became) &&
+          _same(
+            _without(before, const {'rules', 'revision', 'sessionRevisions'}),
+            _without(after, const {'rules', 'revision', 'sessionRevisions'}),
+          ),
+    _ => false,
+  };
+  return session || rules;
+}
+
+/// [id], or where [step] took it.
+Object? _stepped(Object? id, ({String from, String to}) step) {
+  return switch (id) {
+    final String id when id == step.from => step.to,
+    _ => id,
+  };
+}
+
+/// Whether two JSON values hold the same.
+bool _same(Object? a, Object? b) {
+  return switch ((a, b)) {
+    (final Map a, final Map b) =>
+      a.length == b.length && a.keys.every((key) => b.containsKey(key) && _same(a[key], b[key])),
+    (final List a, final List b) => a.length == b.length && a.indexed.every((each) => _same(each.$2, b[each.$1])),
+    _ => a == b,
+  };
 }

@@ -345,6 +345,13 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       // the session ended while the mirror was read (#671): this is the last
       // one's workout, and the state has been cleared for the next
       if (userId != id) return;
+      // a workout started before this ran (a start-up that waited for the
+      // exercise library, #723) is the one in progress, and stays as it is
+      if (hasActiveWorkout) {
+        _hasResolvedActiveWorkout = true;
+        notifyListeners();
+        return;
+      }
       _pausedAt = pausedAt;
       _hasResolvedActiveWorkout = true;
       // the setter notifies, so listeners see both at once

@@ -26,6 +26,7 @@ const _historyReviewName = 'entryReview';
 const _historyLogName = 'logWorkout';
 const _exercisesName = 'exercises';
 const _exercisesPath = '/$_exercisesName';
+const _exerciseArchivePath = '$_exercisesPath/$_exerciseArchivedSegment';
 const _exerciseDetailName = 'exerciseDetail';
 const _exerciseWorkoutName = 'exerciseWorkout';
 const _exerciseArchivedDetailName = 'exerciseArchivedDetail';

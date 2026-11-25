@@ -594,24 +594,57 @@ RouteBase _exercisesRoute() {
     navigatorKey: navigatorKey,
     builder: (context, state, detail) {
       final selectedExerciseId = state.pathParameters['exerciseId'];
+      // on a tablet the archive takes the library's place, an exercise of it
+      // opening beside it (#718)
+      final archive = switch (state.uri.pathSegments) {
+        [_exercisesName, _exerciseArchivedSegment, ...] => true,
+        _ => false,
+      };
+      final opened = switch (selectedExerciseId) {
+        null => null,
+        _ => detail,
+      };
+      // the library's own pick, none while the archive is up
+      final (String? picked, Widget? pickedPage) = switch (archive) {
+        true => (null, null),
+        false => (selectedExerciseId, opened),
+      };
 
       return switch (LayoutProvider.of(context)) {
         .compact => detail,
         .wide => _withNavigator(
           detail,
           shown: selectedExerciseId != null,
-          page: ExercisesPage(
-            selectedId: selectedExerciseId,
-            detail: switch (selectedExerciseId) {
-              null => null,
-              _ => detail,
-            },
-            onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
-            onOpenActiveWorkout: () {
-              HapticFeedback.mediumImpact();
-              context.goToActiveWorkout();
-            },
-            onShowArchived: context.goToExerciseArchive,
+          page: Stack(
+            fit: .expand,
+            children: [
+              // kept while the archive is up: its search and place stay
+              Visibility(
+                visible: !archive,
+                maintainState: true,
+                child: ExercisesPage(
+                  selectedId: picked,
+                  detail: pickedPage,
+                  onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
+                  onOpenActiveWorkout: () {
+                    HapticFeedback.mediumImpact();
+                    context.goToActiveWorkout();
+                  },
+                  onShowArchived: context.goToExerciseArchive,
+                ),
+              ),
+              if (archive)
+                ExerciseArchive(
+                  selectedId: selectedExerciseId,
+                  detail: opened,
+                  leading: BackButton(onPressed: context.closeExerciseDetail),
+                  onExercise: (exercise, _) => context.goToArchivedExerciseDetail(exercise.id),
+                  onOpenActiveWorkout: () {
+                    HapticFeedback.mediumImpact();
+                    context.goToActiveWorkout();
+                  },
+                ),
+            ],
           ),
         ),
       };
@@ -637,23 +670,54 @@ RouteBase _exercisesRoute() {
           GoRoute(
             path: _exerciseArchivedSegment,
             builder: (context, _) {
-              return ExerciseArchive(
-                onExercise: (exercise, _) {
-                  context.goToExerciseDetail(exercise.id);
-                },
-              );
+              return switch (LayoutProvider.of(context)) {
+                .wide => const SizedBox.shrink(), // already rendered by the builder
+                .compact => ExerciseArchive(
+                  onExercise: (exercise, _) => context.goToArchivedExerciseDetail(exercise.id),
+                ),
+              };
             },
             name: _exerciseArchive,
             routes: [
               GoRoute(
                 path: ':exerciseId',
+                // one this device doesn't have (a link from elsewhere, a
+                // catalog still loading) falls back to the archive, as the
+                // library's detail falls back to the library
+                redirect: (context, state) async {
+                  final exercises = Exercises.of(context);
+                  await _exercisesReady(exercises);
+                  return switch (state.pathParameters['exerciseId']) {
+                    String id when exercises.lookup(id) != null => null,
+                    _ => _exerciseArchivePath,
+                  };
+                },
                 builder: (context, state) {
                   final exerciseId = state.pathParameters['exerciseId']!;
+                  // gone since the redirect: the archive's own page shows
                   final exercise = Exercises.of(context).lookup(exerciseId);
+                  if (exercise == null) return const SizedBox.shrink();
                   return ExerciseDetailPage(
-                    exercise: exercise!,
-                    onTapWorkout: (_) async {},
+                    exercise: exercise,
+                    // in a pane beside the archive, as the library's is
+                    leading: switch (LayoutProvider.of(context)) {
+                      .compact => null,
+                      .wide => IconButton(
+                        key: AppKeys.closeDetail,
+                        tooltip: L.of(context).close,
+                        onPressed: context.goToExerciseArchive,
+                        icon: const Icon(Icons.close),
+                      ),
+                    },
                     initialTab: state.uri.queryParameters['tab'],
+                    // as the library's detail does: a workout of its history,
+                    // a history moved, and adding it to the workout under way
+                    onHistoryMoved: (target) => context.replaceExerciseDetail(target.id),
+                    onTapWorkout: (workoutId) {
+                      return Workouts.of(context).fetchWorkout(workoutId).then<void>((_) {
+                        if (context.mounted) context.goToExerciseWorkout(exerciseId, workoutId);
+                      });
+                    },
                     onShareExercise: (exercise, {tab}) {
                       _onShareExercise(context, exercise, tab);
                     },
@@ -661,6 +725,7 @@ RouteBase _exercisesRoute() {
                     onTapAlternative: (alternative) {
                       context.goToExerciseDetail(alternative.id);
                     },
+                    onAddToWorkout: (exercise) => _onAddToWorkout(context, exercise),
                     onArchived: context.closeExerciseDetail,
                     onUnarchived: () => _leaveUnarchivedInTab(context, exercise),
                   );
@@ -1066,16 +1131,19 @@ RouteBase _galleryRoute() {
 /// Resolves once the exercise catalog is initialized, or gives up after a
 /// timeout so a failed init (no network, empty catalog) cannot hold the
 /// navigation forever — the caller then falls back to the exercise list.
+/// A catalog that went on without the library (#723) is as ready as it will
+/// be: the user's own exercises are in it.
 Future<void> _exercisesReady(Exercises exercises) {
-  if (exercises.isInitialized) return Future<void>.value();
+  bool ready() => exercises.isInitialized || exercises.libraryUnavailable;
+  if (ready()) return Future<void>.value();
 
-  final ready = Completer<void>();
+  final done = Completer<void>();
   void onChange() {
-    if (exercises.isInitialized && !ready.isCompleted) ready.complete();
+    if (ready() && !done.isCompleted) done.complete();
   }
 
   exercises.addListener(onChange);
-  return ready.future
+  return done.future
       .timeout(const Duration(seconds: 10), onTimeout: () {})
       .whenComplete(() => exercises.removeListener(onChange));
 }

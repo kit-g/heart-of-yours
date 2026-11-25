@@ -158,6 +158,10 @@ abstract final class Router {
     return '${connection(connectionId)}/shares';
   }
 
+  static String connectionName(String connectionId) {
+    return '${connection(connectionId)}/name';
+  }
+
   static String workoutHidden(String workoutId) {
     return '$workouts/$workoutId/hidden';
   }

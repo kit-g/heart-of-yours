@@ -487,6 +487,7 @@ class _BesideProgram extends StatelessWidget {
           _ProgramCard(
             key: AppKeys.coachingClientCopy(id),
             client: client,
+            id: id,
             name: name,
             following: false,
             waiting: waiting,

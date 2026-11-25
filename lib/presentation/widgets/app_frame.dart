@@ -202,6 +202,9 @@ Future<void> _customCallbacks(BuildContext context, int branch) async {
       if (LayoutProvider.of(context) == .compact && context.canPop()) {
         return context.pop();
       }
+      // two panes, with the archive in the library's place: backed out of a
+      // step at a time, as a pushed page is on one
+      if (HeartRouter.backOutOfExerciseArchive(context)) return;
 
       return Scrolls.of(context).resetExerciseStack();
   }

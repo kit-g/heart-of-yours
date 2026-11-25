@@ -172,6 +172,106 @@ void main() {
     ]);
   });
 
+  test('a look clears a changed program too, and keeps the rest of the row (#745)', () async {
+    server.clients.add(
+      ClientSummary(
+        connectionId: 'c-muffin',
+        studentId: 'muffin',
+        name: 'Muff',
+        namedByYou: true,
+        status: 'active',
+        reasons: ['changed', 'gap'],
+        assistant: true,
+      ),
+    );
+    await roster.load();
+
+    await roster.markReviewed(roster.clients.single);
+
+    final row = roster.clients.single;
+    expect(row.reasons, ['gap']);
+    expect((row.name, row.namedByYou, row.assistant), ('Muff', true, true));
+  });
+
+  test("a name the coach gave reaches the client's row, live or former (#753)", () async {
+    server.clients.add(_client('muffin'));
+    server.former.add(
+      ClientSummary(connectionId: 'c-pepper', studentId: 'pepper', status: 'severed', reasons: const []),
+    );
+    await roster.load();
+    await roster.loadFormer();
+    var told = 0;
+    roster.addListener(() => told++);
+
+    Connection named(String id, String? name, {required bool byYou}) => Connection(
+      targetId: id.substring(2),
+      role: .coach,
+      domain: .fitness,
+      status: .active,
+      createdAt: DateTime.utc(2026),
+      connectionId: id,
+      name: name,
+      namedByYou: byYou,
+    );
+    roster.renamed(named('c-muffin', 'Muff', byYou: true));
+    roster.renamed(named('c-pepper', 'Pep', byYou: true));
+    roster.renamed(named('c-nobody', 'Nope', byYou: true));
+
+    expect((roster.clients.single.name, roster.clients.single.namedByYou), ('Muff', true));
+    expect(roster.client('c-pepper')?.name, 'Pep');
+    expect(told, 2, reason: 'a connection no row is about changes nothing');
+
+    roster.renamed(named('c-muffin', 'muffin', byYou: false));
+    expect((roster.clients.single.name, roster.clients.single.namedByYou), ('muffin', false));
+  });
+
+  test('a name is the coach\'s for the person: every row of theirs takes it, in any domain (#753)', () async {
+    server.clients.addAll([
+      ClientSummary(connectionId: 'c-fit', studentId: 'muffin', name: 'muffin', status: 'active', reasons: const []),
+      ClientSummary(connectionId: 'c-run', studentId: 'muffin', name: 'muffin', status: 'active', reasons: const []),
+      _client('pepper'),
+    ]);
+    await roster.load();
+
+    roster.renamed(
+      Connection(
+        targetId: 'muffin',
+        role: .coach,
+        domain: .fitness,
+        status: .active,
+        createdAt: DateTime.utc(2026),
+        connectionId: 'c-fit',
+        name: 'Muff',
+        namedByYou: true,
+      ),
+    );
+
+    expect(roster.clients.map((each) => each.name), ['Muff', 'Muff', 'pepper']);
+  });
+
+  test('a read already out when a name was given keeps the name (#753)', () async {
+    server.clients.add(_client('muffin'));
+    await roster.load();
+    final reading = roster.load();
+    roster.renamed(
+      Connection(
+        targetId: 'muffin',
+        role: .coach,
+        domain: .fitness,
+        status: .active,
+        createdAt: DateTime.utc(2026),
+        connectionId: 'c-muffin',
+        name: 'Muff',
+        namedByYou: true,
+      ),
+    );
+    await reading;
+    expect(roster.clients.single.name, 'Muff', reason: 'the read began before the name');
+
+    await roster.load();
+    expect(roster.clients.single.name, 'muffin', reason: "a read after it is the server's word");
+  });
+
   test('a look is counted once the server took it, and a refused one is not (#568)', () async {
     final reported = ReportedAnalytics();
     roster = Roster(

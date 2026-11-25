@@ -161,6 +161,24 @@ final class HeartRouter {
     };
   }
 
+  /// A step back out of the Exercises tab's archive, where it is up beside or
+  /// in place of the library on a tablet (#718): from an exercise of it to the
+  /// archive, from the archive to the library. Answers whether there was one
+  /// to take: the tab's re-tap backs out of what it would otherwise not
+  /// reach, since the list it scrolls is the library put away underneath.
+  static bool backOutOfExerciseArchive(BuildContext context) {
+    switch (GoRouter.of(context).state.uri.pathSegments) {
+      case [_exercisesName, _exerciseArchivedSegment, _]:
+        context.goToExerciseArchive();
+        return true;
+      case [_exercisesName, _exerciseArchivedSegment]:
+        context.closeExerciseDetail();
+        return true;
+      default:
+        return false;
+    }
+  }
+
   /// A link into the left-out Exercises tab that arrived before there was a
   /// screen to open it over: a cold start's, or one that met a gate.
   static _OverTheTab? _heldLink;

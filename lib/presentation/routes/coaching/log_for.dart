@@ -84,7 +84,7 @@ class _LogForButtonState extends State<_LogForButton> {
   Future<void> _log(BuildContext context) async {
     final client = widget.client;
     final l = L.of(context);
-    final name = _clientName(l, client);
+    final name = clientName(l, client);
     final sessions = await _sessionsOf(context);
     if (!context.mounted) return;
     final _LogStart start;
