@@ -237,6 +237,41 @@ void main() {
       expect(messages.thread(threadId).messages.single.text, 'queued');
     });
 
+    test('one counts as locked only once its key was looked for', () async {
+      server.items = [_item('stuck', cursor: 'c1')];
+      cipher.missing.add('stuck');
+      cipher.holdReceive = Completer();
+      await messages.load();
+
+      unawaited(messages.open(threadId));
+      await pumpEventQueue();
+      expect(messages.thread(threadId).messages.single.opened, isA<Locked>());
+      expect(messages.thread(threadId).locked, isEmpty, reason: 'its key may be in the queue');
+
+      cipher.holdReceive!.complete();
+      await pumpEventQueue();
+      expect(messages.thread(threadId).locked.map((each) => each.id), ['item-stuck']);
+
+      cipher.missing.clear();
+      cipher.arrive(threadId);
+      await pumpEventQueue();
+      expect(messages.thread(threadId).locked, isEmpty);
+    });
+
+    test('one whose key was in the queue never counts as locked', () async {
+      server.items = [_item('queued', cursor: 'c1')];
+      cipher.missing.add('queued');
+      cipher.queued = {threadId};
+      await messages.load();
+      var seen = false;
+      messages.addListener(() => seen |= messages.thread(threadId).locked.isNotEmpty);
+
+      await messages.open(threadId);
+      await pumpEventQueue();
+
+      expect(seen, isFalse);
+    });
+
     test('coming back to the front reads the inbox and the thread on screen', () async {
       server.items = [_item('first', cursor: 'c1')];
       await messages.load();
@@ -1008,11 +1043,15 @@ class _Cipher implements ThreadCipher {
   Set<String> queued = {};
   int receives = 0;
 
+  /// Holds [receive] until completed.
+  Completer<void>? holdReceive;
+
   void arrive(String threadId) => _keys.add(threadId);
 
   @override
   Future<void> receive() async {
     receives++;
+    await holdReceive?.future;
     if (queued.isEmpty) return;
     missing.clear();
     for (final each in queued) {

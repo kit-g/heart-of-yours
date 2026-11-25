@@ -111,6 +111,9 @@ const _coachingClientNotesName = 'coachingClientNotes';
 const _coachingClientLogName = 'coachingClientLog';
 const _threadName = 'thread';
 const _threadPath = '/messages/:connectionId';
+// the account's devices over a conversation (#555)
+const _yourDevicesOverName = 'yourDevicesOver';
+const _yourDevicesOverPath = '/yourDevices';
 const _coachingProgramsName = 'coachingPrograms';
 const _coachingProgramsPath = '$_coachingPath/programs';
 // a coach's library (#557), under the Programs tab

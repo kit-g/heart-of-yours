@@ -131,7 +131,13 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) => ListView(
-          padding: .symmetric(horizontal: math.max(0, (constraints.maxWidth - _maxWidth) / 2)),
+          padding: .fromLTRB(
+            math.max(0, (constraints.maxWidth - _maxWidth) / 2),
+            0,
+            math.max(0, (constraints.maxWidth - _maxWidth) / 2),
+            // over the whole app, nothing below it keeps clear of the edge
+            MediaQuery.paddingOf(context).bottom,
+          ),
           children: [
             Padding(
               padding: const .all(16),

@@ -8,9 +8,12 @@ import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/core/env/config.dart';
 import 'package:heart/core/utils/message_runs.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/navigation/pushes.dart' show pushesOn;
+import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/confirm.dart';
 import 'package:heart/presentation/widgets/in_view.dart';
@@ -90,19 +93,32 @@ const threadWidth = 720.0;
 /// which conversation it is.
 String threadName(BuildContext context, Thread? thread, {String? connectionId, String? fallback}) {
   final l = L.of(context);
-  final coaching = Coaching.of(context);
   final connection = thread?.connectionId ?? connectionId;
-  final student = coaching.coaches.any((each) => each.connectionId == connection);
+  return switch (_knownName(context, thread, connectionId: connectionId, fallback: fallback)) {
+    final String name => name,
+    null when _isCoach(context, connection) => l.yourCoach,
+    null => l.coachingClientUnnamed,
+  };
+}
+
+/// Whether [connectionId] is with one of this account's coaches.
+bool _isCoach(BuildContext context, String? connectionId) {
+  return Coaching.of(context).coaches.any((each) => each.connectionId == connectionId);
+}
+
+/// A name for who a conversation is with, as [threadName] has it, or null
+/// where only the role they play is known.
+String? _knownName(BuildContext context, Thread? thread, {String? connectionId, String? fallback}) {
+  final connection = thread?.connectionId ?? connectionId;
   final named = _connectionOf(context, connection)?.name;
   return switch ((thread?.otherName?.trim(), fallback?.trim(), named?.trim())) {
     (final String name, _, _) when name.isNotEmpty => name,
     (_, final String name, _) when name.isNotEmpty => name,
     (_, _, final String name) when name.isNotEmpty => name,
-    _ when student => switch (connection) {
-      final String id => Preferences.of(context).coachName(id) ?? l.yourCoach,
-      null => l.yourCoach,
+    _ => switch (connection) {
+      final String id when _isCoach(context, id) => Preferences.of(context).coachName(id),
+      _ => null,
     },
-    _ => l.coachingClientUnnamed,
   };
 }
 
@@ -146,18 +162,25 @@ class _ThreadViewState extends State<ThreadView> {
   final _opening = ValueNotifier(_Opening.opening);
   final _text = TextEditingController();
   late final Messages _messages;
+  late final DeviceKeys? _keys;
   String? _threadId;
+
+  /// The account's devices were read for this conversation, or are being.
+  bool _readDevices = false;
 
   @override
   void initState() {
     super.initState();
-    _messages = Messages.of(context);
+    _messages = Messages.of(context)..addListener(_devicesFor);
+    _keys = Provider.of<DeviceKeys?>(context, listen: false)?..addListener(_devicesFor);
     _text.addListener(_keepDraft);
     WidgetsBinding.instance.addPostFrameCallback((_) => _open());
   }
 
   @override
   void dispose() {
+    _messages.removeListener(_devicesFor);
+    _keys?.removeListener(_devicesFor);
     if (_threadId case final String id) _messages.close(id);
     _text
       ..removeListener(_keepDraft)
@@ -168,6 +191,23 @@ class _ThreadViewState extends State<ThreadView> {
 
   void _keepDraft() {
     if (_threadId case final String id) _messages.keepDraft(id, _text.text);
+  }
+
+  /// What opens locked messages turns on the account's devices, which nothing
+  /// may have read since the app started: read once, while some are shown and
+  /// this device's keys run.
+  Future<void> _devicesFor() async {
+    final keys = _keys;
+    final (userId, threadId) = (_messages.userId, _threadId);
+    if (keys == null || userId == null || threadId == null) return;
+    if (_readDevices || keys.status != .published || keys.peer(userId) != null) return;
+    if (_messages.thread(threadId).locked.isEmpty) return;
+    _readDevices = true;
+    try {
+      await keys.devicesOf(userId);
+    } catch (_) {
+      // offline, or keys stopped on the way: nothing is said of them
+    }
   }
 
   Future<void> _open() async {
@@ -292,6 +332,7 @@ class _Conversation extends StatelessWidget {
     };
     // newest at the bottom, where the eye and the box are
     final shown = thread.messages.reversed.toList();
+    final newestLocked = thread.locked.lastOrNull?.id;
     final places = const MessageRuns().of([for (final each in thread.messages) (at: each.at, mine: each.mine)]);
     return Column(
       children: [
@@ -325,6 +366,8 @@ class _Conversation extends StatelessWidget {
                         connectionId: connectionId,
                         onOpenWorkout: onOpenWorkout,
                       ),
+                      if (shown[index].id == newestLocked)
+                        _LockedLine(connectionId: connectionId, thread: thread, closed: closed),
                     ],
                   ),
                   false => switch (thread.hasOlder) {
@@ -357,6 +400,114 @@ class _Conversation extends StatelessWidget {
           false => _Composer(connectionId: connectionId, text: text, onSend: onSend),
         },
       ],
+    );
+  }
+}
+
+/// What opens the messages this device has no key for, after the newest of
+/// them: with the way to Your devices and its link, to open on the device that
+/// approves this one, where that is what helps. Nothing until it is known.
+class _LockedLine extends StatelessWidget {
+  final String connectionId;
+  final MessageThread thread;
+
+  /// The conversation takes nothing more.
+  final bool closed;
+
+  const new({required this.connectionId, required this.thread, required this.closed});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final messages = Messages.watch(context);
+    final keys = Provider.of<DeviceKeys?>(context);
+    final connection = _connectionOf(context, connectionId, listen: true);
+    final inbox = messages.lookup(thread.threadId);
+    final reason = lockedReason(
+      supported: keys?.supported ?? false,
+      mine: thread.locked.any((each) => each.mine),
+      theirs: thread.locked.any((each) => !each.mine),
+      // a student's device holds their coach's fingerprint: it is the coach's
+      // devices that are checked
+      checked: connection?.role == .coach,
+      closed: closed || (inbox != null && inbox.connectionId == null),
+      own: switch (messages.userId) {
+        final String userId => keys?.peer(userId),
+        null => null,
+      },
+      deviceId: keys?.deviceId,
+    );
+    if (reason == null) return const SizedBox.shrink();
+    final words = switch (reason) {
+      .elsewhere => l.messagesLockedElsewhere,
+      .approve => l.messagesLockedApprove,
+      .others => switch (_knownName(context, inbox, connectionId: connectionId)) {
+        final String name => l.messagesLockedOthers(name),
+        null => l.messagesLockedOthersUnnamed,
+      },
+      .ownLater => l.messagesLockedLater,
+      .ended => l.messagesLockedEnded,
+      .gone => l.messagesLockedGone,
+    };
+    return Padding(
+      key: AppKeys.messagesLockedLine,
+      padding: const .fromLTRB(4, 8, 4, 8),
+      child: Column(
+        crossAxisAlignment: .start,
+        children: [
+          Row(
+            spacing: 12,
+            children: [
+              Icon(Icons.key_rounded, size: 20, color: colorScheme.onSurfaceVariant),
+              Expanded(
+                child: Text(words, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+              ),
+            ],
+          ),
+          if (reason == .approve && pushesOn(context, listen: true)) const _DevicesButtons(),
+        ],
+      ),
+    );
+  }
+}
+
+/// The way to Your devices, and its link for the device that approves.
+class _DevicesButtons extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final router = HeartRouter.maybeOf(context);
+    final domain = Provider.of<AppConfig?>(context, listen: false)?.appDomain;
+    return Padding(
+      // under the words, past the key
+      padding: const .only(left: 24),
+      child: Wrap(
+        spacing: 8,
+        children: [
+          if (router != null)
+            QuietButton(
+              key: AppKeys.messagesYourDevices,
+              plain: true,
+              onPressed: () => router.pushYourDevices(context),
+              child: Text(l.yourDevices),
+            ),
+          if (domain != null)
+            QuietButton(
+              key: AppKeys.messagesCopyDevicesLink,
+              plain: true,
+              icon: Icons.link_rounded,
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.maybeOf(context);
+                await Clipboard.setData(ClipboardData(text: '${HeartRouter.yourDevicesLink(domain)}'));
+                messenger?.snack(l.copiedToClipboard);
+              },
+              child: Text(l.messagesCopyDevicesLink),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -426,12 +577,10 @@ class _Bubble extends StatelessWidget {
     final words = textTheme.bodyLarge?.copyWith(color: foreground) ?? TextStyle(color: foreground);
     final (text, style, leading) = switch (message.opened) {
       Opened(:final text) => (text, words, null),
-      // says what opens it: the device has already asked for its key
+      // a line under the conversation says what opens it: the device has
+      // already asked for its key
       Locked() => (
-        switch (mine) {
-          true => l.messagesLockedYours,
-          false => l.messagesLocked,
-        },
+        l.messagesLocked,
         words.copyWith(fontStyle: .italic),
         Icons.key_rounded,
       ),

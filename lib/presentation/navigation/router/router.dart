@@ -15,7 +15,7 @@ import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/navigation/program_link.dart';
-import 'package:heart/presentation/navigation/pushes.dart' show pushesOn;
+import 'package:heart/presentation/navigation/pushes.dart' show pushesOn, pushesSettled;
 import 'package:heart/presentation/navigation/shortcuts.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/done/done.dart';
@@ -92,6 +92,7 @@ final class HeartRouter {
           _coachingRoute(),
           _invitationRoute(),
           _threadRoute(),
+          _yourDevicesOverRoute(),
           _upgradeRequiredRoute(),
           _onboardingRoute(),
           _activeWorkoutRoute(),
@@ -465,6 +466,16 @@ final class HeartRouter {
   void openThread(String connectionId) {
     config.pushNamed(_threadName, pathParameters: {'connectionId': connectionId});
   }
+
+  /// Your devices (#555), over what asked for it. Only where device keys run:
+  /// a push the route turned away would put a second copy of the tabs on top.
+  void pushYourDevices(BuildContext context) {
+    if (!pushesOn(context) || !DeviceKeys.of(context).supported) return;
+    config.pushNamed(_yourDevicesOverName);
+  }
+
+  /// The link to Your devices, to open on another device.
+  static Uri yourDevicesLink(String domain) => Uri.https(domain, '$_profilePath/$_settingsPath/$_yourDevicesPath');
 
   /// A coach's invitation (#553), as its link would open it.
   void openInvitation(String token, {String? fingerprint}) {

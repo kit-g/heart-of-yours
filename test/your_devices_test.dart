@@ -8,6 +8,10 @@ import 'package:go_router/go_router.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/visual.dart' show dialogWidth;
+import 'package:heart/presentation/navigation/pushes.dart' show PushPresenter;
+import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
+import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage;
+import 'package:heart/presentation/routes/settings/settings.dart' show SettingsPage, YourDevicesPage;
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -139,9 +143,13 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
-  Future<void> pump(WidgetTester tester, {Size size = const Size(1200, 2400)}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    Size size = const Size(1200, 2400),
+    Map<String, Object> features = const {'feature-yourCoach': 'on'},
+  }) async {
     tall(tester, size: size);
-    SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-yourCoach': 'on'});
+    SharedPreferences.setMockInitialValues({...pastOnboarding(), ...features});
     await const TestAppHarness().pumpHeartApp(
       tester,
       db: db,
@@ -318,6 +326,150 @@ void main() {
       ),
     );
   }
+
+  /// Muffin coaches Sam, whose message this device has no key for.
+  void lockedConversation() {
+    when(api.registerAccount(any)).thenAnswer((invocation) async {
+      final user = invocation.positionalArguments.single as User;
+      return User(id: user.id, email: user.email, settings: user.settings, entitlements: ['coach']);
+    });
+    when(api.getConnections()).thenAnswer(
+      (_) async => [
+        Connection(
+          targetId: 'sam',
+          role: .coach,
+          domain: .fitness,
+          status: .active,
+          createdAt: DateTime.utc(2026, 11, 8),
+          connectionId: 'c-sam',
+          acceptedAt: DateTime.utc(2026, 11, 8),
+          name: 'Sam',
+        ),
+      ],
+    );
+    final thread = Thread(id: 't-sam', connectionId: 'c-sam', otherId: 'sam', otherName: 'Sam');
+    when(api.openThread('c-sam')).thenAnswer((_) async => thread);
+    when(api.getThreads()).thenAnswer((_) async => [thread]);
+    final at = DateTime.utc(2026, 11, 12, 8);
+    final held = <StoredItem>[];
+    when(api.getThreadItems(any, limit: anyNamed('limit'))).thenAnswer(
+      (_) async => (
+        items: [
+          ThreadItem(
+            id: '01a1e000-0000-7000-8000-0000000000f1',
+            threadId: 't-sam',
+            senderId: 'sam',
+            kind: 'message',
+            content: 'm1.somesession.AAAA',
+            commitment: 'c',
+            tag: 't',
+            tagKey: 'k',
+            at: at,
+            createdAt: at,
+            cursor: 'c1',
+          ),
+        ],
+        cursor: null,
+      ),
+    );
+    when(api.markThreadRead(any, any)).thenAnswer((_) async {});
+    when(db.getThreads(any)).thenAnswer((_) async => []);
+    when(db.storeThreads(any, any)).thenAnswer((_) async {});
+    when(db.storeThread(any, any)).thenAnswer((_) async {});
+    when(db.storeThreadItems(any, any)).thenAnswer((invocation) async {
+      held.addAll(invocation.positionalArguments[1] as Iterable<StoredItem>);
+    });
+    when(db.getThreadItems(any, any)).thenAnswer((_) async => [...held]);
+  }
+
+  testWidgets('it opens over a conversation that needs it, clear of the edge, and Back returns there', (tester) async {
+    lockedConversation();
+    await pump(tester, size: const Size(400, 860));
+    tester.view.padding = const FakeViewPadding(bottom: 34);
+    HeartRouter.of(root(tester)).openThread('c-sam');
+    await tester.pumpTimes();
+    expect(find.byType(ThreadPage), findsOneWidget);
+    expect(find.byKey(AppKeys.messagesLockedLine), findsOneWidget);
+
+    await tester.tap(find.byKey(AppKeys.messagesYourDevices));
+    await tester.pumpTimes();
+    expect(find.byKey(AppKeys.compareCodes(tablet.id)), findsOneWidget);
+    final list = tester.widget<ListView>(
+      find.ancestor(of: find.byKey(AppKeys.compareCodes(tablet.id)), matching: find.byType(ListView)).first,
+    );
+    expect(list.padding!.resolve(.ltr).bottom, 34);
+
+    await tester.pageBack();
+    await tester.pumpTimes();
+    expect(find.byKey(AppKeys.compareCodes(tablet.id)), findsNothing);
+    expect(find.byType(ThreadPage), findsOneWidget);
+  });
+
+  testWidgets('off, nothing pushes it', (tester) async {
+    await pump(tester, features: {});
+    HeartRouter.of(root(tester)).pushYourDevices(root(tester));
+    await tester.pumpTimes();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(YourDevicesPage), findsNothing);
+  });
+
+  group('its link starting the app', () {
+    Future<void> start(WidgetTester tester, {Map<String, Object> features = const {'feature-yourCoach': 'on'}}) {
+      final platform = tester.binding.platformDispatcher
+        ..defaultRouteNameTestValue = HeartRouter.yourDevicesLink('heart-of.me').path;
+      addTearDown(platform.clearDefaultRouteNameTestValue);
+      return pump(tester, features: features);
+    }
+
+    testWidgets('opens it for a student', (tester) async {
+      await start(tester);
+      expect(find.byType(YourDevicesPage), findsOneWidget);
+    });
+
+    testWidgets('opens it for a coach with only Coach people on, once the account says so', (tester) async {
+      final answer = Completer<void>();
+      when(api.registerAccount(any)).thenAnswer((invocation) async {
+        final user = invocation.positionalArguments.single as User;
+        await answer.future;
+        return User(id: user.id, email: user.email, settings: user.settings, entitlements: ['coach']);
+      });
+      await start(tester, features: {'feature-coachPeople': 'on'});
+      // no page yet for the harness to register from
+      unawaited(Auth.of(tester.element(find.byType(PushPresenter))).registerAgain());
+      await tester.pumpTimes();
+      expect(find.byType(YourDevicesPage), findsNothing, reason: 'not before it is known');
+
+      answer.complete();
+      await tester.pumpTimes();
+      expect(find.byType(YourDevicesPage), findsOneWidget);
+    });
+
+    testWidgets('is one the app has no screen for with both off', (tester) async {
+      await start(tester, features: {});
+      expect(find.byType(YourDevicesPage), findsNothing);
+      expect(find.byType(SettingsPage), findsOneWidget);
+    });
+
+    testWidgets('is let go where the account never says', (tester) async {
+      when(api.registerAccount(any)).thenAnswer((_) => Completer<User>().future);
+      await start(tester, features: {'feature-coachPeople': 'on'});
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pumpTimes();
+      expect(find.byType(YourDevicesPage), findsNothing);
+      expect(find.byType(SettingsPage), findsOneWidget);
+    });
+  });
+
+  testWidgets('its link is the page in Settings', (tester) async {
+    expect(
+      '${HeartRouter.yourDevicesLink('heart-of.me')}',
+      'https://heart-of.me/profile/settings/devices',
+    );
+    await pump(tester);
+    GoRouter.of(root(tester)).go(HeartRouter.yourDevicesLink('heart-of.me').path);
+    await tester.pumpTimes();
+    expect(find.byKey(AppKeys.compareCodes(tablet.id)), findsOneWidget);
+  });
 
   testWidgets('one already asked for shows as the page opens, with no push (#734)', (tester) async {
     await pump(tester);

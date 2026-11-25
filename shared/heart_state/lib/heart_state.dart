@@ -27,6 +27,7 @@ export 'src/history_filter.dart';
 export 'src/import.dart';
 export 'src/balance.dart';
 export 'src/lens.dart';
+export 'src/locked_messages.dart';
 export 'src/messages.dart';
 export 'src/muscle_family.dart';
 export 'src/package.dart';
