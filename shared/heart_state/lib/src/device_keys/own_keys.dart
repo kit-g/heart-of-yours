@@ -74,6 +74,12 @@ extension _OwnKeys on DeviceKeys {
         await _create(run, run.sealbox);
         return _publish(run);
       }
+      // expected, not an error: this device waits for room
+      if (error case ServerRefusal(code: 'device_limit')) {
+        run.status = .full;
+        _changed(run);
+        return;
+      }
       run.status = .failed;
       _changed(run);
       rethrow;

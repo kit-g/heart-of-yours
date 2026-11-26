@@ -6,6 +6,10 @@ enum LockedReason {
   /// This device keeps no keys (the web, a desktop): they open on a phone.
   elsewhere,
 
+  /// The account holds as many devices as it can, so this one's keys aren't
+  /// on the server: removing one it no longer uses lets it in (#750).
+  full,
+
   /// Another of the account's devices has to approve this one.
   approve,
 
@@ -30,6 +34,7 @@ enum LockedReason {
 /// they take for this person's.
 ///
 /// - [supported]: this device can keep keys at all;
+/// - [full]: its keys wait for room on the account;
 /// - [mine], [theirs]: whose messages are locked;
 /// - [checked]: the other person has a fingerprint to check this one's devices
 ///   against, as a student has of their coach's, and so leaves out one that
@@ -39,6 +44,7 @@ enum LockedReason {
 /// - [deviceId]: this device's, null while its keys don't run.
 LockedReason? lockedReason({
   required bool supported,
+  required bool full,
   required bool mine,
   required bool theirs,
   required bool checked,
@@ -48,6 +54,8 @@ LockedReason? lockedReason({
 }) {
   if (!mine && !theirs) return null;
   if (!supported) return .elsewhere;
+  // nothing reaches it until it is in: the rest waits on that
+  if (full) return .full;
   // with no keys running, everything is locked: no reason of its own yet
   if (deviceId == null) return null;
   final theirsOpen = theirs && !closed;

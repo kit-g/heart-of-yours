@@ -138,17 +138,126 @@ void main() {
     });
 
     test('a refusal leaves the keys unpublished and is reported, not thrown', () async {
-      server.refuseNext['publish'] = refusedAs({'error': 'conflict', 'code': 'device_limit'}, status: 409);
+      server.refuseNext['publish'] = refusedAs({'error': 'conflict', 'code': 'rate_limited'}, status: 429);
       final phone = device('dana');
 
       await phone.start('dana');
 
       expect(phone.status, DeviceKeysStatus.failed);
       expect(errors, [
-        isRefusal('device_limit'),
+        isRefusal('rate_limited'),
       ]);
       await phone.refresh();
       expect(phone.status, DeviceKeysStatus.published);
+    });
+  });
+
+  group('a full account (#750)', () {
+    Object full() => refusedAs({'error': 'conflict', 'code': 'device_limit'}, status: 409);
+
+    test('a device the account has no room for waits, says so, and reports nothing', () async {
+      server.refuseNext['publish'] = full();
+      final phone = device('dana');
+
+      await phone.start('dana');
+
+      expect(phone.status, DeviceKeysStatus.full);
+      expect(phone.deviceId, isNotNull);
+      expect(errors, isEmpty);
+      // nothing else goes out for a device the server doesn't know
+      expect(server.calls.where((each) => !each.startsWith('publish')), isEmpty);
+    });
+
+    test('it goes on by itself at the next resume once there is room', () async {
+      server.refuseNext['publish'] = full();
+      final phone = device('dana');
+      await phone.start('dana');
+
+      await phone.refresh();
+
+      expect(phone.status, DeviceKeysStatus.published);
+      expect(server.devices.keys, [phone.deviceId]);
+    });
+
+    test("it goes on as soon as another device of the account's is removed elsewhere", () async {
+      final tablet = device('dana');
+      await tablet.start('dana');
+      server.refuseNext['publish'] = full();
+      final phone = device('dana');
+      await phone.start('dana');
+      expect(phone.status, DeviceKeysStatus.full);
+
+      server.remove(tablet.deviceId!);
+      await phone.devicesChanged('dana');
+
+      expect(phone.status, DeviceKeysStatus.published);
+      expect(errors, isEmpty);
+    });
+
+    test('it goes on right after it removes a device itself', () async {
+      final tablet = device('dana');
+      await tablet.start('dana');
+      server.refuseNext['publish'] = full();
+      final phone = device('dana');
+      await phone.start('dana');
+      await phone.devicesOf('dana');
+
+      await phone.remove(tablet.deviceId!);
+
+      expect(server.removed, {tablet.deviceId});
+      expect(phone.status, DeviceKeysStatus.published);
+      expect(phone.peer('dana')!.devices.map((each) => each.id), [phone.deviceId]);
+      expect(errors, isEmpty);
+    });
+
+    test('still full after a removal elsewhere: it waits again, quietly', () async {
+      final tablet = device('dana');
+      await tablet.start('dana');
+      server.refuseNext['publish'] = full();
+      final phone = device('dana');
+      await phone.start('dana');
+
+      server.refuseNext['publish'] = full();
+      await phone.devicesChanged('dana');
+
+      expect(phone.status, DeviceKeysStatus.full);
+      expect(errors, isEmpty);
+    });
+  });
+
+  group('removing a device (#750)', () {
+    test('this device is never removed from here', () async {
+      final phone = device('dana');
+      await phone.start('dana');
+
+      expect(phone.remove(phone.deviceId!), throwsArgumentError);
+      expect(server.removed, isEmpty);
+    });
+
+    test('what the server says goes to whoever asked, and nothing changes', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      server.refuseNext['remove'] = refusedAs({'error': 'not found', 'code': 'not_found'}, status: 404);
+
+      await expectLater(phone.remove(tablet.deviceId!), throwsA(isRefusal('not_found')));
+      expect(server.devices.keys, contains(tablet.deviceId));
+    });
+
+    test('removed, even when the list after it fails to read: the removal is kept', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await phone.devicesOf('dana');
+      server.refuseNext['devices'] = TimeoutException('offline');
+
+      await phone.remove(tablet.deviceId!);
+
+      expect(server.removed, {tablet.deviceId});
+      expect(phone.peer('dana')!.devices.map((each) => each.id), [phone.deviceId]);
+      expect(errors, [isA<TimeoutException>()]);
     });
   });
 
@@ -1001,6 +1110,86 @@ void main() {
       expect(opened.map((each) => (each as Opened).text), ['before', 'after']);
     });
 
+    test('removed from here, the next message seals under a new key before anything is read again', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      final student = device('sam');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await student.start('sam');
+      await approve(phone, tablet);
+      await phone.devicesOf('dana');
+      final first = await phone.seal(thread, 'before');
+      await phone.share(thread, userId: 'sam');
+
+      await phone.remove(tablet.deviceId!);
+      final second = await phone.seal(thread, 'after');
+
+      expect(sessionOf(second), isNot(sessionOf(first)));
+    });
+
+    test('a removal heard before a relaunch replaces the key at the first seal after it', () async {
+      final vault = _Vault();
+      final phone = device('dana', vault: vault);
+      final tablet = device('dana');
+      final student = device('sam');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await student.start('sam');
+      await approve(phone, tablet);
+      final mine = await phone.seal(thread, 'mine before');
+      await phone.share(thread, userId: 'sam');
+
+      // removed elsewhere, and heard of here
+      server.remove(tablet.deviceId!);
+      await phone.devicesChanged('dana');
+      phone.stop();
+      // the same phone, launched again: offline, nothing read yet
+      final again = device('dana', vault: vault, remote: RemoteAccess(allowed: false));
+      await again.start('dana');
+      final after = await again.seal(thread, 'mine after');
+
+      expect(sessionOf(after), isNot(sessionOf(mine)));
+    });
+
+    test("the other person's device removed: the next message seals under a new key, after a relaunch too", () async {
+      final vault = _Vault();
+      final coach = device('dana', vault: vault);
+      final phone = device('sam');
+      final tablet = device('sam');
+      await coach.start('dana');
+      await phone.start('sam');
+      await tablet.start('sam');
+      final first = await coach.seal(thread, 'before');
+      await coach.share(thread, userId: 'sam');
+      server.remove(tablet.deviceId!);
+      await coach.devicesChanged('sam');
+      coach.stop();
+      final again = device('dana', vault: vault, remote: RemoteAccess(allowed: false));
+      await again.start('dana');
+
+      final second = await again.seal(thread, 'after');
+
+      expect(sessionOf(second), isNot(sessionOf(first)));
+    });
+
+    test('a key nobody removed keeps sealing, before and after a relaunch', () async {
+      final vault = _Vault();
+      final phone = device('dana', vault: vault);
+      final student = device('sam');
+      await phone.start('dana');
+      await student.start('sam');
+      final first = await phone.seal(thread, 'one');
+      await phone.share(thread, userId: 'sam');
+      phone.stop();
+      final again = device('dana', vault: vault, remote: RemoteAccess(allowed: false));
+      await again.start('dana');
+
+      final second = await again.seal(thread, 'two');
+
+      expect(sessionOf(second), sessionOf(first));
+    });
+
     test('someone with no device to read it on is shared nothing, so what waits for it stays back', () async {
       final student = device('sam');
       await student.start('sam');
@@ -1391,6 +1580,26 @@ void main() {
       expect(keyOf(second), isNot(keyOf(first)));
       final opened = await phone.openNotes([stored('n1', first), stored('n2', second)]);
       expect(opened.map((each) => (each as ReadNote).text), ['before', 'after']);
+    });
+
+    test('removed from here, the next note seals under a new key, after a relaunch too', () async {
+      final vault = _Vault();
+      final phone = device('dana', vault: vault);
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await approve(phone, tablet);
+      final first = await phone.sealNote('n1', connectionId: client, text: 'before');
+      await phone.shareNoteKeys();
+
+      await phone.remove(tablet.deviceId!);
+      phone.stop();
+      final again = device('dana', vault: vault, remote: RemoteAccess(allowed: false), sharesNoteKeys: () => false);
+      await again.start('dana');
+      final second = await again.sealNote('n2', connectionId: client, text: 'after');
+
+      String keyOf(String content) => content.split('.')[1];
+      expect(keyOf(second), isNot(keyOf(first)));
     });
 
     test('with notes off, a device the account adds hears nothing of them until they are used', () async {
@@ -2422,6 +2631,14 @@ class _As implements RemoteKeyService {
       (final by, final said) when by == vouchedBy && said == signature => device,
       _ => throw refusedAs({'error': 'conflict', 'code': 'already_vouched'}),
     };
+  }
+
+  @override
+  Future<void> removeCryptoDevice(String deviceId) async {
+    server.calls.add('remove $me');
+    await _answer('remove');
+    _mine(deviceId);
+    server.remove(deviceId);
   }
 
   @override

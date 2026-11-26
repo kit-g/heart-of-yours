@@ -101,7 +101,13 @@ extension _Notes on DeviceKeys {
     if (run == null) throw StateError('device keys are off');
     return _notesSerial(run, () async {
       final record = await _NoteKeys.read(run);
-      final (keyId, key) = record.current ?? await _newNoteKey(run, record);
+      // a device that held the current key and is gone: sealed under a new
+      // one it never gets
+      final current = switch (record.current) {
+        (final String id, _) && final current when !await run.heldByGone(record.holders(id, run.userId)) => current,
+        _ => null,
+      };
+      final (keyId, key) = current ?? await _newNoteKey(run, record);
       final sealed = _guard(
         () => Sealbox.sealNote(
           key: key,
@@ -173,7 +179,6 @@ extension _Notes on DeviceKeys {
     if (fresh && record.keys.keys.every(covered)) return;
 
     final devices = (await devicesOf(run.userId)).devices;
-    final listed = {for (final each in devices) each.id};
     // only the devices this one trusts: one the server merely lists could be
     // anyone's, and gets the keys once a code is compared with it
     final trusted = {
@@ -181,11 +186,13 @@ extension _Notes on DeviceKeys {
         if (each.trusted) each.id,
     };
     // a device that held the current key and is gone: what is written from
-    // here on seals under a new one it never gets
+    // here on seals under a new one it never gets, made now so it travels
+    // with this share
     record = await _notesSerial(run, () async {
       final latest = await _NoteKeys.read(run);
-      final held = latest.shared[latest.current?.$1] ?? const <String>{};
-      if (held.any((id) => id != run.device?.id && !listed.contains(id))) await _newNoteKey(run, latest);
+      if (latest.current case (final String id, _) when await run.heldByGone(latest.holders(id, run.userId))) {
+        await _newNoteKey(run, latest);
+      }
       return latest;
     });
     for (final MapEntry(key: keyId, value: key) in record.keys.entries) {
@@ -290,6 +297,11 @@ class _NoteKeys {
 
   /// None yet: filled as keys are made or arrive.
   new empty() : keys = {}, shared = {}, mine = [];
+
+  /// The devices [keyId] reached, or came from, all of [userId]'s own.
+  Map<String, String> holders(String keyId, String userId) {
+    return {for (final each in shared[keyId] ?? const <String>{}) each: userId};
+  }
 
   /// What a note is sealed under: the newest made here, or, while this device
   /// made none, the newest received.

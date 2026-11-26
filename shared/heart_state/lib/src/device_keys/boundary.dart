@@ -17,6 +17,10 @@ abstract interface class RemoteKeyService {
 
   Future<CryptoDevice> vouchForCryptoDevice(String deviceId, {required String vouchedBy, required String signature});
 
+  /// Removes one of the account's devices for good: it can't come back under
+  /// its id, and nothing more is sent to it.
+  Future<void> removeCryptoDevice(String deviceId);
+
   Future<int> addOneTimeKeys(String deviceId, Map<String, String> keys);
 
   Future<int> countOneTimeKeys(String deviceId);

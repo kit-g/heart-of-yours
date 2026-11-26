@@ -254,6 +254,17 @@ void main() {
       expectSaid("Some messages can't be opened any more.");
     });
 
+    testWidgets('on a device the account has no room for say so, and no link is offered (#750)', (tester) async {
+      keys
+        ..status = .full
+        ..others = {'tablet': .pinned};
+      await open(tester, from: ['muffin', 'whiskers']);
+      expectSaid(
+        "This device can't open messages yet: your account has as many devices as it can hold. "
+        'Remove one you no longer use in Your devices.',
+      );
+    });
+
     testWidgets('where no keys are kept open on a phone', (tester) async {
       keys.supported = false;
       keys.others = {'tablet': .unverified};

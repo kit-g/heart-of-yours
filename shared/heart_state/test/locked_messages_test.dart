@@ -30,6 +30,7 @@ void main() {
 
   LockedReason? reason({
     bool supported = true,
+    bool full = false,
     bool mine = false,
     bool theirs = false,
     bool checked = true,
@@ -39,6 +40,7 @@ void main() {
   }) {
     return lockedReason(
       supported: supported,
+      full: full,
       mine: mine,
       theirs: theirs,
       checked: checked,
@@ -55,6 +57,14 @@ void main() {
 
   test('where no keys are kept, they open elsewhere whatever else holds', () {
     expect(reason(supported: false, mine: true, theirs: true, closed: true, own: notLetIn), LockedReason.elsewhere);
+  });
+
+  test('a device the account has no room for says so first, whatever else holds (#750)', () {
+    expect(reason(theirs: true, full: true, own: letsIn), LockedReason.full);
+    expect(reason(mine: true, full: true, own: notLetIn), LockedReason.full);
+    expect(reason(theirs: true, closed: true, full: true), LockedReason.full);
+    expect(reason(full: true), isNull);
+    expect(reason(theirs: true, full: true, supported: false), LockedReason.elsewhere);
   });
 
   test("while this device's keys don't run, nothing is said", () {

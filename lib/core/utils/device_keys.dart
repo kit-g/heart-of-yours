@@ -36,6 +36,9 @@ class RemoteDeviceKeys implements RemoteKeyService {
   }
 
   @override
+  Future<void> removeCryptoDevice(String deviceId) => _api.removeCryptoDevice(deviceId);
+
+  @override
   Future<int> addOneTimeKeys(String deviceId, Map<String, String> keys) => _api.addOneTimeKeys(deviceId, keys);
 
   @override

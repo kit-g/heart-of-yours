@@ -6316,5 +6316,19 @@
   "pushNoteProgramChanged": "{name} changed {program}",
   "@pushNoteProgramChanged": {"description": "The in-app note when a coach changed a program they sent, arriving with the app open (#724). {name} is the coach, {program} the program's name", "type": "text", "placeholders": {"name": {}, "program": {}}},
   "exerciseLibraryUnavailable": "The exercise library couldn't be loaded.",
-  "@exerciseLibraryUnavailable": {"description": "Above the exercise list when the exercise library failed to download: only the user's own exercises, if any, are shown under it, with a button to try again (#723)", "type": "text", "placeholders": {}}
+  "@exerciseLibraryUnavailable": {"description": "Above the exercise list when the exercise library failed to download: only the user's own exercises, if any, are shown under it, with a button to try again (#723)", "type": "text", "placeholders": {}},
+  "yourDevicesFull": "Your account has as many devices as it can hold, so this one can't open your messages and notes yet. Remove a device you no longer use, and this one joins by itself.",
+  "@yourDevicesFull": {"description": "Your devices page, a notice at the top when this device's keys couldn't go on the server because the account holds the most devices it can (#750)", "type": "text", "placeholders": {}},
+  "deviceOptions": "Device options",
+  "@deviceOptions": {"description": "Tooltip of the button that opens a device's menu on the Your devices page (#750)", "type": "text", "placeholders": {}},
+  "deviceRemove": "Remove",
+  "@deviceRemove": {"description": "Your devices page: the menu item, and the confirm button, that remove one of the account's devices for good (#750)", "type": "text", "placeholders": {}},
+  "deviceRemoveTitle": "Remove {name}?",
+  "@deviceRemoveTitle": {"description": "Title of the dialog that asks before a device is removed (#750). {name} is the device's name, as Device A1B2C3", "type": "text", "placeholders": {"name": {"type": "String"}}},
+  "deviceRemoveBody": "It stops getting your messages and notes. This can't be undone: to use it again, open Heart on it and approve it as a new device.",
+  "@deviceRemoveBody": {"description": "Body of the dialog that asks before a device is removed (#750)", "type": "text", "placeholders": {}},
+  "deviceRemoveFailed": "Couldn't remove the device. Try again in a moment.",
+  "@deviceRemoveFailed": {"description": "Snackbar when removing a device failed (#750)", "type": "text", "placeholders": {}},
+  "messagesLockedFull": "This device can't open messages yet: your account has as many devices as it can hold. Remove one you no longer use in Your devices.",
+  "@messagesLockedFull": {"description": "Beside locked messages, when this device's keys couldn't go on the server because the account holds the most devices it can (#750)", "type": "text", "placeholders": {}}
 }

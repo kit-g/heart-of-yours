@@ -146,6 +146,26 @@ class _Run {
     );
   }
 
+  /// Whether one of [holders], devices each with whose it is, is no longer
+  /// among that person's devices as last read: a key one of them holds is
+  /// replaced before anything more is sealed under it. Read from the vault,
+  /// so a relaunch sees a removal before the next read of the devices does.
+  Future<bool> heldByGone(Map<String, String> holders) async {
+    for (final owner in holders.values.toSet()) {
+      final listed = switch (_decode(await read('seen.$owner'))) {
+        final Map seen => seen.keys.toSet(),
+        // never read: nothing to tell a removed device from
+        null => null,
+      };
+      if (listed == null) continue;
+      final gone = holders.entries.where(
+        (each) => each.value == owner && each.key != device?.id && !listed.contains(each.key),
+      );
+      if (gone.isNotEmpty) return true;
+    }
+    return false;
+  }
+
   /// The account's devices this one compared a code with, each by the keys
   /// it had then: what this device trusts of its own besides itself.
   Future<Map<String, String>> compared() async {

@@ -449,6 +449,7 @@ class _LockedLine extends StatelessWidget {
     final inbox = messages.lookup(thread.threadId);
     final reason = lockedReason(
       supported: keys?.supported ?? false,
+      full: keys?.status == .full,
       mine: thread.locked.any((each) => each.mine),
       theirs: thread.locked.any((each) => !each.mine),
       // a student's device holds their coach's fingerprint: it is the coach's
@@ -464,6 +465,7 @@ class _LockedLine extends StatelessWidget {
     if (reason == null) return const SizedBox.shrink();
     final words = switch (reason) {
       .elsewhere => l.messagesLockedElsewhere,
+      .full => l.messagesLockedFull,
       .approve => l.messagesLockedApprove,
       .others => switch (_knownName(context, inbox, connectionId: connectionId)) {
         final String name => l.messagesLockedOthers(name),
@@ -488,16 +490,25 @@ class _LockedLine extends StatelessWidget {
               ),
             ],
           ),
-          if (reason == .approve && pushesOn(context, listen: true)) const _DevicesButtons(),
+          // Your devices is there only while coaching runs
+          ...switch (reason) {
+            .approve when pushesOn(context, listen: true) => [const _DevicesButtons(link: true)],
+            // a device is removed from here, so the link is no help
+            .full when pushesOn(context, listen: true) => [const _DevicesButtons(link: false)],
+            _ => const <Widget>[],
+          },
         ],
       ),
     );
   }
 }
 
-/// The way to Your devices, and its link for the device that approves.
+/// The way to Your devices, and with [link] its link for the device that
+/// approves.
 class _DevicesButtons extends StatelessWidget {
-  const new();
+  final bool link;
+
+  const new({required this.link});
 
   @override
   Widget build(BuildContext context) {
@@ -517,7 +528,7 @@ class _DevicesButtons extends StatelessWidget {
               onPressed: () => router.pushYourDevices(context),
               child: Text(l.yourDevices),
             ),
-          if (domain != null)
+          if (domain != null && link)
             QuietButton(
               key: AppKeys.messagesCopyDevicesLink,
               plain: true,

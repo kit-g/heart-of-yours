@@ -99,9 +99,10 @@ abstract interface class ThreadCipher {
 /// makes them, or vouched for from one that is. A key is shared from
 /// its first message, so a device that comes later reads the whole session.
 /// A key is replaced after [_messagesPerKey] messages, after [_keyLife], when
-/// one of the devices it reached is removed, and when its saved state turns
-/// out older than its counter: a state restored from somewhere would seal at
-/// positions already used.
+/// one of the devices it reached is no longer listed (checked as it seals,
+/// against the devices last read, so a removal heard before a relaunch counts
+/// after it), and when its saved state turns out older than its counter: a
+/// state restored from somewhere would seal at positions already used.
 extension _Threads on DeviceKeys {
   static const _messagesPerKey = 100;
   static const _keyLife = Duration(days: 7);
@@ -123,6 +124,11 @@ extension _Threads on DeviceKeys {
     return _serial(run, () async {
       final franked = Sealbox.frank(text);
       final record = await _ThreadRecord.read(run, threadId);
+      // a device that held the current key and is gone: sealed under a new
+      // one it never gets
+      if (record.held(record.current) case final Map<String, String> held when await run.heldByGone(held)) {
+        record.current = null;
+      }
       // a second try under a new key, when the first finds its state stale
       final sealed =
           await _sealOnce(run, threadId, record, franked.inner) ??
@@ -224,24 +230,11 @@ extension _Threads on DeviceKeys {
     ({String deviceId, Set<String> sessions})? resend,
   }) async {
     final reader = peer.userId;
-    final listed = {for (final each in peer.devices) each.id};
     final receiving = {
       for (final each in peer.devices)
         if (_receives(run, peer, each)) each.id,
     };
     final record = await _serial(run, () => _ThreadRecord.read(run, threadId));
-    // a device that held the current key and is gone: the next message
-    // seals under a new one
-    if (record.own.lastOrNull case final _OwnKey last when record.current?.sessionId == last.sessionId) {
-      final gone = last.shared.entries.where((each) => each.value == reader && !listed.contains(each.key));
-      if (gone.isNotEmpty) {
-        await _serial(run, () async {
-          final latest = await _ThreadRecord.read(run, threadId);
-          latest.current = null;
-          await latest.save(run);
-        });
-      }
-    }
     for (final key in record.own) {
       final again = switch (resend) {
         (:final deviceId, :final sessions) when sessions.contains(key.sessionId) => deviceId,
@@ -630,6 +623,11 @@ class _ThreadRecord {
   final List<_OwnKey> own;
 
   new(this.threadId, {this.current, List<_OwnKey>? own}) : own = own ?? [];
+
+  /// The devices [out] reached, each with whose it is; null for none.
+  Map<String, String>? held(_Outbound? out) {
+    return own.where((each) => each.sessionId == out?.sessionId).firstOrNull?.shared;
+  }
 
   static Future<_ThreadRecord> read(_Run run, String threadId) async {
     return switch (_Run._decode(await run.read('thread.$threadId'))) {

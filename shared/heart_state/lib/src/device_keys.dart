@@ -71,6 +71,12 @@ enum DeviceKeysStatus {
   /// The server refused, or could not be reached; tried again on the next
   /// start or resume.
   failed,
+
+  /// The account holds as many devices with keys as the server takes
+  /// (`device_limit`): this one's go on once one is removed, here or
+  /// elsewhere, and are tried again at each start, resume and change to the
+  /// account's devices (#750).
+  full,
 }
 
 /// This device's keys for end-to-end encryption, and carrying sealed items
@@ -400,7 +406,10 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     try {
       await devicesOf(userId);
       final run = _run;
-      if (run == null || userId != run.userId || !(run.device?.published ?? false)) return;
+      if (run == null || userId != run.userId) return;
+      // a device removed elsewhere may have made room for this one
+      if (run.status == .full) await refresh();
+      if (!(run.device?.published ?? false)) return;
       // a vouch this device owes may be due, or answered by another's
       await _payOwed(run);
       // a device of the account's own may be new, or newly vouched for: one
@@ -411,6 +420,43 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     } on _Stopped {
       // stopped on the way: read again at the next start
     } catch (error, stacktrace) {
+      _report(error, stacktrace);
+    }
+  }
+
+  /// Removes [deviceId], another of the account's devices, for good: the
+  /// server sends it nothing more, and every key this device made that it
+  /// held is replaced before anything else is sealed under it. Then this
+  /// device publishes, when it waited for room. Throws what the server says,
+  /// and [ArgumentError] for this device, which is never removed from here.
+  Future<void> remove(String deviceId) async {
+    final run = _run;
+    if (run == null || !_remote.allowed) throw StateError('device keys are off');
+    final device = await _local(run);
+    if (deviceId == device.id) throw ArgumentError.value(deviceId, 'deviceId', 'this device');
+    await _serial(run, () async {
+      await run.service.removeCryptoDevice(deviceId).timeout(_answerTime);
+      // kept before anything else: a seal that comes before the next read of
+      // the devices finds it gone, even after a relaunch
+      await run.saveSeen(run.userId, {...await run.seen(run.userId)}..remove(deviceId));
+      await run.forgetSessions(deviceId);
+      if (run.peers[run.userId] case final Peer own) {
+        run.peers[run.userId] = Peer(
+          userId: own.userId,
+          check: own.check,
+          devices: [...own.devices.where((each) => each.id != deviceId)],
+        );
+      }
+    });
+    _changed(run);
+    try {
+      // in first, when it waited for room: then the list holds it too
+      if (run.status == .full) await refresh();
+      await devicesOf(run.userId);
+    } on _Stopped {
+      // stopped on the way: read again at the next start
+    } catch (error, stacktrace) {
+      // removed all the same: the list is read again on the next open
       _report(error, stacktrace);
     }
   }

@@ -281,6 +281,102 @@ void main() {
     expect(find.byKey(AppKeys.compareCodes(tablet.id)), findsNothing);
   });
 
+  group('removing a device (#750)', () {
+    Future<void> openMenu(WidgetTester tester) async {
+      await tester.tap(find.byKey(AppKeys.deviceMenu(tablet.id)));
+      await tester.pumpTimes();
+      await tester.tap(find.byKey(AppKeys.deviceRemove(tablet.id)));
+      await tester.pumpTimes();
+    }
+
+    testWidgets('another device is removed from its menu, asked once; this one has no menu', (tester) async {
+      when(api.removeCryptoDevice(any)).thenAnswer((_) async {
+        when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => [phone]);
+      });
+      await pump(tester);
+      await openDevices(tester);
+
+      expect(find.byKey(AppKeys.deviceMenu(phone.id)), findsNothing);
+      expect(find.byTooltip(l(tester).deviceOptions), findsOneWidget);
+
+      // asked, and cancelled: nothing happens
+      await openMenu(tester);
+      expect(find.text(l(tester).deviceRemoveBody), findsOneWidget);
+      await tester.tap(find.text(l(tester).cancel));
+      await tester.pumpTimes();
+      verifyNever(api.removeCryptoDevice(any));
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsOneWidget);
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.deviceRemoveConfirm));
+      await tester.pumpTimes();
+
+      verify(api.removeCryptoDevice(tablet.id)).called(1);
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsNothing);
+      expect(find.byKey(AppKeys.deviceRow(phone.id)), findsOneWidget);
+    });
+
+    testWidgets('a removal the server refuses says so, and the device stays', (tester) async {
+      when(api.removeCryptoDevice(any)).thenThrow(
+        const ServerRefusal(status: 404, code: 'not_found', method: 'DELETE', route: '/v1/keys/devices/{id}'),
+      );
+      await pump(tester);
+      await openDevices(tester);
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.deviceRemoveConfirm));
+      await tester.pumpTimes();
+
+      expect(find.text(l(tester).deviceRemoveFailed), findsOneWidget);
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsOneWidget);
+    });
+
+    testWidgets('an account with no room says so at the top, and this device joins once one is removed', (
+      tester,
+    ) async {
+      var full = true;
+      when(
+        api.publishCryptoDevice(
+          id: anyNamed('id'),
+          identityKey: anyNamed('identityKey'),
+          signingKey: anyNamed('signingKey'),
+          fallbackKey: anyNamed('fallbackKey'),
+          vouch: anyNamed('vouch'),
+        ),
+      ).thenAnswer((invocation) async {
+        if (full) {
+          throw const ServerRefusal(status: 409, code: 'device_limit', method: 'POST', route: '/v1/keys/devices');
+        }
+        return phone = CryptoDevice(
+          id: invocation.namedArguments[#id] as String,
+          userId: 'muffin',
+          identityKey: invocation.namedArguments[#identityKey] as String,
+          signingKey: invocation.namedArguments[#signingKey] as String,
+          fallbackKey: invocation.namedArguments[#fallbackKey] as String,
+          createdAt: DateTime.utc(2026, 10, 1),
+        );
+      });
+      // once the tablet is gone there is room, and the list holds this device
+      when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => full ? [tablet] : [phone]);
+      when(api.removeCryptoDevice(any)).thenAnswer((_) async => full = false);
+      await pump(tester);
+      await openDevices(tester);
+
+      expect(find.byKey(AppKeys.yourDevicesFull), findsOneWidget);
+      expect(find.text(l(tester).yourDevicesFull), findsOneWidget);
+      // comparing travels through the server, which doesn't know this device
+      expect(find.byKey(AppKeys.compareCodes(tablet.id)), findsNothing);
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.deviceRemoveConfirm));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.yourDevicesFull), findsNothing);
+      expect(DeviceKeys.of(root(tester)).status, DeviceKeysStatus.published);
+      expect(find.text(l(tester).thisDevice), findsOneWidget);
+    });
+  });
+
   testWidgets('another device asking opens the comparison over whatever is on screen, and may be told no', (
     tester,
   ) async {

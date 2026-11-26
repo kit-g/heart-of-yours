@@ -112,6 +112,40 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
     }
   }
 
+  /// Asks once, then removes [deviceId] for good, from the menu [anchor]
+  /// opened under.
+  Future<void> _remove(BuildContext anchor, String deviceId) async {
+    final l = L.of(context);
+    final keys = DeviceKeys.of(context);
+    final picked = await showMenu<_DeviceAction>(
+      context: anchor,
+      position: menuUnder(anchor),
+      items: [
+        PopupMenuItem(
+          key: AppKeys.deviceRemove(deviceId),
+          value: .remove,
+          child: Text(l.deviceRemove),
+        ),
+      ],
+    );
+    if (picked != .remove || !mounted) return;
+    final sure = await confirmDestructive(
+      context,
+      title: l.deviceRemoveTitle(deviceName(l, deviceId)),
+      body: l.deviceRemoveBody,
+      confirm: l.deviceRemove,
+      cancel: l.cancel,
+      key: AppKeys.deviceRemoveConfirm,
+    );
+    if (!sure || !mounted) return;
+    try {
+      await keys.remove(deviceId);
+    } catch (error, stacktrace) {
+      if (mounted) snack(context, l.deviceRemoveFailed);
+      widget.onError?.call(error, stacktrace: stacktrace);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
@@ -139,6 +173,7 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
             MediaQuery.paddingOf(context).bottom,
           ),
           children: [
+            if (keys.status == .full) _Full(),
             Padding(
               padding: const .all(16),
               child: Text(l.yourDevicesExplainer),
@@ -202,15 +237,59 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
               Text(l.deviceAddedOn(format.format(each.device.createdAt.toLocal()))),
             ],
           ),
-          trailing: switch (canCompare && each.id != self && !each.trusted) {
-            true => OutlinedButton(
-              key: AppKeys.compareCodes(each.id),
-              onPressed: () => _compare(each.id),
-              child: Text(l.compareCodes),
+          trailing: switch (each.id == self) {
+            // this device is never removed from here
+            true => null,
+            false => Row(
+              mainAxisSize: .min,
+              children: [
+                if (canCompare && !each.trusted)
+                  OutlinedButton(
+                    key: AppKeys.compareCodes(each.id),
+                    onPressed: () => _compare(each.id),
+                    child: Text(l.compareCodes),
+                  ),
+                Builder(
+                  builder: (anchor) => IconButton(
+                    key: AppKeys.deviceMenu(each.id),
+                    tooltip: l.deviceOptions,
+                    icon: Icon(switch (Theme.of(context).platform) {
+                      .iOS || .macOS => Icons.more_horiz_rounded,
+                      _ => Icons.more_vert_rounded,
+                    }),
+                    onPressed: () => _remove(anchor, each.id),
+                  ),
+                ),
+              ],
             ),
-            false => null,
           },
         ),
     ];
+  }
+}
+
+/// What a device's menu offers.
+enum _DeviceAction { remove }
+
+/// Said at the top while this device waits for room on the account (#750):
+/// what to do, which is on this page.
+class _Full extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    return Padding(
+      key: AppKeys.yourDevicesFull,
+      padding: const .fromLTRB(16, 16, 16, 0),
+      child: Row(
+        crossAxisAlignment: .start,
+        spacing: 12,
+        children: [
+          Icon(Icons.info_outline_rounded, size: 20, color: colorScheme.error),
+          Expanded(
+            child: Text(L.of(context).yourDevicesFull, style: textTheme.bodyMedium),
+          ),
+        ],
+      ),
+    );
   }
 }

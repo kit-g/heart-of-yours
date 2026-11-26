@@ -243,6 +243,13 @@ abstract final class AppKeys {
   static const yourDevices = Key('Settings.yourDevices');
   static Key deviceRow(String id) => Key('YourDevices.row.$id');
   static Key compareCodes(String id) => Key('YourDevices.compare.$id');
+
+  /// Removing a device (#750): its menu, the menu's item, the dialog's
+  /// confirm, and the notice while this device waits for room.
+  static Key deviceMenu(String id) => Key('YourDevices.menu.$id');
+  static Key deviceRemove(String id) => Key('YourDevices.remove.$id');
+  static const deviceRemoveConfirm = Key('YourDevices.removeConfirm');
+  static const yourDevicesFull = Key('YourDevices.full');
   static const codesMatch = Key('CompareCodes.match');
   static const codesDontMatch = Key('CompareCodes.dontMatch');
   static const closeComparison = Key('CompareCodes.close');
