@@ -72,15 +72,27 @@ class Peer {
 extension _Checking on DeviceKeys {
   /// Reads [userId]'s devices as [run]'s account: the account's own id reads
   /// its own other devices.
-  Future<List<CryptoDevice>> _listed(_Run run, String userId) {
-    return run.service
+  ///
+  /// The account's own list without this device, once published, says it was
+  /// removed: it forgets its keys and throws [_Removed]. Not a list read
+  /// before its publish went through, which couldn't have held it.
+  Future<List<CryptoDevice>> _listed(_Run run, String userId) async {
+    final own = userId == run.userId;
+    final (device, since) = (run.device, run.publishes);
+    final devices = await run.service
         .getCryptoDevices(
-          userId: switch (userId == run.userId) {
+          userId: switch (own) {
             true => null,
             false => userId,
           },
         )
         .timeout(DeviceKeys._answerTime);
+    if ((own, device) case (true, _Device(published: true, :final id))
+        when since == run.publishes && run.device?.id == id && !devices.any((each) => each.id == id)) {
+      await _forgetRemoved(run);
+      throw _Removed();
+    }
+    return devices;
   }
 
   Future<Peer> _check(_Run run, String userId, List<CryptoDevice> devices, {String? fingerprint}) async {
@@ -98,6 +110,8 @@ extension _Checking on DeviceKeys {
         },
     };
     await run.saveSeen(userId, remembered);
+    // one of the account's own gone since the last look
+    if (own && seen.keys.any((id) => !remembered.containsKey(id))) await run.ownDeviceWent();
 
     final compared = switch (own) {
       true => await run.compared(),

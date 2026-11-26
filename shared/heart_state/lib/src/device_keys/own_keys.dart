@@ -16,12 +16,19 @@ extension _OwnKeys on DeviceKeys {
   /// network and no turn in the queue: whoever asks while they are being read
   /// or made waits for that, and nothing else.
   Future<_Device> _local(_Run run) async {
+    run.check();
     if (run.device case final _Device device) return device;
     await (run.loading ??= _load(run).whenComplete(() => run.loading = null));
     return run.device!;
   }
 
   Future<void> _load(_Run run) async {
+    // removed, maybe cut short on the way: the rest is forgotten before
+    // anything could seal or answer with it
+    if (await run.marked()) {
+      await _forgetRemoved(run);
+      throw _Removed();
+    }
     final storageKey = await run.read('storage') ?? await _newStorageKey(run);
     final box = run.box = Sealbox(storageKey);
     final device = await run.storedDevice() ?? await _create(run, box);
@@ -85,6 +92,7 @@ extension _OwnKeys on DeviceKeys {
       rethrow;
     }
     await run.saveDevice(device.copyWith(published: true));
+    run.publishes++;
     run.status = .published;
     _changed(run);
   }

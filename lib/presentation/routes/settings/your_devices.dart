@@ -61,6 +61,8 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
     _expecting?.cancel();
     _stopExpecting?.call();
     _failed.dispose();
+    _removing.dispose();
+    _startingOver.dispose();
     super.dispose();
   }
 
@@ -112,6 +114,28 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
     }
   }
 
+  /// The devices being removed from here: their menus are gone until it ends.
+  final _removing = ValueNotifier(const <String>{});
+
+  /// Starting over as a new device, while it runs.
+  final _startingOver = ValueNotifier(false);
+
+  /// After this device was removed: new keys, then the list again.
+  Future<void> _startOver() async {
+    if (_startingOver.value) return;
+    _startingOver.value = true;
+    final l = L.of(context);
+    try {
+      await DeviceKeys.of(context).startOver();
+      await _read();
+    } catch (error, stacktrace) {
+      if (mounted) snack(context, l.deviceStartOverFailed);
+      widget.onError?.call(error, stacktrace: stacktrace);
+    } finally {
+      _startingOver.value = false;
+    }
+  }
+
   /// Asks once, then removes [deviceId] for good, from the menu [anchor]
   /// opened under.
   Future<void> _remove(BuildContext anchor, String deviceId) async {
@@ -137,12 +161,15 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
       cancel: l.cancel,
       key: AppKeys.deviceRemoveConfirm,
     );
-    if (!sure || !mounted) return;
+    if (!sure || !mounted || _removing.value.contains(deviceId)) return;
+    _removing.value = {..._removing.value, deviceId};
     try {
       await keys.remove(deviceId);
     } catch (error, stacktrace) {
       if (mounted) snack(context, l.deviceRemoveFailed);
       widget.onError?.call(error, stacktrace: stacktrace);
+    } finally {
+      _removing.value = {..._removing.value}..remove(deviceId);
     }
   }
 
@@ -172,29 +199,33 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
             // over the whole app, nothing below it keeps clear of the edge
             MediaQuery.paddingOf(context).bottom,
           ),
-          children: [
-            if (keys.status == .full) _Full(),
-            Padding(
-              padding: const .all(16),
-              child: Text(l.yourDevicesExplainer),
-            ),
-            ...switch (peer) {
-              final Peer peer => _rows(context, l, keys, peer),
-              null => [
-                ValueListenableBuilder(
-                  valueListenable: _failed,
-                  builder: (context, failed, _) {
-                    return switch (failed) {
-                      true => Align(
-                        child: PrimaryButton.shrunk(onPressed: _read, child: Text(l.retry)),
-                      ),
-                      false => const LinearProgressIndicator(),
-                    };
-                  },
-                ),
-              ],
-            },
-          ],
+          children: switch (keys.status) {
+            // it holds nothing now, and lists nothing: only the way back
+            .removed => [_RemovedHere(startingOver: _startingOver, onStartOver: _startOver)],
+            .off || .local || .published || .failed || .full => [
+              if (keys.status == .full) _Full(),
+              Padding(
+                padding: const .all(16),
+                child: Text(l.yourDevicesExplainer),
+              ),
+              ...switch (peer) {
+                final Peer peer => _rows(context, l, keys, peer),
+                null => [
+                  ValueListenableBuilder(
+                    valueListenable: _failed,
+                    builder: (context, failed, _) {
+                      return switch (failed) {
+                        true => Align(
+                          child: PrimaryButton.shrunk(onPressed: _read, child: Text(l.retry)),
+                        ),
+                        false => const LinearProgressIndicator(),
+                      };
+                    },
+                  ),
+                ],
+              },
+            ],
+          },
         ),
       ),
     );
@@ -235,21 +266,28 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
                 (false, false, _) => l.deviceNotApproved,
               }),
               Text(l.deviceAddedOn(format.format(each.device.createdAt.toLocal()))),
+              // under the words, so the title keeps the row's width in every
+              // language and at large text
+              if (canCompare && each.id != self && !each.trusted)
+                Padding(
+                  padding: const .only(top: 8),
+                  child: OutlinedButton(
+                    key: AppKeys.compareCodes(each.id),
+                    onPressed: () => _compare(each.id),
+                    child: Text(l.compareCodes),
+                  ),
+                ),
             ],
           ),
           trailing: switch (each.id == self) {
             // this device is never removed from here
             true => null,
-            false => Row(
-              mainAxisSize: .min,
-              children: [
-                if (canCompare && !each.trusted)
-                  OutlinedButton(
-                    key: AppKeys.compareCodes(each.id),
-                    onPressed: () => _compare(each.id),
-                    child: Text(l.compareCodes),
-                  ),
-                Builder(
+            false => ValueListenableBuilder(
+              valueListenable: _removing,
+              builder: (context, removing, _) => switch (removing.contains(each.id)) {
+                // on its way out: nothing more to ask of it
+                true => const SizedBox.square(dimension: kMinInteractiveDimension),
+                false => Builder(
                   builder: (anchor) => IconButton(
                     key: AppKeys.deviceMenu(each.id),
                     tooltip: l.deviceOptions,
@@ -260,11 +298,48 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
                     onPressed: () => _remove(anchor, each.id),
                   ),
                 ),
-              ],
+              },
             ),
           },
         ),
     ];
+  }
+}
+
+/// This device was removed and forgot its keys (#750): said, with the one
+/// way back, as a new device.
+class _RemovedHere extends StatelessWidget {
+  final ValueListenable<bool> startingOver;
+  final VoidCallback onStartOver;
+
+  const new({required this.startingOver, required this.onStartOver});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    return Padding(
+      key: AppKeys.yourDevicesRemoved,
+      padding: const .all(16),
+      child: Column(
+        crossAxisAlignment: .start,
+        spacing: 16,
+        children: [
+          Text(l.yourDevicesRemoved),
+          ValueListenableBuilder(
+            valueListenable: startingOver,
+            builder: (context, starting, _) => switch (starting) {
+              true => const LinearProgressIndicator(),
+              false => PrimaryButton.shrunk(
+                key: AppKeys.deviceStartOver,
+                hitHeight: kMinInteractiveDimension,
+                onPressed: onStartOver,
+                child: Text(l.deviceStartOver),
+              ),
+            },
+          ),
+        ],
+      ),
+    );
   }
 }
 

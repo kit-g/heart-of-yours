@@ -31,6 +31,7 @@ void main() {
   LockedReason? reason({
     bool supported = true,
     bool full = false,
+    bool removed = false,
     bool mine = false,
     bool theirs = false,
     bool checked = true,
@@ -41,6 +42,7 @@ void main() {
     return lockedReason(
       supported: supported,
       full: full,
+      removed: removed,
       mine: mine,
       theirs: theirs,
       checked: checked,
@@ -62,9 +64,19 @@ void main() {
   test('a device the account has no room for says so first, whatever else holds (#750)', () {
     expect(reason(theirs: true, full: true, own: letsIn), LockedReason.full);
     expect(reason(mine: true, full: true, own: notLetIn), LockedReason.full);
-    expect(reason(theirs: true, closed: true, full: true), LockedReason.full);
+    expect(reason(mine: true, closed: true, full: true), LockedReason.full);
     expect(reason(full: true), isNull);
     expect(reason(theirs: true, full: true, supported: false), LockedReason.elsewhere);
+  });
+
+  test("over, with only the other person's locked, a full account changes nothing: they never open", () {
+    expect(reason(theirs: true, closed: true, full: true), LockedReason.ended);
+  });
+
+  test('a removed device says so, whatever else holds, and nothing where nothing is locked (#750)', () {
+    expect(reason(theirs: true, removed: true, deviceId: null), LockedReason.removed);
+    expect(reason(mine: true, closed: true, removed: true, own: letsIn), LockedReason.removed);
+    expect(reason(removed: true), isNull);
   });
 
   test("while this device's keys don't run, nothing is said", () {

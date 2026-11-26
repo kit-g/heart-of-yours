@@ -265,6 +265,22 @@ void main() {
       );
     });
 
+    testWidgets('on a device the account removed say so, with no link (#750)', (tester) async {
+      keys.status = .removed;
+      await open(tester, from: ['muffin', 'whiskers']);
+      expectSaid("This device was removed from your account and can't open messages. Use it again from Your devices.");
+    });
+
+    testWidgets("over, with only the other person's locked, a full account isn't the reason (#750)", (tester) async {
+      connections.status = .severed;
+      await coaching.load();
+      keys
+        ..status = .full
+        ..others = {'tablet': .pinned};
+      await open(tester);
+      expectSaid("Some messages can't be opened any more.");
+    });
+
     testWidgets('where no keys are kept open on a phone', (tester) async {
       keys.supported = false;
       keys.others = {'tablet': .unverified};

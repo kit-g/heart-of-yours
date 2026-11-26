@@ -225,6 +225,99 @@ void main() {
     });
   });
 
+  group('a device the server removed (#750)', () {
+    test('learns it from a refusal, forgets every key it held, and says so without a report', () async {
+      final vault = _Vault();
+      final phone = device('dana', vault: vault);
+      final student = device('sam');
+      await phone.start('dana');
+      await student.start('sam');
+      await phone.seal('thread-1', 'hello');
+      await phone.share('thread-1', userId: 'sam');
+      await phone.sealNote('n1', connectionId: 'connection-sam', text: 'a note');
+      expect(vault.entries.length, greaterThan(5));
+
+      server.remove(phone.deviceId!);
+      await phone.refresh();
+
+      expect(phone.status, DeviceKeysStatus.removed);
+      expect(phone.deviceId, isNull);
+      expect(vault.entries.keys, ['keys.dana.removed'], reason: 'nothing but the mark that it was');
+      expect(errors, isEmpty);
+      expect(phone.seal('thread-1', 'again'), throwsStateError);
+      expect(await phone.open('thread-1', []), isEmpty);
+    });
+
+    test('learns it from the account list it reads, as on a change to the devices', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+
+      server.remove(phone.deviceId!);
+      await phone.devicesChanged('dana');
+
+      expect(phone.status, DeviceKeysStatus.removed);
+      expect(errors, isEmpty);
+    });
+
+    test('a device not on the server yet is not removed by a list without it', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await tablet.start('dana');
+      server.refuseNext['publish'] = refusedAs({'error': 'conflict', 'code': 'device_limit'}, status: 409);
+      await phone.start('dana');
+
+      await phone.devicesOf('dana');
+
+      expect(phone.status, DeviceKeysStatus.full);
+    });
+
+    test('cut short while forgetting, a relaunch forgets the rest before it could seal or answer', () async {
+      final vault = _Vault();
+      final phone = device('dana', vault: vault);
+      final student = device('sam');
+      await phone.start('dana');
+      await student.start('sam');
+      final sealed = await phone.seal('thread-1', 'hello');
+      phone.stop();
+      // the mark went in, and the app was gone before the rest
+      vault.entries['keys.dana.removed'] = '1';
+
+      final again = device('dana', vault: vault);
+      await again.start('dana');
+
+      expect(again.status, DeviceKeysStatus.removed);
+      expect(vault.entries.keys, ['keys.dana.removed']);
+      expect(again.seal('thread-1', 'more'), throwsStateError);
+      final opened = await again.open('thread-1', [
+        (id: 'm1', senderId: 'dana', content: sealed.content, commitment: sealed.commitment),
+      ]);
+      expect(opened.single, isA<Locked>());
+      expect(server.calls.where((each) => each.startsWith('enqueue')), isEmpty);
+      expect(errors, isEmpty);
+    });
+
+    test('comes back only when asked, as a new device', () async {
+      final vault = _Vault();
+      final phone = device('dana', vault: vault);
+      await phone.start('dana');
+      final old = phone.deviceId;
+      server.remove(old!);
+      await phone.refresh();
+      await phone.refresh();
+      expect(phone.status, DeviceKeysStatus.removed, reason: 'not by itself');
+
+      await phone.startOver();
+
+      expect(phone.status, DeviceKeysStatus.published);
+      expect(phone.deviceId, isNot(old));
+      expect(server.devices.keys, [phone.deviceId]);
+      expect(vault.entries.keys, isNot(contains('keys.dana.removed')));
+      expect(errors, isEmpty);
+    });
+  });
+
   group('removing a device (#750)', () {
     test('this device is never removed from here', () async {
       final phone = device('dana');
@@ -239,10 +332,24 @@ void main() {
       final tablet = device('dana');
       await phone.start('dana');
       await tablet.start('dana');
-      server.refuseNext['remove'] = refusedAs({'error': 'not found', 'code': 'not_found'}, status: 404);
+      server.refuseNext['remove'] = refusedAs({'error': 'forbidden', 'code': 'forbidden'}, status: 403);
 
-      await expectLater(phone.remove(tablet.deviceId!), throwsA(isRefusal('not_found')));
+      await expectLater(phone.remove(tablet.deviceId!), throwsA(isRefusal('forbidden')));
       expect(server.devices.keys, contains(tablet.deviceId));
+    });
+
+    test('one removed already, elsewhere, counts as removed from here', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await phone.devicesOf('dana');
+      server.remove(tablet.deviceId!);
+
+      await phone.remove(tablet.deviceId!);
+
+      expect(phone.peer('dana')!.devices.map((each) => each.id), [phone.deviceId]);
+      expect(errors, isEmpty);
     });
 
     test('removed, even when the list after it fails to read: the removal is kept', () async {
@@ -1602,6 +1709,30 @@ void main() {
       expect(keyOf(second), isNot(keyOf(first)));
     });
 
+    test("one of the account's own removed: a device sealing under a key it was given makes its own", () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      final ipad = device('dana');
+      for (final keys in [phone, tablet, ipad]) {
+        await keys.start('dana');
+      }
+      await approve(phone, tablet);
+      await approve(tablet, ipad);
+      final given = await tablet.sealNote('n1', connectionId: client, text: 'from the tablet');
+      await tablet.shareNoteKeys();
+      await phone.receive();
+      await ipad.receive();
+
+      // the iPad held the tablet's key, which the phone can't know
+      await phone.remove(ipad.deviceId!);
+      final mine = await phone.sealNote('n2', connectionId: client, text: 'from the phone');
+
+      String keyOf(String content) => content.split('.')[1];
+      expect(keyOf(mine), isNot(keyOf(given)));
+      final again = await phone.sealNote('n3', connectionId: client, text: 'again');
+      expect(keyOf(again), keyOf(mine), reason: 'its own from then on');
+    });
+
     test('with notes off, a device the account adds hears nothing of them until they are used', () async {
       var on = false;
       final phone = device('dana', sharesNoteKeys: () => on);
@@ -2466,6 +2597,9 @@ class _Vault implements KeyVault {
 
   @override
   Future<void> delete(String key) async => entries.remove(key);
+
+  @override
+  Future<Iterable<String>> names() async => [...entries.keys];
 
   /// As though the last publish never reached the server.
   void unpublish(String userId) {

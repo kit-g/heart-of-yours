@@ -55,4 +55,8 @@ abstract interface class KeyVault {
   Future<void> write(String key, String value);
 
   Future<void> delete(String key);
+
+  /// The name of everything kept: what a removed device goes through to
+  /// forget it all.
+  Future<Iterable<String>> names();
 }

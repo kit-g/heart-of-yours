@@ -44,12 +44,69 @@ class _Run {
   /// time, apart from the steps that wait on the network.
   Future<void> notesTail = Future.value();
 
+  /// The server no longer has this device (#750): what it held is forgotten,
+  /// and nothing more is read, written or sent until it starts over as a new
+  /// one.
+  bool removed = false;
+
+  /// Publishes this run saw through: a read of the account's devices that
+  /// began before the latest can't tell whether this device is among them.
+  int publishes = 0;
+
   void end() => _over = true;
 
-  /// Throws [_Stopped] once the run is over.
+  /// Throws [_Stopped] once the run is over, and [_Removed] once the device
+  /// was removed.
   void check() {
     if (_over) throw _Stopped();
+    if (removed) throw _Removed();
   }
+
+  /// What marks this device removed, kept until it starts over.
+  static const _removedMark = 'removed';
+
+  /// Whether a removal was marked here, finished or cut short.
+  Future<bool> marked() async {
+    if (_over) throw _Stopped();
+    return await _vault.read(_key(_removedMark)) != null;
+  }
+
+  /// Forgets everything the account keeps on this device: its own keys, its
+  /// sessions, every thread's and note's keys, what waits in the inbox. The
+  /// mark goes first, so a relaunch partway through finds it, forgets the
+  /// rest, and seals and answers nothing with what was left.
+  Future<void> forgetAll() async {
+    if (_over) throw _Stopped();
+    final mark = _key(_removedMark);
+    await _vault.write(mark, '1');
+    for (final name in await _vault.names()) {
+      if (name.startsWith(_key('')) && name != mark) await _vault.delete(name);
+    }
+    removed = true;
+    device = null;
+    box = null;
+    peers.clear();
+    sharedAt.clear();
+    owing.clear();
+    arrived = false;
+    received = false;
+    status = .removed;
+  }
+
+  /// Ends the removal: what starts over is a new device, already kept.
+  Future<void> unmark() async {
+    if (_over) throw _Stopped();
+    await _vault.delete(_key(_removedMark));
+  }
+
+  /// One of the account's own devices went: a note key that came from
+  /// another device may be held by more than this one knows of, so the next
+  /// note seals under one made here.
+  Future<void> ownDeviceWent() => write('notes.rekey', '1');
+
+  Future<bool> notesRekey() async => await read('notes.rekey') != null;
+
+  Future<void> notesRekeyed() => forget('notes.rekey');
 
   RemoteKeyService get service {
     check();
@@ -245,7 +302,13 @@ class _Run {
 
 /// What a step of a run that is over throws, to stop where it stands.
 class _Stopped extends StateError {
-  new() : super('device keys are off');
+  new([super.message = 'device keys are off']);
+}
+
+/// What a step throws once the server removed this device (#750): stopped
+/// the same way, quietly, until it starts over.
+class _Removed extends _Stopped {
+  new() : super('this device was removed');
 }
 
 /// A pairwise session with one device, and that device's identity key.

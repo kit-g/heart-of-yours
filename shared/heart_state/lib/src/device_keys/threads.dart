@@ -307,8 +307,14 @@ extension _Threads on DeviceKeys {
   Future<List<OpenedMessage>> _openThread(String threadId, List<ThreadCiphertext> items) async {
     final run = _run;
     if (run == null) return [for (final _ in items) const Locked()];
-    await _local(run);
-    final inbound = await _serial(run, () => _InboundKeys.read(run, threadId));
+    final _InboundKeys inbound;
+    try {
+      await _local(run);
+      inbound = await _serial(run, () => _InboundKeys.read(run, threadId));
+    } on _Stopped {
+      // removed, or stopped on the way: nothing opens with keys it no longer has
+      return [for (final _ in items) const Locked()];
+    }
     // (session, position) → the item that took it
     final taken = <(String, int), String>{};
     return [

@@ -10,6 +10,10 @@ enum LockedReason {
   /// on the server: removing one it no longer uses lets it in (#750).
   full,
 
+  /// This device was removed and forgot its keys: it reads again only as a
+  /// new device, let in by another (#750).
+  removed,
+
   /// Another of the account's devices has to approve this one.
   approve,
 
@@ -35,6 +39,7 @@ enum LockedReason {
 ///
 /// - [supported]: this device can keep keys at all;
 /// - [full]: its keys wait for room on the account;
+/// - [removed]: it was removed, and forgot its keys;
 /// - [mine], [theirs]: whose messages are locked;
 /// - [checked]: the other person has a fingerprint to check this one's devices
 ///   against, as a student has of their coach's, and so leaves out one that
@@ -45,6 +50,7 @@ enum LockedReason {
 LockedReason? lockedReason({
   required bool supported,
   required bool full,
+  required bool removed,
   required bool mine,
   required bool theirs,
   required bool checked,
@@ -54,8 +60,15 @@ LockedReason? lockedReason({
 }) {
   if (!mine && !theirs) return null;
   if (!supported) return .elsewhere;
-  // nothing reaches it until it is in: the rest waits on that
-  if (full) return .full;
+  if (removed) return .removed;
+  // nothing reaches it until it is in, unless only the other person's are
+  // locked in a conversation that is over: being let in opens none of those
+  if (full) {
+    return switch ((closed, mine)) {
+      (true, false) => .ended,
+      _ => .full,
+    };
+  }
   // with no keys running, everything is locked: no reason of its own yet
   if (deviceId == null) return null;
   final theirsOpen = theirs && !closed;

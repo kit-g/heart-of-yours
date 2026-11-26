@@ -77,6 +77,11 @@ enum DeviceKeysStatus {
   /// elsewhere, and are tried again at each start, resume and change to the
   /// account's devices (#750).
   full,
+
+  /// The server removed this device, from another or from this one's
+  /// account elsewhere (#750). Every key it held is forgotten, and it comes
+  /// back only when asked, as a new device ([DeviceKeys.startOver]).
+  removed,
 }
 
 /// This device's keys for end-to-end encryption, and carrying sealed items
@@ -372,8 +377,58 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     } on _Stopped {
       // stopped on the way: nothing more goes out
     } catch (error, stacktrace) {
-      _report(error, stacktrace);
+      if (!await _removedBy(run, error)) _report(error, stacktrace);
     }
+  }
+
+  /// Whether [error], what a call naming this device was answered with, came
+  /// because the server removed it: the account's own list is read to tell,
+  /// and a device missing from it forgets its keys. A device whose keys were
+  /// never published was never on it.
+  Future<bool> _removedBy(_Run run, Object error) async {
+    if (error case ServerRefusal(code: 'not_found' || 'device_removed') when run.device?.published ?? false) {
+      try {
+        await devicesOf(run.userId);
+      } on _Removed {
+        return true;
+      } catch (_) {
+        // not told either way: the refusal is said as it came
+      }
+    }
+    return false;
+  }
+
+  /// This device was removed: everything it held is forgotten, and the run
+  /// says so.
+  Future<void> _forgetRemoved(_Run run) async {
+    await run.forgetAll();
+    approval._abandon();
+    _changed(run);
+  }
+
+  /// Makes this device over as a new one, after it was removed (#750): new
+  /// keys, published as soon as the server takes them. It reads nothing said
+  /// before until one of the account's devices lets it in.
+  Future<void> startOver() async {
+    final run = _run;
+    if (run == null || !run.removed) throw StateError('this device was not removed');
+    run.removed = false;
+    try {
+      final box = run.box = Sealbox(await _newStorageKey(run));
+      run.device = await _create(run, box);
+      // the new one is kept first: cut short before this, the next start
+      // finds the mark and forgets it, and is removed as before
+      await run.unmark();
+    } catch (_) {
+      run
+        ..removed = true
+        ..device = null
+        ..box = null;
+      rethrow;
+    }
+    run.status = .local;
+    _changed(run);
+    await refresh();
   }
 
   /// Takes deliveries of [kind]: what is already waiting at once, and every
@@ -407,9 +462,13 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
       await devicesOf(userId);
       final run = _run;
       if (run == null || userId != run.userId) return;
-      // a device removed elsewhere may have made room for this one
-      if (run.status == .full) await refresh();
-      if (!(run.device?.published ?? false)) return;
+      if (!(run.device?.published ?? false)) {
+        // a device removed elsewhere may have made room for this one
+        await refresh();
+        if (!(run.device?.published ?? false)) return;
+        // in now: its own row, and a list the shares below can go by
+        await devicesOf(userId);
+      }
       // a vouch this device owes may be due, or answered by another's
       await _payOwed(run);
       // a device of the account's own may be new, or newly vouched for: one
@@ -435,10 +494,16 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     final device = await _local(run);
     if (deviceId == device.id) throw ArgumentError.value(deviceId, 'deviceId', 'this device');
     await _serial(run, () async {
-      await run.service.removeCryptoDevice(deviceId).timeout(_answerTime);
+      try {
+        await run.service.removeCryptoDevice(deviceId).timeout(_answerTime);
+      } on ServerRefusal catch (refusal) {
+        // removed already, from another device: the same as from here
+        if (refusal.code != 'not_found' && refusal.code != 'device_removed') rethrow;
+      }
       // kept before anything else: a seal that comes before the next read of
       // the devices finds it gone, even after a relaunch
       await run.saveSeen(run.userId, {...await run.seen(run.userId)}..remove(deviceId));
+      await run.ownDeviceWent();
       await run.forgetSessions(deviceId);
       if (run.peers[run.userId] case final Peer own) {
         run.peers[run.userId] = Peer(
@@ -451,7 +516,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     _changed(run);
     try {
       // in first, when it waited for room: then the list holds it too
-      if (run.status == .full) await refresh();
+      if (!(run.device?.published ?? false)) await refresh();
       await devicesOf(run.userId);
     } on _Stopped {
       // stopped on the way: read again at the next start
@@ -471,6 +536,9 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
       await _receive(run);
     } on _Stopped {
       // stopped on the way: what was not confirmed waits on the server
+    } catch (error) {
+      // the queue of a device the server removed: it forgets its keys
+      if (!await _removedBy(run, error)) rethrow;
     }
   }
 
@@ -508,8 +576,9 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     final run = _run;
     if (run == null) throw StateError('device keys are not published');
     return _serial(run, () async {
-      final device = run.device;
-      if (device == null || !device.published || !_remote.allowed) {
+      // read first: a device removed on the way here answers nothing
+      final device = await _local(run);
+      if (!device.published || !_remote.allowed) {
         throw StateError('device keys are not published');
       }
       final listed = await _listed(run, userId);

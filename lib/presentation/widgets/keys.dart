@@ -250,6 +250,10 @@ abstract final class AppKeys {
   static Key deviceRemove(String id) => Key('YourDevices.remove.$id');
   static const deviceRemoveConfirm = Key('YourDevices.removeConfirm');
   static const yourDevicesFull = Key('YourDevices.full');
+
+  /// A device the server removed (#750): the notice, and starting over.
+  static const yourDevicesRemoved = Key('YourDevices.removed');
+  static const deviceStartOver = Key('YourDevices.startOver');
   static const codesMatch = Key('CompareCodes.match');
   static const codesDontMatch = Key('CompareCodes.dontMatch');
   static const closeComparison = Key('CompareCodes.close');

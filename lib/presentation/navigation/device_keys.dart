@@ -110,7 +110,7 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
       case (null, String()):
         _running = null;
         keys.stop();
-      case (final String userId, _) when userId != _running || keys.status != .published:
+      case (final String userId, _) when userId != _running || !_settled(keys.status):
         // again on every word from Auth, and as Upsync opens the leg, until the server has the
         // keys: the token, and the end of a replay, may come after the account
         _running = userId;
@@ -118,6 +118,16 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
       case (String(), _):
         return;
     }
+  }
+
+  /// Whether [status] needs no new start: published, or waiting on what a
+  /// start can't change (room on the account, or being asked to start over),
+  /// which a resume and a change to the account's devices try again (#750).
+  static bool _settled(DeviceKeysStatus status) {
+    return switch (status) {
+      .published || .full || .removed => true,
+      .off || .local || .failed => false,
+    };
   }
 
   /// Shows a comparison another device asked for, once no sheet is up: one

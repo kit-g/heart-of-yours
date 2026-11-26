@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show File, Platform;
+import 'dart:ui' show ImageByteFormat;
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/rendering.dart' show RenderParagraph;
+import 'package:flutter/rendering.dart' show RenderParagraph, RenderRepaintBoundary;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/theme/state.dart';
@@ -12,6 +14,7 @@ import 'package:heart/presentation/navigation/pushes.dart' show PushPresenter;
 import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
 import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage;
 import 'package:heart/presentation/routes/settings/settings.dart' show SettingsPage, YourDevicesPage;
+import 'package:heart/presentation/widgets/compare_codes.dart' show deviceName;
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -318,7 +321,7 @@ void main() {
 
     testWidgets('a removal the server refuses says so, and the device stays', (tester) async {
       when(api.removeCryptoDevice(any)).thenThrow(
-        const ServerRefusal(status: 404, code: 'not_found', method: 'DELETE', route: '/v1/keys/devices/{id}'),
+        const ServerRefusal(status: 403, code: 'forbidden', method: 'DELETE', route: '/v1/keys/devices/{id}'),
       );
       await pump(tester);
       await openDevices(tester);
@@ -374,6 +377,88 @@ void main() {
       expect(find.byKey(AppKeys.yourDevicesFull), findsNothing);
       expect(DeviceKeys.of(root(tester)).status, DeviceKeysStatus.published);
       expect(find.text(l(tester).thisDevice), findsOneWidget);
+    });
+
+    testWidgets('one removed already, elsewhere, goes from the list as though removed here', (tester) async {
+      var gone = false;
+      when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => gone ? [phone] : [phone, tablet]);
+      when(api.removeCryptoDevice(any)).thenAnswer((_) async {
+        gone = true;
+        throw const ServerRefusal(status: 404, code: 'not_found', method: 'DELETE', route: '/v1/keys/devices/{id}');
+      });
+      await pump(tester);
+      await openDevices(tester);
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.deviceRemoveConfirm));
+      await tester.pumpTimes();
+
+      expect(find.text(l(tester).deviceRemoveFailed), findsNothing);
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsNothing);
+    });
+
+    testWidgets('while its removal runs, the row offers nothing more', (tester) async {
+      final answer = Completer<void>();
+      when(api.removeCryptoDevice(any)).thenAnswer((_) => answer.future);
+      await pump(tester);
+      await openDevices(tester);
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.deviceRemoveConfirm));
+      await tester.pump();
+
+      expect(find.byKey(AppKeys.deviceMenu(tablet.id)), findsNothing);
+      when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => [phone]);
+      answer.complete();
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsNothing);
+    });
+
+    testWidgets('a device the account removed says so, lists nothing, and comes back only as a new one', (
+      tester,
+    ) async {
+      var published = <String>[];
+      when(
+        api.publishCryptoDevice(
+          id: anyNamed('id'),
+          identityKey: anyNamed('identityKey'),
+          signingKey: anyNamed('signingKey'),
+          fallbackKey: anyNamed('fallbackKey'),
+          vouch: anyNamed('vouch'),
+        ),
+      ).thenAnswer((invocation) async {
+        published = [...published, invocation.namedArguments[#id] as String];
+        return phone = CryptoDevice(
+          id: invocation.namedArguments[#id] as String,
+          userId: 'muffin',
+          identityKey: invocation.namedArguments[#identityKey] as String,
+          signingKey: invocation.namedArguments[#signingKey] as String,
+          fallbackKey: invocation.namedArguments[#fallbackKey] as String,
+          createdAt: DateTime.utc(2026, 10, 1),
+        );
+      });
+      await pump(tester);
+      final first = phone.id;
+      // removed from the tablet: the list no longer holds this phone
+      var removed = true;
+      when(api.getCryptoDevices(userId: anyNamed('userId')))
+          .thenAnswer((_) async => removed ? [tablet] : [phone, tablet]);
+      await openDevices(tester);
+
+      expect(find.byKey(AppKeys.yourDevicesRemoved), findsOneWidget);
+      expect(find.text(l(tester).yourDevicesRemoved), findsOneWidget);
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsNothing);
+      expect(DeviceKeys.of(root(tester)).status, DeviceKeysStatus.removed);
+
+      removed = false;
+      await tester.tap(find.byKey(AppKeys.deviceStartOver));
+      await tester.pumpTimes();
+
+      expect(published, hasLength(2));
+      expect(published.last, isNot(first));
+      expect(find.byKey(AppKeys.yourDevicesRemoved), findsNothing);
+      expect(find.text(l(tester).thisDevice), findsOneWidget);
+      expect(find.byKey(AppKeys.compareCodes(tablet.id)), findsOneWidget);
     });
   });
 
@@ -941,6 +1026,42 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('in Russian on a 360dp phone at large text, a row keeps its title whole beside its menu', (
+    tester,
+  ) async {
+    tester.platformDispatcher
+      ..localesTestValue = [const Locale('ru')]
+      ..textScaleFactorTestValue = 1.3;
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await pump(tester, size: const Size(360, 780));
+    HeartRouter.of(root(tester)).pushYourDevices(root(tester));
+    await tester.pumpTimes();
+
+    final row = find.byKey(AppKeys.deviceRow(tablet.id));
+    final title = find.descendant(of: row, matching: find.text(deviceName(l(tester), tablet.id)));
+    final menu = find.byKey(AppKeys.deviceMenu(tablet.id));
+    final compare = find.byKey(AppKeys.compareCodes(tablet.id));
+    expect(tester.getRect(title).right, lessThanOrEqualTo(tester.getRect(menu).left));
+    expect(oneLine(tester, deviceName(l(tester), tablet.id)), isTrue, reason: 'the title wrapped');
+    expect(tester.getRect(compare).top, greaterThan(tester.getRect(title).bottom), reason: 'under the words');
+    // the app bar's logo stripe overflows at this text size on every page
+    // that has one, rows or not: not this test's to answer
+    tester.takeException();
+
+    // a picture to look at, when asked for one
+    if (Platform.environment['HEART_SHOTS'] case final String dir) {
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.ancestor(of: find.byType(YourDevicesPage), matching: find.byType(RepaintBoundary)).first,
+      );
+      await tester.runAsync(() async {
+        final image = await boundary.toImage(pixelRatio: 2);
+        final bytes = await image.toByteData(format: ImageByteFormat.png);
+        File('$dir/your_devices_ru_360_1.3.png').writeAsBytesSync(bytes!.buffer.asUint8List());
+      });
+    }
+  });
 
   testWidgets('a comparison abandoned under the sheet can no longer be answered (#668)', (tester) async {
     final code = await sheetAt(tester, const Size(360, 780));

@@ -101,10 +101,8 @@ extension _Notes on DeviceKeys {
     if (run == null) throw StateError('device keys are off');
     return _notesSerial(run, () async {
       final record = await _NoteKeys.read(run);
-      // a device that held the current key and is gone: sealed under a new
-      // one it never gets
       final current = switch (record.current) {
-        (final String id, _) && final current when !await run.heldByGone(record.holders(id, run.userId)) => current,
+        (final String id, _) && final current when !await _noteKeyGone(run, record, id) => current,
         _ => null,
       };
       final (keyId, key) = current ?? await _newNoteKey(run, record);
@@ -126,13 +124,29 @@ extension _Notes on DeviceKeys {
     record.keys[made.$1] = made.$2;
     record.mine.add(made.$1);
     await record.save(run);
+    // one made here: who holds it is known
+    await run.notesRekeyed();
     return made;
+  }
+
+  /// Whether [keyId], the current note key, is no longer to seal under: a
+  /// device that held it is gone, or it came from another device and one of
+  /// the account's own went since, which may have held it unknown to this one.
+  Future<bool> _noteKeyGone(_Run run, _NoteKeys record, String keyId) async {
+    if (await run.heldByGone(record.holders(keyId, run.userId))) return true;
+    return !record.mine.contains(keyId) && await run.notesRekey();
   }
 
   Future<List<OpenedNote>> _openNotes(List<CoachNote> notes) async {
     final run = _run;
     if (run == null) return [for (final _ in notes) const LockedNote()];
-    final record = await _notesSerial(run, () => _NoteKeys.read(run));
+    final _NoteKeys record;
+    try {
+      record = await _notesSerial(run, () => _NoteKeys.read(run));
+    } on _Stopped {
+      // removed, or stopped on the way: nothing opens with keys it no longer has
+      return [for (final _ in notes) const LockedNote()];
+    }
     return [for (final note in notes) _openNote(run, record, note)];
   }
 
@@ -190,7 +204,7 @@ extension _Notes on DeviceKeys {
     // with this share
     record = await _notesSerial(run, () async {
       final latest = await _NoteKeys.read(run);
-      if (latest.current case (final String id, _) when await run.heldByGone(latest.holders(id, run.userId))) {
+      if (latest.current case (final String id, _) when await _noteKeyGone(run, latest, id)) {
         await _newNoteKey(run, latest);
       }
       return latest;

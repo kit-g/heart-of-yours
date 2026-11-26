@@ -6325,10 +6325,18 @@
   "@deviceRemove": {"description": "Your devices page: the menu item, and the confirm button, that remove one of the account's devices for good (#750)", "type": "text", "placeholders": {}},
   "deviceRemoveTitle": "Remove {name}?",
   "@deviceRemoveTitle": {"description": "Title of the dialog that asks before a device is removed (#750). {name} is the device's name, as Device A1B2C3", "type": "text", "placeholders": {"name": {"type": "String"}}},
-  "deviceRemoveBody": "It stops getting your messages and notes. This can't be undone: to use it again, open Heart on it and approve it as a new device.",
+  "deviceRemoveBody": "It stops getting your messages and notes, and forgets the keys it had once it's next online. This can't be undone: to use it again, open Heart on it, start it as a new device and approve it.",
   "@deviceRemoveBody": {"description": "Body of the dialog that asks before a device is removed (#750)", "type": "text", "placeholders": {}},
   "deviceRemoveFailed": "Couldn't remove the device. Try again in a moment.",
   "@deviceRemoveFailed": {"description": "Snackbar when removing a device failed (#750)", "type": "text", "placeholders": {}},
   "messagesLockedFull": "This device can't open messages yet: your account has as many devices as it can hold. Remove one you no longer use in Your devices.",
-  "@messagesLockedFull": {"description": "Beside locked messages, when this device's keys couldn't go on the server because the account holds the most devices it can (#750)", "type": "text", "placeholders": {}}
+  "@messagesLockedFull": {"description": "Beside locked messages, when this device's keys couldn't go on the server because the account holds the most devices it can (#750)", "type": "text", "placeholders": {}},
+  "yourDevicesRemoved": "This device was removed from your account, so it forgot the keys to your messages and notes. Use it again as a new device, then approve it from one you already have.",
+  "@yourDevicesRemoved": {"description": "Your devices page, on a device the account removed (from another device or elsewhere): what happened, above the button to use it again (#750)", "type": "text", "placeholders": {}},
+  "deviceStartOver": "Use this device again",
+  "@deviceStartOver": {"description": "Your devices page: the button on a removed device that makes it over as a new device (#750)", "type": "text", "placeholders": {}},
+  "deviceStartOverFailed": "Couldn't set this device up again. Try again in a moment.",
+  "@deviceStartOverFailed": {"description": "Snackbar when starting a removed device over as a new one failed (#750)", "type": "text", "placeholders": {}},
+  "messagesLockedRemoved": "This device was removed from your account and can't open messages. Use it again from Your devices.",
+  "@messagesLockedRemoved": {"description": "Beside locked messages on a device the account removed, which forgot its keys (#750)", "type": "text", "placeholders": {}}
 }

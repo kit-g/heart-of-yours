@@ -253,4 +253,7 @@ class MemoryKeyVault implements KeyVault {
 
   @override
   Future<void> delete(String key) async => entries.remove(key);
+
+  @override
+  Future<Iterable<String>> names() async => [...entries.keys];
 }

@@ -450,6 +450,7 @@ class _LockedLine extends StatelessWidget {
     final reason = lockedReason(
       supported: keys?.supported ?? false,
       full: keys?.status == .full,
+      removed: keys?.status == .removed,
       mine: thread.locked.any((each) => each.mine),
       theirs: thread.locked.any((each) => !each.mine),
       // a student's device holds their coach's fingerprint: it is the coach's
@@ -466,6 +467,7 @@ class _LockedLine extends StatelessWidget {
     final words = switch (reason) {
       .elsewhere => l.messagesLockedElsewhere,
       .full => l.messagesLockedFull,
+      .removed => l.messagesLockedRemoved,
       .approve => l.messagesLockedApprove,
       .others => switch (_knownName(context, inbox, connectionId: connectionId)) {
         final String name => l.messagesLockedOthers(name),
@@ -493,9 +495,10 @@ class _LockedLine extends StatelessWidget {
           // Your devices is there only while coaching runs
           ...switch (reason) {
             .approve when pushesOn(context, listen: true) => [const _DevicesButtons(link: true)],
-            // a device is removed from here, so the link is no help
-            .full when pushesOn(context, listen: true) => [const _DevicesButtons(link: false)],
-            _ => const <Widget>[],
+            // what helps is done on this device, so the link is no help
+            .full || .removed when pushesOn(context, listen: true) => [const _DevicesButtons(link: false)],
+            .approve || .full || .removed => const <Widget>[],
+            .elsewhere || .others || .ownLater || .ended || .gone => const <Widget>[],
           },
         ],
       ),
