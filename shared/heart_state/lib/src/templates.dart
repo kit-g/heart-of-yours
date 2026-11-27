@@ -239,14 +239,32 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
   /// Reads the user's own templates from the mirror again, replacing what is
   /// held: the rows changed under them (an exercise's history moved, #338),
   /// and the held copies still name the old exercise.
+  ///
+  /// The template open in the editor stays the one being edited: its held
+  /// copy goes back in place of the mirror's, and a draft's bare row, which
+  /// is in the mirror from its first exercise but not in the list until it
+  /// is saved, stays out (#616: an exercise can be renamed with the editor
+  /// open).
   Future<void> reread() async {
     if (userId case String id) {
       await _step(() async {
+        final unsaved = switch (editable) {
+          final Template draft when !_templates.any((each) => each.id == draft.id) => draft.id,
+          _ => null,
+        };
         final local = await _service.getTemplates(id);
         if (userId != id) return;
+        final editing = editable;
         _templates
           ..clear()
-          ..addAll(local);
+          ..addAll([
+            for (final each in local)
+              if (each.id != unsaved || each.id != editing?.id)
+                switch (editing) {
+                  final Template held when held.id == each.id => held,
+                  _ => each,
+                },
+          ]);
         notifyListeners();
       });
     }

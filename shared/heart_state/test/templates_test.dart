@@ -488,6 +488,41 @@ void main() {
         verify(local.deleteTemplate('draft-1')).called(1);
       });
 
+      test('a reread leaves a draft out of the list, and its row is still deleted on discard (#616)', () async {
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'draft-2', order: 1));
+        when(local.deleteTemplate('draft-2')).thenAnswer((_) async {});
+        await templates.add(ex('Push Up'));
+        final draft = templates.editable!;
+        // the mirror has the draft's bare row from its first exercise
+        when(local.getTemplates(any)).thenAnswer((_) async => [Template.empty(id: 'draft-2', order: 1)]);
+        addTearDown(() => when(local.getTemplates(any)).thenAnswer((_) async => []));
+
+        await templates.reread();
+
+        expect(templates.length, 0);
+        expect(templates.editable, same(draft));
+        await templates.discardEditable();
+        verify(local.deleteTemplate('draft-2')).called(1);
+      });
+
+      test('a reread keeps the copy of a saved template that is open in the editor (#616)', () async {
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'kept-2', order: 1));
+        when(remote.saveTemplate(any)).thenAnswer((inv) async => inv.positionalArguments.first as Template);
+        await templates.add(ex('Push Up'));
+        await templates.saveEditable();
+        final editing = templates.editable = templates.first;
+        when(local.getTemplates(any)).thenAnswer((_) async => [Template.empty(id: 'kept-2', order: 1)]);
+        addTearDown(() => when(local.getTemplates(any)).thenAnswer((_) async => []));
+
+        await templates.reread();
+
+        expect(templates.single, same(editing));
+      });
+
       test('discardEditable keeps a saved template it was only editing', () async {
         when(
           local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),

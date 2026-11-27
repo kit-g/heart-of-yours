@@ -1637,17 +1637,56 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// Reads every held workout that names [exerciseId] from the mirror again:
   /// the rows were re-keyed under them (an exercise's history moved, #338).
   /// The workout in progress is left alone; nothing moves while there is one.
-  Future<void> reread(ExerciseId exerciseId) async {
+  ///
+  /// With [active], it is read again too: the exercise was renamed (#616),
+  /// and a workout holds the copy it was built with. It comes back as a
+  /// relaunch brings it back, every set under the id it had, so the pause,
+  /// the stopwatch and what was typed still find theirs.
+  Future<void> reread(ExerciseId exerciseId, {bool active = false}) async {
     if (userId case String id) {
+      bool names(Workout workout) => workout.any((each) => each.exercise.id == exerciseId);
       final holding = _workouts.values
-          .where((workout) => workout.id != _activeWorkoutId && workout.any((each) => each.exercise.id == exerciseId))
+          .where((workout) => workout.id != _activeWorkoutId && names(workout))
           .map((workout) => workout.id)
           .toList();
       for (final workoutId in holding) {
-        if (await _localService.getWorkout(id, workoutId) case Workout fresh) _workouts[workoutId] = fresh;
+        final fresh = await _localService.getWorkout(id, workoutId);
+        if (fresh != null && userId == id && _workouts.containsKey(workoutId)) _workouts[workoutId] = fresh;
       }
-      if (holding.isNotEmpty) notifyListeners();
+      final swapped = active && await _rereadActive(id, names);
+      if (holding.isNotEmpty || swapped) notifyListeners();
     }
+  }
+
+  /// Swaps the workout in progress for the mirror's copy of it, when it
+  /// [names] the exercise. Answers whether it did.
+  ///
+  /// A change that lands on the held copy while the mirror is read (a set
+  /// ticked from the watch) is written after that read, so the copy read
+  /// lacks it: the read is taken again, a few times at most, and given up on
+  /// rather than swap in a copy that would lose it.
+  Future<bool> _rereadActive(String id, bool Function(Workout) names) async {
+    for (var attempt = 0; attempt < 3; attempt++) {
+      final current = activeWorkout;
+      if (current == null || !names(current)) return false;
+      final before = '${current.toMap()}';
+      final fresh = await _getActiveWorkout(id);
+      // signed out, finished or cancelled meanwhile
+      if (fresh == null || userId != id || !identical(activeWorkout, current) || fresh.id != current.id) return false;
+      if ('${current.toMap()}' != before) continue;
+      _workouts[fresh.id] = fresh;
+      // "next" is counted from the set last ticked, by the copies now held
+      _latestMarkedSet = switch (_latestMarkedSet) {
+        (_, final ExerciseSet ticked) =>
+          fresh
+              .expand((exercise) => exercise.map((set) => (exercise, set)))
+              .where((each) => each.$2.id == ticked.id)
+              .firstOrNull,
+        null => null,
+      };
+      return true;
+    }
+    return false;
   }
 
   void notifyOfActiveWorkout() {
