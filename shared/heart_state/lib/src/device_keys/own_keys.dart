@@ -16,12 +16,19 @@ extension _OwnKeys on DeviceKeys {
   /// network and no turn in the queue: whoever asks while they are being read
   /// or made waits for that, and nothing else.
   Future<_Device> _local(_Run run) async {
+    run.check();
     if (run.device case final _Device device) return device;
     await (run.loading ??= _load(run).whenComplete(() => run.loading = null));
     return run.device!;
   }
 
   Future<void> _load(_Run run) async {
+    // removed, maybe cut short on the way: the rest is forgotten before
+    // anything could seal or answer with it
+    if (await run.marked()) {
+      await _forgetRemoved(run);
+      throw _Removed();
+    }
     final storageKey = await run.read('storage') ?? await _newStorageKey(run);
     final box = run.box = Sealbox(storageKey);
     final device = await run.storedDevice() ?? await _create(run, box);
@@ -68,17 +75,39 @@ extension _OwnKeys on DeviceKeys {
         fallbackKey: device.fallbackKey,
       );
     } catch (error) {
-      // a device removed for good can't come back under its id: this phone
-      // starts over as a new one, which takes the old one's place in one step
       if (error case ServerRefusal(code: 'device_removed')) {
+        // the server took this device before, in a place or waiting for
+        // one, and it was removed since: it forgets its keys, and comes back
+        // only when asked
+        if (await run.known(device.id)) {
+          await _forgetRemoved(run);
+          throw _Removed();
+        }
+        // an id the server never took from this install, as on a phone
+        // restored over a removed one: nothing was ever sealed for it, so it
+        // starts over as a new device in one step
         await _create(run, run.sealbox);
         return _publish(run);
+      }
+      // expected, not errors: the account has no place for this device
+      switch (error) {
+        case ServerRefusal(code: 'device_waiting'):
+          await run.saveKnown(device.id);
+          run.status = .waiting;
+          _changed(run);
+          return;
+        case ServerRefusal(code: 'device_limit'):
+          run.status = .full;
+          _changed(run);
+          return;
       }
       run.status = .failed;
       _changed(run);
       rethrow;
     }
+    await run.saveKnown(device.id);
     await run.saveDevice(device.copyWith(published: true));
+    run.publishes++;
     run.status = .published;
     _changed(run);
   }

@@ -382,7 +382,7 @@ void main() {
   });
 
   testWidgets("a silent push that someone's devices changed reads that person's devices (#555)", (tester) async {
-    when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => []);
+    when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => const CryptoDevices([]));
     await pump(tester, {'feature-yourCoach': 'on'}, keyVault: MemoryKeyVault());
     clearInteractions(api);
 

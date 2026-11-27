@@ -13,9 +13,21 @@ abstract interface class RemoteKeyService {
     ({String signature, String vouchedBy})? vouch,
   });
 
-  Future<List<CryptoDevice>> getCryptoDevices({String? userId});
+  /// [userId]'s devices, or the account's own: then also the ones waiting
+  /// for a place, the ones removed lately and the day each was last seen.
+  Future<CryptoDevices> getCryptoDevices({String? userId});
 
   Future<CryptoDevice> vouchForCryptoDevice(String deviceId, {required String vouchedBy, required String signature});
+
+  /// Removes one of the account's devices for good: it can't come back under
+  /// its id, and nothing more is sent to it. [removedBy], this device, signed
+  /// [DeviceKeys.removeMessage] at [signedAt], in seconds ([signature]).
+  Future<void> removeCryptoDevice(
+    String deviceId, {
+    required String removedBy,
+    required int signedAt,
+    required String signature,
+  });
 
   Future<int> addOneTimeKeys(String deviceId, Map<String, String> keys);
 
@@ -51,4 +63,8 @@ abstract interface class KeyVault {
   Future<void> write(String key, String value);
 
   Future<void> delete(String key);
+
+  /// The name of everything kept: what a removed device goes through to
+  /// forget it all.
+  Future<Iterable<String>> names();
 }

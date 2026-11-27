@@ -28,4 +28,7 @@ class SecureKeyVault implements KeyVault {
 
   @override
   Future<void> delete(String key) => _storage.delete(key: key);
+
+  @override
+  Future<Iterable<String>> names() async => (await _storage.readAll()).keys;
 }

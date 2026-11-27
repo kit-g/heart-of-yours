@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show File, Platform;
+import 'dart:ui' show ImageByteFormat;
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/rendering.dart' show RenderParagraph;
+import 'package:flutter/rendering.dart' show RenderParagraph, RenderRepaintBoundary;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/theme/state.dart';
@@ -12,10 +14,12 @@ import 'package:heart/presentation/navigation/pushes.dart' show PushPresenter;
 import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
 import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage;
 import 'package:heart/presentation/routes/settings/settings.dart' show SettingsPage, YourDevicesPage;
+import 'package:heart/presentation/widgets/compare_codes.dart' show deviceName;
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 import 'package:sealbox/sealbox.dart';
@@ -98,7 +102,7 @@ void main() {
       return phoneKeys.length;
     });
     when(api.countOneTimeKeys(any)).thenAnswer((_) async => 50);
-    when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => [phone, tablet]);
+    when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => CryptoDevices([phone, tablet]));
     when(api.claimKeys('muffin', deviceIds: anyNamed('deviceIds'))).thenAnswer((_) async => [tablet]);
     when(
       api.enqueueKeyItem(
@@ -134,6 +138,15 @@ void main() {
       );
     });
   });
+
+  /// A signed removal of [deviceId], or of any device: for stubbing and
+  /// verifying, whatever it was signed with.
+  Future<void> removal([String? deviceId]) => api.removeCryptoDevice(
+    deviceId ?? any,
+    removedBy: anyNamed('removedBy'),
+    signedAt: anyNamed('signedAt'),
+    signature: anyNamed('signature'),
+  );
 
   /// Tall enough that the Settings list builds its Account section, unless
   /// a test is about [size] itself.
@@ -279,6 +292,384 @@ void main() {
     await tester.pumpTimes();
     expect(find.text(l(tester).deviceApproved), findsOneWidget);
     expect(find.byKey(AppKeys.compareCodes(tablet.id)), findsNothing);
+  });
+
+  group('removing a device (#750)', () {
+    Future<void> openMenu(WidgetTester tester) async {
+      await tester.tap(find.byKey(AppKeys.deviceMenu(tablet.id)));
+      await tester.pumpTimes();
+      await tester.tap(find.byKey(AppKeys.deviceRemove(tablet.id)));
+      await tester.pumpTimes();
+    }
+
+    testWidgets('another device is removed from its menu, asked once; this one has no menu', (tester) async {
+      when(removal()).thenAnswer((_) async {
+        when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => CryptoDevices([phone]));
+      });
+      await pump(tester);
+      await openDevices(tester);
+
+      expect(find.byKey(AppKeys.deviceMenu(phone.id)), findsNothing);
+      expect(find.byTooltip(l(tester).deviceOptions), findsOneWidget);
+
+      // asked, and cancelled: nothing happens
+      await openMenu(tester);
+      expect(find.text(l(tester).deviceRemoveBody), findsOneWidget);
+      await tester.tap(find.text(l(tester).cancel));
+      await tester.pumpTimes();
+      verifyNever(removal());
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsOneWidget);
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.deviceRemoveConfirm));
+      await tester.pumpTimes();
+
+      verify(removal(tablet.id)).called(1);
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsNothing);
+      expect(find.byKey(AppKeys.deviceRow(phone.id)), findsOneWidget);
+    });
+
+    testWidgets('a removal the server refuses says so, and the device stays', (tester) async {
+      when(removal()).thenThrow(
+        const ServerRefusal(status: 403, code: 'forbidden', method: 'DELETE', route: '/v1/keys/devices/{id}'),
+      );
+      await pump(tester);
+      await openDevices(tester);
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.deviceRemoveConfirm));
+      await tester.pumpTimes();
+
+      expect(find.text(l(tester).deviceRemoveFailed), findsOneWidget);
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsOneWidget);
+    });
+
+    /// Publishing answered by [refusal] until a removal makes room; this
+    /// device's waiting row, where the server keeps one, as [waitingSince].
+    void noPlace(String refusal, {DateTime? waitingSince, List<CryptoDevice> waiting = const []}) {
+      var room = false;
+      CryptoDevice row(Invocation invocation, DateTime at) => CryptoDevice(
+        id: invocation.namedArguments[#id] as String,
+        userId: 'muffin',
+        identityKey: invocation.namedArguments[#identityKey] as String,
+        signingKey: invocation.namedArguments[#signingKey] as String,
+        fallbackKey: invocation.namedArguments[#fallbackKey] as String,
+        createdAt: at,
+      );
+      CryptoDevice? self;
+      when(
+        api.publishCryptoDevice(
+          id: anyNamed('id'),
+          identityKey: anyNamed('identityKey'),
+          signingKey: anyNamed('signingKey'),
+          fallbackKey: anyNamed('fallbackKey'),
+          vouch: anyNamed('vouch'),
+        ),
+      ).thenAnswer((invocation) async {
+        if (!room) {
+          if (waitingSince != null) self = row(invocation, waitingSince);
+          throw ServerRefusal(status: 409, code: refusal, method: 'POST', route: '/v1/keys/devices');
+        }
+        return phone = row(invocation, waitingSince ?? DateTime.utc(2026, 10, 1));
+      });
+      when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer(
+        (_) async => switch (room) {
+          false => CryptoDevices([tablet], waiting: [?self, ...waiting]),
+          true => CryptoDevices([phone]),
+        },
+      );
+      when(removal()).thenAnswer((_) async {
+        room = true;
+      });
+    }
+
+    testWidgets('waiting for a place, it says so at the top, and joins once it removes one', (tester) async {
+      // waiting since before the tablet came: the tablet is removed at once
+      noPlace('device_waiting', waitingSince: DateTime.utc(2026, 10, 1));
+      await pump(tester);
+      await openDevices(tester);
+
+      expect(DeviceKeys.of(root(tester)).status, DeviceKeysStatus.waiting);
+      expect(find.text(l(tester).yourDevicesFull), findsOneWidget);
+      // comparing travels through the queue, which a waiting device can't use
+      expect(find.byKey(AppKeys.compareCodes(tablet.id)), findsNothing);
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.deviceRemoveConfirm));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.yourDevicesFull), findsNothing);
+      expect(DeviceKeys.of(root(tester)).status, DeviceKeysStatus.published);
+      expect(find.text(l(tester).thisDevice), findsOneWidget);
+    });
+
+    testWidgets('with nowhere even to wait, it sends the person to another device, and offers no menu', (
+      tester,
+    ) async {
+      noPlace('device_limit');
+      await pump(tester);
+      await openDevices(tester);
+
+      expect(DeviceKeys.of(root(tester)).status, DeviceKeysStatus.full);
+      expect(find.text(l(tester).yourDevicesFullElsewhere), findsOneWidget);
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsOneWidget);
+      expect(find.byKey(AppKeys.deviceMenu(tablet.id)), findsNothing);
+    });
+
+    testWidgets("in its first day, an older device's Remove is greyed with when it can be", (tester) async {
+      // waiting since just now, after the tablet
+      final since = DateTime.now().toUtc().subtract(const Duration(hours: 2));
+      noPlace('device_waiting', waitingSince: since);
+      await pump(tester);
+      await openDevices(tester);
+
+      await tester.tap(find.byKey(AppKeys.deviceMenu(tablet.id)));
+      await tester.pumpTimes();
+
+      final item = tester.widget<PopupMenuItem<Object?>>(find.byKey(AppKeys.deviceRemove(tablet.id)));
+      expect(item.enabled, isFalse);
+      final at = DateFormat.MMMd('en').add_jm().format(since.add(const Duration(days: 1)).toLocal());
+      expect(find.text(l(tester).deviceRemovableFrom(at)), findsOneWidget);
+      await tester.tap(find.byKey(AppKeys.deviceRemove(tablet.id)), warnIfMissed: false);
+      await tester.pumpTimes();
+      expect(find.text(l(tester).deviceRemoveBody), findsNothing, reason: 'nothing to confirm');
+    });
+
+    testWidgets("the server's word that it's too soon is said with its time, and not reported", (tester) async {
+      when(removal()).thenThrow(
+        const ServerRefusal(
+          status: 403,
+          code: 'device_too_new',
+          method: 'DELETE',
+          route: '/v1/keys/devices/{id}',
+          details: {'removableAt': '2026-12-01T09:00:00Z'},
+        ),
+      );
+      await pump(tester);
+      await openDevices(tester);
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.deviceRemoveConfirm));
+      await tester.pumpTimes();
+
+      final at = DateFormat.MMMd('en').add_jm().format(DateTime.utc(2026, 12, 1, 9).toLocal());
+      expect(find.text(l(tester).deviceRemoveTooNew(at)), findsOneWidget);
+      expect(find.text(l(tester).deviceRemoveFailed), findsNothing);
+    });
+
+    testWidgets('says when each other device was last seen, and marks one not seen for two weeks', (tester) async {
+      final today = DateTime.now().toUtc();
+      DateTime daysAgo(int days) => DateTime.utc(today.year, today.month, today.day - days);
+      CryptoDevice seen(String id, DateTime on) => CryptoDevice(
+        id: id,
+        userId: 'muffin',
+        identityKey: tablet.identityKey,
+        signingKey: tablet.signingKey,
+        fallbackKey: tablet.fallbackKey,
+        createdAt: DateTime.utc(2026, 11, 2),
+        lastSeenOn: on,
+      );
+      const today_ = '01a1e000-0000-7000-8000-00000000aa01';
+      const yesterday = '01a1e000-0000-7000-8000-00000000aa02';
+      const week = '01a1e000-0000-7000-8000-00000000aa03';
+      const old = '01a1e000-0000-7000-8000-00000000aa04';
+      when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer(
+        (_) async => CryptoDevices([
+          phone,
+          seen(today_, daysAgo(0)),
+          seen(yesterday, daysAgo(1)),
+          seen(week, daysAgo(7)),
+          seen(old, daysAgo(20)),
+        ]),
+      );
+      await pump(tester);
+      await openDevices(tester);
+      final format = DateFormat.yMMMd('en');
+
+      Finder under(String id, String words) =>
+          find.descendant(of: find.byKey(AppKeys.deviceRow(id)), matching: find.text(words));
+      // "today" only while the reader's day is the server's UTC one: across
+      // midnight between them, the date is said
+      final here = DateTime.now();
+      final sameDay = (here.year, here.month, here.day) == (today.year, today.month, today.day);
+      expect(
+        under(today_, sameDay ? l(tester).deviceSeenToday : l(tester).deviceSeenOn(format.format(daysAgo(0)))),
+        findsOneWidget,
+      );
+      expect(
+        under(yesterday, sameDay ? l(tester).deviceSeenYesterday : l(tester).deviceSeenOn(format.format(daysAgo(1)))),
+        findsOneWidget,
+      );
+      expect(under(week, l(tester).deviceSeenOn(format.format(daysAgo(7)))), findsOneWidget);
+      expect(under(old, l(tester).deviceNotSeenSince(format.format(daysAgo(20)))), findsOneWidget);
+      expect(find.byKey(AppKeys.deviceStale(old)), findsOneWidget);
+      expect(find.byKey(AppKeys.deviceStale(week)), findsNothing);
+    });
+
+    testWidgets('waiting devices have their own section, with Remove; removals say by which device', (
+      tester,
+    ) async {
+      const waitingId = '01a1e000-0000-7000-8000-00000000bb01';
+      const mineId = '01a1e000-0000-7000-8000-00000000bb02';
+      const theirsId = '01a1e000-0000-7000-8000-00000000bb03';
+      CryptoDevice other(String id, {DateTime? removedAt, String? removedBy}) => CryptoDevice(
+        id: id,
+        userId: 'muffin',
+        identityKey: tablet.identityKey,
+        signingKey: tablet.signingKey,
+        fallbackKey: tablet.fallbackKey,
+        createdAt: DateTime.utc(2026, 11, 20),
+        removedAt: removedAt,
+        removedBy: removedBy,
+      );
+      when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer(
+        (_) async => CryptoDevices(
+          [phone, tablet],
+          waiting: [other(waitingId)],
+          removed: [
+            other(mineId, removedAt: DateTime.utc(2026, 11, 24, 12), removedBy: phone.id),
+            other(theirsId, removedAt: DateTime.utc(2026, 11, 22, 12), removedBy: tablet.id),
+          ],
+        ),
+      );
+      when(removal()).thenAnswer((_) async {});
+      await pump(tester);
+      await openDevices(tester);
+      final format = DateFormat.yMMMd('en');
+
+      expect(find.text(l(tester).yourDevicesWaiting), findsOneWidget);
+      expect(find.byKey(AppKeys.waitingRow(waitingId)), findsOneWidget);
+      expect(find.text(l(tester).yourDevicesRemovedLately), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(AppKeys.removedRow(mineId)),
+          matching: find.text(l(tester).deviceRemovedByThis(format.format(DateTime.utc(2026, 11, 24, 12).toLocal()))),
+        ),
+        findsOneWidget,
+      );
+      final tabletName = 'Device ${tablet.id.replaceAll('-', '').substring(26).toUpperCase()}';
+      expect(
+        find.descendant(
+          of: find.byKey(AppKeys.removedRow(theirsId)),
+          matching: find.text(
+            l(tester).deviceRemovedBy(tabletName, format.format(DateTime.utc(2026, 11, 22, 12).toLocal())),
+          ),
+        ),
+        findsOneWidget,
+      );
+      // the one this device didn't make is marked for a reader too
+      expect(
+        find.descendant(
+          of: find.byKey(AppKeys.removedRow(theirsId)),
+          matching: find.byWidgetPredicate(
+            (each) => each is Icon && each.semanticLabel == l(tester).deviceRemovedElsewhere,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(AppKeys.removedRow(mineId)),
+          matching: find.byWidgetPredicate(
+            (each) => each is Icon && each.semanticLabel == l(tester).deviceRemovedElsewhere,
+          ),
+        ),
+        findsNothing,
+      );
+
+      await tester.ensureVisible(find.byKey(AppKeys.deviceMenu(waitingId)));
+      await tester.tap(find.byKey(AppKeys.deviceMenu(waitingId)));
+      await tester.pumpTimes();
+      await tester.tap(find.byKey(AppKeys.deviceRemove(waitingId)));
+      await tester.pumpTimes();
+      await tester.tap(find.byKey(AppKeys.deviceRemoveConfirm));
+      await tester.pumpTimes();
+
+      verify(removal(waitingId)).called(1);
+    });
+
+    testWidgets('one removed already, elsewhere, goes from the list as though removed here', (tester) async {
+      var gone = false;
+      when(api.getCryptoDevices(userId: anyNamed('userId')))
+          .thenAnswer((_) async => CryptoDevices(gone ? [phone] : [phone, tablet]));
+      when(removal()).thenAnswer((_) async {
+        gone = true;
+        throw const ServerRefusal(status: 404, code: 'not_found', method: 'DELETE', route: '/v1/keys/devices/{id}');
+      });
+      await pump(tester);
+      await openDevices(tester);
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.deviceRemoveConfirm));
+      await tester.pumpTimes();
+
+      expect(find.text(l(tester).deviceRemoveFailed), findsNothing);
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsNothing);
+    });
+
+    testWidgets('while its removal runs, the row offers nothing more', (tester) async {
+      final answer = Completer<void>();
+      when(removal()).thenAnswer((_) => answer.future);
+      await pump(tester);
+      await openDevices(tester);
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.deviceRemoveConfirm));
+      await tester.pump();
+
+      expect(find.byKey(AppKeys.deviceMenu(tablet.id)), findsNothing);
+      when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => CryptoDevices([phone]));
+      answer.complete();
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsNothing);
+    });
+
+    testWidgets('a device the account removed says so, lists nothing, and comes back only as a new one', (
+      tester,
+    ) async {
+      var published = <String>[];
+      when(
+        api.publishCryptoDevice(
+          id: anyNamed('id'),
+          identityKey: anyNamed('identityKey'),
+          signingKey: anyNamed('signingKey'),
+          fallbackKey: anyNamed('fallbackKey'),
+          vouch: anyNamed('vouch'),
+        ),
+      ).thenAnswer((invocation) async {
+        published = [...published, invocation.namedArguments[#id] as String];
+        return phone = CryptoDevice(
+          id: invocation.namedArguments[#id] as String,
+          userId: 'muffin',
+          identityKey: invocation.namedArguments[#identityKey] as String,
+          signingKey: invocation.namedArguments[#signingKey] as String,
+          fallbackKey: invocation.namedArguments[#fallbackKey] as String,
+          createdAt: DateTime.utc(2026, 10, 1),
+        );
+      });
+      await pump(tester);
+      final first = phone.id;
+      // removed from the tablet: the list no longer holds this phone
+      var removed = true;
+      when(
+        api.getCryptoDevices(userId: anyNamed('userId')),
+      ).thenAnswer((_) async => CryptoDevices(removed ? [tablet] : [phone, tablet]));
+      await openDevices(tester);
+
+      expect(find.byKey(AppKeys.yourDevicesRemoved), findsOneWidget);
+      expect(find.text(l(tester).yourDevicesRemoved), findsOneWidget);
+      expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsNothing);
+      expect(DeviceKeys.of(root(tester)).status, DeviceKeysStatus.removed);
+
+      removed = false;
+      await tester.tap(find.byKey(AppKeys.deviceStartOver));
+      await tester.pumpTimes();
+
+      expect(published, hasLength(2));
+      expect(published.last, isNot(first));
+      expect(find.byKey(AppKeys.yourDevicesRemoved), findsNothing);
+      expect(find.text(l(tester).thisDevice), findsOneWidget);
+      expect(find.byKey(AppKeys.compareCodes(tablet.id)), findsOneWidget);
+    });
   });
 
   testWidgets('another device asking opens the comparison over whatever is on screen, and may be told no', (
@@ -845,6 +1236,69 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('in Russian on a 360dp phone at large text, a row keeps its title whole beside its menu', (
+    tester,
+  ) async {
+    tester.platformDispatcher
+      ..localesTestValue = [const Locale('ru')]
+      ..textScaleFactorTestValue = 1.3;
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    // every kind of row the page has: one not seen lately, one waiting, and
+    // removals by this device and by another
+    CryptoDevice other(String id, {DateTime? lastSeenOn, DateTime? removedAt, String? removedBy}) => CryptoDevice(
+      id: id,
+      userId: 'muffin',
+      identityKey: tablet.identityKey,
+      signingKey: tablet.signingKey,
+      fallbackKey: tablet.fallbackKey,
+      createdAt: DateTime.utc(2026, 11, 20),
+      lastSeenOn: lastSeenOn,
+      removedAt: removedAt,
+      removedBy: removedBy,
+    );
+    when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer(
+      (_) async => CryptoDevices(
+        [
+          phone,
+          tablet,
+          other('01a1e000-0000-7000-8000-00000000cc01', lastSeenOn: DateTime.utc(2026, 10, 1)),
+        ],
+        waiting: [other('01a1e000-0000-7000-8000-00000000cc02')],
+        removed: [
+          other('01a1e000-0000-7000-8000-00000000cc03', removedAt: DateTime.utc(2026, 11, 24), removedBy: phone.id),
+          other('01a1e000-0000-7000-8000-00000000cc04', removedAt: DateTime.utc(2026, 11, 22), removedBy: tablet.id),
+        ],
+      ),
+    );
+    await pump(tester, size: const Size(360, 780));
+    HeartRouter.of(root(tester)).pushYourDevices(root(tester));
+    await tester.pumpTimes();
+
+    final row = find.byKey(AppKeys.deviceRow(tablet.id));
+    final title = find.descendant(of: row, matching: find.text(deviceName(l(tester), tablet.id)));
+    final menu = find.byKey(AppKeys.deviceMenu(tablet.id));
+    final compare = find.byKey(AppKeys.compareCodes(tablet.id));
+    expect(tester.getRect(title).right, lessThanOrEqualTo(tester.getRect(menu).left));
+    expect(oneLine(tester, deviceName(l(tester), tablet.id)), isTrue, reason: 'the title wrapped');
+    expect(tester.getRect(compare).top, greaterThan(tester.getRect(title).bottom), reason: 'under the words');
+    // the app bar's logo stripe overflows at this text size on every page
+    // that has one, rows or not: not this test's to answer
+    tester.takeException();
+
+    // a picture to look at, when asked for one
+    if (Platform.environment['HEART_SHOTS'] case final String dir) {
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.ancestor(of: find.byType(YourDevicesPage), matching: find.byType(RepaintBoundary)).first,
+      );
+      await tester.runAsync(() async {
+        final image = await boundary.toImage(pixelRatio: 2);
+        final bytes = await image.toByteData(format: ImageByteFormat.png);
+        File('$dir/your_devices_ru_360_1.3.png').writeAsBytesSync(bytes!.buffer.asUint8List());
+      });
+    }
+  });
 
   testWidgets('a comparison abandoned under the sheet can no longer be answered (#668)', (tester) async {
     final code = await sheetAt(tester, const Size(360, 780));

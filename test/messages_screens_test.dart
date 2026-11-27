@@ -254,6 +254,49 @@ void main() {
       expectSaid("Some messages can't be opened any more.");
     });
 
+    testWidgets('on a device waiting for a place say so, and no link is offered: it removes one itself (#750)', (
+      tester,
+    ) async {
+      keys
+        ..status = .waiting
+        ..others = {'tablet': .pinned};
+      await open(tester, from: ['muffin', 'whiskers']);
+      expectSaid(
+        "This device can't open messages yet: your account has as many devices as it can hold. "
+        'Remove one you no longer use in Your devices.',
+      );
+    });
+
+    testWidgets('with nowhere even to wait, send the person to another device, with the link for it (#750)', (
+      tester,
+    ) async {
+      keys
+        ..status = .full
+        ..others = {'tablet': .pinned};
+      await open(tester, from: ['muffin', 'whiskers']);
+      expectSaid(
+        "This device can't open messages yet: your account has as many devices as it can hold. "
+        'Remove one you no longer use from another of your devices.',
+        buttons: true,
+      );
+    });
+
+    testWidgets('on a device the account removed say so, with no link (#750)', (tester) async {
+      keys.status = .removed;
+      await open(tester, from: ['muffin', 'whiskers']);
+      expectSaid("This device was removed from your account and can't open messages. Use it again from Your devices.");
+    });
+
+    testWidgets("over, with only the other person's locked, a full account isn't the reason (#750)", (tester) async {
+      connections.status = .severed;
+      await coaching.load();
+      keys
+        ..status = .full
+        ..others = {'tablet': .pinned};
+      await open(tester);
+      expectSaid("Some messages can't be opened any more.");
+    });
+
     testWidgets('where no keys are kept open on a phone', (tester) async {
       keys.supported = false;
       keys.others = {'tablet': .unverified};

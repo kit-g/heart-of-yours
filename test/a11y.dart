@@ -2069,7 +2069,7 @@ void a11y({required int shard}) {
         when(api.countOneTimeKeys(any)).thenAnswer((_) async => 50);
         when(api.getKeyQueue(any)).thenAnswer((_) async => []);
         when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer(
-          (_) async => [
+          (_) async => CryptoDevices([
             ?published,
             CryptoDevice(
               id: '01a1e000-0000-7000-8000-00000000ab12',
@@ -2079,7 +2079,7 @@ void a11y({required int shard}) {
               fallbackKey: 'tablet-fallback',
               createdAt: DateTime.utc(2026, 11, 2),
             ),
-          ],
+          ]),
         );
       case _Screen.restTimers:
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench]));
