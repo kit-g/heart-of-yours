@@ -292,7 +292,7 @@ void main() {
       expect(find.byKey(AppKeys.goalRow('done-1')), findsOneWidget);
       expect(find.byKey(AppKeys.goalRow('live-1')), findsNothing);
       expect(find.text('Add goal'), findsNothing);
-      expect(find.text('Achieved'), findsWidgets);
+      expect(find.text('Goals reached'), findsWidgets);
 
       await tester.tap(find.byKey(AppKeys.goalsViewActive));
       await tester.pumpAndSettle();

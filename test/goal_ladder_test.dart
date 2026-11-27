@@ -75,7 +75,7 @@ void main() {
       ]),
     );
 
-    expect(find.textContaining('Achieved'), findsOneWidget);
+    expect(find.textContaining('Reached'), findsOneWidget);
     expect(find.textContaining('Due'), findsNothing);
   });
 
@@ -194,7 +194,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.open_in_new_rounded), findsNothing);
-      expect(find.textContaining('Achieved'), findsOneWidget);
+      expect(find.textContaining('Reached'), findsOneWidget);
     });
   });
 

@@ -168,9 +168,9 @@ void main() {
     await tester.tap(find.widgetWithText(OutlinedButton, 'Sign up'));
     await tester.pumpTimes(10);
 
-    expect(find.text('Email already exists'), findsOneWidget);
+    expect(find.text('This email already has an account'), findsOneWidget);
 
-    await tester.tap(find.text('Yes, sign me in!'));
+    await tester.tap(find.text('Yes, log me in!'));
     await tester.pumpTimes(10);
 
     // The confirmation logged in with the typed password instead of signing up.
@@ -185,7 +185,7 @@ void main() {
     await tester.tap(find.widgetWithText(OutlinedButton, 'Sign up'));
     await tester.pumpTimes();
 
-    expect(find.text('Cannot be empty'), findsWidgets);
+    expect(find.text("Can't be empty"), findsWidgets);
     expect(find.byType(SignUpPage), findsOneWidget);
     expect(firebase.currentUser?.isAnonymous, isTrue);
   });

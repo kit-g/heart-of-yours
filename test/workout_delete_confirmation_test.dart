@@ -73,14 +73,14 @@ void main() {
 
     await openDeleteDialog(tester);
 
-    expect(find.text('Do you want to delete this workout?'), findsOneWidget);
+    expect(find.text('Delete this workout?'), findsOneWidget);
     verifyNever(remote.deleteWorkout(any));
     verifyNever(local.deleteWorkout(any));
 
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Do you want to delete this workout?'), findsNothing);
+    expect(find.text('Delete this workout?'), findsNothing);
     verifyNever(remote.deleteWorkout(any));
     verifyNever(local.deleteWorkout(any));
     expect(deleted, isFalse);

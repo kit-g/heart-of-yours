@@ -15,5 +15,5 @@
     <string name="function_unknown_exercise">I don\'t know that exercise</string>
     <string name="function_unknown_template">I don\'t know that template</string>
     <string name="function_opening">Opening Heart</string>
-    <string name="function_app_closed">Heart is not running; it will apply this when opened</string>
+    <string name="function_app_closed">Heart isn\'t running. It will apply this when you open it.</string>
 </resources>

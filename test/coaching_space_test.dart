@@ -733,7 +733,7 @@ void main() {
       await tester.pumpTimes();
 
       expect(find.byKey(AppKeys.coachingClientNameField), findsOneWidget);
-      expect(find.text('Unknown error occurred'), findsOneWidget);
+      expect(find.text('Something went wrong'), findsOneWidget);
     });
 
     testWidgets('two clients with no name at all are told apart by when they joined (#753)', (tester) async {

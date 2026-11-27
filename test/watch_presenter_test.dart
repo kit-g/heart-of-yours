@@ -648,9 +648,9 @@ void main() {
       await running(tester, prepare: (workout) => workout.first.first.setType = .warmup);
 
       final sent = link.sent.last as WatchWorkout;
-      expect(sent.set?.position, 'Warm up', reason: 'the set up next is the warm-up');
+      expect(sent.set?.position, 'Warm-up', reason: 'the set up next is the warm-up');
       final [first, second] = sent.exercises.single.sets;
-      expect((first.mark, first.type, first.position), ('W', 'Warm up', 'Warm up'));
+      expect((first.mark, first.type, first.position), ('W', 'Warm-up', 'Warm-up'));
       expect((second.mark, second.type, second.position), ('1', null, 'Set 1 of 1'));
     });
 

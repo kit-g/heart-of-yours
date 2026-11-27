@@ -138,7 +138,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.info_outline_rounded));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('isn’t reading any health data'), findsOneWidget);
+      expect(find.textContaining("isn't reading any health data"), findsOneWidget);
       expect(find.textContaining('Heart read'), findsOneWidget);
       // The switch that is kept away from the permission list, and without
       // which every read stops 30 days back however far the chart zooms out.
@@ -155,7 +155,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(device.log, contains('openPermissions'));
-      expect(find.textContaining('isn’t reading any health data'), findsNothing, reason: 'the dialog goes too');
+      expect(find.textContaining("isn't reading any health data"), findsNothing, reason: 'the dialog goes too');
     });
 
     testWidgets('and takes nobody anywhere they did not ask to go', (tester) async {
@@ -168,7 +168,7 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('isn’t reading any health data'), findsNothing);
+      expect(find.textContaining("isn't reading any health data"), findsNothing);
       expect(device.log, isNot(contains('openPermissions')));
     });
 

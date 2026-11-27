@@ -235,7 +235,7 @@ class PrimaryButton extends StatelessWidget {
   }
 }
 
-/// The quiet button of the Goals header's pair ("Achieved" beside "Add
+/// The quiet button of the Goals header's pair ("Reached" beside "Add
 /// goal"): a dialog's way out, or a page's side action. It draws the house
 /// 32pt and answers taps over a full target, so it is never drawn tall.
 ///

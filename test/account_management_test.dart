@@ -122,7 +122,7 @@ void main() {
     await tester.pumpTimes();
     expect(find.byType(SettingsPage), findsOneWidget);
 
-    await tester.tap(find.text('Account control'));
+    await tester.tap(find.text('Manage account'));
     await tester.pumpTimes();
     expect(find.byType(AccountManagementPage), findsOneWidget);
   }
@@ -338,7 +338,7 @@ void main() {
 
       // Has a password, so the password prompt is next rather than an
       // immediate deletion.
-      expect(find.text('Confirm your account deletion'), findsOneWidget);
+      expect(find.text('Confirm you want to delete your account'), findsOneWidget);
       verifyNever(api.deleteAccount(accountId: anyNamed('accountId'), appleGrant: anyNamed('appleGrant')));
 
       await tester.enterTextAndWait(find.byType(TextField).last, 'correct-horse');
@@ -525,7 +525,7 @@ void main() {
       await tester.tap(find.text('Yep, go on without me!'));
       await tester.pumpTimes();
 
-      expect(find.text('Confirm your account deletion'), findsNothing);
+      expect(find.text('Confirm you want to delete your account'), findsNothing);
     });
 
     testWidgets('a wrong password refuses the deletion and reports invalid credentials', (tester) async {

@@ -944,7 +944,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
 
   // Account management (lib/presentation/routes/settings/account.dart),
-  // reached from Settings' "Account control" row for a signed-in,
+  // reached from Settings' "Manage account" row for a signed-in,
   // non-anonymous user.
   (_Screen.accountManagement, _Guideline.labeledTapTarget, null),
   (_Screen.accountManagement, _Guideline.textContrastLight, null),
@@ -2434,7 +2434,7 @@ void a11y({required int shard}) {
         await tester.pumpTimes();
         await tester.tapByKey(WorkoutDetailKeys.setTypeFor(_bench.id, 1));
         await tester.pumpTimes();
-        await tester.tap(find.byTooltip('About Warm up'));
+        await tester.tap(find.byTooltip('About Warm-up'));
       case _Screen.setTargetDialog:
         final template = Template.empty(id: 'template-aimed', order: 0)
           ..name = 'Aimed'
@@ -2744,7 +2744,7 @@ void a11y({required int shard}) {
           await tester.enterText(find.byKey(WorkoutDetailKeys.repsFor(_bench.id, 1)), '5');
           FocusManager.instance.primaryFocus?.unfocus();
           await tester.pumpTimes();
-          expect(find.text('Log Workout'), findsOneWidget);
+          expect(find.text('Log workout'), findsOneWidget);
         }
       case _Screen.entryReviewOffer || _Screen.entryReview:
         // read here for the reason the upsync run is started here: `_initApp`
@@ -2807,7 +2807,7 @@ void a11y({required int shard}) {
       case _Screen.accountManagement:
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
-        await tester.tap(find.text('Account control'));
+        await tester.tap(find.text('Manage account'));
       case _Screen.moveHistoryDialog:
         // the catalog the way start-up would read it (see the upsync case)
         unawaited(Exercises.of(tester.element(find.byType(MaterialApp))).init());
