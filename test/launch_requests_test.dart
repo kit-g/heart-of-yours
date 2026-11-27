@@ -7,11 +7,9 @@
 // counts requests in flight per account (ten on dev), so every request added
 // to the first second is added on purpose, and to this list.
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_models/heart_models.dart';
@@ -22,8 +20,6 @@ import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
 import 'support/harness.dart';
-
-const _pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
 
 const _uid = 'u1';
 
@@ -100,18 +96,6 @@ void main() {
     // main() puts the build's headers on the client; start-up adds the token
     api.authenticate({});
 
-    // flutter_cache_manager asks for it once per isolate, behind any image
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-      _pathProviderChannel,
-      (_) async => Directory.systemTemp.path,
-    );
-    addTearDown(() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-        _pathProviderChannel,
-        null,
-      );
-    });
-
     stubStartupMirror(db);
     final bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
     when(cdn.getExerciseLibrary(cached: anyNamed('cached'))).thenAnswer(
@@ -133,21 +117,25 @@ void main() {
       cdn: cdn,
       firebaseAuth: MockFirebaseAuth(
         signedIn: true,
-        mockUser: MockUser(uid: _uid, email: 'muffin@heart.test'),
+        mockUser: _Account(),
       ),
       settle: false,
       startUp: true,
     );
-    // until the launch has said all it has to say: nothing new for a
-    // while, however slow the machine
-    final deadline = DateTime.now().add(const Duration(seconds: 60));
+    // Until the launch has said all it has to say. Not a fixed wait, and not
+    // quiet alone: a busy machine stalls mid-launch for longer than any quiet
+    // worth waiting for. The launch's own last words come first, the account
+    // written and the read that waits for all the opening ones, and then a
+    // quiet second for anything that should not have followed.
+    final deadline = DateTime.now().add(const Duration(minutes: 2));
     var seen = -1;
     var quiet = 0;
     while (quiet < 10 && DateTime.now().isBefore(deadline)) {
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
       await tester.pump(const Duration(milliseconds: 100));
+      final through = ['PUT /v1/accounts', ..._afterwards].every(sent.contains);
       quiet = switch (sent.length) {
-        final count when count == seen && count > 0 => quiet + 1,
+        final count when through && count == seen => quiet + 1,
         _ => 0,
       };
       seen = sent.length;
@@ -183,4 +171,16 @@ void main() {
       expect(at(later), greaterThan(opened), reason: '$later went out among the opening reads');
     }
   });
+}
+
+// MockUser otherwise supplies a remote avatar: the profile would fetch it
+// through the image cache, which is no request of the launch's and leaves the
+// cache's clean-up timer running past the test.
+// The upstream mock is mutable despite Firebase User's immutable annotation.
+// ignore: must_be_immutable
+class _Account extends MockUser {
+  new() : super(uid: _uid, email: 'muffin@heart.test');
+
+  @override
+  String? get photoURL => null;
 }
