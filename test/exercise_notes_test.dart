@@ -60,7 +60,7 @@ void exerciseNoteTests({Future<void> Function(String name)? onFrame, bool useDev
       await tester.pumpTimes();
       verify(db.setExerciseNote(ex.id, 'anon', 'Pause at the bottom', pending: true)).called(1);
       verifyNever(api.setExerciseNote(any, any));
-      expect(find.tooltip('Unpin for future workouts'), findsOneWidget);
+      expect(find.tooltip('Unpin from future workouts'), findsOneWidget);
       await onFrame?.call('pinned-${size.width.toInt()}');
       await tester.drag(find.text('Pause at the bottom'), const Offset(-600, 0));
       await tester.pumpTimes();
@@ -80,8 +80,8 @@ void exerciseNoteTests({Future<void> Function(String name)? onFrame, bool useDev
       await tester.pumpTimes();
       expect(workout.first.note, 'One hand at a time');
       expect(exercises.noteFor(ex.id), 'Pause at the bottom');
-      expect(find.tooltip('Unpin for future workouts'), findsOneWidget);
-      await tester.tap(find.tooltip('Unpin for future workouts'));
+      expect(find.tooltip('Unpin from future workouts'), findsOneWidget);
+      await tester.tap(find.tooltip('Unpin from future workouts'));
       await tester.pumpTimes();
       expect(exercises.noteFor(ex.id), isNull);
       expect(workout.first.note, 'One hand at a time');
@@ -94,7 +94,7 @@ void exerciseNoteTests({Future<void> Function(String name)? onFrame, bool useDev
       expect(exercises.noteFor(ex.id), 'One hand at a time');
       await tester.tap(find.byKey(WorkoutDetailKeys.exerciseOptionsFor(ex.id)));
       await tester.pumpTimes();
-      await tester.tap(find.text('Unpin for future workouts'));
+      await tester.tap(find.text('Unpin from future workouts'));
       await tester.pumpTimes();
       expect(exercises.noteFor(ex.id), isNull);
 

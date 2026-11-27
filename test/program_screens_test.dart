@@ -1421,7 +1421,7 @@ void main() {
       await tester.pumpTimes();
       expect(calendar.listed, 1);
       // what an event will say, before anything is saved
-      expect(find.textContaining('Every event is called just “Training”'), findsOneWidget);
+      expect(find.textContaining('Every event is titled just “Training”'), findsOneWidget);
       // calendars under their accounts; one Heart cannot write to is there,
       // greyed, saying why
       expect(find.text('iCloud'), findsOneWidget);

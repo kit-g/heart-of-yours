@@ -188,7 +188,7 @@ void main() {
           await pickTimes(tester);
 
           expect(find.byType(WorkoutEditor), findsOneWidget);
-          expect(find.text('Log Workout'), findsOneWidget);
+          expect(find.text('Log workout'), findsOneWidget);
           expect(find.byType(WorkoutDetail), findsOneWidget);
           await fillIn(tester);
 
@@ -220,7 +220,7 @@ void main() {
           await tester.tapByKey(AppKeys.logPastWorkout);
           await tester.pumpTimes();
           await pickTimes(tester);
-          expect(find.text('Log Workout'), findsOneWidget);
+          expect(find.text('Log workout'), findsOneWidget);
           await fillIn(tester);
 
           await tester.tap(save());
@@ -297,7 +297,7 @@ void main() {
         }
         await tester.pumpTimes();
         expect(find.text('Quit editing?'), findsOneWidget);
-        await tester.tap(find.text('Quit this page'));
+        await tester.tap(find.text('Leave this page'));
         await tester.pumpTimes();
 
         expect(find.byType(WorkoutEditor), findsNothing);

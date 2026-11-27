@@ -54,7 +54,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "cropAvatar": "Crop avatar",
+  "cropAvatar": "Crop profile photo",
   "@cropAvatar": {
     "description": "Label in the image cropper",
     "type": "text",
@@ -120,13 +120,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "logInTitle": "Welcome Back",
+  "logInTitle": "Welcome back",
   "@logInTitle": {
     "description": "Login page copy",
     "type": "text",
     "placeholders": {}
   },
-  "logInBody": "You've already started something important. \nLet's keep going.",
+  "logInBody": "You've already started something important.\nLet's keep going.",
   "@logInBody": {
     "description": "Login page copy",
     "type": "text",
@@ -138,19 +138,19 @@
     "type": "text",
     "placeholders": {}
   },
-  "signUpBody": "Every journey starts with one decision. \nThis one's yours.",
+  "signUpBody": "Every journey starts with one decision.\nThis one's yours.",
   "@signUpBody": {
     "description": "Sign up page copy",
     "type": "text",
     "placeholders": {}
   },
-  "recoverTitle": "Still with You",
+  "recoverTitle": "Still with you",
   "@recoverTitle": {
     "description": "Recover page copy",
     "type": "text",
     "placeholders": {}
   },
-  "recoverBody": "Your journey isn't lost. \nJust a moment of pause — we'll reset together.",
+  "recoverBody": "Your journey isn't lost.\nJust a moment of pause — we'll reset together.",
   "@recoverBody": {
     "description": "Recover page copy",
     "type": "text",
@@ -210,7 +210,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "noAccountBodyLose": "If you lose this phone, you lose your data.",
+  "noAccountBodyLose": "If you lose this device, you lose your data.",
   "@noAccountBodyLose": {
     "description": "No-account dialog, last paragraph; the export screen repeats this line and nothing else",
     "type": "text",
@@ -407,13 +407,13 @@
       "exerciseName": {}
     }
   },
-  "archiveConfirmBody": "This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won't affect any of your past workouts — your history stays intact.",
+  "archiveConfirmBody": "It moves to Archived exercises (Exercises → More → Show archived).\nYour past workouts aren't affected.",
   "@archiveConfirmBody": {
     "description": "Dialog body",
     "type": "text",
     "placeholders": {}
   },
-  "exerciseArchived": "This exercise is archived \nand won't appear in your main library anymore.",
+  "exerciseArchived": "This exercise is archived\nand won't appear in your main library anymore.",
   "@exerciseArchived": {
     "description": "Tooltip over archived icon",
     "type": "text",
@@ -545,7 +545,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "okBang": "Ok!",
+  "okBang": "OK!",
   "@okBang": {
     "description": "Generic label",
     "type": "text",
@@ -799,7 +799,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "aboutApp": "About app",
+  "aboutApp": "About the app",
   "@aboutApp": {
     "description": "Setting item title",
     "type": "text",
@@ -941,13 +941,13 @@
       }
     }
   },
-  "finishWorkoutTitle": "Finish Workout?",
+  "finishWorkoutTitle": "Finish workout?",
   "@finishWorkoutTitle": {
     "description": "Workout completion confirmation dialog",
     "type": "text",
     "placeholders": {}
   },
-  "finishWorkoutWarningTitle": "Complete Your Workout?",
+  "finishWorkoutWarningTitle": "Finish your workout?",
   "@finishWorkoutWarningTitle": {
     "description": "Workout completion confirmation dialog",
     "type": "text",
@@ -965,7 +965,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "notificationsOffEnable": "Enable",
+  "notificationsOffEnable": "Turn on",
   "@notificationsOffEnable": {
     "description": "Action on the notifications-off reminder: opens the system notification settings",
     "type": "text",
@@ -1013,13 +1013,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "cancelWorkoutBody": "All progress made so far will be lost.",
+  "cancelWorkoutBody": "Everything you've logged so far will be lost.",
   "@cancelWorkoutBody": {
     "description": "Workout completion confirmation dialog",
     "type": "text",
     "placeholders": {}
   },
-  "cancelWorkoutTitle": "Do you want to cancel this workout?",
+  "cancelWorkoutTitle": "Cancel this workout?",
   "@cancelWorkoutTitle": {
     "description": "Workout completion confirmation dialog",
     "type": "text",
@@ -1067,13 +1067,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "deleteTemplateTitle": "Do you want to delete this workout template?",
+  "deleteTemplateTitle": "Delete this template?",
   "@deleteTemplateTitle": {
     "description": "Template deletion confirmation dialog",
     "type": "text",
     "placeholders": {}
   },
-  "deleteTemplateBody": "This cannot be undone",
+  "deleteTemplateBody": "This can't be undone",
   "@deleteTemplateBody": {
     "description": "Template deletion confirmation dialog",
     "type": "text",
@@ -1091,7 +1091,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "quitPage": "Quit this page",
+  "quitPage": "Leave this page",
   "@quitPage": {
     "description": "Template deletion confirmation dialog",
     "type": "text",
@@ -1109,7 +1109,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "selected": "Selected {count}",
+  "selected": "{count} selected",
   "@selected": {
     "description": "Selected 4 exercises",
     "type": "text",
@@ -1127,7 +1127,7 @@
       }
     }
   },
-  "restTimerSubtitle": "Adjust duration via the +/- buttons.",
+  "restTimerSubtitle": "Adjust the time with the +10s and −10s buttons.",
   "@restTimerSubtitle": {
     "description": "Rest timer",
     "type": "text",
@@ -1139,7 +1139,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "subtractSeconds": "-10s",
+  "subtractSeconds": "−10s",
   "@subtractSeconds": {
     "description": "Rest timer",
     "type": "text",
@@ -1157,7 +1157,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "workoutsPerWeekTitle": "Your workouts will be presented here",
+  "workoutsPerWeekTitle": "Your workouts will show up here",
   "@workoutsPerWeekTitle": {
     "description": "Chart label",
     "type": "text",
@@ -1263,7 +1263,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "goalAchievedOn": "Achieved {date}",
+  "goalAchievedOn": "Reached {date}",
   "@goalAchievedOn": {
     "description": "When a milestone's target was first met",
     "type": "text",
@@ -1291,13 +1291,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "goalsViewAchieved": "Achieved",
+  "goalsViewAchieved": "Reached",
   "@goalsViewAchieved": {
     "description": "Button on the goals card that flips it over to show goals already achieved",
     "type": "text",
     "placeholders": {}
   },
-  "goalsAchievedTitle": "Achieved",
+  "goalsAchievedTitle": "Goals reached",
   "@goalsAchievedTitle": {
     "description": "Heading on the back of the goals card, above the goals already achieved",
     "type": "text",
@@ -1309,13 +1309,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "goalOpenWorkout": "View the session",
+  "goalOpenWorkout": "Open the workout",
   "@goalOpenWorkout": {
     "description": "Tooltip on the achieved date of a goal rung, opening the workout credited with meeting it",
     "type": "text",
     "placeholders": {}
   },
-  "goalWorkoutGone": "That session is no longer on this device",
+  "goalWorkoutGone": "That workout is no longer on this device",
   "@goalWorkoutGone": {
     "description": "Shown when the workout credited with a goal rung can no longer be found",
     "type": "text",
@@ -1392,7 +1392,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "newTemplate": "New Template",
+  "newTemplate": "New template",
   "@newTemplate": {
     "description": "New template form header",
     "type": "text",
@@ -1470,7 +1470,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "editTemplate": "Edit Template",
+  "editTemplate": "Edit template",
   "@editTemplate": {
     "description": "Edit template form header",
     "type": "text",
@@ -1490,7 +1490,7 @@
       "name": {}
     }
   },
-  "editWorkout": "Edit Workout",
+  "editWorkout": "Edit workout",
   "@editWorkout": {
     "description": "Edit workout form header",
     "type": "text",
@@ -1508,7 +1508,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "cannotBeEmpty": "Cannot be empty",
+  "cannotBeEmpty": "Can't be empty",
   "@cannotBeEmpty": {
     "description": "Form validation message",
     "type": "text",
@@ -1538,7 +1538,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "resetPasswordBody": "We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌",
+  "resetPasswordBody": "We'll send a reset link to your email faster than you can say “forgot my password.” No turning back after this — unless you cancel, of course. 😌",
   "@resetPasswordBody": {
     "description": "Button",
     "type": "text",
@@ -1580,7 +1580,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "sendResetLink": "Send Reset Link",
+  "sendResetLink": "Send reset link",
   "@sendResetLink": {
     "description": "Password recovery flow",
     "type": "text",
@@ -1592,19 +1592,19 @@
     "type": "text",
     "placeholders": {}
   },
-  "recoveryLinkMessageSent": "💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).",
+  "recoveryLinkMessageSent": "💌 Your password setup email is on its way! Check your inbox (or maybe your spam folder — it likes to hide).",
   "@recoveryLinkMessageSent": {
     "description": "Password recovery flow",
     "type": "text",
     "placeholders": {}
   },
-  "emailExistsTitle": "Email already exists",
+  "emailExistsTitle": "This email already has an account",
   "@emailExistsTitle": {
     "description": "Email exists dialog",
     "type": "text",
     "placeholders": {}
   },
-  "emailExistsOkButton": "Yes, sign me in!",
+  "emailExistsOkButton": "Yes, log me in!",
   "@emailExistsOkButton": {
     "description": "Email exists dialog",
     "type": "text",
@@ -1624,7 +1624,7 @@
       "address": {}
     }
   },
-  "sendResetLinkBody": "Enter you email and we'll help you reset your password",
+  "sendResetLinkBody": "Enter your email and we'll help you reset your password",
   "@sendResetLinkBody": {
     "description": "Password recovery flow",
     "type": "text",
@@ -1636,13 +1636,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "unknownError": "Unknown error occurred",
+  "unknownError": "Something went wrong",
   "@unknownError": {
     "description": "Login error message",
     "type": "text",
     "placeholders": {}
   },
-  "accountControl": "Account control",
+  "accountControl": "Manage account",
   "@accountControl": {
     "description": "Settings item",
     "type": "text",
@@ -1654,7 +1654,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "leaveFeedbackBody": "Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.\n\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}",
+  "leaveFeedbackBody": "Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.\n\nWe love feedback. Every squiggle and comment helps us make the app better — for you and everyone else. So thanks. Seriously. {emoji}",
   "@leaveFeedbackBody": {
     "description": "Settings item",
     "type": "text",
@@ -1662,7 +1662,7 @@
       "emoji": {}
     }
   },
-  "feedbackReceived": "Your feedback was received, thank you!",
+  "feedbackReceived": "Got your feedback, thank you!",
   "@feedbackReceived": {
     "description": "Confirmation snack message",
     "type": "text",
@@ -1698,7 +1698,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "deleteAccountBody": "Your account is scheduled for deletion in {deadline, plural, =1{1 day} other{{deadline} days}}. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.",
+  "deleteAccountBody": "Your account will be deleted in {deadline, plural, =1{1 day} other{{deadline} days}}. Until then you can still log in and change your mind. After that, your account and personal data are deleted for good.",
   "@deleteAccountBody": {
     "description": "Delete account dialog",
     "type": "text",
@@ -1730,7 +1730,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "eraseDataBody": "Your workouts, templates, custom exercises, goals and chart settings are deleted from this device, together with Heart's copy of your health data. The records in your health app are not touched. Without an account there is no backup — this cannot be undone.",
+  "eraseDataBody": "Your workouts, templates, custom exercises, goals and chart settings are deleted from this device, together with Heart's copy of your health data. The records in your health app are not touched. Without an account there is no backup — this can't be undone.",
   "@eraseDataBody": {
     "description": "Erase-my-data dialog body. Must name the health data as included (it is device-only and lives in the same store) while making clear the operating system's health store itself is untouched, and say plainly that nothing can bring the data back",
     "type": "text",
@@ -1748,7 +1748,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "confirmDeleteAccountTitle": "Confirm your account deletion",
+  "confirmDeleteAccountTitle": "Confirm you want to delete your account",
   "@confirmDeleteAccountTitle": {
     "description": "Delete account dialog",
     "type": "text",
@@ -1766,13 +1766,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "accountDeleted": "Account deleted",
+  "accountDeleted": "Your account will be deleted",
   "@accountDeleted": {
     "description": "Delete account page",
     "type": "text",
     "placeholders": {}
   },
-  "accountDeletedBody": "Your account has been scheduled for deletion on {date}.\n\nIf you change your mind, you can restore your account anytime before this date.\n\nSimply click the button below to cancel the deletion and keep your account safe.",
+  "accountDeletedBody": "Your account will be deleted on {date}.\n\nIf you change your mind, you can restore it any time before then.\n\nTap the button below to cancel the deletion and keep your account.",
   "@accountDeletedBody": {
     "description": "Delete account page",
     "type": "text",
@@ -1810,7 +1810,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "patternHelp": "The movement itself — coarser than equipment, finer than body part. Exercises that share a pattern can stand in for one another.",
+  "patternHelp": "The kind of movement, like a squat or a press: finer than a body part, and whatever the equipment. Exercises that share a pattern can stand in for one another.",
   "@patternHelp": {
     "description": "Help tooltip on the Pattern section of the movement filter sheet",
     "type": "text",
@@ -2116,7 +2116,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "goToWorkout": "Go to Workout",
+  "goToWorkout": "Go to workout",
   "@goToWorkout": {
     "description": "Label for button that pulls up active workout UI",
     "type": "text",
@@ -2128,13 +2128,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "updateRequiredTitle": "Oops. That one’s on us",
+  "updateRequiredTitle": "Oops. That one's on us",
   "@updateRequiredTitle": {
     "description": "Force update screen, title",
     "type": "text",
     "placeholders": {}
   },
-  "updateRequiredBody": "There’s an important update waiting — one that keeps your app working as it should.\n\nYou’ll need to install it before continuing.\nThanks for your patience — and sorry for the interruption.",
+  "updateRequiredBody": "There's an important update waiting — one that keeps your app working as it should.\n\nYou'll need to install it before continuing.\nThanks for your patience — and sorry for the interruption.",
   "@updateRequiredBody": {
     "description": "Force update screen, body",
     "type": "text",
@@ -2169,7 +2169,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "adjustTimes": "Adjust Start/End Time",
+  "adjustTimes": "Edit start and end times",
   "@adjustTimes": {
     "description": "Title of the dialog for editing a workout's start and end times",
     "type": "text",
@@ -2193,7 +2193,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "cropImage": "Crop image",
+  "cropImage": "Crop photo",
   "@cropImage": {
     "description": "Label in the image cropper",
     "type": "text",
@@ -2205,13 +2205,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "aboutExercise": "About exercise",
+  "aboutExercise": "About this exercise",
   "@aboutExercise": {
     "description": "Menu item that opens exercise details",
     "type": "text",
     "placeholders": {}
   },
-  "myDashboard": "My Dashboard",
+  "myDashboard": "My dashboard",
   "@myDashboard": {
     "description": "Title of the dashboard screen with performance charts",
     "type": "text",
@@ -2259,7 +2259,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "emptyChartStateBody": "Add your first set to start tracking real progress",
+  "emptyChartStateBody": "Add your first set to start tracking your progress",
   "@emptyChartStateBody": {
     "description": "Empty state for chart widget",
     "type": "text",
@@ -2375,13 +2375,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "deleteImageDialogTitle": "Remove this image?",
+  "deleteImageDialogTitle": "Remove this photo?",
   "@deleteImageDialogTitle": {
     "description": "Confirmation dialog title when user attempts to delete an image from a workout",
     "type": "text",
     "placeholders": {}
   },
-  "deleteImageDialogBody": "It won't affect the workout — just clears the picture",
+  "deleteImageDialogBody": "The workout stays as it is. Only the photo goes.",
   "@deleteImageDialogBody": {
     "description": "Confirmation dialog body explaining that removing the image won't delete workout data",
     "type": "text",
@@ -2513,7 +2513,7 @@
       "exerciseName": {}
     }
   },
-  "goalLadderSummary": "{achieved} of {total} targets reached. Current: {current}.",
+  "goalLadderSummary": "{achieved} of {total} milestones reached. Current: {current}.",
   "@goalLadderSummary": {
     "description": "Accessibility summary of a goal's ladder progress bar, replacing the painted rungs with a sentence",
     "type": "text",
@@ -2650,13 +2650,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "healthOffInSettings": "Let Heart read your health data in your device’s health settings. Allow past data too, or charts stop at the last 30 days.",
+  "healthOffInSettings": "Let Heart read your health data in your device's health settings. Allow past data too, or charts stop at the last 30 days.",
   "@healthOffInSettings": {
     "description": "Non-iOS fallback for healthOffInHealthApp. An instruction, never an explanation, and neutral about why there is nothing to show. The second sentence is Android-specific and load-bearing: Health Connect keeps past-data access as a separate switch away from the main permission list, and without it every read is capped at 30 days however far back the app asks. Say 'past data' — that is the platform's own wording for it",
     "type": "text",
     "placeholders": {}
   },
-  "healthOffTitle": "Heart isn’t reading any health data",
+  "healthOffTitle": "Heart isn't reading any health data",
   "@healthOffTitle": {
     "description": "Title of that dialog, and the tooltip on the button that opens it. States the fact and nothing else — the app cannot tell whether the user declined or simply has no readings, so it must not sound like a fault on either side",
     "type": "text",
@@ -2710,7 +2710,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "healthWriteWorkoutsOn": "Saving how long you train, and nothing else",
+  "healthWriteWorkoutsOn": "Saving how long you train and what kind of workout it was, nothing else",
   "@healthWriteWorkoutsOn": {
     "description": "Settings row subtitle when Heart may write. States the limit as the reassurance: duration and activity type only. Never claim Heart records calories \u2014 it deliberately does not, because without a watch there is no measurement, only a guess",
     "type": "text",
@@ -2734,13 +2734,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "deleteWorkoutTitle": "Do you want to delete this workout?",
+  "deleteWorkoutTitle": "Delete this workout?",
   "@deleteWorkoutTitle": {
     "description": "Workout deletion confirmation dialog",
     "type": "text",
     "placeholders": {}
   },
-  "deleteWorkoutBody": "This cannot be undone",
+  "deleteWorkoutBody": "This can't be undone",
   "@deleteWorkoutBody": {
     "description": "Workout deletion confirmation dialog",
     "type": "text",
@@ -2817,7 +2817,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "importConsentBody": "These didn't match anything in the library. Check the ones to bring over as your own custom exercises — anything unchecked stays behind, along with its sets.",
+  "importConsentBody": "These didn't match anything in the library. Tick the ones to bring over as custom exercises — anything unticked stays behind, along with its sets.",
   "@importConsentBody": {
     "description": "Import page, explains the consent checkboxes over unmatched exercises",
     "type": "text",
@@ -2857,7 +2857,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "exportExplainer": "Everything Heart keeps on this phone, in a file that is yours to keep: workouts with every set, templates and folders, custom exercises, unit settings and goals.",
+  "exportExplainer": "Everything Heart keeps on this device, in a file that is yours to keep: workouts with every set, templates and folders, custom exercises, unit settings and goals.",
   "@exportExplainer": {
     "description": "Export page, what the file holds",
     "type": "text",
@@ -2942,7 +2942,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "importExplainerHeart": "From another account or another phone? Bring your Heart history along.\n\nIn Heart, go to Settings → Export my data and save either file, then pick it here. The JSON brings everything back: workouts, templates and folders, custom exercises and goals. The CSV brings workouts and their sets only.",
+  "importExplainerHeart": "From another account or another device? Bring your Heart history along.\n\nIn Heart, go to Settings → Export my data and save either file, then pick it here. The JSON brings everything back: workouts, templates and folders, custom exercises and goals. The CSV brings workouts and their sets only.",
   "@importExplainerHeart": {
     "description": "Import page, explains where Heart's own export files (JSON and CSV) come from and what each carries",
     "type": "text",
@@ -3002,7 +3002,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "importExplainerHeartJson": "Bring back what you exported from Heart, on this phone or another.\n\nIn Heart, go to Settings → Export my data → Export as JSON. Save the file, then pick it here. Everything in it comes back: workouts, templates and folders, custom exercises and goals.",
+  "importExplainerHeartJson": "Bring back what you exported from Heart, on this device or another.\n\nIn Heart, go to Settings → Export my data → Export as JSON. Save the file, then pick it here. Everything in it comes back: workouts, templates and folders, custom exercises and goals.",
   "@importExplainerHeartJson": {
     "description": "Import page without an account, where only Heart's own JSON export can be imported: where the file comes from and what it carries",
     "type": "text",
@@ -3570,7 +3570,7 @@
       "existing": {}
     }
   },
-  "upsyncSkipped": "{skipped, plural, =1{1 item could not be uploaded.} other{{skipped} items could not be uploaded.}}",
+  "upsyncSkipped": "{skipped, plural, =1{1 item couldn't be uploaded.} other{{skipped} items couldn't be uploaded.}}",
   "@upsyncSkipped": {
     "description": "Appended to the finished backup line when the server refused some rows (for example, over the goal limit)",
     "type": "text",
@@ -3608,7 +3608,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "unpinExerciseNote": "Unpin for future workouts",
+  "unpinExerciseNote": "Unpin from future workouts",
   "@unpinExerciseNote": {
     "description": "Exercise note control or feedback",
     "type": "text",
@@ -3624,7 +3624,7 @@
       }
     }
   },
-  "exerciseNoteSaveFailed": "Could not save the note. Please try again.",
+  "exerciseNoteSaveFailed": "Couldn't save the note. Try again.",
   "@exerciseNoteSaveFailed": {
     "description": "Exercise note control or feedback",
     "type": "text",
@@ -3971,7 +3971,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "muscleMapUnmapped": "{count, plural, one{1 set} other{{count} sets}} from exercises without muscle data not counted",
+  "muscleMapUnmapped": "{count, plural, one{1 set from an exercise without muscle data isn't counted.} other{{count} sets from exercises without muscle data aren't counted.}}",
   "@muscleMapUnmapped": {
     "description": "Note under the muscle map: completed sets from exercises that have no muscle tags (usually custom exercises), so they could not be placed",
     "type": "text",
@@ -4153,7 +4153,7 @@
       }
     }
   },
-  "setTypeWarmup": "Warm up",
+  "setTypeWarmup": "Warm-up",
   "@setTypeWarmup": {
     "description": "Set type menu item: a lighter set done to prepare for the working sets",
     "type": "text",
@@ -4229,7 +4229,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "rpeSubtitle": "Rate how hard each set was, from its number",
+  "rpeSubtitle": "Tap a set's number to rate how hard it was",
   "@rpeSubtitle": {
     "description": "Subtitle under the RPE switch in Settings \u203a Features",
     "type": "text",
@@ -4585,7 +4585,7 @@
   "@apiTokenCopied": {"description": "Snack after copying the secret", "type": "text", "placeholders": {}},
   "apiTokenStored": "I've got it",
   "@apiTokenStored": {"description": "Create page after minting: the way back to the list, once the secret is safe", "type": "text", "placeholders": {}},
-  "accountUnderOtherProvider": "This email already has a Heart account under a different sign-in. Sign in that way once, and this one is connected to it.",
+  "accountUnderOtherProvider": "This email already has a Heart account under a different sign-in. Log in that way once, and this one is connected to it.",
   "@accountUnderOtherProvider": {"description": "Login page, when a Google or Apple sign-in is refused because the email already has an account under another provider", "type": "text", "placeholders": {}},
   "signIns": "Sign-ins",
   "@signIns": {"description": "Account control, header over the account's sign-ins (Google, Apple, email and password)", "type": "text", "placeholders": {}},
@@ -4859,7 +4859,7 @@
   "@replaceIncompatible": {"description": "Tooltip on a greyed exercise when picking a replacement in a workout: its sets have other columns, or an assisted weight, so the replaced exercise's sets and targets cannot move onto it", "type": "text", "placeholders": {"target": {}, "source": {}}},
   "replaceScopeTitle": "Just today, or in {program} too?",
   "@replaceScopeTitle": {"description": "Title of the question after replacing an exercise in a program's workout: whether the replacement is for this workout only or for the program's sessions as well", "type": "text", "placeholders": {"program": {}}},
-  "replaceScopeBody": "{to} is in this workout now. It can also take {from}'s place in every session of the program, and the way it grows with it.",
+  "replaceScopeBody": "{to} is in this workout now. It can also take {from}'s place in every session of the program, and grow the way {from} did.",
   "@replaceScopeBody": {"description": "Body of the question after replacing an exercise in a program's workout", "type": "text", "placeholders": {"to": {}, "from": {}}},
   "replaceJustToday": "Just today",
   "@replaceJustToday": {"description": "Answer to the replace question in a program's workout: the replacement is for this workout only", "type": "text", "placeholders": {}},
@@ -5001,7 +5001,7 @@
   "@exercisePatternNone": {"description": "In the new-exercise dialog: the exercise has no movement pattern; also the first choice of the pattern menu", "type": "text", "placeholders": {}},
   "programCalendar": "Programs in your calendar",
   "@programCalendar": {"description": "Name of the opt-in feature in Settings › Features: a program's sessions in the device calendar", "type": "text", "placeholders": {}},
-  "programCalendarSetupNote": "Each session lands on your training days, with a link that starts it. Every event is called just “{title}”, so a shared calendar shows nothing more.",
+  "programCalendarSetupNote": "Each session lands on your training days, with a link that starts it. Every event is titled just “{title}”; the session and its exercises are in its notes, for those you share details with.",
   "@programCalendarSetupNote": {"description": "Note under the title of the calendar setup on a program's page: each session becomes an event with a link that starts it; {title} is the neutral word every event is titled with, so a shared calendar shows nothing more", "type": "text", "placeholders": {"title": {}}},
   "programCalendarEventTitle": "Training",
   "@programCalendarEventTitle": {"description": "The title of every calendar event a program makes: one plain neutral word, the same for all, saying nothing about the program, the body or the app — calendars are often shared", "type": "text", "placeholders": {}},
@@ -5027,7 +5027,7 @@
   "@programCalendarDenied": {"description": "In the calendar dialog when the OS calendar permission was refused", "type": "text", "placeholders": {}},
   "programCalendarOpenSettings": "Open Settings",
   "@programCalendarOpenSettings": {"description": "Button under the calendar permission notice: opens the app's page in the system settings", "type": "text", "placeholders": {}},
-  "programCalendarNone": "There's no calendar on this phone Heart can add to.",
+  "programCalendarNone": "There's no calendar on this device Heart can add to.",
   "@programCalendarNone": {"description": "In the calendar dialog when the device has no calendar Heart may write to", "type": "text", "placeholders": {}},
   "programCalendarExercise": "{sets} × {exercise}",
   "@programCalendarExercise": {"description": "One line of a program's calendar event description: an exercise and how many sets; never a weight", "type": "text", "placeholders": {"sets": {"type": "int"}, "exercise": {}}},
@@ -5103,7 +5103,7 @@
   "@recapExercises": {"description": "Section heading in a monthly recap: exercises by working sets", "type": "text", "placeholders": {}},
   "recapNothing": "Nothing logged this month",
   "@recapNothing": {"description": "A month's recap page when nothing was logged in it", "type": "text", "placeholders": {}},
-  "recapsNone": "Recaps appear here once a month with workouts is over.",
+  "recapsNone": "Recaps appear here after any month with workouts in it.",
   "@recapsNone": {"description": "The list of recaps before any month with workouts is over", "type": "text", "placeholders": {}},
   "recaps": "Recaps",
   "@recaps": {"description": "Settings › Features title for monthly and yearly training recaps (#154, #155)", "type": "text", "placeholders": {}},
@@ -5179,7 +5179,7 @@
   "@firstRecordLine": {"description": "Workout Done page, a line in the list under the first-records badge: an exercise done for the first time and one record it set, such as 'Hack Squat: Max weight, 100 kg'", "type": "text", "placeholders": {"exercise": {}, "record": {}, "value": {}}},
   "programCalendarReadOnly": "Read-only: Heart can't add to it",
   "@programCalendarReadOnly": {"description": "Under a calendar in the program-calendar picker that cannot be written to, such as a subscribed one; the row is greyed", "type": "text", "placeholders": {}},
-  "programCalendarGoogleHint": "Using Google Calendar? Add your Google account to this iPhone (Settings › Apps › Calendar › Calendar Accounts) and turn on Calendars; its calendars then appear here.",
+  "programCalendarGoogleHint": "Using Google Calendar? Add your Google account to this device (Settings › Apps › Calendar › Calendar Accounts) and turn on Calendars; its calendars then appear here.",
   "@programCalendarGoogleHint": {"description": "iPhone only, under the calendar list in the program-calendar picker: only accounts added to the phone are listed, so a Google Calendar user has to add their account there; the path is the iOS Settings app's", "type": "text", "placeholders": {}},
   "lensChartTip": "{key}: sets per week, the last {weeks} weeks — {now} this week.",
   "@lensChartTip": {"description": "Tooltip and screen-reader label of the small bar chart beside a pattern or muscle on the profile's weekly sets card: what it shows; {key} is the pattern or muscle, {now} this week's sets such as '12 sets'", "type": "text", "placeholders": {"key": {}, "weeks": {"type": "int"}, "now": {}}},
@@ -5371,7 +5371,7 @@
   "@programSessionRemoved": {"description": "Shown once a session is taken out of its program, beside Undo; {session} is the template's name, {program} the program's", "type": "text", "placeholders": {"session": {}, "program": {}}},
   "rpeImportOfferTitle": "Your workouts include RPE",
   "@rpeImportOfferTitle": {"description": "Title of the one-time card under an import's report when the imported workouts carry RPE (how hard each set was) and the user has never been asked about the RPE feature", "type": "text", "placeholders": {}},
-  "rpeImportOfferBody": "Show it in Heart? Each set's rating appears beside it, and you can rate new sets from their number.",
+  "rpeImportOfferBody": "Show it in Heart? Each set's rating appears beside it, and you can rate new sets by tapping their number.",
   "@rpeImportOfferBody": {"description": "Body of the one-time RPE card under an import's report; its buttons are No thanks and Turn on. Sets are rated from the menu on their number", "type": "text", "placeholders": {}},
   "copyForAi": "Copy for AI",
   "@copyForAi": {"description": "Copy for AI (#259): the feature's name in Settings › Features, the menu item on a workout, the button on History and on an exercise's history, and the title of its sheet. Copies your own training as text for an AI assistant", "type": "text", "placeholders": {}},
@@ -5535,7 +5535,7 @@
   "@sampleTemplatesSubtitle": {"description": "Settings › Features subtitle for Example templates, the ready-made templates listed under the user's own on the Workout tab (#528)", "type": "text", "placeholders": {}},
   "exercisesTab": "Exercises tab",
   "@exercisesTab": {"description": "Title of the switch in Settings › Features that shows or hides the Exercises tab in the navigation bar (#608). On by default", "type": "text", "placeholders": {}},
-  "exercisesTabSubtitle": "The exercise library as a tab of its own. Without it, you still pick and create exercises in a workout",
+  "exercisesTabSubtitle": "The exercise library as a tab of its own. Without it, you still pick and create exercises in a workout.",
   "@exercisesTabSubtitle": {"description": "Subtitle under the Exercises tab switch in Settings › Features: off, the tab leaves the navigation bar, but the workout's exercise picker still lists and creates exercises (#608)", "type": "text", "placeholders": {}},
   "pastWorkouts": "Past workouts",
   "@pastWorkouts": {"description": "Title of the opt-in feature in Settings › Features for logging a workout that already happened, after the fact (#530)", "type": "text", "placeholders": {}},
@@ -5543,7 +5543,7 @@
   "@pastWorkoutsSubtitle": {"description": "Subtitle under the Past workouts switch in Settings › Features: the user picks when the workout was, then fills in its exercises and sets (#530)", "type": "text", "placeholders": {}},
   "logPastWorkout": "Log a past workout",
   "@logPastWorkout": {"description": "Tooltip and screen-reader label of the buttons on the Workout tab and in History that start logging a workout that already happened (#530)", "type": "text", "placeholders": {}},
-  "logWorkout": "Log Workout",
+  "logWorkout": "Log workout",
   "@logWorkout": {"description": "Header of the editor for a workout being logged after the fact, styled like 'Edit Workout' (#530)", "type": "text", "placeholders": {}},
   "whenWasIt": "When was it?",
   "@whenWasIt": {"description": "Title of the dialog where the user picks the date, start and end of a workout they are logging after the fact (#530)", "type": "text", "placeholders": {}},
@@ -5647,9 +5647,9 @@
   "@invitationDecline": {"description": "Button declining a coach's invitation (#553)", "type": "text", "placeholders": {}},
   "invitationBlock": "Block",
   "@invitationBlock": {"description": "Button that blocks whoever sent the invitation (#553)", "type": "text", "placeholders": {}},
-  "invitationNeedsAccount": "Coaching needs an account. Make one, and your workouts come with you.",
+  "invitationNeedsAccount": "Coaching needs an account. Sign up, and your workouts come with you.",
   "@invitationNeedsAccount": {"description": "On the invitation page in a session without an account (#553)", "type": "text", "placeholders": {}},
-  "invitationMakeAccount": "Make an account",
+  "invitationMakeAccount": "Sign up",
   "@invitationMakeAccount": {"description": "Button on the invitation page that leads to making an account (#553)", "type": "text", "placeholders": {}},
   "invitationGone": "This invitation is no longer good",
   "@invitationGone": {"description": "Title of the invitation page for a link that is no longer good (#553)", "type": "text", "placeholders": {}},
@@ -5839,7 +5839,7 @@
   "@pushDeliveryDaily": {"description": "A choice for a kind of push: once a day, in the evening. Short, it is a segment of a control (#554)", "type": "text", "placeholders": {}},
   "pushDeliveryOff": "Off",
   "@pushDeliveryOff": {"description": "A choice for a kind of push: never sent. Short, it is a segment of a control (#554)", "type": "text", "placeholders": {}},
-  "pushDeliveryFollow": "As for all",
+  "pushDeliveryFollow": "Same as all",
   "@pushDeliveryFollow": {"description": "A choice for one person's pushes: the same as the setting for everyone. Short, it is a segment of a control (#554)", "type": "text", "placeholders": {}},
   "pushPeople": "People",
   "@pushPeople": {"description": "Heading on the Notifications page over the people the person trains with (#554)", "type": "text", "placeholders": {}},

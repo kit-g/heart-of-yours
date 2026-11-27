@@ -76,7 +76,7 @@ void main() {
     await pumpToRecovery(tester, firebaseAuth: firebase);
 
     await tester.enterTextAndWait(find.byType(TextFormField), 'forgot@test.com');
-    await tester.tap(find.text('Send Reset Link'));
+    await tester.tap(find.text('Send reset link'));
     await tester.pumpTimes(10);
 
     expect(firebase.lastEmail, 'forgot@test.com');
@@ -93,7 +93,7 @@ void main() {
     await pumpToRecovery(tester, firebaseAuth: firebase);
 
     await tester.enterTextAndWait(find.byType(TextFormField), 'forgot@test.com');
-    await tester.tap(find.text('Send Reset Link'));
+    await tester.tap(find.text('Send reset link'));
     await tester.pumpTimes(10);
 
     expect(find.textContaining('The internet tripped over a dumbbell'), findsOneWidget);
@@ -103,11 +103,11 @@ void main() {
     final firebase = _TrackingFirebase();
     await pumpToRecovery(tester, firebaseAuth: firebase);
 
-    final button = tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Send Reset Link'));
+    final button = tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Send reset link'));
     expect(button.onPressed, isNull);
 
     await tester.enterTextAndWait(find.byType(TextFormField), 'x');
-    final enabled = tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Send Reset Link'));
+    final enabled = tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Send reset link'));
     expect(enabled.onPressed, isNotNull);
   });
 
@@ -118,7 +118,7 @@ void main() {
     // Not `.isEmpty`, so the button enables and the form's validator (which
     // never trims) lets it through — only `_resetPassword` itself trims.
     await tester.enterTextAndWait(find.byType(TextFormField), '   ');
-    await tester.tap(find.text('Send Reset Link'));
+    await tester.tap(find.text('Send reset link'));
     await tester.pumpTimes(10);
 
     expect(firebase.lastEmail, '');

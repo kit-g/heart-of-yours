@@ -425,7 +425,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "androidFunctionAppClosed": "Heart is not running; it will apply this when opened",
+  "androidFunctionAppClosed": "Heart isn't running. It will apply this when you open it.",
   "@androidFunctionAppClosed": {
     "description": "What the assistant says when a command was kept for the app, which is not running, to apply when opened (Android). Generated into strings_shortcuts.xml",
     "type": "text",

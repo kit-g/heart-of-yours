@@ -344,7 +344,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TemplateEditor), findsOneWidget);
-      expect(find.text('Edit Template'), findsOneWidget);
+      expect(find.text('Edit template'), findsOneWidget);
       expect(find.byType(AppBarTextField), findsOneWidget);
       expect(find.text('Previous'), findsOneWidget, reason: "one's own template keeps the column (#591)");
 
@@ -538,7 +538,7 @@ void main() {
 
       Navigator.maybePop(tester.element(find.byType(TemplateEditor)));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Quit this page'));
+      await tester.tap(find.text('Leave this page'));
       await tester.pumpAndSettle();
 
       expect(find.byType(TemplateEditor), findsNothing);
@@ -554,7 +554,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TemplateEditor), findsOneWidget);
-      expect(find.text('New Template'), findsOneWidget);
+      expect(find.text('New template'), findsOneWidget);
 
       Navigator.maybePop(tester.element(find.byType(TemplateEditor)));
       await tester.pumpAndSettle();
@@ -576,7 +576,7 @@ void main() {
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Do you want to delete this workout template?'), findsOneWidget);
+      expect(find.text('Delete this template?'), findsOneWidget);
 
       await tester.tap(find.text('Yes, delete this'));
       await tester.pumpAndSettle();

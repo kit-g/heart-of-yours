@@ -11,7 +11,7 @@ import '../buttons.dart';
 /// Which inline picker, if any, is currently unfolded in the dialog.
 enum _Unfolded { none, start, end }
 
-/// Opens the "Adjust Start/End Time" dialog. Works entirely in local time: the
+/// Opens the "Edit start and end times" dialog. Works entirely in local time: the
 /// caller passes local [start]/[end] and receives local values back through
 /// [onSave], which fires once (batching both fields) when the user taps Save.
 /// Returns after the dialog closes.
@@ -19,7 +19,7 @@ enum _Unfolded { none, start, end }
 /// The duration it shows leaves out [pauses] (#134), cut to the times as
 /// edited, the way the server cuts them on save.
 ///
-/// [title] and [action] stand in for "Adjust Start/End Time" and Save where
+/// [title] and [action] stand in for "Edit start and end times" and Save where
 /// the times are a step rather than an edit: a past workout's, picked before
 /// it is filled in (#530), which also has to last ([needsLength]).
 Future<void> showAdjustTimesDialog(

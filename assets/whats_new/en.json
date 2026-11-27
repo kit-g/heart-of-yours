@@ -119,12 +119,12 @@
       {
         "id": "go-easy",
         "title": "Things to go easy on",
-        "body": "Name a knee, your spine or pressing overhead, and Heart marks the exercises that are harder on it and suggests kinder swaps. The list stays on your phone."
+        "body": "Name a knee, your spine or pressing overhead, and Heart marks the exercises that are harder on it and suggests kinder swaps. The list stays on this device."
       },
       {
         "id": "program-calendar",
         "title": "Your program in your calendar",
-        "body": "Add a program's sessions to a calendar on your phone, Google's included, at a time or all day."
+        "body": "Add a program's sessions to a calendar on your device, Google's included, at a time or all day."
       },
       {
         "id": "supersets",
@@ -327,7 +327,7 @@
       {
         "id": "features-follow-you",
         "title": "Your choices follow you",
-        "body": "Turn a feature on or off once, and your other signed-in devices know."
+        "body": "Turn a feature on or off once, and your other logged-in devices know."
       }
     ]
   },
@@ -359,7 +359,7 @@
       {
         "id": "exercise-notes",
         "title": "Exercise notes",
-        "body": "Add a note to any exercise while you train: a cue, a setup, a weight to try next time. Signed in, you can **pin** a note so it comes back every time the exercise does, including in workouts started from a template."
+        "body": "Add a note to any exercise while you train: a cue, a setup, a weight to try next time. Logged in, you can **pin** a note so it comes back every time the exercise does, including in workouts started from a template."
       },
       {
         "id": "history-calendar",
@@ -380,17 +380,17 @@
       {
         "id": "no-account",
         "title": "No account needed",
-        "body": "Open the app and start training. Workouts, templates, custom exercises and goals live on your device from the first session, and everything that doesn’t need a server works without one."
+        "body": "Open the app and start training. Workouts, templates, custom exercises and goals live on your device from the first session, and everything that doesn't need a server works without one."
       },
       {
         "id": "sign-in-later",
-        "title": "Sign in whenever you like",
-        "body": "Sign in later and everything you’ve logged moves to your account. If that account already has workouts from another device, the two are merged, not overwritten."
+        "title": "Log in whenever you like",
+        "body": "Log in later and everything you've logged moves to your account. If that account already has workouts from another device, the two are merged, not overwritten."
       },
       {
         "id": "whole-history",
         "title": "Your whole history counts",
-        "body": "The weekly chart, your goals and your records now count everything you’ve ever logged, not only the most recent part."
+        "body": "The weekly chart, your goals and your records now count everything you've ever logged, not only the most recent part."
       },
       {
         "id": "export-erase",
@@ -406,7 +406,7 @@
       {
         "id": "languages",
         "title": "Spanish, French and Russian",
-        "body": "Set your device to one of them and every screen follows, down to the exercise library’s names and instructions."
+        "body": "Set your device to one of them and every screen follows, down to the exercise library's names and instructions."
       },
       {
         "id": "themes",
@@ -416,12 +416,12 @@
       {
         "id": "records",
         "title": "Records",
-        "body": "An exercise’s **Records** tab shows your best set, most reps, best pace, a rep-max table and lifetime totals. When a workout sets a personal record, the summary celebrates it."
+        "body": "An exercise's **Records** tab shows your best set, most reps, best pace, a rep-max table and lifetime totals. When a workout sets a personal record, the summary celebrates it."
       },
       {
         "id": "dashboard-charts",
         "title": "Exercise charts on your profile",
-        "body": "Add any chart from an exercise’s **Charts** tab to your profile with one tap, and take it off the same way."
+        "body": "Add any chart from an exercise's **Charts** tab to your profile with one tap, and take it off the same way."
       }
     ]
   },
@@ -432,7 +432,7 @@
       {
         "id": "strong-import",
         "title": "Bring your Strong history",
-        "body": "**Settings → Your data → Import workout history** reads the CSV file from Strong’s export and brings over your workouts, sets and exercises. You approve any exercise Heart doesn’t know, and importing the same file twice never duplicates anything."
+        "body": "**Settings → Your data → Import workout history** reads the CSV file from Strong's export and brings over your workouts, sets and exercises. You approve any exercise Heart doesn't know, and importing the same file twice never duplicates anything."
       }
     ]
   },
@@ -443,7 +443,7 @@
       {
         "id": "health-workouts",
         "title": "Workouts in Apple Health and Health Connect",
-        "body": "Finished workouts are saved to your device’s health app, so your lifting counts toward your activity. Heart writes how long you trained and what kind of session it was, and never estimates calories. You can turn it off in **Settings**."
+        "body": "Finished workouts are saved to your device's health app, so your lifting counts toward your activity. Heart writes how long you trained and what kind of session it was, and never estimates calories. You can turn it off in **Settings**."
       }
     ]
   },
@@ -486,7 +486,7 @@
       {
         "id": "goals",
         "title": "Goals",
-        "body": "Set a weekly or monthly workout goal, or a ladder of milestones with an optional deadline. Goals show up as lines on your charts, the workout summary tells you when you reach one, and every goal you’ve reached links back to the workout that did it."
+        "body": "Set a weekly or monthly workout goal, or a ladder of milestones with an optional deadline. Goals show up as lines on your charts, the workout summary tells you when you reach one, and every goal you've reached links back to the workout that did it."
       }
     ]
   },
@@ -518,13 +518,13 @@
     "items": [
       {
         "id": "workout-times",
-        "title": "Edit a workout’s times",
+        "title": "Edit a workout's times",
         "body": "Correct when a past workout started and ended."
       },
       {
         "id": "also-try",
         "title": "Also try",
-        "body": "An exercise’s page suggests others built on the same movement."
+        "body": "An exercise's page suggests others built on the same movement."
       }
     ]
   },
@@ -535,7 +535,7 @@
       {
         "id": "idle-workout",
         "title": "Still working out?",
-        "body": "If a workout sits untouched for a while, Heart sends a notification asking whether you’re still going."
+        "body": "If a workout sits untouched for a while, Heart sends a notification asking whether you're still going."
       }
     ]
   },
@@ -551,7 +551,7 @@
       {
         "id": "rest-timer",
         "title": "Rest timer",
-        "body": "A rest timer runs between sets, and a notification tells you when it’s time for the next one."
+        "body": "A rest timer runs between sets, and a notification tells you when it's time for the next one."
       },
       {
         "id": "templates",

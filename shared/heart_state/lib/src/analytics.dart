@@ -764,7 +764,7 @@ class Analytics {
 
   void apiTokenRevoked() => _log(_apiTokenRevoked);
 
-  /// A second sign-in linked onto the account from Account control (#323),
+  /// A second sign-in linked onto the account from Manage account (#323),
   /// or the one a refused sign-in left pending.
   void signInConnected({required AuthProvider provider}) {
     _log(_signInConnected, {_provider: provider.id});

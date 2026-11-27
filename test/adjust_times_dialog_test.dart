@@ -1,4 +1,4 @@
-// The "Adjust Start/End Time" dialog, pumped directly.
+// The "Edit start and end times" dialog, pumped directly.
 //
 // It is a standalone widget (not part of the `workout.dart` private library),
 // so it needs no router or providers — just a MaterialApp for localizations
@@ -59,7 +59,7 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Adjust Start/End Time'), findsOneWidget);
+    expect(find.text('Edit start and end times'), findsOneWidget);
     expect(find.text('Start time'), findsOneWidget);
     expect(find.text('End time'), findsOneWidget);
     expect(find.text('Duration'), findsOneWidget);
@@ -110,7 +110,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.close_rounded));
     await tester.pumpAndSettle();
 
-    expect(find.text('Adjust Start/End Time'), findsNothing);
+    expect(find.text('Edit start and end times'), findsNothing);
     expect(saved, isFalse);
   });
 
@@ -133,7 +133,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text("End time can't be before the start time."), findsOneWidget);
-    expect(find.text('Adjust Start/End Time'), findsOneWidget);
+    expect(find.text('Edit start and end times'), findsOneWidget);
     expect(saved, isFalse);
   });
 
@@ -157,7 +157,7 @@ void main() {
 
     expect(savedStart, start);
     expect(savedEnd, end);
-    expect(find.text('Adjust Start/End Time'), findsNothing);
+    expect(find.text('Edit start and end times'), findsNothing);
   });
 
   testWidgets('shows a spinner while saving and disables closing meanwhile', (tester) async {
@@ -183,7 +183,7 @@ void main() {
     saving.complete();
     await tester.pumpAndSettle();
 
-    expect(find.text('Adjust Start/End Time'), findsNothing);
+    expect(find.text('Edit start and end times'), findsNothing);
   });
 
   testWidgets('iOS unfolds the inline wheel for the tapped row, one at a time', (tester) async {
@@ -222,7 +222,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // the dialog is still up, unharmed, and the value did not change
-    expect(find.text('Adjust Start/End Time'), findsOneWidget);
+    expect(find.text('Edit start and end times'), findsOneWidget);
     expect(find.text('Start time'), findsOneWidget);
   });
 

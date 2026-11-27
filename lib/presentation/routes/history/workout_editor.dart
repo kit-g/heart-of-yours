@@ -507,7 +507,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
   /// Goes out with the rest of the edit on Save, like the name.
   Future<void> _setNote(String? note) async => _notifier.note = note;
 
-  /// Opens the "Adjust Start/End Time" dialog — from the menu item or the
+  /// Opens the "Edit start and end times" dialog — from the menu item or the
   /// linkified date/duration header. The dialog works in local time; we convert
   /// to UTC on the wire and only patch the fields that actually changed.
   Future<void> _openTimesDialog(BuildContext context, Workout workout) {
@@ -706,7 +706,7 @@ class _WorkoutNotifier with ChangeNotifier {
 enum _WorkoutEditOption { editImage, editName, editNote, editTimes }
 
 /// Linkified date + duration under the workout title. Tapping anywhere opens the
-/// "Adjust Start/End Time" dialog. Mirrors the history list-item header, but the
+/// "Edit start and end times" dialog. Mirrors the history list-item header, but the
 /// whole block is a tappable affordance for editing the times.
 class _WorkoutTimesSummary extends StatelessWidget {
   final Workout workout;
