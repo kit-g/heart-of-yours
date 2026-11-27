@@ -49,6 +49,7 @@ import 'package:heart/presentation/widgets/menu.dart';
 import 'package:heart/presentation/widgets/popping_text.dart';
 import 'package:heart/presentation/widgets/selection_controls.dart';
 import 'package:heart/presentation/widgets/vector.dart';
+import 'package:heart/presentation/widgets/whole_words.dart';
 import 'package:heart/presentation/widgets/workout/previous_scope.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
@@ -892,31 +893,46 @@ class NewWorkoutHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final start = _start(context);
-    return SliverPersistentHeader(
-      pinned: true,
-      delegate: FixedHeightHeaderDelegate(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        child: switch (onLogPastWorkout) {
-          VoidCallback log => Row(
-            spacing: 8,
-            children: [
-              Expanded(child: start),
-              PrimaryButton.shrunk(
-                key: WorkoutDetailKeys.logPastWorkout,
-                tooltip: L.of(context).logPastWorkout,
-                backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-                onPressed: log,
-                child: const Icon(Icons.more_time_rounded, size: 18),
-              ),
-            ],
-          ),
-          null => start,
-        },
-        height: 40,
+    final start = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: _buttonHeight),
+      child: _start(context),
+    );
+    // Pinned at its own height, not a fixed one: at 40pt flat the label was
+    // cut top and bottom at the largest text sizes (#704). The header is as
+    // tall as its label, wrapped, and 40pt whenever that is enough.
+    return PinnedHeaderSliver(
+      child: ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Padding(
+          padding: const .symmetric(horizontal: 8, vertical: 4),
+          child: switch (onLogPastWorkout) {
+            VoidCallback log => Row(
+              spacing: 8,
+              children: [
+                Expanded(child: start),
+                PrimaryButton.shrunk(
+                  key: WorkoutDetailKeys.logPastWorkout,
+                  tooltip: L.of(context).logPastWorkout,
+                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                  onPressed: log,
+                  child: const Icon(Icons.more_time_rounded, size: 18),
+                ),
+              ],
+            ),
+            null => start,
+          },
+        ),
       ),
     );
   }
+
+  /// The button at ordinary text sizes: the 40pt the header always was, less
+  /// its padding.
+  static const _buttonHeight = 32.0;
+
+  /// Twice its size is the most the label takes: three lines of a phone at
+  /// worst, where the largest sizes asked for seven.
+  static const _labelScale = 2.0;
 
   Widget _start(BuildContext context) {
     return PrimaryButton.wide(
@@ -934,10 +950,12 @@ class NewWorkoutHeader extends StatelessWidget {
                 mainAxisSize: .min,
                 children: [
                   const Icon(Icons.add_rounded, size: 18),
-                  // a fixed-height pinned header: one line, cut short at a
-                  // large text size rather than run past the button (#701)
+                  // Wraps at a large text size, and the header grows with
+                  // it (#704), rather than run past the button (#701). Up
+                  // to a point: the header is pinned, and what it takes the
+                  // list under it never gets back.
                   Flexible(
-                    child: Text(L.of(context).startNewWorkout, maxLines: 1, overflow: .ellipsis),
+                    child: WholeWords(L.of(context).startNewWorkout, textAlign: .center, maxScale: _labelScale),
                   ),
                 ],
               ),
