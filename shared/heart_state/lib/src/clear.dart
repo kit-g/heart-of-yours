@@ -10,6 +10,7 @@ import 'client_programs.dart';
 import 'coach_library.dart';
 import 'coach_notes.dart';
 import 'coaching.dart';
+import 'connected_apps.dart';
 import 'device_keys.dart';
 import 'exercises.dart';
 import 'go_easy.dart';
@@ -118,6 +119,7 @@ List<({void Function()? clear, void Function(String?)? key})> _sessionState(Buil
     (clear: CoachNotes.of(context).onSignOut, key: (id) => CoachNotes.of(context).userId = id),
     (clear: Alarms.of(context).onSignOut, key: null),
     (clear: ApiTokens.of(context).onSignOut, key: null),
+    (clear: ConnectedApps.of(context).onSignOut, key: null),
     (clear: Backfill.of(context).onSignOut, key: null),
     (clear: CoachLibrary.of(context).onSignOut, key: null),
     (clear: ClientPrograms.of(context).onSignOut, key: null),
