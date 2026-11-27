@@ -63,10 +63,7 @@ class UnsentExerciseEdits implements UnsentExerciseEditService {
   Future<Map<String, UnsentExerciseEdit>> read(String userId) async {
     return {
       for (final MapEntry(key: id, value: renamed) in (await _db.getUnsentExerciseEdits(userId)).entries)
-        id: switch (renamed) {
-          true => .renamed,
-          false => .named,
-        },
+        id: renamed ? .renamed : .named,
     };
   }
 

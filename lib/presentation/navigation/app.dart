@@ -250,6 +250,16 @@ class HeartApp extends StatelessWidget {
             );
             // which sessions are a coach's copy's, written from a revision
             templates.shared = programs;
+            // an own exercise a sync left under another name (#616): the
+            // templates and the workouts holding a copy read it again. Here
+            // because this is the first place that sees all three.
+            final workouts = Workouts.of(context);
+            Exercises.of(context).onOwnRenamed = (renamed) {
+              templates.reread();
+              for (final id in renamed) {
+                workouts.reread(id, active: true);
+              }
+            };
             return programs;
           },
         ),
@@ -768,17 +778,8 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     final exercises = Exercises.of(context)..onLocaleChanged(languageTag());
     // and a library start-up went on without (#723)
     if (exercises.libraryUnavailable) exercises.retryLibrary();
-    // an own exercise edited with the server out of reach (#616), and
-    // whoever holds a copy of one that came back under another name
-    if (exercises.hasUnsentEdits) {
-      final (templates, workouts) = (Templates.of(context), Workouts.of(context));
-      exercises.sendUnsentEdits().then((renamed) {
-        if (renamed.isNotEmpty) templates.reread();
-        for (final id in renamed) {
-          workouts.reread(id, active: true);
-        }
-      });
-    }
+    // an own exercise edited with the server out of reach (#616)
+    if (exercises.hasUnsentEdits) exercises.sendUnsentEdits();
   }
 
   /// Localized backend content (the exercise catalog) is served per request

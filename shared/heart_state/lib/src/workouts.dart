@@ -1651,7 +1651,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
           .toList();
       for (final workoutId in holding) {
         final fresh = await _localService.getWorkout(id, workoutId);
-        if (fresh != null && userId == id && _workouts.containsKey(workoutId)) _workouts[workoutId] = fresh;
+        if ((fresh, _workouts[workoutId]) case (final Workout fresh, final Workout held) when userId == id) {
+          _keepEnergy(fresh, from: held);
+          _workouts[workoutId] = fresh;
+        }
       }
       final swapped = active && await _rereadActive(id, names);
       if (holding.isNotEmpty || swapped) notifyListeners();
@@ -1661,32 +1664,59 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// Swaps the workout in progress for the mirror's copy of it, when it
   /// [names] the exercise. Answers whether it did.
   ///
-  /// A change that lands on the held copy while the mirror is read (a set
-  /// ticked from the watch) is written after that read, so the copy read
-  /// lacks it: the read is taken again, a few times at most, and given up on
-  /// rather than swap in a copy that would lose it.
-  Future<bool> _rereadActive(String id, bool Function(Workout) names) async {
-    for (var attempt = 0; attempt < 3; attempt++) {
-      final current = activeWorkout;
-      if (current == null || !names(current)) return false;
-      final before = '${current.toMap()}';
-      final fresh = await _getActiveWorkout(id);
-      // signed out, finished or cancelled meanwhile
-      if (fresh == null || userId != id || !identical(activeWorkout, current) || fresh.id != current.id) return false;
-      if ('${current.toMap()}' != before) continue;
-      _workouts[fresh.id] = fresh;
-      // "next" is counted from the set last ticked, by the copies now held
-      _latestMarkedSet = switch (_latestMarkedSet) {
-        (_, final ExerciseSet ticked) =>
-          fresh
-              .expand((exercise) => exercise.map((set) => (exercise, set)))
-              .where((each) => each.$2.id == ticked.id)
-              .firstOrNull,
-        null => null,
-      };
-      return true;
+  /// Only for a copy that says what the held one says ([_logged]): the two
+  /// part ways while a change is on its way to the mirror (a set ticked from
+  /// the watch during the read, warm-ups written one row at a time, a note
+  /// stored before it shows), and the mirror's copy would then lose it, for
+  /// good once the workout is finished. The read is taken again, [attempts]
+  /// times at most, and given up on rather than swap such a copy in: the
+  /// name then waits for the next launch.
+  Future<bool> _rereadActive(String id, bool Function(Workout) names, {int attempts = 3}) async {
+    final current = activeWorkout;
+    if (attempts == 0 || current == null || !names(current)) return false;
+    final fresh = await _getActiveWorkout(id);
+    // signed out, finished or cancelled meanwhile
+    if (fresh == null || userId != id || !identical(activeWorkout, current) || fresh.id != current.id) return false;
+    if (_logged(fresh) != _logged(current)) return _rereadActive(id, names, attempts: attempts - 1);
+    _keepEnergy(fresh, from: current);
+    _workouts[fresh.id] = fresh;
+    // "next" is counted from the set last ticked, by the copies now held
+    _latestMarkedSet = switch (_latestMarkedSet) {
+      (_, final ExerciseSet ticked) =>
+        fresh
+            .expand((exercise) => exercise.map((set) => (exercise, set)))
+            .where((each) => each.$2.id == ticked.id)
+            .firstOrNull,
+      null => null,
+    };
+    return true;
+  }
+
+  /// What [workout] holds of the session as logged, apart from the copies of
+  /// its exercises: each exercise in order with its note, and each of its
+  /// sets with what was typed, ticked and rated.
+  static String _logged(Workout workout) {
+    return [
+      workout.note,
+      for (final exercise in workout) ...[
+        exercise.id,
+        exercise.exercise.id,
+        exercise.note,
+        for (final set in exercise)
+          [set.id, set.weight, set.reps, set.duration, set.distance, set.isCompleted, set.setTypeValue, set.rpe],
+      ],
+    ].join('|');
+  }
+
+  /// The energy estimates the mirror does not keep (a session's calories, an
+  /// exercise's MET), carried from the [from] copy onto the one read in its
+  /// place.
+  static void _keepEnergy(Workout fresh, {required Workout from}) {
+    fresh.calories ??= from.calories;
+    final held = {for (final each in from) each.id: each.met};
+    for (final exercise in fresh) {
+      exercise.met ??= held[exercise.id];
     }
-    return false;
   }
 
   void notifyOfActiveWorkout() {

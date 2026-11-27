@@ -194,6 +194,12 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// read of them is older than what the device holds by now.
   final _editedInSync = <Set<ExerciseId>>[];
 
+  /// Told which own exercises a sync left under another name than the device
+  /// had: a rename made on another device, or one of this device's that the
+  /// server refused (#616). Whoever holds a copy of them reads it again. Set
+  /// by the app, once the holders exist.
+  void Function(Set<ExerciseId> renamed)? onOwnRenamed;
+
   /// The one send of [_unsent] under way ([sendUnsentEdits]).
   Future<Set<ExerciseId>>? _sending;
 
@@ -381,10 +387,14 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
       await _step(() async {
         final units = await _service.getExerciseUnits(id);
         final notes = await _noteService?.read(id) ?? {};
-        final unsent = await _unsentService?.read(id) ?? const <ExerciseId, UnsentExerciseEdit>{};
         if (left()) return;
         _units.addAll(units);
         _notes.addAll(notes);
+      });
+      // a step of its own: marks that cannot be read cost no units or notes
+      await _step(() async {
+        final unsent = await _unsentService?.read(id) ?? const <ExerciseId, UnsentExerciseEdit>{};
+        if (left()) return;
         _unsent.addAll(unsent);
       });
     }
@@ -405,7 +415,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// library comes in late.
   Future<void> _ownLeg(String? owner) async {
     if (!_remote.allowed) return;
-    await _step(_syncOwn);
+    await _step(() async => _renamed(await _syncOwn()));
     // its own read, run whether or not the list above landed: a failed
     // list must not cost the preferences of every library exercise
     if (owner case String id when !_disposed && userId == id) await _syncPreferences(id);
@@ -645,30 +655,41 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// way first: the device's copy is sent, and kept. See [_sendUnsent].
   ///
   /// Answers the exercises whose name on the device changed.
-  Future<Set<ExerciseId>> _syncOwn() async {
+  ///
+  /// With [patient], a list the server could not be reached for is no
+  /// failure: nothing is done, and nothing thrown.
+  Future<Set<ExerciseId>> _syncOwn({bool patient = false}) async {
     final owner = userId;
     final edited = <ExerciseId>{};
     _editedInSync.add(edited);
     try {
-      final served = await _remoteService.getOwnExercises();
-      final decided = [
-        for (final theirs in served)
+      final List<Exercise> list;
+      try {
+        list = [...await _remoteService.getOwnExercises()];
+      } catch (error) {
+        if (patient && _waits(error)) return {};
+        rethrow;
+      }
+      // side by side: a launch waits for these (the catalog settles after
+      // them), and one after another they could each run to a timeout
+      final decided = await Future.wait([
+        for (final theirs in list)
           switch ((_unsent[theirs.id], _exercises[theirs.id], owner)) {
-            (final UnsentExerciseEdit edit, final Exercise mine, final String id) => await _sendUnsent(
+            (final UnsentExerciseEdit edit, final Exercise mine, final String id) => _sendUnsent(
               mine,
               theirs,
               edit,
               id,
             ),
-            _ => _withLocalTags(theirs),
+            _ => Future.value(_withLocalTags(theirs)),
           },
-      ];
+      ]);
       // the session ended while an edit was sent (#671)
       if (userId != owner) return {};
       // a mark on an exercise the account no longer has, or the device no
       // longer holds, is nobody's to send
       if (owner case final String id) {
-        final listed = {for (final each in served) each.id};
+        final listed = {for (final each in list) each.id};
         bool held(ExerciseId each) => listed.contains(each) && _exercises.containsKey(each);
         for (final gone in _unsent.keys.where((each) => !held(each)).toList()) {
           await _markUnsent(gone, id, null);
@@ -690,7 +711,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
       // server's copies only: a device's copy kept above carries the unit the
       // last list gave it, not the one in force.
       if (owner case final String id) {
-        for (final each in served) {
+        for (final each in list) {
           if (each.unitSystem case MeasurementUnit u) {
             _units[each.id] = u;
             await _service.setExerciseUnit(exerciseName: each.id, userId: id, unit: u);
@@ -1163,11 +1184,19 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     } catch (error, stacktrace) {
       if (_waits(error)) return mine;
       onError?.call(error, stacktrace: stacktrace);
-      await _markUnsent(mine.id, owner, null);
+      await _settleUnsent(mine, owner);
       return _withLocalTags(theirs);
     }
-    await _markUnsent(mine.id, owner, null);
+    await _settleUnsent(mine, owner);
     return sent;
+  }
+
+  /// Clears the mark on [mine], whose send the server has answered, unless
+  /// the exercise was edited again while it was on its way: that edit's mark
+  /// is the same one, and it is still owed.
+  Future<void> _settleUnsent(Exercise mine, String owner) async {
+    if (userId == owner && !identical(_exercises[mine.id], mine)) return;
+    await _markUnsent(mine.id, owner, null);
   }
 
   /// Whether an own exercise's edit is still waiting for the server.
@@ -1193,16 +1222,23 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     return _sending = run;
   }
 
+  /// Out of reach still, it waits for the next time. Anything else that
+  /// fails is the server's refusal or the device's own (the mirror's), and
+  /// is reported like any step's.
   Future<Set<ExerciseId>> _resend() async {
     try {
-      final renamed = await _syncOwn();
+      final renamed = await _syncOwn(patient: true);
       if (!_disposed) notifyListeners();
+      _renamed(renamed);
       return renamed;
     } catch (error, stacktrace) {
-      // still out of reach: the next time, then
-      if (!_waits(error)) onError?.call(error, stacktrace: stacktrace);
+      onError?.call(error, stacktrace: stacktrace);
       return const {};
     }
+  }
+
+  void _renamed(Set<ExerciseId> renamed) {
+    if (renamed.isNotEmpty && !_disposed) onOwnRenamed?.call(renamed);
   }
 
   Future<void> archive(Exercise exercise) {
@@ -1213,22 +1249,14 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     return _setArchived(exercise, false);
   }
 
-  /// The server's copy wins where there is one; otherwise the edit is the copy.
+  /// An edit like any other ([editExercise]): kept and marked when the
+  /// server is out of reach or the account's leg is closed, so the next sync
+  /// does not bring the exercise back (#616).
   ///
   /// The current copy, not [exercise]: a page holding the one it was opened
   /// with would otherwise archive a name or a pattern edited since.
-  Future<void> _setArchived(Exercise exercise, bool archived) async {
-    final edited = (_exercises[exercise.id] ?? exercise).copyWith(isArchived: archived);
-    // the server's copy is behind this one (#616): it must not win, so the
-    // whole of the device's goes up with the archive
-    if (_unsent.containsKey(edited.id)) return editExercise(edited);
-    final saved = switch (_remote.allowed) {
-      true => _withLocalTags(await _remoteService.editExercise(edited)),
-      false => edited,
-    };
-    _service.storeExercises([saved], userId: userId);
-    _exercises[saved.id] = saved;
-    notifyListeners();
+  Future<void> _setArchived(Exercise exercise, bool archived) {
+    return editExercise((_exercises[exercise.id] ?? exercise).copyWith(isArchived: archived));
   }
 
   /// Whether an exercise's history can be moved: it is the account's to move,

@@ -237,37 +237,43 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
   }
 
   /// Reads the user's own templates from the mirror again, replacing what is
-  /// held: the rows changed under them (an exercise's history moved, #338),
-  /// and the held copies still name the old exercise.
+  /// held: the rows changed under them (an exercise's history moved, #338; an
+  /// exercise renamed, #616), and the held copies still name the old exercise.
   ///
-  /// The template open in the editor stays the one being edited: its held
-  /// copy goes back in place of the mirror's, and a draft's bare row, which
-  /// is in the mirror from its first exercise but not in the list until it
-  /// is saved, stays out (#616: an exercise can be renamed with the editor
-  /// open).
+  /// An unsaved draft open in the editor stays out of the list: its bare row
+  /// is in the mirror from its first exercise, but it is no template until it
+  /// is saved. A saved template open in the editor is replaced in the list
+  /// like any other; the editor keeps its own copy, as it did.
+  ///
+  /// What changes the list while the mirror is read (a save, a pull of a
+  /// coach's sessions) is newer than the read, which is taken again, a few
+  /// times at most, rather than laid over it.
   Future<void> reread() async {
-    if (userId case String id) {
-      await _step(() async {
-        final unsaved = switch (editable) {
-          final Template draft when !_templates.any((each) => each.id == draft.id) => draft.id,
-          _ => null,
-        };
-        final local = await _service.getTemplates(id);
-        if (userId != id) return;
-        final editing = editable;
-        _templates
-          ..clear()
-          ..addAll([
-            for (final each in local)
-              if (each.id != unsaved || each.id != editing?.id)
-                switch (editing) {
-                  final Template held when held.id == each.id => held,
-                  _ => each,
-                },
-          ]);
-        notifyListeners();
-      });
+    if (userId case String id) await _step(() => _reread(id));
+  }
+
+  Future<void> _reread(String id, {int attempts = 3}) async {
+    // the list as it stands, by identity: a saved copy swapped for the
+    // server's is a change too
+    final (before, editing) = ([..._templates], editable);
+    final local = await _service.getTemplates(id);
+    if (userId != id) return;
+    final changed =
+        !identical(editable, editing) ||
+        _templates.length != before.length ||
+        !_templates.indexed.every((each) => identical(each.$2, before[each.$1]));
+    if (changed) {
+      if (attempts > 1) await _reread(id, attempts: attempts - 1);
+      return;
     }
+    final unsaved = switch (editing) {
+      final Template draft when !before.any((each) => each.id == draft.id) => draft.id,
+      _ => null,
+    };
+    _templates
+      ..clear()
+      ..addAll(local.where((each) => each.id != unsaved));
+    notifyListeners();
   }
 
   /// Runs one step of [init], reporting what it throws instead of letting it
@@ -371,7 +377,11 @@ class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implem
   /// client-minted id — the state a template made offline is in until a save
   /// reaches the server.
   Future<Template> _save(Template template) async {
-    _templates.add(template);
+    // over a copy read from the mirror since the editor opened ([reread]):
+    // the set would keep that one, being equal, and show it unedited
+    _templates
+      ..removeWhere((each) => each.id == template.id && !identical(each, template))
+      ..add(template);
     await _service.updateTemplate(template);
 
     if (!_remote.allowed) return template;

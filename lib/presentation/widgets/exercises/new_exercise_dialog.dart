@@ -63,9 +63,6 @@ String _nameKey(String name) => name.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p
 // a pattern's label runs to "Trunk Lateral Rotation"; 56pt steps (the popup's)
 const _patternMenuWidth = 280.0;
 
-/// Creates an exercise, or edits [editable], and answers with the one saved:
-/// null when the dialog was closed or the save failed. [name] fills in a new
-/// exercise's name, such as a search that found nothing (#529).
 /// Edits [exercise], the user's own, in the dialog, and answers as
 /// [showNewExerciseDialog] does.
 ///
@@ -87,6 +84,9 @@ Future<Exercise?> showEditExerciseDialog(BuildContext context, Exercise exercise
   return saved;
 }
 
+/// Creates an exercise, or edits [editable], and answers with the one saved:
+/// null when the dialog was closed or the save failed. [name] fills in a new
+/// exercise's name, such as a search that found nothing (#529).
 Future<Exercise?> showNewExerciseDialog(BuildContext context, {Exercise? editable, String? name}) {
   // the current copy, not the one the caller holds: a page opened before an
   // edit still has the old name, and saving from it would put that back

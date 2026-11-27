@@ -1329,6 +1329,116 @@ void main() {
       verifyNever(local.setExerciseUnit(exerciseName: own.id, userId: 'u1', unit: anyNamed('unit')));
     });
 
+    test('an edit made while an older one is being sent keeps its mark (#616)', () async {
+      renames.failure = offline;
+      await sut.editExercise(own.renamed('First Name'));
+      final sending = Completer<void>();
+      renames.gate = sending.future;
+      renames.failure = null;
+
+      final resend = sut.sendUnsentEdits();
+      await pumpEventQueue();
+      // the second edit, saved while the first is on its way, and out of reach
+      renames
+        ..gate = null
+        ..failure = offline;
+      await sut.editExercise(own.renamed('Second Name'));
+      renames.failure = null;
+      sending.complete();
+      await resend;
+
+      expect(sut.lookup(own.id)?.name, 'Second Name');
+      expect(unsent.marked['u1'], {own.id: UnsentExerciseEdit.renamed});
+
+      await sut.sendUnsentEdits();
+      expect(renames.sent.last.name, 'Second Name');
+      expect(unsent.marked['u1'], isEmpty);
+    });
+
+    test('an archive made out of reach is kept, marked and sent later, not undone by the list (#616)', () async {
+      when(remote.editExercise(any)).thenThrow(offline);
+
+      await sut.archive(own);
+
+      expect(sut.lookup(own.id)?.isArchived, isTrue);
+      expect(unsent.marked['u1'], {own.id: UnsentExerciseEdit.named});
+      when(remote.editExercise(any)).thenAnswer((i) async => i.positionalArguments.first as Exercise);
+      clearInteractions(remote);
+
+      await sut.sendUnsentEdits();
+
+      final sent = verify(remote.editExercise(captureAny)).captured.single as Exercise;
+      expect(sent.isArchived, isTrue);
+      expect(sut.lookup(own.id)?.isArchived, isTrue);
+      expect(unsent.marked['u1'], isEmpty);
+    });
+
+    test('a resend tells who holds a copy, and reports what fails on the device itself (#616)', () async {
+      final reported = <Object>[];
+      final told = <Set<String>>[];
+      sut =
+          Exercises(
+              onError: (error, {stacktrace}) => reported.add(error as Object),
+              remoteService: remote,
+              remote: access,
+              service: local,
+              libraryService: library,
+              catalogService: catalog,
+              preferenceService: preferences,
+              renameService: renames,
+              unsentService: unsent,
+            )
+            ..userId = 'u1'
+            ..onOwnRenamed = told.add;
+      await sut.makeExercise(own);
+      sut.isInitialized = true;
+      renames.failure = offline;
+      await sut.editExercise(own.renamed('Sled Push'));
+
+      // out of reach still: nothing told, nothing reported
+      when(remote.getOwnExercises()).thenThrow(offline);
+      await sut.sendUnsentEdits();
+      expect(reported, isEmpty);
+      expect(told, isEmpty);
+
+      // refused: back under the server's name, and the holders are told
+      when(remote.getOwnExercises()).thenAnswer((_) async => [own]);
+      renames.failure = const _NameTaken();
+      await sut.sendUnsentEdits();
+      expect(told.single, {own.id});
+
+      // the mirror fails: the device's own failure, reported
+      renames.failure = offline;
+      await sut.editExercise(own.renamed('Prowler Push'));
+      renames.failure = null;
+      when(local.storeExercises(any, userId: anyNamed('userId'))).thenThrow(StateError('disk'));
+      addTearDown(() => when(local.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {}));
+      await sut.sendUnsentEdits();
+      expect(reported.single, isStateError);
+    });
+
+    test('marks that cannot be read cost the session neither its units nor its notes (#616)', () async {
+      final broken = _Unsent()..fails = true;
+      final relaunched = Exercises(
+        onError: (_, {stacktrace}) {},
+        remoteService: remote,
+        remote: access,
+        service: local,
+        libraryService: library,
+        catalogService: catalog,
+        preferenceService: preferences,
+        renameService: renames,
+        unsentService: broken,
+      )..userId = 'u1';
+      when(local.getExercises(userId: 'u1')).thenAnswer((_) async => (null, [own]));
+      when(local.getExerciseUnits('u1')).thenAnswer((_) async => {own.id: MeasurementUnit.imperial});
+      addTearDown(() => when(local.getExerciseUnits('u1')).thenAnswer((_) async => {}));
+
+      await relaunched.init();
+
+      expect(relaunched.unitFor(own.id), MeasurementUnit.imperial);
+    });
+
     test('archiving an unsent rename sends the name with it', () async {
       renames.failure = offline;
       await sut.editExercise(own.renamed('Half-kneeling Press'));
@@ -1919,9 +2029,13 @@ class _MoveFake implements ExerciseMoveService {
 
 class _Unsent implements UnsentExerciseEditService {
   final marked = <String, Map<String, UnsentExerciseEdit>>{};
+  bool fails = false;
 
   @override
-  Future<Map<String, UnsentExerciseEdit>> read(String userId) async => {...?marked[userId]};
+  Future<Map<String, UnsentExerciseEdit>> read(String userId) async {
+    if (fails) throw StateError('unreadable');
+    return {...?marked[userId]};
+  }
 
   @override
   Future<void> mark(String exerciseId, String userId, UnsentExerciseEdit? edit) async {
@@ -1946,9 +2060,13 @@ class _Renames implements RemoteExerciseRenameService {
   /// Thrown by the next rename, and every one after, until cleared.
   Object? failure;
 
+  /// What a rename waits for before it answers, when set as it starts.
+  Future<void>? gate;
+
   @override
   Future<Exercise> renameExercise(Exercise exercise) async {
     if (failure case final Object failure) throw failure;
+    if (gate case final Future<void> gate) await gate;
     sent.add(exercise);
     return exercise;
   }

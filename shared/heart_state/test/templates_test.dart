@@ -489,6 +489,8 @@ void main() {
       });
 
       test('a reread leaves a draft out of the list, and its row is still deleted on discard (#616)', () async {
+        templates.userId = 'u1';
+        addTearDown(() => templates.userId = null);
         when(
           local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
         ).thenAnswer((_) async => Template.empty(id: 'draft-2', order: 1));
@@ -507,20 +509,60 @@ void main() {
         verify(local.deleteTemplate('draft-2')).called(1);
       });
 
-      test('a reread keeps the copy of a saved template that is open in the editor (#616)', () async {
+      test(
+        'a reread takes the mirror\'s copy of a template open in the editor, and saving puts the edit back (#616)',
+        () async {
+          templates.userId = 'u1';
+          addTearDown(() => templates.userId = null);
+          when(
+            local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+          ).thenAnswer((_) async => Template.empty(id: 'kept-2', order: 1));
+          when(remote.saveTemplate(any)).thenAnswer((inv) async => inv.positionalArguments.first as Template);
+          when(remote.editTemplate(any)).thenThrow(Exception('Connection failed'));
+          await templates.add(ex('Push Up'));
+          await templates.saveEditable();
+          final editing = templates.editable = templates.first;
+          final mirrored = Template.empty(id: 'kept-2', order: 1);
+          when(local.getTemplates(any)).thenAnswer((_) async => [mirrored]);
+          addTearDown(() => when(local.getTemplates(any)).thenAnswer((_) async => []));
+
+          await templates.reread();
+          // re-keyed rows (a history move, #338) must reach the list
+          expect(templates.single, same(mirrored));
+          expect(templates.editable, same(editing));
+
+          // saved with the server out of reach: the edit, not the mirror's copy
+          await templates.saveEditable();
+          expect(templates.single, same(editing));
+        },
+      );
+
+      test('a save that lands while the mirror is read is not wiped by the read (#616)', () async {
+        templates.userId = 'u1';
+        addTearDown(() => templates.userId = null);
         when(
           local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
-        ).thenAnswer((_) async => Template.empty(id: 'kept-2', order: 1));
+        ).thenAnswer((_) async => Template.empty(id: 'draft-3', order: 1));
         when(remote.saveTemplate(any)).thenAnswer((inv) async => inv.positionalArguments.first as Template);
         await templates.add(ex('Push Up'));
-        await templates.saveEditable();
-        final editing = templates.editable = templates.first;
-        when(local.getTemplates(any)).thenAnswer((_) async => [Template.empty(id: 'kept-2', order: 1)]);
+        final draft = templates.editable!;
+        final reads = <Completer<Iterable<Template>>>[];
+        when(local.getTemplates(any)).thenAnswer((_) {
+          reads.add(Completer());
+          return reads.last.future;
+        });
         addTearDown(() => when(local.getTemplates(any)).thenAnswer((_) async => []));
 
-        await templates.reread();
+        final rereading = templates.reread();
+        await templates.saveEditable();
+        // read before the save: the draft's bare row, which the list must not lose the save to
+        reads.first.complete([Template.empty(id: 'draft-3', order: 1)]);
+        await pumpEventQueue();
+        reads.last.complete([draft]);
+        await rereading;
 
-        expect(templates.single, same(editing));
+        expect(reads, hasLength(2));
+        expect(templates.map((each) => each.id), ['draft-3']);
       });
 
       test('discardEditable keeps a saved template it was only editing', () async {
