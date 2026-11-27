@@ -156,9 +156,15 @@ void main() {
       expect(find.byKey(AppKeys.restSoundPicker), findsOneWidget);
       expect(find.byKey(AppKeys.setDoneSound), findsOneWidget);
 
-      await tester.tap(find.descendant(of: find.byKey(AppKeys.restSoundPicker), matching: find.text('Bell')));
+      // each a row whose value opens a menu of the choices
+      await tester.tapByKey(AppKeys.restSoundPicker);
       await tester.pumpTimes();
-      await tester.tap(find.descendant(of: find.byKey(AppKeys.soundVolumePicker), matching: find.text('Low')));
+      await tester.tap(find.text('Bell').last);
+      await tester.pumpTimes();
+      await tester.ensureVisible(find.byKey(AppKeys.soundVolumePicker));
+      await tester.tapByKey(AppKeys.soundVolumePicker);
+      await tester.pumpTimes();
+      await tester.tap(find.text('Low').last);
       await tester.pumpTimes();
       await tester.ensureVisible(find.byKey(AppKeys.setDoneSound));
       await tester.tapByKey(AppKeys.setDoneSound);

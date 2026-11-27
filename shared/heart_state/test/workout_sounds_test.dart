@@ -13,14 +13,16 @@ void main() {
   late _Player player;
   late WorkoutSounds sut;
   var onScreen = true;
+  var buzzes = 0;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     onScreen = true;
+    buzzes = 0;
     preferences = Preferences();
     await preferences.init();
     player = _Player();
-    sut = WorkoutSounds(preferences: preferences, player: player, onScreen: () => onScreen);
+    sut = WorkoutSounds(preferences: preferences, player: player, buzz: () => buzzes++, onScreen: () => onScreen);
     await sut.init();
   });
 
@@ -37,6 +39,7 @@ void main() {
       sut.setRestSound(.bell);
       sut.setVolume(.high);
       expect(player.played, isEmpty);
+      expect(buzzes, 0);
       expect(sut.restNotificationSound, isNull);
     });
 
@@ -84,6 +87,14 @@ void main() {
       sut.restRanOut('bench');
 
       expect(player.played, [('rest_bell', SoundVolume.low.gain)]);
+    });
+
+    test('a rest that runs out on screen buzzes whatever the volume, and away it is the notification\'s', () {
+      sut.setVolume(.off);
+      sut.restRanOut('bench');
+      onScreen = false;
+      sut.restRanOut('bench');
+      expect(buzzes, 1);
     });
 
     test('choosing a sound or a volume plays it, so the choice is heard', () {

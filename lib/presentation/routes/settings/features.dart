@@ -288,7 +288,7 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
                         preferences.setOption(option, on: checked ?? false, source: .settings);
                       },
                       title: Text(option.title(l)),
-                      controlAffinity: ListTileControlAffinity.trailing,
+                      controlAffinity: .trailing,
                       dense: true,
                       visualDensity: .compact,
                       contentPadding: const .symmetric(horizontal: 8),
@@ -412,6 +412,64 @@ class const _WatchReadingsSwitch() extends StatelessWidget {
   }
 }
 
+/// One of workout sounds' pick-one choices, as a value-and-menu row
+/// ([MenuValue]): four sounds or four volumes in Russian outgrow a 360dp
+/// phone as segments under the switch's indent (docs/style.md).
+class _SoundChoice<T extends Object> extends StatefulWidget {
+  final String title;
+  final T value;
+  final List<T> values;
+  final String Function(T) label;
+  final ValueChanged<T> onPicked;
+
+  const new({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.values,
+    required this.label,
+    required this.onPicked,
+  });
+
+  @override
+  State<_SoundChoice<T>> createState() => _SoundChoiceState<T>();
+}
+
+class _SoundChoiceState<T extends Object> extends State<_SoundChoice<T>> with HasHaptic<_SoundChoice<T>> {
+  /// The value at the row's end, which the menu hangs off.
+  final _valueKey = GlobalKey();
+
+  Future<void> _pick(BuildContext anchor) async {
+    final (:position, :constraints) = menuEndingUnder(anchor, width: 200);
+    final picked = await showMenu<T>(
+      context: anchor,
+      position: position,
+      constraints: constraints,
+      items: [
+        for (final each in widget.values)
+          CheckedPopupMenuItem<T>(value: each, checked: each == widget.value, child: Text(widget.label(each))),
+      ],
+    );
+    if (picked case final T picked when mounted) widget.onPicked(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const .symmetric(horizontal: 8),
+      dense: true,
+      visualDensity: .compact,
+      shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+      title: Text(widget.title),
+      trailing: MenuValue(widget.label(widget.value), key: _valueKey),
+      onTap: () {
+        buzz();
+        if (_valueKey.currentContext case final value?) _pick(value);
+      },
+    );
+  }
+}
+
 /// What workout sounds (#169) let the user choose, under its switch while it
 /// is on: the rest's sound and the volume, each played as it is picked, and a
 /// sound on every ticked set. The record's sound has no row until there are
@@ -423,46 +481,11 @@ class _WorkoutSoundsSettings extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final sounds = WorkoutSounds.watch(context);
-    final ThemeData(:textTheme) = Theme.of(context);
-
-    Widget picker<T extends Object>({
-      required Key key,
-      required String title,
-      required T value,
-      required List<T> values,
-      required String Function(T) label,
-      required ValueChanged<T> onPicked,
-    }) {
-      return Padding(
-        padding: const .fromLTRB(8, 8, 8, 4),
-        child: Column(
-          crossAxisAlignment: .start,
-          spacing: 6,
-          children: [
-            Text(title, style: textTheme.bodyMedium),
-            // four names in Russian outgrow a phone's width under the indent:
-            // the control shrinks rather than overflow
-            FittedBox(
-              fit: .scaleDown,
-              alignment: .centerLeft,
-              child: SettingSwitcher<T>(
-                key: key,
-                value: value,
-                onValueChanged: (picked) {
-                  if (picked != null) onPicked(picked);
-                },
-                children: {for (final each in values) each: Text(label(each))},
-              ),
-            ),
-          ],
-        ),
-      );
-    }
 
     return Column(
       crossAxisAlignment: .stretch,
       children: [
-        picker<RestSound>(
+        _SoundChoice<RestSound>(
           key: AppKeys.restSoundPicker,
           title: l.restSoundLabel,
           value: sounds.restSound,
@@ -470,7 +493,7 @@ class _WorkoutSoundsSettings extends StatelessWidget {
           label: (sound) => sound.title(l),
           onPicked: sounds.setRestSound,
         ),
-        picker<SoundVolume>(
+        _SoundChoice<SoundVolume>(
           key: AppKeys.soundVolumePicker,
           title: l.soundVolume,
           value: sounds.volume,
@@ -486,7 +509,7 @@ class _WorkoutSoundsSettings extends StatelessWidget {
             sounds.setSetDoneSound(on: checked ?? false);
           },
           title: Text(l.setDoneSoundLabel),
-          controlAffinity: ListTileControlAffinity.trailing,
+          controlAffinity: .trailing,
           dense: true,
           visualDensity: .compact,
           contentPadding: const .symmetric(horizontal: 8),
@@ -503,7 +526,7 @@ class _WorkoutSoundsSettings extends StatelessWidget {
               sounds.setRecordSound(on: checked ?? false);
             },
             title: Text(l.recordSoundLabel),
-            controlAffinity: ListTileControlAffinity.trailing,
+            controlAffinity: .trailing,
             dense: true,
             visualDensity: .compact,
             contentPadding: const .symmetric(horizontal: 8),

@@ -459,14 +459,11 @@ NotificationDetails _details({
     ),
   };
   // a channel's sound is fixed when it is made, so each sound has its own
+  // ([_ensureRestChannel])
   final (channelId, channelName, androidSound) = switch (tone) {
     null => (_defaultChannelId, _defaultChannelName, null),
-    (sound: silentNotification, :String channel) => ('$_defaultChannelId silent', channel, null),
-    (:String sound, :String channel) => (
-      '$_defaultChannelId $sound',
-      channel,
-      RawResourceAndroidNotificationSound(sound),
-    ),
+    (sound: silentNotification, :String channel) => (_restChannelId(silentNotification), channel, null),
+    (:String sound, :String channel) => (_restChannelId(sound), channel, RawResourceAndroidNotificationSound(sound)),
   };
   return NotificationDetails(
     iOS: darwin,
@@ -502,9 +499,71 @@ typedef RestTone = ({String sound, String channel});
 const _restToneSound = 'workoutSounds.restNotification';
 const _restToneChannel = 'workoutSounds.restChannel';
 
+/// The Android channel of the rest's notification under [sound]: the default
+/// channel's id and the sound's name, or `silent` for none.
+String _restChannelId(String sound) {
+  return switch (sound) {
+    silentNotification => '${_restChannelPrefix}silent',
+    _ => '$_restChannelPrefix$sound',
+  };
+}
+
+const _restChannelPrefix = '$_defaultChannelId ';
+
+/// The name each of the sounds' channels was last created under, in this
+/// process.
+final _restChannelNames = <String, String>{};
+
+/// Creates [tone]'s channel, or renames it after a language change. Explicit
+/// for [_ensureOngoingChannel]'s reason, and for one more: made from a
+/// notification's details the channel would take `enableVibration: false`
+/// from them, which the default channel, created in [_createNotificationChannel]
+/// before any notification, never did. Created here it is the default
+/// channel with another sound, vibration and all.
+Future<void> _ensureRestChannel(RestTone tone) async {
+  final id = _restChannelId(tone.sound);
+  if (_restChannelNames[id] == tone.channel) return;
+  await _plugin
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(
+        AndroidNotificationChannel(
+          id,
+          tone.channel,
+          importance: .defaultImportance,
+          playSound: tone.sound != silentNotification,
+          sound: switch (tone.sound) {
+            silentNotification => null,
+            final sound => RawResourceAndroidNotificationSound(sound),
+          },
+        ),
+      );
+  _restChannelNames[id] = tone.channel;
+}
+
+/// Takes down every sound's channel but [tone]'s: off, or on another sound,
+/// the system's settings list nothing workout sounds no longer uses. Android
+/// remembers what was set on a deleted channel and restores it when the id
+/// comes back.
+Future<void> _deleteOtherRestChannels(RestTone? tone) async {
+  final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+  final kept = switch (tone) {
+    null => null,
+    (:final sound, channel: _) => _restChannelId(sound),
+  };
+  final channels = await android?.getNotificationChannels() ?? const <AndroidNotificationChannel>[];
+  for (final AndroidNotificationChannel(:id) in channels) {
+    if (!id.startsWith(_restChannelPrefix) || id == kept) continue;
+    await android?.deleteNotificationChannel(channelId: id);
+    _restChannelNames.remove(id);
+  }
+}
+
 /// Leaves [tone] for the surfaces that schedule the rest's notification on
 /// their own ([_restToneSound]); null takes it away, back to the system's.
+/// A rest still counting is posted again with it, so a change of sound, of
+/// volume or of the switch itself is the next rest's end and this one's.
 Future<void> publishRestTone(RestTone? tone) async {
+  if (tone != null) await _guarded(() => _ensureRestChannel(tone));
   final prefs = await SharedPreferences.getInstance();
   switch (tone) {
     case (:String sound, :String channel):
@@ -514,6 +573,8 @@ Future<void> publishRestTone(RestTone? tone) async {
       await prefs.remove(_restToneSound);
       await prefs.remove(_restToneChannel);
   }
+  await _repostRest();
+  await _guarded(() => _deleteOtherRestChannels(tone));
 }
 
 /// [reload] for the buttons' isolate, whose copy of the store is as old as
@@ -540,16 +601,45 @@ bool _quiet = false;
 /// chosen — iOS does the same through `presentSound`. Called as the app comes
 /// and goes; a rest still to end is posted again with the right sound. With
 /// workout sounds off there is nothing to quiet: the system's sound is 1.9's.
-Future<void> quietRestNotification({required bool quiet}) async {
+///
+/// [savedRest] is the rest as it was kept across a restart (#141). A process
+/// killed mid-rest comes back with no [_lastRest], while the notification it
+/// scheduled, sound and all, is still pending: read back and posted again,
+/// or the app and the notification would both sound the end.
+Future<void> quietRestNotification({required bool quiet, Future<SavedRest?> Function()? savedRest}) async {
   if (quiet == _quiet) return;
   _quiet = quiet;
-  final rest = _lastRest;
-  if (rest == null || !rest.time.isAfter(DateTime.now())) return;
-  final tone = await _readRestTone();
-  if (tone == null) return;
-  final pending = await _plugin.pendingNotificationRequests();
-  if (!pending.any((request) => request.id == _currentExercise)) return;
-  await _scheduleRest(rest, tone);
+  if (await _readRestTone() == null) return;
+  await _repostRest(savedRest: savedRest);
+}
+
+/// Posts the rest's pending notification again, with the tone and the quiet
+/// of this moment. Nothing where no rest is pending or it has already ended.
+Future<void> _repostRest({Future<SavedRest?> Function()? savedRest}) {
+  return _guarded(() async {
+    final pending = await _plugin.pendingNotificationRequests();
+    final request = pending.where((request) => request.id == _currentExercise).firstOrNull;
+    if (request == null) return;
+    final rest =
+        _lastRest ??
+        switch ((await savedRest?.call(), request.title)) {
+          // the subtitle Android does not report is the one thing lost
+          ((:final exerciseId, :final end, total: _), final String title) when exerciseId == request.payload => (
+            exerciseId: exerciseId,
+            time: end,
+            title: title,
+            body: request.body,
+            subtitle: null,
+          ),
+          _ => null,
+        };
+    if (rest == null) return;
+    _lastRest = rest;
+    final tone = await _readRestTone();
+    // the awaits above take time, and a past date is refused outright
+    if (!rest.time.isAfter(DateTime.now())) return;
+    await _scheduleRest(rest, tone);
+  });
 }
 
 Future<void> _scheduleRest(

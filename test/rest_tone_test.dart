@@ -14,6 +14,8 @@ void main() {
 
   const channel = MethodChannel('dexterous.com/flutter/local_notifications');
   late List<MethodCall> scheduled;
+  late List<MethodCall> channels;
+  late List<Object?> deleted;
 
   setUpAll(() {
     tz.initializeTimeZones();
@@ -23,10 +25,30 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     scheduled = [];
+    channels = [];
+    deleted = [];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
       return switch (call.method) {
         'initialize' => true,
         'zonedSchedule' => scheduled.add(call),
+        'createNotificationChannel' => channels.add(call),
+        // the system's own list: what was created and not yet deleted
+        'getNotificationChannels' => [
+          for (final call in channels)
+            if (call.arguments case {'id': final id, 'name': final name} when !deleted.contains(id))
+              {
+                'id': id,
+                'name': name,
+                'importance': 3,
+                'showBadge': true,
+                'bypassDnd': false,
+                'playSound': true,
+                'enableLights': false,
+                'enableVibration': true,
+                'ledColor': 0,
+              },
+        ],
+        'deleteNotificationChannel' => deleted.add(call.arguments),
         // the rest is still to come: it may be posted again
         'pendingNotificationRequests' => [
           {'id': 0, 'title': 'Rest complete!', 'body': null, 'payload': 'bench'},
@@ -39,6 +61,8 @@ void main() {
 
   tearDown(() async {
     await quietRestNotification(quiet: false);
+    // no rest carries over: the next test's tone would post it again
+    await cancelExerciseNotification();
     await publishRestTone(null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
   });
@@ -92,5 +116,55 @@ void main() {
     await scheduleExerciseNotification('bench', soon, title: 'Rest complete!');
     await quietRestNotification(quiet: true);
     expect(scheduled, hasLength(1));
+  });
+
+  test('a sound chosen mid-rest is that rest\'s, and switched off it is the system\'s again', () async {
+    await publishRestTone((sound: 'rest_bell', channel: 'Rest timers: Bell'));
+    await scheduleExerciseNotification('bench', soon, title: 'Rest complete!');
+
+    await publishRestTone((sound: 'rest_chime', channel: 'Rest timers: Chime'));
+    await publishRestTone(null);
+
+    expect(scheduled.map((call) => details(call)['channelId']), [
+      'Rest Timers rest_bell',
+      'Rest Timers rest_chime',
+      'Rest Timers',
+    ]);
+  });
+
+  test('a rest picked up after the process died is posted again from what was kept', () async {
+    await publishRestTone((sound: 'rest_bell', channel: 'Rest timers: Bell'));
+
+    await quietRestNotification(
+      quiet: true,
+      savedRest: () async => (exerciseId: 'bench', end: soon, total: 120),
+    );
+
+    final android = details(scheduled.single);
+    expect(android['silent'], isTrue);
+    expect((scheduled.single.arguments as Map)['title'], 'Rest complete!');
+  });
+
+  test('each sound\'s channel is the default one with another sound, and is renamed with the language', () async {
+    await publishRestTone((sound: 'rest_bell', channel: 'Rest timers: Bell'));
+    await publishRestTone((sound: 'rest_bell', channel: 'Таймеры отдыха: колокол'));
+
+    // after the default channel, made as the plugin starts
+    final made = channels.map((call) => call.arguments as Map).skip(1).toList();
+    expect(made.map((each) => (each['id'], each['name'])), [
+      ('Rest Timers rest_bell', 'Rest timers: Bell'),
+      ('Rest Timers rest_bell', 'Таймеры отдыха: колокол'),
+    ]);
+    expect(made.first['sound'], 'rest_bell');
+    expect(made.first['enableVibration'], isTrue, reason: 'as the default channel, which buzzes');
+  });
+
+  test('a sound no longer used leaves no channel behind, and off leaves none at all', () async {
+    await publishRestTone((sound: 'rest_bell', channel: 'Rest timers: Bell'));
+    await publishRestTone((sound: 'rest_chime', channel: 'Rest timers: Chime'));
+    expect(deleted, ['Rest Timers rest_bell']);
+
+    await publishRestTone(null);
+    expect(deleted, ['Rest Timers rest_bell', 'Rest Timers rest_chime']);
   });
 }

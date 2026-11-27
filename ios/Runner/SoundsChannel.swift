@@ -35,28 +35,58 @@ final class SoundsChannel: NSObject, AVAudioPlayerDelegate {
         }
     }
 
+    /// Whether the session has its category yet: set once, not on every tick.
+    private var configured = false
+
     /// Whether [name] started; a sound not in the bundle, or a session that
     /// would not start, is false and nothing else.
     private func play(_ name: String, volume: Float) -> Bool {
         guard let url = Bundle.main.url(forResource: name, withExtension: "wav") else { return false }
+        // a player a call, Siri or an alarm cut short never reports finishing:
+        // left in, the session would never be let go and the music stay ducked
+        playing = playing.filter(\.isPlaying)
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.ambient, options: [.duckOthers])
+            if !configured {
+                try session.setCategory(.ambient, options: [.duckOthers])
+                configured = true
+            }
             try session.setActive(true)
             let player = try AVAudioPlayer(contentsOf: url)
             player.volume = max(0, min(1, volume))
             player.delegate = self
+            guard player.play() else {
+                release()
+                return false
+            }
             playing.insert(player)
-            return player.play()
+            return true
         } catch {
+            release()
             return false
         }
     }
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         playing.remove(player)
-        // the last one out lets the music back up
+        release()
+    }
+
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        playing.remove(player)
+        release()
+    }
+
+    /// The last one out lets the music back up. A session that will not let
+    /// go now is tried again after the next sound.
+    private func release() {
+        playing = playing.filter(\.isPlaying)
         guard playing.isEmpty else { return }
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        do {
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            // the category may have been taken from under us: set it again next time
+            configured = false
+        }
     }
 }

@@ -86,9 +86,17 @@ class WorkoutSounds with ChangeNotifier {
   /// the notification's to sound, and no moment to ask anything.
   final bool Function() _onScreen;
 
+  /// A buzz for the end of a rest on screen. The notification is quiet
+  /// there while the feature is on, and the app's sound is silenced by the
+  /// silent switch or a silent ringer: without this, a phone on silent would
+  /// mark the end with nothing, where the notification's sound used to buzz.
+  /// Null where there is nothing to buzz: tests, the web.
+  final VoidCallback? _buzz;
+
   SharedPreferences? _prefs;
 
-  new({required this._preferences, this._player, bool Function()? onScreen}) : _onScreen = onScreen ?? _visible;
+  new({required this._preferences, this._player, this._buzz, bool Function()? onScreen})
+    : _onScreen = onScreen ?? _visible;
 
   static WorkoutSounds of(BuildContext context) {
     return Provider.of<WorkoutSounds>(context, listen: false);
@@ -109,8 +117,19 @@ class WorkoutSounds with ChangeNotifier {
   }
 
   Future<void> init() async {
-    _prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
+    // torn down while the read was in flight: nobody is left to tell
+    if (_disposed) return;
+    _prefs = prefs;
     notifyListeners();
+  }
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 
   bool get _on => _preferences.isOn(_feature);
@@ -172,7 +191,10 @@ class WorkoutSounds with ChangeNotifier {
   /// sound — or, never asked, the moment to ask.
   void restRanOut(String exerciseId) {
     if (!_onScreen()) return;
-    if (_on) return _play(restSound.file);
+    if (_on) {
+      _buzz?.call();
+      return _play(restSound.file);
+    }
     if (_offerUnder == null && _preferences.isInitialized && _preferences.shouldOffer(_feature)) {
       _offerUnder = exerciseId;
       notifyListeners();

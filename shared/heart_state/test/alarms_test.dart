@@ -289,6 +289,19 @@ void main() {
       expect(ranOut, ['row']);
     });
 
+    test('a rest noticed long after its end, the app having been away, is not reported (#169)', () async {
+      final ranOut = <String>[];
+      final alarms = Alarms(tick: tick, now: () => clock, onRunOut: ranOut.add);
+      addTearDown(alarms.stopActiveExerciseTimer);
+
+      alarms.startActiveExerciseTimer(1, exerciseId: 'row');
+      // the process slept through the end: the next tick comes a second late
+      await elapse(200);
+
+      expect(alarms.activeExerciseTimer, isNull);
+      expect(ranOut, isEmpty);
+    });
+
     test('onSignOut stops active exercise timer and notifies', () async {
       alarms.startActiveExerciseTimer(3, exerciseId: 'bench');
       notifications = 0;

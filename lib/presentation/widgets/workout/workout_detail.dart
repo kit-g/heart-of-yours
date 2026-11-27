@@ -143,9 +143,10 @@ class WorkoutDetail extends StatefulWidget {
   final bool needsCancelWorkoutButton;
   final bool allowsCompletingSet;
 
-  /// Whether the one offer of default rest (#174) may appear under an
-  /// exercise: the active workout's sheet, where a tick starts a rest — not a
-  /// past workout being edited, where it does not.
+  /// Whether the one offer of default rest (#174), and of workout sounds
+  /// (#169), may appear under an exercise: the active workout's sheet, where
+  /// a tick starts a rest — not a past workout being edited, where it does
+  /// not.
   final bool offersDefaultRest;
   final Iterable<WorkoutImage>? workoutImages;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
@@ -513,7 +514,8 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                       selector: (_, provider) => provider.pointedAtExercise == set.id,
                     ),
                     if (widget.offersDefaultRest) _DefaultRestOffer(exercise: set),
-                    _SoundsOffer(exercise: set),
+                    // the same sheet, for the same reason: a rest runs out there
+                    if (widget.offersDefaultRest) _SoundsOffer(exercise: set),
                   ],
                 );
               },

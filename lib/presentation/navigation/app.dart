@@ -302,6 +302,10 @@ class HeartApp extends StatelessWidget {
               true => const ChannelSoundPlayer(),
               false => null,
             },
+            buzz: switch (hasLocalNotifications ?? false) {
+              true => HapticFeedback.vibrate,
+              false => null,
+            },
           )..init(),
         ),
         ChangeNotifierProvider<AppInfo>(

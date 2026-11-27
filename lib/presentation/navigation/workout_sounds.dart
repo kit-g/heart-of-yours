@@ -1,4 +1,5 @@
 import 'package:heart/core/env/notifications.dart';
+import 'package:heart/core/env/rest_store.dart';
 import 'package:heart/presentation/widgets/feature_copy.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
@@ -56,6 +57,7 @@ class _WorkoutSoundsPresenterState extends State<WorkoutSoundsPresenter> with Wi
       _preferences = preferences..addListener(_publish);
     }
     // the channel's name is copy: a new language names it again
+    // ([publishRestTone] renames the channel)
     _publish();
     // the app starts on screen, before any change of state says so
     _quiet(WidgetsBinding.instance.lifecycleState);
@@ -71,6 +73,8 @@ class _WorkoutSoundsPresenterState extends State<WorkoutSoundsPresenter> with Wi
         .resumed || .inactive || null => true,
         .hidden || .paused || .detached => false,
       },
+      // a rest picked up after the process was killed (#141)
+      savedRest: const PreferencesRestStore().read,
     );
   }
 

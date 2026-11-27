@@ -16,8 +16,9 @@ app running:
 - `android/app/src/main/res/raw/<name>.wav` — a raw resource, which a
   notification channel's sound and the in-app player both name.
 
-The names are the contract with Dart (`WorkoutSound` in heart_state, and the
-`heart/sounds` channel): change one and change all three.
+The names are the contract with Dart (`RestSound.file`, `_setDoneFile` and
+`_recordFile` in heart_state's `workout_sounds.dart`, and the `heart/sounds`
+channel): change one and change all three.
 
     python3 scripts/sounds.py
 """

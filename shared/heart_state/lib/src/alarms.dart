@@ -21,6 +21,10 @@ abstract interface class RestStore {
   Future<void> clear();
 }
 
+/// How many ticks after its end a rest's run-out still counts as noticed on
+/// time: a timer runs a little late, a suspended process a lot.
+const _lateTicks = 3;
+
 class Alarms with ChangeNotifier implements SignOutStateSentry {
   final VoidCallback? cancelRestTimerNotifications;
   final Duration _tick;
@@ -179,7 +183,10 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
             _activeExercise?.remains.value = 0;
             if (timer.isActive) {
               onComplete?.call();
-              _onRunOut?.call(exerciseId);
+              // noticed long after the end, the process was suspended and the
+              // app away: that end was the notification's to sound, and is no
+              // moment to ask anything (#169)
+              if (-remains <= _tick.inMilliseconds * _lateTicks) _onRunOut?.call(exerciseId);
             }
             _stopActiveExerciseTimer();
             // run out, not skipped: nothing to withdraw, nothing to keep
