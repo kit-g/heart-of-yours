@@ -27,6 +27,15 @@ mixin _Skips on _LocalDatabase {
         for (final skip in skips) {
           await _storeSkip(txn, skip, userId);
         }
+        // a skip taken back on another device takes its snapshot (#445) too.
+        // Not one taken within the day: a skip being made, or stored again
+        // under a new id for its reason, has its snapshot before its row, and
+        // this read may land between the two
+        await txn.rawDelete(
+          'DELETE FROM $_skipSnapshots WHERE user_id = ? AND taken_at < ? '
+          'AND skip_id NOT IN (SELECT id FROM $_skips WHERE user_id = ?)',
+          [userId, DateTime.timestamp().subtract(const Duration(days: 1)).toIso8601String(), userId],
+        );
       },
     );
   }
