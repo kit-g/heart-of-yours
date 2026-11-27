@@ -5,7 +5,7 @@ import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
-import java.time.ZoneId
+import java.time.ZoneOffset
 
 /// "Not today" asked for outside the app (#445), on the JVM: the moment is
 /// kept for Dart, the day is marked at once, and nothing is offered while
@@ -82,10 +82,16 @@ class NotTodayTest {
 
     @Test
     fun `a moment's day is the device's own`() {
-        // 2026-11-26T07:30Z is still the 25th in Vancouver
+        // 2026-11-26T07:30Z is still the 25th eight hours behind, and already
+        // the 26th seven behind. Fixed offsets, not a named zone: what a zone
+        // is behind by is the JVM's time zone data to say, and it changes —
+        // British Columbia stopped changing its clocks, so "America/Vancouver"
+        // is -08:00 on one JDK and -07:00 on a newer one, a day apart here
         val moment = 1_795_678_200_000L
-        assertEquals("2026-11-26", NotToday.dayOf(moment, ZoneId.of("UTC")))
-        assertEquals("2026-11-25", NotToday.dayOf(moment, ZoneId.of("America/Vancouver")))
+        assertEquals("2026-11-26", NotToday.dayOf(moment, ZoneOffset.UTC))
+        assertEquals("2026-11-25", NotToday.dayOf(moment, ZoneOffset.ofHours(-8)))
+        assertEquals("2026-11-26", NotToday.dayOf(moment, ZoneOffset.ofHours(-7)))
+        assertEquals("2026-11-26", NotToday.dayOf(moment, ZoneOffset.ofHours(9)))
     }
 
     @Test
