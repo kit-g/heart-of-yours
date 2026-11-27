@@ -1429,6 +1429,19 @@ void a11y({required int shard}) {
     // the developer API's tokens (#271): one live, one revoked, and a mint
     // that hands back a secret
     when(api.listApiTokens()).thenAnswer((_) async => [_liveToken, _pastToken]);
+    // and one app let in through OAuth, with its disconnect (#448)
+    when(api.listConnectedApps()).thenAnswer(
+      (_) async => [
+        ConnectedApp(
+          id: 'grant-1',
+          clientId: 'https://assistant.example/metadata.json',
+          name: 'Assistant',
+          scopes: const ['read', 'write:templates'],
+          resource: 'https://api.example.com/mcp',
+          connectedAt: DateTime.utc(2026, 10, 18),
+        ),
+      ],
+    );
     when(
       api.createApiToken(name: anyNamed('name'), expiry: anyNamed('expiry'), purpose: anyNamed('purpose')),
     ).thenAnswer(

@@ -147,6 +147,88 @@ void main() {
     }
   }
 
+  group('made or replaced elsewhere (#448)', () {
+    /// Away from the app long enough to count as coming back to it.
+    void leaveAndComeBack(WidgetTester tester) {
+      for (final AppLifecycleState state in [.inactive, .hidden, .paused, .hidden, .inactive, .resumed]) {
+        tester.binding.handleAppLifecycleStateChanged(state);
+      }
+    }
+
+    testWidgets('a pull on the page reads the server again and shows what an assistant made', (tester) async {
+      when(api.getTemplates()).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push')]);
+      await openWorkoutTab(tester);
+      expect(find.text('From the assistant'), findsNothing);
+
+      when(api.getTemplates()).thenAnswer(
+        (_) async => [
+          template(id: 't1', order: 0, name: 'Push'),
+          template(id: 't2', order: 1, name: 'From the assistant'),
+        ],
+      );
+      when(api.getFolders(userId: anyNamed('userId'))).thenAnswer(
+        (_) async => [TemplateFolder(id: 'f1', name: 'Assistant’s folder', order: 0)],
+      );
+      await tester.fling(find.byType(CustomScrollView).first, const Offset(0, 400), 1000);
+      await tester.pumpTimes();
+
+      expect(find.text('From the assistant'), findsOneWidget);
+      expect(find.textContaining('Assistant’s folder'), findsOneWidget);
+    });
+
+    testWidgets('a template replaced elsewhere reads as replaced after the pull', (tester) async {
+      when(api.getTemplates()).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push')]);
+      await openWorkoutTab(tester);
+
+      when(api.getTemplates()).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push, by the assistant')]);
+      await tester.fling(find.byType(CustomScrollView).first, const Offset(0, 400), 1000);
+      await tester.pumpTimes();
+
+      expect(find.text('Push, by the assistant'), findsOneWidget);
+      expect(find.text('Push'), findsNothing);
+    });
+
+    testWidgets('coming back to the app shows them too', (tester) async {
+      when(api.getTemplates()).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push')]);
+      await openWorkoutTab(tester);
+      addTearDown(() => tester.binding.handleAppLifecycleStateChanged(.resumed));
+
+      when(api.getTemplates()).thenAnswer(
+        (_) async => [
+          template(id: 't1', order: 0, name: 'Push'),
+          template(id: 't2', order: 1, name: 'From the assistant'),
+        ],
+      );
+      leaveAndComeBack(tester);
+      await tester.pumpTimes();
+
+      expect(find.text('From the assistant'), findsOneWidget);
+    });
+
+    testWidgets('without an account there is nothing to pull', (tester) async {
+      await openWorkoutTab(tester, signedIn: false);
+
+      expect(find.byType(RefreshIndicator), findsNothing);
+    });
+
+    testWidgets("a change the server never had is kept beside the assistant's replacement, named as the user's", (
+      tester,
+    ) async {
+      // the device holds its own change to t1, owed since the server's Push
+      when(db.getTemplates(userId)).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push, heavier')]);
+      when(db.getUnsentTemplates(userId)).thenAnswer((_) async => {'t1': template(id: 't1', order: 0, name: 'Push')});
+      // and the assistant replaced it meanwhile
+      when(api.getTemplates()).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push, by the assistant')]);
+      await openWorkoutTab(tester);
+
+      expect(find.text('Push, by the assistant'), findsOneWidget);
+      expect(find.text('Your changes: Push, heavier'), findsOneWidget);
+      final kept = verify(api.saveTemplate(captureAny)).captured.single as Template;
+      expect(kept.name, 'Your changes: Push, heavier');
+      expect(kept.single.exercise.name, bench.name);
+    });
+  });
+
   group('empty state', () {
     testWidgets('says so when there are no templates and no folders', (tester) async {
       await openWorkoutTab(tester);

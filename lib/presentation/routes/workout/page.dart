@@ -29,13 +29,22 @@ class _WorkoutPageState extends State<WorkoutPage> with AfterLayoutMixin {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body: _TemplatesLayout(
-          goToTemplateEditor: widget.goToTemplateEditor,
-          onNewWorkout: widget.onOpenActiveWorkout,
-          goToProgram: widget.goToProgram,
-          goToNewProgram: widget.goToNewProgram,
-          goToLibrary: widget.goToLibrary,
-          onLogPastWorkout: widget.onLogPastWorkout,
+        // Pulled to read the server's templates and folders again: ones an
+        // assistant or another device made show without a relaunch (#448).
+        // Absent without an account, which has no server to read.
+        body: _Pullable(
+          onRefresh: switch (Auth.watch(context).isAnonymous) {
+            true => null,
+            false => Templates.of(context).refresh,
+          },
+          child: _TemplatesLayout(
+            goToTemplateEditor: widget.goToTemplateEditor,
+            onNewWorkout: widget.onOpenActiveWorkout,
+            goToProgram: widget.goToProgram,
+            goToNewProgram: widget.goToNewProgram,
+            goToLibrary: widget.goToLibrary,
+            onLogPastWorkout: widget.onLogPastWorkout,
+          ),
         ),
         floatingActionButton: WorkoutTimerFloatingButton(onPressed: widget.onOpenActiveWorkout),
       ),

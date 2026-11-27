@@ -256,6 +256,13 @@ abstract final class AppKeys {
   static Key apiTokenRow(String id) => Key('ApiTokens.row.$id');
   static Key revokeApiToken(String id) => Key('ApiTokens.revoke.$id');
   static const confirmRevokeApiToken = Key('ApiTokens.revoke.confirm');
+
+  /// The apps the account let in (#448), on the same page: each one's row and
+  /// its disconnect button.
+  static Key connectedAppRow(String id) => Key('ConnectedApps.row.$id');
+  static Key disconnectApp(String id) => Key('ConnectedApps.disconnect.$id');
+  static const confirmDisconnectApp = Key('ConnectedApps.disconnect.confirm');
+  static const retryConnectedApps = Key('ConnectedApps.retry');
   static const apiTokenName = Key('NewApiToken.name');
   static Key apiTokenPurposeOption(Object? purpose) => Key('NewApiToken.purpose.${purpose ?? 'unset'}');
   static const createApiToken = Key('NewApiToken.create');

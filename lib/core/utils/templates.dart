@@ -35,6 +35,23 @@ class LocalTemplateFolders implements LocalTemplateFolderService {
   }
 }
 
+/// Presents [LocalDatabase] as the [UnsentTemplateService] the [Templates]
+/// notifier wants: what a template owes the server sits on its mirror row.
+class UnsentTemplates implements UnsentTemplateService {
+  final LocalDatabase _db;
+
+  const new(this._db);
+
+  @override
+  Future<Map<String, Template?>> getUnsent(String userId) => _db.getUnsentTemplates(userId);
+
+  @override
+  Future<void> markUnsent(String templateId, Template base) => _db.markTemplateUnsent(templateId, base);
+
+  @override
+  Future<void> clearUnsent(String templateId) => _db.clearTemplateUnsent(templateId);
+}
+
 /// Presents [Api] as the [RemoteTemplateFilingService] the [Templates] notifier
 /// wants — the folder CRUD travels as [ApiTemplateFolderService], which [Api]
 /// implements itself, and this carries the one call that interface lacks.
