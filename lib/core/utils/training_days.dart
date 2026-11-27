@@ -1,4 +1,5 @@
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/heart_state.dart' show DropEfforts;
 
 /// One calendar day of training, as the Home Screen widget (#161) counts it:
 /// [volume] in kilograms, [seconds] trained, and the sets and reps the user
@@ -26,15 +27,17 @@ Map<DateTime, TrainingDay> trainingDays(
     final start = workout.start.toLocal();
     if (start.isBefore(since)) continue;
     final day = DateTime(start.year, start.month, start.day);
-    final sets = workout
-        .expand((exercise) => exercise)
-        .where((set) => set.isCompleted && set.setType != .warmup && !leftOut.sets.contains(set.id));
+    bool counts(ExerciseSet set) => set.isCompleted && set.setType != .warmup && !leftOut.sets.contains(set.id);
+    final sets = workout.expand((exercise) => exercise).where(counts);
+    // a drop set is one set however many drops it has; its every drop's
+    // load is volume all the same (#614)
+    final efforts = workout.fold(0, (sum, exercise) => sum + exercise.countEfforts(counts));
     final today = days[day] ?? (volume: 0.0, workouts: 0, seconds: 0, sets: 0, reps: 0);
     days[day] = (
       volume: today.volume + sets.map(_volume).fold(0.0, (sum, each) => sum + each),
       workouts: today.workouts + 1,
       seconds: today.seconds + (leftOut.durations.contains(workout.id) ? 0 : workout.duration?.inSeconds ?? 0),
-      sets: today.sets + sets.length,
+      sets: today.sets + efforts,
       reps: today.reps + sets.map((set) => set.reps ?? 0).fold(0, (sum, each) => sum + each),
     );
   }

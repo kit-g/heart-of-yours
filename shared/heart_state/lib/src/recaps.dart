@@ -74,6 +74,10 @@ typedef RecapSet = ({
   int? reps,
   double? duration,
   double? distance,
+  // a drop holds no record, and one that continues an effort is not a set
+  // of its own: one drop set is one set (#614)
+  bool drop,
+  bool continuesEffort,
 });
 
 /// What one key — a muscle group, a movement pattern — gathered over the
@@ -264,7 +268,7 @@ Recap recapOf(
         .map((workout) => DateTime(workout.start.year, workout.start.month, workout.start.day))
         .toSet()
         .length,
-    sets: done.length,
+    sets: done.where((set) => !set.continuesEffort).length,
     volume: unit(rows.fold(0.0, (sum, row) => sum + row.volume)),
     weightUnit: weightUnit,
     muscles: byKey(muscleKeysOf),
@@ -343,7 +347,7 @@ List<_Row> _rowsOf(Iterable<RecapSet> sets) {
         movement: first.movement,
         muscles: first.muscles,
         target: first.target,
-        sets: group.length,
+        sets: group.where((set) => !set.continuesEffort).length,
       ),
       volume: switch (_lifted(first.category)) {
         true => group.map(_recordSet).fold(0.0, (sum, set) => sum + set.volume),
@@ -382,7 +386,8 @@ List<RecapRecord> _recordsOf(List<RecapSet> history, Set<String> inPeriod, Map<S
   final records = [
     for (final MapEntry(key: exerciseId, value: sets) in _byExercise(history).entries)
       if (sets.first.category case final Category category)
-        if (sets.map(_recordSet).toList().toPersonalRecords(category) case final Map<String, Object> folded)
+        if (sets.where((set) => !set.drop).map(_recordSet).toList().toPersonalRecords(category)
+            case final Map<String, Object> folded)
           for (final MapEntry(key: record, :value) in folded.entries)
             if (value case final Map entry && {'workoutId': final String holder} when inPeriod.contains(holder))
               (exerciseId: exerciseId, category: category, record: record, value: entry.cast<String, Object>()),
@@ -398,7 +403,7 @@ List<RecapLift> _liftsOf(List<RecapSet> done) {
   final lifts = [
     for (final MapEntry(key: exerciseId, value: sets) in _byExercise(done).entries)
       if (sets.first.category case final Category category when _lifted(category))
-        if (sets.map(_recordSet).toList().toPersonalRecords(category)
+        if (sets.where((set) => !set.drop).map(_recordSet).toList().toPersonalRecords(category)
             case {'heaviest': final Object heaviest} && final folded)
           (
             exerciseId: exerciseId,

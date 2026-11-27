@@ -169,7 +169,8 @@ class WorkoutItem extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                '${exercise.exercise.name} ×${exercise.where((set) => set.isCompleted).length}',
+                                // the sets done, a drop set one however many drops (#614)
+                                '${exercise.exercise.name} ×${exercise.countEfforts((set) => set.isCompleted)}',
                                 style: textTheme.bodySmall,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -415,9 +416,10 @@ class WorkoutItem extends StatelessWidget {
     return exercise.where((set) => set.isCompleted && set.setType != .warmup);
   }
 
-  /// The best ticked working set, or none when nothing was done.
+  /// The best ticked working set, or none when nothing was done. Never a
+  /// drop, which holds no best (#614); with nothing else done, none.
   static ExerciseSet? _best(WorkoutExercise exercise) {
-    final done = _done(exercise);
+    final done = _done(exercise).where((set) => set.setType != .drop);
     return switch (done.isEmpty) {
       true => null,
       false => done.reduce(

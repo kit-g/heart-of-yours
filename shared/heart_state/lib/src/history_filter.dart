@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'drop_sets.dart';
 import 'muscle_family.dart';
 
 /// What History is narrowed to: muscle groups (#610), templates and a stretch
@@ -144,7 +145,8 @@ class WorkoutGroups {
   /// (#617). A set counts once toward each family its exercise reaches.
   Map<MuscleFamily, int> setsByFamily(Iterable<Workout> workouts) {
     return workouts.expand(done).fold(<MuscleFamily, int>{}, (sets, each) {
-      final count = each.where(_counts).length;
+      // a drop set is one set however many drops it has (#614)
+      final count = each.countEfforts();
       final families = {for (final group in ofExercise(each.exercise)) MuscleFamily.of(group)};
       return {
         ...sets,

@@ -56,6 +56,8 @@ void main() {
       reps: reps,
       duration: null,
       distance: null,
+      drop: false,
+      continuesEffort: false,
     );
   }
 

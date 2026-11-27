@@ -12,6 +12,7 @@ export 'src/coach_library.dart';
 export 'src/coach_notes.dart';
 export 'src/coaching.dart';
 export 'src/device_keys.dart';
+export 'src/drop_sets.dart';
 export 'src/auth.dart';
 export 'src/backfill.dart';
 export 'src/charts.dart';

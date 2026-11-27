@@ -1522,6 +1522,8 @@ void a11y({required int shard}) {
             reps: 5,
             duration: null,
             distance: null,
+            drop: false,
+            continuesEffort: false,
           ),
         ],
       );
