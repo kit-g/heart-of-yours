@@ -15,9 +15,8 @@
 #   either of the last two. The branch goes with it: merged is checked here,
 #   against the PR or origin/main, because `git branch -d` asks the local main,
 #   which is usually behind;
-# - agent simulators other than the canonical agent-iphone and agent-ipad
-#   (agents/host-agent creates those two and nothing else), and duplicates of
-#   those names;
+# - agent simulators other than the canonical agent-iphone and agent-ipad,
+#   and duplicates of those names;
 # - simulators whose runtime is no longer installed;
 # - Xcode DerivedData folders untouched for a week.
 #

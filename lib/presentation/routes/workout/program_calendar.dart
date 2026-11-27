@@ -2,7 +2,8 @@ part of 'workout.dart';
 
 /// A program in the device calendar (#391), on its page: the row that says
 /// where its sessions go or offers to put them there, while Programs' calendar
-/// is selected in Settings, and nothing otherwise. Nothing is asked here: the
+/// is selected in Settings — for a coach's program under Your coach too, as
+/// Programs would (#593) — and nothing otherwise. Nothing is asked here: the
 /// OS asks for the calendar once the user opens the setup.
 class _ProgramCalendarSlot extends StatelessWidget {
   final Program program;
@@ -11,7 +12,7 @@ class _ProgramCalendarSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (Preferences.watch(context).isOptionOn(.programsCalendar)) {
+    return switch (Preferences.watch(context).programCalendarOn(program)) {
       true => Padding(
         padding: const .only(top: 16),
         child: _ProgramCalendarRow(program: program),

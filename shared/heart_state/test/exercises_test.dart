@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/exercises.dart';
@@ -26,8 +28,12 @@ void main() {
 
   const stamp = (version: 'run-1', locale: 'en', etag: null);
 
-  Exercises build({void Function(dynamic error, {dynamic stacktrace})? onError}) {
+  Exercises build({
+    void Function(dynamic error, {dynamic stacktrace})? onError,
+    Duration libraryWait = const Duration(seconds: 30),
+  }) {
     return Exercises(
+      libraryWait: libraryWait,
       remoteService: remote,
       noteService: notes,
       remote: access,
@@ -238,6 +244,38 @@ void main() {
       expect(stored.movement.groups, ['elbow_flexion']);
     });
 
+    // nor muscles (#176): the tagging the user picked on the atlas stays, so
+    // the muscle map and the pattern lens keep counting the custom's sets
+    test("a custom's muscles survive the server's copy, which has none", () async {
+      Exercise curl({bool tagged = false}) => Exercise.fromJson({
+        'id': 'id-curl',
+        'name': 'My Curl',
+        'category': 'Dumbbell',
+        'target': 'Arms',
+        'own': true,
+        if (tagged)
+          'muscles': {
+            'primary': {
+              'ids': ['biceps_brachii_caput_longum_l', 'biceps_brachii_caput_longum_r'],
+            },
+            'secondary': {
+              'ids': ['brachialis_l', 'brachialis_r'],
+            },
+          },
+      });
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [curl(tagged: true)]));
+      when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[curl()]);
+
+      await sut.init();
+
+      expect(sut.lookup('id-curl')?.muscles.primary.ids, [
+        'biceps_brachii_caput_longum_l',
+        'biceps_brachii_caput_longum_r',
+      ]);
+      final [stored] = verify(local.storeExercises(captureAny, userId: 'u1')).captured.single as List<Exercise>;
+      expect(stored.muscles.secondary?.ids, ['brachialis_l', 'brachialis_r']);
+    });
+
     test("the server's own movement on a custom wins over the device's", () async {
       Exercise curl(String group) => Exercise.fromJson({
         'id': 'id-curl',
@@ -306,6 +344,42 @@ void main() {
       await sut.init();
       expect(sut.noteFor(bench.id), isNull);
       expect(notes.values, isEmpty);
+    });
+
+    test("the account's own exercises failing to read costs the preferences nothing (#681)", () async {
+      final bench = ex('Bench Press');
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
+      when(remote.getOwnExercises()).thenThrow(const ServerFailed());
+      when(preferences.getExercisePreferences()).thenAnswer(
+        (_) async => [ExercisePreference(exerciseId: bench.id, unitSystem: .imperial)],
+      );
+
+      await sut.init();
+
+      expect(sut.unitFor(bench.id), MeasurementUnit.imperial);
+    });
+
+    test('a preference read that fails keeps every note, rather than reading as none (#681)', () async {
+      final bench = ex('Bench Press');
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
+      when(preferences.getExercisePreferences()).thenAnswer(
+        (_) async => [ExercisePreference(exerciseId: bench.id, note: 'Pause')],
+      );
+      await sut.init();
+
+      // a 5xx, a throttle, a 2xx it could not read: heart_api throws them all
+      for (final failure in [
+        const ServerFailed(),
+        refusedAs({'code': 'rate_limited'}, status: 429),
+        const FormatException('an answer this build cannot read'),
+      ]) {
+        when(preferences.getExercisePreferences()).thenThrow(failure);
+        await sut.init();
+        expect(sut.noteFor(bench.id), 'Pause');
+        expect(notes.values[bench.id], 'Pause');
+      }
     });
 
     test('a catalog gap preserves a cached pin until its exercise can be reconciled', () async {
@@ -473,6 +547,41 @@ void main() {
       verify(library.getLibrary(cached: null)).called(1);
     });
 
+    // #612: a stamp passes every comparison the manifest makes, so rows that
+    // disagree with it would never be replaced
+    test('a Russian stamp over English rows is not trusted, and is reported', () async {
+      const inRussian = (version: 'run-1', locale: 'ru', etag: '"abc"');
+      final errors = <Object?>[];
+      sut = build(onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (DateTime(2024), [ex('Squat')]));
+      when(catalog.getCatalogStamp()).thenAnswer((_) async => inRussian);
+
+      await sut.init(locale: 'ru-RU');
+
+      verify(library.getLibrary(cached: null)).called(1);
+      expect(errors, [
+        isA<CatalogLanguageMismatch>()
+            .having((e) => e.stamped, 'stamped', 'ru')
+            .having((e) => e.device, 'device', 'ru-RU'),
+      ]);
+    });
+
+    test('a Russian stamp over Russian rows is trusted', () async {
+      const inRussian = (version: 'run-1', locale: 'ru', etag: '"abc"');
+      final errors = <Object?>[];
+      sut = build(onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer(
+        (_) async => (DateTime(2024), [ex('Squat'), ex('Приседания (штанга)')]),
+      );
+      when(catalog.getCatalogStamp()).thenAnswer((_) async => inRussian);
+      when(library.getLibrary(cached: inRussian)).thenAnswer((_) async => (null, inRussian));
+
+      await sut.init(locale: 'ru-RU');
+
+      verify(library.getLibrary(cached: inRussian)).called(1);
+      expect(errors, isEmpty);
+    });
+
     test('routes errors to onError and does not throw', () async {
       Object? err;
       sut = build(onError: (e, {stacktrace}) => err = e);
@@ -546,6 +655,20 @@ void main() {
       expect(sut.lookup(en.id)?.name, 'Bench Press');
     });
 
+    test('a fetch that fails keeps the old tag, so the same change tries again', () async {
+      await sut.init(locale: 'en');
+      when(library.getLibrary(cached: anyNamed('cached'))).thenThrow(Exception('offline'));
+
+      await sut.onLocaleChanged('ru');
+
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[], glossary: SearchGlossary.empty()), stamp));
+      clearInteractions(library);
+      await sut.onLocaleChanged('ru');
+
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
+    });
+
     test('a change before init is only recorded — init fetches under the new header anyway', () async {
       await sut.onLocaleChanged('ru');
 
@@ -597,6 +720,29 @@ void main() {
       final all = sut.search('press', filters: false).toList();
       expect(all, [a]);
     });
+  });
+
+  test('showing only one filter is asked for; a filter set in the picker, or none left, is not (#711)', () {
+    var notified = 0;
+    sut.addListener(() => notified++);
+    sut.addFilter(Category.barbell);
+    expect(sut.filtersAskedFor, isFalse);
+
+    sut.showOnly(const PatternFilter('horizontal_press'));
+    expect(sut.filters, [const PatternFilter('horizontal_press')]);
+    expect(sut.filtersAskedFor, isTrue);
+    expect(notified, 2);
+
+    sut.addFilter(Target.chest);
+    expect(sut.filtersAskedFor, isFalse);
+
+    sut.showOnly(Target.legs);
+    sut.removeFilter(Target.legs);
+    expect(sut.filtersAskedFor, isFalse);
+
+    sut.showOnly(Target.legs);
+    sut.clearFilters();
+    expect(sut.filtersAskedFor, isFalse);
   });
 
   group('search() ranking (#135)', () {
@@ -926,6 +1072,58 @@ void main() {
     });
   });
 
+  group('editExercise (#616)', () {
+    late _Renames renames;
+    final own = Exercise.fromJson({
+      'id': 'own-1',
+      'name': 'Landmine Press',
+      'category': 'Barbell',
+      'target': 'Shoulders',
+      'own': 1,
+    });
+
+    setUp(() async {
+      renames = _Renames();
+      sut = Exercises(
+        remoteService: remote,
+        remote: access,
+        service: local,
+        libraryService: library,
+        catalogService: catalog,
+        preferenceService: preferences,
+        renameService: renames,
+      )..userId = 'u1';
+      when(remote.editExercise(any)).thenAnswer((i) async => i.positionalArguments.first as Exercise);
+      await sut.makeExercise(own);
+      clearInteractions(remote);
+    });
+
+    test('a new name goes through the rename', () async {
+      await sut.editExercise(own.renamed('Half-kneeling Press'));
+
+      expect(renames.sent.single.name, 'Half-kneeling Press');
+      verifyNever(remote.editExercise(any));
+      expect(sut.lookup(own.id)?.name, 'Half-kneeling Press');
+    });
+
+    test('an edit that keeps the name never sends one', () async {
+      await sut.editExercise(own.copyWith(target: .chest));
+
+      expect(renames.sent, isEmpty);
+      verify(remote.editExercise(any)).called(1);
+    });
+
+    test('archiving acts on the current copy, not the one it was handed', () async {
+      await sut.editExercise(own.renamed('Half-kneeling Press'));
+
+      await sut.archive(own);
+
+      final archived = verify(remote.editExercise(captureAny)).captured.single as Exercise;
+      expect(archived.name, 'Half-kneeling Press');
+      expect(archived.isArchived, isTrue);
+    });
+  });
+
   group('showingMine', () {
     test('getter/setter works and notifies', () {
       final probe = ListenerProbe()..attach(sut);
@@ -942,7 +1140,7 @@ void main() {
   });
 
   group('misc', () {
-    test('iterator, index operator, and sign-out does not notify', () async {
+    test('iterator, index operator, and sign-out says so', () async {
       when(
         local.getExercises(userId: anyNamed('userId')),
       ).thenAnswer(
@@ -956,7 +1154,7 @@ void main() {
 
       final probe = ListenerProbe()..attach(sut);
       sut.onSignOut();
-      expect(probe.notifications, 0);
+      expect(probe.notifications, 1);
       expect(sut.isInitialized, isFalse);
       expect(sut.selected, isEmpty);
       expect(sut.filters, isEmpty);
@@ -1249,6 +1447,207 @@ void main() {
       expect(moves.mirrored, isEmpty);
     });
   });
+
+  group('a library that does not come (#723)', () {
+    const wait = Duration(milliseconds: 50);
+    final curl = Exercise.fromJson({
+      'id': 'id-curl',
+      'name': 'My Curl',
+      'category': 'Dumbbell',
+      'target': 'Arms',
+      'own': true,
+    });
+    final bench = ex('Bench Press');
+    final arrived = ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp);
+
+    /// The next download, answered when the test says.
+    Completer<(CatalogLibrary?, CatalogStamp)> held() {
+      final download = Completer<(CatalogLibrary?, CatalogStamp)>();
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) => download.future);
+      return download;
+    }
+
+    void fails() => when(library.getLibrary(cached: anyNamed('cached'))).thenThrow(const ServerFailed());
+
+    void answers() => when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => arrived);
+
+    test('is waited for no longer than the wait, reported, and the own exercises are read all the same', () async {
+      held();
+      when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[curl]);
+      final errors = <Object?>[];
+      final exercises = build(libraryWait: wait, onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
+
+      final populated = await exercises.init();
+
+      expect(populated, isFalse, reason: 'nothing the chained start-up can write against');
+      expect(exercises.isInitialized, isFalse);
+      expect(exercises.libraryUnavailable, isTrue);
+      expect(exercises.map((each) => each.id), [curl.id]);
+      expect(errors.single, isA<LibraryStalled>());
+    });
+
+    test('a download that lands after the wait is taken, with the own leg read again over it', () async {
+      final download = held();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      var ran = 0;
+      exercises.whenInitialized('u1', () => ran++);
+      clearInteractions(remote);
+      clearInteractions(preferences);
+
+      download.complete(arrived);
+      await pumpEventQueue();
+
+      expect(exercises.isInitialized, isTrue);
+      expect(exercises.libraryUnavailable, isFalse);
+      expect(exercises.lookup(bench.id), isNotNull);
+      expect(ran, 1);
+      verify(remote.getOwnExercises()).called(1);
+      verify(preferences.getExercisePreferences()).called(1);
+    });
+
+    test('one that fails outright reads the same, and is not a stall', () async {
+      fails();
+      final errors = <Object?>[];
+      final exercises = build(libraryWait: wait, onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
+
+      await exercises.init();
+
+      expect(exercises.libraryUnavailable, isTrue);
+      expect(errors.whereType<LibraryStalled>(), isEmpty);
+    });
+
+    test('a retry after a failure downloads afresh, reads the own leg, and puts the catalog in', () async {
+      fails();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      answers();
+      clearInteractions(remote);
+      var told = 0;
+      exercises.addListener(() => told++);
+
+      final retry = exercises.retryLibrary();
+      expect(exercises.retryingLibrary, isTrue);
+      expect(identical(exercises.retryLibrary(), retry), isTrue, reason: 'one retry at a time');
+
+      expect(await retry, isTrue);
+      expect(exercises.isInitialized, isTrue);
+      expect(exercises.libraryUnavailable, isFalse);
+      expect(exercises.retryingLibrary, isFalse);
+      expect(exercises.lookup(bench.id), isNotNull);
+      expect(told, greaterThanOrEqualTo(2));
+      verify(remote.getOwnExercises()).called(1);
+    });
+
+    test('a retry joins the download under way rather than start another', () async {
+      final download = held();
+      final exercises = build(libraryWait: const Duration(seconds: 5))..userId = 'u1';
+      final init = exercises.init();
+      await pumpEventQueue();
+      final retry = exercises.retryLibrary();
+
+      download.complete(arrived);
+      expect(await init, isTrue);
+      expect(await retry, isTrue);
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
+    });
+
+    test('a retry that waits out the download lets go of it, and the next starts afresh', () async {
+      final first = held();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+
+      expect(await exercises.retryLibrary(), isFalse, reason: 'joined the hung one, and waited it out');
+      expect(exercises.libraryUnavailable, isTrue);
+      expect(exercises.retryingLibrary, isFalse);
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
+
+      answers();
+      expect(await exercises.retryLibrary(), isTrue);
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
+      // the first landing late changes nothing more
+      first.complete(arrived);
+      await pumpEventQueue();
+      expect(exercises.isInitialized, isTrue);
+    });
+
+    test('a retry the session ended under changes nothing for the next one', () async {
+      fails();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      final download = held();
+
+      final retry = exercises.retryLibrary();
+      exercises
+        ..onSignOut()
+        ..userId = 'u2';
+      download.complete(arrived);
+
+      expect(await retry, isFalse);
+      expect(exercises.isInitialized, isFalse);
+      expect(exercises.lookup(bench.id), isNull, reason: "the last session's download is not the next one's");
+      expect(exercises.libraryUnavailable, isFalse, reason: "the next session's init hasn't run");
+      expect(exercises.retryingLibrary, isFalse);
+    });
+
+    test(
+      'what waits for the catalog runs once, the first asked of a session only, and never another session',
+      () async {
+        fails();
+        final exercises = build(libraryWait: wait)..userId = 'u1';
+        await exercises.init();
+        var first = 0;
+        var second = 0;
+        var stale = 0;
+        exercises
+          ..whenInitialized('u1', () => first++)
+          // the same session asking again, as a resync does
+          ..whenInitialized('u1', () => second++)
+          // asked by a session that has ended
+          ..whenInitialized('u0', () => stale++);
+        expect(first, 0);
+
+        answers();
+        await exercises.retryLibrary();
+        expect(first, 1);
+        // a later notification runs nothing again
+        exercises.showingMine = true;
+        expect(first, 1);
+        expect(second, 0);
+        expect(stale, 0);
+        // once in, a new ask runs at once
+        exercises.whenInitialized('u1', () => second++);
+        expect(second, 1);
+      },
+    );
+
+    test('what waits is dropped when the session ends first, and the next session may wait', () async {
+      fails();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      var ran = 0;
+      exercises.whenInitialized('u1', () => ran++);
+
+      exercises
+        ..onSignOut()
+        ..userId = 'u2';
+      await exercises.init();
+      var next = 0;
+      exercises.whenInitialized('u2', () => next++);
+      answers();
+      await exercises.retryLibrary();
+      expect(ran, 0);
+      expect(next, 1);
+    });
+
+    test('nothing to retry once the catalog is in', () async {
+      await sut.init();
+      clearInteractions(library);
+
+      expect(await sut.retryLibrary(), isTrue);
+      verifyNever(library.getLibrary(cached: anyNamed('cached')));
+    });
+  });
 }
 
 class SocketLikeFailure implements Exception {
@@ -1287,5 +1686,15 @@ class _MoveFake implements ExerciseMoveService {
   Future<void> mirror(ExerciseMoveReport report, {required String userId}) async {
     if (mirrorFails) throw StateError('locked');
     mirrored.add((report, userId));
+  }
+}
+
+class _Renames implements RemoteExerciseRenameService {
+  final sent = <Exercise>[];
+
+  @override
+  Future<Exercise> renameExercise(Exercise exercise) async {
+    sent.add(exercise);
+    return exercise;
   }
 }

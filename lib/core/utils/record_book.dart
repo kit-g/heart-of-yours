@@ -9,7 +9,7 @@ import 'package:heart_state/heart_state.dart';
 /// local store, once per workout per session.
 class RecordBook {
   final Future<Map?> Function(String userId, Exercise exercise, String workoutId) _asOf;
-  final _read = Expando<Future<List<AchievedRecord>>>();
+  var _read = Expando<Future<List<AchievedRecord>>>();
 
   new({required this._asOf});
 
@@ -30,6 +30,11 @@ class RecordBook {
       lookup: (exercise) => _asOf(userId, exercise, workout.id),
     );
   }
+
+  /// Forgets every workout's records, so the next ask reads them again: what
+  /// counts toward a record changed under them — an entry discarded, or
+  /// counted again (#428).
+  void forget() => _read = Expando();
 
   /// The records [workout] set that beat an earlier value, on their sets.
   Future<RecordMarks> marksOf(Workout workout, {required String userId}) async {

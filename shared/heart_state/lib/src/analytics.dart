@@ -1,8 +1,10 @@
-import 'package:heart_models/heart_models.dart' show ApiTokenExpiry, ApiTokenPurpose, ProgramActionKind, SetType;
+import 'package:heart_models/heart_models.dart'
+    show ApiTokenExpiry, ApiTokenPurpose, ConnectionRole, ProgramActionKind, SetType;
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import 'features.dart';
+import 'messages.dart' show ReportReason;
 import 'skips.dart';
 
 /// Where an [Analytics] writes.
@@ -182,8 +184,8 @@ enum AccountState {
 }
 
 /// Which real estate the app is running on. GA4 reports a device category of
-/// its own, but the phone/tablet split this app acts on is `_isPhone`'s, and
-/// only the app can state it.
+/// its own, but the phone/tablet split this app acts on is the app's
+/// `FormFactorWatch`'s, and only the app can state it.
 enum FormFactor {
   phone('phone'),
   tablet('tablet');
@@ -193,9 +195,80 @@ enum FormFactor {
   new(this.id);
 }
 
+/// Where an opt-in feature's answer came from: the in-context ask, the switch
+/// in Settings › Features, or an ask left unanswered. They read apart because
+/// the ask is the feature's reach and the switch is mostly its reversals.
+enum FeatureSwitchSource {
+  ask('ask'),
+  settings('settings'),
+
+  /// An offer left unanswered, which became a no at the next launch.
+  lapsed('lapsed');
+
+  final String id;
+
+  new(this.id);
+}
+
+/// What became of a coaching connection (#553), by whichever side.
+enum CoachingAction {
+  paused('paused'),
+  resumed('resumed'),
+
+  /// Left by the student or let go by the coach: severed for both.
+  ended('ended'),
+  blocked('blocked');
+
+  final String id;
+
+  new(this.id);
+}
+
+/// Which part of a client's copy of a program a coach changed (#558).
+enum ClientProgramEdit {
+  /// Its own fields: name, note, weeks, days a week.
+  fields('fields'),
+
+  /// A session written, new or over an old one.
+  session('session'),
+  sessionDeleted('session_deleted'),
+
+  /// A change put back.
+  reverted('reverted');
+
+  final String id;
+
+  new(this.id);
+}
+
+/// Which sides of coaching this account is on: it coaches (Coach people on,
+/// and allowed to), it is coached (Your coach on, with a coach), both, or
+/// neither.
+enum CoachingRole {
+  none('none'),
+  coach('coach'),
+  student('student'),
+  both('both');
+
+  final String id;
+
+  new(this.id);
+
+  factory of({required bool coaches, required bool coached}) {
+    return switch ((coaches, coached)) {
+      (true, true) => both,
+      (true, false) => coach,
+      (false, true) => student,
+      (false, false) => none,
+    };
+  }
+}
+
 // Event names. GA4 allows 40 characters of letters, digits and underscores, and
-// reserves the `firebase_`, `google_` and `ga_` prefixes. `screen_view` is not
-// here on purpose: `FirebaseAnalyticsObserver` already sends it.
+// reserves the `firebase_`, `google_` and `ga_` prefixes. `screen_view` is sent
+// by `FirebaseAnalyticsObserver` on every route change; it is here only for a
+// pane that changes with no route ([Analytics.paneShown]).
+const _screenView = 'screen_view';
 const _anonSessionMinted = 'anon_session_minted';
 const _signupPromptShown = 'signup_prompt_shown';
 const _signupStarted = 'signup_started';
@@ -209,6 +282,8 @@ const _deletionCancelled = 'deletion_cancelled';
 // Parameter keys, and the user property names — a separate namespace, capped at
 // 24 characters against a parameter's 40.
 const _provider = 'provider';
+// GA4's own, so reported without being registered
+const _screenName = 'screen_name';
 const _fromAnonymous = 'from_anonymous';
 const _arrival = 'arrival';
 const _reason = 'reason';
@@ -222,6 +297,7 @@ const _ok = 'ok';
 
 const _workoutStarted = 'workout_started';
 const _workoutFinished = 'workout_finished';
+const _workoutLogged = 'workout_logged';
 const _workoutCancelled = 'workout_cancelled';
 const _workoutEdited = 'workout_edited';
 const _templateCreated = 'template_created';
@@ -257,6 +333,21 @@ const _apiTokenRevoked = 'api_token_revoked';
 const _signInConnected = 'sign_in_connected';
 const _signInDisconnected = 'sign_in_disconnected';
 
+// Tier 4, coaching
+const _featureSwitched = 'feature_switched';
+const _invitationCreated = 'invitation_created';
+const _invitationAnswered = 'invitation_answered';
+const _coachingChanged = 'coaching_changed';
+const _programSent = 'program_sent';
+const _clientProgramEdited = 'client_program_edited';
+const _clientReviewed = 'client_reviewed';
+const _workoutLoggedFor = 'workout_logged_for';
+const _messageSent = 'message_sent';
+const _conversationDeleted = 'conversation_deleted';
+const _personReported = 'person_reported';
+const _coachNoteSaved = 'coach_note_saved';
+const _coachNoteDeleted = 'coach_note_deleted';
+
 const _source = 'source';
 const _pinnedNotes = 'pinned_notes';
 const _exerciseCount = 'exercise_count';
@@ -286,12 +377,21 @@ const _keptTemplates = 'kept_templates';
 const _replaceScope = 'replace_scope';
 const _suggested = 'suggested';
 const _libraryProgram = 'library_program';
+const _withProgram = 'with_program';
+const _accepted = 'accepted';
+const _role = 'role';
+const _coachingAction = 'coaching_action';
+const _clients = 'clients';
+const _withMessages = 'with_messages';
+const _alsoBlocked = 'also_blocked';
+const _edited = 'edited';
 
 const _accountStateProperty = 'account_state';
 const _authProviderProperty = 'auth_provider';
 const _formFactorProperty = 'form_factor';
 const _workoutsBucketProperty = 'workouts_bucket';
 const _templatesBucketProperty = 'templates_bucket';
+const _coachingRoleProperty = 'coaching_role';
 
 /// A boolean as GA4 can hold it.
 ///
@@ -422,6 +522,12 @@ class Analytics {
 
   void accountDeletionCancelled() => _log(_deletionCancelled);
 
+  /// A screen opened in a pane beside a list, which changes no route, so the
+  /// navigator observer never hears of it (#687). [screen] is the name the
+  /// same screen goes by when it is a route of its own, so the two count as
+  /// one screen.
+  void paneShown({required String screen}) => _log(_screenView, {_screenName: screen});
+
   /// Null where there is no session at all — the web's gate, or the moment
   /// after a sign-out. That is neither rung, and saying so beats leaving the
   /// last session's answer standing against the next one's events.
@@ -457,6 +563,17 @@ class Analytics {
       _setCount: setCount,
       _durationMin: durationMin,
       _untickedSets: untickedSets,
+    });
+  }
+
+  /// A workout put into history after it happened (#530), rather than lived
+  /// through: the same counts as [workoutFinished], kept apart so the habit
+  /// loop's finishes stay the sessions the app actually ran.
+  void workoutLogged({required int exerciseCount, required int setCount, required int durationMin}) {
+    _log(_workoutLogged, {
+      _exerciseCount: exerciseCount,
+      _setCount: setCount,
+      _durationMin: durationMin,
     });
   }
 
@@ -657,6 +774,77 @@ class Analytics {
     _log(_signInDisconnected, {_provider: provider.id});
   }
 
+  // Tier 4 — coaching
+  //
+  // Identifiers and flags only. Never a name, a message, a note, a program's
+  // title or anything a coach can read of a client's training: those are the
+  // people's own, and most of them are sealed on the device besides.
+
+  /// An opt-in feature's answer changed (#138): the in-context ask's yes or
+  /// no, the Settings switch either way, or an ask that lapsed into a no.
+  /// Only a change: an answer repeated is not counted again. Generic, but it
+  /// is how the coaching switches' reach is read.
+  void featureSwitched({required Feature feature, required bool on, required FeatureSwitchSource source}) {
+    _log(_featureSwitched, {_feature: feature.value, _on: _flag(on), _source: source.id});
+  }
+
+  /// A coach made an invitation link (#553), once the server made it.
+  void invitationCreated({required bool withProgram}) {
+    _log(_invitationCreated, {_withProgram: _flag(withProgram)});
+  }
+
+  /// An invitation answered by the person invited, once the server took it.
+  /// Blocking whoever sent it is a no.
+  void invitationAnswered({required bool accepted}) {
+    _log(_invitationAnswered, {_accepted: _flag(accepted)});
+  }
+
+  /// A connection paused, resumed, ended or blocked, once the server took it.
+  /// [role] is this account's side of it.
+  void coachingChanged({required ConnectionRole role, required CoachingAction action}) {
+    _log(_coachingChanged, {_role: role.name, _coachingAction: action.id});
+  }
+
+  /// A coach sent a library program (#557): how many clients it reached.
+  void programSent({required int clients}) => _log(_programSent, {_clients: clients});
+
+  /// A coach changed a client's copy of a program (#558), once it landed.
+  void clientProgramEdited({required ClientProgramEdit edit}) {
+    _log(_clientProgramEdited, {_coachingAction: edit.id});
+  }
+
+  /// A coach marked a client looked at (#559).
+  void clientReviewed() => _log(_clientReviewed);
+
+  /// A coach logged a session for a client (#560): the counts of what went,
+  /// as [workoutLogged] counts the user's own.
+  void workoutLoggedFor({required int exerciseCount, required int setCount}) {
+    _log(_workoutLoggedFor, {_exerciseCount: exerciseCount, _setCount: setCount});
+  }
+
+  /// A message written and handed over to be sent (#556). [role] is the
+  /// writer's side of the connection, when this device knows it.
+  void messageSent({ConnectionRole? role}) => _log(_messageSent, {_role: ?role?.name});
+
+  /// A conversation deleted for both people (#556).
+  void conversationDeleted({ConnectionRole? role}) => _log(_conversationDeleted, {_role: ?role?.name});
+
+  /// Someone reported (#556): why, as the tag picked, whether their messages
+  /// went with it, and whether a block followed.
+  void personReported({required ReportReason reason, required bool withMessages, required bool alsoBlocked}) {
+    _log(_personReported, {
+      _reason: reason.wire,
+      _withMessages: _flag(withMessages),
+      _alsoBlocked: _flag(alsoBlocked),
+    });
+  }
+
+  /// A coach's note on a client kept (#556): a new one, or [edited] over an
+  /// old one. Never its words.
+  void coachNoteSaved({required bool edited}) => _log(_coachNoteSaved, {_edited: _flag(edited)});
+
+  void coachNoteDeleted() => _log(_coachNoteDeleted);
+
   void setAccountState(AccountState? state) => _property(_accountStateProperty, state?.id);
 
   void setWorkoutsBucket(int count) => _property(_workoutsBucketProperty, _bucket(count));
@@ -670,6 +858,9 @@ class Analytics {
   }
 
   void setFormFactor(FormFactor factor) => _property(_formFactorProperty, factor.id);
+
+  /// Null with no account behind the session: coaching needs one.
+  void setCoachingRole(CoachingRole? role) => _property(_coachingRoleProperty, role?.id);
 
   static Analytics of(BuildContext context) {
     return Provider.of<Analytics>(context, listen: false);

@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
@@ -61,9 +59,9 @@ class const UpsyncRow({super.key}) extends StatelessWidget {
     return SliverToBoxAdapter(
       child: LayoutBuilder(
         builder: (_, constraints) {
-          // a line of prose and a bar: a readable column, start-aligned with
-          // the chart below it, not the whole width of an iPad
-          final width = math.min(constraints.maxWidth - 32, readableWidth);
+          // a line of prose and a bar, as wide as the chart tile under it, so
+          // it starts and ends on that tile's edges (#687)
+          final width = tileWidth(constraints.maxWidth - 32);
           return Padding(
             padding: const .fromLTRB(16, 8, 16, 0),
             child: Align(
@@ -121,7 +119,7 @@ class const BackfillRow({super.key}) extends StatelessWidget {
     return SliverToBoxAdapter(
       child: LayoutBuilder(
         builder: (_, constraints) {
-          final width = math.min(constraints.maxWidth - 32, readableWidth);
+          final width = tileWidth(constraints.maxWidth - 32);
           return Padding(
             padding: const .fromLTRB(16, 8, 16, 0),
             child: Align(

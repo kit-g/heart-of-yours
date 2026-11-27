@@ -139,6 +139,7 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     _leftForPermissions = false;
     _writeAccess = null;
     _writeAsked = false;
+    notifyListeners();
   }
 
   /// Loads whatever is already mirrored, then tops it up from the device.

@@ -57,20 +57,24 @@ class _ExercisesPageState extends State<ExercisesPage> {
           centerTitle: true,
         ),
         actions: [
-          IconButton(
-            tooltip: exerciseOptions,
-            onPressed: () {
-              _onExerciseOptions(
-                context,
-                onShowArchived: widget.onShowArchived,
-                hasArchived: exercises.archived.isNotEmpty,
-              );
-            },
-            icon: Icon(
-              switch (platform) {
-                .iOS || .macOS => Icons.more_horiz_rounded,
-                _ => Icons.more_vert_rounded,
+          // a Builder for the button's own context: the options menu hangs
+          // off the button
+          Builder(
+            builder: (button) => IconButton(
+              tooltip: exerciseOptions,
+              onPressed: () {
+                _onExerciseOptions(
+                  button,
+                  onShowArchived: widget.onShowArchived,
+                  hasArchived: exercises.archived.isNotEmpty,
+                );
               },
+              icon: Icon(
+                switch (platform) {
+                  .iOS || .macOS => Icons.more_horiz_rounded,
+                  _ => Icons.more_vert_rounded,
+                },
+              ),
             ),
           ),
         ],
@@ -81,29 +85,20 @@ class _ExercisesPageState extends State<ExercisesPage> {
       backgroundColor: backgroundColor,
       onExerciseSelected: widget.onExercise,
       highlightedName: widget.selectedId,
+      // the search that found nothing is the name the new one most likely
+      // has; created, it is what that search finds (#529)
+      onCreateExercise: (name) => showNewExerciseDialog(context, name: name),
     );
 
     return Scaffold(
       body: SafeArea(
         child: switch (layout) {
           .compact => listview,
-          .wide => Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: listview,
-              ),
-              const VerticalDivider(width: 1),
-              // the pane stays put whether or not anything is selected, so
-              // picking an exercise does not resize the list underneath you
-              Expanded(
-                flex: 3,
-                child: switch (widget.detail) {
-                  null => const _NoSelectionState(),
-                  Widget detail => detail,
-                },
-              ),
-            ],
+          // nothing picked, the list has the page; a pick opens beside it
+          .wide => MasterDetail(
+            masterWidth: (width) => width * 2 / 5,
+            master: listview,
+            detail: widget.detail,
           ),
         },
       ),

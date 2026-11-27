@@ -1,5 +1,15 @@
 # CLAUDE.md
 
+## Content production
+Before any Heart social post, carousel, screenshot composition, feature ad,
+video or narration task, read `docs/content-production.md`. It contains Kit's
+settled preferences and the visual checks to complete before presenting a
+draft. Read it again when resuming content work in a new session. Record new
+accepted lessons there; do not rely on conversation memory. This applies to
+content artifacts outside the repository too when working from this project.
+The guide is private and gitignored: never stage, commit or publish it. If it
+is missing in another checkout, report that rather than assume it was loaded.
+
 ## Code navigation
 Use the Dart MCP LSP (`ToolSearch` → `select:mcp__dart__lsp`) for symbol/type
 resolution instead of grep: `resolveWorkspaceSymbol` to find a definition,
@@ -48,7 +58,7 @@ cached by `ModalRoute` — changes to either need a hot restart, not a reload.
 ## Accessibility
 Every interactive control announces itself — tooltip or semantic label, and
 labels are copy, so they go through the translations flow like any string.
-Screens keep their entries in `test/a11y_test.dart`'s screen×guideline
+Screens keep their entries in `test/a11y.dart`'s screen×guideline
 matrix honest: enable what passes, skip what doesn't with a file:line
 reason. Patterns, the adoption rule, and what maps to WCAG: `docs/a11y.md`.
 

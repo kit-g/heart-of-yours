@@ -1,3 +1,41 @@
+/// Where a count leaves out the sets the user discarded (#428): every query
+/// that counts sets — records, charts, the muscle map and the pattern lens,
+/// and through them goal progress — carries `/*discarded:<alias>*/` after its
+/// warm-up clause. As written it is a comment, and the count is the one it was
+/// before suspicious entries existed. While the feature is on,
+/// [LocalDatabase.leavesOutDiscarded], the marker becomes [leaveOutDiscarded]
+/// over the query's own alias for `sets`. The log itself (a workout, an
+/// exercise's history, last time) is never filtered: a discarded set stays in
+/// it.
+final discarded = RegExp(r'/\*discarded:(\w+)\*/');
+
+/// Where a read of a workout's time learns that the user discarded it (#428).
+/// A discarded duration takes only the time: the workout still counts. As
+/// written it selects a plain 0; while the feature is on, whether there is such
+/// a decision for the workout the alias names.
+final discardedTime = RegExp(r'/\*discardedTime:(\w+)\*/ 0');
+
+/// [discardedTime]'s expression, for the alias it names.
+String timeLeftOut(String alias) {
+  return """EXISTS (
+      SELECT 1
+      FROM anomalies
+      WHERE anomalies.workout_id = $alias.id
+        AND anomalies.set_id IS NULL
+        AND anomalies.status = 'invalid'
+  )""";
+}
+
+/// [discarded]'s clause, for the alias it names.
+String leaveOutDiscarded(String alias) {
+  return """AND NOT EXISTS (
+      SELECT 1
+      FROM anomalies
+      WHERE anomalies.set_id = $alias.id
+        AND anomalies.status = 'invalid'
+  )""";
+}
+
 /// The session in progress *on this device*.
 ///
 /// `synced = 0` is what makes it this device's: the app never posts an
@@ -56,6 +94,8 @@ SELECT
     _workout.pauses,
     _workout.template_id AS templateId,
     _workout.program_id AS programId,
+    _workout.logged_by AS loggedBy,
+    _workout.logged_by_name AS loggedByName,
     _workout.unread,
     (
         SELECT json_group_array(
@@ -68,7 +108,9 @@ SELECT
                 'plan', json(_ex.plan),
                 -- sets this build could not read, put back by toWorkout (#277)
                 'unread', json(_ex.unread),
-                'sets', (
+                -- json(): a subquery's result may not stay marked as JSON, and json_object
+                -- would store it as a string; SQLite 3.54.1 does exactly that
+                'sets', json((
                     SELECT json_group_array(
                         json_object(
                             'id', _sets.id,
@@ -85,7 +127,7 @@ SELECT
                     )
                     FROM _sets
                     WHERE exercise_id = _ex.id
-                )
+                ))
             )
         )
         FROM _ex
@@ -145,6 +187,8 @@ SELECT
     _workout.pauses,
     _workout.template_id AS templateId,
     _workout.program_id AS programId,
+    _workout.logged_by AS loggedBy,
+    _workout.logged_by_name AS loggedByName,
     _workout.unread,
     (
         SELECT json_group_array(
@@ -157,7 +201,9 @@ SELECT
                 'plan', json(_ex.plan),
                 -- sets this build could not read, put back by toWorkout (#277)
                 'unread', json(_ex.unread),
-                'sets', (
+                -- json(): a subquery's result may not stay marked as JSON, and json_object
+                -- would store it as a string; SQLite 3.54.1 does exactly that
+                'sets', json((
                     SELECT json_group_array(
                         json_object(
                             'id', _sets.id,
@@ -174,7 +220,7 @@ SELECT
                     )
                     FROM _sets
                     WHERE exercise_id = _ex.id
-                )
+                ))
             )
         )
         FROM _ex
@@ -232,6 +278,8 @@ SELECT
     _workouts.pauses,
     _workouts.template_id AS templateId,
     _workouts.program_id AS programId,
+    _workouts.logged_by AS loggedBy,
+    _workouts.logged_by_name AS loggedByName,
     _workouts.unread,
     (
         SELECT json_group_array(
@@ -244,7 +292,9 @@ SELECT
                 'plan', json(_ex.plan),
                 -- sets this build could not read, put back by toWorkout (#277)
                 'unread', json(_ex.unread),
-                'sets', (
+                -- json(): a subquery's result may not stay marked as JSON, and json_object
+                -- would store it as a string; SQLite 3.54.1 does exactly that
+                'sets', json((
                     SELECT json_group_array(
                         json_object(
                             'id', _sets.id,
@@ -261,7 +311,7 @@ SELECT
                     )
                     FROM _sets
                     WHERE exercise_id = _ex.id
-                )
+                ))
             )
         )
         FROM _ex
@@ -300,8 +350,8 @@ WHERE we.workout_id = ?
 /// foreign keys on, REPLACE is a delete + insert, and the delete cascades
 /// through `workout_exercises` into `sets` (heart-of-yours#85).
 const upsertWorkout = '''
-INSERT INTO workouts (id, start, user_id, name, "end", images, synced, note, pauses, template_id, program_id, unread)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO workouts (id, start, user_id, name, "end", images, synced, note, pauses, template_id, program_id, unread, logged_by, logged_by_name)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
     start   = EXCLUDED.start,
     user_id = EXCLUDED.user_id,
@@ -316,6 +366,10 @@ ON CONFLICT(id) DO UPDATE SET
     -- workout (the arguments before the last) may also let them go
     template_id = CASE WHEN ? THEN EXCLUDED.template_id ELSE coalesce(EXCLUDED.template_id, workouts.template_id) END,
     program_id  = CASE WHEN ? THEN EXCLUDED.program_id ELSE coalesce(EXCLUDED.program_id, workouts.program_id) END,
+    -- who logged it never changes once known (#560): an edit made here, which
+    -- doesn't carry it, leaves it
+    logged_by      = coalesce(EXCLUDED.logged_by, workouts.logged_by),
+    logged_by_name = coalesce(EXCLUDED.logged_by_name, workouts.logged_by_name),
     -- the exercises this build could not read belong with the children: only
     -- a payload authoritative for them (the last argument) replaces them
     unread  = CASE WHEN ? THEN EXCLUDED.unread ELSE workouts.unread END;
@@ -491,6 +545,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 ORDER BY workouts.start, workouts.id;
 ''';
 
@@ -512,6 +567,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
   AND (workouts.id = ? OR workouts.start < (SELECT start FROM workouts WHERE id = ?))
 ORDER BY workouts.start, workouts.id;
 ''';
@@ -535,6 +591,7 @@ WHERE workouts.user_id = ?
   AND workouts.id IS NOT ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 ORDER BY workouts.start, workouts.id;
 ''';
 
@@ -549,6 +606,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
@@ -566,6 +624,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id 
 ORDER BY "when" DESC
 LIMIT ?
@@ -583,6 +642,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id 
 ORDER BY "when" DESC
 LIMIT ?
@@ -600,6 +660,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
@@ -665,6 +726,26 @@ GROUP BY _recent.exercise_id, _recent.workout_exercise_id, _recent.last_workout_
 ;
 """;
 
+/// How many finished workouts each exercise was done in: a workout counts
+/// when it holds a completed working set of the exercise. Warm-ups and
+/// discarded sets are no session of it, as everywhere else that counts. A
+/// grouped picker pictures each group by the one done most (#711).
+const sessionsPerExercise = '''
+SELECT
+    we.exercise_id AS exercise_id,
+    count(DISTINCT w.id) AS sessions
+FROM workouts w
+INNER JOIN workout_exercises we ON we.workout_id = w.id
+INNER JOIN sets s ON s.exercise_id = we.id
+WHERE w.user_id = ?
+  AND w."end" IS NOT NULL
+  AND s.completed
+  AND s.set_type IS NOT 'warmup'
+  /*discarded:s*/
+GROUP BY we.exercise_id
+;
+''';
+
 /// Completed working sets per exercise per finished workout started in a
 /// window, with the exercise's muscle tagging: the muscle map's read.
 const muscleSets = '''
@@ -683,6 +764,7 @@ WHERE w.user_id = ?
   AND w.start < ?
   AND s.completed
   AND s.set_type IS NOT 'warmup'
+  /*discarded:s*/
 GROUP BY w.id, we.exercise_id
 ;
 ''';
@@ -708,6 +790,7 @@ WHERE w.user_id = ?
   AND w.start < ?
   AND s.completed
   AND s.set_type IS NOT 'warmup'
+  /*discarded:s*/
 GROUP BY w.id, we.exercise_id
 ;
 ''';
@@ -720,7 +803,8 @@ SELECT
     id,
     start,
     "end",
-    pauses
+    pauses,
+    /*discardedTime:workouts*/ 0 AS time_left_out
 FROM workouts
 WHERE user_id = ?
   AND "end" IS NOT NULL
@@ -756,6 +840,7 @@ WHERE w.user_id = ?
   AND w.start < ?
   AND s.completed
   AND s.set_type IS NOT 'warmup'
+  /*discarded:s*/
   AND we.exercise_id IN (
       SELECT pwe.exercise_id
       FROM workouts pw
@@ -806,6 +891,7 @@ SELECT
     w.start AS start,
     w."end" AS "end",
     w.pauses AS pauses,
+    /*discardedTime:w*/ 0 AS time_left_out,
     count(s.id) AS sets,
     coalesce(
         sum(

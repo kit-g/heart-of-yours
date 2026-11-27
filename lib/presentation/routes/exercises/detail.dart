@@ -30,6 +30,18 @@ class ExerciseDetailPage extends StatelessWidget {
   /// menu does not offer the move at all.
   final void Function(Exercise target)? onHistoryMoved;
 
+  /// Where to go once this exercise is archived (#710): the page has nothing
+  /// left to show. Called when the user confirms, before the account has the
+  /// change. Injected, so the route decides where that is — what is under the
+  /// page depends on how it was reached. Without it, the page leaves for
+  /// whatever is under it, if it can.
+  final VoidCallback? onArchived;
+
+  /// [onArchived] for taking it out of the archive: where to go once it is
+  /// back in the library, which may have emptied the archive the page was
+  /// opened from.
+  final VoidCallback? onUnarchived;
+
   const new({
     super.key,
     required this.exercise,
@@ -42,6 +54,8 @@ class ExerciseDetailPage extends StatelessWidget {
     this.onTapAlternative,
     this.onAddToWorkout,
     this.onHistoryMoved,
+    this.onArchived,
+    this.onUnarchived,
   });
 
   @override
@@ -57,12 +71,17 @@ class ExerciseDetailPage extends StatelessWidget {
     //
     // The remembered tab survives because it is library-scoped, not State —
     // see [_rememberedSection].
-    final key = ValueKey(exercise.id);
+    // the current copy, so an edit made from this page — a rename, a new
+    // target (#616) — shows at once, and the menu acts on what is shown
+    final current = Exercises.watch(context).lookup(exercise.id) ?? exercise;
+    // and by whether it has info: an own exercise gains or loses its About tab
+    // with its instructions (#621), and the tab controller is sized once
+    final key = ValueKey((current.id, current.hasInfo));
 
     return switch (Theme.of(context).platform) {
       .iOS || .macOS => _CupertinoExerciseDetailPage(
         key: key,
-        exercise: exercise,
+        exercise: current,
         onTapWorkout: onTapWorkout,
         allowOptions: allowOptions,
         leading: leading,
@@ -72,10 +91,12 @@ class ExerciseDetailPage extends StatelessWidget {
         onTapAlternative: onTapAlternative,
         onAddToWorkout: onAddToWorkout,
         onHistoryMoved: onHistoryMoved,
+        onArchived: onArchived,
+        onUnarchived: onUnarchived,
       ),
       _ => _MaterialExerciseDetailPage(
         key: key,
-        exercise: exercise,
+        exercise: current,
         onTapWorkout: onTapWorkout,
         allowOptions: allowOptions,
         leading: leading,
@@ -85,6 +106,8 @@ class ExerciseDetailPage extends StatelessWidget {
         onTapAlternative: onTapAlternative,
         onAddToWorkout: onAddToWorkout,
         onHistoryMoved: onHistoryMoved,
+        onArchived: onArchived,
+        onUnarchived: onUnarchived,
       ),
     };
   }

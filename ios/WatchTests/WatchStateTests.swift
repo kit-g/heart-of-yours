@@ -14,7 +14,7 @@ final class WatchStateTests: XCTestCase {
         func row(_ id: String, _ number: Int, of total: Int) -> WatchState.Workout.Exercise.Row {
             .init(
                 id: id, weight: 60, reps: 5, done: done.contains(id),
-                position: "Set \(number) of \(total)", previous: "Last time: \(id)", next: "Next: \(id)"
+                position: "Set \(number) of \(total)", last: .init(line: "Last time: \(id)"), next: "Next: \(id)"
             )
         }
         let exercises: [WatchState.Workout.Exercise] = [
@@ -52,7 +52,7 @@ final class WatchStateTests: XCTestCase {
 
         XCTAssertEqual(after.set?.setId, "b2")
         XCTAssertEqual(after.set?.position, "Set 2 of 3", "the row's own copy, sent ahead for this")
-        XCTAssertEqual(after.set?.previous, "Last time: b2")
+        XCTAssertEqual(after.set?.last?.line, "Last time: b2")
         XCTAssertEqual(after.next, "Next: b2", "the complication's line")
         let ticked = after.exercises[0].sets[0]
         XCTAssertEqual([ticked.weight, ticked.reps.map(Double.init)], [62.5, 6], "the values the tick sent")
@@ -163,7 +163,7 @@ final class WatchStateTests: XCTestCase {
         XCTAssertEqual(exercise?.sets.map(\.mark), ["W", "1"])
         XCTAssertEqual(exercise?.sets.map(\.type), ["Warm-up", nil])
         XCTAssertEqual(exercise?.sets.last?.position, "Set 1 of 1")
-        XCTAssertEqual(exercise?.sets.last?.previous, "Last time: 60 kg × 5")
+        XCTAssertEqual(exercise?.sets.last?.last?.line, "Last time: 60 kg × 5")
         XCTAssertEqual(exercise?.sets.last?.next, "Next: set 1")
     }
 }

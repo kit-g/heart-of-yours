@@ -18,8 +18,15 @@ typedef PreviousSetsInTemplate = Future<Map<ExerciseId, List<Map<String, dynamic
   DateTime? before,
 });
 
+/// Reads how many finished workouts each exercise was done in (#711).
+typedef SessionCounts = Future<Map<ExerciseId, int>> Function(String userId);
+
 class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
   final _previous = <ExerciseId, List<Map<String, dynamic>>>{};
+
+  /// How many finished workouts each exercise was done in; absent for one
+  /// never done.
+  final _sessions = <ExerciseId, int>{};
 
   /// Last time within [_templateId]; empty unless this copy follows one.
   final _inTemplate = <ExerciseId, List<Map<String, dynamic>>>{};
@@ -27,6 +34,7 @@ class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
   final PreviousExerciseService _service;
   final PreviousSetsBefore? _readBefore;
   final PreviousSetsInTemplate? _readInTemplate;
+  final SessionCounts? _readSessions;
 
   /// Set on a copy made by [before]: the moment "last time" is counted from.
   final DateTime? _asOf;
@@ -37,24 +45,38 @@ class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
   String? userId;
   bool _disposed = false;
 
-  new({required this._service, this._readBefore, this._readInTemplate}) : _asOf = null, _templateId = null;
+  new({required this._service, this._readBefore, this._readInTemplate, this._readSessions})
+    : _asOf = null,
+      _templateId = null;
 
-  new _scoped(this._service, this._readBefore, this._readInTemplate, this._asOf, this._templateId, this.userId);
+  new _scoped(
+    this._service,
+    this._readBefore,
+    this._readInTemplate,
+    this._readSessions,
+    this._asOf,
+    this._templateId,
+    this.userId,
+  );
 
   /// A copy that counts "last time" from [start] — for a past workout, whose
   /// own sets would otherwise be its "last time" when it is the newest. Not
   /// yet read: [init] it. Without a dated reader it knows no last time at
   /// all, which is still truer than the workout itself.
   PreviousExercises before(DateTime start) {
-    return ._scoped(_service, _readBefore, _readInTemplate, start, _templateId, userId);
+    return ._scoped(_service, _readBefore, _readInTemplate, _readSessions, start, _templateId, userId);
   }
+
+  /// A copy that knows no last time: for a workout logged for someone else
+  /// (#560), whose last time this account never saw.
+  PreviousExercises none() => ._scoped(_service, null, null, null, null, null, null);
 
   /// A copy whose "last time" is the last run of [templateId] (#172) — a
   /// workout started from a template, or a program's session. An exercise
   /// that template never had falls back to last time anywhere, so the column
   /// is empty only where it always was. Not yet read: [init] it.
   PreviousExercises inTemplate(String templateId) {
-    return ._scoped(_service, _readBefore, _readInTemplate, _asOf, templateId, userId);
+    return ._scoped(_service, _readBefore, _readInTemplate, _readSessions, _asOf, templateId, userId);
   }
 
   @override
@@ -67,7 +89,9 @@ class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
   void onSignOut() {
     _previous.clear();
     _inTemplate.clear();
+    _sessions.clear();
     userId = null;
+    notifyListeners();
   }
 
   static PreviousExercises of(BuildContext context) {
@@ -89,8 +113,12 @@ class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
         (String template, PreviousSetsInTemplate read) => await read(id, template, before: _asOf),
         _ => const <ExerciseId, List<Map<String, dynamic>>>{},
       };
+      final sessions = await _readSessions?.call(id) ?? const <ExerciseId, int>{};
       // a scoped copy can go with its screen before the read lands
       if (_disposed) return;
+      _sessions
+        ..clear()
+        ..addAll(sessions);
       _previous
         ..clear()
         ..addAll(previous);
@@ -140,4 +168,9 @@ class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
       _ => null,
     };
   }
+
+  /// How many finished workouts held a working set of [exerciseId]; 0 for one
+  /// never done. A grouped picker pictures each group by the one done most
+  /// (#711).
+  int timesDone(ExerciseId exerciseId) => _sessions[exerciseId] ?? 0;
 }

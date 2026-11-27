@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_models/heart_models.dart' as models;
 import 'package:heart_state/src/analytics.dart';
+import 'package:heart_state/src/remote.dart';
 import 'package:heart_state/src/workouts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
@@ -157,7 +158,7 @@ void main() {
         targetUserId: anyNamed('targetUserId'),
         workoutId: anyNamed('workoutId'),
       ),
-    ).thenThrow({'error': 'not found', 'code': 'not_found'});
+    ).thenThrow(refusedAs({'error': 'not found', 'code': 'not_found'}, status: 404));
     when(remote.saveWorkout(any)).thenAnswer((inv) async => inv.positionalArguments.first as Workout);
     when(remote.editWorkout(any)).thenAnswer((inv) async => inv.positionalArguments.first as Workout);
     when(remote.deleteWorkout(any)).thenAnswer((_) async => true);
@@ -167,6 +168,7 @@ void main() {
       service: local,
       remoteService: remote,
       analytics: Analytics(service: reported),
+      remote: RemoteAccess(failures: testFailures),
     )..userId = 'u1';
   });
 
@@ -679,6 +681,17 @@ void main() {
       expect(probe.notifications, 1);
     });
 
+    test('init keeps a workout started before it ran, rather than the stored one (#723)', () async {
+      await sut.startWorkout(source: .blank, name: 'Live');
+      final live = sut.activeWorkout;
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => Workout(name: 'Stored'));
+
+      await sut.init();
+
+      expect(sut.activeWorkout, same(live));
+      expect(sut.hasResolvedActiveWorkout, isTrue);
+    });
+
     test('init resolves the active workout even when there is none, and a sign-out forgets it', () async {
       when(local.getActiveWorkout('u1')).thenAnswer((_) async => null);
       expect(sut.hasResolvedActiveWorkout, isFalse, reason: 'not loaded yet is not "none"');
@@ -692,6 +705,25 @@ void main() {
 
       sut.onSignOut();
       expect(sut.hasResolvedActiveWorkout, isFalse);
+    });
+
+    // a start is UTC; the month is the user's (#619). Run under a zone west
+    // of Greenwich (TZ=America/Toronto) to see the two differ.
+    test('byMonth files a workout under the month it started on the user\'s clock', () async {
+      final evening = Workout(name: 'Evening')..start = DateTime(2026, 11, 30, 21).toUtc();
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [evening..finish(evening.start)]);
+      when(local.getWorkoutGallery(userId: 'u1')).thenAnswer((_) async => ProgressGalleryResponse(images: []));
+      when(
+        remote.getWorkoutGallery(cursor: anyNamed('cursor')),
+      ).thenAnswer((_) async => ProgressGalleryResponse.fromJson({'images': []}));
+
+      // the mocks are the file's: later tests count calls from here
+      addTearDown(() {
+        clearInteractions(local);
+        clearInteractions(remote);
+      });
+      await sut.initHistory();
+      expect(sut.byMonth.keys, ['2026-11']);
     });
 
     test('initHistory: uses local if present, otherwise remote + store', () async {
@@ -1109,6 +1141,44 @@ void main() {
       expect(sut.lookup(w1.id), w1);
     });
 
+    test('coming back reads the newest page, at most once in ten minutes, and paging carries on (#560)', () async {
+      final w1 = Workout(name: 'w1');
+      final w2 = Workout(name: 'w2');
+      whenFirstPage([w1], more: true);
+      whenPageAfter(w1.id, [w2], more: false);
+      await sut.initHistory();
+      clearInteractions(remote);
+      // one their coach logged while they were away
+      final logged = Workout(name: 'logged');
+      whenFirstPage([logged, w1], more: true);
+      final at = DateTime.utc(2026, 11, 14, 9);
+
+      await sut.refreshHistory(now: at);
+      await sut.refreshHistory(now: at.add(const Duration(minutes: 9)));
+
+      expect(sut.lookup(logged.id), logged);
+      verify(local.storeWorkoutHistory([logged, w1], 'u1')).called(1);
+      verify(
+        remote.getWorkouts(
+          'u1',
+          pageSize: anyNamed('pageSize'),
+          since: argThat(isNull, named: 'since'),
+        ),
+      ).called(1);
+
+      await sut.loadMoreHistory();
+      expect(sut.lookup(w2.id), w2, reason: 'the next page is the one after the first, as before');
+
+      await sut.refreshHistory(now: at.add(const Duration(minutes: 10)));
+      verify(
+        remote.getWorkouts(
+          'u1',
+          pageSize: anyNamed('pageSize'),
+          since: argThat(isNull, named: 'since'),
+        ),
+      ).called(1);
+    });
+
     test('initHistory stops when the backend reports no more (end of list)', () async {
       final w1 = Workout(name: 'w1');
       whenFirstPage([w1], more: false);
@@ -1367,10 +1437,9 @@ void main() {
     });
 
     test('skips a workout the server no longer has and carries on', () async {
-      // any body the server answered with is an answer about that one
-      // workout — a 404 is not an outage, whatever shape it comes in
+      // a refusal is an answer about that one workout, not an outage
       when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('gone'), stripped('w2')]);
-      fails('gone', {'error': 'not found'});
+      fails('gone', refusedAs({'error': 'not found', 'code': 'not_found'}, status: 404));
       final full = detailed('w2');
       whenServerHas(full);
 
@@ -1378,6 +1447,47 @@ void main() {
 
       verify(local.storeWorkoutHistory([full], 'u1')).called(1);
       expect(sut.lookup('w2'), full);
+    });
+
+    test('skips a workout the gateway says is not there, a 404 with no code, and carries on', () async {
+      // otherwise the pass stalls on it at every visit to History
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('gone'), stripped('w2')]);
+      fails('gone', const ServerFailed(404));
+      final full = detailed('w2');
+      whenServerHas(full);
+
+      await sut.initHistory();
+
+      verify(local.storeWorkoutHistory([full], 'u1')).called(1);
+    });
+
+    test('skips a workout whose answer this build cannot read, and carries on', () async {
+      // a 2xx heart_api could not read is a FormatException (UnreadableAnswer):
+      // asking again gets the same, so it must not stop the pass every launch
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('odd'), stripped('w2')]);
+      fails('odd', const FormatException('an answer this build cannot read'));
+      final full = detailed('w2');
+      whenServerHas(full);
+
+      await sut.initHistory();
+
+      verify(local.storeWorkoutHistory([full], 'u1')).called(1);
+    });
+
+    test('stops at a server that failed or asked to wait, to go again later', () async {
+      for (final failure in [
+        const ServerFailed(),
+        refusedAs({'code': 'rate_limited'}, status: 429),
+      ]) {
+        clearInteractions(local);
+        when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('w1'), stripped('w2')]);
+        fails('w1', failure);
+        whenServerHas(detailed('w2'));
+
+        await sut.initHistory();
+
+        verifyNever(local.storeWorkoutHistory(argThat(isNotEmpty), 'u1'));
+      }
     });
 
     test('asks about a workout once per session', () async {

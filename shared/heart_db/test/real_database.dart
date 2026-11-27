@@ -152,6 +152,28 @@ const _schema = [
   addProgramActionExercise,
   addProgramActionSlot,
   addProgramActionStage,
+  // v28 (#428)
+  createAnomalies,
+  anomaliesSetIndex,
+  anomaliesWorkoutIndex,
+  // v29
+  createWorkoutPlans,
+  // v30 (#557)
+  addProgramCoachId,
+  addProgramCoachName,
+  addProgramWaitingSince,
+  // v31 (#558)
+  addProgramRevision,
+  addProgramSessionRevisions,
+  // v32 (#556)
+  createThreads,
+  createThreadItems,
+  threadItemsIndex,
+  // v33 (#556)
+  createCoachNotes,
+  // v34 (#560)
+  addWorkoutLoggedBy,
+  addWorkoutLoggedByName,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -161,7 +183,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 27,
+      version: 28,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);

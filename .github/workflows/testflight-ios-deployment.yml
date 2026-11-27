@@ -72,7 +72,7 @@ jobs:
         run: echo "version=$(cat .flutter-version)" >> "$GITHUB_OUTPUT"
 
       - name: "Set up Flutter"
-        uses: flutter-actions/setup-flutter@adb607ae976a9e00473569facfc69813c637a060 # v4.3
+        uses: flutter-actions/setup-flutter@0e3ac53a5126c46be01612423cf26b5d59018adc # v5.0
         with:
           channel: 'stable'
           version: ${{ steps.flutter.outputs.version }}

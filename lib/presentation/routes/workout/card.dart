@@ -280,12 +280,8 @@ double _cardExtent(BuildContext context, List<Template> templates) {
   final rows = max(_minRowsPerCard, listed + overflow);
 
   // the title row is as tall as its popup menu button, not its text
-  final title = max(_menuButtonHeight, _lineExtent(titleMedium, scaler));
-  return title + rows * _lineExtent(bodyMedium, scaler) + _cardMargin + _cardBottomPadding;
-}
-
-double _lineExtent(TextStyle? style, TextScaler scaler) {
-  return scaler.scale(style?.fontSize ?? 14) * (style?.height ?? 1.4);
+  final title = max(_menuButtonHeight, lineExtent(titleMedium, scaler));
+  return title + rows * lineExtent(bodyMedium, scaler) + _cardMargin + _cardBottomPadding;
 }
 
 /// An [IconButton] at the card's [VisualDensity] of -3.

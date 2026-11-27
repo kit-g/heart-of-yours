@@ -220,3 +220,17 @@ developers run:
 
 A newer deploy cancels a superseded in-flight one (latest code wins); every workflow installs
 the Flutter version pinned in `.flutter-version`.
+
+## Licence
+
+The app and everything else in this repository is under the [GNU GPL v3.0](LICENSE), with two
+additional permissions: a copy may be distributed through the App Store and Google Play, whose
+terms the GPL alone would rule out, and may be combined with Apple's and Google's SDKs. The name
+and icon aren't covered. [NOTICE](NOTICE) has the full terms and lists what in the repository
+isn't ours. The reasons are in [docs/2026-11-08.licence.md](docs/2026-11-08.licence.md).
+
+## Contributing
+
+Contributions come in under the same licence and the same additional permissions (inbound =
+outbound). Opening a pull request means you agree to that and that the work is yours to give.
+There is no CLA.

@@ -66,6 +66,25 @@ void main() {
     expect(days.values.single, (volume: 300.0, workouts: 1, seconds: 3600, sets: 1, reps: 5));
   });
 
+  test('a discarded set counts for nothing, and a discarded duration only loses its time (#428)', () {
+    final slip = _done(_bench, weight: 630, reps: 5);
+    final workout = _workout(
+      DateTime(2026, 10, 12, 7),
+      minutes: 60 * 9,
+      sets: (workout) => workout.add(_bench)
+        ..add(_done(_bench, weight: 60, reps: 5))
+        ..add(slip),
+    );
+
+    final days = trainingDays(
+      [workout],
+      since: since,
+      leftOut: (sets: {slip.id}, durations: {workout.id}),
+    );
+
+    expect(days.values.single, (volume: 300.0, workouts: 1, seconds: 0, sets: 1, reps: 5));
+  });
+
   test('volume is weight × reps of the loaded categories only', () {
     final days = trainingDays(
       [

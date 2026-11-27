@@ -8,6 +8,7 @@ class _TemplatesLayout extends StatefulWidget {
   final void Function(Program) goToProgram;
   final void Function(TemplateFolder) goToNewProgram;
   final VoidCallback goToLibrary;
+  final VoidCallback? onLogPastWorkout;
 
   const new({
     required this.goToTemplateEditor,
@@ -15,6 +16,7 @@ class _TemplatesLayout extends StatefulWidget {
     required this.goToProgram,
     required this.goToNewProgram,
     required this.goToLibrary,
+    this.onLogPastWorkout,
   });
 
   @override
@@ -47,7 +49,6 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
       :yourWorkouts,
       templates: copy,
       :template,
-      :exampleTemplates,
       :newFolder,
       :noFolder,
       :noTemplatesYet,
@@ -71,7 +72,11 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
             title: Text(yourWorkouts),
           ),
         ),
-        NewWorkoutHeader(openWorkoutSheet: widget.onNewWorkout),
+        NewWorkoutHeader(
+          openWorkoutSheet: widget.onNewWorkout,
+          // a past workout (#530), beside the empty one, while it is on
+          onLogPastWorkout: preferences.isOn(.pastWorkouts) ? widget.onLogPastWorkout : null,
+        ),
         if (preferences.isOn(.notToday)) const _NotToday(),
         _ProgramsSection(
           onOpen: widget.goToProgram,
@@ -81,47 +86,45 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  copy,
-                  style: textTheme.headlineSmall,
-                ),
-                Row(
-                  children: [
-                    // folders are the server's — it mints their ids — so there
-                    // are none to make without an account
-                    if (!isAnonymous)
-                      IconButton(
-                        tooltip: newFolder,
-                        // a square tight box rather than `visualDensity`, same as
-                        // the movement filter: Material clamps the density's
-                        // horizontal adjustment at zero, so it trimmed the height
-                        // alone and the splash came out an ellipse
-                        constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-                        padding: .zero,
-                        icon: const Icon(Icons.create_new_folder_outlined),
-                        onPressed: () {
-                          _createFolder(context);
-                        },
-                      ),
-                    if (templates.allowsNewTemplate)
-                      PrimaryButton.shrunk(
-                        backgroundColor: colorScheme.secondaryContainer,
-                        onPressed: () {
-                          widget.goToTemplateEditor(newTemplate: true);
-                        },
-                        child: Row(
-                          children: [
-                            const Icon(Icons.add_rounded, size: 18),
-                            Text(template),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
+            padding: const .all(8),
+            // the actions go under the heading when they don't fit beside it:
+            // a longer language at a large text size on a phone (#701)
+            child: HeadingRow(
+              heading: Text(
+                copy,
+                style: textTheme.headlineSmall,
+              ),
+              actions: [
+                // folders are the server's — it mints their ids — so there
+                // are none to make without an account
+                if (!isAnonymous)
+                  IconButton(
+                    tooltip: newFolder,
+                    // a square tight box rather than `visualDensity`, same as
+                    // the movement filter: Material clamps the density's
+                    // horizontal adjustment at zero, so it trimmed the height
+                    // alone and the splash came out an ellipse
+                    constraints: const .tightFor(width: 36, height: 36),
+                    padding: .zero,
+                    icon: const Icon(Icons.create_new_folder_outlined),
+                    onPressed: () {
+                      _createFolder(context);
+                    },
+                  ),
+                if (templates.allowsNewTemplate)
+                  PrimaryButton.shrunk(
+                    backgroundColor: colorScheme.secondaryContainer,
+                    onPressed: () {
+                      widget.goToTemplateEditor(newTemplate: true);
+                    },
+                    child: Row(
+                      mainAxisSize: .min,
+                      children: [
+                        const Icon(Icons.add_rounded, size: 18),
+                        Flexible(child: Text(template)),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -175,17 +178,33 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           templates: unfiled,
           card: (template) => _userCard(context, template),
         ),
+        // opt-in (#528): off, this is an empty sliver and nothing else
+        _samples(context, templates, preferences),
+      ],
+    );
+  }
+
+  /// The example templates' slot (#528): the grid under its header while the
+  /// feature is on, which it is by default; off, nothing, and the tab ends
+  /// with the user's own, as if samples had never been built.
+  Widget _samples(BuildContext context, Templates templates, Preferences preferences) {
+    return switch (preferences.isOn(.sampleTemplates)) {
+      true => _sampleGrid(context, templates),
+      false => const SliverToBoxAdapter(),
+    };
+  }
+
+  /// The samples under their header, as they were before #528 made them a
+  /// choice.
+  Widget _sampleGrid(BuildContext context, Templates templates) {
+    return SliverMainAxisGroup(
+      slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: .spaceBetween,
-              children: [
-                Text(
-                  exampleTemplates,
-                  style: textTheme.headlineSmall,
-                ),
-              ],
+            padding: const .all(8),
+            child: Text(
+              L.of(context).exampleTemplates,
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
         ),
@@ -200,9 +219,14 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
               onStartWorkout: (template) async {
                 final started = await startWorkoutOverActive(
                   context,
-                  () => Workouts.of(
+                  () => startPlanned(
                     context,
-                  ).startWorkout(source: .sample, template: startingWorkout(context, template), applyPinnedNotes: true),
+                    Workouts.of(
+                      context,
+                    ),
+                    template,
+                    source: .sample,
+                  ),
                 );
                 if (started) widget.onNewWorkout();
               },
@@ -225,26 +249,24 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
   Future<void> _startSession(BuildContext context, Template session) async {
     final started = await startWorkoutOverActive(
       context,
-      () =>
-          Workouts.of(context)
-              .startWorkout(source: .program, template: startingWorkout(context, session), applyPinnedNotes: true),
+      () => startPlanned(context, Workouts.of(context), session, source: .program),
     );
     if (started) widget.onNewWorkout();
   }
 
   Widget _userCard(BuildContext context, Template template) {
     final templates = Templates.of(context);
-    final programs = Programs.watch(context);
     // a program's session can leave it, and a template in a program's folder
-    // that is not one can join it (#489): an assistant's, a tap from joining
-    final (joins, leaves) = switch ((Preferences.of(context).isOn(.programs), template.programId, template.folder)) {
-      (false, _, _) => (null, null),
-      (true, final String id, _) => (null, programs.lookup(id)),
-      (true, null, final TemplateFolder folder) => (
+    // that is not one can join it (#489): an assistant's, a tap from joining.
+    // Only a program that is shown: a coach's under Your coach alone (#593)
+    final programs = shownPrograms(context, listen: true);
+    final (joins, leaves) = switch ((template.programId, template.folder)) {
+      (final String id, _) => (null, programs.lookup(id)),
+      (null, final TemplateFolder folder) => (
         templates.templatesIn(folder).map((each) => each.programId).nonNulls.map(programs.lookup).nonNulls.firstOrNull,
         null,
       ),
-      (true, null, null) => (null, null),
+      (null, null) => (null, null),
     };
     final card = _TemplateCard(
       template: template,
@@ -283,9 +305,14 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
       onStartWorkout: (template) async {
         final started = await startWorkoutOverActive(
           context,
-          () => Workouts.of(
+          () => startPlanned(
             context,
-          ).startWorkout(source: .template, template: startingWorkout(context, template), applyPinnedNotes: true),
+            Workouts.of(
+              context,
+            ),
+            template,
+            source: .template,
+          ),
         );
         if (started) widget.onNewWorkout();
       },
@@ -383,7 +410,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
   void _showFolderError(BuildContext context, Object error) {
     final L(:folderNameTaken, :unknownError) = L.of(context);
     final message = switch (error) {
-      {'code': 'bad_request'} => folderNameTaken,
+      ServerRefusal(code: 'bad_request') => folderNameTaken,
       _ => unknownError,
     };
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -609,11 +636,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
         // tells the two sources apart.
         final started = await startWorkoutOverActive(
           context,
-          () => Workouts.of(context).startWorkout(
-            source: allowsEditing ? .template : .sample,
-            template: startingWorkout(context, template),
-            applyPinnedNotes: true,
-          ),
+          () => startPlanned(context, Workouts.of(context), template, source: allowsEditing ? .template : .sample),
         );
         if (started) widget.onNewWorkout();
       },
@@ -1289,7 +1312,7 @@ class _FolderNameFormState extends State<_FolderNameForm> {
       final L(:folderNameTaken, :unknownError) = L.of(context);
       _saving.value = false;
       _rejected.value = switch (error) {
-        {'code': 'bad_request'} => folderNameTaken,
+        ServerRefusal(code: 'bad_request') => folderNameTaken,
         _ => unknownError,
       };
     }

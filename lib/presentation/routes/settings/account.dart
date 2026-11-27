@@ -26,6 +26,11 @@ class _AccountManagementPageState extends State<AccountManagementPage>
   final _obscurityController = ValueNotifier(true);
   final _avatarController = ValueNotifier<double?>(null);
 
+  /// The deletion dialog's conversations (#568): being deleted, and how many
+  /// of them failed once that is over (null before).
+  final _clearing = ValueNotifier(false);
+  final _clearFailed = ValueNotifier<int?>(null);
+
   @override
   void dispose() {
     _nameFocusNode.dispose();
@@ -33,6 +38,8 @@ class _AccountManagementPageState extends State<AccountManagementPage>
     _passwordController.dispose();
     _obscurityController.dispose();
     _avatarController.dispose();
+    _clearing.dispose();
+    _clearFailed.dispose();
 
     super.dispose();
   }
@@ -270,14 +277,28 @@ class _AccountManagementPageState extends State<AccountManagementPage>
       context,
     );
 
+    // conversations stay with the other person (#568): said, with a way to
+    // delete them first, to someone who has any, where coaching runs at all
+    final coaching = coachingRuns(Preferences.of(context), Auth.of(context));
+    final messages = Messages.of(context);
+    _clearFailed.value = null;
+    if (coaching) unawaited(messages.load());
     return showBrandedDialog(
       context,
-      title: Text(deleteAccountTitle, textAlign: TextAlign.center),
+      scrollable: true,
+      title: Text(deleteAccountTitle, textAlign: .center),
       content: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text(
-          deleteAccountBody(AppConfig.of(context).accountDeletionDeadline),
-          textAlign: TextAlign.center,
+        padding: const .all(8),
+        child: Column(
+          mainAxisSize: .min,
+          spacing: 12,
+          children: [
+            Text(
+              deleteAccountBody(AppConfig.of(context).accountDeletionDeadline),
+              textAlign: .center,
+            ),
+            if (coaching) _ConversationsStay(messages: messages, clearing: _clearing, failed: _clearFailed),
+          ],
         ),
       ),
       icon: Icon(Icons.auto_delete_rounded, color: colorScheme.error),
@@ -292,29 +313,40 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                 Navigator.of(context, rootNavigator: true).pop();
               },
             ),
-            PrimaryButton.wide(
-              backgroundColor: colorScheme.errorContainer,
-              child: Center(
-                child: Text(
-                  deleteAccountConfirmMessage,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onErrorContainer,
-                  ),
+            // not while conversations are being deleted: the account would
+            // go with them half done
+            ValueListenableBuilder(
+              valueListenable: _clearing,
+              builder: (_, clearing, _) => switch (clearing) {
+                true => const SizedBox.square(
+                  dimension: 48,
+                  child: Center(child: CircularProgressIndicator.adaptive()),
                 ),
-              ),
-              onPressed: () {
-                Navigator.of(context, rootNavigator: true).pop();
-                // Only an account that has a password can be asked for one.
-                // Apple and Google accounts re-authenticate through their
-                // provider instead, which is a sheet rather than a prompt —
-                // asking them to type a password they never set is how
-                // deletion used to be impossible for them.
-                switch (Auth.of(context).hasPassword) {
-                  case true:
-                    _onConfirmDeleteAccount(context);
-                  case false:
-                    _requestAccountDeletion(context);
-                }
+                false => PrimaryButton.wide(
+                  backgroundColor: colorScheme.errorContainer,
+                  child: Center(
+                    child: Text(
+                      deleteAccountConfirmMessage,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context, rootNavigator: true).pop();
+                    // Only an account that has a password can be asked for one.
+                    // Apple and Google accounts re-authenticate through their
+                    // provider instead, which is a sheet rather than a prompt —
+                    // asking them to type a password they never set is how
+                    // deletion used to be impossible for them.
+                    switch (Auth.of(context).hasPassword) {
+                      case true:
+                        _onConfirmDeleteAccount(context);
+                      case false:
+                        _requestAccountDeletion(context);
+                    }
+                  },
+                ),
               },
             ),
           ],
@@ -736,5 +768,91 @@ class _SignInRow extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// What deleting an account leaves behind (#568): conversations stay with the
+/// other person, so the way to take one's words with them is to delete the
+/// conversations first, here, for both people. Said once the inbox says there
+/// is any.
+class _ConversationsStay extends StatelessWidget {
+  final Messages messages;
+
+  /// Shared with the dialog's own buttons, which step aside meanwhile.
+  final ValueNotifier<bool> clearing;
+
+  /// How many could not be deleted, once that was tried.
+  final ValueNotifier<int?> failed;
+
+  const new({required this.messages, required this.clearing, required this.failed});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return ListenableBuilder(
+      listenable: Listenable.merge([messages, clearing, failed]),
+      builder: (context, _) {
+        final count = messages.holding.length;
+        final tried = failed.value;
+        return switch ((count, tried)) {
+          (0, null) => const SizedBox.shrink(),
+          (0, _) => Text(
+            l.deleteAccountConversationsGone,
+            textAlign: .center,
+            style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+          ),
+          _ => Column(
+            mainAxisSize: .min,
+            spacing: 4,
+            children: [
+              Text(
+                l.deleteAccountConversations(count),
+                textAlign: .center,
+                style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+              ),
+              if (tried case final int some when some > 0)
+                Text(
+                  l.deleteAccountConversationsFailed(some),
+                  textAlign: .center,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.error),
+                ),
+              switch (clearing.value) {
+                true => const SizedBox.square(
+                  dimension: 48,
+                  child: Center(child: CircularProgressIndicator.adaptive()),
+                ),
+                false => QuietButton(
+                  key: AppKeys.deleteAccountConversations,
+                  danger: true,
+                  onPressed: () => _deleteAll(context),
+                  child: Text(l.deleteAccountConversationsDelete),
+                ),
+              },
+            ],
+          ),
+        };
+      },
+    );
+  }
+
+  /// Deletes every conversation, each for both people, after asking.
+  Future<void> _deleteAll(BuildContext context) async {
+    final l = L.of(context);
+    final sure = await confirmDestructive(
+      context,
+      title: l.deleteAccountConversationsTitle,
+      body: l.deleteAccountConversationsBody,
+      confirm: l.delete,
+      cancel: l.cancel,
+      key: AppKeys.deleteAccountConversationsConfirm,
+    );
+    if (!sure || clearing.value) return;
+    clearing.value = true;
+    try {
+      failed.value = await messages.clearAll();
+    } finally {
+      clearing.value = false;
+    }
   }
 }

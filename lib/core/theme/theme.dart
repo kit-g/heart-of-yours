@@ -154,6 +154,21 @@ ThemeData theme(Preset preset, Brightness brightness) {
     ),
     timePickerTheme: TimePickerThemeData(
       hourMinuteTextStyle: textTheme.displaySmall,
+      // the field being edited is the one lit: the default read primaryContainer
+      // for it, which some presets keep near the page, so the idle field looked
+      // chosen instead
+      hourMinuteColor: WidgetStateColor.resolveWith(
+        (states) => switch (states.contains(WidgetState.selected)) {
+          true => colorScheme.primary,
+          false => colorScheme.surfaceContainerHighest,
+        },
+      ),
+      hourMinuteTextColor: WidgetStateColor.resolveWith(
+        (states) => switch (states.contains(WidgetState.selected)) {
+          true => colorScheme.onPrimary,
+          false => colorScheme.onSurface,
+        },
+      ),
       confirmButtonStyle: pickerActionStyle,
       cancelButtonStyle: pickerActionStyle,
     ),

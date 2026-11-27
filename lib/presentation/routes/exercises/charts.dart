@@ -56,14 +56,7 @@ class _Charts extends StatelessWidget {
           // the string still travels as [label] — it feeds the chart's
           // spoken summary — while the row adds the dashboard toggle
           label: title,
-          customLabel: Row(
-            children: [
-              Expanded(
-                child: Text(title, style: textTheme.titleMedium, maxLines: 1, overflow: .ellipsis),
-              ),
-              _DashboardToggle(exercise: exercise, type: type),
-            ],
-          ),
+          customLabel: DashboardChartTitle(title: title, exercise: exercise, type: type),
           converter: type.converter(prefs, unit: unit, category: exercise.category),
           getLeftLabel: type.leftLabel(style),
           getTooltip: type.tooltip,
@@ -77,11 +70,12 @@ class _Charts extends StatelessWidget {
 }
 
 extension on _Charts {
-  /// The first program the user follows whose sessions hold [exercise]; null
-  /// while Programs is off or none does.
+  /// The first shown program the user follows whose sessions hold
+  /// [exercise]; null while none does. With Programs off, only a coach's is
+  /// shown, under Your coach (#593).
   Program? _programOf(BuildContext context) {
-    if (!Preferences.watch(context).isOn(.programs)) return null;
-    final following = {for (final program in Programs.watch(context).following) program.id: program};
+    if (!Preferences.watch(context).programsReach) return null;
+    final following = {for (final program in shownPrograms(context, listen: true).following) program.id: program};
     return Templates.watch(context)
         .where((session) => following.containsKey(session.programId))
         .where((session) => session.any((each) => each.exercise.id == exercise.id))
@@ -125,57 +119,6 @@ class _InProgram extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// Puts this exercise+metric chart on the profile dashboard, or takes it back
-/// off — the same [ChartPreference] the profile's "New chart" dialog builds,
-/// minus the two-step picker, offered right where the metric is on screen.
-class _DashboardToggle extends StatelessWidget {
-  final Exercise exercise;
-  final ChartPreferenceType type;
-
-  const new({required this.exercise, required this.type});
-
-  @override
-  Widget build(BuildContext context) {
-    // watched: adding or removing the card flips this button in place
-    final charts = Charts.watch(context);
-    final L(:addChartToProfile, :removeChartFromProfile, :chartAddedToProfile) = L.of(context);
-
-    // the dashboard card this chart would duplicate, if it is already there.
-    // The preference's getter keeps its stale name — the value is the
-    // exercise id, the identity that survives localization.
-    final existing = charts.exerciseCharts
-        .where((each) => each.exerciseName == exercise.id && each.type == type)
-        .firstOrNull;
-
-    return switch (existing) {
-      null => FeedbackButton.circular(
-        tooltip: addChartToProfile,
-        onPressed: () {
-          charts.addPreference(.exercise(exercise.id, type));
-          // the result lives on another tab, so confirm it landed
-          snack(context, chartAddedToProfile);
-        },
-        child: const Padding(
-          padding: .all(2.0),
-          child: Icon(Icons.addchart_rounded, size: 20),
-        ),
-      ),
-      final preference => FeedbackButton.circular(
-        tooltip: removeChartFromProfile,
-        onPressed: () => charts.removePreference(preference),
-        child: Padding(
-          padding: const .all(2.0),
-          child: Icon(
-            Icons.check_circle_rounded,
-            size: 20,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-      ),
-    };
   }
 }
 

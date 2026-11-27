@@ -1,35 +1,16 @@
-Plates, warm-ups and rest, worked out for you.
-
-- Plate calculator: while you type a barbell or machine weight, see
-  which plates go on each side. Set the bar for each exercise and untick
-  the plates your gym doesn't have.
-- Warm-up sets, worked out from your first working set and rounded to
-  what you can load. Change the ramp in Settings.
-- Default rest after every set: one length for compound lifts, one for
-  isolation, one for bodyweight and cardio. An exercise's own timer
-  still wins.
-- Add a session to a program you're already running, from its page or
-  from its folder. Your weeks and starting weights stay as they are.
-- A muscle map for your templates, as you plan them and before you start.
-- New charts: volume, working sets and average workout length by week or
-  month, and the days you trained a lift.
-- Apple Watch: a set fits on one screen, Done included, on every size.
-- Clearer Spanish, French and Russian.
+Bug fixes and performance improvements.
 
 What to test
-- Plate calculator: the offer the first time you type a barbell weight,
-  a weight the plates can't make, changing the bar, unticking plates.
-- Warm-ups: the offer under a barbell exercise, then Add warm-up sets
-  from the exercise menu.
-- Default rest: the offer after a set with no timer, the countdown's
-  length, an exercise with its own timer.
-- Programs: add a session from the program page and from a template's
-  menu in its folder, then remove it and undo. Add one with no signal.
-- The exercise menu in a workout: every row, a long superset name, the
-  weight unit choice.
-- A bodyweight exercise done without added weight shows its reps as
-  Previous next time.
-- Apple Watch: tick sets without scrolling, edit weight and reps with the
-  crown, a template set starts at its target.
-- A program's page from the library, and back from After this.
-- Add each new chart to Profile and switch week and month.
+- Your own exercise, on a slow connection: tap Save, then try to close
+  the dialog (back, the close button, a tap outside) before it finishes.
+  It stays open until the save is done, closes itself, and the screen
+  behind it still works.
+- A workout with a very long exercise name (your own, or in Russian):
+  the name wraps or is cut short, and the timer and options buttons
+  stay on screen and work.
+- History: an exercise with sets you planned but never ticked shows no
+  best set, and total volume counts ticked sets only.
+- A weekly goal on a top set or estimated 1RM: its line now shows on
+  the exercise's charts and on its Profile chart.
+- iPad, both orientations: Exercises and History tabs, select
+  something, clear it, switch tabs.

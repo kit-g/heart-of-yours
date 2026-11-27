@@ -1,5 +1,7 @@
 import 'package:heart_models/heart_models.dart';
 
+import 'programs.dart' show ProgramLife;
+
 /// One session of a program on the day it is planned for (#391): what a
 /// calendar event stands for. [week] is the program week, the cycle the session
 /// was planned in, so an event keeps naming the same occurrence after the
@@ -18,7 +20,7 @@ List<SessionAhead> plannedSessions(
   required int days,
   bool trainedToday = false,
 }) {
-  if (program.archived || position.paused || position.finished || program.days.isEmpty) return const [];
+  if (!program.live || position.paused || position.finished || program.days.isEmpty) return const [];
   final queue = _ahead(program, position).iterator;
   final today = DateTime(from.year, from.month, from.day);
   return [

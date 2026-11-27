@@ -4,7 +4,7 @@
 // library, so — unlike `GalleryPage` or the standalone adjust-times dialog —
 // there is no way to pump them directly; every test here drives the real app
 // through the router, the same way `workout_start_test.dart` and
-// `a11y_test.dart` reach the workout tab.
+// `a11y.dart` reach the workout tab.
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -49,7 +49,6 @@ void main() {
   }
 
   setUp(() {
-    SharedPreferences.setMockInitialValues(pastOnboarding());
     db = MockLocalDatabase();
     api = MockApi();
     cdn = MockCdn();
@@ -114,7 +113,7 @@ void main() {
   /// `app.dart`), which a widget test's fake-time zone never pumps, so
   /// anything behind it — `Templates.init()` several turns deep, behind
   /// exercises and workouts init — never resolves no matter how many frames
-  /// are pumped. `a11y_test.dart` hits the same wall for `Upsync`/`Backfill`
+  /// are pumped. `a11y.dart` hits the same wall for `Upsync`/`Backfill`
   /// and works around it the same way: calling the notifier directly.
   Future<void> openWorkoutTab(WidgetTester tester, {bool signedIn = true}) async {
     final firebase = signedIn
@@ -220,6 +219,44 @@ void main() {
     });
   });
 
+  group('example templates are a switch, on by default (#528)', () {
+    Finder sample() => find.text('Sample Day', skipOffstage: false);
+    Finder header() => find.text('Example templates', skipOffstage: false);
+
+    void answered(String? answer) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-sampleTemplates': ?answer,
+      });
+      when(cdn.getSampleTemplates()).thenAnswer((_) async => [template(id: 's1', order: 0, name: 'Sample Day')]);
+    }
+
+    testWidgets('never answered, the grid is there', (tester) async {
+      answered(null);
+      await openWorkoutTab(tester);
+
+      expect(header(), findsOneWidget);
+      expect(sample(), findsOneWidget);
+    });
+
+    testWidgets('off, the tab has no grid, and the user\'s own stay', (tester) async {
+      answered('off');
+      when(db.getTemplates(userId)).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push Day')]);
+      await openWorkoutTab(tester);
+
+      expect(find.text('Push Day'), findsOneWidget);
+      expect(header(), findsNothing);
+      expect(sample(), findsNothing);
+      // kept, not dropped: the switch shows them again
+      final context = tester.element(find.byType(MaterialApp));
+      expect(Templates.of(context).samples.map((each) => each.id), ['s1']);
+
+      Preferences.of(context).setFeature(.sampleTemplates, on: true);
+      await tester.pumpTimes();
+      expect(sample(), findsOneWidget);
+    });
+  });
+
   group('starting a workout from a template', () {
     testWidgets('starts one from a user template and opens the active-workout sheet', (tester) async {
       when(db.getTemplates(userId)).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push Day')]);
@@ -309,6 +346,7 @@ void main() {
       expect(find.byType(TemplateEditor), findsOneWidget);
       expect(find.text('Edit Template'), findsOneWidget);
       expect(find.byType(AppBarTextField), findsOneWidget);
+      expect(find.text('Previous'), findsOneWidget, reason: "one's own template keeps the column (#591)");
 
       // an existing template already has a name and an exercise, so Save
       // starts enabled — no need to type anything before tapping it
@@ -318,6 +356,28 @@ void main() {
       expect(find.byType(TemplateEditor), findsNothing);
       verify(db.updateTemplate(any)).called(1);
       verify(api.editTemplate(any)).called(1);
+    });
+
+    testWidgets('a name of only spaces is no name: Save stays off', (tester) async {
+      when(db.getTemplates(userId)).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push Day')]);
+
+      await openWorkoutTab(tester);
+      final card = find.ancestor(of: find.text('Push Day'), matching: find.byType(Card)).first;
+      await tester.tap(find.descendant(of: card, matching: find.byIcon(Icons.more_horiz)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.descendant(of: find.byType(AppBarTextField), matching: find.byType(TextField)),
+        '   ',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TemplateEditor), findsOneWidget, reason: 'nothing saved, the editor stays');
+      verifyNever(db.updateTemplate(any));
     });
 
     group('targets (#173)', () {

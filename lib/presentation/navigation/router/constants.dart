@@ -22,12 +22,17 @@ const _historyName = 'history';
 const _historyPath = '/$_historyName'; // a callback in bottom navigation bar in app_frame.dart relies on this
 const _historyEditName = 'edit';
 const _historySkipName = 'skip';
+const _historyReviewName = 'entryReview';
+const _historyLogName = 'logWorkout';
 const _exercisesName = 'exercises';
 const _exercisesPath = '/$_exercisesName';
+const _exerciseArchivePath = '$_exercisesPath/$_exerciseArchivedSegment';
 const _exerciseDetailName = 'exerciseDetail';
 const _exerciseWorkoutName = 'exerciseWorkout';
 const _exerciseArchivedDetailName = 'exerciseArchivedDetail';
 const _exerciseArchive = 'archive';
+const _exerciseArchivedSegment = 'archived';
+const _exerciseWorkoutSegment = 'workout';
 const _doneName = 'done';
 const _donePath = '/$_doneName';
 const _accountManagementPath = 'account';
@@ -40,6 +45,10 @@ const _whatsNewPath = 'whats-new';
 const _whatsNewName = 'whatsNew';
 const _restTimersPath = 'rest-timers';
 const _restTimersName = 'restTimers';
+const _pushSettingsPath = 'notifications';
+const _pushSettingsName = 'pushSettings';
+const _yourDevicesPath = 'devices';
+const _yourDevicesName = 'yourDevices';
 const _apiTokensPath = 'tokens';
 const _apiTokensName = 'apiTokens';
 const _newApiTokenPath = 'new';
@@ -81,5 +90,46 @@ const _workoutOverName = 'workoutOver';
 const _workoutOverPath = '/past-workout/:workoutId';
 const _filteredExercisesName = 'filteredExercises';
 const _filteredExercisesPath = '/filtered-exercises';
+const _exerciseArchiveOverName = 'exerciseArchiveOver';
+const _exerciseArchiveOverPath = '/archived-exercises';
 const _onboardingName = 'welcome';
 const _onboardingPath = '/$_onboardingName';
+// the Coaching space (#566): a shell of its own, beside the app's
+const _coachingPath = '/coaching';
+const _coachingClientsName = 'coachingClients';
+const _coachingClientsPath = '$_coachingPath/clients';
+const _coachingClientName = 'coachingClient';
+const _coachingClientWorkoutName = 'coachingClientWorkout';
+const _coachingClientProgramName = 'coachingClientProgram';
+const _coachingClientSessionName = 'coachingClientSession';
+const _coachingMessagesName = 'coachingMessages';
+const _coachingMessagesPath = '$_coachingPath/messages';
+const _coachingThreadName = 'coachingThread';
+const _coachingClientThreadName = 'coachingClientThread';
+// a coach's notes on a client (#556)
+const _coachingClientNotesName = 'coachingClientNotes';
+// a workout a coach logs for a client (#560)
+const _coachingClientLogName = 'coachingClientLog';
+const _threadName = 'thread';
+const _threadPath = '/messages/:connectionId';
+// the account's devices over a conversation (#555)
+const _yourDevicesOverName = 'yourDevicesOver';
+const _yourDevicesOverPath = '/yourDevices';
+const _coachingProgramsName = 'coachingPrograms';
+const _coachingProgramsPath = '$_coachingPath/programs';
+// a coach's library (#557), under the Programs tab
+const _coachingNewProgramName = 'coachingNewProgram';
+const _coachingProgramName = 'coachingProgram';
+const _coachingProgramEditName = 'coachingProgramEdit';
+const _coachingProgramSessionName = 'coachingProgramSession';
+const _coachingMeName = 'coachingMe';
+
+/// What the Coaching space's copies of shared routes are named with (#685).
+const _coachingPrefix = 'coaching.';
+const _coachingMePath = '$_coachingPath/me';
+// what a coach's invitation link opens (#553): the site's own path, which iOS
+// and Android both hand to the app
+const _invitationPath = '/invite.html';
+const _invitationToken = 't';
+// what an invitation token looks like when the server made it: base64url
+final _invitationTokenShape = RegExp(r'^[A-Za-z0-9_-]{1,128}$');

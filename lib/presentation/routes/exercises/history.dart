@@ -109,11 +109,11 @@ class _CopyForAi extends StatelessWidget {
   Widget build(BuildContext context) {
     return Align(
       alignment: .centerRight,
-      child: TextButton.icon(
+      child: QuietButton(
+        plain: true,
         key: AppKeys.copyForAiExercise,
-        style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-        icon: const Icon(Icons.auto_awesome_outlined, size: 18),
-        label: Text(L.of(context).copyForAi),
+        icon: Icons.auto_awesome_outlined,
+        child: Text(L.of(context).copyForAi),
         onPressed: () => copyExerciseForAi(context, exercise),
       ),
     );

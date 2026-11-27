@@ -14,7 +14,8 @@ import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show ProgramPage;
 import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/keys.dart';
-import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetailKeys;
+import 'package:heart/presentation/widgets/program_progress.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetailKeys, startingWorkout;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -183,9 +184,15 @@ void main() {
       // the week, and on a line of its own when the program would end at
       // this pace (#F33, #F42): never cut short
       final status = find.byKey(AppKeys.programBandStatus('p1'));
-      expect(find.descendant(of: status, matching: find.text('Week 1 of 8')), findsOneWidget);
+      // of so many weeks is the bar's to say, and the count the rings'
+      expect(find.text('Week 1 of 8'), findsNothing);
+      final weeks = tester.widget<ProgramWeeksBar>(find.byKey(AppKeys.programBandWeeks('p1')));
+      expect((weeks.week, weeks.weeks, weeks.done), (1, 8, 0));
+      expect(find.bySemanticsLabel(RegExp('Week 1 of 8')), findsWidgets);
       expect(find.descendant(of: status, matching: find.textContaining(RegExp(r'^ends '))), findsOneWidget);
-      expect(find.descendant(of: band, matching: find.text('0 of 3 this week')), findsOneWidget);
+      final count = tester.widget<WeekCount>(find.descendant(of: band, matching: find.byType(WeekCount)));
+      expect((count.done, count.target), (0, 3));
+      expect(find.bySemanticsLabel(RegExp('0 of 3 this week')), findsWidgets);
 
       await tester.tapByKey(AppKeys.programStart('p1'));
       await tester.pumpTimes();
@@ -202,6 +209,361 @@ void main() {
 
       // once on the band's strip, once as a card in the folder
       expect(find.text('Push'), findsNWidgets(2));
+    });
+  });
+
+  group('a program a coach sent (#557)', () {
+    final sent = Program.fromJson({
+      ...Program(
+        id: 'c1',
+        name: 'Strength block',
+        perWeek: 2,
+        weeks: 4,
+        sessions: const ['t3'],
+        createdAt: DateTime.utc(2026, 11, 10),
+      ).toMap(),
+      'coachId': 'coach-muffin',
+      'coachName': 'Muffin',
+      'waitingSince': '2026-11-10T12:00:00.000Z',
+    });
+
+    /// [program] followed, and [sent] waiting beside it.
+    void withSent({bool yourCoach = true}) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-programs': 'on',
+        if (yourCoach) 'feature-yourCoach': 'on',
+      });
+      when(db.getPrograms(userId)).thenAnswer((_) async => [program, sent]);
+      when(api.getPrograms()).thenAnswer((_) async => [program, sent]);
+      when(db.getTemplates(userId)).thenAnswer(
+        (_) async => [
+          template('t1', 0, 'Push', programId: 'p1'),
+          template('t2', 1, 'Pull', programId: 'p1'),
+          template('t3', 2, 'Day A', programId: 'c1'),
+        ],
+      );
+      when(api.startProgram('c1')).thenAnswer((_) async {});
+    }
+
+    testWidgets('waits beside what the user follows, saying whose it is, and plans nothing yet', (tester) async {
+      withSent();
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.programBand('p1')), findsOneWidget);
+      expect(find.byKey(AppKeys.programBand('c1')), findsNothing, reason: 'not followed until started');
+      final card = find.byKey(AppKeys.programWaiting('c1'));
+      expect(card, findsOneWidget);
+      expect(
+        find.descendant(of: card, matching: find.text('From Muffin · Waiting for you to start it')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('with Your coach off, it still waits, and still says whose it is', (tester) async {
+      withSent(yourCoach: false);
+      await openWorkoutTab(tester);
+
+      final card = find.byKey(AppKeys.programWaiting('c1'));
+      expect(
+        find.descendant(of: card, matching: find.text('From Muffin · Waiting for you to start it')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('starting it asks, then replaces what the user follows', (tester) async {
+      withSent();
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.programStartSent('c1'));
+      await tester.pumpTimes();
+      expect(find.text('Start Strength block?'), findsOneWidget);
+      expect(find.text("You'll stop following Split. Its history stays."), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.programStartSentConfirm);
+      await tester.pumpTimes();
+
+      verify(api.startProgram('c1')).called(1);
+      final edited = verify(api.editProgram(captureAny)).captured.cast<Program>();
+      expect(edited.single.id, 'p1');
+      expect(edited.single.archived, isTrue);
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsNothing);
+      expect(find.byKey(AppKeys.programBand('c1')), findsOneWidget);
+      expect(find.byKey(AppKeys.programBand('p1')), findsNothing);
+      expect(find.text('You started Strength block'), findsOneWidget);
+    });
+
+    testWidgets('replacing several, it counts them rather than listing names that may hold commas', (tester) async {
+      withSent();
+      final second = Program(
+        id: 'p2',
+        name: 'Full body, three days',
+        perWeek: 3,
+        weeks: 8,
+        sessions: const [],
+        createdAt: DateTime.utc(2026, 11, 1),
+      );
+      when(db.getPrograms(userId)).thenAnswer((_) async => [program, second, sent]);
+      when(api.getPrograms()).thenAnswer((_) async => [program, second, sent]);
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.programStartSent('c1'));
+      await tester.pumpTimes();
+      expect(find.text("You'll stop following the 2 programs you're on. Their history stays."), findsOneWidget);
+    });
+
+    testWidgets('a start the server refuses says so, and it keeps waiting', (tester) async {
+      withSent();
+      when(api.startProgram('c1'))
+          .thenThrow(const ServerRefusal(status: 400, code: 'program_not_found', method: 'POST', route: '/v1/test'));
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.programStartSent('c1'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.programStartSentConfirm);
+      await tester.pumpTimes();
+
+      expect(find.text("Couldn't start it. Try again."), findsOneWidget);
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsOneWidget);
+      verifyNever(api.editProgram(any));
+    });
+
+    testWidgets('its page offers starting it, and nothing that would change it or train from it', (tester) async {
+      withSent();
+      await openWorkoutTab(tester);
+      await tester.tap(find.text('Strength block'));
+      await tester.pumpTimes();
+
+      expect(find.byTooltip('Edit program'), findsNothing);
+      expect(find.byKey(AppKeys.programAddSession), findsNothing);
+      await tester.tap(find.text('Day A').last);
+      await tester.pumpTimes();
+      expect(find.byType(Dialog), findsNothing, reason: 'no start dialog for a session of a program not started');
+    });
+
+    testWidgets('its page waits too, and once started says whose it is', (tester) async {
+      withSent();
+      await openWorkoutTab(tester);
+
+      await tester.tap(find.text('Strength block'));
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsOneWidget);
+      expect(find.byKey(AppKeys.programSentBy), findsNothing);
+
+      await tester.tapByKey(AppKeys.programStartSent('c1'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.programStartSentConfirm);
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsNothing);
+      expect(tester.widget<Text>(find.byKey(AppKeys.programSentBy)).data, 'From Muffin');
+    });
+  });
+
+  group("a coach's program with Programs off (#593)", () {
+    final sent = Program.fromJson({
+      ...Program(
+        id: 'c1',
+        name: 'Strength block',
+        perWeek: 2,
+        weeks: 4,
+        sessions: const ['t3'],
+        createdAt: DateTime.utc(2026, 11, 10),
+      ).toMap(),
+      'coachId': 'coach-muffin',
+      'coachName': 'Muffin',
+      'waitingSince': '2026-11-10T12:00:00.000Z',
+    });
+
+    /// The user's own [program] followed and [sent] waiting, with Programs
+    /// off and Your coach as [yourCoach] says.
+    void withSent({required bool yourCoach}) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-programs': 'off',
+        'feature-yourCoach': yourCoach ? 'on' : 'off',
+      });
+      when(db.getPrograms(userId)).thenAnswer((_) async => [program, sent]);
+      when(api.getPrograms()).thenAnswer((_) async => [program, sent]);
+      when(db.getTemplates(userId)).thenAnswer(
+        (_) async => [
+          template('t1', 0, 'Push', programId: 'p1'),
+          template('t2', 1, 'Pull', programId: 'p1'),
+          template('t3', 2, 'Day A', programId: 'c1'),
+        ],
+      );
+      when(api.startProgram('c1')).thenAnswer((_) async {});
+    }
+
+    testWidgets('with Your coach on, it waits; their own program and every way to make one stay away', (
+      tester,
+    ) async {
+      withSent(yourCoach: true);
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsOneWidget);
+      expect(find.byKey(AppKeys.programBand('p1')), findsNothing);
+      expect(find.byKey(AppKeys.programsFromFolder), findsNothing);
+      expect(find.byKey(AppKeys.libraryEntry), findsNothing);
+
+      await tester.tap(find.byTooltip('More options').first);
+      await tester.pumpTimes();
+      expect(find.text('Make a program'), findsNothing);
+    });
+
+    testWidgets('started, it replaces nothing hidden, and its session starts with its plan', (tester) async {
+      withSent(yourCoach: true);
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.programStartSent('c1'));
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.programStartSentConfirm), findsNothing, reason: 'nothing shown to replace');
+      verify(api.startProgram('c1')).called(1);
+      verifyNever(api.editProgram(any));
+      expect(find.byKey(AppKeys.programBand('c1')), findsOneWidget);
+
+      final context = tester.element(find.byType(MaterialApp));
+      final templates = Templates.of(context);
+      expect(startingWorkout(context, templates.lookup('t3')!).plan, isNotNull);
+      expect(startingWorkout(context, templates.lookup('t1')!).plan, isNull, reason: 'their own stays plain');
+
+      await tester.tapByKey(AppKeys.programStart('c1'));
+      await tester.pumpTimes();
+      final started = verify(db.startWorkout(captureAny, any)).captured.single as Workout;
+      expect(started.templateId, 't3');
+      expect(started.programId, 'c1');
+    });
+
+    testWidgets('its page opens, stays while Programs is off, and leaves with Your coach', (tester) async {
+      withSent(yourCoach: true);
+      await openWorkoutTab(tester);
+
+      await tester.tap(find.text('Strength block'));
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsOneWidget);
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsOneWidget);
+
+      // any change of preference asks the page again: it stays while shown
+      final preferences = Preferences.of(tester.element(find.byType(ProgramPage)))..setFeature(.rpe, on: true);
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsOneWidget);
+
+      // and leaves once Your coach is off: the program is no longer shown
+      preferences.setFeature(.yourCoach, on: false);
+      await tester.pumpTimes();
+      expect(find.byType(ProgramPage), findsNothing);
+    });
+
+    testWidgets('with Your coach off too, there is nothing', (tester) async {
+      withSent(yourCoach: false);
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.programWaiting('c1')), findsNothing);
+      expect(find.byKey(AppKeys.programBand('p1')), findsNothing);
+      expect(find.text('Programs'), findsNothing);
+    });
+  });
+
+  group("a coach's copy both of them edit (#558)", () {
+    final shared = Program.fromJson({
+      ...Program(
+        id: 'c1',
+        name: 'Strength block',
+        perWeek: 2,
+        weeks: 4,
+        sessions: const ['t3'],
+        createdAt: DateTime.utc(2026, 11, 10),
+      ).toMap(),
+      'coachId': 'coach-muffin',
+      'coachName': 'Muffin',
+      'revision': 2,
+      'sessionRevisions': {'t3': 1},
+    });
+
+    ProgramChange change(String id, {String? sessionId, Map<String, dynamic>? after}) {
+      return ProgramChange(
+        id: id,
+        programId: 'c1',
+        actorId: 'coach-muffin',
+        kind: 'edit',
+        revision: 2,
+        sessionId: sessionId,
+        before: after,
+        after: after,
+        at: DateTime.now().subtract(const Duration(hours: 1)),
+        cursor: id,
+      );
+    }
+
+    /// [shared] followed, with what the coach changed in it.
+    void withShared({bool yourCoach = true, List<ProgramChange> changes = const []}) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-programs': 'on',
+        if (yourCoach) 'feature-yourCoach': 'on',
+      });
+      when(db.getPrograms(userId)).thenAnswer((_) async => [shared]);
+      when(api.getPrograms()).thenAnswer((_) async => [shared]);
+      when(api.getProgram('c1')).thenAnswer((_) async => shared);
+      when(db.getTemplates(userId)).thenAnswer((_) async => [template('t3', 0, 'Day A', programId: 'c1')]);
+      when(api.getProgramChanges('c1', since: anyNamed('since'))).thenAnswer(
+        (i) async => (items: i.namedArguments[#since] == null ? changes : <ProgramChange>[], cursor: null),
+      );
+    }
+
+    testWidgets('its band says what the coach changed since the user looked, until they say they saw it', (
+      tester,
+    ) async {
+      withShared(
+        changes: [
+          change('ch1'),
+          change('ch2', sessionId: 't3', after: {'name': 'Day A'}),
+        ],
+      );
+      await openWorkoutTab(tester);
+
+      final line = find.byKey(AppKeys.programCoachChanges('c1'));
+      expect(find.descendant(of: find.byKey(AppKeys.programBand('c1')), matching: line), findsOneWidget);
+      expect(find.descendant(of: line, matching: find.text('Muffin changed Day A · +1')), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.programCoachChangesSeen('c1'));
+      await tester.pumpTimes();
+      expect(line, findsNothing);
+    });
+
+    testWidgets('with Your coach off, the band says nothing of it', (tester) async {
+      withShared(yourCoach: false, changes: [change('ch1')]);
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.programBand('c1')), findsOneWidget);
+      expect(find.byKey(AppKeys.programCoachChanges('c1')), findsNothing);
+    });
+
+    testWidgets("a session the coach changed first shows both on its page, and Use mine sends the user's again", (
+      tester,
+    ) async {
+      withShared();
+      when(
+        api.editTemplate(any, baseRevision: anyNamed('baseRevision'), changeId: anyNamed('changeId')),
+      ).thenAnswer((i) async => i.positionalArguments.single as Template);
+      await openWorkoutTab(tester);
+      await tester.tap(find.text('Strength block'));
+      await tester.pumpTimes();
+
+      final context = tester.element(find.byType(ProgramPage));
+      await Programs.of(context).beaten(template('t3', 0, 'Day A (mine)', programId: 'c1'));
+      await tester.pumpTimes();
+      expect(find.text("Muffin changed Day A (mine) since you opened it. Yours isn't saved."), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.coachingCopyKeepMine);
+      await tester.pumpTimes();
+
+      final [sent, base] = verify(
+        api.editTemplate(captureAny, baseRevision: captureAnyNamed('baseRevision'), changeId: anyNamed('changeId')),
+      ).captured;
+      expect((sent as Template).name, 'Day A (mine)');
+      expect(base, 1);
+      expect(find.byKey(AppKeys.coachingCopyConflict), findsNothing);
     });
   });
 
@@ -339,7 +701,7 @@ void main() {
       final start = tester.getRect(find.byKey(AppKeys.programStart('p1')));
       final card = tester.getRect(band);
 
-      final week = tester.getRect(find.descendant(of: band, matching: find.textContaining('Week')));
+      final week = tester.getRect(find.byKey(AppKeys.programBandWeeks('p1')));
       expect(start.right, closeTo(card.right - 12, 1));
       expect(start.right, closeTo(week.right, 1));
     });

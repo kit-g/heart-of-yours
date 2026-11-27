@@ -19,6 +19,12 @@ void main() {
       return verify(service.logEvent(name, captureAny)).captured.single as Map<Object?, Object?>;
     }
 
+    test('a pane counts as the screen it is as a route of its own (#687)', () {
+      sut.paneShown(screen: 'monthlyReport');
+
+      expect(parametersOf('screen_view'), {'screen_name': 'monthlyReport'});
+    });
+
     test('every parameter reaches the SDK as a String or a num', () {
       sut.signupStarted(provider: .google, fromAnonymous: true);
 
@@ -85,6 +91,93 @@ void main() {
       sut.setTypeChanged(type: .warmup);
 
       expect(parametersOf('set_type_changed'), {'set_type': 'warmup'});
+    });
+
+    group('coaching (tier 4)', () {
+      test('a feature switch names the feature, the answer and where it was given', () {
+        sut.featureSwitched(feature: .yourCoach, on: false, source: .ask);
+        expect(parametersOf('feature_switched'), {'feature': 'yourCoach', 'on': 'false', 'source': 'ask'});
+
+        sut.featureSwitched(feature: .coachPeople, on: true, source: .settings);
+        expect(parametersOf('feature_switched'), {'feature': 'coachPeople', 'on': 'true', 'source': 'settings'});
+      });
+
+      test('an invitation says whether it carried a program, and an answer whether it was a yes', () {
+        sut.invitationCreated(withProgram: false);
+        expect(parametersOf('invitation_created'), {'with_program': 'false'});
+
+        sut.invitationAnswered(accepted: true);
+        expect(parametersOf('invitation_answered'), {'accepted': 'true'});
+      });
+
+      test("a connection's change names this account's side and what became of it", () {
+        sut.coachingChanged(role: .student, action: .paused);
+        expect(parametersOf('coaching_changed'), {'role': 'student', 'coaching_action': 'paused'});
+
+        sut.coachingChanged(role: .coach, action: .ended);
+        expect(parametersOf('coaching_changed'), {'role': 'coach', 'coaching_action': 'ended'});
+      });
+
+      test("a client's copy edited names the part, as its wire word", () {
+        sut.clientProgramEdited(edit: .sessionDeleted);
+        expect(parametersOf('client_program_edited'), {'coaching_action': 'session_deleted'});
+      });
+
+      test('the counts go as numbers', () {
+        sut.programSent(clients: 3);
+        expect(parametersOf('program_sent'), {'clients': 3});
+
+        sut.workoutLoggedFor(exerciseCount: 2, setCount: 5);
+        expect(parametersOf('workout_logged_for'), {'exercise_count': 2, 'set_count': 5});
+      });
+
+      test('a look at a client, and a note deleted, carry nothing', () {
+        sut.clientReviewed();
+        expect(parametersOf('client_reviewed'), isEmpty);
+
+        sut.coachNoteDeleted();
+        expect(parametersOf('coach_note_deleted'), isEmpty);
+      });
+
+      test('a message and a deletion carry the side when it is known, and nothing in its place when not', () {
+        sut.messageSent(role: .coach);
+        expect(parametersOf('message_sent'), {'role': 'coach'});
+
+        sut.messageSent();
+        expect(parametersOf('message_sent'), isEmpty);
+
+        sut.conversationDeleted(role: .student);
+        expect(parametersOf('conversation_deleted'), {'role': 'student'});
+      });
+
+      test("a report carries the tag's wire word and two flags, never its wording", () {
+        sut.personReported(reason: .unsafeAdvice, withMessages: true, alsoBlocked: false);
+        expect(parametersOf('person_reported'), {
+          'reason': 'unsafe_advice',
+          'with_messages': 'true',
+          'also_blocked': 'false',
+        });
+      });
+
+      test('a note says whether it was new', () {
+        sut.coachNoteSaved(edited: true);
+        expect(parametersOf('coach_note_saved'), {'edited': 'true'});
+      });
+
+      test('the coaching role is a user property, cleared with no account', () {
+        sut.setCoachingRole(.both);
+        verify(service.setUserProperty('coaching_role', 'both')).called(1);
+
+        sut.setCoachingRole(null);
+        verify(service.setUserProperty('coaching_role', null)).called(1);
+      });
+
+      test('the role follows from the two sides', () {
+        expect(CoachingRole.of(coaches: true, coached: true), CoachingRole.both);
+        expect(CoachingRole.of(coaches: true, coached: false), CoachingRole.coach);
+        expect(CoachingRole.of(coaches: false, coached: true), CoachingRole.student);
+        expect(CoachingRole.of(coaches: false, coached: false), CoachingRole.none);
+      });
     });
 
     test('a session with no account behind it clears the property rather than leaving the last answer', () {

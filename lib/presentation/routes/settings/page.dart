@@ -9,6 +9,12 @@ class SettingsPage extends StatelessWidget with HasHaptic {
   final VoidCallback onExportData;
   final VoidCallback onWhatsNew;
   final VoidCallback onRestTimers;
+
+  /// What reaches the person by push (#554), while the push client runs.
+  final VoidCallback onPushSettings;
+
+  /// The account's devices and letting one in (#555), where device keys run.
+  final VoidCallback onYourDevices;
   final VoidCallback onFeatures;
   final VoidCallback onDeveloperApi;
 
@@ -22,6 +28,8 @@ class SettingsPage extends StatelessWidget with HasHaptic {
     required this.onExportData,
     required this.onWhatsNew,
     required this.onRestTimers,
+    required this.onPushSettings,
+    required this.onYourDevices,
     required this.onFeatures,
     required this.onDeveloperApi,
     required this.onErased,
@@ -54,6 +62,11 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :account,
       :app,
       :developerApi,
+      :yourDevices,
+      :screens,
+      :historyDensity,
+      :historyDensityFull,
+      :historyDensityCompact,
     ) = L.of(
       context,
     );
@@ -132,6 +145,28 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                     // no page padding: the swatch strip scrolls to the screen
                     // edge and carries the inset itself
                     _PresetPicker(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // how the screens show themselves (#609, #620); History's view
+                // and the exercise picker's grouping are also switched, and
+                // remembered, from those screens themselves
+                _Section(
+                  title: screens,
+                  children: [
+                    const _HistoryViewPicker(),
+                    // how History's list draws a workout (#611)
+                    _ScreenChoiceRow<HistoryDensity>(
+                      key: AppKeys.historyDensitySetting,
+                      title: historyDensity,
+                      read: (preferences) => preferences.historyDensity,
+                      write: (preferences, density) => preferences.setHistoryDensity(density),
+                      children: {
+                        .full: Text(historyDensityFull),
+                        .compact: Text(historyDensityCompact),
+                      },
+                    ),
+                    const _PickerGroupingPicker(),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -277,6 +312,16 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                         title: Text(developerApi),
                         onTap: onDeveloperApi,
                       ),
+                      // where coaching's encryption keys run (#555): a device
+                      // is let in by one the account already has
+                      if (pushesOn(context, listen: true) && DeviceKeys.of(context).supported)
+                        ListTile(
+                          key: AppKeys.yourDevices,
+                          leading: const Icon(Icons.devices_rounded),
+                          title: Text(yourDevices),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: onYourDevices,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -291,7 +336,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                       title: Text(features),
                       onTap: onFeatures,
                     ),
-                    const _NotificationsRow(),
+                    _NotificationsRow(onPushSettings: onPushSettings),
                     // absent until there is a timer to list, or default rest
                     // (#174) to adjust: an entry that can only open onto an
                     // empty page is a dead end
@@ -457,7 +502,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
 
   void _openFeedback(BuildContext context) {
     Navigator.of(context, rootNavigator: true).pop();
-    final L(:feedbackReceived) = L.of(context);
+    final L(:feedbackReceived, :feedbackFailed) = L.of(context);
     final heart = AppTheme.of(context).heart();
 
     final messenger = ScaffoldMessenger.of(context);
@@ -477,6 +522,11 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                     SnackBar(content: Text('$feedbackReceived $heart')),
                   );
                 }
+              },
+              // what the user wrote did not arrive: said so, and reported
+              onError: (Object error, StackTrace stacktrace) {
+                messenger.snack(feedbackFailed);
+                reportToSentry(error, stacktrace: stacktrace);
               },
             );
       },
@@ -600,10 +650,23 @@ class _LockScreenWorkoutSwitchState extends State<_LockScreenWorkoutSwitch> {
 /// a row that might never appear, and where the plugin is absent (a widget
 /// test) its failure had nobody listening — a crash of the test, surfaced the
 /// moment the Features section pushed this row below the first screen.
-class const _NotificationsRow() extends StatelessWidget {
+///
+/// While the push client runs (#554) it opens the app's own page instead, which
+/// lists what reaches the person and keeps the way to the system's settings at
+/// its top. Off, the row is what it was before pushes were built.
+class const _NotificationsRow({required final VoidCallback onPushSettings}) extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final L(:notificationSettings) = L.of(context);
+    if (pushesOn(context, listen: true)) {
+      return ListTile(
+        key: AppKeys.pushSettings,
+        leading: const Icon(Icons.notifications_rounded),
+        title: Text(notificationSettings),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onPushSettings,
+      );
+    }
     return FutureBuilder<bool>(
       future: hasNotificationsPermission(Theme.of(context).platform),
       builder: (context, snapshot) {
@@ -685,6 +748,50 @@ class const _Weekday(final int weekday) extends StatelessWidget {
       label: DateFormat.EEEE(locale).format(day),
       excludeSemantics: true,
       child: Text(DateFormat.E(locale).format(day)),
+    );
+  }
+}
+
+/// One screen choice as a settings row (#609, #611): the stored choice in a
+/// segmented control, nothing until the preferences are read.
+class _ScreenChoiceRow<T extends Object> extends StatelessWidget with HasHaptic {
+  final String title;
+  final T Function(Preferences) read;
+  final void Function(Preferences, T) write;
+  final Map<T, Widget> children;
+
+  const new({
+    super.key,
+    required this.title,
+    required this.read,
+    required this.write,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const .symmetric(horizontal: 16.0),
+      child: Selector<Preferences, T?>(
+        selector: (_, provider) => switch (provider.isInitialized) {
+          true => read(provider),
+          false => null,
+        },
+        builder: (context, value, _) {
+          return switch (value) {
+            null => const SizedBox.shrink(),
+            final T value => FixedLengthSettingPicker<T>(
+              title: title,
+              value: value,
+              onValueChanged: (picked) {
+                buzz();
+                if (picked != null) write(Preferences.of(context), picked);
+              },
+              children: children,
+            ),
+          };
+        },
+      ),
     );
   }
 }

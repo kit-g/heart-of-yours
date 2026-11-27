@@ -43,7 +43,13 @@ class _Ledger extends Fake implements LocalUpsyncService {
   }
 
   @override
-  Future<void> settle(String userId) async => owed.remove(userId);
+  Future<void> settle(String userId) async {
+    owed.remove(userId);
+    onSettle?.call();
+  }
+
+  /// Runs as a settled run is written down.
+  void Function()? onSettle;
 
   @override
   Future<void> mergeExercise(String userId, {required String from, required String to}) async {
@@ -70,7 +76,7 @@ class _Server extends Fake implements UpsyncService {
   final merged = <String, String>{};
 
   /// Refusals, by id sent.
-  final refused = <String, Map<String, dynamic>>{};
+  final refused = <String, Object>{};
 
   /// Ids the server takes, and answers in a shape this build cannot read.
   final unreadable = <String>{};
@@ -81,18 +87,23 @@ class _Server extends Fake implements UpsyncService {
   void _reach(UpsyncResource resource, String id) {
     if (deadAfter case int n when calls.length >= n) throw const SocketException('offline');
     calls.add((resource, id));
-    if (refused[id] case Map<String, dynamic> refusal) throw refusal;
+    if (refused[id] case final Object refusal) throw refusal;
     if (unreadable.contains(id)) throw ArgumentError('Invalid value for GoalMetric: aMetricFromTheFuture');
   }
 
-  /// The server keeps no movement on a custom exercise (#343).
-  bool dropsMovement = false;
+  /// The server keeps no movement (#343) and no muscles (#176) on a custom
+  /// exercise.
+  bool dropsTags = false;
 
   @override
   Future<Replayed<Exercise>> replayExercise(Exercise exercise) async {
     _reach(.exercise, exercise.id);
-    final row = switch (dropsMovement) {
-      true => Exercise.fromJson({...exercise.toMap()..remove('movement')}),
+    final row = switch (dropsTags) {
+      true => Exercise.fromJson({
+        ...exercise.toMap()
+          ..remove('movement')
+          ..remove('muscles'),
+      }),
       false => exercise,
     };
     return switch (merged[exercise.id]) {
@@ -280,7 +291,7 @@ void main() {
     templates = MockTemplateService();
     workouts = MockWorkoutService();
     goals = MockLocalGoalService();
-    access = RemoteAccess();
+    access = RemoteAccess(failures: testFailures);
     errors = [];
     completions = 0;
     reported = ReportedAnalytics();
@@ -331,6 +342,25 @@ void main() {
   });
 
   group('claim', () {
+    test('the leg opening is said once, and a sign-out never is (#734)', () async {
+      var opened = 0;
+      sut.opened.addListener(() => opened++);
+      await sut.claim(from: uid, to: uid);
+      await sut.run(uid);
+      expect(opened, 1);
+      await sut.run(uid);
+      expect(opened, 1, reason: 'it was open already');
+
+      sut.onSignOut();
+      expect(opened, 1);
+
+      // signed out as the run is settled: nothing opens for the account leaving
+      await sut.claim(from: uid, to: uid);
+      ledger.onSettle = sut.onSignOut;
+      await sut.run(uid);
+      expect(opened, 1);
+    });
+
     test('link: the uid stays, nothing moves, the replay is owed and the leg held', () async {
       await sut.claim(from: uid, to: uid);
 
@@ -427,13 +457,33 @@ void main() {
         },
       });
       when(exercises.getExercises(userId: uid)).thenAnswer((_) async => (null, [bench, patterned]));
-      server.dropsMovement = true;
+      server.dropsTags = true;
       await sut.claim(from: uid, to: uid);
 
       await sut.run(uid);
 
       final stored = verify(exercises.storeExercises(captureAny, userId: uid)).captured.single as Iterable<Exercise>;
       expect(stored.single.movement.groups, ['chest_fly']);
+    });
+
+    test("a custom's muscles stay when the server's copy has none (#176)", () async {
+      seedStore();
+      final tagged = Exercise.fromJson({
+        ...custom.toMap(),
+        'muscles': {
+          'primary': {
+            'groups': ['chest'],
+          },
+        },
+      });
+      when(exercises.getExercises(userId: uid)).thenAnswer((_) async => (null, [bench, tagged]));
+      server.dropsTags = true;
+      await sut.claim(from: uid, to: uid);
+
+      await sut.run(uid);
+
+      final stored = verify(exercises.storeExercises(captureAny, userId: uid)).captured.single as Iterable<Exercise>;
+      expect(stored.single.muscles.primary.groups, ['chest']);
     });
 
     test('into an account with history: 200s are counted as already there', () async {
@@ -706,7 +756,7 @@ void main() {
 
     test('a refusal is skipped and reported, and the run goes on', () async {
       seedStore();
-      server.refused['g1'] = {'error': 'bad request', 'code': 'goal_limit'};
+      server.refused['g1'] = refusedAs({'error': 'bad request', 'code': 'goal_limit'});
       await sut.claim(from: uid, to: uid);
 
       await sut.run(uid);
@@ -732,10 +782,39 @@ void main() {
       expect(access.allowed, isTrue, reason: 'the remote leg opens');
     });
 
+    test('a 2xx this build cannot read at all is skipped too, not met again every run', () async {
+      // heart_api's UnreadableAnswer is a FormatException: the server took
+      // the row, and the next pull brings it to a build that can read it
+      seedStore();
+      server.refused['g1'] = const FormatException('an answer this build cannot read');
+      await sut.claim(from: uid, to: uid);
+
+      await sut.run(uid);
+      await sut.run(uid);
+
+      expect(sut.status, UpsyncStatus.done);
+      expect(server.calls.where((each) => each.$2 == 'g1'), hasLength(1));
+    });
+
+    test("the server's throttle stops the run to go again, and is never recorded as final", () async {
+      seedStore();
+      server.refused['g1'] = refusedAs({'code': 'rate_limited', 'retryAfter': 30}, status: 429);
+      await sut.claim(from: uid, to: uid);
+
+      await sut.run(uid);
+      expect(sut.status, UpsyncStatus.failed);
+      expect(sut.reachedServer, isTrue);
+
+      server.refused.remove('g1');
+      await sut.run(uid);
+      expect(sut.status, UpsyncStatus.done);
+      expect(server.calls.where((each) => each.$2 == 'g1'), hasLength(2));
+    });
+
     test('an id that belongs to someone else is skipped and never retried', () async {
       final monday = finished('Monday');
       seedStore(pending: [monday, finished('Tuesday')]);
-      server.refused[monday.id] = {'error': 'forbidden', 'code': 'id_taken'};
+      server.refused[monday.id] = refusedAs({'error': 'forbidden', 'code': 'id_taken'}, status: 403);
       await sut.claim(from: uid, to: uid);
 
       // stopped by a dead network right after, so the second run is a resume
@@ -755,11 +834,11 @@ void main() {
       // Before it the same case arrived as a 500, which reads as an outage:
       // the run stopped where it stood and everything behind it went untried.
       seedStore();
-      server.refused[unitOn.id] = {
+      server.refused[unitOn.id] = refusedAs({
         'error': 'not found',
         'code': 'unknown_exercise',
         'message': 'Exercise #${unitOn.id} not found',
-      };
+      }, status: 404);
       await sut.claim(from: 'anon-1', to: uid);
 
       await sut.run(uid);
@@ -786,10 +865,10 @@ void main() {
 
     test('an unrecognised server error is not a connection problem', () async {
       seedStore();
-      // `Api` throws the decoded body when the server answered; this one is
-      // not a refusal the replay knows, so the run stops — but it stops having
-      // been answered. The 500 that stopped a 358-row backup read like this.
-      server.refused[unitOn.id] = {'error': 'server error', 'code': 'server_error'};
+      // a 500: not a refusal the replay knows, so the run stops, to go again
+      // later — but it stops having been answered. The 500 that stopped a
+      // 358-row backup read like this.
+      server.refused[unitOn.id] = const ServerFailed();
       await sut.claim(from: 'anon-1', to: uid);
 
       await sut.run(uid);
@@ -943,18 +1022,19 @@ void main() {
       expect(errors, isEmpty);
     });
 
-    test('a program the server refuses is skipped, and its sessions go up as plain templates', () async {
-      server.refused['p1'] = {'code': 'program_limit'};
+    for (final code in ['program_limit', 'invalid_phase', 'invalid_plan']) {
+      test('a program the server refuses ($code) is skipped, and its sessions go up as plain templates', () async {
+        server.refused['p1'] = refusedAs({'code': code});
 
-      await sut.claim(from: uid, to: uid);
-      await sut.run(uid);
+        await sut.claim(from: uid, to: uid);
+        await sut.run(uid);
 
-      expect(sut.status, UpsyncStatus.done);
-      expect(ledger.entries[uid]![UpsyncResource.program], {'p1': UpsyncOutcome.skipped});
-      // backed up all the same, filed under nothing the server lacks
-      expect(ledger.entries[uid]![UpsyncResource.template], containsPair('s1', UpsyncOutcome.created));
-      expect(server.filedUnder, containsPair('s1', null));
-    });
+        expect(sut.status, UpsyncStatus.done);
+        expect(ledger.entries[uid]![UpsyncResource.program], {'p1': UpsyncOutcome.skipped});
+        expect(ledger.entries[uid]![UpsyncResource.template], containsPair('s1', UpsyncOutcome.created));
+        expect(server.filedUnder, containsPair('s1', null));
+      });
+    }
 
     test('what the account pull brought down is written off, not offered back', () async {
       access.account = true;

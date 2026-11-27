@@ -7,10 +7,12 @@ REPORTS_DIR set, which makes `flutter test` drop a JSON report into
 "Test Summary" job downloads them all and runs this to render a single view.
 
 Input: `dart test --file-reporter=json` output — newline-delimited events.
-Counted from `testDone` events, ignoring the synthetic "loading …" suites the
-reporter emits per file. And JUnit XML, which Gradle writes for the Android
+Counted from `testDone` events, ignoring the synthetic "loading …" test the
+reporter emits per file unless it failed: that is a file that would not compile. And JUnit XML, which Gradle writes for the Android
 native tests (one `TEST-<class>.xml` per class): every XML file under one
-directory is one suite, named after the directory.
+directory is one suite, named after the directory. A suite CI splits over
+several jobs reports once per job as `<suite>.<k>-of-<n>.json`; those add up
+to one row, failed when any of its n shards left no report.
 
 Usage:  test_summary.py <report-dir>
 
@@ -25,6 +27,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import sys
 import xml.etree.ElementTree as ElementTree
 from dataclasses import dataclass, field
@@ -67,11 +70,12 @@ def parse_dart(path: pathlib.Path) -> Suite:
                 test = event.get("test", {})
                 names[test.get("id")] = test.get("name", "")
             case "testDone":
-                # The reporter emits a synthetic "loading <file>" test per suite;
-                # counting those would inflate every total by the file count.
-                name = names.get(event.get("testID"), "")
-                if event.get("hidden") or name.startswith("loading "):
+                # The reporter emits a synthetic "loading <file>" test per suite,
+                # hidden once it loads; counting those would inflate every total
+                # by the file count. A visible one is a file that failed to load.
+                if event.get("hidden"):
                     continue
+                name = names.get(event.get("testID"), "")
                 match (event.get("result"), event.get("skipped")):
                     case (_, True):
                         suite.skipped += 1
@@ -108,6 +112,45 @@ def parse_junit(directory: pathlib.Path) -> Suite:
                     suite.passed += 1
     suite.seconds = round(suite.seconds, 1)
     return suite
+
+
+_SHARD = re.compile(r"(?P<name>.+)\.(?P<k>\d+)-of-(?P<n>\d+)")
+
+
+def merge(name: str, shards: list[Suite]) -> Suite:
+    """One row for a suite run as [shards] in parallel jobs: the counts add up,
+    and its time is the slowest shard's, since that is how long it took."""
+    return Suite(
+        name=name,
+        passed=sum(s.passed for s in shards),
+        failed=sum(s.failed for s in shards),
+        skipped=sum(s.skipped for s in shards),
+        seconds=max((s.seconds for s in shards), default=0.0),
+        failures=[failure for s in shards for failure in s.failures],
+    )
+
+
+def dart_suites(paths: list[pathlib.Path]) -> list[Suite]:
+    """A row per Dart report, except that `<suite>.<k>-of-<n>` shards make one
+    row between them. A shard that left no report fails that row by name: its
+    tests did not run, and the rest alone would read as the whole suite."""
+    suites: list[Suite] = []
+    sharded: dict[tuple[str, int], dict[int, Suite]] = {}
+    for path in paths:
+        match _SHARD.fullmatch(path.stem):
+            case None:
+                suites.append(parse_dart(path))
+            case shard:
+                key = (shard["name"], int(shard["n"]))
+                sharded.setdefault(key, {})[int(shard["k"])] = parse_dart(path)
+
+    for (name, n), parts in sharded.items():
+        suite = merge(name, list(parts.values()))
+        missing = [k for k in range(1, n + 1) if k not in parts]
+        suite.failed += len(missing)
+        suite.failures += [f"shard {k} of {n} left no report" for k in missing]
+        suites.append(suite)
+    return suites
 
 
 def render(suites: list[Suite]) -> str:
@@ -152,7 +195,7 @@ def render(suites: list[Suite]) -> str:
 
 def main() -> int:
     reports = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "test-reports")
-    suites = [parse_dart(path) for path in sorted(reports.rglob("*.json"))]
+    suites = dart_suites(sorted(reports.rglob("*.json")))
     suites += [parse_junit(directory) for directory in sorted({path.parent for path in reports.rglob("*.xml")})]
     print(render(suites))
     return 0

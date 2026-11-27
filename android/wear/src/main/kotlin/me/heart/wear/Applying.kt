@@ -106,8 +106,9 @@ private fun PhoneState.Workout.movedOn(e: Int, r: Int): PhoneState.Workout {
             reps = row.reps,
             unit = target.unit,
             step = target.step,
-            previous = row.previous,
+            last = row.last,
             position = row.position,
+            before = row.before,
         ),
     )
 }

@@ -28,7 +28,7 @@ void main() {
   // to the nearest 2.5 kg, as a metric user's plates go
   num round(Exercise _, num kilograms) => (kilograms / 2.5).round() * 2.5;
 
-  Workout plan(
+  PlannedWorkout planned(
     Template session, {
     Map<String, ProgramBase> bases = const {},
     bool lighter = false,
@@ -52,6 +52,17 @@ void main() {
       stages: stages,
       round: round,
     );
+  }
+
+  Workout plan(
+    Template session, {
+    Map<String, ProgramBase> bases = const {},
+    bool lighter = false,
+    Deload? deload,
+    Map<String, GrowthRule> rules = const {},
+    Map<String, int> stages = const {},
+  }) {
+    return planned(session, bases: bases, lighter: lighter, deload: deload, rules: rules, stages: stages).workout;
   }
 
   test('a share of a base is a weight to aim for, rounded down to the step', () {
@@ -265,5 +276,67 @@ void main() {
     ]);
     expect(sets.skip(1).map((set) => set.target![.weight]), List.filled(6, TargetRange.exactly(100)));
     expect(sets.map((set) => set.id).toSet(), hasLength(7), reason: 'each laid-out set is a set of its own');
+  });
+
+  group('the plan it records (#566)', () {
+    Template squatDay() => session([
+      {
+        'id': 'te1',
+        'exercise': squat,
+        'sets': [
+          set({
+            'share': 0.65,
+            'reps': {'min': 5, 'max': 5},
+          }),
+          set({
+            'share': 0.85,
+            'reps': {'min': 5},
+          }),
+        ],
+      },
+    ]);
+
+    List<Map<String, dynamic>> plannedSets(WorkoutPlan plan) => [
+      for (final exercise in (plan.plan['exercises'] as List).cast<Map>())
+        ...(exercise['sets'] as List).cast<Map<String, dynamic>>(),
+    ];
+
+    test('names the set each planned set became, at the weight it showed', () {
+      final (:workout, :plan) = planned(squatDay(), bases: {'squat': base('squat', 120)});
+
+      final sets = plannedSets(plan!);
+      expect(sets.map((each) => each['setId']), workout.first.map((set) => set.id));
+      // on the plates, as the cells showed them
+      expect(sets.map((each) => each['weight']), [77.5, 100]);
+    });
+
+    test('says which week and session it was, as the developer API and MCP read it', () {
+      final (:plan, workout: _) = planned(squatDay(), bases: {'squat': base('squat', 120)});
+      expect(plan!.plan, containsPair('templateId', 's1'));
+      expect(plan.plan, containsPair('week', 1));
+      expect(plan.plan, containsPair('lighter', false));
+    });
+
+    test('a lighter week plans what it laid out, and no more', () {
+      final (:workout, :plan) = planned(squatDay(), bases: {'squat': base('squat', 120)}, lighter: true);
+      expect(plan!.plan, containsPair('lighter', true));
+      expect(plannedSets(plan).map((each) => each['setId']), workout.first.map((set) => set.id));
+    });
+
+    test('without a base, the sets are still named, with no weight to compare', () {
+      final (:workout, :plan) = planned(squatDay());
+      final sets = plannedSets(plan!);
+      expect(sets.map((each) => each['setId']), workout.first.map((set) => set.id));
+      expect(sets.map((each) => each['weight']), everyElement(isNull));
+    });
+
+    test('has the shape the server reads', () {
+      final (:plan, workout: _) = planned(squatDay(), bases: {'squat': base('squat', 120)});
+      final uuidV7 = RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$');
+      for (final each in plannedSets(plan!)) {
+        expect(each['weight'], anyOf(isNull, isA<num>()));
+        expect(each['setId'], matches(uuidV7));
+      }
+    });
   });
 }

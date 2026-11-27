@@ -88,6 +88,16 @@ void main() {
 
       expect(alarms.activeExerciseId, 'live');
     });
+
+    test("restore leaves a running rest's saved state as it is (#723)", () async {
+      final workout = Workout(name: 'Push')..add(bench);
+      alarms.startActiveExerciseTimer(30, exerciseId: 'live');
+
+      await alarms.restore(workout);
+
+      expect(alarms.activeExerciseId, 'live');
+      expect(store.saved?.exerciseId, 'live', reason: 'a kill now still finds the rest');
+    });
   });
 
   group('Alarms (unit)', () {

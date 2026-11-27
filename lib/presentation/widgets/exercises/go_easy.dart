@@ -1,11 +1,22 @@
 part of 'exercises.dart';
 
 /// What [exercise] is harder on among the things the user goes easy on
-/// (#396): empty unless Programs is on, the map is published and something
-/// listed is harder on it. A mark is never a block.
-List<GoEasyEntry> goEasyMarks(BuildContext context, Exercise exercise) {
-  if (!Preferences.watch(context).isOn(.programs)) return const [];
-  return GoEasy.watch(context).harderOn(exercise);
+/// (#396): empty unless the map is published and something listed is harder
+/// on it. A mark is never a block. A program's page asks it of its own shown
+/// program; a list of the whole library only while [goEasyOn].
+List<GoEasyEntry> goEasyMarks(BuildContext context, Exercise exercise) => GoEasy.watch(context).harderOn(exercise);
+
+/// Whether what the user goes easy on is in play across the app: while any
+/// program is shown — every one with Programs on, and with it off a coach's
+/// under Your coach (#593), stopped ones too, since a stopped program's page
+/// offers the list as a running one's does. Asked once per list, never per
+/// row.
+bool goEasyOn(BuildContext context) {
+  final preferences = Preferences.watch(context);
+  if (preferences.isOn(.programs)) return true;
+  // with both off, the programs are never read
+  if (!preferences.programsReach) return false;
+  return shownPrograms(context, listen: true).isNotEmpty;
 }
 
 /// The listed things' names, joined: "Knee, Jumping and impact".
@@ -17,13 +28,16 @@ String _names(Iterable<GoEasyEntry> entries) {
 /// The neutral mark on an exercise harder on something the user goes easy
 /// on: a leaf and what it is harder on, in the muted ink. With [exercise]
 /// and [candidates] it opens the kinder swaps; without, it only says so — a
-/// picker row has a tap of its own.
+/// picker row has a tap of its own. A long press says what the leaf means,
+/// unless [explains] is off: a refused picker row keeps the long press for
+/// the reason it can't be picked.
 class GoEasyMarker extends StatelessWidget {
   final List<GoEasyEntry> marks;
   final Exercise? exercise;
   final Iterable<Exercise> candidates;
+  final bool explains;
 
-  const new({super.key, required this.marks, this.exercise, this.candidates = const []});
+  const new({super.key, required this.marks, this.exercise, this.candidates = const [], this.explains = true});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +45,8 @@ class GoEasyMarker extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final color = colorScheme.onSurfaceVariant;
     final names = _names(marks);
-    final mark = Row(
+    final said = copy.goEasyHarderOn(names);
+    final row = Row(
       mainAxisSize: .min,
       spacing: 4,
       children: [
@@ -46,13 +61,14 @@ class GoEasyMarker extends StatelessWidget {
         ),
       ],
     );
+    final mark = explains ? Tooltip(message: said, child: row) : row;
 
     return switch (exercise) {
       // its own node: a tap target of its own inside a card that reads as one
       final Exercise exercise => Semantics(
         container: true,
         button: true,
-        label: copy.goEasyHarderOn(names),
+        label: said,
         excludeSemantics: true,
         child: InkWell(
           borderRadius: const .all(.circular(6)),
@@ -60,7 +76,7 @@ class GoEasyMarker extends StatelessWidget {
           child: Padding(padding: const .symmetric(vertical: 4), child: mark),
         ),
       ),
-      null => Semantics(label: copy.goEasyHarderOn(names), excludeSemantics: true, child: mark),
+      null => Semantics(label: said, excludeSemantics: true, child: mark),
     };
   }
 }
@@ -219,7 +235,7 @@ class GoEasyRow extends StatelessWidget {
     final copy = L.of(context);
     final easy = GoEasy.watch(context);
     final title = easy.content?.title;
-    if (!Preferences.watch(context).isOn(.programs) || title == null) return const SizedBox.shrink();
+    if (!goEasyOn(context) || title == null) return const SizedBox.shrink();
     final listed = easy.listed;
 
     return ListTile(

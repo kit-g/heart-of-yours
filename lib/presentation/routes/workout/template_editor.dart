@@ -1,11 +1,22 @@
 part of 'workout.dart';
 
+/// The template editor, on whatever keeps the template: the user's own
+/// [Templates], or a session of a coach's library program (#557).
 class TemplateEditor extends StatefulWidget {
   final bool isNewTemplate;
+
+  /// Who keeps the template being edited, and takes the save.
+  final TemplateDrafting drafts;
+
+  /// What the page is called and what its name field asks for, when the
+  /// template is something more particular than a template.
+  final ({String title, String hint})? words;
 
   const new({
     super.key,
     required this.isNewTemplate,
+    required this.drafts,
+    this.words,
   });
 
   @override
@@ -26,10 +37,23 @@ class _TemplateEditorState extends State<TemplateEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:scaffoldBackgroundColor, :colorScheme, :textTheme) = Theme.of(context);
-    final L(:newTemplate, :editTemplate, :save, :templateName) = L.of(context);
-    final templates = Templates.watch(context);
+    final L(:newTemplate, :editTemplate, :templateName) = L.of(context);
+    final templates = widget.drafts;
+    final title = switch (widget.words) {
+      (:final title, hint: _) => title,
+      null when widget.isNewTemplate => newTemplate,
+      null => editTemplate,
+    };
 
+    return ListenableBuilder(
+      listenable: templates,
+      builder: (context, _) => _page(context, templates, title: title, hint: widget.words?.hint ?? templateName),
+    );
+  }
+
+  Widget _page(BuildContext context, TemplateDrafting templates, {required String title, required String hint}) {
+    final ThemeData(:scaffoldBackgroundColor, :colorScheme, :textTheme) = Theme.of(context);
+    final L(:save) = L.of(context);
     if (_controller.text.isEmpty) {
       _controller.text = templates.editable?.name ?? '';
     }
@@ -45,12 +69,13 @@ class _TemplateEditorState extends State<TemplateEditor> {
         appBar: AppBar(
           scrolledUnderElevation: 0,
           backgroundColor: scaffoldBackgroundColor,
-          title: Text(widget.isNewTemplate ? newTemplate : editTemplate),
+          title: Text(title),
           actions: [
             ValueListenableBuilder<TextEditingValue>(
               valueListenable: _controller,
               builder: (_, value, _) {
-                final enabled = (templates.editable?.isNotEmpty ?? false) && value.text.isNotEmpty;
+                // a name of spaces is no name: the one saved is trimmed
+                final enabled = (templates.editable?.isNotEmpty ?? false) && value.text.trim().isNotEmpty;
                 return AnimatedOpacity(
                   opacity: enabled ? 1 : .3,
                   duration: const Duration(milliseconds: 200),
@@ -74,50 +99,62 @@ class _TemplateEditorState extends State<TemplateEditor> {
           ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(56),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: AppBarTextField(
-                hint: templateName,
-                style: textTheme.titleMedium,
-                hintStyle: textTheme.bodyLarge,
-                onChanged: (value) {
-                  templates.editable?.name = value.trim();
-                },
-                focusNode: _focusNode,
-                controller: _controller,
+            // over the set table, as wide as it is (#592)
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const .new(maxWidth: setTableWidth),
+                child: Padding(
+                  padding: const .symmetric(horizontal: 8),
+                  child: AppBarTextField(
+                    hint: hint,
+                    style: textTheme.titleMedium,
+                    hintStyle: textTheme.bodyLarge,
+                    onChanged: (value) {
+                      templates.editable?.name = value.trim();
+                    },
+                    focusNode: _focusNode,
+                    controller: _controller,
+                  ),
+                ),
               ),
             ),
           ),
         ),
         body: SafeArea(
-          child: WorkoutDetail(
-            exercises: templates.editable ?? [],
-            // what the plan works, as it grows (#263)
-            slivers: [
-              SliverToBoxAdapter(
-                child: TemplateMuscles(
-                  exercises: templates.editable ?? [],
-                  padding: const .symmetric(horizontal: 8),
+          // a session a coach writes is a client's: no Previous column of the
+          // coach's own last sets, and no header fill from them (#591)
+          child: PreviousScope(
+            someoneElse: templates.forSomeoneElse,
+            child: WorkoutDetail(
+              exercises: templates.editable ?? [],
+              programId: templates.editable?.programId,
+              // what the plan works, as it grows (#263)
+              slivers: [
+                SliverToBoxAdapter(
+                  child: TemplateMuscles(
+                    exercises: templates.editable ?? [],
+                    padding: const .symmetric(horizontal: 8),
+                  ),
                 ),
-              ),
-            ],
-            onDragExercise: templates.append,
-            onRemoveSet: templates.removeSet,
-            onSetType: templates.setSetType,
-            onSetTarget: templates.setSetTarget,
-            onAddSet: templates.addSet,
-            onRemoveExercise: templates.removeExercise,
-            onGroup: templates.group,
-            onLeaveGroup: templates.leaveGroup,
-            needsCancelWorkoutButton: false,
-            onAddExercises: (exercises) async {
-              for (final each in exercises) {
-                await templates.add(each);
-              }
-            },
-            allowsCompletingSet: false,
-            onSwapExercise: templates.swap,
-            onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
+              ],
+              onDragExercise: templates.append,
+              onRemoveSet: templates.removeSet,
+              onSetType: templates.setSetType,
+              onSetTarget: templates.setSetTarget,
+              onAddSet: templates.addSet,
+              onRemoveExercise: templates.removeExercise,
+              onGroup: templates.group,
+              onLeaveGroup: templates.leaveGroup,
+              needsCancelWorkoutButton: false,
+              onAddExercises: (exercises) async {
+                for (final each in exercises) {
+                  await templates.add(each);
+                }
+              },
+              allowsCompletingSet: false,
+              onSwapExercise: templates.swap,
+              onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
+            ),
           ),
         ),
       ),
@@ -171,7 +208,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
                 ),
               ),
               onPressed: () {
-                Templates.of(context).discardEditable();
+                widget.drafts.discardEditable();
                 Navigator.of(context, rootNavigator: true).pop();
                 Navigator.of(context).pop();
               },

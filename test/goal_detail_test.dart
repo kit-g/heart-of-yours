@@ -23,6 +23,9 @@ void main() {
   late Exercises exercises;
   late Stats stats;
   late Preferences preferences;
+  late MockExerciseService exerciseService;
+  late MockLocalChartService chartService;
+  late Charts charts;
 
   const userId = 'user-1';
   final press = Exercise(name: 'Bench Press (Barbell)', category: .barbell, target: .chest);
@@ -62,16 +65,16 @@ void main() {
     remote = _FakeRemote();
     goals = Goals(service: local, remoteService: remote)..userId = userId;
 
-    final service = MockExerciseService();
+    exerciseService = MockExerciseService();
     final remoteExercise = MockRemoteExerciseService();
-    when(service.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [press]));
-    when(service.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
-    when(service.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
+    when(exerciseService.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [press]));
+    when(exerciseService.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
+    when(exerciseService.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
     when(remoteExercise.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
 
     exercises = Exercises(
       remoteService: remoteExercise,
-      service: service,
+      service: exerciseService,
       libraryService: MockExerciseLibraryService(),
       catalogService: MockLocalCatalogService(),
       preferenceService: MockRemoteExercisePreferenceService(),
@@ -83,6 +86,12 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     preferences = Preferences();
     await preferences.init();
+
+    chartService = MockLocalChartService();
+    charts = Charts(service: chartService)
+      ..userId = userId
+      // as once the dashboard has loaded: before then the toggle is absent
+      ..initialized = true;
   });
 
   Future<void> pump(
@@ -102,6 +111,7 @@ void main() {
           ChangeNotifierProvider<Exercises>.value(value: exercises),
           ChangeNotifierProvider<Stats>.value(value: stats),
           ChangeNotifierProvider<Preferences>.value(value: settings ?? preferences),
+          ChangeNotifierProvider<Charts>.value(value: charts),
         ],
         child: MaterialApp(
           localizationsDelegates: localizationsDelegates,
@@ -110,7 +120,7 @@ void main() {
             body: SizedBox(
               height: 700,
               width: 400,
-              child: GoalDetail(goal: goal, workouts: WorkoutAggregation.empty(), onClose: onClose),
+              child: GoalDetail(goal: goal, onClose: onClose),
             ),
           ),
         ),
@@ -190,6 +200,45 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(AppKeys.closeGoalDetail), findsNothing);
+    });
+  });
+
+  group('the chart\'s add-to-profile button (#626)', () {
+    bool onProfile() {
+      return charts.exerciseCharts.any((each) => each.exerciseName == press.id && each.type == .topSetWeight);
+    }
+
+    testWidgets('adds the exercise\'s chart, says so, and a second tap takes it off', (tester) async {
+      when(
+        exerciseService.getExerciseMetics(any, any, any, limit: anyNamed('limit')),
+      ).thenAnswer((_) async => [(100, DateTime(2026, 1, 1))]);
+      when(chartService.saveChart(any, any)).thenAnswer((_) async => 'stored-id');
+      when(chartService.deleteChart(any, any)).thenAnswer((_) async {});
+
+      await pump(tester, benchLadder());
+      await tester.pumpAndSettle();
+      final l = L.of(tester.element(find.byType(GoalDetail)));
+
+      await tester.tap(find.byTooltip(l.addChartToProfile));
+      await tester.pumpAndSettle();
+      expect(onProfile(), isTrue);
+      expect(find.text(l.chartAddedToProfile), findsOneWidget);
+      // the same card About's button reads: one per exercise and metric
+      expect(find.byTooltip(l.removeChartFromProfile), findsOneWidget);
+
+      await tester.tap(find.byTooltip(l.removeChartFromProfile));
+      await tester.pumpAndSettle();
+      expect(onProfile(), isFalse);
+      expect(find.byTooltip(l.addChartToProfile), findsOneWidget);
+    });
+
+    testWidgets('a whole-workout goal, which draws no chart, offers none', (tester) async {
+      await pump(tester, workoutsGoal());
+      await tester.pumpAndSettle();
+      final l = L.of(tester.element(find.byType(GoalDetail)));
+
+      expect(find.byTooltip(l.addChartToProfile), findsNothing);
+      expect(find.byTooltip(l.removeChartFromProfile), findsNothing);
     });
   });
 

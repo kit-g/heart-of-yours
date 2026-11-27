@@ -153,6 +153,17 @@ void main() {
       expect(find.byKey(AppKeys.libraryEntry), findsOneWidget);
     });
 
+    testWidgets("off, with Your coach on, a coach's programs don't bring the library back (#593)", (tester) async {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-programs': FeatureAnswer.off.name,
+        'feature-yourCoach': FeatureAnswer.on.name,
+      });
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.libraryEntry), findsNothing);
+    });
+
     testWidgets('off, there is no way in and no offer', (tester) async {
       answer(.off);
       await openWorkoutTab(tester);

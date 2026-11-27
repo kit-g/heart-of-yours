@@ -100,6 +100,13 @@ EVENT_DIMENSIONS = {
     'replace_scope': 'Replace scope',
     'suggested': 'Picked a suggestion',
     'library_program': 'Library program',
+    'with_program': 'Invited with a program',
+    'accepted': 'Invitation accepted',
+    'role': 'Coaching side',
+    'coaching_action': 'Coaching action',
+    'with_messages': 'Report carried messages',
+    'also_blocked': 'Report also blocked',
+    'edited': 'Note edited',
 }
 
 # User properties are user-scoped dimensions; GA4 draws no other distinction.
@@ -109,6 +116,7 @@ USER_DIMENSIONS = {
     'form_factor': 'Form factor',
     'workouts_bucket': 'Workouts bucket',
     'templates_bucket': 'Templates bucket',
+    'coaching_role': 'Coaching role',
 }
 
 METRICS = {
@@ -126,6 +134,7 @@ METRICS = {
     'created_custom': 'Custom exercises created',
     'workout_exercises': 'Logged exercises moved',
     'sessions': 'Program sessions',
+    'clients': 'Clients reached',
 }
 
 

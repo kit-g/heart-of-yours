@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'refusals.dart';
 import 'remote.dart';
 
 /// The local half of goal storage.
@@ -26,9 +27,17 @@ abstract interface class LocalGoalService implements GoalService {
 
 /// A rung the app has just noticed was met, and the goal it belongs to.
 ///
-/// Returned by [Goals.observeProgress] so a caller can say so — the workout
-/// summary congratulates you for the rung the session you just finished earned.
+/// Returned by [Goals.observeProgress] and [Goals.stampCrossed] so a caller
+/// can say so — the workout summary congratulates you for the rung the session
+/// you just finished earned, and live goal notes (#625) for the one a set just
+/// reached.
 typedef GoalAchievement = ({Goal goal, GoalStage stage});
+
+extension GoalStageReach on GoalStage {
+  /// Whether [value] meets this rung. Pace is the one metric where progress
+  /// means going down, so its rungs are met from above.
+  bool isMetBy(num value, GoalMetric metric) => metric.lowerIsBetter ? value <= target : value >= target;
+}
 
 /// A write the server considered and refused.
 ///
@@ -37,10 +46,12 @@ typedef GoalAchievement = ({Goal goal, GoalStage stage});
 /// 500 are worth retrying forever; a refusal is not — retrying one spends a
 /// request on every launch and leaves a goal that looks saved and never will be.
 ///
-/// The server names every failure with a stable [code] for exactly this, so the
-/// client branches on identity rather than on prose that may be reworded.
-/// `server_error` is the one named failure that is still transient; an unnamed
-/// one — no body, a timeout, a proxy's HTML — never reached the handler at all.
+/// The server names every refusal with a stable [code] for exactly this, as a
+/// `ServerRefusal`, so the client branches on identity rather than on prose
+/// that may be reworded. Its throttle (`429 rate_limited`) is the one named
+/// refusal that is still transient. A server error is a 5xx and never a
+/// refusal, and an unnamed failure — no body, a timeout, a proxy's HTML —
+/// never reached the handler at all.
 class GoalRejected implements Exception {
   /// The server's stable identifier: `goal_limit`, `goal_scope`,
   /// `goal_cadence_stages`, `goal_not_found`, `goal_stage_not_found`, or the
@@ -65,22 +76,13 @@ class GoalRejected implements Exception {
   /// telling apart so a stamp can be retried without it rather than dropped.
   bool get isUnknownWorkout => code == 'goal_workout_unknown';
 
-  /// Named, but still transient: the request was fine and the server broke.
-  static const _serverError = 'server_error';
-
   /// Reads a refusal out of whatever the service threw, or null when the
-  /// failure could just as well be an outage.
+  /// failure could just as well be an outage, or is the server's throttle,
+  /// which says "later", not "no".
   static GoalRejected? from(Object? error) {
     return switch (error) {
-      {'code': _serverError} => null,
-      {'code': String code} => GoalRejected(
-        code,
-        reason: switch (error) {
-          {'reason': String reason} => reason,
-          {'message': String message} => message,
-          _ => null,
-        },
-      ),
+      ServerRefusal(:final isThrottle) when isThrottle => null,
+      ServerRefusal(:final code, :final reason) => GoalRejected(code, reason: reason),
       _ => null,
     };
   }
@@ -166,6 +168,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     initialized = false;
     _pulled = false;
     _initializing = null;
+    notifyListeners();
   }
 
   /// Paints from the local mirror, then reconciles with the server and retries
@@ -208,13 +211,19 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   Future<void> _init() async {
     if (userId case String id) {
       try {
-        _replace(await _mine(id));
+        // a session that ended while they were read (#671): the last one's
+        final live = await _mine(id);
+        if (userId != id) return;
+        _replace(live);
+        final archived = await _mine(id, archived: true);
+        if (userId != id) return;
         _archived
           ..clear()
-          ..addAll(await _mine(id, archived: true));
+          ..addAll(archived);
       } catch (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
       }
+      if (userId != id) return;
       initialized = true;
       notifyListeners();
 
@@ -436,7 +445,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
 
       for (final stage in goal.stages) {
         if (stage.isAchieved || stage.id == null) continue;
-        if (!_meets(stage, value, goal.metric.lowerIsBetter)) continue;
+        if (!stage.isMetBy(value, goal.metric)) continue;
 
         try {
           final stamped = await markStageAchieved(
@@ -458,61 +467,41 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     return achieved;
   }
 
-  /// Recurring goals this session carried over their target.
+  /// Stamps the rungs in [crossed] — what one session carried over the line
+  /// (#625) — and hands [crossed] back with each goal as it now stands, for
+  /// the caller to announce.
   ///
-  /// Separate from [observeProgress] because nothing is stamped: a cadence goal
-  /// resets each period and is never "done", so there is no achievement to
-  /// record — only something worth saying once.
+  /// Which rungs a session crossed is the caller's to work out: the workout
+  /// summary and the note over a workout in progress ask the same question of
+  /// the same numbers, and the answer has to be one answer. This only records
+  /// it.
   ///
-  /// Announced when the session made the difference: with it the period meets
-  /// the target, without it the period did not. That is both truer than "is it
-  /// met right now" and self-limiting — a later session in the same period
-  /// cannot re-announce, because by then the period already met the target
-  /// without it. No marker to persist, and nothing to reset when the week
-  /// rolls over.
-  Future<List<GoalAchievement>> observePeriodWins({
-    required Future<num?> Function(Goal goal) valueOf,
-    required Future<num?> Function(Goal goal) valueBefore,
-    bool Function(Goal goal)? setAside,
-  }) async {
-    final wins = <GoalAchievement>[];
-    if (userId == null) return wins;
-
-    for (final goal in List.of(_goals)) {
-      if (goal.cadence == null) continue;
-      if (setAside?.call(goal) ?? false) continue;
-      // the db gives a cadence goal exactly one stage
-      final stage = goal.stages.firstOrNull;
-      if (stage == null) continue;
-
-      final num? now;
-      final num? before;
-      try {
-        now = await valueOf(goal);
-        before = await valueBefore(goal);
-      } catch (error, stacktrace) {
-        onError?.call(error, stacktrace: stacktrace);
-        continue;
-      }
-
-      if (now == null) continue;
-      if (!_meets(stage, now, goal.metric.lowerIsBetter)) continue;
-      // already there without this session, so this session is not the news
-      if (before != null && _meets(stage, before, goal.metric.lowerIsBetter)) continue;
-
-      wins.add((goal: goal, stage: stage));
-    }
-
-    return wins;
+  /// - A recurring goal's rung passes through unstamped: it resets each
+  ///   period and is never "done", so there is nothing to record — only
+  ///   something worth saying once.
+  /// - A rung already stamped keeps its timestamp, which says when the target
+  ///   was *first* met.
+  /// - A refusal is reported, not raised, and the rung is still announced: the
+  ///   session did reach it, whatever the server made of the credit.
+  Future<List<GoalAchievement>> stampCrossed(List<GoalAchievement> crossed, {String? achievedBy}) async {
+    if (userId == null) return crossed;
+    return [for (final crossing in crossed) await _stamp(crossing, achievedBy: achievedBy)];
   }
 
-  /// Pace is the one metric where progress means going down, so its rungs are
-  /// met from above.
-  bool _meets(GoalStage stage, num value, bool lowerIsBetter) {
-    return switch (lowerIsBetter) {
-      true => value <= stage.target,
-      false => value >= stage.target,
-    };
+  Future<GoalAchievement> _stamp(GoalAchievement crossing, {String? achievedBy}) async {
+    final (:goal, :stage) = crossing;
+    switch ((goal.id, stage.id)) {
+      case (final String goalId, final String stageId) when goal.cadence == null && !stage.isAchieved:
+        try {
+          final stamped = await markStageAchieved(goalId, stageId, DateTime.timestamp(), achievedBy: achievedBy);
+          return (goal: stamped, stage: stage);
+        } on GoalRejected catch (rejection, stacktrace) {
+          onError?.call(rejection, stacktrace: stacktrace);
+          return crossing;
+        }
+      case _:
+        return crossing;
+    }
   }
 
   /// Re-attempts the push for goals persisted locally but never confirmed —
@@ -582,7 +571,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     } catch (error, stacktrace) {
       if (GoalRejected.from(error) case GoalRejected rejection) {
         await onRejected(local);
-        throw rejection;
+        Error.throwWithStackTrace(rejection, stacktrace);
       }
       onError?.call(error, stacktrace: stacktrace);
       return local;

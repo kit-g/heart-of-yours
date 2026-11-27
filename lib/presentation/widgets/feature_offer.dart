@@ -1,7 +1,9 @@
+import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The one ask for an opt-in feature, in the place it would do something
@@ -67,9 +69,13 @@ class _FeatureOfferState extends State<FeatureOffer> {
                 ],
               ),
               Text(widget.body, style: textTheme.bodyMedium),
-              Row(
-                mainAxisAlignment: .end,
+              // stacked, still at the end, when the two don't fit one line:
+              // Russian at a large text size on a phone (#701)
+              OverflowBar(
+                alignment: .end,
+                overflowAlignment: .end,
                 spacing: 8,
+                overflowSpacing: 8,
                 children: [
                   TextButton(
                     key: widget.declineKey,
@@ -131,4 +137,59 @@ class FeatureDeclinedNotice extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The one ask for [feature] as a sheet over whatever led to it — a menu
+/// item, a calendar day — for a feature asked about on a tap rather than in a
+/// list. Showing it spends the offer; dismissing it is waving it away, a no.
+/// Completes with the answer, recorded ([answerOffer]) before it returns, so
+/// an answer outlives a caller that went away while the sheet was up.
+Future<bool> askInSheet(
+  BuildContext context,
+  Feature feature, {
+  required IconData icon,
+  required String title,
+  required String body,
+  Key? offerKey,
+  Key? acceptKey,
+  Key? declineKey,
+}) async {
+  final preferences = Preferences.of(context);
+  final answer = await showModalBottomSheet<bool>(
+    context: context,
+    useRootNavigator: true,
+    constraints: const BoxConstraints(maxWidth: dialogWidth),
+    builder: (context) {
+      return SafeArea(
+        child: Padding(
+          padding: const .fromLTRB(16, 24, 16, 16),
+          // the offer is laid out for a list, where it gets unbounded height;
+          // in a sheet it would fill the sheet's height without this
+          child: Column(
+            mainAxisSize: .min,
+            children: [
+              FeatureOffer(
+                key: offerKey,
+                acceptKey: acceptKey,
+                declineKey: declineKey,
+                icon: icon,
+                title: title,
+                body: body,
+                onAnswer: (yes) => Navigator.of(context).pop(yes),
+                onShown: () => preferences.markOffered(feature),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+  final yes = answer ?? false;
+  preferences.answerOffer(feature, yes: yes);
+  if (!yes && context.mounted) {
+    snack(context, L.of(context).featureDeclinedNotice);
+    // the snack was the notice: owed once, and now paid
+    preferences.acknowledgeDeclineNotice(feature);
+  }
+  return yes;
 }

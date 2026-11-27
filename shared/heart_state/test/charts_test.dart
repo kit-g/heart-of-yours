@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -50,6 +51,40 @@ void main() {
       expect(saved.type, ChartPreferenceType.totalVolume);
       expect(sut.exerciseCharts.single.id, '7');
       expect(probe.notifications, 1);
+    });
+
+    test('an exercise chart goes on once, however many taps race to add it (#626)', () async {
+      var saves = 0;
+      when(mockService.saveChart(any, userId)).thenAnswer((_) async {
+        saves++;
+        await Future<void>.delayed(Duration.zero);
+        return 'id-$saves';
+      });
+
+      final added = await Future.wait([
+        sut.addExerciseChart('bench', .totalVolume),
+        sut.addExerciseChart('bench', .totalVolume),
+      ]);
+
+      expect(added, [true, false]);
+      expect(saves, 1);
+      expect(sut.exerciseChartOf('bench', .totalVolume)?.id, 'id-1');
+      expect(await sut.addExerciseChart('bench', .totalVolume), isFalse, reason: 'already there');
+    });
+
+    test('taking an exercise chart off takes every card of it', () async {
+      var saved = 0;
+      when(mockService.saveChart(any, userId)).thenAnswer((_) async => 'id-${++saved}');
+      when(mockService.deleteChart(any, userId)).thenAnswer((_) async {});
+      // two, as the profile's New chart dialog can make
+      await sut.addPreference(.exercise('bench', .totalVolume));
+      await sut.addPreference(.exercise('bench', .totalVolume));
+
+      await sut.removeExerciseChart('bench', .totalVolume);
+
+      expect(sut.exerciseChartOf('bench', .totalVolume), isNull);
+      verify(mockService.deleteChart('id-1', userId)).called(1);
+      verify(mockService.deleteChart('id-2', userId)).called(1);
     });
 
     test('add() saves a training chart, which is not an exercise chart', () async {
@@ -123,6 +158,29 @@ void main() {
 
       sut.onSignOut();
       expect(sut.isEmpty, isTrue);
+    });
+
+    // #719: the log out clears, then awaits the push unregister, and only
+    // then is the next uid keyed. A load started for the account that left
+    // lands in between, and must neither fill the dashboard nor mark it read.
+    test("a load for the session that ended lands on nothing, and the next user's still reads", () async {
+      final stale = Completer<List<DashboardChart>>();
+      when(mockService.getCharts(userId)).thenAnswer((_) => stale.future);
+      final loading = sut.init();
+
+      sut.onSignOut();
+      expect(sut.userId, isNull);
+      stale.complete([exercise('a')]);
+      await loading;
+
+      expect(sut.isEmpty, isTrue);
+      expect(sut.initialized, isFalse);
+
+      when(mockService.getCharts('next')).thenAnswer((_) async => [exercise('b')]);
+      sut.userId = 'next';
+      await sut.init();
+
+      expect(sut.map((each) => each.id), ['b']);
     });
   });
 

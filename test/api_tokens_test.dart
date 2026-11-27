@@ -70,7 +70,10 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.settings_rounded));
     await tester.pumpTimes();
-    await tester.ensureVisible(find.byKey(AppKeys.developerApi));
+    // dragged rather than ensureVisible: on a wide window that leaves a row
+    // just below the fold where it is, and a tap then misses it
+    await tester.dragUntilVisible(find.byKey(AppKeys.developerApi), find.byType(ListView).first, const Offset(0, -200));
+    await tester.pumpTimes();
     await tester.tapByKey(AppKeys.developerApi);
     await tester.pumpTimes();
     expect(find.byType(ApiTokensPage), findsOneWidget);
@@ -229,7 +232,15 @@ void main() {
     testWidgets('a refusal at the cap sends the form back to the list', (tester) async {
       when(
         api.createApiToken(name: anyNamed('name'), expiry: anyNamed('expiry'), purpose: anyNamed('purpose')),
-      ).thenAnswer((_) async => throw {'code': 'token_limit', 'reason': 'you can have at most 5 active tokens'});
+      ).thenAnswer(
+        (_) async => throw const ServerRefusal(
+          status: 400,
+          code: 'token_limit',
+          method: 'POST',
+          route: '/v1/accounts/tokens',
+          details: {'reason': 'you can have at most 5 active tokens'},
+        ),
+      );
       await pumpToTokens(tester);
       await tester.tapByKey(AppKeys.newApiToken);
       await tester.pumpTimes();

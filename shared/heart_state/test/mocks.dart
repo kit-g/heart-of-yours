@@ -38,6 +38,8 @@ import 'package:mockito/annotations.dart';
     MockSpec<LocalUpsyncService>(),
     MockSpec<RemoteAccountSummaryService>(),
     MockSpec<LocalMirrorService>(),
+    MockSpec<LocalAnomalyService>(),
+    MockSpec<AnomalyService>(),
   ],
 )
 void main() {

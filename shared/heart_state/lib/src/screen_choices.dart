@@ -1,0 +1,119 @@
+import 'package:heart_models/heart_models.dart';
+
+/// What History opens on: the list of workouts, the calendar's months one
+/// under another (#609), or one month at a time (#739). The list is what
+/// History always was, and stays the default.
+///
+/// [value] is the storage key, on the device and in the account, and never
+/// changes once shipped.
+enum HistoryView {
+  list('list'),
+  calendar('calendar'),
+  month('month');
+
+  final String value;
+
+  new(this.value);
+
+  static HistoryView? fromValue(String? value) => values.where((view) => view.value == value).firstOrNull;
+}
+
+/// How History's list draws a workout (#611): the full card, every exercise
+/// with its best set, or a compact one — name, date, the numbers and the
+/// muscle groups trained, in three lines. Full is what History always was,
+/// and stays the default.
+///
+/// [value] is the storage key, on the device and in the account, and never
+/// changes once shipped.
+enum HistoryDensity {
+  full('full'),
+  compact('compact');
+
+  final String value;
+
+  new(this.value);
+
+  static HistoryDensity? fromValue(String? value) => values.where((density) => density.value == value).firstOrNull;
+}
+
+/// A choice of how one of the app's screens shows itself, kept with when it
+/// was made: what travels between devices. Like an opt-in answer
+/// ([FeatureRecord]), the time settles two devices that disagree, and the
+/// later choice wins.
+///
+/// [value] is the choice's own storage value ([HistoryView.value]), kept as
+/// a string so a value from a newer app passes through an older one.
+final class ScreenChoiceRecord {
+  final String value;
+  final DateTime at;
+
+  const new({required this.value, required this.at});
+
+  @override
+  bool operator ==(Object other) => other is ScreenChoiceRecord && other.value == value && other.at == at;
+
+  @override
+  int get hashCode => Object.hash(value, at);
+
+  @override
+  String toString() => 'ScreenChoiceRecord(value: $value, at: $at)';
+}
+
+/// The screen choices there are, by their storage key.
+enum ScreenChoice {
+  /// [HistoryView] (#609).
+  historyView('historyView'),
+
+  /// [HistoryDensity] (#611).
+  historyDensity('historyDensity'),
+
+  /// How the exercise picker groups the library, a [PickerGrouping] by name
+  /// (#620).
+  pickerGrouping('pickerGrouping');
+
+  final String value;
+
+  new(this.value);
+}
+
+/// Where the choices live in the account's [Settings]: `extra.screens`, one
+/// entry per [ScreenChoice.value] —
+/// `{"historyView": {"value": "calendar", "at": "…"}}`.
+const _settingsKey = 'screens';
+
+/// The choices [settings] carries. Lenient: an entry this app cannot read —
+/// malformed, or a choice from a newer version — is skipped, never a throw.
+Map<ScreenChoice, ScreenChoiceRecord> screenChoicesOf(Settings settings) {
+  final stored = switch (settings.extra[_settingsKey]) {
+    Map stored => stored,
+    _ => const {},
+  };
+  return {
+    for (final choice in ScreenChoice.values)
+      if (stored[choice.value] case {'value': String value, 'at': String at})
+        if (DateTime.tryParse(at) case DateTime at) choice: ScreenChoiceRecord(value: value, at: at),
+  };
+}
+
+/// [settings] with [records] written into it. Every other entry is kept as it
+/// was, so a newer app's choices pass through an older one untouched.
+Settings withScreenChoices(Settings settings, Map<ScreenChoice, ScreenChoiceRecord> records) {
+  final stored = switch (settings.extra[_settingsKey]) {
+    Map stored => stored,
+    _ => const {},
+  };
+  return settings.copyWith(
+    extra: {
+      ...settings.extra,
+      _settingsKey: {
+        ...stored,
+        for (final MapEntry(key: choice, value: ScreenChoiceRecord(:value, :at)) in records.entries)
+          choice.value: {
+            if (stored[choice.value] case Map entry) ...entry,
+            'value': value,
+            'at': at.toUtc().toIso8601String(),
+          },
+      },
+    },
+  );
+}

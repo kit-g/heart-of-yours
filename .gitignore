@@ -74,3 +74,6 @@ lib/firebase_options_prod.dart
 # also swallows docs/handoff.md.
 /HANDOFF.md
 /REVIEW.md
+
+# Private content-production preferences (loaded through CLAUDE.md).
+/docs/content-production.md

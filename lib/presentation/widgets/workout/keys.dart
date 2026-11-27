@@ -11,6 +11,7 @@ class WorkoutDetailKeys {
   static Key recordPill(String kind) => Key('WorkoutDetail.recordPill.$kind');
   static const recordCount = Key('WorkoutDetail.recordCount');
   static const liveRecordNote = Key('WorkoutDetail.liveRecordNote');
+  static const liveGoalBurst = Key('WorkoutDetail.liveGoalBurst');
   static const liveRecordsOffer = Key('WorkoutDetail.liveRecordsOffer');
   static const liveRecordsAccept = Key('WorkoutDetail.liveRecordsAccept');
   static const liveRecordsDecline = Key('WorkoutDetail.liveRecordsDecline');
@@ -19,6 +20,7 @@ class WorkoutDetailKeys {
   static const programBaseSave = Key('WorkoutDetail.programBase.save');
   static Key programBaseEdit(String key) => Key('WorkoutDetail.programBase.edit.$key');
   static const addExercises = Key('WorkoutDetail.addExercises');
+  static const newExercise = Key('WorkoutDetail.newExercise');
   static const platesOffer = Key('WorkoutDetail.platesOffer');
   static const platesAccept = Key('WorkoutDetail.platesAccept');
   static const platesDecline = Key('WorkoutDetail.platesDecline');
@@ -31,7 +33,12 @@ class WorkoutDetailKeys {
   static Key plateNearest(String total) => Key('WorkoutDetail.plateNearest.$total');
   static Key barOption(String bar) => Key('WorkoutDetail.barOption.$bar');
   static const startNewWorkout = Key('WorkoutDetail.startNewWorkout');
+
+  /// Past workouts (#530): the way in beside an empty workout.
+  static const logPastWorkout = Key('WorkoutDetail.logPastWorkout');
   static const finishWorkout = Key('WorkoutDetail.finishWorkout');
+  static const saveUnticked = Key('WorkoutDetail.saveUnticked');
+  static const discardUnticked = Key('WorkoutDetail.discardUnticked');
   static const timer = Key('WorkoutDetail.timer');
   static const resume = Key('WorkoutDetail.resume');
   static const keepGoing = Key('WorkoutDetail.keepGoing');

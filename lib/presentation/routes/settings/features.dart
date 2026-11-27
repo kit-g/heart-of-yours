@@ -99,9 +99,64 @@ class _FeaturesPageState extends State<FeaturesPage> {
       .watchApp => const _WatchAppSwitch(),
       // the ramp itself, which only the switch's own page can hold
       .warmups => const _FeatureSwitch(.warmups, extra: _WarmupScheme()),
+      .entryReview => const _EntryReviewSwitch(),
+      .coachPeople => const _CoachPeopleSwitch(),
+      .yourCoach => const _YourCoachSwitch(),
       // the sound, the volume, and the cues that are not the rest's
       .workoutSounds => const _FeatureSwitch(.workoutSounds, extra: _WorkoutSoundsSettings()),
       _ => _FeatureSwitch(feature),
+    };
+  }
+}
+
+/// Coach people's switch (#566), only for an account that may coach: in the
+/// beta the server grants that by hand, and the profile says whether it holds it.
+class _CoachPeopleSwitch extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (Auth.watch(context).user?.mayCoach ?? false) {
+      true => const _FeatureSwitch(.coachPeople),
+      false => const SizedBox.shrink(),
+    };
+  }
+}
+
+/// Your coach's switch (#566), only once it has been asked about: an
+/// invitation is the ask (#553), and before one there is nothing to switch.
+class _YourCoachSwitch extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (Preferences.watch(context).featureAnswer(.yourCoach)) {
+      // never invited: nothing here, and nothing asked of the server
+      .unasked => const SizedBox.shrink(),
+      .pending || .on || .off => const Column(
+        crossAxisAlignment: .stretch,
+        children: [
+          _FeatureSwitch(.yourCoach),
+          // each coach, whatever the switch says: leaving needs no switch on
+          Padding(padding: .symmetric(horizontal: 16), child: _YourCoaches()),
+          // a block made from an invitation outlives a no to it
+          _Blocked(),
+        ],
+      ),
+    };
+  }
+}
+
+/// Suspicious entries' switch (#428), only for an account: the server finds
+/// them, and an anonymous session has nothing on a server to find.
+class _EntryReviewSwitch extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (Auth.watch(context).isAnonymous) {
+      true => const SizedBox.shrink(),
+      false => const _FeatureSwitch(.entryReview),
     };
   }
 }
@@ -138,7 +193,7 @@ class _SpotlightState extends State<_Spotlight> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme(:tertiaryContainer) = Theme.of(context).colorScheme;
-    final still = MediaQuery.disableAnimationsOf(context);
+    final still = lessMotion(context);
     return ValueListenableBuilder<bool>(
       valueListenable: _lit,
       builder: (context, lit, child) {
@@ -199,7 +254,7 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
       onChanged: (on) {
         // the row as well as the thumb flips it, and neither clicks by itself
         HapticFeedback.selectionClick();
-        preferences.setFeature(feature, on: on);
+        preferences.setFeature(feature, on: on, source: .settings);
         onSwitched?.call();
       },
     );
@@ -230,7 +285,7 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
                       // leaving out the last one turns the feature off
                       onChanged: (checked) {
                         HapticFeedback.selectionClick();
-                        preferences.setOption(option, on: checked ?? false);
+                        preferences.setOption(option, on: checked ?? false, source: .settings);
                       },
                       title: Text(option.title(l)),
                       controlAffinity: ListTileControlAffinity.trailing,

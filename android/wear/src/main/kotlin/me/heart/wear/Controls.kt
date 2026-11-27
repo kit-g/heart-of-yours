@@ -1,5 +1,6 @@
 package me.heart.wear
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,8 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -37,19 +36,19 @@ import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnScope
 import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.CompactButton
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.Dialog
 import androidx.wear.compose.material3.FilledTonalButton
 import androidx.wear.compose.material3.FilledTonalIconButton
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.IconButtonDefaults
-import androidx.wear.compose.material3.LocalContentColor
 import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.minimumInteractiveComponentSize
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
@@ -96,10 +95,10 @@ internal fun TransformingLazyColumnScope.setControls(
             }
         }
     }
-    set.previous?.let { previous ->
+    set.last?.let { last ->
         item {
             Text(
-                previous,
+                last.line,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -195,8 +194,12 @@ internal fun SetValueDialog(
 ) {
     Dialog(visible = draft.editing != null, onDismissRequest = { draft.editing = null }) {
         when (draft.editing) {
-            Field.Weight -> ValueEditor(draft.weight, set.step, set.unit.orEmpty(), accent) { draft.weight = it }
-            Field.Reps -> ValueEditor(draft.reps, 1.0, controls.reps, accent) { draft.reps = it }
+            Field.Weight -> ValueEditor(
+                draft.weight, set.step, set.unit.orEmpty(), accent, offers = listOfNotNull(set.last, set.before).map { it.offer(Field.Weight) },
+            ) { draft.weight = it }
+            Field.Reps -> ValueEditor(
+                draft.reps, 1.0, controls.reps, accent, offers = listOfNotNull(set.last, set.before).map { it.offer(Field.Reps) },
+            ) { draft.reps = it }
             null -> Unit
         }
     }
@@ -234,8 +237,19 @@ internal fun ValuePill(text: String, unit: String, modifier: Modifier = Modifier
 /// One value, full screen: − and + a step at a time, the crown or bezel for
 /// bigger moves — focused from the start, with nothing else on screen to
 /// scroll. Swiping it away puts it away; the set's own Done is what logs it.
+///
+/// [offers] are values this one held earlier, which a tap sets (#586): last
+/// session's, and the set before's — a range that starts the count at its
+/// floor is often far from where it ends.
 @Composable
-internal fun ValueEditor(value: Double, step: Double, unit: String, accent: Color, onChange: (Double) -> Unit) {
+internal fun ValueEditor(
+    value: Double,
+    step: Double,
+    unit: String,
+    accent: Color,
+    offers: List<Offer> = emptyList(),
+    onChange: (Double) -> Unit,
+) {
     val focus = remember { FocusRequester() }
     val haptics = LocalHapticFeedback.current
     var turned by remember { mutableFloatStateOf(0f) }
@@ -287,8 +301,43 @@ internal fun ValueEditor(value: Double, step: Double, unit: String, accent: Colo
             Stepper(R.drawable.ic_minus, accent) { nudge(-1) }
             Stepper(R.drawable.ic_plus, accent) { nudge(1) }
         }
+        offers.forEach { (line, earlier) ->
+            // one tap to an earlier value; already there, it is only said —
+            // at the same height, so the steppers do not jump when it gets there
+            when (val offered = earlier?.takeIf { it != current }) {
+                null -> Text(
+                    line,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    modifier = Modifier.minimumInteractiveComponentSize(),
+                )
+                // a quiet outline says it can be tapped: the bare line read as
+                // a caption, a filled button pulled the eye off the number
+                else -> CompactButton(
+                    onClick = {
+                        current = offered
+                        onChange(offered)
+                    },
+                    label = { Text(line, maxLines = 2, textAlign = TextAlign.Center) },
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = accent),
+                    border = BorderStroke(1.dp, accent.copy(alpha = 0.6f)),
+                )
+            }
+        }
     }
     LaunchedEffect(Unit) { focus.requestFocus() }
+}
+
+/// An earlier value on offer in the [ValueEditor]: its line, and the value a
+/// tap sets — null where that set had none, and the line is only said.
+internal data class Offer(val line: String, val value: Double?)
+
+/// This as the editor of its [field] offers it.
+internal fun PhoneState.Workout.Earlier.offer(field: Field): Offer = when (field) {
+    Field.Weight -> Offer(line, weight)
+    Field.Reps -> Offer(line, reps?.toDouble())
 }
 
 @Composable
@@ -307,28 +356,23 @@ private const val DETENT = 48f
 private const val MAX = 1000.0
 
 /// Shorter, longer, or over: the three things the phone's countdown offers.
+/// Skip has a row of its own: three to a row leaves too little of a small round
+/// screen for "Пропустить" or "Passer" (#502).
 @Composable
 fun RestControls(workoutId: String, controls: PhoneState.Workout.Controls, send: (Command) -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        listOf(
-            controls.subtract to Command.AdjustRest(workoutId, -10),
-            controls.add to Command.AdjustRest(workoutId, 10),
-            controls.skip to Command.SkipRest(workoutId),
-        ).forEach { (label, command) ->
-            FilledTonalButton(
-                onClick = { send(command) },
-                contentPadding = PaddingValues(horizontal = 4.dp),
-                modifier = Modifier.weight(if (command is Command.SkipRest) 1.4f else 1f),
-            ) {
-                // a share of a small watch, and "Пропустить" to fit in it
-                BasicText(
-                    label,
-                    Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Center, color = LocalContentColor.current),
-                    maxLines = 1,
-                    autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MaterialTheme.typography.labelSmall.fontSize),
-                )
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf(
+                controls.subtract to Command.AdjustRest(workoutId, -10),
+                controls.add to Command.AdjustRest(workoutId, 10),
+            ).forEach { (label, command) ->
+                FilledTonalButton(onClick = { send(command) }, modifier = Modifier.weight(1f)) {
+                    Text(label, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                }
             }
+        }
+        FilledTonalButton(onClick = { send(Command.SkipRest(workoutId)) }, modifier = Modifier.fillMaxWidth()) {
+            Text(controls.skip, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, maxLines = 1)
         }
     }
 }

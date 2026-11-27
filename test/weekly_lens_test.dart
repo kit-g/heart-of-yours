@@ -12,7 +12,8 @@ import 'mocks.mocks.dart';
 import 'support/harness.dart';
 
 /// The weekly sets card on the profile (#341): sets and sessions a week, by
-/// movement pattern or by muscle group. Baseline, so no offer and no switch.
+/// movement pattern or by muscle group. On by default, with a switch since
+/// #526: the group at the end covers the switch.
 void main() {
   late MockLocalDatabase db;
   late MockApi api;
@@ -61,8 +62,9 @@ void main() {
     required List<LensSets> rows,
     bool history = true,
     Size size = const Size(1200, 2400),
+    Map<String, Object> features = const {},
   }) async {
-    SharedPreferences.setMockInitialValues(pastOnboarding());
+    SharedPreferences.setMockInitialValues({...pastOnboarding(), ...features});
     when(
       db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
     ).thenAnswer((_) async => history ? WorkoutAggregation.dummy() : WorkoutAggregation.empty());
@@ -290,6 +292,24 @@ void main() {
       await showBalance(tester);
 
       expect(inCard('Nothing in the last four weeks falls on either side of a pair yet.'), findsOneWidget);
+    });
+  });
+
+  group('the switch (#526)', () {
+    final rows = [
+      row('w1', today, patterns: ['horizontal_press'], sets: 4),
+    ];
+
+    testWidgets('never answered, the card is there: on by default', (tester) async {
+      await pumpProfile(tester, rows: rows);
+
+      expect(card(), findsOneWidget);
+    });
+
+    testWidgets('switched off, the profile has no card', (tester) async {
+      await pumpProfile(tester, rows: rows, features: {'feature-weeklySets': 'off'});
+
+      expect(card(), findsNothing);
     });
   });
 }

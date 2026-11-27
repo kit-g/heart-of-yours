@@ -112,10 +112,44 @@ ticket doesn't say:
   offer (it stays for that session, then reads as no); tapping it opens the
   ask, and yes goes straight on to the copy. Nothing interrupts a user who
   never reaches for it.
+- Past workouts (`Feature.pastWorkouts`, #530) shipped with **no ask at all**:
+  an offer has to come at the moment the feature would help, and nothing in
+  ordinary use marked a lifter who logs after the fact. History's calendar
+  (#618) made that moment: **tapping an empty past day is the signal**. The
+  first such tap asks; yes goes on to logging that day (straight on, or through the ways to: empty,
+  from a template, as a copy of a past workout, #737), and after a
+  no the tap does nothing. Off, the Workout tab and History have no way in;
+  a workout already logged this way is an ordinary workout.
+- Coaching (#566) is two features, because it is two people's choices. **Coach
+  people** (`Feature.coachPeople`) has no ask, as Past workouts had none before
+  #618, and is the first switch that depends on the account: during the beta it shows only for an
+  account holding the `coach` entitlement, which the server grants by hand. Off,
+  or without the entitlement, Profile has no Coaching button and a link into the
+  space lands on Profile. **Your coach** (`Feature.yourCoach`) is asked when an
+  invitation arrives (#553), and shows in Settings › Features only once asked.
+  It is also the first answer the server writes: accepting an invitation turns
+  `extra.features.yourCoach` on, so the key is the server's as much as the app's.
+
+- Pushes (#567) have **no switch of their own**: they are opt-in through the
+  features that push, today the two coaching ones. With both off there is no
+  FCM token on the device, nothing is registered with the server, and no
+  Android channel shows in the system's settings; turning one off drops the
+  token. The OS's notification permission is asked by the first thing that
+  would push (a coach's first invitation sent, a student's invitation
+  accepted), after that feature's own yes. Settings › Notification settings
+  opens the app's own page only while pushes run, and the system's otherwise,
+  as it always did.
+
+- Device keys for end-to-end encryption (#555) follow the push client's rule
+  exactly: an account and a coaching switch on, no switch or ask of their own.
+  Until then no key is made and nothing reaches `/keys`. Turning the switches
+  off stops them and keeps the keys on the device, inert, so turning back on is
+  the same device; it never removes the device from the server. The keys live
+  in the Keychain or the Keystore, this device only and out of every backup.
 
 ### Default on
 
-Programs (`Feature.programs`, #340) is the one feature that is **on until the
+Programs (`Feature.programs`, #340) was the first feature **on until the
 user turns it off**, rather than off until they say yes: it is too large a part
 of the app to hide behind an ask. `Feature.defaultOn` marks it. Never answered,
 it reads as on, so its in-context offer (#345) was retired and nothing ever
@@ -123,6 +157,33 @@ asks. Everything else in the contract holds: the switch in Settings › Features
 is live both ways, an explicit off stays off and the app looks as if Programs
 had never been built, and the data stays whole either way. The default is not
 an answer: only a switch the user actually flipped syncs to the account.
+
+One exception crosses two switches (#593): with Programs off and Your coach
+on, a program a coach sent (`Program.coachId`) is shown and runs as Programs
+would run it — its band, its page, its plan, its growth, its calendar —
+because a no to Programs is never asked again, and the student would otherwise
+never see it. Their own programs, the library and every way of making one stay
+Programs'. `Preferences.programShown` is the one rule every surface asks;
+`Programs.shown` is the programs as it lets them be seen.
+
+Sets a week (`Feature.weeklySets`, #526) is the second, and the first core
+feature made a choice after it shipped: the profile card was core under #341,
+and feedback from experienced lifters asked for a way to turn it off. Default
+on keeps it where everyone already had it, and the switch removes it.
+Example templates (`Feature.sampleTemplates`, #528) followed for the same
+reason. Off, the Workout tab ends with the user's own templates, and neither
+the assistant nor a pinned shortcut can name a sample. Off is the UI only: the
+samples are still fetched and kept, and a copy made from one is the user's own
+template either way.
+
+The Exercises tab (`Feature.exercisesTab`, #608) is the first switch that
+takes a core surface away rather than adding one: on by default, never asked,
+and off leaves the navigation bar with three tabs, reflowed as if the fourth
+had never been there. Its branch stays in the router, so turning it back on
+finds the tab where it was left, and a way into it (a shared exercise link,
+the archive) opens the same page over the screen on view while it is off.
+The other home screens follow the same switch family as they become
+optional.
 
 ## Answers follow the account
 

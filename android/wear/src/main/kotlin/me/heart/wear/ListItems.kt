@@ -35,7 +35,8 @@ internal fun listPadding(scaffold: PaddingValues): PaddingValues {
         start = margin,
         end = margin,
         top = scaffold.calculateTopPadding(),
-        bottom = scaffold.calculateBottomPadding(),
+        // and the pager's dots, which sit over a list's last line otherwise
+        bottom = scaffold.calculateBottomPadding() + 12.dp,
     )
 }
 
@@ -45,7 +46,14 @@ internal fun TransformingLazyColumnItemScope.line(spec: TransformationSpec): Mod
     Modifier
         .fillMaxWidth()
         .transformedHeight(this, spec)
-        .graphicsLayer { with(spec) { applyContainerTransformation(scrollProgress) } }
+        // the content's fade too, not only the shape's: text scrolling up under
+        // the clock went there at full strength
+        .graphicsLayer {
+            with(spec) {
+                applyContainerTransformation(scrollProgress)
+                applyContentTransformation(scrollProgress)
+            }
+        }
         .minimumVerticalContentPadding(
             top = ListHeaderDefaults.minimumTopListContentPadding,
             bottom = ListHeaderDefaults.minimumBottomListContentPadding,

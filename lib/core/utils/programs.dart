@@ -69,9 +69,9 @@ class LocalPrograms implements LocalProgramService {
   Future<List<ProgramOwed>> getProgramsOwed(String userId) async {
     return [
       for (final (:row, :id, :programId, :change) in await _db.getProgramsOwed(userId))
-        if ((ProgramRow.values.asNameMap()[row], ProgramChange.values.asNameMap()[change]) case (
+        if ((ProgramRow.values.asNameMap()[row], ProgramOwedChange.values.asNameMap()[change]) case (
           final ProgramRow row,
-          final ProgramChange change,
+          final ProgramOwedChange change,
         ))
           (row: row, id: id, programId: programId, change: change),
     ];
@@ -100,78 +100,73 @@ class LocalPrograms implements LocalProgramService {
 }
 
 /// Presents [Api] as the [RemoteProgramService] the [Programs] notifier wants.
-///
-/// A refusal reaches [Programs] as the body the server sent, `{'code': …}`,
-/// the way every other create throws it: `heart_state` cannot see the typed
-/// [ProgramRefused], and decides by the code what not to ask again.
+/// A refusal reaches [Programs] as the [ServerRefusal] [Api] threw, and it
+/// decides by the code what not to ask again.
 class RemotePrograms implements RemoteProgramService {
   final Api _api;
 
   const new(this._api);
 
   @override
-  Future<List<Program>> getPrograms() => _refusedAsBody(_api.getPrograms);
+  Future<List<Program>> getPrograms() => _api.getPrograms();
+
+  @override
+  Future<Program> getProgram(String programId) => _api.getProgram(programId);
 
   @override
   Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions}) {
-    return _refusedAsBody(() => _api.replayProgram(program, sessions: sessions));
+    return _api.replayProgram(program, sessions: sessions);
   }
 
   @override
-  Future<Program> editProgram(Program program) => _refusedAsBody(() => _api.editProgram(program));
+  Future<Program> editProgram(Program program, {int? baseRevision, String? changeId}) {
+    return _api.editProgram(program, baseRevision: baseRevision, changeId: changeId);
+  }
+
+  @override
+  Future<({List<ProgramChange> items, String? cursor})> getProgramChanges(String programId, {String? since}) {
+    return _api.getProgramChanges(programId, since: since);
+  }
 
   @override
   Future<void> deleteProgram(String programId, {required bool keepTemplates}) {
-    return _refusedAsBody(() => _api.deleteProgram(programId, keepTemplates: keepTemplates));
+    return _api.deleteProgram(programId, keepTemplates: keepTemplates);
   }
 
   @override
-  Future<List<ProgramAction>> getProgramActions(String programId) {
-    return _refusedAsBody(() => _api.getProgramActions(programId));
-  }
+  Future<List<ProgramAction>> getProgramActions(String programId) => _api.getProgramActions(programId);
 
   @override
-  Future<Replayed<ProgramAction>> replayProgramAction(ProgramAction action) {
-    return _refusedAsBody(() => _api.replayProgramAction(action));
-  }
+  Future<Replayed<ProgramAction>> replayProgramAction(ProgramAction action) => _api.replayProgramAction(action);
 
   @override
   Future<void> deleteProgramAction(String programId, String actionId) {
-    return _refusedAsBody(() => _api.deleteProgramAction(programId, actionId));
+    return _api.deleteProgramAction(programId, actionId);
   }
 
   @override
-  Future<List<ProgramBase>> getProgramBases(String programId) => _refusedAsBody(() => _api.getProgramBases(programId));
+  Future<List<ProgramBase>> getProgramBases(String programId) => _api.getProgramBases(programId);
 
   @override
-  Future<Replayed<ProgramBase>> replayProgramBase(ProgramBase base) {
-    return _refusedAsBody(() => _api.replayProgramBase(base));
-  }
+  Future<Replayed<ProgramBase>> replayProgramBase(ProgramBase base) => _api.replayProgramBase(base);
 
   @override
-  Future<void> deleteProgramBase(String programId, String baseId) {
-    return _refusedAsBody(() => _api.deleteProgramBase(programId, baseId));
-  }
+  Future<void> deleteProgramBase(String programId, String baseId) => _api.deleteProgramBase(programId, baseId);
 
   @override
   Future<Template> setTemplateProgram(Template template, {required String? programId}) {
-    return _refusedAsBody(() => _api.setTemplateProgram(template, programId: programId));
+    return _api.setTemplateProgram(template, programId: programId);
   }
 
   @override
-  Future<List<TrainingSkip>> getSkips() => _refusedAsBody(_api.getSkips);
+  Future<List<TrainingSkip>> getSkips() => _api.getSkips();
 
   @override
-  Future<Replayed<TrainingSkip>> replaySkip(TrainingSkip skip) => _refusedAsBody(() => _api.replaySkip(skip));
+  Future<Replayed<TrainingSkip>> replaySkip(TrainingSkip skip) => _api.replaySkip(skip);
 
   @override
-  Future<void> deleteSkip(String skipId) => _refusedAsBody(() => _api.deleteSkip(skipId));
+  Future<void> deleteSkip(String skipId) => _api.deleteSkip(skipId);
 
-  static Future<T> _refusedAsBody<T>(Future<T> Function() call) async {
-    try {
-      return await call();
-    } on ProgramRefused catch (refused) {
-      throw {'code': refused.reason.code};
-    }
-  }
+  @override
+  Future<void> startProgram(String programId) => _api.startProgram(programId);
 }

@@ -258,6 +258,8 @@ Future<void> initNotifications({
         return onWorkoutTimeoutNotification?.call();
       case NotificationResponse(:int id) when id == _ongoingWorkout:
         return onOngoingWorkoutNotification?.call();
+      case NotificationResponse(:final payload) when _pushIn(payload) != null:
+        pushTaps.value = _pushIn(payload);
       default:
         return onUnknownNotification?.call(notification.toMap());
     }
@@ -1200,6 +1202,115 @@ Future<void> cancelOngoingWorkoutNotification() {
 
 Future<void> cancelAllNotifications() {
   return _plugin.cancelAll();
+}
+
+/// The Android channels the server's pushes name (#567). Its own ids, never
+/// renamed once shipped: Android keeps what the person set on a channel by
+/// its id.
+const _commentsChannel = 'comments';
+const _messagesChannel = 'messages';
+const _coachingChannel = 'coaching';
+
+/// Where a push the app shows itself goes in the payload, so a tap on it can
+/// be told from the app's own notifications.
+const _pushPayloadKey = 'push';
+
+/// The next id for a push the app shows itself: past the fixed ids above, and
+/// one each, so two messages stack rather than replace each other.
+var _nextPushId = 100;
+
+/// Taps on a push the app showed itself (Android, the app in front but not
+/// active), for the push presenter. A notifier rather than a callback
+/// because the tap that launched the app can arrive before the presenter is
+/// there to hear it: it waits here, and the presenter clears it once
+/// handled.
+final pushTaps = ValueNotifier<Push?>(null);
+
+/// The channels the server's pushes go to, named in the person's language, so
+/// each can be silenced on its own in the system's settings. Android only;
+/// made when the push client starts, which is only with coaching on.
+Future<void> createPushChannels({
+  required TargetPlatform platform,
+  required String comments,
+  required String messages,
+  required String coaching,
+}) async {
+  if (platform != .android) return;
+  final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+  for (final (id, name) in [(_commentsChannel, comments), (_messagesChannel, messages), (_coachingChannel, coaching)]) {
+    await _guarded(() async => android?.createNotificationChannel(AndroidNotificationChannel(id, name)));
+  }
+}
+
+/// Takes the channels down again when the push client stops: off, the
+/// system's settings list nothing coaching ever added. Android remembers what
+/// was set on a deleted channel and restores it when the id comes back.
+Future<void> deletePushChannels(TargetPlatform platform) async {
+  if (platform != .android) return;
+  final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+  for (final id in [_commentsChannel, _messagesChannel, _coachingChannel]) {
+    await _guarded(() async => android?.deleteNotificationChannel(channelId: id));
+  }
+}
+
+/// The channel each kind of push goes to.
+String _pushChannel(Push push) {
+  return switch (push.known) {
+    .commentCreated => _commentsChannel,
+    .coachingMessage => _messagesChannel,
+    .invitationAccepted || .programReceived || .workoutDigest => _coachingChannel,
+    // a silent one has no channel of its own: what the app says of it goes
+    // with coaching, as does one this build has never heard of
+    .programChanged || .threadCleared || .devicesChanged || .queueWaiting || null => _coachingChannel,
+  };
+}
+
+/// Shows a push that arrived with the app in front but not active (the
+/// shade pulled over it, the other half of a split screen), on Android,
+/// where FCM leaves that to the app (#724). [title] is the one the server
+/// wrote; a push has no body, because it says who, never what.
+Future<void> showPush(Push push, {required String title}) {
+  final channel = _pushChannel(push);
+  return _guarded(
+    () => _plugin.show(
+      id: _nextPushId++,
+      title: title,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(channel, channel, icon: _androidIcon),
+      ),
+      payload: jsonEncode({_pushPayloadKey: push.toMap()}),
+    ),
+  );
+}
+
+/// Whether Android lets [push]'s kind show (#724): the app's notifications
+/// on, and its channel not set to none. What the plugin can't say counts as
+/// open.
+Future<bool> pushChannelOpen(Push push) async {
+  final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+  if (android == null) return true;
+  try {
+    if (await android.areNotificationsEnabled() == false) return false;
+    final id = _pushChannel(push);
+    final channel = (await android.getNotificationChannels())?.where((each) => each.id == id).firstOrNull;
+    return channel?.importance != Importance.none;
+  } catch (_) {
+    return true;
+  }
+}
+
+/// The push a notification's [payload] carries, or null for one of the app's
+/// own.
+Push? _pushIn(String? payload) {
+  if (payload == null || !payload.startsWith('{')) return null;
+  try {
+    return switch (jsonDecode(payload)) {
+      {_pushPayloadKey: Map data} => Push.of(data),
+      _ => null,
+    };
+  } on FormatException {
+    return null;
+  }
 }
 
 /// [elapsed] as a stopped clock reads, "0:42" or "1:02:03".

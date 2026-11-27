@@ -391,6 +391,55 @@ void main() {
     });
   });
 
+  group('which programs are shown (#593)', () {
+    final own = Program(id: 'p1', name: 'Split', sessions: const [], createdAt: DateTime.utc(2026, 10, 1));
+    final coached = Program.fromJson({...own.toMap(), 'id': 'c1', 'coachId': 'coach-muffin'});
+
+    Future<void> answers({required bool programs, required bool yourCoach}) async {
+      await sut.init();
+      sut
+        ..setFeature(.programs, on: programs)
+        ..setFeature(.yourCoach, on: yourCoach);
+    }
+
+    test('with Programs on, every program, and an unknown one', () async {
+      await answers(programs: true, yourCoach: false);
+      expect(sut.programShown(own), isTrue);
+      expect(sut.programShown(coached), isTrue);
+      expect(sut.programShown(null), isTrue);
+      expect(sut.programsReach, isTrue);
+    });
+
+    test("with Programs off and Your coach on, only a coach's", () async {
+      await answers(programs: false, yourCoach: true);
+      expect(sut.programShown(coached), isTrue);
+      expect(sut.programShown(own), isFalse);
+      expect(sut.programShown(null), isFalse);
+      expect(sut.programsReach, isTrue);
+    });
+
+    test('with both off, none', () async {
+      await answers(programs: false, yourCoach: false);
+      expect(sut.programShown(coached), isFalse);
+      expect(sut.programShown(own), isFalse);
+      expect(sut.programsReach, isFalse);
+    });
+
+    test("the calendar follows a shown program: a coach's keeps it with Programs off", () async {
+      await answers(programs: false, yourCoach: true);
+      expect(sut.programCalendarOn(coached), isTrue);
+      expect(sut.programCalendarOn(own), isFalse);
+    });
+
+    test('the calendar left out of Programs is off for every program, a coach\'s too', () async {
+      await answers(programs: true, yourCoach: true);
+      sut.setOption(.programsCalendar, on: false);
+      expect(sut.programCalendarOn(own), isFalse);
+      sut.setFeature(.programs, on: false);
+      expect(sut.programCalendarOn(coached), isFalse, reason: 'what was left out stays out');
+    });
+  });
+
   group('opt-in features (#138)', () {
     const feature = Feature.muscleMap;
 
@@ -425,6 +474,80 @@ void main() {
 
       sut.acknowledgeDeclineNotice(feature);
       expect(sut.owesDeclineNotice(feature), isFalse);
+    });
+
+    group('feature_switched (#568)', () {
+      late ReportedAnalytics reported;
+
+      setUp(() {
+        reported = ReportedAnalytics();
+        sut = Preferences(analytics: Analytics(service: reported));
+      });
+
+      List<Map<String, Object>> switched() => [
+        for (final (name, parameters) in reported.events)
+          if (name == 'feature_switched') parameters,
+      ];
+
+      test('an answer to the ask counts once, and the same answer again counts nothing', () async {
+        await sut.init();
+        sut.markOffered(feature);
+
+        sut.answerOffer(feature, yes: true);
+        // an invitation accepted with Your coach already on, say
+        sut.answerOffer(feature, yes: true);
+
+        expect(switched(), [
+          {'feature': 'muscleMap', 'on': 'true', 'source': 'ask'},
+        ]);
+      });
+
+      test('the switch counts as the source it is given, and a switch with none is no one\'s answer', () async {
+        await sut.init();
+
+        sut.setFeature(feature, on: true, source: .settings);
+        sut.setFeature(feature, on: true, source: .settings);
+        sut.setFeature(feature, on: false, source: .settings);
+        // the watch app's first launch, a Siri shortcut used
+        sut.setFeature(feature, on: true);
+
+        expect(switched(), [
+          {'feature': 'muscleMap', 'on': 'true', 'source': 'settings'},
+          {'feature': 'muscleMap', 'on': 'false', 'source': 'settings'},
+        ]);
+      });
+
+      test('leaving out the last part counts as the switch off, and leaving out one of several nothing', () async {
+        await sut.init();
+        sut.setFeature(feature, on: true);
+
+        for (final option in feature.options) {
+          sut.setOption(option, on: false, source: .settings);
+        }
+
+        expect(sut.isOn(feature), isFalse);
+        expect(switched(), [
+          {'feature': 'muscleMap', 'on': 'false', 'source': 'settings'},
+        ]);
+      });
+
+      test('an ask left unanswered is counted as a no at the next launch, and only then', () async {
+        await sut.init();
+        sut.markOffered(feature);
+        expect(switched(), isEmpty, reason: 'still on screen this session');
+
+        final next = Preferences(analytics: Analytics(service: reported));
+        await next.init();
+        // startup reads twice
+        await next.init();
+        final after = Preferences(analytics: Analytics(service: reported));
+        await after.init();
+
+        expect(switched(), [
+          {'feature': 'muscleMap', 'on': 'false', 'source': 'lapsed'},
+        ]);
+        expect(next.featureAnswer(feature), FeatureAnswer.pending, reason: 'still not an answer that travels');
+      });
     });
 
     test('the notice does not outlive the session it was owed in', () async {
@@ -508,6 +631,13 @@ void main() {
         'recaps',
         'copyForAi',
         'liveRecords',
+        'entryReview',
+        'weeklySets',
+        'sampleTemplates',
+        'exercisesTab',
+        'pastWorkouts',
+        'coachPeople',
+        'yourCoach',
         'workoutSounds',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
@@ -625,6 +755,38 @@ void main() {
       final stored = Preferences();
       await stored.init();
       expect(stored.warmupScheme, [(percent: 45, reps: 5), (percent: 75, reps: 2)]);
+    });
+  });
+
+  group("when the user last looked at a coach's changes (#558)", () {
+    test('is nothing until set, then the time, per program, and notifies', () async {
+      await sut.init(locale: const Locale('en', 'US'));
+      var notified = 0;
+      sut.addListener(() => notified++);
+
+      expect(sut.programSeen('p1'), isNull);
+      await sut.setProgramSeen('p1', DateTime.utc(2026, 11, 12, 9));
+
+      expect(sut.programSeen('p1'), DateTime.utc(2026, 11, 12, 9));
+      expect(sut.programSeen('p2'), isNull);
+      expect(notified, 1);
+    });
+  });
+
+  group("when a coach's client last changed a copy (#745)", () {
+    test('keeps the latest, per program, and an older one changes nothing', () async {
+      await sut.init(locale: const Locale('en', 'US'));
+      var notified = 0;
+      sut.addListener(() => notified++);
+
+      expect(sut.programChanged('p1'), isNull);
+      await sut.setProgramChanged('p1', DateTime.utc(2026, 11, 20));
+      await sut.setProgramChanged('p1', DateTime.utc(2026, 11, 18));
+      await sut.setProgramChanged('p1', DateTime.utc(2026, 11, 20));
+
+      expect(sut.programChanged('p1'), DateTime.utc(2026, 11, 20));
+      expect(sut.programChanged('p2'), isNull);
+      expect(notified, 1);
     });
   });
 }

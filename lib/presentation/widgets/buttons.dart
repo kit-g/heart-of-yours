@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
+import 'package:heart/core/utils/visual.dart' show lineWidth;
 import 'package:material_ui/material_ui.dart';
 
 /// Flat coloured (or transparent by default) button with an ink well
@@ -10,6 +13,10 @@ class InkButton extends StatelessWidget {
   final BoxBorder? border;
   final InteractiveInkFeatureFactory? splashFactory;
 
+  /// The ripple's colour: half the fill's, unless given. A clear fill has none
+  /// to halve.
+  final Color? splashColor;
+
   const new({
     super.key,
     required this.child,
@@ -18,6 +25,7 @@ class InkButton extends StatelessWidget {
     this.inkShape,
     this.border,
     this.splashFactory,
+    this.splashColor,
   });
 
   const new rounded({
@@ -27,6 +35,7 @@ class InkButton extends StatelessWidget {
     this.backgroundColor,
     this.border,
     this.splashFactory,
+    this.splashColor,
   }) : inkShape = const RoundedRectangleBorder(
          borderRadius: BorderRadius.all(Radius.circular(8)),
        );
@@ -56,6 +65,8 @@ class InkButton extends StatelessWidget {
     return Material(
       borderRadius: borderRadius,
       color: switch (onPressed) {
+        // what had no fill gets none by being disabled
+        null when backgroundColor?.a == 0 => backgroundColor,
         null => disabledBackground,
         _ => backgroundColor,
       },
@@ -66,7 +77,7 @@ class InkButton extends StatelessWidget {
           border: border,
         ),
         child: InkWell(
-          splashColor: backgroundColor?.withValues(alpha: .5),
+          splashColor: splashColor ?? backgroundColor?.withValues(alpha: .5),
           customBorder: inkShape,
           onTap: onPressed,
           splashFactory: splashFactory,
@@ -97,6 +108,10 @@ const primaryButtonRadius = Radius.circular(8);
 /// height — instead of chasing it with a padding fudge.
 const primaryButtonMinHeight = 32.0;
 
+/// The inset that makes a [PrimaryButton] a full 48pt tap target: a page's
+/// main action, and the pair of answers a sheet or page ends in.
+const tallButtonPadding = EdgeInsets.symmetric(horizontal: 8.0, vertical: 14);
+
 const _defaultMargin = primaryButtonPadding;
 
 class PrimaryButton extends StatelessWidget {
@@ -108,6 +123,17 @@ class PrimaryButton extends StatelessWidget {
   final bool enableFeedback;
   final BoxBorder? border;
   final InteractiveInkFeatureFactory? splashFactory;
+  final Color? splashColor;
+
+  /// The height the button answers taps over, when it is more than it draws:
+  /// a dialog's answers keep the house 32pt look and a full tap target, the
+  /// band above and below it taking the tap too.
+  final double? hitHeight;
+
+  /// What a button with only an icon in it does, on a long press and to a
+  /// screen reader. Inside the button's own node: a [Tooltip] wrapped around
+  /// the button labels the node above it instead.
+  final String? tooltip;
 
   const new shrunk({
     super.key,
@@ -118,6 +144,9 @@ class PrimaryButton extends StatelessWidget {
     this.enableFeedback = true,
     this.border,
     this.splashFactory = InkRipple.splashFactory,
+    this.splashColor,
+    this.hitHeight,
+    this.tooltip,
   }) : wide = false;
 
   const new wide({
@@ -129,6 +158,9 @@ class PrimaryButton extends StatelessWidget {
     this.enableFeedback = true,
     this.border,
     this.splashFactory = InkRipple.splashFactory,
+    this.splashColor,
+    this.hitHeight,
+    this.tooltip,
   }) : wide = true;
 
   @override
@@ -137,8 +169,9 @@ class PrimaryButton extends StatelessWidget {
     // On the default (accent) fill the ambient text color cannot be trusted
     // — pale ink on the accent is illegible in dark mode — so the button owns
     // its content color. Callers passing a background keep owning theirs.
+    // Disabled, the ink is the disabled one, over either.
     final content = switch (backgroundColor) {
-      null => DefaultTextStyle.merge(
+      null when onPressed != null => DefaultTextStyle.merge(
         style: TextStyle(color: colorScheme.onTertiaryContainer),
         child: IconTheme.merge(
           data: IconThemeData(color: colorScheme.onTertiaryContainer),
@@ -147,18 +180,51 @@ class PrimaryButton extends StatelessWidget {
       ),
       _ => child,
     };
-    return SizedBox(
+    final drawn = SizedBox(
       width: wide ? double.infinity : null,
       child: InkButton.rounded(
         border: border,
         onPressed: onPressed == null ? null : _onPressed,
         backgroundColor: backgroundColor ?? colorScheme.tertiaryContainer,
+        splashFactory: splashFactory,
+        splashColor: splashColor,
         child: Padding(
           padding: margin,
           child: content,
         ),
       ),
     );
+    final button = switch (tooltip) {
+      final String message => Tooltip(message: message, child: drawn),
+      null => drawn,
+    };
+    // a node of its own with a button's role: the ink alone announces a tap
+    // and its label, not that this is a button, or whether it is enabled.
+    // Wrapping the hit band too, the node is as tall as what answers a tap
+    final announced = Semantics(
+      button: true,
+      container: true,
+      enabled: onPressed != null,
+      child: switch (hitHeight) {
+        final double height => GestureDetector(
+          behavior: .opaque,
+          onTap: onPressed == null ? null : _onPressed,
+          excludeFromSemantics: true,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: height),
+            // sized to the button, then centred in the band
+            child: Align(widthFactor: 1, heightFactor: 1, child: button),
+          ),
+        ),
+        null => button,
+      },
+    );
+    return switch ((wide, hitHeight)) {
+      // only over what it draws: stretched by a column, the band would answer
+      // taps on the empty page beside it
+      (false, _?) => Align(widthFactor: 1, heightFactor: 1, child: announced),
+      _ => announced,
+    };
   }
 
   void _onPressed() {
@@ -166,6 +232,155 @@ class PrimaryButton extends StatelessWidget {
       HapticFeedback.mediumImpact();
     }
     onPressed?.call();
+  }
+}
+
+/// The quiet button of the Goals header's pair ("Achieved" beside "Add
+/// goal"): a dialog's way out, or a page's side action. It draws the house
+/// 32pt and answers taps over a full target, so it is never drawn tall.
+///
+/// [danger] for an answer that can't be taken back; [plain] with no fill, for
+/// one inside a line of content or a corner.
+class QuietButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final Widget child;
+  final IconData? icon;
+  final bool danger;
+  final bool plain;
+
+  /// The label's colour, where the place it sits in has one of its own.
+  final Color? color;
+  final double iconSize;
+
+  const new({
+    super.key,
+    required this.onPressed,
+    required this.child,
+    this.icon,
+    this.danger = false,
+    this.plain = false,
+    this.color,
+    this.iconSize = 18,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final (fill, own) = switch ((plain, danger)) {
+      (true, true) => (Colors.transparent, colorScheme.error),
+      (true, false) => (Colors.transparent, colorScheme.primary),
+      (false, true) => (colorScheme.errorContainer, colorScheme.onErrorContainer),
+      (false, false) => (colorScheme.secondaryContainer, colorScheme.onSecondaryContainer),
+    };
+    final ink = switch (onPressed) {
+      null => colorScheme.onSurface.withValues(alpha: .38),
+      _ => color ?? own,
+    };
+    return PrimaryButton.shrunk(
+      backgroundColor: fill,
+      splashColor: ink.withValues(alpha: .12),
+      hitHeight: kMinInteractiveDimension,
+      enableFeedback: danger,
+      onPressed: onPressed,
+      child: DefaultTextStyle.merge(
+        style: TextStyle(color: ink),
+        child: ConstrainedBox(
+          // with the button's own inset, as wide as a target is at the least
+          constraints: const BoxConstraints(minWidth: 32),
+          child: switch (icon) {
+            final IconData icon => Row(
+              mainAxisSize: .min,
+              mainAxisAlignment: .center,
+              spacing: 6,
+              children: [
+                Icon(icon, size: iconSize, color: ink),
+                Flexible(child: child),
+              ],
+            ),
+            null => Center(widthFactor: 1, heightFactor: 1, child: child),
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// The dialogs' pair laid flat: a muted way out beside the one action, the
+/// same size, side by side at the full 48pt.
+///
+/// Side by side only while both labels fit their halves on one line, at the
+/// reader's text size, bold or not. A label that would break there ("Ils ne
+/// correspondent pas" on a phone at large text broke mid-word) stacks the
+/// pair full width instead, the way out first as the dialogs stack it.
+class ButtonPair extends StatelessWidget {
+  final String cancel;
+  final VoidCallback? onCancel;
+  final Key? cancelKey;
+  final String action;
+  final VoidCallback? onAction;
+  final Key? actionKey;
+
+  const new({
+    super.key,
+    required this.cancel,
+    required this.onCancel,
+    this.cancelKey,
+    required this.action,
+    required this.onAction,
+    this.actionKey,
+  });
+
+  static const _gap = 8.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final widest = math.max(lineWidth(context, cancel), lineWidth(context, action));
+    final ColorScheme(:surfaceContainerHighest, :onSurface) = Theme.of(context).colorScheme;
+    // a button given its own fill draws its label in the ambient color,
+    // which under a sheet is not the one that reads on this fill
+    final wayOut = PrimaryButton.wide(
+      key: cancelKey,
+      backgroundColor: surfaceContainerHighest,
+      margin: tallButtonPadding,
+      onPressed: onCancel,
+      child: Center(
+        child: Text(
+          cancel,
+          textAlign: .center,
+          style: TextStyle(color: onSurface),
+        ),
+      ),
+    );
+    final go = PrimaryButton.wide(
+      key: actionKey,
+      margin: tallButtonPadding,
+      onPressed: onAction,
+      child: Center(child: Text(action, textAlign: .center)),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final half = (constraints.maxWidth - _gap) / 2 - tallButtonPadding.horizontal;
+        return switch (widest <= half) {
+          // sized together all the same: a fallback glyph can still make
+          // one label a hair taller than the other
+          true => IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: .stretch,
+              spacing: _gap,
+              children: [
+                Expanded(child: wayOut),
+                Expanded(child: go),
+              ],
+            ),
+          ),
+          false => Column(
+            crossAxisAlignment: .stretch,
+            spacing: _gap,
+            children: [wayOut, go],
+          ),
+        };
+      },
+    );
   }
 }
 

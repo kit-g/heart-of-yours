@@ -3,6 +3,10 @@ part of 'exercises.dart';
 class ExerciseItem extends StatelessWidget {
   final Exercise exercise;
   final Preferences preferences;
+
+  /// Whether the row marks what the exercise is harder on among the things
+  /// the user goes easy on ([goEasyOn]), decided once for the list.
+  final bool goEasy;
   final void Function(Exercise, TapDownDetails?)? onExerciseSelected;
   final bool selected;
 
@@ -23,6 +27,7 @@ class ExerciseItem extends StatelessWidget {
     super.key,
     required this.exercise,
     required this.preferences,
+    required this.goEasy,
     required this.selected,
     this.highlighted = false,
     this.refusal,
@@ -33,7 +38,7 @@ class ExerciseItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final style = textTheme.bodySmall;
-    final marks = goEasyMarks(context, exercise);
+    final marks = goEasy ? goEasyMarks(context, exercise) : const <GoEasyEntry>[];
     TapDownDetails? details;
 
     final row = TweenAnimationBuilder<Color?>(
@@ -88,22 +93,15 @@ class ExerciseItem extends StatelessWidget {
                             ),
                             // harder on something the user goes easy on
                             // (#396): said, never refused
-                            if (marks.isNotEmpty)
-                              Semantics(
-                                label: L.of(context).goEasyHarderOn(_names(marks)),
-                                excludeSemantics: true,
-                                child: Row(
-                                  spacing: 4,
-                                  children: [
-                                    Text('  ·  ', style: style),
-                                    Icon(Icons.spa_outlined, size: 14, color: colorScheme.onSurfaceVariant),
-                                    Text(
-                                      _names(marks),
-                                      style: style?.copyWith(color: colorScheme.onSurfaceVariant),
-                                    ),
-                                  ],
-                                ),
+                            if (marks.isNotEmpty) ...[
+                              ExcludeSemantics(child: Text('  ·  ', style: style)),
+                              // the marker ellipsizes its names in a Flexible,
+                              // which needs a bounded width, and this line
+                              // scrolls sideways: measured, it gets its whole
+                              IntrinsicWidth(
+                                child: GoEasyMarker(marks: marks, explains: enabled),
                               ),
+                            ],
                           ],
                         ),
                       ],

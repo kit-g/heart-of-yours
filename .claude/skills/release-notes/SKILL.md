@@ -58,7 +58,7 @@ the vocabulary for the notes. Sort and dedupe; a merge can list the same key twi
 - `android/**`, `ios/**` — invisible *except* permissions, entitlements and min SDK, which
   change what the user is asked for and which devices still get the app. Both worth a line.
 - `test/**`, `integration_test/**`, `.github/**`, `Makefile`, `scripts/**`, `docs/**`,
-  `agents/**`, `.claude/**` — never user-facing.
+  `.claude/**` — never user-facing.
 - `*.g.dart`, `*.mocks.dart`, `intl_en_CA.arb`, `intl_ru.arb` — generated. Never.
 
 **Commit type.** `feat:` and `fix:` are candidates; `refactor:`, `chore:`, `docs:`, `test:`

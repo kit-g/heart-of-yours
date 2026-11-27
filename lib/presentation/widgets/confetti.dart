@@ -1,0 +1,255 @@
+import 'dart:math';
+
+import 'package:heart/core/utils/visual.dart';
+import 'package:material_ui/material_ui.dart';
+
+class _Particle {
+  /// initial horizontal position
+  final double startX;
+
+  /// initial vertical position
+  final double startY;
+
+  /// initial horizontal speed
+  final double initialVelocityX;
+
+  /// initial vertical speed
+  final double initialVelocityY;
+
+  /// how fast it falls down
+  final double gravity;
+
+  /// size of the box it's in
+  final double size;
+
+  /// fill color
+  final Color color;
+
+  /// either a star or a heart
+  final bool isStar;
+
+  /// initial speed of spinning
+  final double initialRotation;
+
+  /// current speed of spinning
+  double rotationSpeed;
+
+  /// how fast it slows down spinning
+  final double damping;
+
+  /// how much it wobbles
+  final double oscillationAmplitude;
+
+  /// how fast it wobbles
+  final double oscillationFrequency;
+
+  new()
+    : startX = _rng.nextDouble() * 20 - 10,
+      startY = _rng.nextDouble() * 10,
+      initialVelocityX = (_rng.nextDouble() - 0.5) * 200,
+      initialVelocityY = -(_rng.nextDouble() * 500 + 40),
+      gravity = 100 + _rng.nextInt(500).toDouble(),
+      size = _rng.nextDouble() * 20 + 8,
+      color = Colors.primaries[_rng.nextInt(Colors.primaries.length)],
+      isStar = _rng.nextBool(),
+      initialRotation = _rng.nextDouble() * 2 * pi,
+      rotationSpeed = (_rng.nextDouble() - 0.5) * 4,
+      damping = 0.96 + Random().nextDouble() * 0.05,
+      // wobble range (5-15px)
+      oscillationAmplitude = _rng.nextDouble() * 10 + 5,
+      // wobble speed (2-7 Hz)
+      oscillationFrequency = _rng.nextDouble() * 5 + 2;
+}
+
+class _ConfettiPainter extends CustomPainter {
+  final List<_Particle> particles;
+  final double progress;
+
+  new(this.particles, this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final particle in particles) {
+      final time = progress * 2.0;
+
+      // original trajectory
+      final baseX = size.width / 2 + particle.startX + particle.initialVelocityX * time;
+      final y =
+          size.height / 2 + particle.startY + particle.initialVelocityY * time + 0.5 * particle.gravity * time * time;
+
+      // side-to-side oscillation
+      final driftX = particle.oscillationAmplitude * sin(particle.oscillationFrequency * time);
+
+      final x = baseX + driftX; // final x position
+
+      final double opacity = (1 - progress).clamp(0, 1);
+
+      final paint = Paint()..color = particle.color.withValues(alpha: opacity);
+
+      particle.rotationSpeed *= particle.damping;
+      final rotation = particle.initialRotation + particle.rotationSpeed * time;
+
+      canvas
+        ..save()
+        ..translate(x, y)
+        ..rotate(rotation);
+
+      if (particle.isStar) {
+        _drawStar(canvas, 0, 0, particle.size, paint);
+      } else {
+        drawHeart(canvas, 0, 0, particle.size, paint);
+      }
+
+      canvas.restore();
+    }
+  }
+
+  void _drawStar(Canvas canvas, double x, double y, double size, Paint paint) {
+    final Path path = Path();
+    const int numPoints = 5;
+    final outerRadius = size / 2;
+    final innerRadius = outerRadius / 2.5;
+    const angle = pi / numPoints;
+
+    for (int i = 0; i < numPoints * 2; i++) {
+      final radius = i.isEven ? outerRadius : innerRadius;
+      final px = x + radius * cos(i * angle - pi / 2);
+      final py = y + radius * sin(i * angle - pi / 2);
+      if (i == 0) {
+        path.moveTo(px, py);
+      } else {
+        path.lineTo(px, py);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+/// A burst of hearts and stars from one point: the Done page's celebration,
+/// and a smaller one when a set reaches a goal (#625). Plays once, and not at
+/// all with less motion asked for (#595).
+class Confetti extends StatefulWidget {
+  final int particleCount;
+  final int duration;
+
+  const new({
+    super.key,
+    this.particleCount = 15,
+    this.duration = 4,
+  });
+
+  @override
+  State<Confetti> createState() => _ConfettiState();
+}
+
+class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late List<_Particle> particles;
+
+  /// Set while the burst waits for the app to come to the front.
+  AppLifecycleListener? _waiting;
+
+  /// Whether the burst has been decided on: it plays once, or not at all.
+  var _decided = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: widget.duration),
+    );
+    particles = List.generate(widget.particleCount, (_) => _Particle());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_decided) return;
+    _decided = true;
+
+    // with less motion asked for, there is no burst (#595)
+    if (lessMotion(context)) return;
+
+    // A workout finished on the watch while the phone was away (#206) can land
+    // here with the app in the background: the queue wakes it, and the finish
+    // opens this screen before anyone is looking. Played then, the burst is
+    // over by the time the app is opened. It waits for the app to be in front.
+    switch (WidgetsBinding.instance.lifecycleState) {
+      case null || .resumed:
+        _controller.forward();
+      case _:
+        _waiting = AppLifecycleListener(onResume: _play);
+    }
+  }
+
+  void _play() {
+    _waiting?.dispose();
+    _waiting = null;
+    _controller.forward();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (lessMotion(context)) return const SizedBox.shrink();
+    return ValueListenableBuilder<double>(
+      valueListenable: _controller,
+      builder: (_, value, _) {
+        return CustomPaint(
+          painter: _ConfettiPainter(particles, value),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _waiting?.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+}
+
+final _rng = Random();
+
+/// A heart [size] across, drawn into [canvas] at ([x], [y]) with [paint]: the
+/// confetti's, and the Done page's workout counter's.
+void drawHeart(Canvas canvas, double x, double y, double size, Paint paint) {
+  final width = size;
+  final height = size;
+  final path = Path();
+  final startX = (size / 2) - (width / 2);
+  final startY = (size / 2) - height * 0.6;
+
+  path
+    ..moveTo(
+      startX + (0.5 * width),
+      startY + (height * 0.4),
+    )
+    ..cubicTo(
+      startX + (0.2 * width),
+      startY + (height * 0.1),
+      startX + (-0.25 * width),
+      startY + (height * 0.6),
+      startX + (0.5 * width),
+      startY + height,
+    )
+    ..moveTo(
+      startX + (0.5 * width),
+      startY + (height * 0.4),
+    )
+    ..cubicTo(
+      startX + (0.8 * width),
+      startY + (height * 0.1),
+      startX + (1.25 * width),
+      startY + (height * 0.6),
+      startX + (0.5 * width),
+      startY + height,
+    );
+
+  canvas.drawPath(path, paint);
+}

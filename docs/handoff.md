@@ -6,7 +6,7 @@ satisfied or explicitly flagged in the handoff.
 
 ## Checklist
 
-1. **Verified** — `make codegen codegen-app` first (a fresh worktree has no
+1. **Verified** — `make codegen` first (a fresh worktree has no
    generated mocks, and `make lint` deliberately does not generate them),
    then `make lint` and `make test` (or the targeted `make test-<pkg>`
    suites) pass; record the exact commands and outcomes. A red lint or test
@@ -25,7 +25,7 @@ satisfied or explicitly flagged in the handoff.
    the generated Dart are derived and not committed: the diff carries the
    two sources only, and `make codegen-heart_language` rebuilds the rest.
 3. **Accessibility** — new interactive controls announce themselves (label,
-   role); screens you touched keep their entries in `test/a11y_test.dart`'s
+   role); screens you touched keep their entries in `test/a11y.dart`'s
    screen×guideline matrix honest: enable what now passes, skip what doesn't
    with a file:line reason. Patterns and adoption rule: `docs/a11y.md`.
 4. **Large screens** — measure `LayoutBuilder` constraints and cap widths
@@ -45,12 +45,11 @@ satisfied or explicitly flagged in the handoff.
    round-trips it, with a switch in Settings › Features. If the ticket
    didn't answer "is this opt-in?", building it as opt-in is the default,
    and the handoff says so.
-7. **Git** — an agent never commits or pushes (`agents/hooks/guard.sh`
-   enforces it; the user's own interactive session may). Leave work in the tree and run
-   `git add -N .` so new files appear in `git diff`. Your worktree may be
-   stacked on another agent's branch rather than `main` (the launcher's
-   `--base`); your work is still exactly `git diff HEAD`, and the handoff
-   names the base so the reviewer diffs and the PR targets the right branch.
+7. **Git** — an agent never commits or pushes; the user's own interactive
+   session may. Leave work in the tree and run `git add -N .` so new files
+   appear in `git diff`. If your worktree is stacked on another branch rather
+   than `main`, the handoff names the base so the reviewer diffs and the PR
+   targets the right branch.
 8. **Self-review** — run the `review-handoff` skill on the finished tree
    before writing the handoff. Fix what it finds, re-run, and leave
    `REVIEW.md` describing the tree as handed off. The reviewer runs the same

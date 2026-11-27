@@ -49,7 +49,8 @@ Future<void> runProgramSessionLink(
     final router = HeartRouter.of(context);
     final analytics = Analytics.of(context);
     final program = programs.lookup(link.programId);
-    if (program == null) return;
+    // with Programs off, only a coach's program is there to open (#593)
+    if (program == null || !Preferences.of(context).programShown(program)) return;
 
     final state = await programs.occurrence(
       program,
@@ -71,11 +72,7 @@ Future<void> runProgramSessionLink(
       case (OccurrenceAhead(), final Template session) when !program.archived:
         final started = await startWorkoutOverActive(
           context,
-          () => workouts.startWorkout(
-            source: .program,
-            template: startingWorkout(context, session),
-            applyPinnedNotes: true,
-          ),
+          () => startPlanned(context, workouts, session, source: .program),
         );
         if (started) analytics.programLinkOpened(outcome: .started);
         // started, or the running one kept: either way there is one to show

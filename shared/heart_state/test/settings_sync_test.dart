@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
@@ -13,6 +14,10 @@ class _Account with ChangeNotifier implements SettingsAccount {
 
   @override
   bool isAnonymous;
+
+  /// The server's copy is in once [arrive] has run, as after registering.
+  @override
+  bool settingsKnown = true;
 
   final saved = <Settings>[];
 
@@ -322,6 +327,27 @@ void main() {
       expect(saved.extra['kept'], isTrue);
     });
 
+    test('nothing is compared before the server\'s copy of the account arrives (#676)', () async {
+      await boot(
+        stored: {
+          'feature-muscleMap': 'on',
+          'feature-muscleMap-at': earlier.toIso8601String(),
+        },
+      );
+      // signed in, as Firebase knows the account: no settings at all
+      account
+        ..settingsKnown = false
+        ..user = User(id: 'muffin', displayName: 'Muffin', email: null, avatar: null, createdAt: null)
+        ..notifyListeners();
+      await settle();
+      expect(account.saved, isEmpty, reason: 'every answer here is newer than none, and would be written for nothing');
+
+      account.settingsKnown = true;
+      account.arrive(settingsWith(on: true, at: earlier));
+      await settle();
+      expect(account.saved, isEmpty);
+    });
+
     test('a second phone that was never asked takes the answer and does not ask', () async {
       await boot();
       account.arrive(settingsWith(on: false, at: earlier));
@@ -381,6 +407,107 @@ void main() {
   });
 
   _weekSync();
+  _screenChoices();
+  _groupingSync();
+}
+
+void _groupingSync() {
+  group('the picker\'s grouping, a screen choice (#620)', () {
+    late Preferences preferences;
+    late _Account account;
+
+    Future<void> boot({Map<String, Object> stored = const {}}) async {
+      SharedPreferences.setMockInitialValues(stored);
+      preferences = Preferences();
+      await preferences.init();
+      account = _Account();
+      final sync = SettingsSync(preferences: preferences, auth: account);
+      addTearDown(sync.dispose);
+    }
+
+    Future<void> settle() => Future<void>.delayed(Duration.zero);
+
+    ScreenChoiceRecord? sent() => screenChoicesOf(account.saved.last)[ScreenChoice.pickerGrouping];
+
+    test('none until chosen, and a grouping from a newer app reads as none', () async {
+      await boot();
+      expect(preferences.pickerGrouping, PickerGrouping.none);
+      expect(preferences.screenChoices, isEmpty);
+
+      await boot(
+        stored: {'screen-pickerGrouping': 'equipment', 'screen-pickerGrouping-at': '2026-09-01T10:00:00.000Z'},
+      );
+      expect(preferences.pickerGrouping, PickerGrouping.none);
+      // and choosing none over it is still a choice
+      preferences.setPickerGrouping(.none);
+      expect(preferences.screenChoices[ScreenChoice.pickerGrouping]?.value, 'none');
+    });
+
+    test('a grouping picked here goes up, with the account\'s other settings intact; none travels too', () async {
+      await boot();
+      account.arrive(const Settings(themeMode: 'dark', extra: {'kept': true}));
+      await settle();
+      expect(account.saved, isEmpty);
+
+      preferences.setPickerGrouping(.category);
+      await settle();
+      expect(sent()?.value, 'category');
+      expect(account.saved.last.themeMode, 'dark');
+      expect(account.saved.last.extra['kept'], isTrue);
+
+      preferences.setPickerGrouping(.none);
+      await settle();
+      expect(sent()?.value, 'none');
+    });
+
+    test('a newer grouping from another phone comes down; an older one does not overwrite this one', () async {
+      await boot(stored: {'screen-pickerGrouping': 'movement', 'screen-pickerGrouping-at': '2026-09-10T10:00:00.000Z'});
+      account.arrive(
+        withScreenChoices(const Settings(), {
+          ScreenChoice.pickerGrouping: ScreenChoiceRecord(value: 'target', at: DateTime.utc(2026, 9, 1)),
+        }),
+      );
+      await settle();
+      expect(preferences.pickerGrouping, PickerGrouping.movement);
+      expect(sent()?.value, 'movement');
+
+      final elsewhere = DateTime.timestamp().add(const Duration(minutes: 1));
+      account.arrive(
+        withScreenChoices(const Settings(), {
+          ScreenChoice.pickerGrouping: ScreenChoiceRecord(value: 'category', at: elsewhere),
+        }),
+      );
+      await settle();
+      expect(preferences.pickerGrouping, PickerGrouping.category);
+    });
+
+    test('an anonymous session keeps its grouping on the device until there is an account', () async {
+      await boot();
+      account.isAnonymous = true;
+      account.arrive(const Settings());
+      await settle();
+
+      preferences.setPickerGrouping(.target);
+      await settle();
+      expect(account.saved, isEmpty);
+
+      account.isAnonymous = false;
+      account.arrive(const Settings());
+      await settle();
+      expect(sent()?.value, 'target');
+    });
+
+    test('fold state never leaves the device', () async {
+      await boot();
+      account.arrive(const Settings());
+      await settle();
+
+      preferences.togglePickerGroup(const TargetGroup(.chest).id);
+      await settle();
+
+      expect(account.saved, isEmpty);
+    });
+  });
 }
 
 void _weekSync() {
@@ -388,11 +515,11 @@ void _weekSync() {
     late Preferences preferences;
     late _Account account;
 
-    Future<void> boot({Map<String, Object> stored = const {}}) async {
+    Future<void> boot({Map<String, Object> stored = const {}, _Account? on}) async {
       SharedPreferences.setMockInitialValues(stored);
       preferences = Preferences();
       await preferences.init(locale: const Locale('en', 'GB'));
-      account = _Account();
+      account = on ?? _Account();
       final sync = SettingsSync(preferences: preferences, auth: account);
       addTearDown(sync.dispose);
     }
@@ -465,6 +592,23 @@ void _weekSync() {
       expect(account.saved, isEmpty);
     });
 
+    test('a day picked while the last one is still being written stays owed, and goes up after it', () async {
+      final slow = _SlowAccount();
+      await boot(on: slow);
+      account.arrive(const Settings());
+      await settle();
+
+      preferences.setFirstWeekday(DateTime.sunday);
+      await settle();
+      preferences.setFirstWeekday(DateTime.saturday);
+      slow.release();
+      await settle();
+      await settle();
+
+      expect(preferences.firstWeekdayOwed, isFalse);
+      expect([for (final each in account.saved) each.firstWeekday], [DateTime.sunday, DateTime.saturday]);
+    });
+
     test('an anonymous session keeps its day on the device, and it goes up once there is an account', () async {
       await boot();
       account.isAnonymous = true;
@@ -482,6 +626,163 @@ void _weekSync() {
       expect(account.saved.single.firstWeekday, DateTime.sunday);
     });
   });
+}
+
+void _screenChoices() {
+  final earlier = DateTime.utc(2026, 9, 1, 10);
+  final later = DateTime.utc(2026, 9, 20, 10);
+
+  group('screen choices (#609)', () {
+    late Preferences preferences;
+    late _Account account;
+
+    Future<void> boot({Map<String, Object> stored = const {}}) async {
+      SharedPreferences.setMockInitialValues(stored);
+      preferences = Preferences();
+      await preferences.init();
+      account = _Account();
+      final sync = SettingsSync(preferences: preferences, auth: account);
+      addTearDown(sync.dispose);
+    }
+
+    Future<void> settle() => Future<void>.delayed(Duration.zero);
+
+    test('the codec reads what it wrote, and passes through what it cannot read', () {
+      final records = {ScreenChoice.historyView: ScreenChoiceRecord(value: 'calendar', at: later)};
+      const settings = Settings(
+        extra: {
+          'kept': 1,
+          'screens': {
+            'templatesView': {'value': 'grid', 'at': '2026-09-01T10:00:00.000Z'},
+            'historyView': {'value': 'list', 'at': '2026-09-01T10:00:00.000Z', 'theirs': true},
+          },
+        },
+      );
+      final written = withScreenChoices(settings, records);
+      expect(screenChoicesOf(written), records);
+      expect(written.extra['kept'], 1);
+      expect(written.extra['screens'], containsPair('templatesView', isA<Map>()));
+      expect((written.extra['screens'] as Map)['historyView'], containsPair('theirs', true));
+      for (final odd in [
+        null,
+        'calendar',
+        {'historyView': 'calendar'},
+        {
+          'historyView': {'value': 'calendar'},
+        },
+        {
+          'historyView': {'value': 1, 'at': '2026-09-01T10:00:00.000Z'},
+        },
+        {
+          'historyView': {'value': 'calendar', 'at': 'yesterday'},
+        },
+      ]) {
+        expect(screenChoicesOf(Settings(extra: {'screens': odd})), isEmpty, reason: '$odd');
+      }
+    });
+
+    test('History opens on the list until a choice is made, and an unknown value reads as the list', () async {
+      await boot();
+      expect(preferences.historyView, HistoryView.list);
+      expect(preferences.screenChoices, isEmpty);
+
+      await boot(stored: {'screen-historyView': 'agenda', 'screen-historyView-at': later.toIso8601String()});
+      expect(preferences.historyView, HistoryView.list);
+      // and choosing the list over a newer app's view is still a choice
+      preferences.setHistoryView(.list);
+      expect(preferences.screenChoices[ScreenChoice.historyView]?.value, 'list');
+    });
+
+    test('one month at a time is stored and travels as the others do (#739)', () async {
+      await boot();
+      account.arrive(const Settings());
+      await settle();
+      preferences.setHistoryView(.month);
+      await settle();
+      expect(preferences.historyView, HistoryView.month);
+      expect(screenChoicesOf(account.saved.single)[ScreenChoice.historyView]?.value, 'month');
+    });
+
+    test('a choice made here goes up, and a newer one from elsewhere comes down', () async {
+      await boot();
+      account.arrive(const Settings());
+      await settle();
+      expect(account.saved, isEmpty);
+
+      preferences.setHistoryView(.calendar);
+      await settle();
+      expect(screenChoicesOf(account.saved.single)[ScreenChoice.historyView]?.value, 'calendar');
+
+      final elsewhere = DateTime.timestamp().add(const Duration(minutes: 1));
+      account.arrive(
+        withScreenChoices(const Settings(), {
+          ScreenChoice.historyView: ScreenChoiceRecord(value: 'list', at: elsewhere),
+        }),
+      );
+      await settle();
+      expect(preferences.historyView, HistoryView.list);
+      expect(account.saved, hasLength(1));
+    });
+
+    test('an older choice from elsewhere does not overwrite a newer one here', () async {
+      await boot(stored: {'screen-historyView': 'calendar', 'screen-historyView-at': later.toIso8601String()});
+      account.arrive(
+        withScreenChoices(const Settings(), {
+          ScreenChoice.historyView: ScreenChoiceRecord(value: 'list', at: earlier),
+        }),
+      );
+      await settle();
+      expect(preferences.historyView, HistoryView.calendar);
+      expect(screenChoicesOf(account.saved.single)[ScreenChoice.historyView]?.value, 'calendar');
+    });
+
+    test('History\'s cards are full until a choice is made, and it travels like the view (#611)', () async {
+      await boot();
+      expect(preferences.historyDensity, HistoryDensity.full);
+      account.arrive(const Settings());
+      await settle();
+
+      // the default chosen again is no choice
+      preferences.setHistoryDensity(.full);
+      await settle();
+      expect(account.saved, isEmpty);
+
+      preferences.setHistoryDensity(.compact);
+      await settle();
+      expect(preferences.historyDensity, HistoryDensity.compact);
+      expect(screenChoicesOf(account.saved.single)[ScreenChoice.historyDensity]?.value, 'compact');
+
+      // a newer app's density reads as full here
+      await boot(stored: {'screen-historyDensity': 'tiny', 'screen-historyDensity-at': later.toIso8601String()});
+      expect(preferences.historyDensity, HistoryDensity.full);
+    });
+
+    test('choosing the view already shown is not a choice', () async {
+      await boot();
+      account.arrive(const Settings());
+      await settle();
+      preferences.setHistoryView(.list);
+      await settle();
+      expect(preferences.screenChoices, isEmpty);
+      expect(account.saved, isEmpty);
+    });
+  });
+}
+
+/// Holds every write until [release]d, so a change can land while one is out.
+class _SlowAccount extends _Account {
+  var _gate = Completer<void>();
+
+  void release() {
+    _gate.complete();
+    _gate = Completer<void>()..complete();
+  }
+
+  @override
+  Future<Settings?> saveSettings(Settings settings) async {
+    await _gate.future;
+    return super.saveSettings(settings);
+  }
 }
 
 class _FailingAccount extends _Account {

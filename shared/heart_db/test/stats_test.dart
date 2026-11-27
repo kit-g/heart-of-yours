@@ -304,7 +304,8 @@ void main() {
 
           final count = await local.getWorkoutCountBetween(
             sunday,
-            sunday.add(const Duration(days: 7)),
+            // calendar days, as weekRange does: a week holding a DST change is not 7 × 24 hours
+            dayOf(daysFromMonday: 6, hour: 0),
             userId: userId,
           );
           expect(count, 2);

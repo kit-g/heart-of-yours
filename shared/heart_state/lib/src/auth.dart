@@ -23,6 +23,11 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// null for an anonymous session: nothing of it may reach the server.
   final Future<void> Function(String?, String?)? onEnter;
 
+  /// Called with the session's token when Firebase refreshes it under a
+  /// session already entered: the client's copy is replaced, and nothing is
+  /// started up again (#676).
+  final void Function(String token)? onToken;
+
   /// Wipes everything the device store holds under a uid — what
   /// [eraseSession] calls before signing the anonymous session out. Null
   /// where there is nothing local to wipe.
@@ -58,6 +63,21 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
 
   @override
   User? get user => _user;
+
+  /// The account whose copy from the server [user] carries, if any.
+  String? _known;
+
+  /// Whether [user]'s entitlements are the server's word. False from a
+  /// sign-in until the server's copy of the account arrives, and with none
+  /// at all: until then the account reads as one granted nothing, which a
+  /// rule that turns something off on a missing entitlement must not take
+  /// for an answer. A later change Firebase reports for the same account
+  /// keeps what the server granted (see [_adopt]).
+  bool get entitlementsKnown => _known != null && _user?.id == _known;
+
+  /// The server's copy of the account carries both.
+  @override
+  bool get settingsKnown => entitlementsKnown;
 
   /// True for an anonymous session too: the rest of the app keys everything on
   /// a uid and an anonymous one is a uid like any other.
@@ -118,6 +138,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     this.onUserChange,
     this.onError,
     this.onEnter,
+    this.onToken,
     this.onErase,
     this.onLink,
     this.analytics,
@@ -142,59 +163,199 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
             user: GoogleSignInAccount account,
           ):
             await _loginWithGoogle(account);
-            await onEnter?.call(account.authentication.idToken, user?.id);
+            if (_enter(user?.id)) await onEnter?.call(account.authentication.idToken, user?.id);
           case GoogleSignInAuthenticationEventSignOut():
-            _user = null;
+            // the session ended: the app is told like any other way out, so
+            // what it held of the account goes with it (#671)
+            _adopt(null);
+            onUserChange?.call(null);
             notifyListeners();
         }
       });
     }
 
     _users = _firebase.userChanges().listen(
-      (user) async {
-        // the account an anonymous session just became: its store moves and
-        // its replay is owed before the uid is keyed in anywhere
-        if (_linking case String from when user != null && !user.isAnonymous) {
-          _linking = null;
-          await onLink?.call(from, user.uid);
-          if (_disposed) return;
-        }
-        _adopt(user);
-        onUserChange?.call(_user);
-        notifyListeners();
-        switch (user) {
-          case fb.User(isAnonymous: true, :final uid):
-            // no token handed over — the anonymous leg never reaches the
-            // server, and registering an account is what an account is for
-            await onEnter?.call(null, uid);
-          case fb.User user:
-            await onEnter?.call(await user.getIdToken(), user.uid);
-            if (_disposed) return;
-            try {
-              _user = await _registerUser(_user);
-              // what the server holds for the account — its settings among it
-              // — has only now arrived; listeners reading those need telling
-              notifyListeners();
-            } on AccountDeleted {
-              _logout();
-            }
-          case null:
-            await ensureSession();
-            // the gate is decided on this answer (see the router), and the
-            // router re-reads it on a user change — which this is: there is
-            // still no user, and now that is settled rather than pending
-            if (_sessionUnavailable) onUserChange?.call(null);
-        }
-        // app startup is awaited above and can outlive a torn-down tree (a
-        // test's, mid-session); there is nobody left to tell
-        if (_disposed) return;
-        isInitialized = true;
-      },
+      // An async listener's throw is nobody's to catch: it lands as an
+      // unhandled, fatal error. So every failure of a run is caught here, in
+      // one place, and the subscription's own onError below only ever sees the
+      // stream's.
+      (user) => _onUserChanged(user).catchError(_userChangeFailed),
       onError: (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
       },
     );
   }
+
+  Future<void> _onUserChanged(fb.User? user) async {
+    final session = _sessionOf(user);
+    // The same session again: a token refresh — which the token read below
+    // sets off on most cold starts — a new name, a reload. Once the run that
+    // started it is through, only what changed is done: starting it up again
+    // is every launch read and the account's write twice over (#676). A run
+    // that failed is no start, and this one starts it instead.
+    if (session != null && session == _entered) {
+      await _starting;
+      if (_disposed) return;
+      if (session == _entered) return _refresh(user!);
+    }
+
+    final starting = Completer<void>();
+    _entered = session;
+    _starting = starting.future;
+    // whether the app was started up for it; a registration that fails after
+    // is tried again on its own, not by starting up again
+    var started = false;
+    try {
+      // the account an anonymous session just became: its store moves and
+      // its replay is owed before the uid is keyed in anywhere
+      if (_linking case String from when user != null && !user.isAnonymous) {
+        _linking = null;
+        await onLink?.call(from, user.uid);
+        if (_disposed) return;
+      }
+      _adopt(user);
+      onUserChange?.call(_user);
+      notifyListeners();
+      switch (user) {
+        case fb.User(isAnonymous: true, :final uid):
+          // no token handed over — the anonymous leg never reaches the
+          // server, and registering an account is what an account is for
+          await onEnter?.call(null, uid);
+          started = true;
+        case fb.User user:
+          await onEnter?.call(await user.getIdToken(), user.uid);
+          started = true;
+          if (_disposed) return;
+          await _register(user.uid);
+        case null:
+          await ensureSession();
+          // the gate is decided on this answer (see the router), and the
+          // router re-reads it on a user change — which this is: there is
+          // still no user, and now that is settled rather than pending
+          if (_sessionUnavailable) onUserChange?.call(null);
+      }
+      // app startup is awaited above and can outlive a torn-down tree (a
+      // test's, mid-session); there is nobody left to tell
+      if (_disposed) return;
+      isInitialized = true;
+    } catch (_) {
+      // started up again on Firebase's next word — unless another session
+      // has taken over since, whose run this never was
+      if (!started && _entered == session) _entered = null;
+      rethrow;
+    } finally {
+      starting.complete();
+    }
+  }
+
+  static ({String uid, bool anonymous})? _sessionOf(fb.User? user) {
+    return switch (user) {
+      fb.User(:final uid, :final isAnonymous) => (uid: uid, anonymous: isAnonymous),
+      null => null,
+    };
+  }
+
+  /// A sign-in's own start-up, beside the stream's: true where the stream
+  /// has not started [uid]'s session, which is then this one's to start.
+  bool _enter(String? uid) {
+    if (uid == null || _entered == (uid: uid, anonymous: false)) return false;
+    _entered = (uid: uid, anonymous: false);
+    return true;
+  }
+
+  /// The session [_onUserChanged] already started, reported again: the app
+  /// hears of it only where something it shows changed, the client takes the
+  /// refreshed token, and the server hears of it where it hasn't yet, or a
+  /// name, address or photo changed.
+  Future<void> _refresh(fb.User user) async {
+    final before = _reported;
+    _adopt(user);
+    final changed = before != _reported;
+    if (changed) {
+      onUserChange?.call(_user);
+      notifyListeners();
+    }
+    if (user.isAnonymous) return;
+    if (await user.getIdToken() case final String token) onToken?.call(token);
+    if (_disposed) return;
+    if (changed || !entitlementsKnown) await _register(user.uid);
+  }
+
+  /// A run of [_onUserChanged] that failed: a request that never reached the
+  /// server (offline, or a socket iOS closed under a backgrounded app,
+  /// HEART-OF-YOURS-2S), a token that could not refresh. None of it is a
+  /// crash. The error handler decides what deserves reporting, and the app is
+  /// still told the session is settled. Without a handler (a test) the error
+  /// is thrown on, as loudly as it always was.
+  void _userChangeFailed(Object error, StackTrace stacktrace) {
+    if (!_disposed) isInitialized = true;
+    switch (onError) {
+      case final report?:
+        report(error, stacktrace: stacktrace);
+      case null:
+        Error.throwWithStackTrace(error, stacktrace);
+    }
+  }
+
+  /// Registers the signed-in account [uid] with the server and keeps its
+  /// answer — the account's settings and entitlements — unless the session
+  /// changed hands while the request was out: a late answer for an account
+  /// signed out of must not bring it back.
+  ///
+  /// A build the server no longer serves (426) keeps the session as it is —
+  /// signed in, as Firebase has it, with whatever the server last said of it.
+  /// It used to be dropped to no user while Firebase still had one, and a
+  /// later registration could sign them back in under the upgrade gate
+  /// (#683). The gate is the client's 426 hook's to raise, and it closes the
+  /// remote leg ([RemoteAccess.outdated]) until an update relaunches the app,
+  /// whose first registration, on Firebase's replay of the same user, lands.
+  Future<void> _register(String uid) async {
+    final user = _user;
+    if (user == null || !_mayRegister) return;
+    try {
+      final saved = await _service.registerAccount(user);
+      if (_disposed || _user?.id != uid) return;
+      _user = saved;
+      _known = uid;
+      // what the server holds for the account — its settings among it
+      // — has only now arrived; listeners reading those need telling
+      notifyListeners();
+    } on AccountDeleted {
+      await _logout();
+    } on UpgradeRequired catch (e) {
+      onError?.call(e);
+    }
+  }
+
+  /// Whether the account may be written to the server: there is one, the
+  /// client has its token, and the server still serves this build.
+  bool get _mayRegister => !_isAnonymous && _service.isAuthenticated && !remote.outdated();
+
+  /// Coming back to the app: an account whose registration never reached the
+  /// server — the launch was offline — tries again, rather than wait for
+  /// Firebase's next word about the user, up to an hour away. Its entitlements
+  /// (coaching among them) are unknown until it does.
+  Future<void> registerAgain() async {
+    if (entitlementsKnown) return;
+    if (_user?.id case final String uid) {
+      try {
+        await _register(uid);
+      } catch (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+      }
+    }
+  }
+
+  /// The session [_onUserChanged] last started up: a uid, and whether it was
+  /// still anonymous — the same uid as an account is a sign-in to start.
+  ({String uid, bool anonymous})? _entered;
+
+  /// The name, address and photo Firebase last reported: what the server
+  /// is told again when one changes.
+  (String?, String?, String?)? _reported;
+
+  /// The run starting [_entered] up, while it is out.
+  Future<void>? _starting;
 
   /// The Firebase subscription, held so [dispose] can end it.
   StreamSubscription<fb.User?>? _users;
@@ -255,8 +416,32 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
 
   /// Takes [user] as the session: the model the app reads, whether it is an
   /// anonymous one, and — the consequence — whether the remote leg is open.
+  ///
+  /// Firebase knows nothing of what the server granted, and reports every
+  /// change to the account (a new name, a new photo, a token refresh): the
+  /// same account keeps its entitlements and settings through those, or a
+  /// coach would read as one who may not coach until the server answered
+  /// again, and every opt-in answer as newer than the account's.
   void _adopt(fb.User? user) {
-    _user = _cast(user);
+    final previous = _user;
+    // another account, or none: what the server said was about the last one
+    if (previous?.id != user?.uid) _known = null;
+    _user = switch ((user, previous)) {
+      // the same account re-reported — a token refresh, a profile edit:
+      // Firebase's name, address and photo over what the server said of it
+      (final fb.User user, final User previous) when previous.id == user.uid => User(
+        id: previous.id,
+        displayName: user.displayName,
+        email: user.email,
+        avatar: user.photoURL,
+        createdAt: previous.createdAt ?? user.metadata.creationTime,
+        scheduledForDeletionAt: previous.scheduledForDeletionAt,
+        settings: previous.settings,
+        entitlements: previous.entitlements,
+      )..localAvatar = previous.localAvatar,
+      _ => _cast(user),
+    };
+    _reported = (user?.displayName, user?.email, user?.photoURL);
     _isAnonymous = user?.isAnonymous ?? false;
     remote.account = user != null && !_isAnonymous;
     if (user != null) _sessionUnavailable = false;
@@ -618,7 +803,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
       _user = _user?.copyWith(displayName: appleName, email: appleEmail);
       _reportArrival(cred, provider: provider, arrival: arrival);
 
-      _user = await _registerUser(_user);
+      if (_user?.id case final String uid) await _register(uid);
       notifyListeners();
       await _connectPending();
     });
@@ -724,9 +909,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
           // the store first, and only then keys the new uid in — starting the
           // app up here as well would read the store while the rows are moving
           await _connectPending();
-          if (wasAnonymous) return;
+          if (wasAnonymous || !_enter(cred?.user?.uid)) return;
           onEnter?.call(await cred?.user?.getIdToken(), cred?.user?.uid);
-          _user = await _registerUser(_user);
+          if (cred?.user?.uid case final String uid) await _register(uid);
         });
   }
 
@@ -795,7 +980,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
 
     // the stream handler starts the app up for a session that just linked —
     // see logInWithEmailAndPassword
-    if (wasAnonymous) return;
+    if (wasAnonymous || !_enter(cred?.user?.uid)) return;
     return onEnter?.call(await cred?.user?.getIdToken(), cred?.user?.uid);
   }
 
@@ -829,7 +1014,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     await _firebase.signOut();
   }
 
-  static User? _cast(fb.User? user) {
+  static User? _cast(fb.User? user, {List<String> entitlements = const []}) {
     if (user == null) return null;
     return User(
       email: user.email,
@@ -837,6 +1022,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
       displayName: user.displayName,
       avatar: user.photoURL,
       createdAt: user.metadata.creationTime,
+      entitlements: entitlements,
     );
   }
 
@@ -853,26 +1039,16 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   @override
   Future<Settings?> saveSettings(Settings settings) async {
     final user = _user;
-    if (user == null || _isAnonymous || !_service.isAuthenticated) return null;
+    if (user == null || !_mayRegister) return null;
     final saved = await _service.registerAccount(
       user.copyWith(settings: settings),
     );
     // the session may have changed hands while the write was out
     if (_user?.id != saved.id) return null;
     _user = saved;
+    _known = saved.id;
     notifyListeners();
     return saved.settings;
-  }
-
-  Future<User?> _registerUser(User? user) async {
-    try {
-      if (user == null || _isAnonymous) return user;
-      if (!_service.isAuthenticated) return user;
-      return await _service.registerAccount(user);
-    } on UpgradeRequired catch (e) {
-      onError?.call(e);
-      return null;
-    }
   }
 
   Future<String?>? get sessionToken => _firebase.currentUser?.getIdToken();
@@ -1022,6 +1198,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
         :final avatar,
         :final createdAt,
         :final settings,
+        :final entitlements,
       ):
         await _service.undoAccountDeletion();
         analytics?.accountDeletionCancelled();
@@ -1040,6 +1217,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
           avatar: avatar,
           createdAt: createdAt,
           settings: settings,
+          entitlements: entitlements,
         );
         notifyListeners();
     }
@@ -1111,7 +1289,15 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     _firebase.currentUser?.updateProfile(photoURL: null);
 
     if (user?.id case String userId) {
-      _service.removeAvatar(userId);
+      // not waited on, so a failure is reported here rather than left loose
+      unawaited(
+        _service
+            .removeAvatar(userId)
+            .then<void>(
+              (_) {},
+              onError: (Object error, StackTrace stacktrace) => onError?.call(error, stacktrace: stacktrace),
+            ),
+      );
     }
 
     notifyListeners();

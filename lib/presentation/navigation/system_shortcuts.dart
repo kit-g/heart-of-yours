@@ -9,7 +9,8 @@ import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Keeps the system's assistant layer told what it can name (#285): the
-/// templates, the user's own first and then the samples, as [ShortcutTemplate]s
+/// templates, the user's own first and then the samples while those are on
+/// (#528), as [ShortcutTemplate]s
 /// — so "Start Push day in Heart" resolves with the app not running. Published
 /// again whenever they change, and only when they changed.
 ///
@@ -115,7 +116,10 @@ class _SystemShortcutsPresenterState extends State<SystemShortcutsPresenter> {
     }
     final list = switch ((off, _templates)) {
       (true, _) || (_, null) => const <ShortcutTemplate>[],
-      (false, Templates templates) => [...templates, ...templates.samples].map(_named).nonNulls.toList(),
+      (false, Templates templates) => [
+        ...templates,
+        if (_preferences?.isOn(.sampleTemplates) ?? false) ...templates.samples,
+      ].map(_named).nonNulls.toList(),
     };
     if (_published case List<ShortcutTemplate> published when listEquals(published, list)) {
       // nothing new to name

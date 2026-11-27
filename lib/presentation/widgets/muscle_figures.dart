@@ -385,6 +385,10 @@ class const MusclePanel({
 
     return switch (help) {
       String help => Stack(
+        // passthrough: a loose Stack let the box shrink to its content inside
+        // the profile's stretched row, so the figures and the list beside them
+        // came out different heights (#687)
+        fit: .passthrough,
         children: [
           box,
           Positioned(top: 0, right: 0, child: PanelHelp(message: help)),
@@ -454,6 +458,26 @@ class const _Tip({
 
 extension MuscleGroupCopy on MuscleGroup {
   String label(L l) {
+    return switch (this) {
+      .legs => l.targetLegs,
+      .adductors => l.muscleGroupAdductors,
+      .hamstrings => l.muscleGroupHamstrings,
+      .glutes => l.muscleGroupGlutes,
+      .arms => l.targetArms,
+      .neck => l.muscleGroupNeck,
+      .back => l.targetBack,
+      .core => l.targetCore,
+      .shoulders => l.targetShoulders,
+      .chest => l.targetChest,
+    };
+  }
+}
+
+/// The same words for heart_models' own groups, which are the atlas's ten by
+/// id (#610).
+extension MuscleGroupKeyCopy on MuscleGroupKey {
+  String label(L l) {
+    // every value named: a group heart_models adds has to be worded here
     return switch (this) {
       .legs => l.targetLegs,
       .adductors => l.muscleGroupAdductors,

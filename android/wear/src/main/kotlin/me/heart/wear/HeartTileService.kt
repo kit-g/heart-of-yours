@@ -110,12 +110,14 @@ class HeartTileService : TileService() {
                 column.addContent(spacer())
                 column.addContent(text(workout.exercise, 16f, INK, lines = 2))
                 column.addContent(spacer())
-                column.addContent(
-                    when (val rest = workout.rest?.takeIf { resting }) {
-                        null -> text(workout.next, 14f, MUTED, lines = 2)
-                        else -> countdown(rest.last)
-                    },
-                )
+                when (val rest = workout.rest?.takeIf { resting }) {
+                    null -> column.addContent(text(workout.next, 14f, MUTED, lines = 2))
+                    else -> {
+                        // a bare number under a name read as the set's: it is the rest
+                        workout.restLabel?.let { column.addContent(text(it, 12f, MUTED)) }
+                        column.addContent(countdown(rest.last))
+                    }
+                }
             }
 
             return LayoutElementBuilders.Box.Builder()

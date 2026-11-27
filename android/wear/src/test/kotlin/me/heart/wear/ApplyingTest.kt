@@ -28,7 +28,7 @@ class ApplyingTest {
     private fun workout(done: Set<String> = emptySet(), upNext: String = "b1"): PhoneState {
         fun row(id: String, number: Int, total: Int) = PhoneState.Workout.Exercise.Row(
             id = id, weight = 60.0, reps = 5, done = id in done, mark = "$number", type = null,
-            position = "Set $number of $total", previous = "Last time: $id", next = "Next: $id",
+            position = "Set $number of $total", last = PhoneState.Workout.Earlier("Last time: $id"), next = "Next: $id",
         )
         return PhoneState.Workout(
             workoutId = "w", startedAt = now, title = "Push", exercise = "Bench", next = "", rest = null,
@@ -50,7 +50,7 @@ class ApplyingTest {
         val after = shown(workout().applying(complete("b1", 62.5, 6), now, now))
         assertEquals("b2", after.set?.setId)
         assertEquals("Set 2 of 3", after.set?.position)
-        assertEquals("Last time: b2", after.set?.previous)
+        assertEquals("Last time: b2", after.set?.last?.line)
         assertEquals("Next: b2", after.next)
         val ticked = after.exercises[0].sets[0]
         assertEquals(62.5, ticked.weight)

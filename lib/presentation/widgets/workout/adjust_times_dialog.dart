@@ -18,17 +18,32 @@ enum _Unfolded { none, start, end }
 ///
 /// The duration it shows leaves out [pauses] (#134), cut to the times as
 /// edited, the way the server cuts them on save.
+///
+/// [title] and [action] stand in for "Adjust Start/End Time" and Save where
+/// the times are a step rather than an edit: a past workout's, picked before
+/// it is filled in (#530), which also has to last ([needsLength]).
 Future<void> showAdjustTimesDialog(
   BuildContext context, {
   required DateTime start,
   required DateTime? end,
   required Future<void> Function(DateTime start, DateTime? end) onSave,
   Iterable<WorkoutPause> pauses = const [],
+  String? title,
+  String? action,
+  bool needsLength = false,
 }) {
   return showAdaptiveDialog<void>(
     context: context,
     barrierDismissible: true,
-    builder: (_) => _AdjustTimesDialog(start: start, end: end, onSave: onSave, pauses: pauses),
+    builder: (_) => _AdjustTimesDialog(
+      start: start,
+      end: end,
+      onSave: onSave,
+      pauses: pauses,
+      title: title,
+      action: action,
+      needsLength: needsLength,
+    ),
   );
 }
 
@@ -37,8 +52,19 @@ class _AdjustTimesDialog extends StatefulWidget {
   final DateTime? end;
   final Future<void> Function(DateTime start, DateTime? end) onSave;
   final Iterable<WorkoutPause> pauses;
+  final String? title;
+  final String? action;
+  final bool needsLength;
 
-  const new({required this.start, required this.end, required this.onSave, required this.pauses});
+  const new({
+    required this.start,
+    required this.end,
+    required this.onSave,
+    required this.pauses,
+    this.title,
+    this.action,
+    required this.needsLength,
+  });
 
   @override
   State<_AdjustTimesDialog> createState() => _AdjustTimesDialogState();
@@ -50,8 +76,6 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
   final _unfolded = ValueNotifier<_Unfolded>(.none);
   final _saving = ValueNotifier<bool>(false);
 
-  static final _valueFormat = DateFormat('yyyy-MM-dd, ').add_jm();
-
   @override
   void dispose() {
     _start.dispose();
@@ -61,7 +85,57 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
     super.dispose();
   }
 
-  String _formatValue(DateTime dt) => _valueFormat.format(dt);
+  /// The times as the open row found them. A wheel tells of every notch it
+  /// passes, so a move is worked out from here and never from the notch
+  /// before: scrolled past and back again, it ends where it would have anyway
+  /// (#738).
+  late ({DateTime start, DateTime? end}) _from = (start: widget.start, end: widget.end);
+
+  void _open() => _from = (start: _start.value, end: _end.value);
+
+  /// Past this, an end away from its start is the day being moved, and not a
+  /// longer workout.
+  static const _longest = Duration(hours: 12);
+
+  Duration get _length {
+    return switch (_from) {
+      (:final start, end: final DateTime end) => end.difference(start),
+      _ => .zero,
+    };
+  }
+
+  /// Now, to the minute, as the wheels pick it.
+  static DateTime _thisMinute() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day, now.hour, now.minute);
+  }
+
+  /// A workout being filled in after the fact ([needsLength]) keeps its
+  /// length when its start moves: picking yesterday's evening carries the end
+  /// along, rather than leaving it at now and making a thirty-hour session. A
+  /// finished workout's times move one at a time.
+  void _moveStart(DateTime start) {
+    _start.value = start;
+    if (widget.needsLength && _end.value != null) _end.value = start.add(_length);
+  }
+
+  /// Its end makes it longer or shorter, and takes the start along when it
+  /// goes to or before it, or so far past it that another day was meant: held
+  /// at the start instead, the wheel went back by itself to the day it was
+  /// scrolled away from (#738).
+  void _moveEnd(DateTime end) {
+    _end.value = end;
+    if (!widget.needsLength) return;
+    final start = _from.start;
+    _start.value = switch (end.isAfter(start) && end.difference(start) < _longest) {
+      true => start,
+      false => end.subtract(_length),
+    };
+  }
+
+  /// The day and time in the reader's language, "Wed, Nov 4, 1:26 AM":
+  /// never an ISO date, which reads as a database's.
+  String _formatValue(DateTime dt) => DateFormat.MMMEd(L.of(context).localeName).add_jm().format(dt);
 
   /// [start]..[end] less the part of every pause that falls inside it.
   Duration _trained(DateTime start, DateTime end) {
@@ -84,15 +158,21 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
   }
 
   void _toggle(_Unfolded which) {
+    _open();
     _unfolded.value = _unfolded.value == which ? .none : which;
   }
 
   Future<void> _save() async {
     final end = _end.value;
-    if (end != null && end.isBefore(_start.value)) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(L.of(context).endBeforeStart)),
-      );
+    final l = L.of(context);
+    final refusal = switch (end) {
+      DateTime end when end.isBefore(_start.value) => l.endBeforeStart,
+      // the wheels can meet: a workout of no time at all is no workout
+      DateTime end when widget.needsLength && !end.isAfter(_start.value) => l.endAfterStart,
+      _ => null,
+    };
+    if (refusal != null) {
+      ScaffoldMessenger.maybeOf(context)?.snack(refusal);
       return;
     }
     _saving.value = true;
@@ -109,6 +189,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
     DateTime? minimum,
     DateTime? maximum,
   }) async {
+    _open();
     final date = await showDatePicker(
       context: context,
       initialDate: _clamp(initial, minimum, maximum),
@@ -116,9 +197,16 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
       lastDate: DateUtils.dateOnly(maximum ?? DateTime.now()),
     );
     if (date == null || !context.mounted) return;
+    // the day is picked by now: no to a new time keeps the old one, and not
+    // the old day with it (#738)
     final time = await showTimePicker(context: context, initialTime: .fromDateTime(initial));
-    if (time == null) return;
-    final picked = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    if (!mounted) return;
+    final picked = switch (time) {
+      TimeOfDay(:final hour, :final minute) => DateTime(date.year, date.month, date.day, hour, minute),
+      // to the second as it was
+      null => initial.copyWith(year: date.year, month: date.month, day: date.day),
+    };
+    if (time == null && picked == initial) return;
     onChanged(_clamp(picked, minimum, maximum));
   }
 
@@ -156,7 +244,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                       onPressed: saving ? null : () => Navigator.of(context).pop(),
                     ),
                     Expanded(
-                      child: Text(adjustTimes, textAlign: .center, style: textTheme.titleMedium),
+                      child: Text(widget.title ?? adjustTimes, textAlign: .center, style: textTheme.titleMedium),
                     ),
                     switch (saving) {
                       true => const SizedBox(
@@ -171,7 +259,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                         child: PrimaryButton.shrunk(
                           backgroundColor: colorScheme.secondaryContainer,
                           onPressed: _save,
-                          child: Text(save),
+                          child: Text(widget.action ?? save),
                         ),
                       ),
                     },
@@ -199,8 +287,14 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
             ListenableBuilder(
               listenable: Listenable.merge([_start, _end, _unfolded]),
               builder: (context, _) {
-                // start can't land after the end (nor in the future when open)
-                final maximum = _end.value ?? DateTime.now();
+                // start can't land after the end (nor in the future when open),
+                // unless the end goes with it: held there, the wheel couldn't
+                // come forward again from a day it was scrolled back to (#738)
+                final maximum = switch (widget.needsLength) {
+                  // the end goes no later than now, and the length stays
+                  true => _thisMinute().subtract(_length),
+                  false => _end.value ?? DateTime.now(),
+                };
                 final expanded = cupertino && _unfolded.value == .start;
                 return Column(
                   mainAxisSize: .min,
@@ -216,7 +310,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                           context,
                           initial: _start.value,
                           maximum: maximum,
-                          onChanged: (value) => _start.value = value,
+                          onChanged: _moveStart,
                         ),
                       },
                     ),
@@ -226,7 +320,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                         brightness: brightness,
                         initial: _start.value,
                         maximum: maximum,
-                        onChanged: (value) => _start.value = value,
+                        onChanged: _moveStart,
                       ),
                   ],
                 );
@@ -238,6 +332,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                 final end = _end.value;
                 if (end == null) return const SizedBox.shrink();
                 final expanded = cupertino && _unfolded.value == .end;
+                final minimum = widget.needsLength ? null : _start.value;
                 return Column(
                   mainAxisSize: .min,
                   crossAxisAlignment: .stretch,
@@ -251,9 +346,9 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                         false => () => _pickMaterial(
                           context,
                           initial: end,
-                          minimum: _start.value,
+                          minimum: minimum,
                           maximum: DateTime.now(),
-                          onChanged: (value) => _end.value = value,
+                          onChanged: _moveEnd,
                         ),
                       },
                     ),
@@ -262,9 +357,9 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                         expanded: expanded,
                         brightness: brightness,
                         initial: end,
-                        minimum: _start.value,
+                        minimum: minimum,
                         maximum: DateTime.now(),
-                        onChanged: (value) => _end.value = value,
+                        onChanged: _moveEnd,
                       ),
                   ],
                 );

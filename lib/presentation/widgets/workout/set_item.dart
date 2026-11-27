@@ -16,6 +16,10 @@ class _ExerciseSetItem extends StatefulWidget {
   final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
   final bool isLocked;
   final Map<String, dynamic>? previousValue;
+
+  /// Whether the Previous cell is there at all: not for someone else's sets
+  /// (#591), which this account's last time says nothing of.
+  final bool showsPrevious;
   final void Function(ExerciseSet, SetType)? onSetType;
 
   /// Rates the set from its number's popup (#234); null where sets are not
@@ -38,6 +42,7 @@ class _ExerciseSetItem extends StatefulWidget {
     this.onSetDone,
     required this.isLocked,
     this.previousValue,
+    required this.showsPrevious,
   });
 
   @override
@@ -215,7 +220,6 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
         :error,
         :onError,
       ),
-      :scaffoldBackgroundColor,
     ) = Theme.of(
       context,
     );
@@ -293,74 +297,17 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                       onSetRpe: widget.onSetRpe,
                       onSetTarget: widget.onSetTarget,
                     ),
-                    Expanded(
-                      flex: 3,
-                      child: Center(
-                        child: switch (widget.previousValue) {
-                          // only a previous that shows real values gets the tappable
-                          // pill — a legacy row missing its category's fields renders
-                          // a bare dash, same as no previous at all
-                          Map<String, dynamic> m when PreviousSet.represents(exercise.exercise, m) =>
-                            PrimaryButton.shrunk(
-                              backgroundColor: scaffoldBackgroundColor,
-                              margin: const EdgeInsets.all(4),
-                              child: PreviousSet(
-                                previousValue: m,
-                                exercise: exercise.exercise,
-                                prefs: prefs,
-                              ),
-                              onPressed: () {
-                                buzz();
-                                switch (exercise.exercise.category) {
-                                  case .weightedBodyWeight:
-                                  case .assistedBodyWeight:
-                                  case .machine:
-                                  case .dumbbell:
-                                  case .barbell:
-                                    switch (m) {
-                                      case {'weight': num weight, 'reps': int reps}:
-                                        _weightController.text = prefs.weight(weight, unit: _unitOverride);
-                                        _repsController.text = '$reps';
-                                      // bodyweight with nothing added: last time had no load
-                                      case {'reps': int reps}:
-                                        _weightController.clear();
-                                        _repsController.text = '$reps';
-                                    }
-                                  case .repsOnly:
-                                    switch (m) {
-                                      case {'reps': int reps}:
-                                        _repsController.text = '$reps';
-                                    }
-                                  case .cardio:
-                                    switch (m) {
-                                      case {'duration': num duration, 'distance': num distance}:
-                                        _durationController.text = duration.toInt().toDuration();
-                                        _distanceController.text = _shownDistance(prefs, distance);
-                                    }
-                                  case .duration:
-                                    switch (m) {
-                                      case {'duration': num duration}:
-                                        _durationController.text = duration.toInt().toDuration();
-                                    }
-                                  case .weightedDistance:
-                                    switch (m) {
-                                      case {'weight': num weight, 'distance': num distance}:
-                                        _weightController.text = prefs.weight(weight, unit: _unitOverride);
-                                        _distanceController.text = _shownDistance(prefs, distance);
-                                    }
-                                  case .weightedDuration:
-                                    switch (m) {
-                                      case {'weight': num weight, 'duration': num duration}:
-                                        _weightController.text = prefs.weight(weight, unit: _unitOverride);
-                                        _durationController.text = duration.toInt().toDuration();
-                                    }
-                                }
-                              },
-                            ),
-                          _ => const Text(_emptyValue),
-                        },
-                      ),
-                    ),
+                    // absent for someone else's sets (#591), its share kept: the
+                    // values stay where one's own are
+                    if (widget.showsPrevious)
+                      _PreviousCell(
+                        previousValue: widget.previousValue,
+                        exercise: exercise.exercise,
+                        prefs: prefs,
+                        onTap: _takePrevious,
+                      )
+                    else
+                      const Spacer(flex: _previousFlex),
                     Expanded(
                       flex: 2,
                       child: Row(
@@ -381,8 +328,8 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                           margin: EdgeInsets.zero,
                           onPressed: () {
                             if (!widget.isLocked) {
-                              if (widget.onSetDone != null) {
-                                widget.onSetDone?.call(exercise, set);
+                              if (widget.onSetDone case final onSetDone?) {
+                                _toggle(onSetDone);
                               } else {
                                 switch ((_timing, _canStartStopwatch)) {
                                   // ■ brings the running stopwatch back
@@ -479,6 +426,12 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
           // the one offer of live records (#160), under the set that would
           // have been one; nothing on every other row
           _LiveRecordOffer(setId: set.id),
+          // a suspicious entry (#428), on a past workout's page
+          if (EntryReviewScope.ofSet(context, set.id) case final Anomaly anomaly)
+            Padding(
+              padding: const .symmetric(horizontal: 16),
+              child: AnomalyMark(anomaly: anomaly),
+            ),
         ],
       ),
     );
@@ -511,6 +464,57 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       for (final (field, listener) in fields) {
         field.addListener(listener);
       }
+    }
+  }
+
+  /// Takes [m], last time's set, into this one's fields: the Previous cell's
+  /// tap.
+  void _takePrevious(Map<String, dynamic> m) {
+    final prefs = Preferences.of(context);
+    buzz();
+    switch (exercise.exercise.category) {
+      case .weightedBodyWeight:
+      case .assistedBodyWeight:
+      case .machine:
+      case .dumbbell:
+      case .barbell:
+        switch (m) {
+          case {'weight': num weight, 'reps': int reps}:
+            _weightController.text = prefs.weight(weight, unit: _unitOverride);
+            _repsController.text = '$reps';
+          // bodyweight with nothing added: last time had no load
+          case {'reps': int reps}:
+            _weightController.clear();
+            _repsController.text = '$reps';
+        }
+      case .repsOnly:
+        switch (m) {
+          case {'reps': int reps}:
+            _repsController.text = '$reps';
+        }
+      case .cardio:
+        switch (m) {
+          case {'duration': num duration, 'distance': num distance}:
+            _durationController.text = duration.toInt().toDuration();
+            _distanceController.text = _shownDistance(prefs, distance);
+        }
+      case .duration:
+        switch (m) {
+          case {'duration': num duration}:
+            _durationController.text = duration.toInt().toDuration();
+        }
+      case .weightedDistance:
+        switch (m) {
+          case {'weight': num weight, 'distance': num distance}:
+            _weightController.text = prefs.weight(weight, unit: _unitOverride);
+            _distanceController.text = _shownDistance(prefs, distance);
+        }
+      case .weightedDuration:
+        switch (m) {
+          case {'weight': num weight, 'duration': num duration}:
+            _weightController.text = prefs.weight(weight, unit: _unitOverride);
+            _durationController.text = duration.toInt().toDuration();
+        }
     }
   }
 
@@ -765,29 +769,58 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     };
   }
 
+  /// A tick on a ghost row takes its target as the set (#173); the fields
+  /// follow the set, and a focused one would be left out.
+  Future<void> _takeTarget() async {
+    _repsFocus.unfocus();
+    _weightFocus.unfocus();
+    _distanceFocus.unfocus();
+    _durationFocus.unfocus();
+    await workouts.acceptTarget(set);
+  }
+
+  /// A tick on a screen with its own ([_ExerciseSetItem.onSetDone]). A target
+  /// that leaves the set short of what it takes ticks nothing, and says what is
+  /// missing, as [_onDone] does.
+  Future<void> _toggle(void Function(WorkoutExercise, ExerciseSet) onSetDone) async {
+    if (!set.isCompleted && set.target != null) {
+      await _takeTarget();
+      if (!mounted) return;
+      if (!set.canBeCompleted) return _showErrors();
+      _clearErrors();
+    }
+    onSetDone(exercise, set);
+  }
+
+  void _clearErrors() {
+    _hasWeightError.value = false;
+    _hasRepsError.value = false;
+    _hasDistanceError.value = false;
+    _hasDurationError.value = false;
+  }
+
+  /// Marks the fields that hold nothing a set can take.
+  void _showErrors() {
+    _hasRepsError.value = int.tryParse(_repsController.text) == null;
+    _hasWeightError.value = double.tryParse(_weightController.text) == null;
+    _hasDistanceError.value = double.tryParse(_distanceController.text) == null;
+    _hasDurationError.value = _parseDuration() <= 0;
+  }
+
   Future<void> _onDone(BuildContext context) async {
     final workouts = Workouts.of(context);
     if (set.isCompleted) {
       return workouts.markSetAsIncomplete(exercise, set);
     }
 
-    // a tick on a ghost row takes its target as the set (#173); the fields
-    // follow the set, and a focused one would be left out
     if (set.target != null) {
-      _repsFocus.unfocus();
-      _weightFocus.unfocus();
-      _distanceFocus.unfocus();
-      _durationFocus.unfocus();
-      await workouts.acceptTarget(set);
+      await _takeTarget();
       if (!context.mounted) return;
       // the set now holds the target as stored; reading it back out of the
       // fields would put it through display rounding, and a carry's 40 m
       // through a field that shows 0.04 km as "0"
       if (set.canBeCompleted) {
-        _hasWeightError.value = false;
-        _hasRepsError.value = false;
-        _hasDistanceError.value = false;
-        _hasDurationError.value = false;
+        _clearErrors();
         workouts.markEdited(set);
         workouts.markSetAsComplete(exercise, set);
         _sound(context);
@@ -864,15 +897,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       _distanceFocus.unfocus();
       _durationFocus.unfocus();
     } on FormatException {
-      final repsCorrect = int.tryParse(_repsController.text) != null;
-      final weightCorrect = double.tryParse(_weightController.text) != null;
-      final distanceCorrect = double.tryParse(_distanceController.text) != null;
-      final durationCorrect = _parseDuration() > 0;
-
-      _hasRepsError.value = !repsCorrect;
-      _hasWeightError.value = !weightCorrect;
-      _hasDistanceError.value = !distanceCorrect;
-      _hasDurationError.value = !durationCorrect;
+      _showErrors();
     }
   }
 
@@ -924,25 +949,32 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
 
   Future<void> _scheduleNotification(DateTime when) => scheduleRestNotification(context, exercise, when);
 
+  /// Reads the set into its fields, silently, as [_syncFromSet] does: what a
+  /// template prescribed is not the user's typing. Through the listeners it
+  /// counted as typed ([Workouts.markEdited]), so finishing an untouched
+  /// template offered to save every prescribed set as done.
   void _initTextControllers(BuildContext context) {
     final prefs = Preferences.of(context);
     var ExerciseSet(:reps, :weight, :distance, :duration) = set;
 
-    if (weight != null) {
-      _weightController.text = prefs.weight(weight, unit: _unitOverride);
+    void seed(TextEditingController field, VoidCallback listener, String? shown) {
+      if (shown == null) return;
+      field
+        ..removeListener(listener)
+        ..text = shown
+        ..addListener(listener);
     }
 
-    if (reps != null) {
-      _repsController.text = reps.toString();
-    }
-
-    if (distance != null) {
-      _distanceController.text = _shownDistance(prefs, distance);
-    }
-
-    if (duration != null) {
-      _durationController.text = duration.toDuration();
-    }
+    seed(_weightController, _weightListener, switch (weight) {
+      double weight => prefs.weight(weight, unit: _unitOverride),
+      null => null,
+    });
+    seed(_repsController, _repsListener, reps?.toString());
+    seed(_distanceController, _distanceListener, switch (distance) {
+      double distance => _shownDistance(prefs, distance),
+      null => null,
+    });
+    seed(_durationController, _durationListener, duration?.toDuration());
   }
 
   /// Parses the weight input from `_weightController` and updates the set's weight measurement.
@@ -1094,4 +1126,45 @@ extension on int {
   }
 
   static String _pad(int n) => n.toString().padLeft(2, '0');
+}
+
+/// Last time's set beside this one: a pill that copies it in, or a dash where
+/// there is nothing to copy.
+class _PreviousCell extends StatelessWidget {
+  final Map<String, dynamic>? previousValue;
+  final Exercise exercise;
+  final Preferences prefs;
+  final void Function(Map<String, dynamic>) onTap;
+
+  const new({
+    this.previousValue,
+    required this.exercise,
+    required this.prefs,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      flex: _previousFlex,
+      child: Center(
+        child: switch (previousValue) {
+          // only a previous that shows real values gets the tappable
+          // pill — a legacy row missing its category's fields renders
+          // a bare dash, same as no previous at all
+          Map<String, dynamic> m when PreviousSet.represents(exercise, m) => PrimaryButton.shrunk(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            margin: const .all(4),
+            child: PreviousSet(
+              previousValue: m,
+              exercise: exercise,
+              prefs: prefs,
+            ),
+            onPressed: () => onTap(m),
+          ),
+          _ => const Text(_emptyValue),
+        },
+      ),
+    );
+  }
 }

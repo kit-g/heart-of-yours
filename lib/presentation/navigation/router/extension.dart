@@ -9,6 +9,97 @@ extension on BuildContext {
     return goNamed(_profileName);
   }
 
+  /// Into the Coaching space (#566). The space remembers itself while it is on
+  /// screen (`CoachingFrame`), so the app opens there next.
+  void goToCoaching() {
+    _crossSpaces();
+    goNamed(_coachingClientsName);
+  }
+
+  /// One client's page (#559), over the roster.
+  void pushCoachingClient(String connectionId) {
+    pushNamed(_coachingClientName, pathParameters: {'connectionId': connectionId});
+  }
+
+  /// The conversation with a client (#556), over their page.
+  void pushCoachingClientThread(String connectionId) {
+    pushNamed(_coachingClientThreadName, pathParameters: {'connectionId': connectionId});
+  }
+
+  /// A workout a coach logs for a client (#560), filled in from [past].
+  void pushCoachingClientLog(String connectionId, PastWorkout past) {
+    pushNamed(_coachingClientLogName, pathParameters: {'connectionId': connectionId}, extra: past);
+  }
+
+  /// The coach's notes on a client (#556).
+  void pushCoachingClientNotes(String connectionId) {
+    pushNamed(_coachingClientNotesName, pathParameters: {'connectionId': connectionId});
+  }
+
+  /// A conversation of the Messages tab (#556), where there's no room for it
+  /// beside the list.
+  void pushCoachingThread(String connectionId) {
+    pushNamed(_coachingThreadName, pathParameters: {'connectionId': connectionId});
+  }
+
+  /// A client's workout, target beside done (#559).
+  ///
+  /// [fromThread] for one opened from the conversation with the client: its
+  /// message action goes back there rather than open another over it.
+  void pushCoachingClientWorkout(String connectionId, String workoutId, {bool fromThread = false}) {
+    pushNamed(
+      _coachingClientWorkoutName,
+      pathParameters: {'connectionId': connectionId, 'workoutId': workoutId},
+      extra: fromThread,
+    );
+  }
+
+  /// A client's copy of their program (#558).
+  void pushCoachingClientProgram(String connectionId, String programId) {
+    pushNamed(_coachingClientProgramName, pathParameters: {'connectionId': connectionId, 'programId': programId});
+  }
+
+  /// The template editor on the session [ClientPrograms] is drafting.
+  void pushCoachingClientSession(String connectionId, String programId, {required bool isNew}) {
+    pushNamed(
+      _coachingClientSessionName,
+      pathParameters: {'connectionId': connectionId, 'programId': programId},
+      queryParameters: {'new': '$isNew'},
+    );
+  }
+
+  /// A program of the coach's library (#557).
+  void goToCoachingProgram(String programId) {
+    return goNamed(_coachingProgramName, pathParameters: {'programId': programId});
+  }
+
+  void goToNewCoachingProgram() => goNamed(_coachingNewProgramName);
+
+  void goToCoachingPrograms() => goNamed(_coachingProgramsName);
+
+  void pushCoachingProgramEdit(String programId) {
+    pushNamed(_coachingProgramEditName, pathParameters: {'programId': programId});
+  }
+
+  /// The template editor on the session the library holds: pushed, so saving
+  /// or leaving it comes back to the program.
+  void pushCoachingProgramSession(String programId, {required bool isNew}) {
+    pushNamed(
+      _coachingProgramSessionName,
+      pathParameters: {'programId': programId},
+      queryParameters: {'new': '$isNew'},
+    );
+  }
+
+  /// Out of the Coaching space, back to the user's own training: Profile,
+  /// unless [to] names another of its routes. Cleared before going, since
+  /// Profile's redirect reads it.
+  void leaveCoaching({String to = _profileName}) {
+    Preferences.of(this).setInCoachingSpace(inside: false);
+    _crossSpaces();
+    return goNamed(to);
+  }
+
   /// The login page, by name: nothing redirects here on mobile, so this is
   /// how an anonymous session gets to an account. Gone to, not pushed: the
   /// route's own redirect is what sends a fresh account on to the profile, and
@@ -100,51 +191,18 @@ extension on BuildContext {
     return goNamed(_accountManagementName);
   }
 
-  void goToImportData() {
-    return goNamed(_importDataName);
-  }
-
-  void goToExportData() {
-    return goNamed(_exportDataName);
-  }
-
-  void goToWhatsNew() {
-    return goNamed(_whatsNewName);
-  }
-
-  void goToRestTimers() {
-    return goNamed(_restTimersName);
-  }
-
-  void goToFeatures() {
-    return goNamed(_featuresName);
-  }
-
-  void goToRecaps() {
-    return goNamed(_recapsName);
+  /// Every past month; on a page wide enough, with [month] open beside them:
+  /// `/profile/recaps?month=2026-09`.
+  void goToRecaps({DateTime? month}) {
+    return goNamed(
+      _recapsName,
+      queryParameters: {if (month != null) _monthParam: _monthKey(month)},
+    );
   }
 
   /// [month]'s recap, by its first day: `/profile/recaps/2026-09`.
   void goToMonthlyReport(DateTime month) {
     return goNamed(_monthlyReportName, pathParameters: {_monthParam: _monthKey(month)});
-  }
-
-  void goToApiTokens() {
-    return goNamed(_apiTokensName);
-  }
-
-  void goToNewApiToken() {
-    return goNamed(_newApiTokenName);
-  }
-
-  /// Opens Features at [feature] over What's new (#239): pushed, so back
-  /// returns to the note that sent the user there.
-  void pushFeature(Feature feature) {
-    pushNamed(
-      _featuresName,
-      queryParameters: {_featureQuery: feature.value},
-      extra: FeatureLinkSource.whatsNew,
-    );
   }
 
   void goToAvatar() {
@@ -156,12 +214,51 @@ extension on BuildContext {
   }
 
   void goToWorkoutEditor(String workoutId) {
-    return go('$_historyPath/$workoutId');
+    leavingUnsavedLog(() {
+      if (mounted) go('$_historyPath/$workoutId');
+    });
   }
 
   /// A day set aside with "Not today" (#312), in History.
   void goToSkip(String skipId) {
-    return goNamed(_historySkipName, pathParameters: {'skipId': skipId});
+    leavingUnsavedLog(() {
+      if (mounted) goNamed(_historySkipName, pathParameters: {'skipId': skipId});
+    });
+  }
+
+  /// The suspicious entries (#428), in History.
+  void goToEntryReview() {
+    leavingUnsavedLog(() {
+      if (mounted) goNamed(_historyReviewName);
+    });
+  }
+
+  /// A workout that already happened, being filled in (#530), in History:
+  /// pushed over the list, or in its detail pane.
+  void goToLogWorkout(PastWorkout past) {
+    return goNamed(_historyLogName, extra: past);
+  }
+
+  /// Asks when a past workout was, then opens it to fill in (#530): by default
+  /// the last hour, or the same hour [on] another day (#618), as [fill] makes
+  /// it once its times are known (#737).
+  void logPast({DateTime? on, PastWorkout Function(PastWorkout past)? fill}) {
+    leavingUnsavedLog(() {
+      if (mounted) logPastWorkout(this, open: (past) => goToLogWorkout(fill?.call(past) ?? past), on: on);
+    });
+  }
+
+  /// A workout from the suspicious entries' list (#428), within History:
+  /// pushed on a phone, so Back returns to the list; in the pane on a tablet,
+  /// where the History button returns to it.
+  void openReviewedWorkout(String workoutId) {
+    final path = '$_historyPath/$workoutId';
+    switch (LayoutProvider.of(this)) {
+      case .compact:
+        push(path);
+      case .wide:
+        go(path);
+    }
   }
 
   /// Pushes on a phone, replaces on a tablet.
@@ -216,14 +313,24 @@ extension on BuildContext {
     return goNamed(_exerciseArchive);
   }
 
+  /// An exercise of the tab's archive: pushed over it on a phone; beside it
+  /// on a tablet, where the list stays the archive (#718).
+  Future<Object?> goToArchivedExerciseDetail(String exerciseId) {
+    switch (LayoutProvider.of(this)) {
+      case .compact:
+        return push('$_exercisesPath/$exerciseId');
+      case .wide:
+        goNamed(_exerciseArchivedDetailName, pathParameters: {'exerciseId': exerciseId});
+        return Future<Object?>.value();
+    }
+  }
+
   /// Opens the library showing only [filter], replacing whatever was filtered
   /// before — arriving from a chip means "show me these", not "narrow what I
   /// had", and the previous filters are not visible from where the chip was
-  /// tapped.
+  /// tapped. Asked for by name, so a grouped library shows it too (#711).
   void goToFilteredExercises(ExerciseFilter filter) {
-    Exercises.of(this)
-      ..clearFilters()
-      ..addFilter(filter);
+    Exercises.of(this).showOnly(filter);
     return goNamed(_exercisesName);
   }
 

@@ -12,12 +12,22 @@ enum _AuthPages {
 RouteBase _profileRoute() {
   return GoRoute(
     path: _profilePath,
+    // the app opens in the space it was left in (#566): Profile itself, not
+    // anything under it, so Settings stays reachable from Coaching
+    redirect: (context, state) {
+      if (state.fullPath != _profilePath) return null;
+      return switch (Preferences.of(context).inCoachingSpace && coachingSpaceOn(context)) {
+        true => _coachingClientsPath,
+        false => null,
+      };
+    },
     builder: (context, _) {
       return ProfilePage(
+        onCoaching: context.goToCoaching,
         onSettings: context.goToSettings,
         onAccount: context.goToAccountManagement,
         onLogIn: context.goToLogin,
-        onRecaps: context.goToRecaps,
+        onRecaps: (month) => context.goToRecaps(month: month),
         onMonthlyReport: context.goToMonthlyReport,
         onAvatar: () {
           final user = Auth.of(context).user;
@@ -38,7 +48,18 @@ RouteBase _profileRoute() {
         path: _recapsPath,
         // off, a link here is one the app has no screen for (`docs/opt-in.md`)
         redirect: (context, _) => Preferences.of(context).isOn(.recaps) ? null : _profilePath,
-        builder: (context, _) => RecapsPage(onMonth: context.goToMonthlyReport),
+        builder: (context, state) {
+          return RecapsPage(
+            month: _monthOf(state.uri.queryParameters[_monthParam]),
+            onMonth: context.goToMonthlyReport,
+            // beside the list a month is no route, so the observers that
+            // count screens and record navigation are told here (#687)
+            onMonthShown: (_) {
+              Analytics.of(context).paneShown(screen: _monthlyReportName);
+              paneBreadcrumb(from: _recapsName, to: _monthlyReportName);
+            },
+          );
+        },
         name: _recapsName,
         routes: [
           GoRoute(
@@ -49,81 +70,127 @@ RouteBase _profileRoute() {
           ),
         ],
       ),
+      _settingsRoute(parent: _profilePath),
+    ],
+  );
+}
+
+/// Settings and every page under it, at [parent]: under Profile, and again
+/// under the Coaching space's Me (#685), so a coach reaches Settings without
+/// leaving the space and Back returns to where they came from. Names are the
+/// router's own and must be unique, so the copy under Coaching takes them
+/// with [prefix]; every way between these pages goes by [prefix]ed name.
+GoRoute _settingsRoute({required String parent, String prefix = ''}) {
+  String named(String name) => '$prefix$name';
+  final settings = '$parent/$_settingsPath';
+
+  return GoRoute(
+    path: _settingsPath,
+    builder: (context, _) {
+      return SettingsPage(
+        onAccountManagement: () => context.goNamed(named(_accountManagementName)),
+        onImportData: () => context.goNamed(named(_importDataName)),
+        onExportData: () => context.goNamed(named(_exportDataName)),
+        onWhatsNew: () => context.goNamed(named(_whatsNewName)),
+        onRestTimers: () => context.goNamed(named(_restTimersName)),
+        onPushSettings: () => context.goNamed(named(_pushSettingsName)),
+        onYourDevices: () => context.goNamed(named(_yourDevicesName)),
+        onFeatures: () => context.goNamed(named(_featuresName)),
+        onDeveloperApi: () => context.goNamed(named(_apiTokensName)),
+        onErased: context.goToProfile,
+      );
+    },
+    name: named(_settingsName),
+    routes: [
       GoRoute(
-        path: _settingsPath,
+        path: _accountManagementPath,
         builder: (context, _) {
-          return SettingsPage(
-            onAccountManagement: context.goToAccountManagement,
-            onImportData: context.goToImportData,
-            onExportData: context.goToExportData,
-            onWhatsNew: context.goToWhatsNew,
-            onRestTimers: context.goToRestTimers,
-            onFeatures: context.goToFeatures,
-            onDeveloperApi: context.goToApiTokens,
-            onErased: context.goToProfile,
+          return AccountManagementPage(
+            onError: reportToSentry,
+            onDeleted: context.goToProfile,
           );
         },
-        name: _settingsName,
+        name: named(_accountManagementName),
+      ),
+      GoRoute(
+        path: _importDataPath,
+        builder: (_, _) => const ImportDataPage(onError: reportToSentry),
+        name: named(_importDataName),
+      ),
+      GoRoute(
+        path: _exportDataPath,
+        builder: (_, _) => const ExportDataPage(onError: reportToSentry),
+        name: named(_exportDataName),
+      ),
+      GoRoute(
+        path: _apiTokensPath,
+        builder: (context, _) => ApiTokensPage(
+          onNewToken: () => context.goNamed(named(_newApiTokenName)),
+          onError: reportToSentry,
+        ),
+        name: named(_apiTokensName),
         routes: [
           GoRoute(
-            path: _accountManagementPath,
-            builder: (context, _) {
-              return AccountManagementPage(
-                onError: reportToSentry,
-                onDeleted: context.goToProfile,
-              );
-            },
-            name: _accountManagementName,
-          ),
-          GoRoute(
-            path: _importDataPath,
-            builder: (_, _) => const ImportDataPage(onError: reportToSentry),
-            name: _importDataName,
-          ),
-          GoRoute(
-            path: _exportDataPath,
-            builder: (_, _) => const ExportDataPage(onError: reportToSentry),
-            name: _exportDataName,
-          ),
-          GoRoute(
-            path: _apiTokensPath,
-            builder: (context, _) => ApiTokensPage(onNewToken: context.goToNewApiToken, onError: reportToSentry),
-            name: _apiTokensName,
-            routes: [
-              GoRoute(
-                path: _newApiTokenPath,
-                builder: (context, _) => NewApiTokenPage(onDone: context.goToApiTokens, onError: reportToSentry),
-                name: _newApiTokenName,
-              ),
-            ],
-          ),
-          GoRoute(
-            path: _whatsNewPath,
-            builder: (context, _) => WhatsNewPage(onError: reportToSentry, onFeature: context.pushFeature),
-            name: _whatsNewName,
-          ),
-          GoRoute(
-            path: _restTimersPath,
-            builder: (_, _) => const RestTimersPage(),
-            name: _restTimersName,
-          ),
-          GoRoute(
-            path: _featuresPath,
-            builder: (_, state) {
-              return FeaturesPage(
-                focus: Feature.values
-                    .where((feature) => feature.value == state.uri.queryParameters[_featureQuery])
-                    .firstOrNull,
-                // only What's new passes one: anything else arrived as a link
-                source: switch (state.extra) {
-                  FeatureLinkSource source => source,
-                  _ => .link,
-                },
-              );
-            },
-            name: _featuresName,
+            path: _newApiTokenPath,
+            builder: (context, _) => NewApiTokenPage(
+              onDone: () => context.goNamed(named(_apiTokensName)),
+              onError: reportToSentry,
+            ),
+            name: named(_newApiTokenName),
           ),
         ],
+      ),
+      GoRoute(
+        path: _whatsNewPath,
+        builder: (context, _) => WhatsNewPage(
+          onError: reportToSentry,
+          // pushed, so back returns to the note that sent the user there
+          onFeature: (feature) => context.pushNamed(
+            named(_featuresName),
+            queryParameters: {_featureQuery: feature.value},
+            extra: FeatureLinkSource.whatsNew,
+          ),
+        ),
+        name: named(_whatsNewName),
+      ),
+      GoRoute(
+        path: _restTimersPath,
+        builder: (_, _) => const RestTimersPage(),
+        name: named(_restTimersName),
+      ),
+      GoRoute(
+        path: _pushSettingsPath,
+        // off, a link here is one the app has no screen for (`docs/opt-in.md`)
+        redirect: (context, _) => switch (pushesOn(context)) {
+          true => null,
+          false => settings,
+        },
+        builder: (_, _) => const PushSettingsPage(),
+        name: named(_pushSettingsName),
+      ),
+      GoRoute(
+        path: _yourDevicesPath,
+        // only where device keys run (#555): off, a link here is one the
+        // app has no screen for (`docs/opt-in.md`)
+        redirect: (context, _) => _yourDevicesOr(context, settings),
+        builder: (_, _) => const YourDevicesPage(onError: reportToSentry),
+        name: named(_yourDevicesName),
+      ),
+      GoRoute(
+        path: _featuresPath,
+        builder: (_, state) {
+          return FeaturesPage(
+            focus: Feature.values
+                .where((feature) => feature.value == state.uri.queryParameters[_featureQuery])
+                .firstOrNull,
+            // only What's new passes one: anything else arrived as a link
+            source: switch (state.extra) {
+              FeatureLinkSource source => source,
+              _ => .link,
+            },
+          );
+        },
+        name: named(_featuresName),
       ),
     ],
   );
@@ -142,15 +209,17 @@ RouteBase _workoutRoute() {
         goToProgram: (program) => context.goToProgram(program.id!),
         goToNewProgram: (folder) => context.goToNewProgram(folder.id!),
         goToLibrary: context.goToProgramLibrary,
+        onLogPastWorkout: context.logPast,
       );
     },
     name: _workoutName,
     routes: [
       GoRoute(
         path: 'templates',
-        builder: (_, state) {
+        builder: (context, state) {
           return TemplateEditor(
             isNewTemplate: state.uri.queryParameters['newTemplate'] == 'true',
+            drafts: Templates.of(context),
           );
         },
         name: _templateEditorName,
@@ -314,44 +383,73 @@ RouteBase _activeWorkoutRoute() {
   );
 }
 
+/// A wide shell with nothing in its detail pane still builds its navigator.
+/// go_router reads the shell's navigator on Back, and one that was never
+/// built reads as null: Back on an Android tablet's Exercises or History root
+/// crashed (#628). Offstage, it is in the tree and shows nothing; the same
+/// global key moves it into the pane once something is selected.
+///
+/// Always the same Stack with [page] first, so selecting or clearing the pane
+/// never rebuilds the page from scratch — a remounted page re-runs its own
+/// start-up.
+Widget _withNavigator(Widget navigator, {required bool shown, required Widget page}) {
+  return Stack(
+    fit: .expand,
+    children: [
+      page,
+      if (!shown) Offstage(child: navigator),
+    ],
+  );
+}
+
 RouteBase _historyRoute() {
   final navigatorKey = GlobalKey<NavigatorState>();
 
   return ShellRoute(
     navigatorKey: navigatorKey,
     builder: (context, state, child) {
-      // a workout or a skip (#391) in the detail pane
+      // a workout or a skip (#391) in the detail pane, or the suspicious
+      // entries (#428)
       final workoutId = state.pathParameters['workoutId'] ?? state.pathParameters['skipId'];
+      final reviewing = state.topRoute?.name == _historyReviewName;
+      // a workout being logged after the fact (#530) has no id yet
+      final logging = state.topRoute?.name == _historyLogName;
 
       return switch (LayoutProvider.of(context)) {
         LayoutSize.compact => child,
-        LayoutSize.wide => HistoryPage(
-          selectedId: workoutId,
-          onNewWorkout: context.goToActiveWorkout,
-          onSaveAsTemplate: (workout) {
-            Templates.of(context).workoutToTemplate(workout);
-            context.goToTemplateEditor(newTemplate: true);
-          },
-          onEditWorkout: (workout) {
-            context.goToWorkoutEditor(workout.id);
-          },
-          onTapWorkout: (workout) {
-            context.goToWorkoutEditor(workout.id);
-          },
-          onDeleteWorkout: (_) {
-            context.goToHistory();
-          },
-          onTapSkip: (skip) {
-            if (skip.id case final String id) context.goToSkip(id);
-          },
-          onOpenActiveWorkout: () {
-            HapticFeedback.mediumImpact();
-            context.goToActiveWorkout();
-          },
-          detail: switch (workoutId) {
-            String() => child, // workout selected
-            null => null,
-          },
+        LayoutSize.wide => _withNavigator(
+          child,
+          shown: workoutId != null || reviewing || logging,
+          page: HistoryPage(
+            selectedId: workoutId,
+            onNewWorkout: context.goToActiveWorkout,
+            onSaveAsTemplate: (workout) {
+              Templates.of(context).workoutToTemplate(workout);
+              context.goToTemplateEditor(newTemplate: true);
+            },
+            onEditWorkout: (workout) {
+              context.goToWorkoutEditor(workout.id);
+            },
+            onTapWorkout: (workout) {
+              context.goToWorkoutEditor(workout.id);
+            },
+            onDeleteWorkout: (_) {
+              context.goToHistory();
+            },
+            onTapSkip: (skip) {
+              if (skip.id case final String id) context.goToSkip(id);
+            },
+            onEntryReview: context.goToEntryReview,
+            onLogPastWorkout: context.logPast,
+            onOpenActiveWorkout: () {
+              HapticFeedback.mediumImpact();
+              context.goToActiveWorkout();
+            },
+            detail: switch ((workoutId, reviewing || logging)) {
+              (String(), _) || (_, true) => child, // workout selected, or the list
+              (null, false) => null,
+            },
+          ),
         ),
       };
     },
@@ -376,6 +474,8 @@ RouteBase _historyRoute() {
               onTapSkip: (skip) {
                 if (skip.id case final String id) context.goToSkip(id);
               },
+              onEntryReview: context.goToEntryReview,
+              onLogPastWorkout: context.logPast,
               onOpenActiveWorkout: () {
                 HapticFeedback.mediumImpact();
                 context.goToActiveWorkout();
@@ -386,6 +486,45 @@ RouteBase _historyRoute() {
         },
         name: _historyName,
         routes: [
+          // before ':workoutId', which would take the word for an id
+          GoRoute(
+            path: 'review',
+            builder: (context, state) {
+              return EntryReviewPage(
+                onOpenWorkout: context.openReviewedWorkout,
+                onClose: switch (LayoutProvider.of(context)) {
+                  .compact => null,
+                  .wide => context.goToHistory,
+                },
+              );
+            },
+            name: _historyReviewName,
+          ),
+          // before ':workoutId' too: a workout that already happened, being
+          // filled in (#530). It lives in what it was opened with, so a
+          // location without it (a restored or typed one) goes to the list
+          GoRoute(
+            path: 'log',
+            redirect: (_, state) {
+              return switch (state.extra) {
+                PastWorkout _ => null,
+                _ => _historyPath,
+              };
+            },
+            builder: (context, state) {
+              final past = state.extra as PastWorkout;
+              return WorkoutEditor(
+                copy: past.workout,
+                logTo: past.logTo,
+                loggingFor: past.loggingFor,
+                onClose: switch (LayoutProvider.of(context)) {
+                  .compact => null,
+                  .wide => context.goToHistory,
+                },
+              );
+            },
+            name: _historyLogName,
+          ),
           GoRoute(
             path: 'skips/:skipId',
             builder: (context, state) {
@@ -407,7 +546,9 @@ RouteBase _historyRoute() {
                 final workoutId = state.pathParameters['workoutId']!;
                 final workout = Workouts.of(context).lookup(workoutId);
                 return WorkoutEditor(
-                  copy: workout!,
+                  // a copy, so edits the user then discards never reach the
+                  // workout History shows; Save hands the copy back
+                  copy: Workout.fromJson(workout!.toMap()),
                   onTapImage: context.goToGallery,
                   onClose: switch (LayoutProvider.of(context)) {
                     .compact => null,
@@ -429,7 +570,9 @@ RouteBase _historyRoute() {
             redirect: (context, state) async {
               final workouts = Workouts.of(context);
               return switch (state.pathParameters['workoutId']) {
-                String id when workouts.lookup(id) != null => null,
+                // a stripped mirror row (#85) is not a workout to edit: the
+                // server's copy is the real one
+                String id when workouts.lookupWhole(id) != null => null,
                 String id => switch (await workouts.fetchWorkout(id)) {
                   true => null,
                   false => _historyPath,
@@ -451,21 +594,58 @@ RouteBase _exercisesRoute() {
     navigatorKey: navigatorKey,
     builder: (context, state, detail) {
       final selectedExerciseId = state.pathParameters['exerciseId'];
+      // on a tablet the archive takes the library's place, an exercise of it
+      // opening beside it (#718)
+      final archive = switch (state.uri.pathSegments) {
+        [_exercisesName, _exerciseArchivedSegment, ...] => true,
+        _ => false,
+      };
+      final opened = switch (selectedExerciseId) {
+        null => null,
+        _ => detail,
+      };
+      // the library's own pick, none while the archive is up
+      final (String? picked, Widget? pickedPage) = switch (archive) {
+        true => (null, null),
+        false => (selectedExerciseId, opened),
+      };
 
       return switch (LayoutProvider.of(context)) {
         .compact => detail,
-        .wide => ExercisesPage(
-          selectedId: selectedExerciseId,
-          detail: switch (selectedExerciseId) {
-            null => null,
-            _ => detail,
-          },
-          onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
-          onOpenActiveWorkout: () {
-            HapticFeedback.mediumImpact();
-            context.goToActiveWorkout();
-          },
-          onShowArchived: context.goToExerciseArchive,
+        .wide => _withNavigator(
+          detail,
+          shown: selectedExerciseId != null,
+          page: Stack(
+            fit: .expand,
+            children: [
+              // kept while the archive is up: its search and place stay
+              Visibility(
+                visible: !archive,
+                maintainState: true,
+                child: ExercisesPage(
+                  selectedId: picked,
+                  detail: pickedPage,
+                  onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
+                  onOpenActiveWorkout: () {
+                    HapticFeedback.mediumImpact();
+                    context.goToActiveWorkout();
+                  },
+                  onShowArchived: context.goToExerciseArchive,
+                ),
+              ),
+              if (archive)
+                ExerciseArchive(
+                  selectedId: selectedExerciseId,
+                  detail: opened,
+                  leading: BackButton(onPressed: context.closeExerciseDetail),
+                  onExercise: (exercise, _) => context.goToArchivedExerciseDetail(exercise.id),
+                  onOpenActiveWorkout: () {
+                    HapticFeedback.mediumImpact();
+                    context.goToActiveWorkout();
+                  },
+                ),
+            ],
+          ),
         ),
       };
     },
@@ -488,25 +668,56 @@ RouteBase _exercisesRoute() {
         },
         routes: [
           GoRoute(
-            path: 'archived',
+            path: _exerciseArchivedSegment,
             builder: (context, _) {
-              return ExerciseArchive(
-                onExercise: (exercise, _) {
-                  context.goToExerciseDetail(exercise.id);
-                },
-              );
+              return switch (LayoutProvider.of(context)) {
+                .wide => const SizedBox.shrink(), // already rendered by the builder
+                .compact => ExerciseArchive(
+                  onExercise: (exercise, _) => context.goToArchivedExerciseDetail(exercise.id),
+                ),
+              };
             },
             name: _exerciseArchive,
             routes: [
               GoRoute(
                 path: ':exerciseId',
+                // one this device doesn't have (a link from elsewhere, a
+                // catalog still loading) falls back to the archive, as the
+                // library's detail falls back to the library
+                redirect: (context, state) async {
+                  final exercises = Exercises.of(context);
+                  await _exercisesReady(exercises);
+                  return switch (state.pathParameters['exerciseId']) {
+                    String id when exercises.lookup(id) != null => null,
+                    _ => _exerciseArchivePath,
+                  };
+                },
                 builder: (context, state) {
                   final exerciseId = state.pathParameters['exerciseId']!;
+                  // gone since the redirect: the archive's own page shows
                   final exercise = Exercises.of(context).lookup(exerciseId);
+                  if (exercise == null) return const SizedBox.shrink();
                   return ExerciseDetailPage(
-                    exercise: exercise!,
-                    onTapWorkout: (_) async {},
+                    exercise: exercise,
+                    // in a pane beside the archive, as the library's is
+                    leading: switch (LayoutProvider.of(context)) {
+                      .compact => null,
+                      .wide => IconButton(
+                        key: AppKeys.closeDetail,
+                        tooltip: L.of(context).close,
+                        onPressed: context.goToExerciseArchive,
+                        icon: const Icon(Icons.close),
+                      ),
+                    },
                     initialTab: state.uri.queryParameters['tab'],
+                    // as the library's detail does: a workout of its history,
+                    // a history moved, and adding it to the workout under way
+                    onHistoryMoved: (target) => context.replaceExerciseDetail(target.id),
+                    onTapWorkout: (workoutId) {
+                      return Workouts.of(context).fetchWorkout(workoutId).then<void>((_) {
+                        if (context.mounted) context.goToExerciseWorkout(exerciseId, workoutId);
+                      });
+                    },
                     onShareExercise: (exercise, {tab}) {
                       _onShareExercise(context, exercise, tab);
                     },
@@ -514,6 +725,9 @@ RouteBase _exercisesRoute() {
                     onTapAlternative: (alternative) {
                       context.goToExerciseDetail(alternative.id);
                     },
+                    onAddToWorkout: (exercise) => _onAddToWorkout(context, exercise),
+                    onArchived: context.closeExerciseDetail,
+                    onUnarchived: () => _leaveUnarchivedInTab(context, exercise),
                   );
                 },
                 name: _exerciseArchivedDetailName,
@@ -559,6 +773,8 @@ RouteBase _exercisesRoute() {
                   context.goToExerciseDetail(alternative.id);
                 },
                 onAddToWorkout: (exercise) => _onAddToWorkout(context, exercise),
+                onArchived: context.closeExerciseDetail,
+                onUnarchived: () => _leaveUnarchivedInTab(context, exercise),
               );
             },
             // Resolves before deciding, like the history route: a deep link
@@ -579,7 +795,7 @@ RouteBase _exercisesRoute() {
               // history stack builds, hosted here so the reader never leaves
               // the exercises stack (or, on a tablet, its pane).
               GoRoute(
-                path: 'workout/:workoutId',
+                path: '$_exerciseWorkoutSegment/:workoutId',
                 name: _exerciseWorkoutName,
                 builder: (context, state) {
                   try {
@@ -775,61 +991,27 @@ RouteBase _workoutDoneRoute() {
           achievementsCallback: () async {
             final workouts = Workouts.of(context);
             final goals = Goals.of(context);
-            final exercises = Exercises.of(context);
             final stats = Stats.of(context);
-            final firstWeekday = Preferences.of(context).firstWeekday;
-            // a goal a running program's cadence overrides is not judged, so
-            // nothing celebrates what is set aside
-            final running = runningPrograms(context);
-            bool setAside(Goal goal) => pausedByPrograms(goal, running);
+            // the goals live goal notes judge, read and folded the same way
+            final judge = goalJudge(context);
 
             // The id the server settled on, not the one this device saved
             // under: `saveWorkout` adopts the server's when they differ, and
             // crediting a rung with the pre-save id had the server reject the
             // attribution outright — it was an id it had never seen.
-            final finished = await workouts.finishing;
-            // the aggregation is what whole-workout goals are judged against,
-            // and it predates the workout that just landed
+            final finished = await workouts.finishing ?? workout;
+            // the aggregation predates the workout that just landed
             await stats.init();
-            // the windows every goal below reads, each read once; `without`
-            // filters what was read, so the before reading shares them too
-            final lensSets = sharedLensSets(stats.getLensSets);
-            final stamped = await goals.observeProgress(
-              (goal) => currentGoalValue(
-                goal,
-                exercises: exercises,
-                firstWeekday: firstWeekday,
-                workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
-                lensSets: lensSets,
-              ),
-              // this screen is the one place that knows which session earned it
-              achievedBy: finished?.id ?? workout.id,
-              setAside: setAside,
+            final priors = Map.fromIterables(
+              judge.goals,
+              await Future.wait(judge.goals.map((goal) => judge.read(goal, finished))),
             );
 
-            // A recurring goal is never stamped, so it would otherwise go
-            // uncelebrated the week it is met — announced here when this
-            // session is what carried the period over.
-            final carried = await goals.observePeriodWins(
-              setAside: setAside,
-              valueOf: (goal) => currentGoalValue(
-                goal,
-                exercises: exercises,
-                firstWeekday: firstWeekday,
-                workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
-                lensSets: lensSets,
-              ),
-              valueBefore: (goal) => currentGoalValue(
-                goal,
-                exercises: exercises,
-                firstWeekday: firstWeekday,
-                workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
-                lensSets: lensSets,
-                without: workout.start,
-              ),
-            );
-
-            return [...stamped, ...carried];
+            // what the session carried over the line: the calculation live
+            // goal notes make as the sets are ticked (#625), so the two agree
+            final crossed = goalCrossings(judge.goals, (goal) => priors[goal], finished, fold: judge.fold);
+            // this screen is the one place that knows which session earned it
+            return goals.stampCrossed(crossed, achievedBy: finished.id);
           },
           // Same contract as the goals: wait out the write, then ask which
           // records now credit this session. The fold ties records to the
@@ -949,16 +1131,19 @@ RouteBase _galleryRoute() {
 /// Resolves once the exercise catalog is initialized, or gives up after a
 /// timeout so a failed init (no network, empty catalog) cannot hold the
 /// navigation forever — the caller then falls back to the exercise list.
+/// A catalog that went on without the library (#723) is as ready as it will
+/// be: the user's own exercises are in it.
 Future<void> _exercisesReady(Exercises exercises) {
-  if (exercises.isInitialized) return Future<void>.value();
+  bool ready() => exercises.isInitialized || exercises.libraryUnavailable;
+  if (ready()) return Future<void>.value();
 
-  final ready = Completer<void>();
+  final done = Completer<void>();
   void onChange() {
-    if (exercises.isInitialized && !ready.isCompleted) ready.complete();
+    if (ready() && !done.isCompleted) done.complete();
   }
 
   exercises.addListener(onChange);
-  return ready.future
+  return done.future
       .timeout(const Duration(seconds: 10), onTimeout: () {})
       .whenComplete(() => exercises.removeListener(onChange));
 }
@@ -1072,7 +1257,9 @@ RouteBase _filteredExercisesRoute() {
         builder: (context, _, _) => ExercisesPage(
           leading: const BackButton(),
           onExercise: (exercise, _) => context.pushExerciseOver(exercise.id),
-          onShowArchived: context.goToExerciseArchive,
+          // over this page, Back returns to it: the tab's archive would take
+          // the reader away, and is not there at all with the tab left out
+          onShowArchived: () => context.pushNamed(_exerciseArchiveOverName),
           onOpenActiveWorkout: () {
             HapticFeedback.mediumImpact();
             context.goToActiveWorkout();
@@ -1081,6 +1268,73 @@ RouteBase _filteredExercisesRoute() {
       );
     },
   );
+}
+
+/// The archived exercises over any tab (#608): the archive's way in with the
+/// Exercises tab left out, which is the filtered library's Archived button.
+/// An exercise in it opens over it in turn.
+RouteBase _exerciseArchiveOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _exerciseArchiveOverPath,
+    name: _exerciseArchiveOverName,
+    builder: (context, _) {
+      return LayoutProvider(
+        currentStack: -1,
+        // the whole window, so capped as a reading column: a row of an
+        // archived exercise across an iPad says nothing more
+        builder: (context, _, _) => LayoutBuilder(
+          builder: (context, constraints) => Align(
+            alignment: .topCenter,
+            child: SizedBox(
+              width: math.min(constraints.maxWidth, readableWidth),
+              child: ExerciseArchive(
+                onExercise: (exercise, _) async {
+                  final left = await context.pushNamed<Object?>(
+                    _exerciseOverName,
+                    pathParameters: {'exerciseId': exercise.id},
+                  );
+                  if (left == _LeftExercise.emptiedArchive && context.mounted) _leaveOver(context);
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+/// What an exercise's page over the tabs hands back to the page under it as
+/// it leaves.
+enum _LeftExercise {
+  /// It was the last one archived, and is out: the archive it was opened
+  /// from has nothing left to show.
+  emptiedArchive,
+}
+
+/// Whether taking [exercise] out of the archive leaves the archive empty.
+/// Asked as the page leaves, which is before the account has the change.
+bool _lastArchived(BuildContext context, Exercise exercise) {
+  return Exercises.of(context).archived.every((each) => each.id == exercise.id);
+}
+
+/// Off a page over the tabs, handing [result] to the page under it; with
+/// nothing under it — a link opened it on its own — to the library. Not at
+/// all when the page is not the one on top: what is, the user opened.
+void _leaveOver(BuildContext context, [Object? result]) {
+  final page = ModalRoute.of(context);
+  if (page == null || !page.isCurrent) return;
+  if (!popIfCurrent(page, result)) context.go(_exercisesPath);
+}
+
+/// Where an exercise's page in the tab lands once [exercise] is out of the
+/// archive: the archive while it holds others, which is where the page was
+/// most likely opened from, and the library once it is empty. A `go`, not a
+/// pop: the tab's archive opens its exercises with one on a tablet, so it may
+/// not be under the page at all.
+void _leaveUnarchivedInTab(BuildContext context, Exercise exercise) {
+  return _lastArchived(context, exercise) ? context.closeExerciseDetail() : context.goToExerciseArchive();
 }
 
 /// A library program over any tab: its next programs and the user's copy
@@ -1126,8 +1380,19 @@ RouteBase _exerciseOverRoute() {
           },
           onShareExercise: (exercise, {tab}) => _onShareExercise(context, exercise, tab),
           onFilter: (filter) => HeartRouter.of(context).goToFilteredExercises(Exercises.of(context), filter),
+          // its history moved onto [target], this one may be gone (#338)
+          onHistoryMoved: (target) => context.pushReplacementNamed(
+            _exerciseOverName,
+            pathParameters: {'exerciseId': target.id},
+          ),
           onTapAlternative: (alternative) => context.pushExerciseOver(alternative.id),
           onAddToWorkout: (exercise) => _onAddToWorkout(context, exercise),
+          onArchived: () => _leaveOver(context),
+          // the archive it was opened from leaves too, once there is nothing in it
+          onUnarchived: () => _leaveOver(
+            context,
+            _lastArchived(context, exercise) ? _LeftExercise.emptiedArchive : null,
+          ),
         ),
       );
     },
@@ -1164,4 +1429,452 @@ DateTime? _monthOf(String? key) {
     },
     _ => null,
   };
+}
+
+/// The Coaching space (#566): its own shell and tabs, there only while
+/// [coachingSpaceOn]. Off, a link into it is one the app has no screen for.
+RouteBase _coachingRoute() {
+  String? off(BuildContext context, GoRouterState _) => coachingSpaceOn(context) ? null : _profilePath;
+
+  return StatefulShellRoute.indexedStack(
+    pageBuilder: (context, state, shell) {
+      return _spacePage(
+        context,
+        key: state.pageKey,
+        child: CoachingFrame(
+          shell: shell,
+          onYourTraining: context.leaveCoaching,
+          onBackToWorkout: () {
+            // the sheet goes over the Workout tab, as a Live Activity's tap
+            // does, once the router has left the space: pushed in the same
+            // frame, it would land over Coaching
+            final router = GoRouter.of(context);
+            context.leaveCoaching(to: _workoutName);
+            WidgetsBinding.instance.addPostFrameCallback((_) => _pushActiveWorkoutOnce(router));
+          },
+        ),
+      );
+    },
+    branches: [
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: _coachingClientsPath,
+            name: _coachingClientsName,
+            redirect: off,
+            builder: (context, _) => ClientsPage(
+              onYourTraining: context.leaveCoaching,
+              onOpenClient: context.pushCoachingClient,
+              onOpenWorkout: context.pushCoachingClientWorkout,
+              onOpenProgram: context.pushCoachingClientProgram,
+              onEditSession: context.pushCoachingClientSession,
+              onOpenOwnWorkout: context.pushWorkoutOver,
+              onLog: context.pushCoachingClientLog,
+            ),
+            routes: [
+              GoRoute(
+                path: ':connectionId',
+                name: _coachingClientName,
+                builder: (context, state) {
+                  final connectionId = state.pathParameters['connectionId']!;
+                  return ClientPage(
+                    key: ValueKey(connectionId),
+                    connectionId: connectionId,
+                    onOpenWorkout: (workoutId) => context.pushCoachingClientWorkout(connectionId, workoutId),
+                    onOpenProgram: (programId) => context.pushCoachingClientProgram(connectionId, programId),
+                    onMessage: context.pushCoachingClientThread,
+                    onNotes: context.pushCoachingClientNotes,
+                    onLog: context.pushCoachingClientLog,
+                  );
+                },
+                routes: [
+                  GoRoute(
+                    path: 'messages',
+                    name: _coachingClientThreadName,
+                    builder: (context, state) {
+                      final connectionId = state.pathParameters['connectionId']!;
+                      return ThreadPage(
+                        connectionId: connectionId,
+                        onOpenWorkout: (
+                          client: (id) => context.pushCoachingClientWorkout(connectionId, id, fromThread: true),
+                          own: context.pushWorkoutOver,
+                        ),
+                      );
+                    },
+                  ),
+                  // a workout the coach logs for them (#560): it lives in what
+                  // it was opened with, so a location without it goes back
+                  GoRoute(
+                    path: 'log',
+                    name: _coachingClientLogName,
+                    redirect: (_, state) => switch (state.extra) {
+                      PastWorkout _ => null,
+                      _ => '$_coachingClientsPath/${state.pathParameters['connectionId']}',
+                    },
+                    builder: (context, state) {
+                      final past = state.extra as PastWorkout;
+                      return WorkoutEditor(copy: past.workout, logTo: past.logTo, loggingFor: past.loggingFor);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'notes',
+                    name: _coachingClientNotesName,
+                    // nowhere to keep the keys that open them, as on the web
+                    redirect: (context, state) => switch (DeviceKeys.of(context).supported) {
+                      true => null,
+                      false => state.namedLocation(
+                        _coachingClientName,
+                        pathParameters: {'connectionId': state.pathParameters['connectionId']!},
+                      ),
+                    },
+                    builder: (context, state) => ClientNotesPage(connectionId: state.pathParameters['connectionId']!),
+                  ),
+                  GoRoute(
+                    path: 'programs/:programId',
+                    name: _coachingClientProgramName,
+                    builder: (context, state) {
+                      final connectionId = state.pathParameters['connectionId']!;
+                      final programId = state.pathParameters['programId']!;
+                      return ClientProgramPage(
+                        key: ValueKey(programId),
+                        connectionId: connectionId,
+                        programId: programId,
+                        onEditSession: ({required isNew}) {
+                          context.pushCoachingClientSession(connectionId, programId, isNew: isNew);
+                        },
+                      );
+                    },
+                    routes: [
+                      GoRoute(
+                        path: 'session',
+                        name: _coachingClientSessionName,
+                        builder: (context, state) {
+                          final l = L.of(context);
+                          final isNew = state.uri.queryParameters['new'] == 'true';
+                          return TemplateEditor(
+                            isNewTemplate: isNew,
+                            drafts: ClientPrograms.of(context),
+                            words: (
+                              title: switch (isNew) {
+                                true => l.coachingProgramNewSession,
+                                false => l.coachingProgramEditSession,
+                              },
+                              hint: l.coachingProgramSessionName,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'workouts/:workoutId',
+                    name: _coachingClientWorkoutName,
+                    builder: (context, state) => WorkoutReviewPage(
+                      key: ValueKey(state.pathParameters['workoutId']),
+                      connectionId: state.pathParameters['connectionId']!,
+                      workoutId: state.pathParameters['workoutId']!,
+                      // from the conversation: back to it, where the message goes
+                      onMessage: switch (state.extra) {
+                        true => context.pop,
+                        _ => () => context.pushCoachingClientThread(state.pathParameters['connectionId']!),
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: _coachingMessagesPath,
+            name: _coachingMessagesName,
+            redirect: off,
+            builder: (context, _) => CoachMessagesPage(
+              onYourTraining: context.leaveCoaching,
+              onOpen: context.pushCoachingThread,
+              onOpenWorkout: (connectionId, workoutId) =>
+                  context.pushCoachingClientWorkout(connectionId, workoutId, fromThread: true),
+              onOpenOwnWorkout: context.pushWorkoutOver,
+            ),
+            routes: [
+              GoRoute(
+                path: ':connectionId',
+                name: _coachingThreadName,
+                builder: (context, state) {
+                  final connectionId = state.pathParameters['connectionId']!;
+                  return ThreadPage(
+                    connectionId: connectionId,
+                    onOpenWorkout: (
+                      client: (id) => context.pushCoachingClientWorkout(connectionId, id, fromThread: true),
+                      own: context.pushWorkoutOver,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+      StatefulShellBranch(routes: [_coachingProgramsRoute(off)]),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: _coachingMePath,
+            name: _coachingMeName,
+            redirect: off,
+            builder: (context, _) => CoachMePage(
+              onYourTraining: context.leaveCoaching,
+              onSettings: () => context.goNamed('$_coachingPrefix$_settingsName'),
+            ),
+            // Settings without leaving the space (#685)
+            routes: [_settingsRoute(parent: _coachingMePath, prefix: _coachingPrefix)],
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+/// A coach's library (#557): the list, a new program, one program, and the
+/// program form and template editor on it, as the coach's own programs have.
+///
+/// On a wide window the library keeps its list and what is picked opens
+/// beside it (#685), the program and its forms in the pane's own navigator,
+/// as Exercises does.
+RouteBase _coachingProgramsRoute(GoRouterRedirect off) {
+  final navigatorKey = GlobalKey<NavigatorState>();
+
+  CoachProgramsPage list(BuildContext context, {String? selectedId, Widget? detail}) {
+    return CoachProgramsPage(
+      selectedId: selectedId,
+      detail: detail,
+      onYourTraining: context.leaveCoaching,
+      onOpen: context.goToCoachingProgram,
+      onNew: context.goToNewCoachingProgram,
+    );
+  }
+
+  return ShellRoute(
+    navigatorKey: navigatorKey,
+    builder: (context, state, detail) {
+      final selectedId = state.pathParameters['programId'];
+      final making = state.topRoute?.name == _coachingNewProgramName;
+      final shown = selectedId != null || making;
+      return switch (LayoutProvider.of(context)) {
+        .compact => detail,
+        .wide => _withNavigator(
+          detail,
+          shown: shown,
+          page: list(
+            context,
+            selectedId: selectedId,
+            detail: shown ? detail : null,
+          ),
+        ),
+      };
+    },
+    routes: [_coachingLibraryRoute(off, list)],
+  );
+}
+
+GoRoute _coachingLibraryRoute(
+  GoRouterRedirect off,
+  CoachProgramsPage Function(BuildContext context, {String? selectedId, Widget? detail}) list,
+) {
+  return GoRoute(
+    path: _coachingProgramsPath,
+    name: _coachingProgramsName,
+    redirect: off,
+    builder: (context, _) {
+      return switch (LayoutProvider.of(context)) {
+        .wide => const SizedBox.shrink(), // already rendered by the shell
+        .compact => list(context),
+      };
+    },
+    routes: [
+      // before ':programId', which would otherwise take "new" for an id
+      GoRoute(
+        path: 'new',
+        name: _coachingNewProgramName,
+        builder: (context, _) {
+          final l = L.of(context);
+          String? made;
+          return ProgramFieldsForm(
+            initial: Program(name: '', perWeek: 3, weeks: 8),
+            title: l.newProgram,
+            saveLabel: l.coachingProgramCreate,
+            withNote: true,
+            onSave: (fields) async {
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                final program = await CoachLibrary.of(context).create(Program(name: '').withFields(fields));
+                made = program.id;
+                return true;
+              } catch (error, stacktrace) {
+                reportToSentry(error, stacktrace: stacktrace);
+                messenger.snack(l.coachingProgramCreateFailed);
+                return false;
+              }
+            },
+            onDone: () => switch (made) {
+              final String id => context.goToCoachingProgram(id),
+              null => context.goToCoachingPrograms(),
+            },
+          );
+        },
+      ),
+      GoRoute(
+        path: ':programId',
+        name: _coachingProgramName,
+        builder: (context, state) {
+          final programId = state.pathParameters['programId']!;
+          return CoachProgramPage(
+            key: ValueKey(programId),
+            programId: programId,
+            onEdit: () => context.pushCoachingProgramEdit(programId),
+            onEditSession: ({required isNew}) => context.pushCoachingProgramSession(programId, isNew: isNew),
+            onGone: context.goToCoachingPrograms,
+            onClose: switch (LayoutProvider.of(context)) {
+              .wide => context.goToCoachingPrograms,
+              .compact => null,
+            },
+          );
+        },
+        routes: [
+          GoRoute(
+            path: 'edit',
+            name: _coachingProgramEditName,
+            builder: (context, state) {
+              final l = L.of(context);
+              final library = CoachLibrary.of(context);
+              final programId = state.pathParameters['programId']!;
+              return switch (library.lookup(programId)) {
+                final CoachLibraryProgram program => ProgramFieldsForm(
+                  key: ValueKey(programId),
+                  initial: program.program,
+                  title: l.editProgram,
+                  saveLabel: l.save,
+                  withNote: true,
+                  // one that doesn't reach the server is kept, and its page
+                  // says so: the form has done its part either way
+                  onSave: (fields) async {
+                    final now = library.lookup(programId) ?? program;
+                    await library.save(now.copyWith(program: now.program.withFields(fields)));
+                    return true;
+                  },
+                  onDone: context.pop,
+                ),
+                null => Scaffold(appBar: AppBar()),
+              };
+            },
+          ),
+          GoRoute(
+            path: 'session',
+            name: _coachingProgramSessionName,
+            builder: (context, state) {
+              final l = L.of(context);
+              final isNew = state.uri.queryParameters['new'] == 'true';
+              return TemplateEditor(
+                isNewTemplate: isNew,
+                drafts: CoachLibrary.of(context),
+                words: (
+                  title: switch (isNew) {
+                    true => l.coachingProgramNewSession,
+                    false => l.coachingProgramEditSession,
+                  },
+                  hint: l.coachingProgramSessionName,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+/// A student's conversation with their coach (#556), over whatever is on
+/// screen. There only while coaching runs: off, a link to it is one the app
+/// has no screen for.
+RouteBase _threadRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _threadPath,
+    name: _threadName,
+    redirect: (context, _) => switch (pushesOn(context)) {
+      true => null,
+      false => _profilePath,
+    },
+    builder: (context, state) {
+      // outside the shell, so the layout is this route's to provide
+      return LayoutProvider(
+        currentStack: -1,
+        // a workout of one's own a message is about, over the conversation;
+        // a client's opens only in Coaching
+        builder: (context, _, _) => ThreadPage(
+          connectionId: state.pathParameters['connectionId']!,
+          onOpenWorkout: (client: null, own: context.pushWorkoutOver),
+        ),
+      );
+    },
+  );
+}
+
+/// Your devices over whatever asked for it, a conversation say: Back returns
+/// there rather than to Settings. Pushed only where it runs
+/// ([HeartRouter.pushYourDevices]): off, a link here is one the app has no
+/// screen for.
+RouteBase _yourDevicesOverRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _yourDevicesOverPath,
+    name: _yourDevicesOverName,
+    redirect: (context, _) => _yourDevicesOr(context, _profilePath),
+    builder: (_, _) => const YourDevicesPage(onError: reportToSentry),
+  );
+}
+
+/// [instead] where device keys (#555) don't run. A link that starts the app is
+/// decided once the session and what the account may do are known: before
+/// that, it reads as off to anyone.
+FutureOr<String?> _yourDevicesOr(BuildContext context, String instead) async {
+  if (!DeviceKeys.of(context).supported) return instead;
+  await pushesSettled(context);
+  // a tree torn down mid-wait (a test's) has nowhere left to go
+  if (!context.mounted) return null;
+  return switch (pushesOn(context)) {
+    true => null,
+    false => instead,
+  };
+}
+
+/// A coach's invitation link (#553), whichever switch is on: the page is Your
+/// coach's ask. A link without a token is one the app has no screen for.
+RouteBase _invitationRoute() {
+  return GoRoute(
+    path: _invitationPath,
+    // a token the server could have made, or no screen: the API refuses any
+    // other before it reaches a path
+    redirect: (_, state) => switch (state.uri.queryParameters[_invitationToken]) {
+      final String token when _invitationTokenShape.hasMatch(token) => null,
+      _ => _profilePath,
+    },
+    builder: (context, state) {
+      final token = state.uri.queryParameters[_invitationToken]!;
+      return InvitationPage(
+        // a second link over the first is a new page, with its own preview
+        key: ValueKey(token),
+        token: token,
+        fingerprint: switch (state.uri.fragment) {
+          '' => null,
+          final String fragment => fragment,
+        },
+        onDone: context.goToProfile,
+        onMakeAccount: context.goToLogin,
+      );
+    },
+  );
 }

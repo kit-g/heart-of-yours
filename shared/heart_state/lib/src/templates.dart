@@ -6,8 +6,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import 'analytics.dart';
+import 'client_programs.dart' show isProgramChanged;
 import 'remote.dart';
-import 'supersets.dart';
+import 'template_drafting.dart';
 
 /// Local persistence of the user's template folders.
 ///
@@ -37,9 +38,31 @@ abstract interface class LocalTemplateFolderService {
 /// the filing alone".
 abstract interface class RemoteTemplateFilingService {
   Future<Template> moveTemplate(Template template, {required String? folderId});
+
+  /// One template by its id: a session of the program a push named (#567).
+  /// Here rather than on `RemoteTemplateService`, which is the server's
+  /// contract and has no such call.
+  Future<Template> getTemplate(String templateId);
+
+  /// A session of a coach's copy (#558), from the revision it was read at
+  /// ([baseRevision]), under [changeId] so a retry writes once. Throws
+  /// the `ServerRefusal` `program_changed` when the coach changed it since.
+  Future<Template> editSharedTemplate(Template template, {required int baseRevision, required String changeId});
 }
 
-class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateSentry {
+/// The sessions of copies two people edit (#558), which [Templates] sends from
+/// the revision they were read at. The programs know which those are.
+abstract interface class SharedSessions {
+  /// The revision [session] was last read at, when it is a session of a
+  /// coach's copy; null for any other template.
+  int? baseRevisionOf(Template session);
+
+  /// The coach changed [mine]'s session first: nothing was saved, and the
+  /// user's version waits to be chosen or let go.
+  Future<void> beaten(Template mine);
+}
+
+class Templates with ChangeNotifier, Iterable<Template>, TemplateDrafting implements SignOutStateSentry {
   final _templates = SplayTreeSet<Template>();
   final _samples = SplayTreeSet<Template>();
   final _folders = SplayTreeSet<TemplateFolder>();
@@ -70,9 +93,10 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   /// of making one people actually use. Absent in tests.
   final Analytics? analytics;
 
-  Template? editable;
-
   String? userId;
+
+  /// Set once the programs exist, which come after the templates.
+  SharedSessions? shared;
 
   bool _ownLoaded = false;
   bool _samplesLoaded = false;
@@ -97,6 +121,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     _ownLoaded = false;
     _templates.clear();
     _folders.clear();
+    notifyListeners();
   }
 
   @override
@@ -125,8 +150,12 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     // runs: local templates that fail to read must not keep the folders, or
     // the server's copies, from loading.
     final id = userId!;
+    // A session that ends mid-read (#671) has had its state cleared for the
+    // next one: what lands after that is the last one's and stays out. Every
+    // step checks the uid again once it has awaited.
     await _step(() async {
       final local = await _service.getTemplates(id);
+      if (userId != id) return;
       if (local.isNotEmpty) {
         _templates.addAll(local);
         notifyListeners();
@@ -137,10 +166,12 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     });
     // read, whether or not anything was there — or the read failed, which
     // [_step] has reported; nothing is still to come from this device
+    if (userId != id) return;
     _ownLoaded = true;
 
     await _step(() async {
       final localFolders = await _folderService.getFolders(id);
+      if (userId != id) return;
       if (localFolders.isNotEmpty) {
         _folders.addAll(localFolders);
         notifyListeners();
@@ -148,18 +179,20 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     });
 
     // the mirror is the whole story until there is a server to reconcile with
-    if (!_remote.allowed) return;
+    if (userId != id || !_remote.allowed) return;
 
     await _step(() async {
       final remote = await _remoteService.getTemplates() ?? [];
+      if (userId != id) return;
       if (remote.isNotEmpty) {
         _templates
           ..removeWhere(remote.contains)
           ..addAll(remote);
         notifyListeners();
-        await _service.storeTemplates(remote, userId: userId);
+        await _service.storeTemplates(remote, userId: id);
       }
     });
+    if (userId != id) return;
 
     // After the templates above: this replace also unfiles whatever points at
     // a folder the server no longer has, so it must see the final template
@@ -167,6 +200,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     // all, so a failure leaves the local folders as they are.
     await _step(() async {
       final remoteFolders = (await _remoteFolderService.getFolders(userId: id)).toList();
+      if (userId != id) return;
       if (remoteFolders.isNotEmpty || _folders.isNotEmpty) {
         _folders
           ..clear()
@@ -175,6 +209,31 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
       }
       await _folderService.storeFolders(remoteFolders, id);
     });
+  }
+
+  /// Reads the templates [ids] from the server over the ones held, and no
+  /// others: a program's sessions, when a push named the program (#567). One
+  /// that fails to read keeps what was held, and the rest still land.
+  Future<void> pull(Iterable<String> ids) async {
+    final id = userId;
+    if (id == null || !_remote.allowed) return;
+    final answers = await Future.wait(
+      ids.map((each) async {
+        try {
+          return await _filingService.getTemplate(each);
+        } catch (e, s) {
+          onError?.call(e, stacktrace: s);
+          return null;
+        }
+      }),
+    );
+    final read = answers.nonNulls.toList();
+    if (read.isEmpty || userId != id) return;
+    _templates
+      ..removeWhere(read.contains)
+      ..addAll(read);
+    notifyListeners();
+    await _step(() => _service.storeTemplates(read, userId: id));
   }
 
   /// Reads the user's own templates from the mirror again, replacing what is
@@ -203,97 +262,9 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     }
   }
 
-  Future<void> add(Exercise exercise) async {
-    editable ??= await _service.startTemplate(
-      userId: userId,
-      order: (_templates.lastOrNull?.order ?? 0) + 1,
-    );
-    editable?.add(exercise);
-    notifyListeners();
-  }
-
-  void remove(WorkoutExercise exercise) {
-    editable?.remove(exercise);
-  }
-
-  void addSet(WorkoutExercise exercise) {
-    // a plain set, whatever the last one was: a warm-up is not what comes
-    // after a warm-up (Strong and Hevy agree)
-    final set = switch (exercise.lastOrNull) {
-      ExerciseSet last => last.copy()..setType = .normal,
-      null => ExerciseSet(exercise.exercise),
-    };
-    exercise.add(set);
-    notifyListeners();
-  }
-
-  void removeSet(WorkoutExercise exercise, ExerciseSet set) {
-    exercise.remove(set);
-    notifyListeners();
-  }
-
-  /// Retypes [set] in the template being edited; saved with the rest of it.
-  void setSetType(ExerciseSet set, SetType type) {
-    set.setType = type;
-    notifyListeners();
-  }
-
-  /// Aims [set] in the template being edited at [target], or at nothing when
-  /// it is null (#173); saved with the rest of it. A set added after it copies
-  /// it, as it copies the values.
-  ///
-  /// A measure the target now aims at gives up the fixed value it held: a cell
-  /// shows one or the other, and "5 reps" left under "6–10" would be the one
-  /// the sheet prefills. The set is rebuilt in its place, under its id.
-  void setSetTarget(ExerciseSet set, SetTarget? target) {
-    set.target = target ?? SetTarget.none;
-    final aimed = {...?set.target?.ranges.keys.map((measure) => measure.value)};
-    final map = set.toMap();
-    final exercise = editable?.where((each) => each.contains(set)).firstOrNull;
-    if (exercise != null && aimed.any((key) => map[key] != null)) {
-      final rebuilt = ExerciseSet.fromJson(exercise.exercise, {...map}..removeWhere((key, _) => aimed.contains(key)));
-      final sets = exercise.toList();
-      sets.forEach(exercise.remove);
-      for (final each in sets) {
-        exercise.add(identical(each, set) ? rebuilt : each);
-      }
-    }
-    notifyListeners();
-  }
-
-  void removeExercise(WorkoutExercise exercise) {
-    editable
-      ?..remove(exercise)
-      // a superset left with one member is no superset (#159)
-      ..settle();
-    notifyListeners();
-  }
-
-  void swap(WorkoutExercise toInsert, WorkoutExercise before) {
-    editable
-      ?..swap(toInsert, before)
-      ..settle(moved: toInsert);
-    notifyListeners();
-  }
-
-  void append(WorkoutExercise exercise) {
-    editable
-      ?..append(exercise)
-      ..settle(moved: exercise);
-    notifyListeners();
-  }
-
-  /// Joins [exercise] and [neighbour] of the template being edited in a
-  /// superset (#159), or [exercise] into the one [neighbour] is in.
-  void group(WorkoutExercise exercise, WorkoutExercise neighbour) {
-    editable?.group(exercise, neighbour);
-    notifyListeners();
-  }
-
-  /// Takes [exercise] of the template being edited out of its superset.
-  void leaveGroup(WorkoutExercise exercise) {
-    editable?.leave(exercise);
-    notifyListeners();
+  @override
+  Future<Template> startDraft() {
+    return _service.startTemplate(userId: userId, order: (_templates.lastOrNull?.order ?? 0) + 1);
   }
 
   /// Drops the template being edited, deleting it if it was never saved.
@@ -308,6 +279,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   /// being edited, and quitting that editor discards the edits, not the
   /// template. Local-only either way, so there is nothing to tell the server:
   /// a draft has never been sent to it.
+  @override
   Future<void> discardEditable() async {
     final draft = editable;
     editable = null;
@@ -318,6 +290,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     await _service.deleteTemplate(draft.id);
   }
 
+  @override
   Future<void> saveEditable() async {
     if (editable case Template template) {
       // `local` is the server-id-not-yet-assigned mark, which is exactly what
@@ -386,9 +359,11 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     if (!_remote.allowed) return template;
 
     try {
-      final save = template.local ? _remoteService.saveTemplate : _remoteService.editTemplate;
-
-      final saved = await save(template);
+      final saved = await switch ((template.local, shared?.baseRevisionOf(template))) {
+        (true, _) => _remoteService.saveTemplate(template),
+        (false, final int base) => _filingService.editSharedTemplate(template, baseRevision: base, changeId: uuidV7()),
+        (false, null) => _remoteService.editTemplate(template),
+      };
       _swap(template, saved);
       if (userId case String id) {
         // A locally-created template is persisted under a client-generated
@@ -401,9 +376,24 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
       }
       return saved;
     } catch (error, stacktrace) {
+      if (isProgramChanged(error)) {
+        // the coach's version comes back here, and the user's waits to be chosen
+        await shared?.beaten(template);
+        await pull([template.id]);
+        return lookup(template.id) ?? template;
+      }
       onError?.call(error, stacktrace: stacktrace);
       return template;
     }
+  }
+
+  /// Sends [template] as it is, over the one held: the user's version of a
+  /// shared session, chosen over the coach's (#558).
+  Future<Template> keep(Template template) async {
+    _templates.removeWhere((each) => each.id == template.id);
+    final saved = await _save(template);
+    notifyListeners();
+    return saved;
   }
 
   Future<void> delete(Template template) {
@@ -412,9 +402,19 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     return Future.wait(
       [
         _service.deleteTemplate(template.id),
-        if (_remote.allowed) _remoteService.deleteTemplate(template.id),
+        if (_remote.allowed) _deleteRemote(template.id),
       ],
     );
+  }
+
+  /// One the server no longer has is gone either way; any other failure is
+  /// reported rather than thrown at the screen that deleted it.
+  Future<void> _deleteRemote(String templateId) async {
+    try {
+      await _remoteService.deleteTemplate(templateId);
+    } catch (error, stacktrace) {
+      if (!_remote.isGone(error)) onError?.call(error, stacktrace: stacktrace);
+    }
   }
 
   /// Folders are remote-first — the server mints their ids — so there are none

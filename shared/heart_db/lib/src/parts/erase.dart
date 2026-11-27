@@ -39,6 +39,7 @@ mixin _Erase on _LocalDatabase {
           'DELETE FROM $_workoutExercises WHERE workout_id IN (SELECT id FROM $_workouts WHERE user_id = ?)',
           [userId],
         );
+        batch.delete(_workoutPlans, where: 'user_id = ?', whereArgs: [userId]);
         batch.delete(_workouts, where: 'user_id = ?', whereArgs: [userId]);
         batch.rawDelete(
           'DELETE FROM $_templatesExercises WHERE template_id IN (SELECT id FROM $_templates WHERE user_id = ?)',
@@ -54,6 +55,10 @@ mixin _Erase on _LocalDatabase {
         batch.delete(_programs, where: 'user_id = ?', whereArgs: [userId]);
         batch.delete(_programsOwed, where: 'user_id = ?', whereArgs: [userId]);
         batch.delete(_skips, where: 'user_id = ?', whereArgs: [userId]);
+        batch.delete(_anomalies, where: 'user_id = ?', whereArgs: [userId]);
+        batch.delete(_threads, where: 'user_id = ?', whereArgs: [userId]);
+        batch.delete(_threadItems, where: 'user_id = ?', whereArgs: [userId]);
+        batch.delete(_coachNotes, where: 'user_id = ?', whereArgs: [userId]);
         batch.delete(_templateFolders, where: 'user_id = ?', whereArgs: [userId]);
         // per-exercise rest timers and unit overrides
         batch.delete(_exerciseDetails, where: 'user_id = ?', whereArgs: [userId]);

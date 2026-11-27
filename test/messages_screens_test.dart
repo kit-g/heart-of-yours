@@ -1,0 +1,966 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/core/env/config.dart';
+import 'package:heart/presentation/widgets/message_text.dart';
+import 'package:heart/presentation/routes/coaching/coaching.dart';
+import 'package:heart/presentation/routes/messages/messages.dart';
+import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
+import 'package:heart_language/heart_language.dart';
+import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
+
+import 'support/harness.dart';
+
+/// Coaching messages on screen (#556): a conversation in the server's order,
+/// writing in it, and a coach's inbox beside the open one on a wide pane.
+void main() {
+  late _Server server;
+  late _Store store;
+  late _Cipher cipher;
+  late Messages messages;
+  late Preferences preferences;
+  late _Connections connections;
+  late Coaching coaching;
+  late RecordedAnalytics recorded;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    preferences = Preferences();
+    await preferences.init();
+    server = _Server();
+    store = _Store();
+    cipher = _Cipher();
+    connections = _Connections();
+    coaching = Coaching(
+      service: connections,
+      remote: RemoteAccess(hasToken: () => true)..account = true,
+    );
+    await coaching.load();
+    recorded = RecordedAnalytics();
+    messages = Messages(
+      service: server,
+      local: store,
+      cipher: cipher,
+      remote: RemoteAccess(hasToken: () => true)..account = true,
+      analytics: Analytics(service: recorded),
+      roleFor: (thread) => coaching.all.where((each) => each.connectionId == thread.connectionId).firstOrNull?.role,
+    )..userId = 'whiskers';
+  });
+
+  Future<void> pump(WidgetTester tester, Widget child, {Size size = const Size(400, 800)}) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<Messages>.value(value: messages),
+          ChangeNotifierProvider<Preferences>.value(value: preferences),
+          ChangeNotifierProvider<Coaching>.value(value: coaching),
+          Provider<Analytics>.value(value: Analytics(service: recorded)),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: localizationsDelegates,
+          supportedLocales: L.supportedLocales,
+          home: LayoutProvider(currentStack: 0, builder: (_, _, _) => child),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('a message about something this device doesn\'t hold says what kind, and opens nothing', (tester) async {
+    server.items = [
+      _item('i1', 'That third set?', sender: 'whiskers', cursor: 'c1', subjectType: 'exercise_set', subjectId: 's3'),
+      _item('i2', 'And the day', sender: 'muffin', cursor: 'c2', subjectType: 'workout', subjectId: 'w9'),
+      _item('i3', 'Later kinds', sender: 'muffin', cursor: 'c3', subjectType: 'skip', subjectId: 'k1'),
+    ];
+    var opened = 0;
+
+    await pump(
+      tester,
+      ThreadPage(connectionId: 'c-muffin', onOpenWorkout: (client: (_) => opened++, own: (_) => opened++)),
+    );
+
+    expect(find.text('About a set'), findsOneWidget);
+    expect(find.text('About a workout'), findsOneWidget);
+    expect(find.byKey(AppKeys.messageSubject), findsNWidgets(2), reason: "a kind this build doesn't know shows none");
+    expect(
+      find.descendant(of: find.byKey(AppKeys.messageSubject), matching: find.byType(QuietButton), matchRoot: true),
+      findsNothing,
+    );
+    expect(opened, 0);
+  });
+
+  testWidgets('what the next message is about sits over the box, goes with it, and can be let go', (tester) async {
+    messages.writeAbout('c-muffin', const MessageSubject(.workout, 'w1'));
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+    expect(find.byKey(AppKeys.messageAbout), findsOneWidget);
+    expect(find.text('About a workout'), findsOneWidget);
+    await tester.enterText(find.byKey(AppKeys.messageBox), 'Felt heavy');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(AppKeys.messageSend));
+    await tester.pumpAndSettle();
+
+    expect(server.subjects, ['workout w1']);
+    expect(find.byKey(AppKeys.messageAbout), findsNothing, reason: 'said: the next is about nothing in particular');
+
+    messages.writeAbout('c-muffin', const MessageSubject(.exerciseSet, 's1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Not about this'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(AppKeys.messageBox), 'Anyway');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(AppKeys.messageSend));
+    await tester.pumpAndSettle();
+
+    expect(server.subjects, ['workout w1'], reason: 'let go before it was said');
+  });
+
+  testWidgets("a conversation reads oldest to newest, and says what couldn't be opened", (tester) async {
+    server.items = [
+      _item('i1', 'Squats?', sender: 'whiskers', cursor: 'c1'),
+      _item('i2', 'Heavy, but good', sender: 'muffin', cursor: 'c2'),
+      _item('i3', 'locked', sender: 'muffin', cursor: 'c3'),
+    ];
+
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+    expect(find.text('Muffin'), findsOneWidget, reason: "the page is titled with who it's with");
+    final first = tester.getTopLeft(_message('Squats?'));
+    final second = tester.getTopLeft(_message('Heavy, but good'));
+    expect(first.dy, lessThan(second.dy));
+    // under the test font each letter is as wide as it is tall: short words keep the bubbles apart
+    expect(second.dx, lessThan(first.dx), reason: "theirs sit left, the coach's own right");
+    expect(_message('Locked message'), findsOneWidget);
+    expect(server.calls, contains('read t1 c3'));
+  });
+
+  group('locked messages', () {
+    late _Keys keys;
+    late _Auth auth;
+
+    setUp(() {
+      keys = _Keys();
+      auth = _Auth();
+      preferences.setFeature(.yourCoach, on: true);
+    });
+
+    Future<void> open(
+      WidgetTester tester, {
+      List<String> from = const ['muffin'],
+      Size size = const Size(400, 800),
+      double textScale = 1,
+      EdgeInsets insets = .zero,
+    }) async {
+      server.items = [
+        for (final (index, sender) in from.indexed) _item('i$index', 'locked', sender: sender, cursor: 'c$index'),
+      ];
+      await pump(
+        tester,
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<DeviceKeys>.value(value: keys),
+            ChangeNotifierProvider<Auth>.value(value: auth),
+            Provider<AppConfig>.value(value: AppConfig.test(appLink: 'heart-of.me')),
+          ],
+          child: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: .linear(textScale), viewInsets: insets),
+              child: const ThreadPage(connectionId: 'c-muffin'),
+            ),
+          ),
+        ),
+        size: size,
+      );
+    }
+
+    final line = find.byKey(AppKeys.messagesLockedLine);
+    final copy = find.byKey(AppKeys.messagesCopyDevicesLink);
+
+    void expectSaid(String words, {bool buttons = false}) {
+      expect(find.descendant(of: line, matching: find.text(words)), findsOneWidget);
+      expect(copy, buttons ? findsOneWidget : findsNothing);
+    }
+
+    testWidgets('say once what opens them, with the way there, where another device has to approve', (tester) async {
+      keys.others = {'tablet': .unverified};
+      await open(tester, from: ['muffin', 'muffin', 'whiskers']);
+
+      expect(_message('Locked message'), findsNWidgets(3));
+      expectSaid(
+        "This device can't open some messages yet. Approve it from another device where you use Heart.",
+        buttons: true,
+      );
+      final newest = tester.getBottomLeft(_message('Locked message').first).dy;
+      expect(tester.getTopLeft(line).dy, greaterThanOrEqualTo(newest), reason: 'after the newest of them');
+      expect(
+        find.descendant(of: find.byKey(AppKeys.thread), matching: line),
+        findsOneWidget,
+        reason: 'and scrolls away',
+      );
+    });
+
+    testWidgets('on an approved device open when their writer is there', (tester) async {
+      keys.others = {'tablet': .pinned};
+      await open(tester);
+      expectSaid('Some messages will open when Muffin next opens Heart.');
+    });
+
+    testWidgets("with no other device open when their writer is there, and one's own never", (tester) async {
+      await open(tester);
+      expectSaid('Some messages will open when Muffin next opens Heart.');
+
+      await tester.pumpWidget(const SizedBox());
+      store.items.clear();
+      await open(tester, from: ['whiskers']);
+      expectSaid("You wrote some messages on a device you no longer use. They can't be opened here.");
+    });
+
+    testWidgets("of one's own wait for the other device once it let this one in", (tester) async {
+      keys.others = {'tablet': .pinned};
+      await open(tester, from: ['whiskers']);
+      expectSaid('Some of your messages will open when your other device is next online.');
+    });
+
+    testWidgets('of a person with no name are said without one', (tester) async {
+      server.name = null;
+      keys.others = {'tablet': .pinned};
+      await open(tester);
+      expectSaid('Some messages will open when the other person next opens Heart.');
+    });
+
+    testWidgets("need nothing approved on a student's side", (tester) async {
+      connections.role = .student;
+      await coaching.load();
+      keys.others = {'tablet': .unverified};
+      await open(tester);
+      expectSaid('Some messages will open when Muffin next opens Heart.');
+    });
+
+    testWidgets('in a conversation that is over never open', (tester) async {
+      connections.status = .severed;
+      await coaching.load();
+      keys.others = {'tablet': .pinned};
+      await open(tester);
+      expectSaid("Some messages can't be opened any more.");
+    });
+
+    testWidgets('where no keys are kept open on a phone', (tester) async {
+      keys.supported = false;
+      keys.others = {'tablet': .unverified};
+      await open(tester);
+      expectSaid('Messages open on your phone, in the Heart app.');
+    });
+
+    testWidgets('read the devices once, and say nothing until that is done, or where it fails', (tester) async {
+      keys
+        ..read = false
+        ..fails = true
+        ..others = {'tablet': .unverified};
+      await open(tester);
+      expect(line, findsNothing);
+      expect(keys.reads, 1);
+      await messages.refresh('t1');
+      await tester.pumpAndSettle();
+      expect(keys.reads, 1, reason: 'not again for each read of the conversation');
+
+      await tester.pumpWidget(const SizedBox());
+      keys.fails = false;
+      await open(tester);
+      expect(keys.reads, 2);
+      expect(line, findsOneWidget);
+    });
+
+    testWidgets('are read for only once the keys run', (tester) async {
+      keys
+        ..read = false
+        ..status = .off
+        ..others = {'tablet': .unverified};
+      await open(tester);
+      expect(keys.reads, 0);
+
+      keys.running();
+      await tester.pumpAndSettle();
+      expect(keys.reads, 1);
+      expect(line, findsOneWidget);
+    });
+
+    testWidgets('say nothing while their keys are still looked for', (tester) async {
+      keys.others = {'tablet': .pinned};
+      cipher.holdReceive = Completer();
+      await open(tester);
+      expect(_message('Locked message'), findsOneWidget);
+      expect(line, findsNothing);
+
+      cipher.holdReceive!.complete();
+      await tester.pumpAndSettle();
+      expect(line, findsOneWidget);
+    });
+
+    testWidgets('leave the box in reach at large text over the keyboard', (tester) async {
+      keys.others = {'tablet': .unverified};
+      await open(
+        tester,
+        size: const Size(320, 640),
+        textScale: 2,
+        insets: const EdgeInsets.only(bottom: 300),
+      );
+      expect(tester.takeException(), isNull);
+      expect(tester.getBottomLeft(find.byKey(AppKeys.messageSend)).dy, lessThanOrEqualTo(340));
+      expect(find.byKey(AppKeys.messageBox).hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('give the link to Your devices, for the other device', (tester) async {
+      keys.others = {'tablet': .unverified};
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') copied.add((call.arguments as Map)['text'] as String);
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      await open(tester);
+      await tester.tap(copy);
+      await tester.pumpAndSettle();
+      expect(copied, ['https://heart-of.me/profile/settings/devices']);
+    });
+
+    testWidgets('are not spoken of where everything opens', (tester) async {
+      server.items = [_item('i1', 'Squats?', sender: 'whiskers', cursor: 'c1')];
+      await open(tester, from: []);
+      expect(line, findsNothing);
+    });
+  });
+
+  testWidgets('a long press copies what was said; one that never opened offers nothing', (tester) async {
+    server.items = [
+      _item('i1', 'Squats?', sender: 'whiskers', cursor: 'c1'),
+      _item('i2', 'locked', sender: 'muffin', cursor: 'c2'),
+    ];
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') copied.add((call.arguments as Map)['text'] as String);
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+    await tester.longPress(_message('Locked message'));
+    await tester.pumpAndSettle();
+    expect(find.text('Copy'), findsNothing);
+
+    await tester.longPress(_message('Squats?'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy'));
+    await tester.pumpAndSettle();
+
+    expect(copied, ['Squats?']);
+    expect(find.text('Copied to clipboard'), findsOneWidget);
+  });
+
+  testWidgets('a day of messages opens under its heading', (tester) async {
+    final now = DateTime.now();
+    server.items = [
+      _item('i1', 'Squats?', sender: 'whiskers', cursor: 'c1', at: now.subtract(const Duration(days: 1))),
+      _item('i2', 'Heavy', sender: 'muffin', cursor: 'c2', at: now),
+    ];
+
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+    expect(find.text('Yesterday'), findsOneWidget);
+    expect(find.text('Today'), findsOneWidget);
+  });
+
+  testWidgets('a message written goes out, and the box empties', (tester) async {
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+    expect(find.text('No messages yet'), findsOneWidget);
+
+    await tester.enterText(find.byKey(AppKeys.messageBox), 'Deload this week');
+    await tester.pump();
+    await tester.tap(find.byKey(AppKeys.messageSend));
+    await tester.pumpAndSettle();
+
+    expect(server.posted, ['sealed:Deload this week']);
+    expect(_message('Deload this week'), findsOneWidget);
+    expect(recorded.of('message_sent'), [
+      {'role': 'coach'},
+    ], reason: "the writer's side, never the words");
+    expect(tester.widget<TextField>(find.byKey(AppKeys.messageBox)).controller!.text, isEmpty);
+  });
+
+  testWidgets("one that can't be sealed stays in the box, and says so", (tester) async {
+    cipher.sealFails = true;
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+    await tester.enterText(find.byKey(AppKeys.messageBox), 'Hello');
+    await tester.pump();
+    await tester.tap(find.byKey(AppKeys.messageSend));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<TextField>(find.byKey(AppKeys.messageBox)).controller!.text, 'Hello');
+    expect(find.text("Couldn't send that. Your words are still here."), findsOneWidget);
+    expect(recorded.of('message_sent'), isEmpty, reason: 'nothing was kept, so nothing was sent');
+  });
+
+  testWidgets('what was being written survives the screen closing', (tester) async {
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+    await tester.enterText(find.byKey(AppKeys.messageBox), 'half a tho');
+    await tester.pump();
+
+    await pump(tester, const SizedBox());
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+    expect(tester.widget<TextField>(find.byKey(AppKeys.messageBox)).controller!.text, 'half a tho');
+  });
+
+  testWidgets('a closed conversation has no box, and says why', (tester) async {
+    server.closed = true;
+    await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+    await tester.enterText(find.byKey(AppKeys.messageBox), 'Still there?');
+    await tester.pump();
+
+    await tester.tap(find.byKey(AppKeys.messageSend));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(AppKeys.messageBox), findsNothing);
+    expect(find.text('This conversation takes no new messages.'), findsOneWidget);
+    expect(find.text('Not sent'), findsOneWidget);
+  });
+
+  testWidgets('a wide inbox opens the conversation beside the list', (tester) async {
+    server.items = [_item('i1', 'Morning!', sender: 'muffin', cursor: 'c1')];
+    final opened = <String>[];
+
+    await pump(
+      tester,
+      CoachMessagesPage(onYourTraining: () {}, onOpen: opened.add),
+      size: const Size(1000, 800),
+    );
+    expect(find.text('Pick a conversation'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget, reason: 'the unread count');
+
+    await tester.tap(find.byKey(AppKeys.inboxThread('t1')));
+    await tester.pumpAndSettle();
+
+    expect(opened, isEmpty, reason: 'no page of its own');
+    expect(_message('Morning!'), findsOneWidget);
+    expect(find.text('Pick a conversation'), findsNothing);
+  });
+
+  testWidgets('a narrow inbox opens the conversation as a page', (tester) async {
+    final opened = <String>[];
+
+    await pump(tester, CoachMessagesPage(onYourTraining: () {}, onOpen: opened.add));
+    await tester.tap(find.byKey(AppKeys.inboxThread('t1')));
+    await tester.pumpAndSettle();
+
+    expect(opened, ['c-muffin']);
+  });
+
+  group('the conversation menu', () {
+    Future<void> openMenu(WidgetTester tester) async {
+      await tester.tap(find.byKey(AppKeys.threadMenu));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('deleting asks first, then empties it for both, and says who did', (tester) async {
+      server.items = [_item('i1', 'Squats?', sender: 'whiskers', cursor: 'c1')];
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.threadDelete));
+      await tester.pumpAndSettle();
+      expect(find.text('Every message goes, for you and for Muffin. This can\'t be undone.'), findsOneWidget);
+      await tester.tap(find.byKey(AppKeys.threadDeleteConfirm));
+      await tester.pumpAndSettle();
+
+      expect(server.calls, contains('clear t1'));
+      expect(_message('Squats?'), findsNothing);
+      expect(store.items, isEmpty, reason: 'gone from the device too');
+      expect(find.text('You deleted the messages before this.'), findsOneWidget);
+      expect(recorded.of('conversation_deleted'), [
+        {'role': 'coach'},
+      ]);
+    });
+
+    testWidgets('blocking asks first, ends the connection, and closes the box', (tester) async {
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.threadBlock));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.threadBlockConfirm));
+      await tester.pumpAndSettle();
+
+      expect(connections.statuses, [ConnectionStatus.blocked]);
+      expect(find.byKey(AppKeys.messageBox), findsNothing);
+      expect(find.text('This conversation takes no new messages.'), findsOneWidget);
+
+      await openMenu(tester);
+      expect(find.byKey(AppKeys.threadBlock), findsNothing, reason: 'nothing left to block');
+    });
+
+    testWidgets('a report sends why, with their messages alone, and blocks when asked', (tester) async {
+      server.items = [
+        _item('i1', 'Skip the warm-up', sender: 'muffin', cursor: 'c1'),
+        _item('i2', 'No', sender: 'whiskers', cursor: 'c2'),
+      ];
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.threadReport));
+      await tester.pumpAndSettle();
+      expect(find.byKey(AppKeys.reportSend), findsNothing, reason: 'nothing to send before a reason');
+      expect(find.text('Include their last messages (1)'), findsOneWidget);
+
+      await tester.tap(find.byKey(AppKeys.reportReason('unsafe_advice')));
+      await tester.tap(find.byKey(AppKeys.reportBlock));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.reportSend));
+      await tester.pumpAndSettle();
+
+      final (:reason, :words) = server.reports.single;
+      expect(reason, 'unsafe_advice');
+      expect(words, ['Skip the warm-up']);
+      expect(connections.statuses, [ConnectionStatus.blocked]);
+      expect(find.text('Report sent. You blocked Muffin.'), findsOneWidget);
+      expect(recorded.of('person_reported'), [
+        {'reason': 'unsafe_advice', 'with_messages': 'true', 'also_blocked': 'true'},
+      ]);
+    });
+
+    testWidgets('a long press reports one message of theirs, and none of the person\'s own', (tester) async {
+      server.items = [
+        _item('i1', 'Skip the warm-up', sender: 'muffin', cursor: 'c1'),
+        _item('i2', 'Mine', sender: 'whiskers', cursor: 'c2'),
+      ];
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+      await tester.longPress(_message('Mine'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(AppKeys.messageReport), findsNothing);
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
+
+      await tester.longPress(_message('Skip the warm-up'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.messageReport));
+      await tester.pumpAndSettle();
+      expect(find.text('Include this message'), findsOneWidget);
+      await tester.tap(find.byKey(AppKeys.reportReason('harassment')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.reportSend));
+      await tester.pumpAndSettle();
+
+      expect(server.reports.single.words, ['Skip the warm-up']);
+      expect(connections.statuses, isEmpty);
+      expect(find.text('Report sent. Thank you.'), findsOneWidget);
+    });
+
+    testWidgets('an ended connection has no box', (tester) async {
+      connections.status = .severed;
+      await coaching.load();
+
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+
+      expect(find.byKey(AppKeys.messageBox), findsNothing);
+    });
+
+    testWidgets('a sheet closed while the report goes leaves the conversation open', (tester) async {
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+      server.holdReport = Completer();
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.threadReport));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.reportReason('spam')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.reportSend));
+      await tester.pump();
+
+      await tester.tapAt(const Offset(200, 20));
+      await tester.pumpAndSettle();
+      server.holdReport!.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ThreadPage), findsOneWidget);
+      expect(find.byKey(AppKeys.reportSheet), findsNothing);
+    });
+
+    testWidgets('a report that failed says so on the sheet, which stays', (tester) async {
+      await pump(tester, const ThreadPage(connectionId: 'c-muffin'));
+      server.reportFails = true;
+      await openMenu(tester);
+      await tester.tap(find.byKey(AppKeys.threadReport));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.reportReason('spam')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.reportSend));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(AppKeys.reportSheet), findsOneWidget);
+      expect(
+        find.descendant(of: find.byKey(AppKeys.reportSheet), matching: find.text("Couldn't send the report.")),
+        findsOneWidget,
+      );
+    });
+  });
+
+  testWidgets('an unread count shows over its icon, said as unread, and nothing at none', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pump(tester, const UnreadBadge(count: 2, child: Icon(Icons.forum_outlined)));
+
+    expect(find.text('2'), findsOneWidget);
+    expect(find.bySemanticsLabel('Unread: 2'), findsOneWidget);
+
+    await pump(tester, const UnreadBadge(count: 0, child: Icon(Icons.forum_outlined)));
+    expect(find.byType(Badge), findsNothing);
+    handle.dispose();
+  });
+
+  test('unread counts split by whose conversations they are', () async {
+    await messages.load();
+
+    expect(messages.unreadIn(coaching.clients.map((each) => each.connectionId)), 2);
+    expect(messages.unreadIn(coaching.coaches.map((each) => each.connectionId)), 0);
+  });
+}
+
+ThreadItem _item(
+  String id,
+  String text, {
+  required String sender,
+  String? cursor,
+  DateTime? at,
+  String? subjectType,
+  String? subjectId,
+}) {
+  at ??= DateTime.utc(2026, 11, 12, 8);
+  return ThreadItem(
+    id: id,
+    threadId: 't1',
+    senderId: sender,
+    kind: 'message',
+    subjectType: subjectType,
+    subjectId: subjectId,
+    content: 'sealed:$text',
+    commitment: 'c',
+    tag: 't',
+    tagKey: 'k',
+    at: at,
+    createdAt: at,
+    cursor: cursor,
+  );
+}
+
+/// The coach's one client, Muffin, and what became of the connection.
+class _Connections implements CoachingService {
+  ConnectionStatus status = .active;
+  ConnectionRole role = .coach;
+  final statuses = <ConnectionStatus>[];
+
+  Connection _muffin() {
+    return Connection(
+      targetId: 'muffin',
+      role: role,
+      domain: .fitness,
+      status: status,
+      createdAt: DateTime.utc(2026, 11, 7),
+      connectionId: 'c-muffin',
+      acceptedAt: DateTime.utc(2026, 11, 7),
+    );
+  }
+
+  @override
+  Future<List<Connection>> getConnections() async => [_muffin()];
+
+  @override
+  Future<List<HiddenWorkout>> getHiddenWorkouts() async => [];
+
+  @override
+  Future<Connection> setConnectionStatus(String connectionId, ConnectionStatus status) async {
+    statuses.add(status);
+    this.status = status;
+    return _muffin();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _Server implements RemoteThreadService {
+  final calls = <String>[];
+  List<ThreadItem> items = [];
+  final posted = <String>[];
+
+  /// What each message posted was about: `<type> <id>`.
+  final subjects = <String>[];
+  bool closed = false;
+
+  String? name = 'Muffin';
+
+  late final _thread = Thread(
+    id: 't1',
+    connectionId: 'c-muffin',
+    otherId: 'muffin',
+    otherName: name,
+    unread: 2,
+    lastAt: DateTime.utc(2026, 11, 12, 8),
+  );
+
+  @override
+  Future<Thread> openThread(String connectionId) async => _thread;
+
+  @override
+  Future<List<Thread>> getThreads() async => [
+    switch (clearedAt) {
+      final DateTime at => Thread(
+        id: _thread.id,
+        connectionId: _thread.connectionId,
+        otherId: _thread.otherId,
+        otherName: _thread.otherName,
+        clearedAt: at,
+        clearedBy: 'whiskers',
+      ),
+      null => _thread,
+    },
+  ];
+
+  @override
+  Future<ThreadItem> postThreadItem(
+    String threadId, {
+    required String id,
+    required String content,
+    required String commitment,
+    required DateTime at,
+    String? subjectType,
+    String? subjectId,
+  }) async {
+    posted.add(content);
+    if (subjectId != null) subjects.add('$subjectType $subjectId');
+    if (closed) {
+      throw const ServerRefusal(status: 403, code: 'thread_closed', method: 'POST', route: '/v1/threads/{id}/items');
+    }
+    return ThreadItem(
+      id: id,
+      threadId: threadId,
+      senderId: 'whiskers',
+      kind: 'message',
+      subjectType: subjectType,
+      subjectId: subjectId,
+      content: content,
+      commitment: commitment,
+      tag: 't',
+      tagKey: 'k',
+      at: at,
+      createdAt: at,
+    );
+  }
+
+  @override
+  Future<({List<ThreadItem> items, String? cursor})> getThreadItems(
+    String threadId, {
+    String? since,
+    String? before,
+    int? limit,
+  }) async {
+    if (since != null) return (items: <ThreadItem>[], cursor: null);
+    return (items: items.reversed.toList(), cursor: null);
+  }
+
+  @override
+  Future<void> markThreadRead(String threadId, String cursor) async => calls.add('read $threadId $cursor');
+
+  DateTime? clearedAt;
+  final reports = <({String reason, List<String> words})>[];
+  Completer<void>? holdReport;
+  bool reportFails = false;
+
+  @override
+  Future<void> clearThread(String threadId) async {
+    calls.add('clear $threadId');
+    items = [];
+    clearedAt = DateTime.utc(2026, 11, 12, 9);
+  }
+
+  @override
+  Future<void> fileReport({
+    required String reportedId,
+    String? connectionId,
+    required String reason,
+    List<ReportedMessage> messages = const [],
+  }) async {
+    await holdReport?.future;
+    if (reportFails) throw const SocketException('offline');
+    reports.add((reason: reason, words: [for (final each in messages) each.words]));
+  }
+}
+
+class _Store implements LocalThreadService {
+  final threads = <Thread>[];
+  final items = <StoredItem>[];
+
+  @override
+  Future<List<Thread>> getThreads(String userId) async => [...threads];
+
+  @override
+  Future<void> storeThreads(String userId, Iterable<Thread> threads) async {
+    this.threads
+      ..clear()
+      ..addAll(threads);
+  }
+
+  @override
+  Future<void> storeThread(String userId, Thread thread) async {
+    threads
+      ..removeWhere((each) => each.id == thread.id)
+      ..add(thread);
+  }
+
+  @override
+  Future<List<StoredItem>> getThreadItems(String userId, String threadId) async {
+    final placed = items.where((each) => each.position != null).toList()
+      ..sort((a, b) => a.position!.compareTo(b.position!));
+    return [...placed, ...items.where((each) => each.position == null)];
+  }
+
+  @override
+  Future<void> deleteThreadItems(String userId, Iterable<String> itemIds) async {
+    items.removeWhere((each) => itemIds.contains(each.item.id));
+  }
+
+  @override
+  Future<void> storeThreadItems(String userId, Iterable<StoredItem> stored) async {
+    for (final each in stored) {
+      items
+        ..removeWhere((old) => old.item.id == each.item.id)
+        ..add(each);
+    }
+  }
+}
+
+class _Cipher implements ThreadCipher {
+  /// Holds [receive] until completed.
+  Completer<void>? holdReceive;
+
+  @override
+  Future<void> receive() async => await holdReceive?.future;
+
+  bool sealFails = false;
+
+  @override
+  Stream<String> get threadKeys => const Stream.empty();
+
+  @override
+  set onKeyRequest(KeyRequestHandler? handler) {}
+
+  @override
+  Future<void> ask(String threadId, List<ThreadCiphertext> items, {String? fingerprint}) async {}
+
+  @override
+  Future<void> answer(KeyRequest request, {String? fingerprint}) async {}
+
+  @override
+  Future<SealedMessage> seal(String threadId, String text) async {
+    if (sealFails) throw StateError('device keys are off');
+    return (content: 'sealed:$text', commitment: 'c');
+  }
+
+  @override
+  Future<void> share(String threadId, {required String userId, String? fingerprint}) async {}
+
+  @override
+  Future<List<OpenedMessage>> open(String threadId, List<ThreadCiphertext> items) async {
+    return [
+      for (final each in items)
+        switch (each.content) {
+          'sealed:locked' => const Locked(),
+          final String content => Opened(text: content.substring('sealed:'.length), frankingKey: 'f'),
+        },
+    ];
+  }
+}
+
+/// A message's words, which a [MessageText] lays out with its time.
+Finder _message(String text) => find.byWidgetPredicate((widget) => widget is MessageText && widget.text == text);
+
+/// This device, `phone`, and the account's [others], each as far as this one
+/// trusts it.
+class _Keys with ChangeNotifier implements DeviceKeys {
+  Map<String, DeviceTrust> others = {};
+
+  /// The account's devices were read already.
+  bool read = true;
+  bool fails = false;
+  int reads = 0;
+
+  @override
+  bool supported = true;
+
+  @override
+  DeviceKeysStatus status = .published;
+
+  @override
+  String? get deviceId => status == .off ? null : 'phone';
+
+  void running() {
+    status = .published;
+    notifyListeners();
+  }
+
+  @override
+  Peer? peer(String userId) {
+    if (!read) return null;
+    return Peer(
+      userId: userId,
+      check: .matched,
+      devices: [
+        for (final (id, trust) in [
+          ('phone', DeviceTrust.pinned),
+          for (final each in others.entries) (each.key, each.value),
+        ])
+          PeerDevice(
+            device: CryptoDevice(
+              id: id,
+              userId: userId,
+              identityKey: 'i-$id',
+              signingKey: 's-$id',
+              fallbackKey: 'f-$id',
+              createdAt: DateTime.utc(2026, 11, 2),
+            ),
+            trust: trust,
+          ),
+      ],
+    );
+  }
+
+  @override
+  Future<Peer> devicesOf(String userId, {String? fingerprint}) async {
+    reads++;
+    if (fails) throw const SocketException('offline');
+    read = true;
+    notifyListeners();
+    return peer(userId)!;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _Auth with ChangeNotifier implements Auth {
+  @override
+  final User user = User(id: 'whiskers', email: 'whiskers@heart.test');
+
+  @override
+  bool get isAnonymous => false;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}

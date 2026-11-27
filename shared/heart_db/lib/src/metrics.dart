@@ -1,6 +1,7 @@
 // Every chart reads working sets only: warm-ups are left out the way the
 // records are (heart-api#83), and `IS NOT` keeps the sets stored before types
-// existed, whose column is null.
+// existed, whose column is null. `/*discarded:sets*/` is where a set the user
+// discarded drops out (#428): see `sql.discarded`.
 
 const getCardioDurationHistory = '''
 SELECT
@@ -13,6 +14,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -30,6 +32,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -47,6 +50,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id, workouts.start
 HAVING sum(sets.distance) > 0
 ORDER BY "when" DESC
@@ -73,6 +77,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
   AND sets.reps > 0
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
@@ -92,6 +97,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -110,6 +116,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -128,6 +135,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -146,6 +154,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -164,6 +173,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -183,6 +193,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
   AND sets.reps > 0
   AND sets.weight > 0
 GROUP BY workouts.id, workouts.start
@@ -204,6 +215,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
   AND sets.set_type IS NOT 'warmup'
+  /*discarded:sets*/
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?

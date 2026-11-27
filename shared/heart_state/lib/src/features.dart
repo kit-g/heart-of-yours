@@ -103,7 +103,68 @@ enum Feature {
   /// Asked once, in context: the first time a ticked set would have been a
   /// record, the offer sits under that set. Computes nothing it stores; off,
   /// nothing is read.
+  ///
+  /// Also the switch for live goal notes (#625): the tick that reaches a goal's
+  /// rung says so in the same note, with a burst of confetti. The one offer
+  /// also sits under a set that would have reached a goal; nothing for
+  /// someone without one.
   liveRecords('liveRecords'),
+
+  /// Suspicious entries (#428, heart-api#42): the sets and durations the
+  /// server found odd, marked where the app shows them, each kept or
+  /// discarded by the user. Asked once, the first time the server has one
+  /// pending. Off, nothing is marked and a discarded entry counts again;
+  /// the anomalies and the decisions stay stored and synced either way.
+  entryReview('entryReview'),
+
+  /// Sets and sessions a week by movement pattern or muscle group, the
+  /// profile card (#341). Shipped as core and made a choice after the first
+  /// feedback from experienced lifters (#526): on by default ([defaultOn]),
+  /// so it is never asked about and the Settings switch is the answer. Reads
+  /// only what the workouts carry; goals on a pattern count the same sets
+  /// either way.
+  weeklySets('weeklySets', defaultOn: true),
+
+  /// The example templates under the user's own on the Workout tab, and in
+  /// the shortcuts that name templates. Shipped as core and made a choice
+  /// after the first feedback from experienced lifters (#528): on by default
+  /// ([defaultOn]), never asked about. Off is the UI only: the samples are
+  /// still fetched and kept, and a template copied from one is the user's own
+  /// either way.
+  sampleTemplates('sampleTemplates', defaultOn: true),
+
+  /// The Exercises tab in the navigation bar (#608), the first of the home
+  /// screens a user can leave out. Core since 1.9.0, so on by default
+  /// ([defaultOn]) and never asked about: a switch to hide a surface, not an
+  /// ask to add one. Off, the bar has one tab fewer and reflows as if it had
+  /// never been there; the library is still the workout's picker, an
+  /// exercise's page opens over the screen it was asked from, and the
+  /// catalog and the user's own exercises are untouched.
+  exercisesTab('exercisesTab', defaultOn: true),
+
+  /// Logging a workout that already happened (#530): when it was, then what
+  /// was done, saved straight to History like any finished workout. No live
+  /// session, so no clock, rest timers, lock screen or watch. Offered once,
+  /// at the one moment that marks a lifter who logs after the fact: tapping an
+  /// empty past day in History's calendar (#618). Yes goes straight on to
+  /// logging that day; no leaves the tap doing nothing. Off, the ways in are
+  /// gone; a workout logged this way is an ordinary workout and stays.
+  pastWorkouts('pastWorkouts'),
+
+  /// Coaching from the coach's side (#168, #566): a space of its own with
+  /// clients, messages, the programs sent to them, and the coach's own page,
+  /// behind one Coaching button on Profile. Settings-only, with no ask, and in
+  /// the beta its switch shows only for an account holding the `coach`
+  /// entitlement. Off, the button and the space are gone; the connections and
+  /// everything sent through them stay on the server.
+  coachPeople('coachPeople'),
+
+  /// Coaching from the student's side (#168, #566): asked when an invitation
+  /// arrives (#553), and in Settings only once asked. The server turns it on
+  /// when an invitation is accepted, under this key, so the key is the
+  /// server's too. Off pauses the connection: the coach stops seeing new
+  /// workouts, and only the student resumes it.
+  yourCoach('yourCoach'),
 
   /// The rest's end, a ticked set and a record, heard (#169): a choice of
   /// rest sound, a volume, and the two optional cues. Asked once, under the
@@ -115,7 +176,7 @@ enum Feature {
   final String value;
 
   /// On until the user turns it off in Settings, rather than off until they
-  /// say yes: the one exception to the ask-once rule (`docs/opt-in.md`,
+  /// say yes: the exception to the ask-once rule (`docs/opt-in.md`,
   /// *Default on*). Never asked about; an explicit off stays off.
   final bool defaultOn;
 

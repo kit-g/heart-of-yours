@@ -84,9 +84,25 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
 
   WorkoutAggregation workouts = WorkoutAggregation.empty();
 
+  /// Moves, and listeners hear, whenever an [init] lands, whether or not
+  /// [workouts] changed, and when the session ends: what the history behind every longer window read
+  /// here — a recap, the muscle map, a goal's count — may have changed beyond
+  /// the eight weeks [workouts] holds (an older workout deleted or imported,
+  /// an entry discarded). A reader that keeps such a read re-reads on it.
+  int get revision => _revision;
+  int _revision = 0;
+
+  /// Which [init] may land: a later one, or the end of the session, outdates
+  /// one still reading.
+  int _generation = 0;
+
   @override
   void onSignOut() {
+    _generation++;
+    userId = null;
     workouts = WorkoutAggregation.empty();
+    _revision++;
+    notifyListeners();
   }
 
   static Stats of(BuildContext context) {
@@ -97,13 +113,38 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
     return Provider.of<Stats>(context, listen: true);
   }
 
+  /// Reads the weekly counts for the session's user, empty ones included: a
+  /// user with no workouts gets an empty chart, not the last user's.
+  ///
+  /// The latest call wins. Each one reads afresh rather than joining one in
+  /// flight, which may have started before the change its caller is asking
+  /// about; a read that a later call or the end of the session outdated is
+  /// dropped. A failure is reported and leaves what was held; nobody awaits
+  /// this to the point of handling what it throws.
   Future<void> init() async {
-    final local = await _service.getWorkoutSummary(userId: userId);
-    if (local.isNotEmpty) {
-      workouts = local;
+    final (id, generation) = (userId, ++_generation);
+    try {
+      final local = await _service.getWorkoutSummary(userId: id);
+      // outdated while it was read: by a fresher read, or by the session
+      // ending — the last user's (#671, #719)
+      if (generation != _generation || userId != id) return;
+      // the same weeks: kept, so a chart drawn from them is not redrawn
+      if (!_sameWeeks(local, workouts)) workouts = local;
+      _revision++;
       notifyListeners();
-      return;
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
     }
+  }
+
+  /// Whether [a] and [b] hold the same workouts, named the same, in the
+  /// same weeks.
+  static bool _sameWeeks(WorkoutAggregation a, WorkoutAggregation b) {
+    String shape(WorkoutAggregation weeks) {
+      return weeks.map((week) => '${week.weekId}:${week.map((each) => '${each.id}=${each.name}').join(',')}').join(';');
+    }
+
+    return identical(a, b) || shape(a) == shape(b);
   }
 
   /// Finished workouts in [d]'s week, which starts on [firstWeekday] — the
@@ -258,9 +299,11 @@ List<(num, DateTime)> trainingSeries(
         final num? value = switch (metric) {
           .volume => workouts.fold<double>(0, (sum, row) => sum + row.volume),
           .sets => workouts.fold<int>(0, (sum, row) => sum + row.sets),
-          .duration => switch (workouts) {
+          // a workout with no time, such as a discarded duration (#428), says
+          // nothing about how long a session runs
+          .duration => switch (workouts.where((row) => row.duration > Duration.zero).toList()) {
             [] => null,
-            _ => workouts.fold<int>(0, (sum, row) => sum + row.duration.inSeconds) / workouts.length,
+            final timed => timed.fold<int>(0, (sum, row) => sum + row.duration.inSeconds) / timed.length,
           },
         };
         return switch (value) {

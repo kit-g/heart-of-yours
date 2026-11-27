@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Backup / device-transfer rules for API >= 31. heart.db is a server-synced
-     cache, so excluding it stops a stale / old-schema copy being restored. -->
+     cache, so excluding it stops a stale / old-schema copy being restored.
+     FlutterSecureStorage holds this device's encryption keys (#555), which
+     must never reach another phone: a restored phone is a new device. -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="database" path="heart.db" />
         <exclude domain="database" path="heart.db-wal" />
         <exclude domain="database" path="heart.db-shm" />
+        <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="database" path="heart.db" />
         <exclude domain="database" path="heart.db-wal" />
         <exclude domain="database" path="heart.db-shm" />
+        <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
     </device-transfer>
 </data-extraction-rules>

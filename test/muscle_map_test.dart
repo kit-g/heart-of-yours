@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_body_atlas/flutter_body_atlas.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/muscle_figures.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
@@ -155,6 +156,20 @@ void main() {
       );
       expect(help, findsOneWidget);
       expect(find.textContaining('without muscle data'), findsNothing);
+    });
+
+    // #687: side by side, the list's box shrank to its few rows beside the
+    // figures' full height
+    testWidgets('side by side, the figures and the list are the same height', (tester) async {
+      await pumpProfile(tester, answer: 'on');
+
+      final panels = find.descendant(of: byKey(AppKeys.muscleMapCard), matching: find.byType(MusclePanel));
+      // the filled box each panel draws, not the panel: the box is what showed
+      Rect box(Finder panel) => tester.getRect(find.descendant(of: panel, matching: find.byType(Container)).first);
+      final (figures, list) = (box(panels.at(0)), box(panels.at(1)));
+      expect(figures.top, list.top);
+      expect(list.left, greaterThan(figures.right));
+      expect(list.height, figures.height);
     });
 
     testWidgets('no earns one notice, and closing it leaves nothing behind', (tester) async {

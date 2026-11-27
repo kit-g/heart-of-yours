@@ -59,6 +59,18 @@ final class GrowthMove {
   }
 }
 
+/// When a move of a program's counts from: one a workout caused, from that
+/// workout's start in [starts], however late a device got round to writing it;
+/// one by hand, or by a workout not among them, from when it was made ([at]).
+/// A session logged after the fact is written days on, and everything that
+/// asks what came before another goes by this.
+DateTime movedAt(String? workoutId, DateTime at, Map<String, DateTime> starts) => starts[workoutId] ?? at;
+
+/// When each of [workouts] began, by id, for [movedAt].
+Map<String, DateTime> startsOf(Iterable<Workout> workouts) => {
+  for (final workout in workouts) workout.id: workout.start,
+};
+
 /// A program session as run: the program's workouts before it, each with
 /// whether it fell in a lighter cycle, which neither misses nor breaks a
 /// streak.
@@ -91,9 +103,10 @@ List<GrowthMove> growthOf(
   Template? session,
   Map<String, String>? slots,
 }) {
+  final starts = startsOf([...earlier.map((each) => each.workout), workout]);
   final groups = _groups(program, workout, session: session, bases: bases, slots: slots);
   final stages = currentStages(actions);
-  final moved = _stageMoves(actions);
+  final moved = _stageMoves(actions, starts);
 
   if (program.tests[workout.templateId] case final ProgramTest test) {
     return [
@@ -124,7 +137,11 @@ List<GrowthMove> growthOf(
     // the streak runs since the base last changed, or a stages rule last
     // moved: a session before either was judged against something else
     // a session whose occurrences can't be told apart any more says nothing
-    final from = [?base?.at, ?program.atSlot(moved, group.exerciseId, slot: group.slot)].fold<DateTime?>(
+    final changed = switch (base) {
+      ProgramBase(:final workoutId, :final at) => movedAt(workoutId, at, starts),
+      null => null,
+    };
+    final from = [?changed, ?program.atSlot(moved, group.exerciseId, slot: group.slot)].fold<DateTime?>(
       null,
       (latest, at) => latest == null || at.isAfter(latest) ? at : latest,
     );
@@ -184,10 +201,11 @@ num _stepOf(GrowthRule? rule) {
 }
 
 /// When each stages rule last moved, keyed like [currentStages].
-Map<String, DateTime> _stageMoves(Iterable<ProgramAction> actions) {
+Map<String, DateTime> _stageMoves(Iterable<ProgramAction> actions, Map<String, DateTime> starts) {
   final moved = <String, DateTime>{};
   for (final action in actions) {
-    if (action case ProgramAction(kind: .stage, :final exercise?, :final at)) {
+    if (action case ProgramAction(kind: .stage, :final exercise?, :final workoutId, at: final written)) {
+      final at = movedAt(workoutId, written, starts);
       final key = action.slot ?? exercise;
       if (moved[key] case final DateTime held when held.isAfter(at)) continue;
       moved[key] = at;

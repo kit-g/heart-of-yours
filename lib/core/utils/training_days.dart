@@ -12,18 +12,28 @@ typedef TrainingDay = ({double volume, int workouts, int seconds, int sets, int 
 ///
 /// Volume is what the history card calls total volume: weight × reps of the
 /// loaded categories.
-Map<DateTime, TrainingDay> trainingDays(Iterable<Workout> workouts, {required DateTime since}) {
+///
+/// [leftOut] is what the user discarded (#428), while suspicious entries is
+/// on: those sets count for nothing, and a workout whose duration was
+/// discarded still counts, with no time.
+Map<DateTime, TrainingDay> trainingDays(
+  Iterable<Workout> workouts, {
+  required DateTime since,
+  ({Set<String> sets, Set<String> durations}) leftOut = (sets: const {}, durations: const {}),
+}) {
   final days = <DateTime, TrainingDay>{};
   for (final workout in workouts.where((workout) => workout.isCompleted)) {
     final start = workout.start.toLocal();
     if (start.isBefore(since)) continue;
     final day = DateTime(start.year, start.month, start.day);
-    final sets = workout.expand((exercise) => exercise).where((set) => set.isCompleted && set.setType != .warmup);
+    final sets = workout
+        .expand((exercise) => exercise)
+        .where((set) => set.isCompleted && set.setType != .warmup && !leftOut.sets.contains(set.id));
     final today = days[day] ?? (volume: 0.0, workouts: 0, seconds: 0, sets: 0, reps: 0);
     days[day] = (
       volume: today.volume + sets.map(_volume).fold(0.0, (sum, each) => sum + each),
       workouts: today.workouts + 1,
-      seconds: today.seconds + (workout.duration?.inSeconds ?? 0),
+      seconds: today.seconds + (leftOut.durations.contains(workout.id) ? 0 : workout.duration?.inSeconds ?? 0),
       sets: today.sets + sets.length,
       reps: today.reps + sets.map((set) => set.reps ?? 0).fold(0, (sum, each) => sum + each),
     );

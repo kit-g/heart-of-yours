@@ -1,5 +1,50 @@
 [
   {
+    "version": "1.17.0",
+    "items": [
+      {
+        "id": "recaps",
+        "title": "Resúmenes",
+        "body": "A principios de cada mes, el mes pasado en tu perfil: entrenamientos, tiempo, series, volumen, los músculos y patrones que trabajaste y los récords que batiste. Cada mes queda en una lista, y puedes compartir un resumen como tarjeta."
+      },
+      {
+        "id": "copy-for-ai",
+        "title": "Copiar para IA",
+        "body": "Un entrenamiento, un mes o el historial de un ejercicio como texto que cualquier asistente de IA lee bien. Nada sobre tu salud va con él."
+      },
+      {
+        "id": "live-records",
+        "title": "Récords al momento",
+        "body": "Un aviso discreto en cuanto una serie marcada supera tu mejor marca."
+      },
+      {
+        "id": "second-look",
+        "title": "Segundo vistazo",
+        "body": "Heart señala los registros que parecen un error, como un entrenamiento que siguió en marcha durante horas. **Consérvalo** o **déjalo fuera** de tus récords y gráficos. Requiere una cuenta."
+      },
+      {
+        "id": "past-workouts",
+        "title": "Registrar un entrenamiento pasado",
+        "body": "Para un entrenamiento que ya hiciste: primero cuándo fue, luego qué hiciste, y va directo al Historial."
+      },
+      {
+        "id": "create-from-picker",
+        "title": "Crea un ejercicio desde el selector",
+        "body": "Busca un ejercicio que no está y créalo al momento, mientras armas una plantilla o en pleno entrenamiento. A tus propios ejercicios puedes marcarles los músculos que trabajan."
+      },
+      {
+        "id": "watch-holds",
+        "title": "Cronometra desde el reloj",
+        "body": "Con el cronómetro de serie activado, inicia y detén una serie por tiempo desde tu Apple Watch o tu reloj Wear OS, y el tiempo llega al teléfono."
+      },
+      {
+        "id": "switches",
+        "title": "Series por semana y plantillas de ejemplo",
+        "body": "Ahora las dos se pueden desactivar. Siguen activas a menos que las apagues."
+      }
+    ]
+  },
+  {
     "version": "1.16.0",
     "items": [
       {

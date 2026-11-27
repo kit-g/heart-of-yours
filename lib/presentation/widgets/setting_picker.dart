@@ -24,10 +24,16 @@ class FixedLengthSettingPicker<T extends Object> extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        spacing: 12,
         children: [
-          Text(
-            title,
-            style: textTheme.bodyLarge,
+          // wraps rather than overflows: a long title beside wide segments
+          // (ru «Карточки истории» beside «Полные | Компактные») outgrew a
+          // 360dp phone at larger text
+          Flexible(
+            child: Text(
+              title,
+              style: textTheme.bodyLarge,
+            ),
           ),
           SettingSwitcher(
             children: children,

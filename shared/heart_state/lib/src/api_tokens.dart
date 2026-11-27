@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'refusals.dart';
 import 'remote.dart';
 
 /// What the server does with an account's personal access tokens
@@ -49,22 +50,12 @@ class ApiTokenRejected implements Exception {
   /// The token is not the account's to revoke — gone, or never its own.
   bool get isUnknown => code == 'not_found';
 
-  /// Named, but still transient: the request was fine and the server broke.
-  static const _serverError = 'server_error';
-
   /// Reads a refusal out of whatever the service threw, or null when the
-  /// failure could just as well be an outage.
+  /// failure could just as well be an outage, or is the server's throttle.
   static ApiTokenRejected? from(Object? error) {
     return switch (error) {
-      {'code': _serverError} => null,
-      {'code': String code} => ApiTokenRejected(
-        code,
-        reason: switch (error) {
-          {'reason': String reason} => reason,
-          {'message': String message} => message,
-          _ => null,
-        },
-      ),
+      ServerRefusal(:final isThrottle) when isThrottle => null,
+      ServerRefusal(:final code, :final reason) => ApiTokenRejected(code, reason: reason),
       _ => null,
     };
   }
@@ -176,11 +167,11 @@ class ApiTokens with ChangeNotifier implements SignOutStateSentry {
       _tokens.insert(0, minted.token);
       notifyListeners();
       return minted;
-    } catch (error) {
+    } catch (error, stacktrace) {
       switch (ApiTokenRejected.from(error)) {
         case ApiTokenRejected rejected:
           if (rejected.isAtCapacity) await load();
-          throw rejected;
+          Error.throwWithStackTrace(rejected, stacktrace);
         case null:
           rethrow;
       }
@@ -196,13 +187,13 @@ class ApiTokens with ChangeNotifier implements SignOutStateSentry {
   Future<void> revoke(ApiToken token) async {
     try {
       await _service.revokeApiToken(token.id);
-    } catch (error) {
+    } catch (error, stacktrace) {
       switch (ApiTokenRejected.from(error)) {
         case ApiTokenRejected(isUnknown: true):
           await load();
           return;
         case ApiTokenRejected rejected:
-          throw rejected;
+          Error.throwWithStackTrace(rejected, stacktrace);
         case null:
           rethrow;
       }

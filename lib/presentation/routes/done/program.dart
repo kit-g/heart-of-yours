@@ -35,7 +35,8 @@ class _ProgramBlockState extends State<_ProgramBlock> {
       final String id => programs.lookup(id),
       null => null,
     };
-    if (program == null || !Preferences.watch(context).isOn(.programs)) return const SizedBox.shrink();
+    // a coach's program is shown under Your coach alone (#593)
+    if (program == null || !Preferences.watch(context).programShown(program)) return const SizedBox.shrink();
 
     final copy = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
@@ -226,12 +227,8 @@ class _MoveRow extends StatelessWidget {
               // read after what it keeps: "Keep 100 kg … take back this change"
               child: Semantics(
                 hint: copy.doneProgramUndoMove(exercise.name),
-                child: TextButton(
-                  // compact, but a whole finger's worth of a button
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(48, 48),
-                    padding: const .symmetric(horizontal: 8),
-                  ),
+                child: QuietButton(
+                  plain: true,
                   onPressed: onKeep,
                   child: Text(
                     switch (keeps) {

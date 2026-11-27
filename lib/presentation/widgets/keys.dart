@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show PageStorageKey;
 
 abstract final class AppKeys {
   const new _();
@@ -14,9 +15,51 @@ abstract final class AppKeys {
   /// test tells it is looking at the compact frame.
   static const navigationRail = Key('AppFrame.navigationRail');
 
-  /// Placeholder holding a two-pane detail open before anything is selected.
-  /// Asserting on it distinguishes "nothing selected" from "no detail pane".
-  static const noSelection = Key('AppFrame.noSelection');
+  /// History's switch between its views, a view in its menu, and the calendar
+  /// itself (#609, #739).
+  static const historyViewSwitch = Key('History.view.switch');
+  static Key historyViewChoice(String view) => Key('History.view.$view');
+
+  /// The calendar a month at a time (#739): the month shown, the ways to the
+  /// ones beside it, and the date picker.
+  static const calendarMonthTitle = Key('History.calendar.month');
+  static const calendarPreviousMonth = Key('History.calendar.previous');
+  static const calendarNextMonth = Key('History.calendar.next');
+  static const calendarGoToDate = Key('History.calendar.goToDate');
+
+  /// A calendar day's list (#618): start a workout today, log one on the day.
+  static const calendarStart = Key('History.calendar.start');
+  static const calendarLog = Key('History.calendar.log');
+
+  /// And what either is made from (#737): the ways in, the lists they open,
+  /// and a row of one.
+  static const calendarFromTemplate = Key('History.calendar.fromTemplate');
+  static const calendarFromWorkout = Key('History.calendar.fromWorkout');
+  static const templateChoices = Key('History.calendar.templates');
+  static const workoutChoices = Key('History.calendar.workouts');
+  static Key makeFromTemplate(String id) => Key('History.calendar.template.$id');
+  static Key makeFromWorkout(String id) => Key('History.calendar.workout.$id');
+  static const historyCalendar = Key('History.calendar');
+  static const historyViewSetting = Key('Settings.historyView');
+  static const historyDensitySetting = Key('Settings.historyDensity');
+
+  /// A workout's compact card in History (#611), and its line of muscle
+  /// groups.
+  static Key compactWorkout(String workoutId) => Key('History.compact.$workoutId');
+  static Key compactWorkoutGroups(String workoutId) => Key('History.compact.$workoutId.groups');
+
+  /// History's muscle-group filter (#610): the button, a group in its menu,
+  /// the chips of the groups set, and the empty state with its way out.
+  static const historyFilter = Key('History.filter');
+  static Key historyFilterGroup(String group) => Key('History.filter.$group');
+  static Key historyFilterAxis(String axis) => Key('History.filter.axis.$axis');
+  static Key historyFilterTemplate(String id) => Key('History.filter.template.$id');
+  static Key historyFilterTemplateChip(String id) => Key('History.filter.template.chip.$id');
+  static const historyFilterFromChip = Key('History.filter.from.chip');
+  static const historyFilterUntilChip = Key('History.filter.until.chip');
+  static const historyFilterChips = Key('History.filter.chips');
+  static const historyFilterEmpty = Key('History.filter.empty');
+  static const historyFilterClear = Key('History.filter.clear');
 
   /// Dismisses a two-pane detail. Distinct from a back button: it clears the
   /// selection rather than popping a route.
@@ -88,6 +131,12 @@ abstract final class AppKeys {
   static const copyForAiOffer = ValueKey('copyForAiOffer');
   static const copyForAiAccept = ValueKey('copyForAiAccept');
   static const copyForAiDecline = ValueKey('copyForAiDecline');
+
+  /// The one ask for Past workouts (#618), on the first tap of an empty past
+  /// day in History's calendar.
+  static const pastWorkoutsOffer = ValueKey('pastWorkoutsOffer');
+  static const pastWorkoutsAccept = ValueKey('pastWorkoutsAccept');
+  static const pastWorkoutsDecline = ValueKey('pastWorkoutsDecline');
   static const copyForAiHistory = ValueKey('copyForAiHistory');
   static const copyForAiExercise = ValueKey('copyForAiExercise');
   static const copyForAiSheet = ValueKey('copyForAiSheet');
@@ -96,6 +145,20 @@ abstract final class AppKeys {
   static const copyForAiCopy = ValueKey('copyForAiCopy');
   static const copyForAiShare = ValueKey('copyForAiShare');
   static Key copyForAiWorkout(String id) => ValueKey('copyForAiWorkout.$id');
+
+  /// Suspicious entries (#428): the one offer and its answers in History, the
+  /// way to the list, a mark beside an entry and the decision it opens.
+  static const entryReviewOffer = Key('EntryReview.offer');
+  static const entryReviewAccept = Key('EntryReview.accept');
+  static const entryReviewDecline = Key('EntryReview.decline');
+  static const entryReviewButton = Key('EntryReview.button');
+  static const entryReviewPage = Key('EntryReview.page');
+  static Key anomalyMark(String id) => Key('EntryReview.mark.$id');
+
+  /// Past workouts (#530): the way in from History's app bar.
+  static const logPastWorkout = Key('History.logPastWorkout');
+  static Key anomalyRow(String id) => Key('EntryReview.row.$id');
+  static Key anomalyDecision(String decision) => Key('EntryReview.decision.$decision');
   static const muscleMapHeatmap = ValueKey('muscleMapHeatmap');
   static const muscleMapFigureTip = ValueKey('muscleMapFigureTip');
   static const workoutMuscleMap = ValueKey('workoutMuscleMap');
@@ -123,6 +186,10 @@ abstract final class AppKeys {
   /// The settings row that opens the rest-timer list; present only while
   /// there is a timer on it.
   static const restTimers = Key('Settings.restTimers');
+  static const pushSettings = Key('Settings.pushSettings');
+
+  /// The note a push shows with the app open (#724).
+  static const pushNote = Key('Push.note');
   static const features = Key('Settings.features');
 
   /// The export page's two actions, one per format.
@@ -178,6 +245,15 @@ abstract final class AppKeys {
   static const loginName = Key('Login.name');
   static const loginPassword = Key('Login.password');
 
+  /// Your devices (#555): the Settings row, each device's row and its
+  /// Compare codes button, and the comparison sheet's answers.
+  static const yourDevices = Key('Settings.yourDevices');
+  static Key deviceRow(String id) => Key('YourDevices.row.$id');
+  static Key compareCodes(String id) => Key('YourDevices.compare.$id');
+  static const codesMatch = Key('CompareCodes.match');
+  static const codesDontMatch = Key('CompareCodes.dontMatch');
+  static const closeComparison = Key('CompareCodes.close');
+
   /// The developer API (#271): the Settings row, the tokens page's controls
   /// and each token's row and revoke button.
   static const developerApi = Key('Settings.developerApi');
@@ -204,10 +280,27 @@ abstract final class AppKeys {
 
   /// "From a folder" on the Workout tab's Programs header (#348).
   static const programsFromFolder = Key('Programs.fromFolder');
+  static const programFormName = Key('Programs.form.name');
+  static const programSentBy = Key('Programs.sentBy');
+
+  /// What the coach changed in a copy since the user looked (#558), and its
+  /// way to say it was seen.
+  static Key programCoachChanges(String programId) => Key('Programs.coachChanges.$programId');
+
+  static Key programCoachChangesSeen(String programId) => Key('Programs.coachChangesSeen.$programId');
+  static const programStartSentConfirm = Key('Programs.startSent.confirm');
+
+  static Key programWaiting(String id) => Key('Programs.waiting.$id');
+
+  static Key programStartSent(String id) => Key('Programs.startSent.$id');
+  static const programFormNote = Key('Programs.form.note');
+  static const programFormSave = Key('Programs.form.save');
 
   /// One program's band on the Workout tab (#347), and its Start button.
   static Key programBand(String? programId) => Key('Programs.band.$programId');
   static Key programBandStatus(String? programId) => Key('Programs.band.status.$programId');
+  static Key programBandWeeks(String? programId) => Key('Programs.band.weeks.$programId');
+  static Key programBandCount(String? programId) => Key('Programs.band.count.$programId');
   static Key partOfProgram(String? programId) => Key('Programs.partOf.$programId');
   static const programInProgress = Key('Programs.inProgress');
   static Key workoutRecords(String workoutId) => Key('History.records.$workoutId');
@@ -296,4 +389,190 @@ abstract final class AppKeys {
   /// choices.
   static const newExercisePattern = Key('NewExercise.pattern');
   static Key newExercisePatternOption(String? pattern) => Key('NewExercise.pattern.${pattern ?? 'none'}');
+
+  /// The new-exercise dialog's name field.
+  static const newExerciseName = Key('NewExercise.name');
+
+  /// The new-exercise dialog's instructions field (#621).
+  static const newExerciseInstructions = Key('NewExercise.instructions');
+
+  static const musclePickerRole = Key('MusclePicker.role');
+  static const musclePickerFigures = Key('MusclePicker.figures');
+
+  /// The line above the exercise list when the library couldn't be loaded.
+  static const libraryUnavailable = ValueKey('libraryUnavailable');
+
+  /// The picker's offer to create an exercise named after a search that
+  /// found nothing (#529).
+  static const pickerCreateExercise = Key('ExercisePicker.createExercise');
+  static const settingsPickerGrouping = Key('Settings.pickerGrouping');
+
+  /// The Coaching space (#566): the way in (on Profile's app bar, or at the
+  /// foot of the rail), the way back out, its tabs, and the line that leads
+  /// back to a workout still going.
+  static const coachingButton = Key('Profile.coaching');
+  static const coachingYourTraining = Key('Coaching.yourTraining');
+  static const coachingClientsStack = Key('Coaching.clientsStack');
+  static const coachingMessagesStack = Key('Coaching.messagesStack');
+  static const coachingProgramsStack = Key('Coaching.programsStack');
+  static const coachingMeStack = Key('Coaching.meStack');
+  static const coachingBackToWorkout = Key('Coaching.backToWorkout');
+
+  /// Inviting someone to be coached (#553): the action, the empty state's
+  /// button, the name, the button that makes the link, and each invitation.
+  static const coachingInviteAction = Key('Coaching.inviteAction');
+  static const coachingInvite = Key('Coaching.invite');
+  static const coachingInviteName = Key('Coaching.inviteName');
+  static const coachingMakeLink = Key('Coaching.makeLink');
+
+  static Key coachingInvitation(String id) => Key('Coaching.invitation.$id');
+
+  /// The roster (#559): Clients or Activity, a reason to filter by, each
+  /// client's row and its "looked at", and the former ones.
+  static const coachingRosterView = Key('Coaching.rosterView');
+  static const coachingActivityView = Key('Coaching.activityView');
+
+  /// Kept open as a client opens beside the roster.
+  static const coachingFormerClients = PageStorageKey('Coaching.formerClients');
+  static const coachingClientFormer = Key('Coaching.client.former');
+
+  static Key coachingReasonFilter(String? reason) => Key('Coaching.reason.${reason ?? 'all'}');
+
+  static Key coachingClient(String connectionId) => Key('Coaching.client.$connectionId');
+
+  static const coachingCopyPutBackConfirm = Key('Coaching.copyPutBackConfirm');
+  static const coachingSettings = Key('Coaching.settings');
+  static const coachingLogOut = Key('Coaching.logOut');
+
+  /// One client (#559): their page, or the pane beside the roster, its way
+  /// shut, and a workout or skip of theirs.
+  static const coachingClientPane = Key('Coaching.clientPane');
+  static const coachingReplyAbout = Key('Coaching.replyAbout');
+  static const coachingBeside = Key('Coaching.beside');
+  static const coachingBesideMenu = Key('Coaching.besideMenu');
+  static const coachingRosterViewMenu = Key('Coaching.rosterViewMenu');
+  static Key coachingBesideTab(String tab) => Key('Coaching.beside.$tab');
+  static const coachingLatestWorkout = Key('Coaching.latestWorkout');
+  static const coachingClientClose = Key('Coaching.clientClose');
+  static Key coachingClientWorkout(String workoutId) => Key('Coaching.clientWorkout.$workoutId');
+  static const coachingClientSkip = Key('Coaching.clientSkip');
+
+  /// A client's copy of a program (#558): the way to it from their page, its
+  /// sessions, a save that didn't land and its answers, and its history.
+  static const coachingClientProgram = Key('Coaching.clientProgram');
+  static Key coachingClientCopy(String programId) => Key('Coaching.clientCopy.$programId');
+  static Key coachingCopyChanged(String programId) => Key('Coaching.copyChanged.$programId');
+  static const coachingClientRename = Key('Coaching.clientRename');
+  static const coachingClientNameField = Key('Coaching.clientNameField');
+  static const coachingClientNameSave = Key('Coaching.clientNameSave');
+  static Key coachingCopySession(String id) => Key('Coaching.copySession.$id');
+  static Key coachingCopySessionMenu(String id) => Key('Coaching.copySessionMenu.$id');
+  static const coachingCopyAddSession = Key('Coaching.copyAddSession');
+  static const coachingCopyConflict = Key('Coaching.copyConflict');
+  static const coachingCopyKeepMine = Key('Coaching.copyKeepMine');
+  static const coachingCopyKeepTheirs = Key('Coaching.copyKeepTheirs');
+  static Key coachingCopyChange(String id) => Key('Coaching.copyChange.$id');
+  static Key coachingCopyPutBack(String id) => Key('Coaching.copyPutBack.$id');
+
+  /// Bringing a holder's copy of a library program up to date (#558).
+  static Key coachingUpdateCopy(String connectionId) => Key('Coaching.updateCopy.$connectionId');
+  static const coachingUpdateCopyConfirm = Key('Coaching.updateCopyConfirm');
+
+  /// A client's workout, target beside done (#559), and one exercise of it.
+  static const coachingReview = Key('Coaching.review');
+  static Key coachingReviewExercise(int index) => Key('Coaching.reviewExercise.$index');
+
+  /// A coach's library (#557): a new program, each program and session, and
+  /// what a program's page does.
+  static const coachingNewProgram = Key('Coaching.newProgram');
+  static const coachingNewProgramEmpty = Key('Coaching.newProgram.empty');
+  static const coachingAddSession = Key('Coaching.addSession');
+  static const coachingSendProgram = Key('Coaching.sendProgram');
+  static const coachingSendConfirm = Key('Coaching.sendProgram.confirm');
+  static const coachingProgramMenu = Key('Coaching.programMenu');
+  static const coachingDeleteProgram = Key('Coaching.deleteProgram');
+  static const coachingDeleteConfirm = Key('Coaching.deleteProgram.confirm');
+  static const coachingUnsavedRetry = Key('Coaching.unsaved.retry');
+
+  static Key coachingLibraryProgram(String id) => Key('Coaching.library.$id');
+
+  static Key coachingLibrarySession(String id) => Key('Coaching.library.session.$id');
+
+  static Key coachingRemoveSession(String id) => Key('Coaching.library.removeSession.$id');
+
+  static Key coachingSendTo(String connectionId) => Key('Coaching.sendTo.$connectionId');
+
+  static Key coachingHolder(String connectionId) => Key('Coaching.holder.$connectionId');
+
+  /// The page an invitation link opens (#553), and its answers.
+  static const invitationPage = Key('Invitation.page');
+  static const invitationShareHistory = Key('Invitation.shareHistory');
+  static const invitationShareGoals = Key('Invitation.shareGoals');
+  static const invitationAccept = Key('Invitation.accept');
+  static const invitationDecline = Key('Invitation.decline');
+  static const invitationBlock = Key('Invitation.block');
+  static const invitationMakeAccount = Key('Invitation.makeAccount');
+
+  /// Your coach in Settings (#553): each coach, leaving one, and lifting a block.
+  static Key yourCoach(String id) => Key('YourCoach.$id');
+  static const yourCoachLeaveConfirm = Key('YourCoach.leaveConfirm');
+
+  static Key yourCoachUnblock(String userId) => Key('YourCoach.unblock.$userId');
+  static const invitationRetry = Key('Invitation.retry');
+
+  // messages (#556)
+  static const thread = Key('Messages.thread');
+  static const messageBox = Key('Messages.box');
+  static const messageSend = Key('Messages.send');
+  static const messagesLockedLine = Key('Messages.locked');
+  static const messagesYourDevices = Key('Messages.locked.devices');
+  static const messagesCopyDevicesLink = Key('Messages.locked.copyLink');
+  static const coachingClientMessages = Key('Coaching.clientMessages');
+  // a coach's notes on a client (#556)
+  static const coachingClientNotes = Key('Coaching.clientNotes');
+  // a workout a coach logs for a client (#560)
+  static const coachingLogFor = Key('Coaching.logFor');
+  static Key coachingLogSession(String id) => Key('Coaching.logSession.$id');
+  static const coachingLogBlank = Key('Coaching.logBlank');
+  // what deleting an account leaves with the other person (#568)
+  static const deleteAccountConversations = Key('Account.deleteConversations');
+  static const deleteAccountConversationsConfirm = Key('Account.deleteConversationsConfirm');
+  static Key loggedBy(String workoutId) => Key('History.loggedBy.$workoutId');
+  static const coachingNoteNew = Key('Coaching.noteNew');
+  static const coachingNoteFirst = Key('Coaching.noteFirst');
+  static Key coachingNote(String id) => Key('Coaching.note.$id');
+  static const coachingNoteEditor = Key('Coaching.noteEditor');
+  static const coachingNoteText = Key('Coaching.noteText');
+  static const coachingNoteSave = Key('Coaching.noteSave');
+  static const coachingNoteDelete = Key('Coaching.noteDelete');
+  static const coachingNoteDeleteConfirm = Key('Coaching.noteDeleteConfirm');
+
+  static Key message(String id) => Key('Messages.message.$id');
+
+  static Key inboxThread(String id) => Key('Messages.inbox.$id');
+
+  static Key yourCoachMessage(String id) => Key('YourCoach.message.$id');
+
+  static const threadMenu = Key('Messages.menu');
+  static const threadDelete = Key('Messages.delete');
+  static const threadDeleteConfirm = Key('Messages.deleteConfirm');
+  static const threadReport = Key('Messages.report');
+  static const threadBlock = Key('Messages.block');
+  static const threadBlockConfirm = Key('Messages.blockConfirm');
+  static const threadCleared = Key('Messages.cleared');
+  static const messageAbout = Key('Messages.about');
+  static const messageSubject = Key('Messages.subject');
+  static const reviewMessage = Key('Review.message');
+  static Key reviewSet(String setId) => Key('Review.set.$setId');
+  static const reviewSetMessage = Key('Review.set.message');
+  static const messageCoachAbout = Key('Workout.messageCoach');
+  static Key messageCoachPick(String connectionId) => Key('Workout.messageCoach.$connectionId');
+  static const messageReport = Key('Messages.messageReport');
+  static const reportSheet = Key('Report.sheet');
+  static const reportInclude = Key('Report.include');
+  static const reportBlock = Key('Report.block');
+  static const reportSend = Key('Report.send');
+  static const profileMessages = Key('Profile.messages');
+
+  static Key reportReason(String reason) => Key('Report.reason.$reason');
 }

@@ -1,9 +1,14 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/analytics.dart';
 import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/push.dart';
 import 'package:heart/presentation/navigation/app.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart_api/heart_api.dart';
@@ -15,6 +20,20 @@ import 'package:mockito/mockito.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../mocks.mocks.dart';
+
+/// Loads every face the app bundles, for a `setUpAll`: the test font draws
+/// each glyph an em square, so anything that measures or fits text (app
+/// bars at phone width, a sheet sizing its code) needs the real metrics.
+Future<void> loadAppFonts() async {
+  final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
+  for (final entry in manifest.cast<Map>()) {
+    final loader = FontLoader(entry['family'] as String);
+    for (final font in (entry['fonts'] as List).cast<Map>()) {
+      loader.addFont(rootBundle.load(font['asset'] as String));
+    }
+    await loader.load();
+  }
+}
 
 /// The least a pumped app needs to start up without tripping over an
 /// unstubbed call: what the profile page's first layout and the chained
@@ -54,6 +73,31 @@ void stubStartup(MockLocalDatabase db, MockApi api) {
   when(api.getExercises()).thenAnswer((_) async => <Exercise>[]);
   when(api.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
   when(api.getWorkoutGallery(cursor: anyNamed('cursor'))).thenAnswer((_) async => ProgressGalleryResponse.fromJson({}));
+}
+
+/// An analytics transport that keeps what it was told, for a test to assert
+/// on: every event in order, and every user property each time it was set.
+class RecordedAnalytics implements AnalyticsService {
+  final events = <(String, Map<String, Object>)>[];
+  final properties = <(String, String?)>[];
+
+  /// The parameters of every event called [name], in order.
+  List<Map<String, Object>> of(String name) => [
+    for (final (each, parameters) in events)
+      if (each == name) parameters,
+  ];
+
+  /// Each value the user property [name] was set to, in order.
+  List<String?> property(String name) => [
+    for (final (each, value) in properties)
+      if (each == name) value,
+  ];
+
+  @override
+  Future<void> logEvent(String name, Map<String, Object> parameters) async => events.add((name, parameters));
+
+  @override
+  Future<void> setUserProperty(String name, String? value) async => properties.add((name, value));
 }
 
 /// Where the active workout's pauses are stored (#134): nothing open on disk,
@@ -100,6 +144,11 @@ class TestAppHarness {
     String version = '0.0.0',
     // the device's calendars (#391): none unless a test brings its own
     DeviceCalendar? calendar,
+    // the push client's transport (#567): none unless a test brings its own
+    PushClient? pushClient,
+    // where encryption keys live (#555): none, so keys never run, unless a
+    // test brings its own
+    KeyVault? keyVault,
   }) async {
     final cfg = appConfig ?? AppConfig.test(allowsFeedbackFeature: false);
 
@@ -124,8 +173,25 @@ class TestAppHarness {
         firebaseAuth: firebaseAuth ?? MockFirebaseAuth(),
         router: router ?? HeartRouter(),
         calendar: calendar,
+        pushClient: pushClient,
+        keyVault: keyVault,
       ),
     );
+
+    // Startup runs in the root zone, which a widget test's pumps never get
+    // to, so the registration that follows it never comes: the account is
+    // registered here instead, as coming back to the app would (#676)
+    // Once Firebase's first word has arrived, which may take a few frames;
+    // a test that signs in later registers through the sign-in itself.
+    for (var i = 0; i < 5; i++) {
+      await tester.pump();
+      if (find.byType(Navigator).evaluate().firstOrNull case final Element element) {
+        final auth = Auth.of(element);
+        if (auth.user == null) continue;
+        unawaited(auth.registerAgain());
+        break;
+      }
+    }
 
     switch (settle) {
       case true:
@@ -173,4 +239,18 @@ extension ExtWidgetTester on WidgetTester {
     await enterText(finder, text);
     await pump();
   }
+}
+
+/// Encryption keys' vault (#555), in memory: what a test brings for keys to run.
+class MemoryKeyVault implements KeyVault {
+  final entries = <String, String>{};
+
+  @override
+  Future<String?> read(String key) async => entries[key];
+
+  @override
+  Future<void> write(String key, String value) async => entries[key] = value;
+
+  @override
+  Future<void> delete(String key) async => entries.remove(key);
 }

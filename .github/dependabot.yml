@@ -20,6 +20,9 @@ updates:
     directory: /android
     schedule:
       interval: weekly
+    ignore:
+      # pinned to the health plugin's version; see android/app/build.gradle
+      - dependency-name: androidx.health.connect:connect-client
     groups:
       minor-and-patch:
         update-types: [ minor, patch ]

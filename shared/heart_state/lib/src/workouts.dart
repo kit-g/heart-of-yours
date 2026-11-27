@@ -12,8 +12,20 @@ import 'remote.dart';
 import 'set_stopwatch.dart';
 import 'supersets.dart';
 import 'warmups.dart';
+import 'workout_plans.dart';
 
 typedef WorkoutId = String;
+
+/// A workout logged after the fact (#530), the user's own or a coach's for a
+/// client (#560): it goes into a history as what was done, and nothing else.
+extension LoggedAfter on Workout {
+  /// Drops what wasn't done: a set ticked with nothing in it is no set, so it
+  /// goes with the unticked ones, and an exercise left with no set goes too.
+  void keepDone() {
+    expand((exercise) => exercise).where((set) => !set.canBeCompleted).forEach((set) => set.isCompleted = false);
+    removeEmptySets();
+  }
+}
 
 class Workouts with ChangeNotifier implements SignOutStateSentry {
   final _workouts = <WorkoutId, Workout>{};
@@ -35,6 +47,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final Future<void> Function(String workoutId, List<WorkoutPause> pauses, DateTime? pausedAt)? _persistPauses;
   final Future<DateTime?> Function(String workoutId)? _pausedAtOf;
   final String? Function(String exerciseId)? _noteFor;
+
+  /// Where a program workout's plan waits until its workout is on the server,
+  /// and the route that takes it (#566). Absent in tests that don't need them.
+  final LocalWorkoutPlanService? _localPlans;
+  final RemoteWorkoutPlanService? _remotePlans;
   final _progress = SplayTreeSet<WorkoutImage>(_compareImages);
 
   /// Ids of sets in the active workout the user has typed a measurement into.
@@ -59,6 +76,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     this._persistPauses,
     this._pausedAtOf,
     this._noteFor,
+    this._localPlans,
+    this._remotePlans,
     this.analytics,
     RemoteAccess? remote,
   }) : _localService = service,
@@ -96,9 +115,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _latestMarkedSet = null;
     _progress.clear();
     _healChecked.clear();
+    _refreshedAt = null;
     // a pass still running is the old user's; it checks for that at every
     // step, and the next sign-in must not wait on it
     _healing = null;
+    notifyListeners();
   }
 
   @override
@@ -240,7 +261,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return history.fold<Map<String, List<Workout>>>(
       result,
       (map, workout) {
-        final date = workout.start;
+        // the user's month: a start is UTC, and an evening at the end of a
+        // month west of Greenwich is already the next one there
+        final date = workout.start.toLocal();
         final monthKey = '${date.year}-${date.month.toString().padLeft(2, '0')}';
         return map..putIfAbsent(monthKey, () => []).add(workout);
       },
@@ -313,12 +336,23 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> init() async {
-    if (userId case String userId) {
-      final active = await _getActiveWorkout(userId);
-      _pausedAt = switch (active) {
+    if (userId case String id) {
+      final active = await _getActiveWorkout(id);
+      final pausedAt = switch (active) {
         Workout workout => await _restorePause(workout.id),
         null => null,
       };
+      // the session ended while the mirror was read (#671): this is the last
+      // one's workout, and the state has been cleared for the next
+      if (userId != id) return;
+      // a workout started before this ran (a start-up that waited for the
+      // exercise library, #723) is the one in progress, and stays as it is
+      if (hasActiveWorkout) {
+        _hasResolvedActiveWorkout = true;
+        notifyListeners();
+        return;
+      }
+      _pausedAt = pausedAt;
       _hasResolvedActiveWorkout = true;
       // the setter notifies, so listeners see both at once
       _activeWorkout = active;
@@ -389,6 +423,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return false;
   }
 
+  /// [workoutId]'s workout, when what is held is the whole of it: null for a
+  /// mirror row that lost its detail (#85), which only a fetch can fill.
+  Workout? lookupWhole(String workoutId) {
+    return switch (lookup(workoutId)) {
+      Workout workout when !_isStripped(workout) => workout,
+      _ => null,
+    };
+  }
+
   /// Whether [workout] is a mirror row that lost its detail.
   ///
   /// A finished workout the server confirmed cannot legitimately be empty:
@@ -414,24 +457,28 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// sample, one of the user's own, and a past workout being repeated all
   /// arrive as a `Workout`. Which one it was is the question retention turns
   /// on, and only the surface that offered it knows.
+  ///
+  /// [plan] is what a program's session was asked to be (#566): kept beside
+  /// the workout, and sent once the workout is on the server.
   Future<void> startWorkout({
     required WorkoutSource source,
     String? name,
     Workout? template,
+    WorkoutPlan? plan,
     bool applyPinnedNotes = false,
-  }) {
+  }) async {
     assert(name == null || template == null, 'Pass only the name or the full workout');
     // Checked before any state moves. Without a session the workout could
     // never reach the mirror, and a half-started one — live in memory, absent
     // from SQLite — fails every set insert on a foreign key and then fails
     // the finish.
     final uid = userId;
-    if (uid == null) return Future.value();
+    if (uid == null) return;
     // One at a time (#228). Starting over an active workout used to orphan it:
     // still unfinished in the mirror, and back as "active" the moment the new
     // one finished. Callers ask the user and [cancelActiveWorkout] first.
     assert(!hasActiveWorkout, 'Cancel the active workout before starting another');
-    if (hasActiveWorkout) return Future.value();
+    if (hasActiveWorkout) return;
     final workout = template ?? Workout(name: name);
     _startedFrom = source;
     _untickedAtPrompt = 0;
@@ -448,7 +495,49 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _activeWorkoutId = workout.id;
 
     notifyListeners();
-    return _localService.startWorkout(workout, uid);
+    await _localService.startWorkout(workout, uid);
+    if (plan != null) await _keepPlan(workout.id, uid, plan);
+  }
+
+  /// A plan not kept is a comparison lost, never a workout lost: the start
+  /// goes on whatever happens here.
+  Future<void> _keepPlan(String workoutId, String uid, WorkoutPlan plan) async {
+    try {
+      await _localPlans?.storeWorkoutPlan(workoutId, uid, plan.plan);
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+    }
+  }
+
+  /// Sends the plans of workouts the server already has (#566). The server
+  /// keeps the first plan it gets, so a retry is harmless. One it refused as
+  /// malformed is dropped, since sending it again can't help; anything else,
+  /// an outage or a workout it hasn't got yet, waits for the next try.
+  Future<void> sendWorkoutPlans() async {
+    if (!_remote.allowed) return;
+    final (local, remote, uid) = (_localPlans, _remotePlans, userId);
+    if (local == null || remote == null || uid == null) return;
+    final List<({String workoutId, Map<String, dynamic> plan})> owed;
+    try {
+      owed = await local.getUnsentWorkoutPlans(uid);
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+      return;
+    }
+    for (final (:workoutId, :plan) in owed) {
+      try {
+        await remote.saveWorkoutPlan(workoutId, WorkoutPlan(plan));
+        await local.markWorkoutPlanSent(workoutId);
+      } catch (error, stacktrace) {
+        switch (error) {
+          // malformed: sending it again can't help
+          case ServerRefusal(code: 'invalid_plan'):
+            await local.markWorkoutPlanSent(workoutId);
+          default:
+            onError?.call(error, stacktrace: stacktrace);
+        }
+      }
+    }
   }
 
   /// The finish most recently started, or null before one this session.
@@ -578,11 +667,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// With the remote leg closed the local copy is the result, left unsynced
   /// exactly like a save that met a dead network — [syncPendingWorkouts] picks
   /// it up once there is an account to push it to.
-  Future<Workout> saveWorkout(Workout active) async {
+  ///
+  /// [plan] is kept with the mirror's row, before anything is sent: it is the
+  /// account's that saved it, however long the server takes.
+  Future<Workout> saveWorkout(Workout active, {WorkoutPlan? plan}) async {
     final uid = userId;
     if (uid == null) return active;
     active.removeEmptySets();
     await _localService.finishWorkout(active, uid);
+    if (plan != null) await _keepPlan(active.id, uid, plan);
 
     _workouts[active.id] = active;
     _historyWritten();
@@ -596,11 +689,39 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         await _localService.storeWorkoutHistory([saved], id);
       }
       _historyWritten();
+      // the workout is there now, so its plan can follow
+      await sendWorkoutPlans();
       return saved;
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
       return active;
     }
+  }
+
+  /// Puts [workout], one that already happened, into this user's history: a
+  /// workout logged after the fact (#530) rather than lived through. It was
+  /// never the active workout, so the one in progress, if any, is left exactly
+  /// as it was, and nothing a live session runs (the clock, rest, the lock
+  /// screen, the watch) hears of it.
+  ///
+  /// It lands as a finish does, through [saveWorkout]: the mirror, the server
+  /// for an account (an anonymous session keeps it for [syncPendingWorkouts]),
+  /// and every reader of [historyRevision]. Returns it as it ended up.
+  ///
+  /// Only what was done goes in: see [LoggedAfter.keepDone]. [plan] is what a
+  /// program's session was asked to be, kept and sent as [startWorkout]'s is.
+  Future<Workout> logWorkout(Workout workout, {WorkoutPlan? plan}) async {
+    assert(workout.end != null, 'A workout logged after the fact has ended');
+    assert(workout.id != _activeWorkoutId, 'The active workout finishes, it is not logged');
+    workout.keepDone();
+    final saved = await saveWorkout(workout, plan: plan);
+    // counted after the save, as a finish is: what history holds
+    analytics?.workoutLogged(
+      exerciseCount: saved.length,
+      setCount: saved.expand((exercise) => exercise).length,
+      durationMin: saved.duration?.inMinutes ?? 0,
+    );
+    return saved;
   }
 
   /// Re-attempts the server save for any finished workout persisted locally but
@@ -627,6 +748,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         }
       }
       if (pending.isNotEmpty) _historyWritten();
+      // the workouts just sent, and any earlier one whose plan never made it
+      await sendWorkoutPlans();
     }
   }
 
@@ -735,9 +858,16 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
+  /// Gone here already; the server's copy is asked to follow. One the server
+  /// no longer has is gone either way, and any other failure is reported
+  /// rather than thrown at the screen that deleted it.
   Future<void> _deleteWorkout(String workoutId) async {
     if (!_remote.allowed) return;
-    await _remoteService.deleteWorkout(workoutId);
+    try {
+      await _remoteService.deleteWorkout(workoutId);
+    } catch (error, stacktrace) {
+      if (!_remote.isGone(error)) onError?.call(error, stacktrace: stacktrace);
+    }
   }
 
   Future<void> deleteWorkout(String workoutId) async {
@@ -1159,18 +1289,24 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (userId case String id) {
       // each step reports its own failure and the next still runs: History
       // initializes whatever happened, and the chain behind it (previous sets,
-      // stats, backfill) is never held back by one step it does not need
+      // stats, backfill) is never held back by one step it does not need.
+      //
+      // A read that lands after the session ended (#671) belongs to the last
+      // one: the state has been cleared for the next, and nothing of it goes
+      // back in. Every step checks the uid again once it has awaited.
       await _step(() async {
         final local = await _localService.getWorkoutHistory(id);
+        if (userId != id) return;
         _workouts.addAll(Map.fromEntries(local?.map(_entry) ?? []));
       });
+      if (userId != id) return;
       // with no server to page from, the mirror is the whole history
       if (!_remote.allowed) _hasMoreHistory = false;
       notifyListeners();
 
       await _step(() async {
         final workouts = await _getRemoteHistory(id);
-        if (workouts != null) {
+        if (workouts != null && userId == id) {
           await _localService.storeWorkoutHistory(workouts, id);
           _absorb(workouts);
           await _dropDeletedElsewhere(workouts);
@@ -1178,11 +1314,18 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
           _historyRevision++;
         }
       });
+      if (userId != id) return;
 
       // heal workouts stranded locally by an earlier failed network save
       await _step(syncPendingWorkouts);
+      if (userId != id) return;
 
-      await _step(() => _localService.getWorkoutGallery(userId: id).then<void>(_progress.addAll));
+      await _step(
+        () => _localService.getWorkoutGallery(userId: id).then<void>((gallery) {
+          if (userId == id) _progress.addAll(gallery);
+        }),
+      );
+      if (userId != id) return;
 
       historyInitialized = true;
       notifyListeners();
@@ -1198,6 +1341,38 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void>? _healing;
+
+  /// Reads the newest page of history from the server over what is held, as
+  /// [initHistory]'s remote step does, and nothing else: coming back to the
+  /// app, where a workout logged elsewhere, by their coach (#560), may be
+  /// waiting. At most once every ten minutes, counted from the last read
+  /// that landed, and one at a time. Paging carries on from where it was.
+  Future<void> refreshHistory({DateTime? now}) async {
+    final at = now ?? DateTime.now();
+    final last = _refreshedAt;
+    if (last != null && at.difference(last) < const Duration(minutes: 10)) return;
+    final id = userId;
+    if (id == null || !_remote.allowed) return;
+    // taken now, so a second resume meanwhile doesn't read it again
+    _refreshedAt = at;
+    final workouts = await _getRemoteHistory(id);
+    if (userId != id) return;
+    if (workouts == null) {
+      // not read: the next time back tries again
+      _refreshedAt = last;
+      return;
+    }
+    await _step(() async {
+      await _localService.storeWorkoutHistory(workouts, id);
+      _absorb(workouts);
+      await _dropDeletedElsewhere(workouts);
+      _historyWritten();
+    });
+    // a page may list a workout without its detail
+    await (_healing ??= _healStrippedHistory(id).whenComplete(() => _healing = null));
+  }
+
+  DateTime? _refreshedAt;
 
   /// Runs one step of [initHistory], reporting what it throws instead of
   /// letting it cost the steps after it.
@@ -1272,10 +1447,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// The server's copy of one of the user's own workouts, or null when the
-  /// server answered with anything but the workout — a 404 body, whatever its
-  /// shape, is still an answer about this one, and so is a workout this build
-  /// cannot read: asking again would get the same one. Not reaching it at all
-  /// throws.
+  /// server answered with anything but the workout — a refusal is still an
+  /// answer about this one, and so is a workout this build cannot read, the
+  /// whole answer or its shape: asking again would get the same one. Not
+  /// reaching it, or a server that failed or asked to wait, throws, and the
+  /// pass is tried again later.
   Future<Workout?> _detailOf(String id, String workoutId) async {
     try {
       return await _remoteService.getTargetWorkout(
@@ -1283,14 +1459,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         targetUserId: id,
         workoutId: workoutId,
       );
-    } on Map {
-      return null;
-    } on ArgumentError {
-      return null;
-    } on TypeError {
-      return null;
-    } on FormatException {
-      return null;
+    } catch (error) {
+      switch (_remote.failureOf(error)) {
+        // a 404 with a code or without, a refusal, an answer this build
+        // cannot read: asking again would get the same one
+        case .gone || .answered:
+          return null;
+        case .transient || .unanswered:
+          rethrow;
+      }
     }
   }
 
@@ -1361,6 +1538,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       notifyListeners();
 
       final workouts = await _getRemoteHistory(id, since: _historyCursor);
+      // the last session's page (#671)
+      if (userId != id) return;
       // A null return means the fetch threw (a valid page is a possibly-empty
       // list) — surface it so the tail can offer a retry.
       if (workouts != null) {
@@ -1393,6 +1572,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
     if (userId case String id) {
       final page = await _getRemoteHistory(id, since: _historyCursor);
+      // the last session's page (#671); Backfill stops on its own uid check
+      if (userId != id) return (stored: 0, more: false);
       if (page == null) throw const HistoryUnavailable();
 
       await _localService.storeWorkoutHistory(page, id);
@@ -1486,7 +1667,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   ) async {
     if (!_remote.allowed) return null;
     // destinationUrl is where the image will be available once saved
-    final (cred, destinationUrl) = await _remoteService.getWorkoutUploadLink(workout.id);
+    final (PreSignedUrl?, String?) link;
+    try {
+      link = await _remoteService.getWorkoutUploadLink(workout.id);
+    } catch (error, stacktrace) {
+      // no link: the photo stays off the workout, and the failure is reported
+      onError?.call(error, stacktrace: stacktrace);
+      return null;
+    }
+    final (cred, destinationUrl) = link;
     if (cred != null) {
       // upload file
       final upload = ('file', image.$1, contentType: image.mimeType, filename: image.name);
@@ -1519,7 +1708,14 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> detachImageFromWorkout(Workout workout, WorkoutImage image) async {
     if (!_remote.allowed) return;
-    final detached = await _remoteService.deleteWorkoutImage(workout.id, image.key);
+    final bool detached;
+    try {
+      detached = await _remoteService.deleteWorkoutImage(workout.id, image.key);
+    } catch (error, stacktrace) {
+      // still on the server, so still on the workout: reported, not thrown
+      onError?.call(error, stacktrace: stacktrace);
+      return;
+    }
     if (detached) {
       _workouts[workout.id]?.images?.remove(image.id);
       _progress.removeWhere((each) => each.id == image.id);

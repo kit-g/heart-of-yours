@@ -78,8 +78,21 @@
       "id": "set-stopwatch",
       "category": "train",
       "title": "A stopwatch for timed sets",
-      "pitch": "Tap play on a timed set and the stopwatch runs, on the lock screen too. Stop it to log the time. Off until you turn it on.",
+      "pitch": "Tap play on a timed set and the stopwatch runs, on the lock screen too, or start it from your watch. Stop it to log the time. Off until you turn it on.",
       "since": "1.12.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "past-workouts",
+      "category": "train",
+      "title": "Log a past workout",
+      "pitch": "Forgot to log at the gym? Say when it was, then what you did, and it goes straight to History. Optional.",
+      "since": "1.17.0",
       "tier": "free",
       "platforms": [
         "ios",
@@ -322,7 +335,7 @@
       "id": "exercise-library",
       "category": "train",
       "title": "Exercise library",
-      "pitch": "Search by name, other names, abbreviations like OHP or RDL, muscle words, or with a typo, or filter by muscle, movement pattern, stability and skill. Add your own exercises too.",
+      "pitch": "Search by name, other names, abbreviations like OHP or RDL, muscle words, or with a typo, or filter by muscle and pattern. Create your own from the picker and tag the muscles they work.",
       "since": "1.0.5",
       "tier": "free",
       "platforms": [
@@ -475,6 +488,32 @@
       "highlight": false
     },
     {
+      "id": "recaps",
+      "category": "progress",
+      "title": "Monthly recaps",
+      "pitch": "Early each month, last month on your profile: workouts, time, volume, the muscles you trained and the records you set. Worked out on your device. Optional.",
+      "since": "1.17.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "live-records",
+      "category": "progress",
+      "title": "Live records",
+      "pitch": "A quiet note the moment a ticked set beats your best. Optional.",
+      "since": "1.17.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
       "id": "week-start",
       "category": "progress",
       "title": "Your week starts when you say",
@@ -590,6 +629,32 @@
         "android"
       ],
       "highlight": true
+    },
+    {
+      "id": "copy-for-ai",
+      "category": "data",
+      "title": "Copy for AI",
+      "pitch": "A workout, a month or one exercise's history as text any AI assistant reads well. Your health data never goes with it. Optional.",
+      "since": "1.17.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "second-look",
+      "category": "data",
+      "title": "Second look",
+      "pitch": "Heart points out entries that look like a slip, like a workout left running for hours, and you keep each one or leave it out of your stats. Needs an account. Optional.",
+      "since": "1.17.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
     },
     {
       "id": "move-history",

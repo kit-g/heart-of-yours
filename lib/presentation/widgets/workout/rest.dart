@@ -1,27 +1,26 @@
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/watch.dart';
+import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// How long [exercise] rests after a set, in seconds: the user's own timer for
-/// it, otherwise what its program session plans (#349) while Programs is on,
-/// and otherwise its kind's default rest (#174) while that is on. The user's
-/// word wins: a timer they set is a choice, a plan a default, and the default
-/// rest the most general of all.
+/// it, otherwise what its program session plans (#349) while the workout it
+/// is in shows its plan ([planned], see [planShown]), and otherwise its kind's
+/// default rest (#174) while that is on. The user's word wins: a timer they
+/// set is a choice, a plan a default, and the default rest the most general
+/// of all.
 ///
 /// Every surface that starts or shows a rest reads it here — the countdown,
 /// the lock screen, the Live Activity, the watch — so the default reaches them
 /// all.
-int? restFor(BuildContext context, WorkoutExercise exercise, {bool listen = false}) {
+int? restFor(BuildContext context, WorkoutExercise exercise, {required bool planned, bool listen = false}) {
   final timers = Provider.of<Timers>(context, listen: listen);
   final preferences = Provider.of<Preferences>(context, listen: listen);
-  final planned = switch (preferences.isOn(.programs)) {
-    true => exercise.rest,
-    false => null,
-  };
-  return timers[exercise.exercise.id] ?? planned ?? _defaultRestFor(preferences, exercise.exercise);
+  final plan = planned ? exercise.rest : null;
+  return timers[exercise.exercise.id] ?? plan ?? _defaultRestFor(preferences, exercise.exercise);
 }
 
 /// [exercise]'s default rest (#174), in seconds: null while the feature is
@@ -40,12 +39,13 @@ int? _defaultRestFor(Preferences preferences, Exercise exercise) {
 /// one there, [exercise]'s own. Otherwise [restFor].
 int? restAfter(BuildContext context, WorkoutExercise exercise) {
   final workout = Workouts.of(context).activeWorkout;
+  final planned = planShown(context, workout?.programId);
   return switch (workout) {
     Workout workout when workout.contains(exercise) => switch (workout.restsAs(exercise)) {
-      WorkoutExercise last => restFor(context, last) ?? restFor(context, exercise),
+      WorkoutExercise last => restFor(context, last, planned: planned) ?? restFor(context, exercise, planned: planned),
       null => null,
     },
-    _ => restFor(context, exercise),
+    _ => restFor(context, exercise, planned: planned),
   };
 }
 

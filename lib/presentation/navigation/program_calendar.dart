@@ -18,7 +18,9 @@ const _horizon = 14;
 /// (#391): told again whenever the programs, their history, the sessions or
 /// the switches change. A program that moves on — a workout, a skip, a repeat,
 /// a pause — moves its future events with it; a paused, finished or archived
-/// one has none, and with either switch off no program has any.
+/// one has none, and one the calendar is off for has none
+/// ([Preferences.programCalendarOn]: Programs' calendar, which a coach's
+/// program keeps under Your coach alone, #593).
 class ProgramCalendarPresenter extends StatefulWidget {
   final Widget child;
 
@@ -85,7 +87,6 @@ class _ProgramCalendarPresenterState extends State<ProgramCalendarPresenter> {
 
     final now = DateTime.now();
     final today = DateUtils.dateOnly(now);
-    final on = preferences.isOptionOn(.programsCalendar);
     final wanted = <String, List<(String, CalendarEventDraft)>>{};
     final trained = <String>{};
 
@@ -96,7 +97,7 @@ class _ProgramCalendarPresenterState extends State<ProgramCalendarPresenter> {
         unawaited(calendars.remove(programId));
         continue;
       }
-      if (!on || program.archived) continue;
+      if (!preferences.programCalendarOn(program) || program.archived) continue;
       final setting = calendars.settingOf(programId)!;
       final position = programs.position(program, now: now, firstWeekday: firstWeekdayOf(context));
       final trainedToday = programs.markedOn(programId, now);

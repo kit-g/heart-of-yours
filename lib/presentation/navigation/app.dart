@@ -4,6 +4,7 @@ import 'package:feedback/feedback.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/goals_widget.dart';
@@ -11,6 +12,7 @@ import 'package:heart/core/env/home_widgets.dart';
 import 'package:heart/core/env/launch_screen.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
+import 'package:heart/core/env/push.dart';
 import 'package:heart/core/env/rest_store.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/env/shortcuts.dart';
@@ -20,26 +22,42 @@ import 'package:heart/core/utils/whats_new.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/theme/tokens.dart';
+import 'package:heart/core/utils/anomalies.dart';
 import 'package:heart/core/utils/api_tokens.dart';
+import 'package:heart/core/utils/coaching.dart';
+import 'package:heart/core/utils/library.dart';
+import 'package:heart/core/utils/roster.dart';
 import 'package:heart/core/utils/backfill.dart';
 import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/programs.dart';
+import 'package:heart/core/utils/coach_notes.dart';
+import 'package:heart/core/utils/messages.dart';
+import 'package:heart/core/utils/pushes.dart';
+import 'package:heart/core/utils/device_keys.dart';
+import 'package:heart/core/utils/workout_plans.dart';
+import 'package:heart/core/utils/live_goals.dart';
 import 'package:heart/core/utils/live_records.dart';
 import 'package:heart/core/utils/record_book.dart';
 import 'package:heart/core/utils/charts.dart';
 import 'package:heart/core/utils/stats.dart';
 import 'package:heart/core/utils/templates.dart';
+import 'package:heart/core/utils/remote_failures.dart';
 import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
+import 'package:heart/core/utils/lifecycle.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/navigation/coaching.dart';
+import 'package:heart/presentation/navigation/entry_review.dart';
 import 'package:heart/presentation/navigation/goals_widget.dart';
 import 'package:heart/presentation/navigation/home_widgets.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
 import 'package:heart/presentation/navigation/pause.dart';
 import 'package:heart/presentation/navigation/program_calendar.dart';
+import 'package:heart/presentation/navigation/pushes.dart';
+import 'package:heart/presentation/navigation/device_keys.dart';
 import 'package:heart/presentation/navigation/system_shortcuts.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/navigation/watch.dart';
@@ -50,6 +68,7 @@ import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:heart_health/heart_health.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:heart_models/heart_models.dart' show Program;
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -68,6 +87,15 @@ class HeartApp extends StatelessWidget {
   /// one. A test passes its own.
   final DeviceCalendar? calendar;
 
+  /// The push client's transport (#567); by default FCM, where the app has
+  /// notifications at all. A test passes its own.
+  final PushClient? pushClient;
+
+  /// Where this device keeps its encryption keys (#555): the Keychain or the
+  /// Keystore on a phone, none on the web or in a test unless it brings one.
+  /// Without one, keys never run.
+  final KeyVault? keyVault;
+
   const new({
     super.key,
     required this.appConfig,
@@ -79,6 +107,8 @@ class HeartApp extends StatelessWidget {
     this.hasLocalNotifications = true,
     this.firebaseAuth,
     this.calendar,
+    this.pushClient,
+    this.keyVault,
   });
 
   @override
@@ -94,7 +124,11 @@ class HeartApp extends StatelessWidget {
         // One gate for every remote leg below; Auth decides, the rest consult.
         // Above them all because each takes it at construction.
         Provider<RemoteAccess>(
-          create: (_) => RemoteAccess(hasToken: () => api.isAuthenticated),
+          create: (_) => RemoteAccess(
+            hasToken: () => api.isAuthenticated,
+            outdated: () => AppVersionSentry.instance.upgradeRequired,
+            failures: remoteFailure,
+          ),
         ),
         ChangeNotifierProvider<AppTheme>(
           create: (_) => AppTheme(),
@@ -114,6 +148,7 @@ class HeartApp extends StatelessWidget {
               libraryService: CdnExerciseLibrary(cdn),
               catalogService: LocalCatalog(db),
               preferenceService: RemoteExercisePreferences(api),
+              renameService: RemoteExerciseRenames(api),
               noteService: ExerciseNotes(db, api),
               moveService: ExerciseMoves(db, api),
               remote: RemoteAccess.of(context),
@@ -126,6 +161,18 @@ class HeartApp extends StatelessWidget {
             // behind the catalog's) and picks names by the device language
             cdn.resolveExercise = exercises.lookupByKey;
             cdn.languageTag = languageTag;
+            // the server names a library exercise inside a workout or a
+            // template from its untranslated row, so it is named here by the
+            // catalog instead, in the user's language (#612)
+            api
+              ..exerciseOnDevice = ((id) => switch (exercises.lookup(id)) {
+                final exercise? => (name: exercise.name, own: exercise.isMine),
+                null => null,
+              })
+              // before the catalog is in, every exercise is a miss
+              ..onUnnamedExercises = (unnamed, of) {
+                if (exercises.isInitialized) reportUnnamedExercises(unnamed, of);
+              };
             return exercises;
           },
         ),
@@ -133,6 +180,7 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<LiveRecords>(
           create: (_) => LiveRecords(without: db.getRecordWithout, onError: reportToSentry),
         ),
+        ChangeNotifierProvider<LiveGoals>(create: (_) => LiveGoals(onError: reportToSentry)),
         ChangeNotifierProvider<Stats>(
           create: (_) => Stats(
             onError: reportToSentry,
@@ -149,12 +197,18 @@ class HeartApp extends StatelessWidget {
             persistPauses: db.setWorkoutPauses,
             pausedAtOf: db.getPausedAt,
             noteFor: Exercises.of(context).noteFor,
+            // a program workout's plan, kept from the start and sent once
+            // the workout is on the server (#566)
+            localPlans: LocalWorkoutPlans(db),
+            remotePlans: RemoteWorkoutPlans(api),
             remoteService: api,
             remote: RemoteAccess.of(context),
             analytics: analytics,
             onError: reportToSentry,
           ),
         ),
+        // History's muscle-group filter (#610): for the run, never stored
+        ChangeNotifierProvider<HistoryFilter>(create: (_) => HistoryFilter()),
         ChangeNotifierProvider<Templates>(
           create: (context) => Templates(
             service: db,
@@ -173,21 +227,30 @@ class HeartApp extends StatelessWidget {
         // position, and `Templates`, which re-reads the sessions a program
         // writes (#346). Data whatever the feature switch says: off only hides.
         ChangeNotifierProvider<Programs>(
-          create: (context) => Programs(
-            service: LocalPrograms(db),
-            remoteService: RemotePrograms(api),
-            templates: db,
-            workouts: Workouts.of(context),
-            onSessionsChanged: Templates.of(context).reread,
-            // a ladder's step (#350): the sessions are the template list's
-            onAdvance: (sessions, {required from, required to}) async {
-              if (Exercises.of(context).lookup(to) case final exercise?) {
-                await Templates.of(context).replaceExercise(sessions, from: from, to: exercise);
-              }
-            },
-            remote: RemoteAccess.of(context),
-            onError: reportToSentry,
-          ),
+          create: (context) {
+            final templates = Templates.of(context);
+            final programs = Programs(
+              service: LocalPrograms(db),
+              remoteService: RemotePrograms(api),
+              templates: db,
+              workouts: Workouts.of(context),
+              onSessionsChanged: templates.reread,
+              // a ladder's step (#350): the sessions are the template list's
+              onAdvance: (sessions, {required from, required to}) async {
+                if (Exercises.of(context).lookup(to) case final exercise?) {
+                  await templates.replaceExercise(sessions, from: from, to: exercise);
+                }
+              },
+              // a coach's copy (#558): the user's version of a session, chosen
+              // over the coach's
+              onKeepSession: templates.keep,
+              remote: RemoteAccess.of(context),
+              onError: reportToSentry,
+            );
+            // which sessions are a coach's copy's, written from a revision
+            templates.shared = programs;
+            return programs;
+          },
         ),
         // Things to go easy on (#396): the map is content, the list the
         // user's own and health-shaped — on this phone only, and its errors
@@ -219,6 +282,7 @@ class HeartApp extends StatelessWidget {
             service: db,
             readBefore: db.getPreviousSetsBefore,
             readInTemplate: db.getPreviousSetsInTemplate,
+            readSessions: db.getSessionCounts,
           ),
         ),
         ChangeNotifierProvider<Preferences>(
@@ -227,7 +291,7 @@ class HeartApp extends StatelessWidget {
           // waits on `Preferences.initialized`, and the sooner that is read
           // the shorter the wait. `_initApp` reads it again with the rest;
           // the second read is harmless.
-          create: (_) => Preferences()..init(locale: PlatformDispatcher.instance.locale),
+          create: (_) => Preferences(analytics: analytics)..init(locale: PlatformDispatcher.instance.locale),
         ),
         // the workout sounds (#169): through the native player, behind the
         // same gate as everything else native
@@ -286,6 +350,16 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        // Suspicious entries (#428): kept and synced whatever the switch says;
+        // the switch decides what is marked and counted (EntryReviewPresenter)
+        ChangeNotifierProvider<Anomalies>(
+          create: (context) => Anomalies(
+            service: LocalAnomalies(db),
+            remoteService: api,
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
         // The developer API's tokens (#271): server-only, read when their page
         // opens, gated by the same remote leg as everything else.
         ChangeNotifierProvider<ApiTokens>(
@@ -293,6 +367,110 @@ class HeartApp extends StatelessWidget {
             service: RemoteApiTokens(api),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
+          ),
+        ),
+        // Coaching's connections and hidden workouts (#552, #566): server-only,
+        // and read only once a coaching feature is on, so with both off nothing
+        // goes over the wire.
+        ChangeNotifierProvider<Coaching>(
+          create: (context) => Coaching(
+            service: RemoteCoaching(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+            analytics: analytics,
+          ),
+        ),
+        // The push client's registration and settings (#567, #554):
+        // server-only, and used only while a coaching switch is on.
+        ChangeNotifierProvider<Pushes>(
+          create: (context) => Pushes(
+            service: RemotePushes(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // This device's encryption keys and what carries them (#555): made and
+        // published only while a coaching switch is on (DeviceKeysPresenter).
+        ChangeNotifierProvider<DeviceKeys>(
+          create: (context) => DeviceKeys(
+            service: RemoteDeviceKeys(api),
+            vault: keyVault,
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+            // a coach's notes are Coach people's: off, a new device of the
+            // account's hears nothing of them (keys only one who wrote notes
+            // holds, so the entitlement adds nothing here)
+            sharesNoteKeys: () => Preferences.of(context).isOn(.coachPeople),
+          ),
+        ),
+        // Coaching messages (#556): sealed on this device with its keys,
+        // kept here as the server keeps them, ciphertext, and read only from
+        // a coaching screen, which exists only with a switch on.
+        ChangeNotifierProvider<Messages>(
+          create: (context) => Messages(
+            service: RemoteThreads(api),
+            local: LocalThreads(db),
+            cipher: DeviceKeys.of(context),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+            // the link's fingerprint names the coach's keys: it checks the
+            // other person only where this one is the student, since the
+            // same connection seen from the coach's side is someone else
+            fingerprintFor: (thread) => switch (thread.connectionId) {
+              final String id when Coaching.of(context).coaches.any((each) => each.connectionId == id) =>
+                Preferences.of(context).coachFingerprint(id),
+              _ => null,
+            },
+            analytics: analytics,
+            roleFor: (thread) {
+              final connections = Coaching.of(context).all;
+              return connections.where((each) => each.connectionId == thread.connectionId).firstOrNull?.role;
+            },
+          ),
+        ),
+        // A coach's notes on their clients (#556): sealed for the coach's
+        // own devices, kept here as ciphertext, and read only from a coach's
+        // screen, which exists only with Coach people on.
+        ChangeNotifierProvider<CoachNotes>(
+          create: (context) => CoachNotes(
+            service: RemoteNotes(api),
+            local: LocalNotes(db),
+            cipher: DeviceKeys.of(context),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+            analytics: analytics,
+          ),
+        ),
+        // A coach's roster and feed (#559): server-only, read when the
+        // Clients tab opens, which is there only with Coach people on.
+        ChangeNotifierProvider<Roster>(
+          create: (context) => Roster(
+            service: RemoteRoster(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+            analytics: analytics,
+          ),
+        ),
+        // A coach's work on a client's copy (#558): server-only, read when
+        // the coach opens it.
+        ChangeNotifierProvider<ClientPrograms>(
+          create: (context) => ClientPrograms(
+            service: RemoteClientPrograms(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+            analytics: analytics,
+          ),
+        ),
+        // A coach's library (#557): server-only, read when the Programs tab
+        // of the Coaching space opens. A body names exercises by id, which
+        // the coach's own catalog turns back into exercises.
+        ChangeNotifierProvider<CoachLibrary>(
+          create: (context) => CoachLibrary(
+            service: RemoteCoachLibrary(api),
+            exerciseOf: (id) => Exercises.of(context).lookup(id),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+            analytics: analytics,
           ),
         ),
         ChangeNotifierProvider<Health>(
@@ -377,7 +555,7 @@ class HeartApp extends StatelessWidget {
             auth.dispose();
           },
           create: (context) {
-            // the uid the state classes are currently keyed on
+            // the uid the API client's token was last handed over for
             String? current;
             final auth = Auth(
               service: api,
@@ -392,6 +570,8 @@ class HeartApp extends StatelessWidget {
                 userId,
                 hasLocalNotifications: hasLocalNotifications,
               ),
+              // Firebase refreshed the token under a running session
+              onToken: api.reauthenticate,
               // "Erase my data": the anonymous session's store is this
               // device's alone, so the wipe is the local database's to do
               onErase: db.eraseUser,
@@ -412,27 +592,27 @@ class HeartApp extends StatelessWidget {
                 // keeps it.
                 if (user?.id != current) api.unauthenticate();
                 router.refresh();
-                // One uid replacing another under a running app — an account
-                // signed into from an anonymous session. A sign-out clears the
-                // state on its way out; this switch has no such moment, so it
-                // is cleared here, before the new uid is keyed in. Exercises
-                // forgets it was initialized, which is what makes `_initApp`
-                // run the full startup again for the new uid.
-                if (current != null && user != null && user.id != current) {
-                  clearUserState(context);
+                switch ((keyedUserId(context), user)) {
+                  // The session ended without the app's own log out, which
+                  // clears on its way out and leaves nothing keyed: Firebase
+                  // signs a user out by itself on a revoked or expired token
+                  // or a deleted or disabled account, and the server can
+                  // report the account gone (#671). Without this, the
+                  // anonymous session minted next showed the account's
+                  // history, goals and dashboard.
+                  case (String _, null):
+                    _sessionLost(context, router);
+                  // One uid replacing another: an account signed into from an
+                  // anonymous session, which has no such moment either.
+                  case (String keyed, final next?) when next.id != keyed:
+                    clearUserState(context);
+                  case _:
                 }
                 current = user?.id;
-                Exercises.of(context).userId = user?.id;
-                Charts.of(context).userId = user?.id;
-                Goals.of(context).userId = user?.id;
-                Health.of(context).userId = user?.id;
-                PreviousExercises.of(context).userId = user?.id;
-                Stats.of(context).userId = user?.id;
-                Templates.of(context).userId = user?.id;
-                Programs.of(context).userId = user?.id;
-                GoEasy.of(context).userId = user?.id;
-                Timers.of(context).userId = user?.id;
-                Workouts.of(context).userId = user?.id;
+                // Exercises forgets it was initialized on a clear, which is
+                // what makes `_initApp` run the full startup again for the
+                // next uid.
+                keyUserState(context, user?.id);
                 if (user?.id case String id) unawaited(_prepareOpening(context, id));
               },
               onError: reportToSentry,
@@ -479,15 +659,24 @@ class HeartApp extends StatelessWidget {
         ),
       ],
       builder: (_, _) {
-        return Consumer<AppTheme>(
-          builder: (_, theme, _) {
-            return _App(
-              theme: theme,
-              config: appConfig,
-              router: router,
-              hasLocalNotifications: hasLocalNotifications ?? true,
-            );
-          },
+        return EntryReviewPresenter(
+          leaveOutDiscarded: (on) => db.leavesOutDiscarded = on,
+          // coaching's connections, read only with a coaching switch on (#566)
+          child: CoachingPresenter(
+            onSpaceAvailable: router.refresh,
+            onPendingInvitation: (token, fingerprint) => router.openInvitation(token, fingerprint: fingerprint),
+            child: Consumer<AppTheme>(
+              builder: (_, theme, _) {
+                return _App(
+                  theme: theme,
+                  config: appConfig,
+                  router: router,
+                  hasLocalNotifications: hasLocalNotifications ?? true,
+                  pushClient: pushClient,
+                );
+              },
+            ),
+          ),
         );
       },
     );
@@ -504,12 +693,14 @@ class _App extends StatefulWidget {
   final AppConfig config;
   final HeartRouter router;
   final bool hasLocalNotifications;
+  final PushClient? pushClient;
 
   const new({
     required this.theme,
     required this.config,
     required this.router,
     required this.hasLocalNotifications,
+    this.pushClient,
   });
 
   @override
@@ -519,13 +710,13 @@ class _App extends StatefulWidget {
 class _AppState extends State<_App> with WidgetsBindingObserver {
   /// The app's only lifecycle hook, and it sits here because [_App] is the
   /// highest widget that can still read the providers above it.
-  late final AppLifecycleListener _lifecycle;
+  late final AppReturns _lifecycle;
 
   @override
   void initState() {
     super.initState();
-    _lifecycle = AppLifecycleListener(onResume: _onResume);
-    // for didChangeLocales; the AppLifecycleListener above cannot carry it
+    _lifecycle = AppReturns(_onReturn, onResume: _onResume);
+    // for didChangeLocales; the listener above cannot carry it
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -547,6 +738,48 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     if (!mounted) return;
     Health.of(context).onResume();
     Auth.of(context).ensureSession();
+  }
+
+  /// Back from elsewhere: what may have changed meanwhile is read again. Not
+  /// after a photo picker or a permission, which resume the app too.
+  void _onReturn() {
+    if (!mounted) return;
+    final auth = Auth.of(context);
+    // an account whose launch could not reach the server, now perhaps online
+    auth.registerAgain();
+    // the sweep that flags entries runs nightly: a phone left open overnight
+    // learns of the morning's flags when it comes back
+    Anomalies.of(context).pull();
+    // a coach's edits to their copies, whose push may never have come (#558);
+    // a coach's programs run under Your coach alone (#593)
+    final preferences = Preferences.of(context);
+    if (_growsLogged(preferences)) {
+      final templates = Templates.of(context);
+      final programs = Programs.of(context);
+      final workouts = Workouts.of(context);
+      final coached = programs.pullCoached().then(templates.pull);
+      // a session the coach logged for them while they were away (#560): once
+      // the copies and the sessions it names are read, over moves read afresh
+      _growLogged(
+        workouts,
+        templates,
+        programs,
+        shown: preferences.programShown,
+        read: (coached, workouts.refreshHistory()).wait,
+        reread: true,
+      );
+    }
+    // messages whose push may never have come (#556)
+    if (coachingRuns(preferences, auth)) Messages.of(context).resume();
+    // a coach's notes, only where the Coaching space is there and keys run
+    if (preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false) && DeviceKeys.of(context).supported) {
+      CoachNotes.of(context).resume();
+    }
+    // a language change whose library fetch failed is retried here; the same
+    // tag as the catalog's is a no-op (heart-of-yours#612)
+    final exercises = Exercises.of(context)..onLocaleChanged(languageTag());
+    // and a library start-up went on without (#723)
+    if (exercises.libraryUnavailable) exercises.retryLibrary();
   }
 
   /// Localized backend content (the exercise catalog) is served per request
@@ -628,7 +861,22 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
                       child: PausePresenter(
                         child: WorkoutSoundsPresenter(
                           enabled: widget.hasLocalNotifications,
-                          child: ProgramCalendarPresenter(child: child ?? const SizedBox.shrink()),
+                          child: ProgramCalendarPresenter(
+                            // the push client (#567), running only with a
+                            // coaching switch on; the same gate again, since
+                            // it posts through the notifications plugin
+                            child: PushPresenter(
+                              client:
+                                  widget.pushClient ??
+                                  switch ((widget.hasLocalNotifications, kIsWeb)) {
+                                    (true, false) => FirebasePushClient(Theme.of(context).platform),
+                                    _ => null,
+                                  },
+                              // this device's encryption keys (#555), by the
+                              // push client's rule
+                              child: DeviceKeysPresenter(child: child ?? const SizedBox.shrink()),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -893,7 +1141,8 @@ Future<void> _initApp(
       },
     );
 
-    final Exercises(:isInitialized, :init) = Exercises.of(context);
+    final exercises = Exercises.of(context);
+    final Exercises(:isInitialized, :init) = exercises;
 
     final templates = Templates.of(context);
     final programs = Programs.of(context);
@@ -937,6 +1186,7 @@ Future<void> _initApp(
     // token is on the client. The profile may have started a goals run before
     // it was; this one then follows it with the server's copy.
     Goals.of(context).init();
+    Anomalies.of(context).init();
     // the replay resumes from the ledger, so a launch mid-run picks up where
     // the last one stopped
     if (owed && userId != null) upsync.run(userId);
@@ -951,14 +1201,13 @@ Future<void> _initApp(
       // never-granted permission simply yields nothing.
       health.init();
 
+      final owner = exercises.userId;
       init(locale: languageTag()).then<void>(
-        (hasExercises) {
-          // everything below reads or writes against the exercise catalog —
-          // templates and workouts persist rows with a foreign key onto
-          // `exercises.name`. Running them against an empty catalog trades a
-          // reported failure for a constraint violation, so stop here instead.
-          if (!hasExercises) return;
-
+        // everything below reads or writes against the exercise catalog —
+        // templates and workouts persist rows with a foreign key onto
+        // `exercises.name`. Running them against an empty catalog trades a
+        // reported failure for a constraint violation, so they wait for one.
+        (_) => exercises.whenInitialized(owner, () {
           // since workouts initialization looks up exercises
           // in `Exercises`, we must chain these calls this way
           workouts.init().then<void>(
@@ -975,11 +1224,12 @@ Future<void> _initApp(
                 programs: programs,
                 backfill: backfill,
                 upsync: upsync,
+                preferences: prefs,
               );
             },
           );
           timers.init();
-        },
+        }),
       );
     }
   });
@@ -1009,6 +1259,23 @@ Future<void> _prepareOpening(BuildContext context, String userId) async {
   } finally {
     unawaited(LaunchScreen.release());
   }
+}
+
+/// What the app's own log out does around `clearState`, for a session that
+/// ended without one (#671): the theme goes back to the default, as it does on
+/// every sign-out, the account's state is forgotten in memory, and an open
+/// workout sheet, whose workout went with it, closes instead of rebuilding
+/// over nothing.
+///
+/// Memory only, and nothing is erased: the account's rows, unsynced ones
+/// included, stay under its uid for when it signs back in. The push client
+/// stops on the same user change (`PushPresenter`), dropping the device's
+/// token; the server is not told, since the session that could tell it is
+/// already gone.
+void _sessionLost(BuildContext context, HeartRouter router) {
+  AppTheme.of(context).onSignOut();
+  clearUserState(context);
+  router.closeActiveWorkout();
 }
 
 /// Where a workout notification lands: the workout if it is still going, the
@@ -1068,9 +1335,10 @@ Future<void> _initTrainingData({
   required Programs programs,
   required Backfill backfill,
   required Upsync upsync,
+  required Preferences preferences,
 }) {
-  templates.init();
-  programs.init();
+  final templatesRead = templates.init();
+  final programsRead = programs.init();
   // Pulls what other devices logged into the local mirror, and heals anything
   // stranded here by a failed save. Until this ran at startup the only thing
   // that ran it was opening the History screen — so a workout from the phone
@@ -1101,8 +1369,39 @@ Future<void> _initTrainingData({
         // back — `adopt` stands down while a replay is still owed.
         await upsync.adopt(uid);
       }
+
+      // what a coach logged for this person moves their program here (#560)
+      if (_growsLogged(preferences)) {
+        await _growLogged(
+          workouts,
+          templates,
+          programs,
+          shown: preferences.programShown,
+          read: (templatesRead, programsRead).wait,
+        );
+      }
     },
   );
+}
+
+/// Moves this person's programs by what their coach logged for them (#560),
+/// once the programs and the sessions they were logged from are read; with
+/// [reread], over their moves read from the server again. Only a program
+/// [shown] moves: with Programs off, the user's own stays as it was (#593).
+Future<void> _growLogged(
+  Workouts workouts,
+  Templates templates,
+  Programs programs, {
+  required bool Function(Program program) shown,
+  required Future<void> read,
+  bool reread = false,
+}) async {
+  try {
+    await read;
+  } catch (_) {
+    // each reports its own failure; what was read still counts
+  }
+  await programs.growLogged(workouts.history, sessionOf: templates.lookup, shown: shown, reread: reread);
 }
 
 /// The replay is done and the remote leg is open: pull what the account holds
@@ -1111,6 +1410,7 @@ Future<void> _initTrainingData({
 void _resync(BuildContext context, Upsync upsync) {
   if (!context.mounted) return;
   final exercises = Exercises.of(context);
+  final preferences = Preferences.of(context);
   final workouts = Workouts.of(context);
   final previous = PreviousExercises.of(context);
   final stats = Stats.of(context);
@@ -1118,20 +1418,24 @@ void _resync(BuildContext context, Upsync upsync) {
   final programs = Programs.of(context);
   final backfill = Backfill.of(context);
   Goals.of(context).init();
-  exercises.init(locale: languageTag()).then<void>(
-    (hasExercises) {
-      if (!hasExercises) return;
-      _initTrainingData(
-        workouts: workouts,
-        previous: previous,
-        stats: stats,
-        templates: templates,
-        programs: programs,
-        backfill: backfill,
-        upsync: upsync,
+  Anomalies.of(context).init();
+  final owner = exercises.userId;
+  exercises
+      .init(locale: languageTag())
+      .then<void>(
+        (_) => exercises.whenInitialized(owner, () {
+          _initTrainingData(
+            workouts: workouts,
+            previous: previous,
+            stats: stats,
+            templates: templates,
+            programs: programs,
+            backfill: backfill,
+            upsync: upsync,
+            preferences: preferences,
+          );
+        }),
       );
-    },
-  );
 }
 
 Future<void> _initAppInfo(BuildContext context) {
@@ -1161,3 +1465,8 @@ Future<void> _initApi({required AppConfig config, String? sessionToken, String? 
     ),
   );
 }
+
+/// Whether a workout a coach logged moves this person's program here (#560):
+/// with a coach to have logged it. Programs needn't be on: a coach's
+/// programs run under Your coach alone (#593).
+bool _growsLogged(Preferences preferences) => preferences.isOn(.yourCoach);

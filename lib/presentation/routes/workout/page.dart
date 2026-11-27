@@ -7,6 +7,9 @@ class WorkoutPage extends StatefulWidget {
   final void Function(TemplateFolder) goToNewProgram;
   final VoidCallback goToLibrary;
 
+  /// Logs a workout that already happened (#530); offered while it is on.
+  final VoidCallback? onLogPastWorkout;
+
   const new({
     super.key,
     required this.goToTemplateEditor,
@@ -14,6 +17,7 @@ class WorkoutPage extends StatefulWidget {
     required this.goToProgram,
     required this.goToNewProgram,
     required this.goToLibrary,
+    this.onLogPastWorkout,
   });
 
   @override
@@ -31,6 +35,7 @@ class _WorkoutPageState extends State<WorkoutPage> with AfterLayoutMixin {
           goToProgram: widget.goToProgram,
           goToNewProgram: widget.goToNewProgram,
           goToLibrary: widget.goToLibrary,
+          onLogPastWorkout: widget.onLogPastWorkout,
         ),
         floatingActionButton: WorkoutTimerFloatingButton(onPressed: widget.onOpenActiveWorkout),
       ),

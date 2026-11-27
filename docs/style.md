@@ -112,6 +112,28 @@ final lifted = switch (exercise.category) {
 };
 ```
 
+**`async`/`await`, not `.then` chains.** An `await` costs about 90 ns more than
+`.then` (measured AOT, 2026-11-21), which is nothing against a request's
+milliseconds. In exchange the VM's async stack traces follow `await` back up
+through every caller, so a Sentry report shows who asked. A `.then` callback runs
+from the microtask queue and its trace starts there. An `async` function also
+turns a synchronous throw into a failed future, so its caller has one error
+path. Keep `.then` only where a sync context starts work it doesn't wait for
+(`unawaited(x.then(...))` in `initState`, say). A future that only ever completes
+with null is `Future<void>`.
+
+```dart
+// no
+Future<String?> undoAccountDeletion() {
+  return put(Router.accounts, body: body).then((_) => null);
+}
+
+// yes
+Future<void> undoAccountDeletion() async {
+  await put(Router.accounts, body: body);
+}
+```
+
 ## Naming and notation
 
 - **Dot-shorthand for constructors**, not only enums, wherever the type is
@@ -167,15 +189,26 @@ row at a time. A literal in a widget is a finding.
   prevents.
 - **Every control announces itself** — a `tooltip` or a `Semantics` label, and
   it is copy, so it is an `L` getter. Screens keep their row in the
-  `test/a11y_test.dart` matrix honest (`docs/a11y.md`).
+  `test/a11y.dart` matrix honest (`docs/a11y.md`).
 - **Material defaults are not decisions.** Stock colours, densities and
   shapes get called out in review; contrast and affordance are chosen. Buttons
   are the `PrimaryButton` family and the theme's tokens, not ad-hoc
   `ElevatedButton`s with inline colours.
+- **No tall text button.** A `TextButton` stretched to 48pt with `minimumSize`
+  is not drawn anywhere: a dialog's way out, a Retry, a page's side action is
+  `QuietButton`, and the action beside it `PrimaryButton.shrunk` with a
+  `hitHeight`: the Goals header's pair. Both draw 32pt and answer taps over 48.
+  `make lint` fails on a hand-set `minimumSize`.
 - **Pick-one-of-a-few is `SettingSwitcher`** (`widgets/setting_picker.dart`):
   the native-ish sliding control Settings uses for Imperial/Metric, Cupertino
   on Apple platforms. Not Material's rounded `SegmentedButton`, which reads as
   a different app.
+  Its segments have to fit one row at the largest text in every language;
+  when they don't (four groupings in Russian on a 360dp phone), the row shows
+  the value at its end and opens a `showMenu` of the choices from it, as the
+  API token purpose and the picker grouping rows do. The value is `MenuValue`
+  (`widgets/menu.dart`), which caps its width so the title keeps the rest of
+  the row; key it and anchor the menu on the key's context.
 - **A snackbar is `snack`** (`core/utils/visual.dart`), never a bare
   `SnackBar`: with an action, Flutter's `persist` defaults to true and the bar
   stays until tapped — an Undo that followed the user through a workout.
@@ -207,3 +240,9 @@ Comments say *why* — the constraint, the bug this shape avoids, the thing
 that looks redundant and isn't. Not what the next line does. No
 `TODO(agent)`, no commented-out code, no `debugPrint` left behind; a genuine
 open end goes in the handoff, not the source.
+
+**A divider comment is a missing file.** `// ---- connections ----` inside a
+class or a test file means the file holds more than one thing: split it, one
+domain to a file, as `heart_api`'s routes are (`lib/src/routes/`, a mixin
+each, #584). When a growing file needs a heading to be readable, the heading
+is the new file's name.

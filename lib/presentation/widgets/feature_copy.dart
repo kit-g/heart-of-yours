@@ -28,6 +28,13 @@ extension FeatureCopy on Feature {
       .recaps => l.recaps,
       .copyForAi => l.copyForAi,
       .liveRecords => l.liveRecords,
+      .entryReview => l.entryReview,
+      .weeklySets => l.lensTitle,
+      .sampleTemplates => l.exampleTemplates,
+      .exercisesTab => l.exercisesTab,
+      .pastWorkouts => l.pastWorkouts,
+      .coachPeople => l.coachPeople,
+      .yourCoach => l.yourCoach,
       .workoutSounds => l.workoutSounds,
     };
   }
@@ -55,6 +62,13 @@ extension FeatureCopy on Feature {
       .recaps => l.recapsSubtitle,
       .copyForAi => l.copyForAiSubtitle,
       .liveRecords => l.liveRecordsSubtitle,
+      .entryReview => l.entryReviewSubtitle,
+      .weeklySets => l.weeklySetsSubtitle,
+      .sampleTemplates => l.sampleTemplatesSubtitle,
+      .exercisesTab => l.exercisesTabSubtitle,
+      .pastWorkouts => l.pastWorkoutsSubtitle,
+      .coachPeople => l.coachPeopleSubtitle,
+      .yourCoach => l.yourCoachSubtitle,
       .workoutSounds => l.workoutSoundsSubtitle,
     };
   }
@@ -77,6 +91,13 @@ extension FeatureCopy on Feature {
       .recaps => Icons.insights_rounded,
       .copyForAi => Icons.auto_awesome_outlined,
       .liveRecords => Icons.emoji_events_rounded,
+      .entryReview => Icons.flag_outlined,
+      .weeklySets => Icons.view_week_rounded,
+      .sampleTemplates => Icons.grid_view_rounded,
+      .exercisesTab => Icons.list_rounded,
+      .pastWorkouts => Icons.more_time_rounded,
+      .coachPeople => Icons.groups_rounded,
+      .yourCoach => Icons.sports_rounded,
       .workoutSounds => Icons.volume_up_rounded,
     };
   }
@@ -97,6 +118,12 @@ extension FeatureCopy on Feature {
       .defaultRest ||
       .recaps ||
       .liveRecords ||
+      .weeklySets ||
+      .sampleTemplates ||
+      .exercisesTab ||
+      .pastWorkouts ||
+      .coachPeople ||
+      .yourCoach ||
       .workoutSounds => const [],
       // what syncs and what doesn't: the line health data never crosses
       .notToday => [l.notTodayNote],
@@ -110,6 +137,8 @@ extension FeatureCopy on Feature {
         .android => [l.watchAppAwayNoteAndroid],
         _ => [l.watchAppAwayNote, l.watchAlwaysOnNote],
       },
+      // that off is not a delete: the decisions wait for the next on
+      .entryReview => [l.entryReviewNote],
     };
   }
 }

@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 
-import 'api_test.mocks.dart';
+import 'support/http.dart';
 
 /// The wire side of the upsync replay contract (heart-api#66): every create
 /// carries the client id, `201` and `200` are told apart, a name match comes
@@ -60,6 +60,29 @@ void main() {
       expect(row.id, theirs);
     });
 
+    test('the create carries the pattern, so a fresh install sees it (#616)', () async {
+      final exercise = Exercise.fromJson({
+        ...custom().toMap(),
+        'movement': {
+          'groups': ['horizontal_press'],
+        },
+      });
+      _post(client, Router.exercises, 201, exercise.toMap());
+
+      await api.replayExercise(exercise);
+
+      expect(sentBody(), containsPair('pattern', 'horizontal_press'));
+    });
+
+    test('the create carries the instructions (#621)', () async {
+      final exercise = Exercise.fromJson({...custom().toMap(), 'instructions': 'Low pulley, step out.'});
+      _post(client, Router.exercises, 201, exercise.toMap());
+
+      await api.replayExercise(exercise);
+
+      expect(sentBody(), containsPair('instructions', 'Low pulley, step out.'));
+    });
+
     test('makeExercise is the same call, and takes a 201 in its stride', () async {
       final exercise = custom();
       _post(client, Router.exercises, 201, exercise.toMap());
@@ -76,17 +99,17 @@ void main() {
         'reason': 'this id belongs to another account',
       });
 
-      expect(() => api.replayExercise(custom()), throwsA(containsPair('code', 'id_taken')));
+      expect(() => api.replayExercise(custom()), throwsA(refused('id_taken')));
     });
   });
 
   test('a unit preference replay fails loudly on anything but success', () async {
     _post(client, Router.exercisePreferences, 200, {'exerciseId': 'e1', 'unitSystem': 'imperial'});
-    await api.replayUnitPreference('e1', .imperial);
+    await api.saveUnitPreference('e1', .imperial);
     expect(sentBody(), {'exerciseId': 'e1', 'unitSystem': 'imperial'});
 
     _post(client, Router.exercisePreferences, 500, {'error': 'server_error', 'code': 'server_error'});
-    expect(() => api.replayUnitPreference('e1', .imperial), throwsA(containsPair('code', 'server_error')));
+    expect(() => api.saveUnitPreference('e1', .imperial), throwsA(isA<NetworkException>()));
   });
 
   group('folders', () {
@@ -275,7 +298,7 @@ void main() {
     test('the cap is a refusal with a name, thrown whole', () async {
       _post(client, Router.goals, 400, {'error': 'bad request', 'code': 'goal_limit'});
 
-      expect(() => api.replayGoal(goal(uuidV7())), throwsA(containsPair('code', 'goal_limit')));
+      expect(() => api.replayGoal(goal(uuidV7())), throwsA(refused('goal_limit')));
     });
   });
 
@@ -299,7 +322,7 @@ void main() {
     test('any other 403 passes through as before', () async {
       _post(client, Router.workouts, 403, {'error': 'forbidden', 'code': 'id_taken'});
 
-      expect(() => api.replayWorkout(Workout(name: 'x')), throwsA(containsPair('code', 'id_taken')));
+      expect(() => api.replayWorkout(Workout(name: 'x')), throwsA(refused('id_taken')));
     });
   });
 }

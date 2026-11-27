@@ -8,11 +8,24 @@ class WorkoutEditor extends StatefulWidget {
   /// route and popping it is the right thing.
   final VoidCallback? onClose;
 
+  /// Where [copy] goes on Save when it is a workout being logged after the
+  /// fact (#530), not yet in History: Save creates it there, and the sets
+  /// added to it start out done. One made from a template or a copy (#737)
+  /// comes with its sets to tick. Null for one already in History, which Save edits.
+  final LogTo? logTo;
+
+  /// Who [copy] is being logged for, by name, when it is someone else's: a
+  /// coach's client (#560). Then nothing of this account's own shows in it:
+  /// not its last time, its records or its notes on an exercise.
+  final String? loggingFor;
+
   const new({
     super.key,
     required this.copy,
     this.onTapImage,
     this.onClose,
+    this.logTo,
+    this.loggingFor,
   });
 
   @override
@@ -31,8 +44,32 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
   void initState() {
     super.initState();
 
-    _notifier = _WorkoutNotifier(widget.copy);
+    _notifier = _WorkoutNotifier(widget.copy, logging: _logging);
+    _workouts = Workouts.of(context)..addListener(_onWorkouts);
+    _keepTrack();
   }
+
+  /// The logs being filled in, for [leavingUnsavedLog].
+  static final _logs = <_WorkoutEditorState>{};
+
+  late final Workouts _workouts;
+
+  void _keepTrack() {
+    switch (_logging) {
+      case true:
+        _logs.add(this);
+      case false:
+        _logs.remove(this);
+    }
+  }
+
+  /// A set row writes what is typed, and what a column fills, into the set and
+  /// tells [Workouts], not this editor.
+  void _onWorkouts() {
+    if (_logging) _notifier.noticeChange();
+  }
+
+  bool get _logging => widget.logTo != null;
 
   @override
   void didUpdateWidget(covariant WorkoutEditor oldWidget) {
@@ -40,12 +77,18 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
 
     // navigated to a different workout
     if (widget.copy.id != oldWidget.copy.id) {
-      _notifier = _WorkoutNotifier(widget.copy);
+      _notifier.dispose();
+      _notifier = _WorkoutNotifier(widget.copy, logging: _logging);
+      // its own name, not the last one's
+      _controller.text = widget.copy.name ?? '';
     }
+    _keepTrack();
   }
 
   @override
   void dispose() {
+    _logs.remove(this);
+    _workouts.removeListener(_onWorkouts);
     _focusNode.dispose();
     _controller.dispose();
     _notifier.dispose();
@@ -57,7 +100,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
   Widget build(BuildContext context) {
     final ThemeData(:scaffoldBackgroundColor, :colorScheme, :textTheme, :platform) = Theme.of(context);
     final l = L.of(context);
-    final L(:editWorkout, :save, :workoutName, :defaultWorkoutName) = l;
+    final L(:editWorkout, :logWorkout, :save, :workoutName, :defaultWorkoutName) = l;
 
     if ((_controller.text.isEmpty, workout.name) case (true, String name) when name.isNotEmpty) {
       _controller.text = name;
@@ -68,16 +111,19 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       builder: (_, _) {
         return PopScope(
           canPop: !_notifier.hasChanged,
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) {
-              _showDiscardTemplateDialog(context);
-            }
+          onPopInvokedWithResult: (didPop, _) async {
+            if (didPop || !await _discards(context) || !context.mounted) return;
+            Navigator.of(context).pop();
           },
           child: Scaffold(
             appBar: AppBar(
               scrolledUnderElevation: 0,
               backgroundColor: scaffoldBackgroundColor,
-              title: Text(editWorkout),
+              title: Text(switch ((widget.loggingFor, _logging)) {
+                (final String name, _) => l.coachingLoggingFor(name),
+                (null, true) => logWorkout,
+                (null, false) => editWorkout,
+              }),
               // in a persistent pane there is nothing behind to go back to, so
               // the control says "put this away" instead
               leading: switch (widget.onClose) {
@@ -102,6 +148,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                       _ => Icons.more_vert_rounded,
                     },
                     size: 20,
+                    semanticLabel: l.workoutOptions,
                   ),
                   onPressed: () {
                     showMenu<_WorkoutEditOption>(
@@ -125,10 +172,19 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                     );
                   },
                 ),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _controller,
-                  builder: (_, value, _) {
-                    final enabled = workout.isNotEmpty && value.text.isNotEmpty;
+                // a set row writes what is typed into the set and tells
+                // [Workouts], not this editor: heard here, so a workout being
+                // logged can be saved the moment a set holds something
+                ListenableBuilder(
+                  listenable: Listenable.merge([_controller, Workouts.of(context)]),
+                  builder: (_, _) {
+                    final enabled = switch (widget.logTo) {
+                      // a new one is named on Save if it has no name, and
+                      // holds something once a set does, ticked or not: Save
+                      // asks about those that aren't
+                      LogTo _ => _keepsAnything(workout),
+                      null => workout.isNotEmpty && _controller.text.isNotEmpty,
+                    };
                     return AnimatedOpacity(
                       opacity: enabled ? 1 : .3,
                       duration: const Duration(milliseconds: 200),
@@ -138,11 +194,23 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                           backgroundColor: colorScheme.secondaryContainer,
                           onPressed: switch (enabled) {
                             // an edit saves as it stands: nothing is
-                            // discarded or ticked, so there is nothing to ask
+                            // discarded or ticked, so there is nothing to ask.
+                            // A new one keeps only what is ticked, and asks
                             true => () {
-                              workout.resolveName(defaultWorkoutName());
-                              Workouts.of(context).editWorkout(workout);
-                              Navigator.of(context).pop();
+                              // named for when it was, which a past one is not now
+                              void name() => workout.resolveName(defaultWorkoutName(workout.start));
+                              switch (widget.logTo) {
+                                case LogTo logTo:
+                                  saveAskingUnticked(context, workout, () {
+                                    name();
+                                    unawaited(logTo(context, workout));
+                                    _leave(context);
+                                  });
+                                case null:
+                                  name();
+                                  Workouts.of(context).editWorkout(workout);
+                                  Navigator.of(context).pop();
+                              }
                             },
                             false => buzz,
                           },
@@ -155,17 +223,23 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               ],
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(56),
-                child: Padding(
-                  padding: const .only(left: 8, bottom: 2, right: 8),
-                  child: AppBarTextField(
-                    hint: workoutName,
-                    style: textTheme.titleMedium,
-                    hintStyle: textTheme.bodyLarge,
-                    onChanged: (value) {
-                      _notifier.name = value.trim();
-                    },
-                    focusNode: _focusNode,
-                    controller: _controller,
+                // over the set table, as wide as it is (#592)
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const .new(maxWidth: setTableWidth),
+                    child: Padding(
+                      padding: const .only(left: 8, bottom: 2, right: 8),
+                      child: AppBarTextField(
+                        hint: workoutName,
+                        style: textTheme.titleMedium,
+                        hintStyle: textTheme.bodyLarge,
+                        onChanged: (value) {
+                          _notifier.name = value.trim();
+                        },
+                        focusNode: _focusNode,
+                        controller: _controller,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -176,72 +250,93 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               // the records this workout set, as of it, beside their sets
               child: _RecordsOf(
                 workout: workout,
-                child: PreviousScope(
-                  before: workout.start,
-                  templateId: workout.templateId,
-                  child: WorkoutDetail(
-                    exercises: workout,
-                    needsCancelWorkoutButton: false,
-                    slivers: [
-                      const SliverToBoxAdapter(child: RecordCountRow()),
-                      SliverToBoxAdapter(
-                        child: _WorkoutTimesSummary(
-                          workout: workout,
-                          onTap: () => _openTimesDialog(context, workout),
-                        ),
-                      ),
-                      if (workout.note case String note)
+                // someone else's records aren't this account's to mark
+                mine: widget.loggingFor == null,
+                // and what looks off in it, while that is on (#428)
+                child: EntryReviewScope(
+                  workoutId: workout.id,
+                  child: PreviousScope(
+                    before: workout.start,
+                    templateId: workout.templateId,
+                    someoneElse: widget.loggingFor != null,
+                    child: WorkoutDetail(
+                      exercises: workout,
+                      programId: workout.programId,
+                      needsCancelWorkoutButton: false,
+                      slivers: [
+                        const SliverToBoxAdapter(child: RecordCountRow()),
                         SliverToBoxAdapter(
-                          child: WorkoutNote(note: note, onChanged: _setNote),
+                          child: _WorkoutTimesSummary(
+                            workout: workout,
+                            onTap: () => _openTimesDialog(context, workout),
+                          ),
                         ),
-                    ],
-                    // what the session worked, as a summary under it (#223)
-                    trailingSlivers: [
-                      SliverToBoxAdapter(
-                        child: WorkoutMuscleMap(
-                          workout: workout,
-                          padding: const .fromLTRB(16, 16, 16, 32),
+                        if (workout.note case String note)
+                          SliverToBoxAdapter(
+                            child: WorkoutNote(note: note, onChanged: _setNote),
+                          ),
+                      ],
+                      // what the session worked, as a summary under it (#223)
+                      trailingSlivers: [
+                        SliverToBoxAdapter(
+                          child: WorkoutMuscleMap(
+                            workout: workout,
+                            padding: const .fromLTRB(16, 16, 16, 32),
+                          ),
                         ),
-                      ),
-                    ],
-                    controller: Scrolls.of(context).editWorkoutScrollController,
-                    onDragExercise: _notifier.append,
-                    onSwapExercise: _notifier.swap,
-                    onAddSet: _notifier.addSet,
-                    onNoteChanged: _notifier.setNote,
-                    onRemoveSet: _notifier.removeSet,
-                    onSetType: _notifier.setSetType,
-                    onSetRpe: _notifier.setRpe,
-                    onRemoveExercise: _notifier.removeExercise,
-                    onGroup: _notifier.group,
-                    onLeaveGroup: _notifier.leaveGroup,
-                    onSetDone: _notifier.markSet,
-                    workoutImages: workout.images?.values,
-                    onTapImage: widget.onTapImage,
-                    onAddExercises: (exercises) async {
-                      final preferences = Exercises.of(context);
-                      for (final each in exercises.toList()) {
-                        await Future.delayed(
-                          // for different IDs
-                          const Duration(milliseconds: 2),
-                          () => _notifier.add(each, note: preferences.noteFor(each.id)),
+                      ],
+                      controller: Scrolls.of(context).editWorkoutScrollController,
+                      onDragExercise: _notifier.append,
+                      onSwapExercise: _notifier.swap,
+                      onAddSet: _notifier.addSet,
+                      onNoteChanged: _notifier.setNote,
+                      onRemoveSet: _notifier.removeSet,
+                      onSetType: _notifier.setSetType,
+                      onSetRpe: _notifier.setRpe,
+                      onRemoveExercise: _notifier.removeExercise,
+                      onGroup: _notifier.group,
+                      onLeaveGroup: _notifier.leaveGroup,
+                      onSetDone: _notifier.markSet,
+                      workoutImages: workout.images?.values,
+                      onTapImage: widget.onTapImage,
+                      onAddExercises: (exercises) async {
+                        final preferences = Exercises.of(context);
+                        for (final each in exercises.toList()) {
+                          await Future.delayed(
+                            // for different IDs
+                            const Duration(milliseconds: 2),
+                            () => _notifier.add(
+                              each,
+                              // this account's own note says nothing of someone else's set
+                              note: switch (widget.loggingFor) {
+                                null => preferences.noteFor(each.id),
+                                String _ => null,
+                              },
+                            ),
+                          );
+                        }
+                      },
+                      allowsCompletingSet: true,
+                      // the exercise's page and its pins are this account's
+                      // own: none of it is someone else's workout's
+                      onTapExercise: switch (widget.loggingFor) {
+                        null => (exercise) => showExerciseDetailDialog(context, exercise),
+                        String _ => null,
+                      },
+                      pinsNotes: widget.loggingFor == null,
+                      onDeleteImage: (image) {
+                        return showDeleteImageDialog(
+                          context,
+                          workout,
+                          image,
+                          onDeleted: (context) async {
+                            Navigator.of(context, rootNavigator: true).pop();
+                            _notifier.detachImageFromWorkout(image);
+                            await Workouts.of(context).detachImageFromWorkout(workout, image);
+                          },
                         );
-                      }
-                    },
-                    allowsCompletingSet: true,
-                    onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
-                    onDeleteImage: (image) {
-                      return showDeleteImageDialog(
-                        context,
-                        workout,
-                        image,
-                        onDeleted: (context) async {
-                          Navigator.of(context, rootNavigator: true).pop();
-                          _notifier.detachImageFromWorkout(image);
-                          await Workouts.of(context).detachImageFromWorkout(workout, image);
-                        },
-                      );
-                    },
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -252,22 +347,32 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     );
   }
 
-  /// Dismisses the pane, routing through the same unsaved-changes guard that
-  /// [PopScope] gives the pushed route — closing must not be a quiet way to
-  /// throw edits away.
-  void _close(BuildContext context) {
-    final close = widget.onClose;
-    if (close == null) return;
+  /// Whether a Save could keep anything: a set with something in it.
+  static bool _keepsAnything(Workout workout) {
+    return workout.expand((exercise) => exercise).any((set) => set.canBeCompleted);
+  }
 
-    switch (_notifier.hasChanged) {
-      case true:
-        _showDiscardTemplateDialog(context, onQuit: close);
-      case false:
+  /// Leaves after a Save: the pushed route pops, the pane empties.
+  void _leave(BuildContext context) {
+    switch (widget.onClose) {
+      case VoidCallback close:
         close();
+      case null:
+        Navigator.of(context).pop();
     }
   }
 
-  Future<void> _showDiscardTemplateDialog(BuildContext context, {VoidCallback? onQuit}) {
+  /// Dismisses the pane, routing through the same unsaved-changes guard that
+  /// [PopScope] gives the pushed route — closing must not be a quiet way to
+  /// throw edits away.
+  Future<void> _close(BuildContext context) async {
+    final close = widget.onClose;
+    if (close == null) return;
+    if (!_notifier.hasChanged || await _discards(context)) close();
+  }
+
+  /// Asks whether what was changed here may be lost.
+  Future<bool> _discards(BuildContext context) async {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
     final L(
       :quitEditing,
@@ -278,7 +383,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       context,
     );
 
-    return showBrandedDialog(
+    final quits = await showBrandedDialog<bool>(
       context,
       title: Text(
         quitEditing,
@@ -314,28 +419,21 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 ),
               ),
               onPressed: () {
-                Navigator.of(context, rootNavigator: true).pop();
-                switch (onQuit) {
-                  // pushed route: leaving means popping it
-                  case null:
-                    Navigator.of(context).pop();
-                  // persistent pane: there is no route to pop, only a
-                  // selection to clear
-                  case VoidCallback quit:
-                    quit();
-                }
+                Navigator.of(context, rootNavigator: true).pop(true);
               },
             ),
           ],
         ),
       ],
     );
+    return quits ?? false;
   }
 
   /// Photos live in the server's bucket, so there is nowhere to put one
-  /// without an account — the option is absent rather than dead.
+  /// without an account, nor on a workout being logged that the server has
+  /// not seen yet — the option is absent rather than dead.
   Iterable<_WorkoutEditOption> _options(BuildContext context) {
-    return switch (Auth.of(context).isAnonymous) {
+    return switch (Auth.of(context).isAnonymous || _logging) {
       true => _WorkoutEditOption.values.where((option) => option != .editImage),
       false => _WorkoutEditOption.values,
     };
@@ -413,6 +511,16 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
   /// linkified date/duration header. The dialog works in local time; we convert
   /// to UTC on the wire and only patch the fields that actually changed.
   Future<void> _openTimesDialog(BuildContext context, Workout workout) {
+    // a workout being logged is not anywhere yet: its times go with it on Save
+    if (_logging) {
+      return showAdjustTimesDialog(
+        context,
+        start: workout.start.toLocal(),
+        end: workout.end?.toLocal(),
+        needsLength: true,
+        onSave: (start, end) async => _notifier.setTimes(start: start.toUtc(), end: end?.toUtc()),
+      );
+    }
     return showAdjustTimesDialog(
       context,
       start: workout.start.toLocal(),
@@ -450,11 +558,18 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
 class _WorkoutNotifier with ChangeNotifier {
   final Workout workout;
 
+  /// A workout being logged after the fact (#530): every set it gains starts
+  /// out done, since it is written down after it was done.
+  final bool logging;
+
   bool _hasChanged = false;
 
   bool get hasChanged => _hasChanged;
 
-  new(this.workout);
+  new(this.workout, {this.logging = false}) {
+    // read now, before anything is typed
+    if (logging) _opened;
+  }
 
   void addSet(WorkoutExercise exercise) {
     // a plain set, whatever the last one was: a warm-up is not what comes
@@ -463,6 +578,7 @@ class _WorkoutNotifier with ChangeNotifier {
       ExerciseSet last => last.copy()..setType = .normal,
       null => ExerciseSet(exercise.exercise),
     };
+    if (logging) set.isCompleted = true;
     _forExercise(exercise, (each) => each.add(set));
   }
 
@@ -499,7 +615,12 @@ class _WorkoutNotifier with ChangeNotifier {
   }
 
   void add(Exercise exercise, {String? note}) {
-    workout.add(exercise).note = note;
+    final added = workout.add(exercise)..note = note;
+    if (logging) {
+      for (final set in added) {
+        set.isCompleted = true;
+      }
+    }
     notifyListeners();
   }
 
@@ -541,7 +662,16 @@ class _WorkoutNotifier with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Reflects times that were just persisted via PATCH back onto the local copy.
+  /// What a log holds as it was opened, to tell what was typed into it: that
+  /// goes into the set, and never through here.
+  late final _opened = jsonEncode(workout.toMap());
+
+  void noticeChange() {
+    if (!_hasChanged && jsonEncode(workout.toMap()) != _opened) notifyListeners();
+  }
+
+  /// Reflects times that were just persisted via PATCH back onto the local copy;
+  /// a workout being logged has none persisted, so there it is a change.
   /// Notifies without flipping [hasChanged] — the change is already saved, so it
   /// must not arm the "discard changes?" guard or require another Save.
   ///
@@ -552,6 +682,7 @@ class _WorkoutNotifier with ChangeNotifier {
     if (start != null) workout.start = start;
     if (end != null) workout.end = end;
     if (pauses != null) workout.pauses = [...pauses];
+    if (logging) return notifyListeners();
     super.notifyListeners();
   }
 
@@ -610,6 +741,8 @@ class _WorkoutTimesSummary extends StatelessWidget {
                 children: [
                   Icon(Icons.schedule_rounded, size: 18, color: colorScheme.onSurfaceVariant),
                   Text(elapsed.formatted(context), style: muted),
+                  // a timer left running (#428)
+                  if (EntryReviewScope.ofDuration(context) case final Anomaly anomaly) AnomalyMark(anomaly: anomaly),
                 ],
               ),
           ],
@@ -626,13 +759,17 @@ class _RecordsOf extends StatelessWidget {
   final Workout workout;
   final Widget child;
 
-  const new({required this.workout, required this.child});
+  /// Whether [workout] is this account's own: no records are marked on
+  /// anyone else's.
+  final bool mine;
+
+  const new({required this.workout, required this.child, this.mine = true});
 
   @override
   Widget build(BuildContext context) {
     final userId = Exercises.of(context).userId;
     final book = RecordBook.maybeOf(context);
-    if (book == null || userId == null) return child;
+    if (book == null || userId == null || !mine) return child;
     return FutureBuilder<RecordMarks>(
       future: book.marksOf(workout, userId: userId),
       builder: (context, snapshot) {
@@ -646,4 +783,17 @@ class _RecordsOf extends StatelessWidget {
       },
     );
   }
+}
+
+/// [go]es somewhere that puts something else where a log may be being filled
+/// in: at once, or after asking when one was changed, which would be gone
+/// without a word. The one guard for every such way.
+void leavingUnsavedLog(VoidCallback go) {
+  final changed = _WorkoutEditorState._logs.where((log) => log.mounted && log._notifier.hasChanged).firstOrNull;
+  if (changed == null) return go();
+  unawaited(_askAndGo(changed, go));
+}
+
+Future<void> _askAndGo(_WorkoutEditorState log, VoidCallback go) async {
+  if (await log._discards(log.context)) go();
 }

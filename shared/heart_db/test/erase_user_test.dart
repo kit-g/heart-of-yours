@@ -45,6 +45,11 @@ void main() {
       'user_id': uid,
       'name': 'Morning',
     });
+    await db.insert('workout_plans', {
+      'workout_id': '$uid-workout',
+      'user_id': uid,
+      'plan': '{"exercises":[]}',
+    });
     await db.insert('workout_exercises', {
       'id': '$uid-workout-exercise',
       'workout_id': '$uid-workout',
@@ -161,6 +166,7 @@ void main() {
         'charts',
         'goals',
         'health_samples',
+        'workout_plans',
       ]),
     );
   });

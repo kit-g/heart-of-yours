@@ -22,13 +22,28 @@ class _Alarms extends Alarms {
   void onSignOut() => calls++;
 }
 
+class _Anomalies extends Anomalies {
+  int calls = 0;
+
+  new() : super(service: MockLocalAnomalyService(), remoteService: MockAnomalyService());
+
+  @override
+  void onSignOut() => calls++;
+}
+
 class _Auth extends Auth {
   int calls = 0;
 
-  new() : super(service: MockAccountService(), firebase: MockFirebaseAuth());
+  /// What happened before the session ended, in order.
+  final List<String>? log;
+
+  new({this.log}) : super(service: MockAccountService(), firebase: MockFirebaseAuth());
 
   @override
-  FutureOr<void> onSignOut() => calls++;
+  FutureOr<void> onSignOut() {
+    log?.add('sign out');
+    calls++;
+  }
 }
 
 class _Charts extends Charts {
@@ -126,6 +141,166 @@ class _ApiTokens extends ApiTokens {
 
   @override
   void onSignOut() => calls++;
+}
+
+class _Coaching extends Coaching {
+  int calls = 0;
+
+  new() : super(service: _NoCoachingService());
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoCoachingService implements CoachingService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _Roster extends Roster {
+  int calls = 0;
+
+  new() : super(service: _NoRosterService());
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoRosterService implements RosterService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _ClientPrograms extends ClientPrograms {
+  int calls = 0;
+
+  new() : super(service: _NoClientProgramService());
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _Pushes extends Pushes {
+  int calls = 0;
+
+  new({RemotePushService? service}) : super(service: service ?? _NoPushService());
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoClientProgramService implements ClientProgramService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+/// Records the removal a sign-out sends, and the registration before it.
+class _LoggingPushService implements RemotePushService {
+  final List<String> log;
+
+  new(this.log);
+
+  @override
+  Future<void> registerDevice({required DevicePlatform platform, required String token, int? utcOffsetMinutes}) async {}
+
+  @override
+  Future<void> unregisterDevice(String token) async => log.add('unregister $token');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoPushService implements RemotePushService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _DeviceKeys extends DeviceKeys {
+  int calls = 0;
+
+  new() : super(service: _NoKeyService(), vault: null);
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoKeyService implements RemoteKeyService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _Messages extends Messages {
+  int calls = 0;
+
+  new() : super(service: _NoThreadService(), local: _NoThreadStore(), cipher: _NoCipher());
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoThreadService implements RemoteThreadService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoThreadStore implements LocalThreadService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _CoachNotes extends CoachNotes {
+  int calls = 0;
+
+  new() : super(service: _NoNoteService(), local: _NoNoteStore(), cipher: _NoNoteCipher());
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoNoteService implements RemoteNoteService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoNoteStore implements LocalNoteService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoNoteCipher implements NoteCipher {
+  @override
+  Stream<void> get noteKeys => const Stream.empty();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoCipher implements ThreadCipher {
+  @override
+  Future<void> receive() async {}
+
+  @override
+  Stream<String> get threadKeys => const Stream.empty();
+
+  @override
+  set onKeyRequest(KeyRequestHandler? handler) {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _Library extends CoachLibrary {
+  int calls = 0;
+
+  new() : super(service: _NoLibraryService(), exerciseOf: (_) => null);
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoLibraryService implements CoachLibraryService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
 class _Goals extends Goals {
@@ -238,6 +413,17 @@ class _Health extends Health {
   void onSignOut() => calls++;
 }
 
+/// A go-easy list that reads and stores nothing: it is only ever keyed here.
+GoEasy _goEasy() {
+  return GoEasy(
+    fetch: ({etag}) async => null,
+    readContent: (_) async => null,
+    storeContent: (_, {required body, etag}) async {},
+    read: (_) async => {},
+    store: (_, _) async {},
+  );
+}
+
 /// Resolves the heart_state package root whether the runner's working
 /// directory is the package itself or the repository root.
 Directory _packageRoot() {
@@ -255,10 +441,27 @@ Directory _packageRoot() {
   fail('could not locate the heart_state package root from ${Directory.current.path}');
 }
 
+/// The notifiers clear.dart signs out, as its source names them: either
+/// `X.of(context).onSignOut()`, or `X.of(context)` held in a local first and
+/// signed out after a wait (`final session = Auth.of(context);` … `await
+/// session.onSignOut();`).
+List<String> _fannedOut(String clear) {
+  // called, or handed over as a tear-off
+  final direct = RegExp(r'(\w+)\.of\(context\)\.onSignOut\b');
+  final held = RegExp(r'final (\w+) = (\w+)\.of\(context\);');
+  return [
+    for (final match in direct.allMatches(clear)) match.group(1)!,
+    for (final match in held.allMatches(clear))
+      if (RegExp('\\b${match.group(1)}\\.onSignOut\\(\\)').hasMatch(clear)) match.group(2)!,
+  ];
+}
+
 void main() {
   group('clearState fan-out', () {
     late _Alarms alarms;
+    late _Anomalies anomalies;
     late _ApiTokens apiTokens;
+    late _Coaching coaching;
     late _Auth auth;
     late _Backfill backfill;
     late _Charts charts;
@@ -269,15 +472,24 @@ void main() {
     late _Stats stats;
     late _Templates templates;
     late _Programs programs;
+    late _Roster roster;
+    late _Pushes pushes;
+    late _DeviceKeys keys;
+    late _Messages messages;
+    late _CoachNotes notes;
+    late _Library library;
+    late _ClientPrograms clientPrograms;
     late _Timers timers;
     late _Upsync upsync;
     late _Workouts workouts;
     late BuildContext capturedContext;
 
-    Future<void> pumpProviders(WidgetTester tester) async {
+    Future<void> pumpProviders(WidgetTester tester, {List<String>? log}) async {
       alarms = _Alarms();
+      anomalies = _Anomalies();
       apiTokens = _ApiTokens();
-      auth = _Auth();
+      coaching = _Coaching();
+      auth = _Auth(log: log);
       backfill = _Backfill();
       charts = _Charts();
       exercises = _Exercises();
@@ -287,6 +499,18 @@ void main() {
       stats = _Stats();
       templates = _Templates();
       programs = _Programs();
+      roster = _Roster();
+      pushes = _Pushes(
+        service: switch (log) {
+          final List<String> log => _LoggingPushService(log),
+          null => null,
+        },
+      );
+      keys = _DeviceKeys();
+      messages = _Messages();
+      notes = _CoachNotes();
+      library = _Library();
+      clientPrograms = _ClientPrograms();
       timers = _Timers();
       upsync = _Upsync();
       workouts = _Workouts();
@@ -295,17 +519,28 @@ void main() {
         MultiProvider(
           providers: [
             ChangeNotifierProvider<Alarms>.value(value: alarms),
+            ChangeNotifierProvider<Anomalies>.value(value: anomalies),
             ChangeNotifierProvider<ApiTokens>.value(value: apiTokens),
+            ChangeNotifierProvider<Coaching>.value(value: coaching),
             ChangeNotifierProvider<Auth>.value(value: auth),
             ChangeNotifierProvider<Backfill>.value(value: backfill),
             ChangeNotifierProvider<Charts>.value(value: charts),
             ChangeNotifierProvider<Exercises>.value(value: exercises),
             ChangeNotifierProvider<Goals>.value(value: goals),
+            ChangeNotifierProvider<GoEasy>(create: (_) => _goEasy()),
             ChangeNotifierProvider<Health>.value(value: health),
+            ChangeNotifierProvider<HistoryFilter>(create: (_) => HistoryFilter()),
             ChangeNotifierProvider<PreviousExercises>.value(value: previous),
             ChangeNotifierProvider<Stats>.value(value: stats),
             ChangeNotifierProvider<Templates>.value(value: templates),
             ChangeNotifierProvider<Programs>.value(value: programs),
+            ChangeNotifierProvider<Roster>.value(value: roster),
+            ChangeNotifierProvider<Pushes>.value(value: pushes),
+            ChangeNotifierProvider<DeviceKeys>.value(value: keys),
+            ChangeNotifierProvider<Messages>.value(value: messages),
+            ChangeNotifierProvider<CoachNotes>.value(value: notes),
+            ChangeNotifierProvider<CoachLibrary>.value(value: library),
+            ChangeNotifierProvider<ClientPrograms>.value(value: clientPrograms),
             ChangeNotifierProvider<Timers>.value(value: timers),
             ChangeNotifierProvider<Upsync>.value(value: upsync),
             ChangeNotifierProvider<Workouts>.value(value: workouts),
@@ -323,7 +558,9 @@ void main() {
     List<int> counts() {
       return [
         alarms.calls,
+        anomalies.calls,
         apiTokens.calls,
+        coaching.calls,
         auth.calls,
         charts.calls,
         exercises.calls,
@@ -333,6 +570,13 @@ void main() {
         stats.calls,
         templates.calls,
         programs.calls,
+        roster.calls,
+        pushes.calls,
+        keys.calls,
+        messages.calls,
+        notes.calls,
+        library.calls,
+        clientPrograms.calls,
         timers.calls,
         upsync.calls,
         workouts.calls,
@@ -342,16 +586,60 @@ void main() {
     testWidgets('invokes onSignOut on every registered notifier exactly once', (tester) async {
       await pumpProviders(tester);
 
-      clearState(capturedContext);
+      await clearState(capturedContext);
 
       expect(counts(), everyElement(1), reason: 'each notifier signs out exactly once per clearState call');
+    });
+
+    testWidgets('the device stops getting the account\'s pushes before the session ends (heart-api#415)', (
+      tester,
+    ) async {
+      final log = <String>[];
+      await pumpProviders(tester, log: log);
+      await pushes.register(platform: .ios, token: 'fcm-1');
+
+      await clearState(capturedContext);
+
+      expect(log, ['unregister fcm-1', 'sign out']);
+    });
+
+    // #719: the log out awaits the push unregister between the clear and the
+    // next key, and a read in flight for the account that left would land on
+    // a class still keyed on its uid
+    testWidgets('leaves every class that reads by uid keyed on none', (tester) async {
+      await pumpProviders(tester);
+      keyUserState(capturedContext, 'u1');
+      expect(Stats.of(capturedContext).userId, 'u1');
+
+      clearUserState(capturedContext);
+
+      expect(
+        [
+          exercises.userId,
+          charts.userId,
+          goals.userId,
+          anomalies.userId,
+          health.userId,
+          previous.userId,
+          stats.userId,
+          templates.userId,
+          programs.userId,
+          timers.userId,
+          workouts.userId,
+          messages.userId,
+          notes.userId,
+        ],
+        everyElement(isNull),
+        reason: 'the stand-ins only count their sign-outs: the clear itself unkeys them',
+      );
+      expect(keyedUserId(capturedContext), isNull);
     });
 
     testWidgets('is not memoized: a second sign-out dispatches again', (tester) async {
       await pumpProviders(tester);
 
-      clearState(capturedContext);
-      clearState(capturedContext);
+      await clearState(capturedContext);
+      await clearState(capturedContext);
 
       expect(counts(), everyElement(2));
     });
@@ -359,7 +647,9 @@ void main() {
 
   group('eraseState', () {
     late _Alarms alarms;
+    late _Anomalies anomalies;
     late _ApiTokens apiTokens;
+    late _Coaching coaching;
     late _Backfill backfill;
     late _Charts charts;
     late _Exercises exercises;
@@ -369,6 +659,13 @@ void main() {
     late _Stats stats;
     late _Templates templates;
     late _Programs programs;
+    late _Roster roster;
+    late _Pushes pushes;
+    late _DeviceKeys keys;
+    late _Messages messages;
+    late _CoachNotes notes;
+    late _Library library;
+    late _ClientPrograms clientPrograms;
     late _Timers timers;
     late _Upsync upsync;
     late _Workouts workouts;
@@ -385,7 +682,9 @@ void main() {
     }) async {
       SharedPreferences.setMockInitialValues({Preferences.onboardingSeenKey: true});
       alarms = _Alarms();
+      anomalies = _Anomalies();
       apiTokens = _ApiTokens();
+      coaching = _Coaching();
       backfill = _Backfill();
       charts = _Charts();
       exercises = _Exercises();
@@ -395,6 +694,13 @@ void main() {
       stats = _Stats();
       templates = _Templates();
       programs = _Programs();
+      roster = _Roster();
+      pushes = _Pushes();
+      keys = _DeviceKeys();
+      messages = _Messages();
+      notes = _CoachNotes();
+      library = _Library();
+      clientPrograms = _ClientPrograms();
       timers = _Timers();
       upsync = _Upsync();
       workouts = _Workouts();
@@ -414,17 +720,28 @@ void main() {
         MultiProvider(
           providers: [
             ChangeNotifierProvider<Alarms>.value(value: alarms),
+            ChangeNotifierProvider<Anomalies>.value(value: anomalies),
             ChangeNotifierProvider<ApiTokens>.value(value: apiTokens),
+            ChangeNotifierProvider<Coaching>.value(value: coaching),
             ChangeNotifierProvider<Auth>.value(value: auth),
             ChangeNotifierProvider<Backfill>.value(value: backfill),
             ChangeNotifierProvider<Charts>.value(value: charts),
             ChangeNotifierProvider<Exercises>.value(value: exercises),
             ChangeNotifierProvider<Goals>.value(value: goals),
+            ChangeNotifierProvider<GoEasy>(create: (_) => _goEasy()),
             ChangeNotifierProvider<Health>.value(value: health),
+            ChangeNotifierProvider<HistoryFilter>(create: (_) => HistoryFilter()),
             ChangeNotifierProvider<PreviousExercises>.value(value: previous),
             ChangeNotifierProvider<Stats>.value(value: stats),
             ChangeNotifierProvider<Templates>.value(value: templates),
             ChangeNotifierProvider<Programs>.value(value: programs),
+            ChangeNotifierProvider<Roster>.value(value: roster),
+            ChangeNotifierProvider<Pushes>.value(value: pushes),
+            ChangeNotifierProvider<DeviceKeys>.value(value: keys),
+            ChangeNotifierProvider<Messages>.value(value: messages),
+            ChangeNotifierProvider<CoachNotes>.value(value: notes),
+            ChangeNotifierProvider<CoachLibrary>.value(value: library),
+            ChangeNotifierProvider<ClientPrograms>.value(value: clientPrograms),
             ChangeNotifierProvider<Timers>.value(value: timers),
             ChangeNotifierProvider<Upsync>.value(value: upsync),
             ChangeNotifierProvider<Workouts>.value(value: workouts),
@@ -444,7 +761,9 @@ void main() {
     List<int> counts() {
       return [
         alarms.calls,
+        anomalies.calls,
         apiTokens.calls,
+        coaching.calls,
         charts.calls,
         exercises.calls,
         goals.calls,
@@ -453,6 +772,13 @@ void main() {
         stats.calls,
         templates.calls,
         programs.calls,
+        roster.calls,
+        pushes.calls,
+        keys.calls,
+        messages.calls,
+        notes.calls,
+        library.calls,
+        clientPrograms.calls,
         timers.calls,
         upsync.calls,
         workouts.calls,
@@ -517,9 +843,7 @@ void main() {
         }
       }
 
-      final clear = File('${src.path}/clear.dart').readAsStringSync();
-      final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
-      final fanned = [for (final match in fanOutCall.allMatches(clear)) match.group(1)!];
+      final fanned = _fannedOut(File('${src.path}/clear.dart').readAsStringSync());
 
       expect(implementers, isNotEmpty, reason: 'the scan itself must find the known implementers');
       expect(
@@ -536,22 +860,30 @@ void main() {
       );
     });
 
-    test('the fan-out list is the fifteen known notifiers', () {
-      final clear = File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync();
-      final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
-      final fanned = {for (final match in fanOutCall.allMatches(clear)) match.group(1)!};
+    test('the fan-out list is the twenty-five known notifiers', () {
+      final fanned = _fannedOut(File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync()).toSet();
 
       expect(fanned, {
         'Alarms',
+        'Anomalies',
         'ApiTokens',
         'Auth',
         'Backfill',
         'Charts',
+        'ClientPrograms',
+        'CoachLibrary',
+        'Coaching',
+        'DeviceKeys',
         'Exercises',
         'Goals',
         'Health',
+        'HistoryFilter',
+        'Messages',
+        'CoachNotes',
         'PreviousExercises',
         'Programs',
+        'Pushes',
+        'Roster',
         'Stats',
         'Templates',
         'Timers',

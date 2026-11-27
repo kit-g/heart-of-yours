@@ -121,14 +121,23 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
 
   Future<void>? _running;
 
+  /// Whether this device is known to hold [userId]'s whole history: the mark
+  /// was found, or written by a run. What History's filter (#610) searches
+  /// is then all of it, though `Workouts.hasMoreHistory` — the server's word
+  /// about its own pages — still says there is more to page.
+  bool get isWhole => _whole;
+  bool _whole = false;
+
   @override
   void onSignOut() {
     // a run still going is the old account's; it checks at every page
     userId = null;
     _running = null;
+    _whole = false;
     _status = .idle;
     _done = 0;
     _total = 0;
+    notifyListeners();
   }
 
   /// Runs the backfill from wherever the mirror stands. Shares one run between
@@ -147,6 +156,7 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
   /// fills it, and 21 imported workouts arrive as the 20 the first page holds.
   Future<void> resync(String uid) async {
     await _local.clearHistoryBackfilled(uid);
+    _whole = false;
     return run(uid);
   }
 
@@ -163,7 +173,7 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
     // no account, or an upsync still replaying into one: the replay owns the
     // wire until it is done, and re-pulls afterwards
     if (!_access.allowed) return;
-    if (await _local.isHistoryBackfilled(uid)) return;
+    if (await _local.isHistoryBackfilled(uid)) return _markedWhole();
 
     final held = await _heldWorkouts(uid);
     final target = await _accountWorkouts();
@@ -175,7 +185,7 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
     // and the whole point of asking before paging. One request, no row.
     if (target case int count when held >= count) {
       await _local.markHistoryBackfilled(uid);
-      return;
+      return _markedWhole();
     }
 
     _done = held;
@@ -212,6 +222,7 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
     final settled = await _heldWorkouts(uid);
     if (_total == 0 || settled >= _total) {
       await _local.markHistoryBackfilled(uid);
+      _whole = true;
     }
 
     _done = settled;
@@ -219,6 +230,11 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
     // Only a run that actually paged. Reaching here having fetched nothing is
     // the already-whole case, which is not a backfill.
     if (pages > 0) analytics?.historyBackfilled(pages: pages);
+    notifyListeners();
+  }
+
+  void _markedWhole() {
+    _whole = true;
     notifyListeners();
   }
 
