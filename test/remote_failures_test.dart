@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/remote_failures.dart';
-import 'package:heart_api/heart_api.dart' show NetworkException, UnreadableAnswer;
+import 'package:heart_api/heart_api.dart' show ExerciseNameTaken, NetworkException, UnreadableAnswer;
 import 'package:heart_state/heart_state.dart' show RemoteFailure;
 import 'package:http/http.dart' as http;
 
@@ -26,6 +26,10 @@ void main() {
       remoteFailure(const UnreadableAnswer(statusCode: 200, method: 'GET', path: '/v1/goals')),
       RemoteFailure.answered,
     );
+  });
+
+  test('a name taken is an answer, not a wait (#616)', () {
+    expect(remoteFailure(const ExerciseNameTaken()), RemoteFailure.answered);
   });
 
   test('no answer at all is unanswered', () {

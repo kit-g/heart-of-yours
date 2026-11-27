@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
@@ -60,6 +62,27 @@ String _nameKey(String name) => name.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p
 
 // a pattern's label runs to "Trunk Lateral Rotation"; 56pt steps (the popup's)
 const _patternMenuWidth = 280.0;
+
+/// Edits [exercise], the user's own, in the dialog, and answers as
+/// [showNewExerciseDialog] does.
+///
+/// Templates (and a program's sessions, which are templates) and workouts,
+/// the one in progress among them, each hold the copy of an exercise they
+/// were built with. After an edit to what they show of it (its name above
+/// all, #616; its category and target too) they read the mirror again, which
+/// takes those from the exercise's row: History, the Live Activity and the
+/// watches follow from those.
+Future<Exercise?> showEditExerciseDialog(BuildContext context, Exercise exercise) async {
+  final before = Exercises.of(context).lookup(exercise.id) ?? exercise;
+  final (templates, workouts) = (Templates.of(context), Workouts.of(context));
+  final saved = await showNewExerciseDialog(context, editable: exercise);
+  if (saved case final Exercise edited
+      when edited.name != before.name || edited.category != before.category || edited.target != before.target) {
+    unawaited(templates.reread());
+    unawaited(workouts.reread(edited.id, active: true));
+  }
+  return saved;
+}
 
 /// Creates an exercise, or edits [editable], and answers with the one saved:
 /// null when the dialog was closed or the save failed. [name] fills in a new
@@ -142,7 +165,10 @@ Future<Exercise?> _showDialog(BuildContext context, {Exercise? editable, String?
                           icon: const Icon(Icons.close_rounded),
                         ),
                         Text(
-                          createNewExercise,
+                          switch (editable) {
+                            Exercise _ => L.of(context).editOwnExercise,
+                            null => createNewExercise,
+                          },
                           style: textTheme.titleMedium,
                         ),
                         Padding(

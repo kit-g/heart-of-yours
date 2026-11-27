@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 34);
+          expect(await userVersion(db), 35);
           expect(
             await tables(db),
             {
@@ -524,7 +524,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 34);
+          expect(await userVersion(db), 35);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -750,7 +750,7 @@ void main() {
 
       await LocalDatabase.init();
       db = await raw();
-      expect(await userVersion(db), 34);
+      expect(await userVersion(db), 35);
       expect(
         await columns(db, 'program_actions'),
         allOf(containsPair('exercise_id', 'TEXT'), containsPair('slot', 'TEXT'), containsPair('stage', 'INTEGER')),
@@ -769,7 +769,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 34);
+    expect(await userVersion(db), 35);
     expect(
       await columns(db, 'anomalies'),
       allOf(containsPair('set_id', 'TEXT'), containsPair('status', 'TEXT'), containsPair('synced', 'INTEGER')),
@@ -788,7 +788,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 34);
+    expect(await userVersion(db), 35);
     expect(
       await columns(db, 'thread_items'),
       allOf(containsPair('content', 'TEXT'), containsPair('position', 'INTEGER'), containsPair('pending', 'INTEGER')),
@@ -807,7 +807,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 34);
+    expect(await userVersion(db), 35);
     expect(
       await columns(db, 'coach_notes'),
       allOf(containsPair('content', 'TEXT'), containsPair('pending', 'INTEGER'), containsPair('deleted', 'INTEGER')),
@@ -824,7 +824,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 34);
+    expect(await userVersion(db), 35);
     expect(
       await columns(db, 'workouts'),
       allOf(containsPair('logged_by', 'TEXT'), containsPair('logged_by_name', 'TEXT')),
@@ -842,7 +842,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 34);
+    expect(await userVersion(db), 35);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
@@ -896,7 +896,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 34);
+          expect(await userVersion(db), 35);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');
@@ -907,6 +907,32 @@ void main() {
       );
     },
   );
+
+  test('v35 marks an own exercise whose edit is unsent, and keeps the rows (#616)', () async {
+    await LocalDatabase.init(version: 34);
+    var db = await raw();
+    expect(await columns(db, 'exercises'), isNot(contains('edit_unsent')));
+    await db.insert('exercises', {
+      'id': 'own-1',
+      'name': 'Landmine press',
+      'category': 'Barbell',
+      'target': 'Shoulders',
+      'own': 1,
+      'user_id': 'u1',
+    });
+    await db.close();
+
+    final local = await LocalDatabase.init();
+    db = await raw();
+
+    expect(await userVersion(db), 35);
+    expect(await columns(db, 'exercises'), contains('edit_unsent'));
+    final [row] = await db.query('exercises');
+    expect(row['name'], 'Landmine press');
+    expect(row['edit_unsent'], 0);
+    expect(await local.getUnsentExerciseEdits('u1'), isEmpty);
+    await db.close();
+  });
 
   test('v24 keeps static content between launches (#352)', () async {
     await LocalDatabase.init(version: 23);

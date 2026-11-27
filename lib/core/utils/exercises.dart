@@ -47,6 +47,30 @@ class RemoteExerciseRenames implements RemoteExerciseRenameService {
 
   @override
   Future<Exercise> renameExercise(Exercise exercise) => _api.renameExercise(exercise);
+
+  @override
+  bool isNameTaken(Object error) => error is ExerciseNameTaken;
+}
+
+/// The mirror's mark on an own exercise whose edit the account has not had
+/// (#616), as the notifier asks for it.
+class UnsentExerciseEdits implements UnsentExerciseEditService {
+  final LocalDatabase _db;
+
+  const new(this._db);
+
+  @override
+  Future<Map<String, UnsentExerciseEdit>> read(String userId) async {
+    return {
+      for (final MapEntry(key: id, value: renamed) in (await _db.getUnsentExerciseEdits(userId)).entries)
+        id: renamed ? .renamed : .named,
+    };
+  }
+
+  @override
+  Future<void> mark(String exerciseId, String userId, UnsentExerciseEdit? edit) {
+    return _db.setExerciseEditUnsent(exerciseId, userId, unsent: edit != null, renamed: edit == .renamed);
+  }
 }
 
 /// Local pins and their account copy share the same adapter during replay.

@@ -1741,6 +1741,110 @@ void main() {
 
       verifyNever(local.getWorkout(any, any));
     });
+
+    test('a rename reads the workout in progress again, under the id it had (#616)', () async {
+      await sut.startWorkout(source: .blank, name: 'Now');
+      final current = sut.activeWorkout!..add(bench);
+      final renamed = Workout.fromJson({...current.toMap(), 'id': current.id});
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => renamed);
+      addTearDown(() => when(local.getActiveWorkout(any)).thenAnswer((_) async => null));
+      final probe = ListenerProbe()..attach(sut);
+
+      await sut.reread(bench.id, active: true);
+
+      expect(sut.activeWorkout, same(renamed));
+      expect(probe.notifications, 1);
+    });
+
+    test('the set last ticked is found again in the copy read, so "next" still counts from it (#616)', () async {
+      await sut.startWorkout(source: .blank, name: 'Now');
+      final current = sut.activeWorkout!;
+      final entry = current.add(bench);
+      await sut.markSetAsComplete(entry, entry.first);
+      final fresh = Workout.fromJson({...current.toMap(), 'id': current.id});
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => fresh);
+      addTearDown(() => when(local.getActiveWorkout(any)).thenAnswer((_) async => null));
+
+      await sut.reread(bench.id, active: true);
+
+      final (exercise, set) = sut.latestMarkedSet!;
+      expect(fresh.contains(exercise), isTrue);
+      expect(set.id, entry.first.id);
+      expect(() => sut.nextIncomplete, returnsNormally);
+    });
+
+    test('a copy lacking a write still on its way is never swapped in (#616)', () async {
+      await sut.startWorkout(source: .blank, name: 'Now');
+      final current = sut.activeWorkout!;
+      current.add(bench);
+      // the mirror, mid-write: the exercise's row is not there yet
+      final behind = Workout.fromJson({...current.toMap(), 'id': current.id, 'exercises': []})..add(bench);
+      var reads = 0;
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async {
+        reads++;
+        return behind;
+      });
+      addTearDown(() => when(local.getActiveWorkout(any)).thenAnswer((_) async => null));
+      final probe = ListenerProbe()..attach(sut);
+
+      await sut.reread(bench.id, active: true);
+
+      // other set ids than the held copy's: read again, then given up on
+      expect(reads, 3);
+      expect(sut.activeWorkout, same(current));
+      expect(probe.notifications, 0);
+    });
+
+    test('a copy read in place of a held one keeps its energy estimates, which the mirror does not (#616)', () async {
+      final held = Workout(name: 'holding')..calories = 240;
+      held.add(bench).met = 5.5;
+      final mirrored = Workout.fromJson({...held.toMap(), 'id': held.id})..calories = null;
+      mirrored.first.met = null;
+      when(local.getWorkout('u1', any)).thenAnswer((inv) async => null);
+      when(local.getWorkout('u1', held.id)).thenAnswer((_) async => held);
+      await sut.fetchWorkout(held.id);
+      when(local.getWorkout('u1', held.id)).thenAnswer((_) async => mirrored);
+
+      await sut.reread(bench.id);
+
+      expect(sut.lookup(held.id), same(mirrored));
+      expect(mirrored.calories, 240);
+      expect(mirrored.first.met, 5.5);
+    });
+
+    test('a change that lands while the mirror is read has it read again, not lost (#616)', () async {
+      await sut.startWorkout(source: .blank, name: 'Now');
+      final current = sut.activeWorkout!;
+      final entry = current.add(bench);
+      final stale = Workout.fromJson({...current.toMap(), 'id': current.id});
+      var reads = 0;
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async {
+        // the watch ticks the set during the first read
+        if (reads++ == 0) {
+          entry.first.isCompleted = true;
+          return stale;
+        }
+        return Workout.fromJson({...current.toMap(), 'id': current.id});
+      });
+      addTearDown(() => when(local.getActiveWorkout(any)).thenAnswer((_) async => null));
+
+      await sut.reread(bench.id, active: true);
+
+      expect(reads, 2);
+      expect(sut.activeWorkout, isNot(same(stale)));
+      expect(sut.activeWorkout!.single.first.isCompleted, isTrue);
+    });
+
+    test('a rename leaves alone a workout in progress that does not name the exercise', () async {
+      await sut.startWorkout(source: .blank, name: 'Now');
+      final current = sut.activeWorkout!..add(squat);
+      clearInteractions(local);
+
+      await sut.reread(bench.id, active: true);
+
+      verifyNever(local.getActiveWorkout(any));
+      expect(sut.activeWorkout, same(current));
+    });
   });
 
   group('misc', () {
