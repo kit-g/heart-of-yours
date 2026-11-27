@@ -1,14 +1,19 @@
+import 'dart:async';
+
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/history/history.dart' show WorkoutEditor;
+import 'package:heart/presentation/routes/messages/messages.dart' show ThreadPage, ThreadView;
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show TemplateEditor;
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetail, WorkoutDetailKeys;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -66,6 +71,13 @@ void main() {
         .thenAnswer((_) async => (items: <CoachFeedItem>[], cursor: null));
     when(api.getLibraryPrograms(cursor: anyNamed('cursor')))
         .thenAnswer((_) async => (items: <CoachProgram>[], cursor: null));
+    // a client opened beside the roster opens the conversation beside them (#693)
+    when(api.openThread(any)).thenAnswer((invocation) async {
+      final connectionId = invocation.positionalArguments.first as String;
+      return Thread(id: 't-$connectionId', connectionId: connectionId, otherId: connectionId, otherName: connectionId);
+    });
+    when(api.getThreadItems(any, limit: anyNamed('limit')))
+        .thenAnswer((_) async => (items: <ThreadItem>[], cursor: null));
     share.shared.clear();
   });
 
@@ -75,11 +87,12 @@ void main() {
     WidgetTester tester,
     Map<String, Object> prefs, {
     bool wide = false,
+    Size? size,
     KeyVault? keyVault,
     AnalyticsService? analytics,
   }) async {
-    tester.view.physicalSize = wide ? const Size(1200, 2400) : const Size(1179, 2556);
-    tester.view.devicePixelRatio = wide ? 1 : 3;
+    tester.view.physicalSize = size ?? (wide ? const Size(1200, 2400) : const Size(1179, 2556));
+    tester.view.devicePixelRatio = (wide || size != null) ? 1 : 3;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues({...pastOnboarding(), ...prefs});
@@ -141,6 +154,22 @@ void main() {
     await tester.pumpTimes();
     expect(find.byType(ProfilePage), findsOneWidget);
     expect(Preferences.of(tester.element(find.byType(ProfilePage))).inCoachingSpace, isFalse);
+  });
+
+  testWidgets("Me's rows line up with the page's edges: the tile's own inset, not the list's on top", (tester) async {
+    account(coach: true);
+    await pump(tester, {'feature-coachPeople': 'on'});
+    await tester.tapByKey(AppKeys.coachingButton);
+    await tester.pumpTimes();
+    await tester.tapByKey(AppKeys.coachingMeStack);
+    await tester.pumpTimes();
+
+    final page = tester.getRect(find.byType(CoachMePage));
+    final settings = find.byKey(AppKeys.coachingSettings);
+    final icon = tester.getRect(find.descendant(of: settings, matching: find.byIcon(Icons.settings_rounded)));
+    final chevron = tester.getRect(find.descendant(of: settings, matching: find.byIcon(Icons.chevron_right_rounded)));
+    expect(icon.left - page.left, 16);
+    expect(page.right - chevron.right, 16);
   });
 
   testWidgets('the app opens in the space it was left in', (tester) async {
@@ -257,7 +286,7 @@ void main() {
     testWidgets("the beta's refusal says so, and shares nothing", (tester) async {
       account(coach: true);
       when(api.createInvitation(any, programId: anyNamed('programId'))).thenAnswer(
-        (_) async => throw {'code': 'coaching_beta'},
+        (_) async => throw const ServerRefusal(status: 400, code: 'coaching_beta', method: 'POST', route: '/v1/test'),
       );
       // wide: under the test font the dialog's buttons overflow a phone
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, wide: true);
@@ -374,10 +403,29 @@ void main() {
           .thenAnswer((_) async => (items: clients, cursor: null));
     }
 
-    testWidgets('who needs a word comes first, with why in words, and a look clears what it can', (tester) async {
+    testWidgets('who needs a word comes first, with why in words, and opening them clears what a look can', (
+      tester,
+    ) async {
       account(coach: true);
       clients([sam, pip, riley]);
-      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
+      // the server, asked again after the look, has the note gone
+      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {
+        clients([
+          ClientSummary(
+            connectionId: 'c-sam',
+            studentId: 'sam',
+            name: 'Sam',
+            status: 'active',
+            programName: 'Strength block',
+            programWeek: 2,
+            programWeeks: 6,
+            recent: [DateTime.now().toUtc()],
+            reasons: ['gap'],
+          ),
+          pip,
+          riley,
+        ]);
+      });
       final recorded = RecordedAnalytics();
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, analytics: recorded);
       expect(recorded.property('coaching_role'), [
@@ -394,10 +442,10 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.byKey(AppKeys.coachingMarkReviewed('c-riley')), findsNothing, reason: 'nothing to look at');
-      expect(find.byKey(AppKeys.coachingMarkReviewed('c-pip')), findsNothing, reason: 'a look clears no gap');
-
-      await tester.tapByKey(AppKeys.coachingMarkReviewed('c-sam'));
+      // opening the client is the look (#686): no button for it
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.pageBack();
       await tester.pumpTimes();
 
       verify(api.markReviewed('c-sam', at: anyNamed('at'))).called(1);
@@ -408,11 +456,11 @@ void main() {
         reason: 'a gap holds until it stops being true',
       );
       expect(find.byKey(AppKeys.coachingReasonFilter('note')), findsNothing, reason: 'nobody left with a note');
-      expect(
-        find.byKey(AppKeys.coachingMarkReviewed('c-sam')),
-        findsNothing,
-        reason: 'a look would clear nothing more',
-      );
+
+      // a gap a look doesn't clear: opening them marks nothing
+      await tester.tapByKey(AppKeys.coachingClient('c-pip'));
+      await tester.pumpTimes();
+      verifyNever(api.markReviewed('c-pip', at: anyNamed('at')));
     });
 
     testWidgets('someone who accepts while the coach is away is there when the app comes back', (tester) async {
@@ -423,8 +471,9 @@ void main() {
 
       clients([sam]);
       void comeBack() {
-        tester.binding.handleAppLifecycleStateChanged(.inactive);
-        tester.binding.handleAppLifecycleStateChanged(.resumed);
+        for (final AppLifecycleState state in [.inactive, .hidden, .paused, .hidden, .inactive, .resumed]) {
+          tester.binding.handleAppLifecycleStateChanged(state);
+        }
       }
 
       // a quick switch away and back reads nothing
@@ -583,6 +632,128 @@ void main() {
       when(api.getClientWorkoutPlan('sam', 'w1')).thenAnswer((_) async => plan);
     }
 
+    testWidgets('the coach names a client, and renames them again (#753)', (tester) async {
+      withSam();
+      Connection named(String name) => Connection(
+        targetId: 'sam',
+        role: .coach,
+        domain: .fitness,
+        status: .active,
+        createdAt: DateTime.utc(2026, 11, 1),
+        connectionId: 'c-sam',
+        name: name,
+        namedByYou: true,
+      );
+      when(api.nameConnection('c-sam', any)).thenAnswer((invocation) async {
+        return named(invocation.positionalArguments.last as String);
+      });
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.coachingClientRename);
+      await tester.pumpTimes();
+      expect(find.text('Only you see this name.'), findsOneWidget);
+      expect(
+        tester.widget<TextField>(find.byKey(AppKeys.coachingClientNameField)).controller?.text,
+        isEmpty,
+        reason: 'Sam is the name they go by',
+      );
+      await tester.enterText(find.byKey(AppKeys.coachingClientNameField), '  Sammy ');
+      await tester.pump();
+      await tester.tapByKey(AppKeys.coachingClientNameSave);
+      await tester.pumpTimes();
+
+      verify(api.nameConnection('c-sam', 'Sammy')).called(1);
+      expect(find.byType(ClientPage), findsOneWidget, reason: 'the dialog closed, and only the dialog');
+      expect(find.text('Sammy'), findsWidgets, reason: 'the page and the roster under it');
+
+      await tester.tapByKey(AppKeys.coachingClientRename);
+      await tester.pumpTimes();
+      expect(tester.widget<TextField>(find.byKey(AppKeys.coachingClientNameField)).controller?.text, 'Sammy');
+      await tester.enterText(find.byKey(AppKeys.coachingClientNameField), 'S.');
+      await tester.pump();
+      await tester.tapByKey(AppKeys.coachingClientNameSave);
+      await tester.pumpTimes();
+
+      expect(find.text('S.'), findsWidgets);
+      expect(find.text('Sammy'), findsNothing);
+    });
+
+    testWidgets('while a name saves, nothing closes the dialog, and the page under it stays', (tester) async {
+      withSam();
+      final answer = Completer<Connection>();
+      when(api.nameConnection('c-sam', 'Sammy')).thenAnswer((_) => answer.future);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClientRename);
+      await tester.pumpTimes();
+      await tester.enterText(find.byKey(AppKeys.coachingClientNameField), 'Sammy');
+      await tester.pump();
+      await tester.tapByKey(AppKeys.coachingClientNameSave);
+      await tester.pump();
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpTimes();
+      await tester.binding.handlePopRoute();
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.coachingClientNameField), findsOneWidget, reason: 'still saving');
+
+      answer.complete(
+        Connection(
+          targetId: 'sam',
+          role: .coach,
+          domain: .fitness,
+          status: .active,
+          createdAt: DateTime.utc(2026, 11, 1),
+          connectionId: 'c-sam',
+          name: 'Sammy',
+          namedByYou: true,
+        ),
+      );
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingClientNameField), findsNothing);
+      expect(find.byType(ClientPage), findsOneWidget);
+    });
+
+    testWidgets('a name that fails to save says so, and the dialog stays', (tester) async {
+      withSam();
+      when(api.nameConnection('c-sam', 'Sammy')).thenThrow(Exception('unavailable'));
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.coachingClientRename);
+      await tester.pumpTimes();
+      await tester.enterText(find.byKey(AppKeys.coachingClientNameField), 'Sammy');
+      await tester.pump();
+      await tester.tapByKey(AppKeys.coachingClientNameSave);
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingClientNameField), findsOneWidget);
+      expect(find.text('Unknown error occurred'), findsOneWidget);
+    });
+
+    testWidgets('two clients with no name at all are told apart by when they joined (#753)', (tester) async {
+      account(coach: true);
+      ClientSummary nameless(String id, DateTime since) {
+        return ClientSummary(connectionId: id, studentId: id, status: 'active', acceptedAt: since, reasons: const []);
+      }
+
+      when(api.getClients(former: false, cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          items: [nameless('a', DateTime.utc(2026, 11, 1, 12)), nameless('b', DateTime.utc(2026, 11, 8, 12))],
+          cursor: null,
+        ),
+      );
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      expect(find.text('Client since Nov 1, 2026'), findsOneWidget);
+      expect(find.text('Client since Nov 8, 2026'), findsOneWidget);
+    });
+
     testWidgets('on a phone, a client opens over the roster: their week, their workouts and skips', (tester) async {
       withSam();
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
@@ -618,6 +789,99 @@ void main() {
       verify(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor'))).called(greaterThan(0));
     });
 
+    final pepper = ClientSummary(connectionId: 'c-old', studentId: 'old', name: 'Pepper', status: 'severed');
+
+    /// Sam coached, Pepper gone, and notes that read as none.
+    void withPepper({List<ClientSummary>? current}) {
+      withSam();
+      if (current != null) {
+        when(api.getClients(former: false, cursor: anyNamed('cursor')))
+            .thenAnswer((_) async => (items: current, cursor: null));
+      }
+      when(api.getClients(former: true, cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (items: [pepper], cursor: null));
+      when(db.getCoachNotes(any)).thenAnswer((_) async => []);
+      when(api.getNotes(connectionId: anyNamed('connectionId'), cursor: anyNamed('cursor')))
+          .thenAnswer((_) async => (notes: <CoachNote>[], cursor: null));
+      when(db.replaceCoachNotes(any, any, keep: anyNamed('keep'))).thenAnswer((_) async {});
+    }
+
+    Future<void> openFormer(WidgetTester tester) async {
+      await tester.scrollUntilVisible(
+        find.byKey(AppKeys.coachingFormerClients),
+        200,
+        scrollable: find.descendant(of: find.byType(ClientsPage), matching: find.byType(Scrollable)).first,
+      );
+      await tester.tapByKey(AppKeys.coachingFormerClients);
+      await tester.pumpTimes();
+    }
+
+    testWidgets("a former client opens to the coach's notes on them, and nothing of their training", (tester) async {
+      withPepper();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault());
+      await openFormer(tester);
+
+      await tester.tapByKey(AppKeys.coachingClient('c-old'));
+      await tester.pumpTimes();
+
+      expect(find.byType(ClientPage), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientFormer), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientMessages), findsNothing, reason: 'no conversation to read back');
+      expect(find.text('Workouts'), findsNothing);
+
+      // pulled down: the notes and the conversation again, never their training
+      await tester.fling(find.byType(ListView).last, const Offset(0, 400), 1000);
+      await tester.pumpTimes();
+      verifyNever(api.getClientWorkouts('old', cursor: anyNamed('cursor')));
+      verifyNever(api.getClientSkips('old'));
+      verifyNever(api.getClientPrograms('old'));
+
+      await tester.tapByKey(AppKeys.coachingClientNotes);
+      await tester.pumpTimes();
+
+      expect(find.byType(ClientNotesPage), findsOneWidget);
+      expect(find.text('Notes on Pepper'), findsOneWidget);
+    });
+
+    testWidgets('on a tablet a former client opens beside the roster, which stays as it was', (tester) async {
+      withPepper();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault(), wide: true);
+      await openFormer(tester);
+
+      await tester.tapByKey(AppKeys.coachingClient('c-old'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingClientPane), findsOneWidget);
+      expect(find.byKey(AppKeys.coachingClientFormer), findsOneWidget);
+      final row = tester.widget<ListTile>(find.byKey(AppKeys.coachingClient('c-old')));
+      expect(row.selected, isTrue, reason: 'Former clients stayed open, with Pepper picked');
+      verifyNever(api.getClientWorkouts('old', cursor: anyNamed('cursor')));
+    });
+
+    testWidgets('a coach whose clients have all left still reaches them', (tester) async {
+      withPepper(current: <ClientSummary>[]);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault());
+
+      expect(find.byKey(AppKeys.coachingFormerClients), findsOneWidget);
+      await tester.tapByKey(AppKeys.coachingFormerClients);
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClient('c-old'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingClientFormer), findsOneWidget);
+    });
+
+    testWidgets('with nothing kept of a former client here, their name leads nowhere', (tester) async {
+      withPepper();
+      // no vault, as on the web, and no conversation
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await openFormer(tester);
+
+      final row = tester.widget<ListTile>(find.byKey(AppKeys.coachingClient('c-old')));
+      expect(row.onTap, isNull);
+      expect(row.trailing, isNull);
+    });
+
     testWidgets('where keys have nowhere to be kept, as on the web, there are no notes to lead to', (tester) async {
       withSam();
       await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
@@ -647,6 +911,150 @@ void main() {
       expect(find.descendant(of: squat, matching: find.text('Skipped')), findsOneWidget);
       // the coach's own unit: these tests run in pounds
       expect(find.descendant(of: squat, matching: find.text('198.4 lbs x 5')), findsOneWidget);
+    });
+
+    testWidgets('from a workout, a message about it, or about one set of it, in words the coach knows', (tester) async {
+      withSam();
+      final thread = Thread(id: 't-sam', connectionId: 'c-sam', otherId: 'sam', otherName: 'Sam');
+      when(api.openThread('c-sam')).thenAnswer((_) async => thread);
+      when(api.getThreads()).thenAnswer((_) async => [thread]);
+      when(api.getThreadItems('t-sam', limit: anyNamed('limit')))
+          .thenAnswer((_) async => (items: <ThreadItem>[], cursor: null));
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClientWorkout('w1'));
+      await tester.pumpTimes();
+      final context = tester.element(find.byKey(AppKeys.coachingReview));
+      final messages = Messages.of(context);
+
+      // a set: a long press on its row, and the one thing the menu offers
+      await tester.longPress(find.byKey(AppKeys.reviewSet('s1')));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.reviewSetMessage);
+      await tester.pumpTimes();
+
+      expect(find.byType(ThreadPage), findsOneWidget);
+      expect(messages.about('c-sam'), const MessageSubject(.exerciseSet, 's1'));
+      // a set by what was done in it, never its place: these tests run in pounds
+      expect(find.text('About Squat, 220.5 lbs x 5'), findsOneWidget, reason: 'over the box, in words');
+
+      await tester.pageBack();
+      await tester.pumpTimes();
+      // the whole workout: the page's own action
+      await tester.tapByKey(AppKeys.reviewMessage);
+      await tester.pumpTimes();
+
+      expect(messages.about('c-sam'), const MessageSubject(.workout, 'w1'));
+      final day = DateFormat.MMMEd('en').format(dayA.start.toLocal());
+      expect(find.text('About Day A, $day'), findsOneWidget);
+    });
+
+    ThreadItem about(String id, String type, String subjectId) {
+      return ThreadItem(
+        id: id,
+        threadId: 't-sam',
+        senderId: 'sam',
+        kind: 'message',
+        subjectType: type,
+        subjectId: subjectId,
+        content: 'm1.session.ciphertext',
+        commitment: 'c',
+        tag: 't',
+        tagKey: 'k',
+        at: DateTime.utc(2026, 11, 8, 9),
+        createdAt: DateTime.utc(2026, 11, 8, 9),
+        cursor: 'c-$id',
+      );
+    }
+
+    /// Sam coached, and a conversation holding [items].
+    void withThread(List<ThreadItem> items) {
+      withSam();
+      final thread = Thread(id: 't-sam', connectionId: 'c-sam', otherId: 'sam', otherName: 'Sam');
+      when(api.openThread('c-sam')).thenAnswer((_) async => thread);
+      when(api.getThreads()).thenAnswer((_) async => [thread]);
+      when(api.getThreadItems('t-sam', limit: anyNamed('limit'))).thenAnswer((_) async => (items: items, cursor: null));
+      // the device's own copy, kept as the store would keep it
+      final stored = <String, StoredItem>{};
+      when(db.getThreads(any)).thenAnswer((_) async => []);
+      when(db.storeThreads(any, any)).thenAnswer((_) async {});
+      when(db.storeThread(any, any)).thenAnswer((_) async {});
+      when(db.storeThreadItems(any, any)).thenAnswer((invocation) async {
+        for (final each in invocation.positionalArguments[1] as Iterable<StoredItem>) {
+          stored[each.item.id] = each;
+        }
+      });
+      when(db.getThreadItems(any, any)).thenAnswer(
+        (_) async => stored.values.toList()..sort((a, b) => (a.position ?? 1 << 30).compareTo(b.position ?? 1 << 30)),
+      );
+    }
+
+    testWidgets("opened straight from Messages, a client's subjects are read, a workout further back by itself", (
+      tester,
+    ) async {
+      withThread([about('i1', 'workout', 'w1'), about('i2', 'workout', 'w9')]);
+      final older = Workout.fromJson({
+        'id': 'w9',
+        'name': 'Day B',
+        'start': '2026-10-01T19:05:00Z',
+        'end': '2026-10-01T20:05:00Z',
+        'exercises': <Object>[],
+      });
+      when(api.getTargetWorkout(requesterId: anyNamed('requesterId'), targetUserId: 'sam', workoutId: 'w9'))
+          .thenAnswer((_) async => older);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault());
+      await tester.tapByKey(AppKeys.coachingMessagesStack);
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.inboxThread('t-sam'));
+      await tester.pumpTimes();
+
+      final day = DateFormat.MMMEd('en');
+      expect(find.text('About Day A, ${day.format(dayA.start.toLocal())}'), findsOneWidget);
+      expect(find.text('About Day B, ${day.format(older.start.toLocal())}'), findsOneWidget);
+    });
+
+    testWidgets("a workout opened from the conversation's subject sends its message back there, not over it", (
+      tester,
+    ) async {
+      withThread([about('i1', 'workout', 'w1')]);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, keyVault: MemoryKeyVault());
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingClientMessages);
+      await tester.pumpTimes();
+
+      await tester.tapByKey(AppKeys.messageSubject);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.coachingReview), findsOneWidget);
+      await tester.tapByKey(AppKeys.reviewMessage);
+      await tester.pumpTimes();
+
+      expect(find.byType(ThreadPage), findsOneWidget, reason: 'the same conversation, not a second over it');
+      expect(find.byKey(AppKeys.coachingReview), findsNothing);
+      expect(find.byKey(AppKeys.messageAbout), findsOneWidget);
+    });
+
+    testWidgets('someone no longer coached: their workout offers no message, by action or by set', (tester) async {
+      withSam();
+      when(api.getClients(former: false, cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          items: [ClientSummary(connectionId: 'c-sam', studentId: 'sam', name: 'Sam', status: 'severed')],
+          cursor: null,
+        ),
+      );
+      when(api.getTargetWorkout(requesterId: anyNamed('requesterId'), targetUserId: 'sam', workoutId: 'w1'))
+          .thenAnswer((_) async => dayA);
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      GoRouter.of(tester.element(find.byType(Navigator).first)).push('/coaching/clients/c-sam/workouts/w1');
+      await tester.pumpTimes();
+
+      expect(find.text('Squat'), findsOneWidget, reason: 'their workout is open');
+      expect(find.byKey(AppKeys.reviewMessage), findsNothing);
+      await tester.longPress(find.byKey(AppKeys.reviewSet('s1')));
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.reviewSetMessage), findsNothing);
     });
 
     testWidgets('a workout with no plan lists what was done and compares nothing', (tester) async {
@@ -703,6 +1111,96 @@ void main() {
       expect(find.text('Nothing logged yet'), findsOneWidget);
     });
 
+    testWidgets(
+      'on its side, a client opens with the conversation beside them, and a reply is about the workout (#693)',
+      (
+        tester,
+      ) async {
+        withSam();
+        // a conversation to show first
+        when(api.getThreads()).thenAnswer(
+          (_) async => [
+            Thread(
+              id: 't-c-sam',
+              connectionId: 'c-sam',
+              otherId: 'sam',
+              otherName: 'Sam',
+              lastAt: DateTime.utc(2026, 11, 12, 8),
+            ),
+          ],
+        );
+        await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, size: const Size(1600, 1000));
+
+        await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+        await tester.pumpTimes();
+
+        final beside = find.byKey(AppKeys.coachingBeside);
+        expect(beside, findsOneWidget);
+        expect(find.descendant(of: beside, matching: find.byType(ThreadView)), findsOneWidget);
+        expect(
+          find.descendant(of: find.byKey(AppKeys.coachingClientPane), matching: find.byKey(AppKeys.coachingBeside)),
+          findsNothing,
+          reason: 'beside the client, not under them',
+        );
+        // the latest workout in full, target beside done
+        final latest = find.byKey(AppKeys.coachingLatestWorkout);
+        expect(find.descendant(of: latest, matching: find.text('Asked')), findsOneWidget);
+        expect(find.descendant(of: latest, matching: find.text('Last set was a grind')), findsOneWidget);
+        expect(
+          find.byKey(AppKeys.coachingClientMessages),
+          findsNothing,
+          reason: 'the conversation is already beside them',
+        );
+
+        await tester.tapByKey(AppKeys.coachingBesideTab('program'));
+        await tester.pumpTimes();
+        expect(find.descendant(of: beside, matching: find.byType(ThreadView)), findsNothing);
+
+        await tester.tapByKey(AppKeys.coachingReplyAbout);
+        await tester.pumpTimes();
+        expect(find.descendant(of: beside, matching: find.byType(ThreadView)), findsOneWidget);
+        final messages = Messages.of(tester.element(beside));
+        expect(messages.about('c-sam'), const MessageSubject(.workout, 'w1'));
+      },
+    );
+
+    testWidgets('upright, what is beside the client is under them, and stays picked through a turn (#693)', (
+      tester,
+    ) async {
+      withSam();
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true}, size: const Size(900, 1200));
+
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+      final beside = find.byKey(AppKeys.coachingBeside);
+      expect(beside, findsOneWidget);
+      // no conversation yet: none is opened on the server just by looking
+      expect(find.descendant(of: beside, matching: find.byType(ThreadView)), findsNothing);
+      verifyNever(api.openThread(any));
+      final client = find.byKey(AppKeys.coachingClientPane);
+      expect(tester.getTopLeft(beside).dx, lessThan(tester.getTopRight(client).dx), reason: 'under the client');
+      expect(tester.getTopLeft(beside).dy, greaterThan(tester.getTopLeft(client).dy));
+
+      await tester.tapByKey(AppKeys.coachingBesideTab('program'));
+      await tester.pumpTimes();
+
+      tester.view.physicalSize = const Size(1600, 1000);
+      await tester.pumpTimes();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(AppKeys.coachingClientPane), findsOneWidget, reason: 'the same client');
+      expect(
+        find.descendant(of: beside, matching: find.byType(ThreadView)),
+        findsNothing,
+        reason: 'still Program',
+      );
+      expect(
+        tester.getTopLeft(beside).dx,
+        greaterThanOrEqualTo(tester.getTopRight(client).dx),
+        reason: 'beside them now',
+      );
+    });
+
     testWidgets('a workout in Activity opens target beside done', (tester) async {
       withSam();
       when(api.getCoachFeed(cursor: anyNamed('cursor'))).thenAnswer(
@@ -740,7 +1238,11 @@ void main() {
       programWeek: 2,
       programWeeks: 4,
     );
-    CoachProgramView copy({int sessionRevision = 0}) {
+    CoachProgramView copy({
+      int sessionRevision = 0,
+      List<Object> exercises = const [],
+      Map<String, Object> planning = const {},
+    }) {
       return CoachProgramView.fromJson({
         'program': {
           'id': 'p1',
@@ -752,20 +1254,21 @@ void main() {
           'sessionRevisions': {'s1': sessionRevision},
         },
         'sessions': [
-          {'id': 's1', 'name': 'Day A', 'order': 0, 'programId': 'p1', 'exercises': <Object>[]},
+          {'id': 's1', 'name': 'Day A', 'order': 0, 'programId': 'p1', 'exercises': exercises},
         ],
         'position': {'week': 2},
+        ...planning,
       });
     }
 
-    void withCopy({ClientSummary? client}) {
+    void withCopy({ClientSummary? client, CoachProgramView? view}) {
       account(coach: true);
       when(api.getClients(former: false, cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: [client ?? sam], cursor: null));
       when(api.getClientWorkouts('sam', cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: <Workout>[], cursor: null));
       when(api.getClientSkips('sam')).thenAnswer((_) async => <TrainingSkip>[]);
-      when(api.getClientProgram('sam', 'p1')).thenAnswer((_) async => copy());
+      when(api.getClientProgram('sam', 'p1')).thenAnswer((_) async => view ?? copy());
       when(api.getClientPrograms('sam')).thenAnswer((_) async => [copy().program]);
       when(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since'))).thenAnswer(
         (_) async => [
@@ -842,9 +1345,68 @@ void main() {
       expect(find.text('Logged for Sam'), findsOneWidget);
     });
 
+    testWidgets("the session starts at the client's targets, and its plan goes with it (heart-api#439)", (
+      tester,
+    ) async {
+      withCopy(
+        view: copy(
+          exercises: [
+            {
+              'id': 'te1',
+              'exercise': {'id': bench.id, 'name': bench.name, 'category': 'Barbell', 'target': 'Chest'},
+              'sets': [
+                {
+                  'id': 'set-1',
+                  'set_type': 'normal',
+                  'target': {
+                    'share': 0.7,
+                    'reps': {'min': 5, 'max': 5},
+                  },
+                },
+              ],
+            },
+          ],
+          planning: {
+            // where a history of nothing folds to, so it can be planned from
+            'position': {'week': 1, 'next': 's1'},
+            'bases': [
+              ProgramBase(
+                id: 'b1',
+                programId: 'p1',
+                exerciseId: bench.id,
+                value: 100,
+                at: DateTime.utc(2026, 11),
+              ).toMap(),
+            ],
+          },
+        ),
+      );
+      when(api.logClientWorkout('sam', any)).thenAnswer(
+        (invocation) async => invocation.positionalArguments.last as Workout,
+      );
+
+      final editor = await logDayA(tester);
+
+      final set = editor.copy.single.single;
+      // 70% of Sam's 100 kg is 154 lb: 155 on the coach's plates, which count
+      // in pounds here
+      expect(set.target?[TargetMeasure.weight]?.min, closeTo(155.asKilograms, 0.001));
+      set
+        ..setMeasurements(weight: 70, reps: 5)
+        ..isCompleted = true;
+      await editor.logTo!(tester.element(find.byType(WorkoutEditor)), editor.copy);
+      await tester.pumpTimes();
+
+      final plan = verify(api.saveClientWorkoutPlan('sam', editor.copy.id, captureAny)).captured.single as WorkoutPlan;
+      final planned = ((plan.plan['exercises'] as List).single as Map)['sets'] as List;
+      expect((planned.single as Map)['setId'], set.id);
+      expect(find.text('Logged for Sam'), findsOneWidget);
+    });
+
     testWidgets('a refusal says why and offers nothing; a failure that may pass offers Retry (#560)', (tester) async {
       withCopy();
-      when(api.logClientWorkout('sam', any)).thenThrow({'code': 'forbidden'});
+      when(api.logClientWorkout('sam', any))
+          .thenThrow(const ServerRefusal(status: 400, code: 'forbidden', method: 'POST', route: '/v1/test'));
 
       final editor = await logDayA(tester);
       final context = tester.element(find.byType(WorkoutEditor));
@@ -854,7 +1416,7 @@ void main() {
       expect(find.text("Couldn't log it: Sam is no longer your client"), findsOneWidget);
       expect(find.text('Retry'), findsNothing);
 
-      when(api.logClientWorkout('sam', any)).thenThrow({'code': 'unavailable'});
+      when(api.logClientWorkout('sam', any)).thenThrow(Exception('unavailable'));
       ScaffoldMessenger.of(context).removeCurrentSnackBar();
       await editor.logTo!(context, editor.copy);
       await tester.pumpTimes();
@@ -873,12 +1435,12 @@ void main() {
       clearInteractions(api);
 
       await tester.ensureVisible(find.byKey(AppKeys.coachingLogFor));
-      // both before a frame: the second reaches the tile as it was
-      final tile = tester.widget<ListTile>(find.byKey(AppKeys.coachingLogFor));
-      tile.onTap!();
-      tile.onTap!();
+      // both before a frame: the second reaches the button as it was
+      final button = tester.widget<PrimaryButton>(find.byKey(AppKeys.coachingLogFor));
+      button.onPressed!();
+      button.onPressed!();
       await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget, reason: 'the chevron, while it reads');
+      expect(find.byType(CircularProgressIndicator), findsOneWidget, reason: 'the icon, while it reads');
       await tester.pumpTimes();
 
       expect(find.byKey(AppKeys.coachingLogBlank), findsOneWidget, reason: 'one menu');
@@ -893,7 +1455,7 @@ void main() {
       await tester.tapByKey(AppKeys.coachingClient('c-sam'));
       await tester.pumpTimes();
 
-      expect(find.byKey(AppKeys.coachingClientMessages), findsOneWidget, reason: 'their page is open');
+      expect(find.byKey(AppKeys.coachingClientFormer), findsOneWidget, reason: 'their page is open');
       expect(find.byKey(AppKeys.coachingLogFor), findsNothing);
     });
 
@@ -975,14 +1537,26 @@ void main() {
     testWidgets('a change is put back, and one built on since says so', (tester) async {
       withCopy();
       when(api.revertClientChange('sam', 'p1', 'ch1')).thenAnswer((_) async {});
-      when(api.revertClientChange('sam', 'p1', 'ch2')).thenThrow({'code': 'conflict'});
+      when(api.revertClientChange('sam', 'p1', 'ch2'))
+          .thenThrow(const ServerRefusal(status: 400, code: 'conflict', method: 'POST', route: '/v1/test'));
       await openCopy(tester);
 
+      // asked first, since it changes what they train (#686): no, then yes
       await tester.tapByKey(AppKeys.coachingCopyPutBack('ch1'));
+      await tester.pumpTimes();
+      expect(find.text('Put this back?'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpTimes();
+      verifyNever(api.revertClientChange('sam', 'p1', 'ch1'));
+      await tester.tapByKey(AppKeys.coachingCopyPutBack('ch1'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingCopyPutBackConfirm);
       await tester.pumpTimes();
       verify(api.revertClientChange('sam', 'p1', 'ch1')).called(1);
 
       await tester.tapByKey(AppKeys.coachingCopyPutBack('ch2'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.coachingCopyPutBackConfirm);
       await tester.pumpTimes();
       expect(find.text("Couldn't put that back. It has changed since."), findsOneWidget);
     });
@@ -1001,7 +1575,15 @@ void main() {
       ).thenAnswer((invocation) async {
         final base = invocation.namedArguments[#baseRevision] as int;
         bases.add(base);
-        if (base == 0) throw {'code': 'program_changed', 'revision': 1};
+        if (base == 0) {
+          throw const ServerRefusal(
+            status: 409,
+            code: 'program_changed',
+            method: 'PUT',
+            route: '/v1/test',
+            details: {'revision': 1},
+          );
+        }
       });
       await openCopy(tester);
 
@@ -1020,6 +1602,143 @@ void main() {
 
       expect(bases, [0, 1]);
       expect(find.byKey(AppKeys.coachingCopyConflict), findsNothing);
+    });
+    testWidgets("a copy they changed says so on its card, by when, until it's opened (#745)", (tester) async {
+      withCopy(
+        client: ClientSummary(
+          connectionId: 'c-sam',
+          studentId: 'sam',
+          name: 'Sam',
+          status: 'active',
+          programId: 'p1',
+          programName: 'Strength block',
+          programWeek: 2,
+          programWeeks: 4,
+          reasons: ['changed'],
+        ),
+      );
+      when(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since'))).thenAnswer(
+        (_) async => [
+          ProgramChange(
+            id: 'ch1',
+            programId: 'p1',
+            sessionId: 's1',
+            actorId: 'sam',
+            kind: 'edit',
+            revision: 1,
+            before: const {'name': 'Day A'},
+            after: const {'name': 'Legs'},
+            at: DateTime.utc(2026, 11, 9, 18),
+          ),
+          ProgramChange(
+            id: 'ch2',
+            programId: 'p1',
+            actorId: 'coach',
+            kind: 'edit',
+            revision: 2,
+            at: DateTime.utc(2026, 11, 10, 18),
+          ),
+        ],
+      );
+      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+
+      expect(
+        find.descendant(of: find.byKey(AppKeys.coachingClient('c-sam')), matching: find.text('Changed their program')),
+        findsOneWidget,
+        reason: 'the roster says why, as it says the rest',
+      );
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      // Sam's change, not the coach's later one
+      final at = DateFormat.MMMEd('en').add_jm().format(DateTime.utc(2026, 11, 9, 18).toLocal());
+      expect(find.text('Changed by them, $at'), findsOneWidget);
+      verify(api.markReviewed('c-sam', at: anyNamed('at'))).called(1);
+
+      await tester.tapByKey(AppKeys.coachingClientProgram);
+      await tester.pumpTimes();
+      await tester.pageBack();
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingCopyChanged('p1')), findsNothing, reason: 'opened since');
+    });
+
+    ClientSummary changedSam() {
+      return ClientSummary(
+        connectionId: 'c-sam',
+        studentId: 'sam',
+        name: 'Sam',
+        status: 'active',
+        programId: 'p1',
+        programName: 'Strength block',
+        programWeek: 2,
+        programWeeks: 4,
+        reasons: ['changed', 'note'],
+      );
+    }
+
+    testWidgets("a change that couldn't be read isn't looked away: the row keeps it", (tester) async {
+      withCopy(client: changedSam());
+      when(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since'))).thenThrow(Exception('unavailable'));
+      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingCopyChanged('p1')), findsNothing);
+      verifyNever(api.markReviewed('c-sam', at: anyNamed('at')));
+    });
+
+    testWidgets('a change no copy shows, as a session added, is kept until a copy is opened', (tester) async {
+      withCopy(client: changedSam());
+      // only the coach's change in the history: what the roster counted is
+      // elsewhere
+      when(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since'))).thenAnswer(
+        (_) async => [
+          ProgramChange(
+            id: 'ch2',
+            programId: 'p1',
+            actorId: 'coach',
+            kind: 'edit',
+            revision: 1,
+            at: DateTime.utc(2026),
+          ),
+        ],
+      );
+      when(api.markReviewed('c-sam', at: anyNamed('at'))).thenAnswer((_) async {});
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingCopyChanged('p1')), findsNothing);
+      verifyNever(api.markReviewed('c-sam', at: anyNamed('at')));
+
+      await tester.tapByKey(AppKeys.coachingClientProgram);
+      await tester.pumpTimes();
+      verify(api.markReviewed('c-sam', at: anyNamed('at'))).called(1);
+    });
+
+    testWidgets("the coach's own change marks nothing, and with no reason the changes aren't read", (tester) async {
+      withCopy();
+      when(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since'))).thenAnswer(
+        (_) async => [
+          ProgramChange(
+            id: 'ch2',
+            programId: 'p1',
+            actorId: 'coach',
+            kind: 'edit',
+            revision: 1,
+            at: DateTime.utc(2026),
+          ),
+        ],
+      );
+      await pump(tester, {'feature-coachPeople': 'on', 'coachingSpace': true});
+      await tester.tapByKey(AppKeys.coachingClient('c-sam'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.coachingCopyChanged('p1')), findsNothing);
+      verifyNever(api.getClientProgramChanges('sam', 'p1', since: anyNamed('since')));
     });
   });
 
@@ -1277,7 +1996,7 @@ void main() {
       await tester.tapByKey(AppKeys.coachingLibraryProgram(programId));
       await tester.pumpTimes();
 
-      when(api.saveLibraryProgram(any, any)).thenThrow({'code': 'offline'});
+      when(api.saveLibraryProgram(any, any)).thenThrow(Exception('offline'));
       await tester.tapByKey(AppKeys.coachingRemoveSession('01a1b7d4-bc59-7ad7-9994-c01207b8fb92'));
       await tester.pumpTimes();
 

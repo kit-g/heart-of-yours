@@ -1,6 +1,7 @@
 library;
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +15,7 @@ import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/navigation/program_link.dart';
-import 'package:heart/presentation/navigation/pushes.dart' show pushesOn;
+import 'package:heart/presentation/navigation/pushes.dart' show pushesOn, pushesSettled;
 import 'package:heart/presentation/navigation/shortcuts.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart';
 import 'package:heart/presentation/routes/done/done.dart';
@@ -32,6 +33,7 @@ import 'package:heart/presentation/widgets/goals/goals.dart' show goalJudge;
 import 'package:heart/presentation/widgets/app_frame.dart';
 import 'package:heart/presentation/widgets/greetings_pane.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/responsive/metrics.dart' show readableWidth;
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/split_scaffold.dart';
 import 'package:heart/presentation/widgets/workout/past_workout.dart';
@@ -65,10 +67,11 @@ final class HeartRouter {
         onEnter: _onEnter,
         routes: [
           StatefulShellRoute.indexedStack(
-            pageBuilder: (_, state, shell) {
-              return NoTransitionPage<void>(
+            pageBuilder: (context, state, shell) {
+              return _spacePage(
+                context,
                 key: state.pageKey,
-                child: AppFrame(shell: shell),
+                child: AppFrame(shell: shell, onCoaching: context.goToCoaching),
               );
             },
             branches: [
@@ -89,6 +92,7 @@ final class HeartRouter {
           _coachingRoute(),
           _invitationRoute(),
           _threadRoute(),
+          _yourDevicesOverRoute(),
           _upgradeRequiredRoute(),
           _onboardingRoute(),
           _activeWorkoutRoute(),
@@ -99,6 +103,7 @@ final class HeartRouter {
           _galleryRoute(),
           _programOverRoute(),
           _filteredExercisesRoute(),
+          _exerciseArchiveOverRoute(),
           _libraryProgramOverRoute(),
           _exerciseOverRoute(),
           _workoutOverRoute(),
@@ -129,13 +134,105 @@ final class HeartRouter {
   /// tab and open the sheet again — a jank over a screen that was already
   /// right, since the tap also brings a backgrounded app to the front exactly
   /// as it was left.
-  static OnEnterResult _onEnter(BuildContext _, GoRouterState _, GoRouterState next, GoRouter router) {
-    final onScreen = router.routerDelegate.currentConfiguration.matches.any(
-      (match) => match.matchedLocation == _activeWorkoutPath,
-    );
-    return switch (next.uri.path == _openWorkoutPath && onScreen) {
-      true => const Block.stop(),
-      false => const Allow(),
+  ///
+  /// With the Exercises tab left out (#608), a link into it (a shared
+  /// exercise, the archive) opens the same page over the screen on view
+  /// instead ([_openOverTheTab]). Only over the app's own tabs: on a gate
+  /// (upgrade, restore, sign-in) the link goes on to [_decide], which holds it
+  /// until the tabs are back ([takeLinkOverTheTab]), as it does a cold start's.
+  static OnEnterResult _onEnter(BuildContext context, GoRouterState _, GoRouterState next, GoRouter router) {
+    final current = router.routerDelegate.currentConfiguration;
+    final onScreen = current.matches.any((match) => match.matchedLocation == _activeWorkoutPath);
+    if (next.uri.path == _openWorkoutPath && onScreen) return const Block.stop();
+    final overTabs = current.isNotEmpty && current.matches.first.route is StatefulShellRoute;
+    if (overTabs && !AppVersionSentry.instance.upgradeRequired) {
+      if (_overTheTab(context, next.uri) case final _OverTheTab link) {
+        return Block.then(() => _openOverTheTab(context, router, link));
+      }
+    }
+    return const Allow();
+  }
+
+  /// Whether the location on view is inside the Exercises tab.
+  static bool onExercisesTab(BuildContext context) {
+    return switch (GoRouter.of(context).state.uri.pathSegments) {
+      [_exercisesName, ...] => true,
+      _ => false,
+    };
+  }
+
+  /// A step back out of the Exercises tab's archive, where it is up beside or
+  /// in place of the library on a tablet (#718): from an exercise of it to the
+  /// archive, from the archive to the library. Answers whether there was one
+  /// to take: the tab's re-tap backs out of what it would otherwise not
+  /// reach, since the list it scrolls is the library put away underneath.
+  static bool backOutOfExerciseArchive(BuildContext context) {
+    switch (GoRouter.of(context).state.uri.pathSegments) {
+      case [_exercisesName, _exerciseArchivedSegment, _]:
+        context.goToExerciseArchive();
+        return true;
+      case [_exercisesName, _exerciseArchivedSegment]:
+        context.closeExerciseDetail();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /// A link into the left-out Exercises tab that arrived before there was a
+  /// screen to open it over: a cold start's, or one that met a gate.
+  static _OverTheTab? _heldLink;
+
+  /// Opens the link [_decide] held, once the app's tabs are on screen: the
+  /// frame calls it after its first frame.
+  static void takeLinkOverTheTab(BuildContext context) {
+    if (_heldLink case final _OverTheTab link) {
+      _heldLink = null;
+      _openOverTheTab(context, GoRouter.of(context), link);
+    }
+  }
+
+  /// The page for [link], over whatever is on screen. An exercise waits for
+  /// the catalog, as the tab's own route does, since a link can come before
+  /// it has loaded; one the device cannot find opens the library instead, as
+  /// in the tab.
+  static Future<void> _openOverTheTab(BuildContext context, GoRouter router, _OverTheTab link) async {
+    final location = switch (link) {
+      _ExerciseLink(:final reference, :final tab) => await () async {
+        final exercises = Exercises.of(context);
+        await _exercisesReady(exercises);
+        return switch (_resolveExercise(exercises, reference)) {
+          final Exercise exercise => router.namedLocation(
+            _exerciseOverName,
+            pathParameters: {'exerciseId': exercise.id},
+            queryParameters: {'tab': ?tab},
+          ),
+          null => router.namedLocation(_filteredExercisesName),
+        };
+      }(),
+      _ArchiveLink() => router.namedLocation(_exerciseArchiveOverName),
+      _LibraryLink() => router.namedLocation(_filteredExercisesName),
+    };
+    // a second tap on the same link does not stack a second copy
+    if (router.state.uri.toString() == location) return;
+    router.push(location);
+  }
+
+  /// What [uri], a location inside the Exercises tab, opens while the tab is
+  /// left out (#608). Null while the tab is there, or for a location outside
+  /// it. Off means turned off: before the preferences load, the tab is there.
+  static _OverTheTab? _overTheTab(BuildContext context, Uri uri) {
+    if (Preferences.of(context).featureAnswer(.exercisesTab) != .off) return null;
+    final tab = uri.queryParameters['tab'];
+    return switch (uri.pathSegments) {
+      [_exercisesName] => const _LibraryLink(),
+      [_exercisesName, _exerciseArchivedSegment] => const _ArchiveLink(),
+      // an exercise, archived or not; and a workout opened from its page,
+      // which, over the tab, is a tap away on the exercise's history
+      [_exercisesName, _exerciseArchivedSegment, final String id] ||
+      [_exercisesName, final String id] ||
+      [_exercisesName, final String id, _exerciseWorkoutSegment, _] => _ExerciseLink(id, tab: tab),
+      _ => null,
     };
   }
 
@@ -274,6 +371,14 @@ final class HeartRouter {
     // tab and does its work over it.
     if (_programSessionLink(context, state.uri) case String path) return path;
 
+    // A link into the Exercises tab while it is left out (#608), with no tab
+    // on screen to open it over (a cold start, or a gate it was carried
+    // through): it lands on the first tab, and the frame opens it over that.
+    if (_overTheTab(context, state.uri) case final _OverTheTab link) {
+      _heldLink = link;
+      return _profilePath;
+    }
+
     // deep link carried through the login flow
     if (state.uri.queryParameters case {'from': String from}) {
       final carried = Uri.tryParse(Uri.decodeComponent(from));
@@ -380,6 +485,16 @@ final class HeartRouter {
     config.pushNamed(_threadName, pathParameters: {'connectionId': connectionId});
   }
 
+  /// Your devices (#555), over what asked for it. Only where device keys run:
+  /// a push the route turned away would put a second copy of the tabs on top.
+  void pushYourDevices(BuildContext context) {
+    if (!pushesOn(context) || !DeviceKeys.of(context).supported) return;
+    config.pushNamed(_yourDevicesOverName);
+  }
+
+  /// The link to Your devices, to open on another device.
+  static Uri yourDevicesLink(String domain) => Uri.https(domain, '$_profilePath/$_settingsPath/$_yourDevicesPath');
+
   /// A coach's invitation (#553), as its link would open it.
   void openInvitation(String token, {String? fingerprint}) {
     return config.go(
@@ -423,6 +538,13 @@ final class HeartRouter {
     return config.goNamed(_workoutName);
   }
 
+  /// Takes the active workout's sheet down, if it is up, onto the workouts
+  /// tab: the workout it showed is gone from under it, with the session it
+  /// belonged to (#671).
+  void closeActiveWorkout() {
+    if (_isActiveWorkoutOpen) goToWorkouts();
+  }
+
   /// The summary of a workout just finished — from the phone's Finish, or the
   /// watch's (#183), which arrives above any route and has no router context.
   void goToWorkoutDone(String? workoutId) {
@@ -432,7 +554,7 @@ final class HeartRouter {
   /// Opens one past session — what a goal rung links back to, crediting the
   /// workout that met it.
   void goToWorkoutEditor(String workoutId) {
-    return config.go('$_historyPath/$workoutId');
+    leavingUnsavedLog(() => config.go('$_historyPath/$workoutId'));
   }
 
   /// A program's page, from outside it: a calendar event's link (#391).
@@ -442,13 +564,12 @@ final class HeartRouter {
 
   /// The library showing only [filter] — from a count on the profile, the
   /// exercises behind it — the previous filters cleared, as a chip's tap does.
+  /// Asked for by name, so a grouped library shows it too (#711).
   ///
   /// Pushed over the tab it was opened from, so Back — Android's too —
   /// returns there rather than leaving the Exercises tab, or the app.
   void goToFilteredExercises(Exercises exercises, ExerciseFilter filter) {
-    exercises
-      ..clearFilters()
-      ..addFilter(filter);
+    exercises.showOnly(filter);
     config.pushNamed(_filteredExercisesName);
   }
 
@@ -473,6 +594,27 @@ final class HeartRouter {
 
   /// A day set aside with "Not today" (#312), in History.
   void goToSkip(String skipId) {
-    return config.goNamed(_historySkipName, pathParameters: {'skipId': skipId});
+    leavingUnsavedLog(() => config.goNamed(_historySkipName, pathParameters: {'skipId': skipId}));
   }
+}
+
+/// A location inside the Exercises tab, read while the tab is left out (#608).
+sealed class _OverTheTab {
+  const new();
+}
+
+/// An exercise by id or by a shared link's slug, and the tab of its page.
+final class _ExerciseLink extends _OverTheTab {
+  final String reference;
+  final String? tab;
+
+  const new(this.reference, {this.tab});
+}
+
+final class _ArchiveLink extends _OverTheTab {
+  const new();
+}
+
+final class _LibraryLink extends _OverTheTab {
+  const new();
 }

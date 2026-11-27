@@ -1,10 +1,13 @@
 part of 'coaching.dart';
 
-/// The coach as their clients see them: the name and photo they use in Heart.
+/// The coach as their clients see them, the name and photo they use in
+/// Heart, and the account itself: Settings and logging out, without leaving
+/// the space for them (#685).
 class CoachMePage extends StatelessWidget {
   final VoidCallback onYourTraining;
+  final VoidCallback onSettings;
 
-  const new({super.key, required this.onYourTraining});
+  const new({super.key, required this.onYourTraining, required this.onSettings});
 
   @override
   Widget build(BuildContext context) {
@@ -20,18 +23,49 @@ class CoachMePage extends StatelessWidget {
       title: l.coachingMe,
       onYourTraining: onYourTraining,
       child: ListView(
-        padding: const .symmetric(horizontal: 16, vertical: 24),
+        // vertical only: a row's tile brings its own 16 a side, and the
+        // list's on top of it set the rows and their chevron in from the
+        // title's edge
+        padding: const .symmetric(vertical: 24),
         children: [
-          Center(
-            child: Avatar(remote: user?.remoteAvatar, local: user?.localAvatar, radius: 40),
+          Padding(
+            padding: const .symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                Avatar(remote: user?.remoteAvatar, local: user?.localAvatar, radius: 40),
+                const SizedBox(height: 16),
+                Text(name, style: textTheme.titleLarge, textAlign: .center),
+                const SizedBox(height: 8),
+                Text(
+                  l.coachingMeBody,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                  textAlign: .center,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          Text(name, style: textTheme.titleLarge, textAlign: .center),
-          const SizedBox(height: 8),
-          Text(
-            l.coachingMeBody,
-            style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-            textAlign: .center,
+          const SizedBox(height: 24),
+          // Material 3's tile insets its end by 24, which left the chevron
+          // short of where the page's other edges are
+          ListTile(
+            key: AppKeys.coachingSettings,
+            contentPadding: const .symmetric(horizontal: 16),
+            leading: const Icon(Icons.settings_rounded),
+            title: Text(l.settings),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: onSettings,
+          ),
+          ListTile(
+            key: AppKeys.coachingLogOut,
+            contentPadding: const .symmetric(horizontal: 16),
+            leading: const Icon(Icons.logout_rounded),
+            title: Text(l.logOut),
+            // signed out, the space goes as if it had never been built, and
+            // the frame takes the user back to their own
+            onTap: () {
+              AppTheme.of(context).onSignOut();
+              clearState(context);
+            },
           ),
         ],
       ),

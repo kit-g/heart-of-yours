@@ -57,8 +57,8 @@ class _ExercisesPageState extends State<ExercisesPage> {
           centerTitle: true,
         ),
         actions: [
-          // a Builder for the button's own context: the grouping menu, opened
-          // from the options, hangs off the button
+          // a Builder for the button's own context: the options menu hangs
+          // off the button
           Builder(
             builder: (button) => IconButton(
               tooltip: exerciseOptions,
@@ -94,23 +94,11 @@ class _ExercisesPageState extends State<ExercisesPage> {
       body: SafeArea(
         child: switch (layout) {
           .compact => listview,
-          .wide => Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: listview,
-              ),
-              const VerticalDivider(width: 1),
-              // the pane stays put whether or not anything is selected, so
-              // picking an exercise does not resize the list underneath you
-              Expanded(
-                flex: 3,
-                child: switch (widget.detail) {
-                  null => const _NoSelectionState(),
-                  Widget detail => detail,
-                },
-              ),
-            ],
+          // nothing picked, the list has the page; a pick opens beside it
+          .wide => MasterDetail(
+            masterWidth: (width) => width * 2 / 5,
+            master: listview,
+            detail: widget.detail,
           ),
         },
       ),

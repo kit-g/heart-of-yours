@@ -76,8 +76,12 @@ class _FeedTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
-    final name = switch (item.name?.trim()) {
-      final String name when name.isNotEmpty => name,
+    final client = Roster.watch(context).clients.where((each) => each.studentId == item.studentId).firstOrNull;
+    // as the roster names them now, a name given since the feed was read
+    // included (#753)
+    final name = switch ((client, item.name?.trim())) {
+      (final ClientSummary client, _) => clientName(l, client),
+      (null, final String name) when name.isNotEmpty => name,
       _ => l.coachingClientUnnamed,
     };
     final title = switch (item.title?.trim()) {
@@ -86,7 +90,6 @@ class _FeedTile extends StatelessWidget {
     };
     final at = item.at.toLocal();
     final opener = _ClientOpener.of(context);
-    final client = Roster.of(context).clients.where((each) => each.studentId == item.studentId).firstOrNull;
     return ListTile(
       // a workout opens target beside done; a skip or an ending has nothing more to show
       onTap: switch ((kind, opener, client)) {
@@ -102,11 +105,12 @@ class _FeedTile extends StatelessWidget {
         (.ending, null) => l.coachingFeedEndingUntitled(name),
       }),
       subtitle: Text(DateFormat.MMMEd(l.localeName).add_jm().format(at)),
-      trailing: Icon(switch (kind) {
-        .workout => Icons.check_circle_outline_rounded,
-        .skip => Icons.redo_rounded,
-        .ending => Icons.flag_outlined,
-      }),
+      // the sentence says what happened; the end of the row says only
+      // whether it opens (#686)
+      trailing: switch ((kind, client)) {
+        (.workout, _?) => const Icon(Icons.chevron_right_rounded),
+        _ => null,
+      },
     );
   }
 }

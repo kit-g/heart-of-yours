@@ -26,10 +26,13 @@ const _historyReviewName = 'entryReview';
 const _historyLogName = 'logWorkout';
 const _exercisesName = 'exercises';
 const _exercisesPath = '/$_exercisesName';
+const _exerciseArchivePath = '$_exercisesPath/$_exerciseArchivedSegment';
 const _exerciseDetailName = 'exerciseDetail';
 const _exerciseWorkoutName = 'exerciseWorkout';
 const _exerciseArchivedDetailName = 'exerciseArchivedDetail';
 const _exerciseArchive = 'archive';
+const _exerciseArchivedSegment = 'archived';
+const _exerciseWorkoutSegment = 'workout';
 const _doneName = 'done';
 const _donePath = '/$_doneName';
 const _accountManagementPath = 'account';
@@ -87,6 +90,8 @@ const _workoutOverName = 'workoutOver';
 const _workoutOverPath = '/past-workout/:workoutId';
 const _filteredExercisesName = 'filteredExercises';
 const _filteredExercisesPath = '/filtered-exercises';
+const _exerciseArchiveOverName = 'exerciseArchiveOver';
+const _exerciseArchiveOverPath = '/archived-exercises';
 const _onboardingName = 'welcome';
 const _onboardingPath = '/$_onboardingName';
 // the Coaching space (#566): a shell of its own, beside the app's
@@ -107,6 +112,9 @@ const _coachingClientNotesName = 'coachingClientNotes';
 const _coachingClientLogName = 'coachingClientLog';
 const _threadName = 'thread';
 const _threadPath = '/messages/:connectionId';
+// the account's devices over a conversation (#555)
+const _yourDevicesOverName = 'yourDevicesOver';
+const _yourDevicesOverPath = '/yourDevices';
 const _coachingProgramsName = 'coachingPrograms';
 const _coachingProgramsPath = '$_coachingPath/programs';
 // a coach's library (#557), under the Programs tab
@@ -115,6 +123,9 @@ const _coachingProgramName = 'coachingProgram';
 const _coachingProgramEditName = 'coachingProgramEdit';
 const _coachingProgramSessionName = 'coachingProgramSession';
 const _coachingMeName = 'coachingMe';
+
+/// What the Coaching space's copies of shared routes are named with (#685).
+const _coachingPrefix = 'coaching.';
 const _coachingMePath = '$_coachingPath/me';
 // what a coach's invitation link opens (#553): the site's own path, which iOS
 // and Android both hand to the app

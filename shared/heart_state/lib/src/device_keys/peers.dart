@@ -73,12 +73,14 @@ extension _Checking on DeviceKeys {
   /// Reads [userId]'s devices as [run]'s account: the account's own id reads
   /// its own other devices.
   Future<List<CryptoDevice>> _listed(_Run run, String userId) {
-    return run.service.getCryptoDevices(
-      userId: switch (userId == run.userId) {
-        true => null,
-        false => userId,
-      },
-    );
+    return run.service
+        .getCryptoDevices(
+          userId: switch (userId == run.userId) {
+            true => null,
+            false => userId,
+          },
+        )
+        .timeout(DeviceKeys._answerTime);
   }
 
   Future<Peer> _check(_Run run, String userId, List<CryptoDevice> devices, {String? fingerprint}) async {

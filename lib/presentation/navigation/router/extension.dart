@@ -11,7 +11,10 @@ extension on BuildContext {
 
   /// Into the Coaching space (#566). The space remembers itself while it is on
   /// screen (`CoachingFrame`), so the app opens there next.
-  void goToCoaching() => goNamed(_coachingClientsName);
+  void goToCoaching() {
+    _crossSpaces();
+    goNamed(_coachingClientsName);
+  }
 
   /// One client's page (#559), over the roster.
   void pushCoachingClient(String connectionId) {
@@ -40,8 +43,15 @@ extension on BuildContext {
   }
 
   /// A client's workout, target beside done (#559).
-  void pushCoachingClientWorkout(String connectionId, String workoutId) {
-    pushNamed(_coachingClientWorkoutName, pathParameters: {'connectionId': connectionId, 'workoutId': workoutId});
+  ///
+  /// [fromThread] for one opened from the conversation with the client: its
+  /// message action goes back there rather than open another over it.
+  void pushCoachingClientWorkout(String connectionId, String workoutId, {bool fromThread = false}) {
+    pushNamed(
+      _coachingClientWorkoutName,
+      pathParameters: {'connectionId': connectionId, 'workoutId': workoutId},
+      extra: fromThread,
+    );
   }
 
   /// A client's copy of their program (#558).
@@ -86,6 +96,7 @@ extension on BuildContext {
   /// Profile's redirect reads it.
   void leaveCoaching({String to = _profileName}) {
     Preferences.of(this).setInCoachingSpace(inside: false);
+    _crossSpaces();
     return goNamed(to);
   }
 
@@ -180,59 +191,18 @@ extension on BuildContext {
     return goNamed(_accountManagementName);
   }
 
-  void goToImportData() {
-    return goNamed(_importDataName);
-  }
-
-  void goToExportData() {
-    return goNamed(_exportDataName);
-  }
-
-  void goToWhatsNew() {
-    return goNamed(_whatsNewName);
-  }
-
-  void goToRestTimers() {
-    return goNamed(_restTimersName);
-  }
-
-  void goToPushSettings() {
-    return goNamed(_pushSettingsName);
-  }
-
-  void goToYourDevices() {
-    return goNamed(_yourDevicesName);
-  }
-
-  void goToFeatures() {
-    return goNamed(_featuresName);
-  }
-
-  void goToRecaps() {
-    return goNamed(_recapsName);
+  /// Every past month; on a page wide enough, with [month] open beside them:
+  /// `/profile/recaps?month=2026-09`.
+  void goToRecaps({DateTime? month}) {
+    return goNamed(
+      _recapsName,
+      queryParameters: {if (month != null) _monthParam: _monthKey(month)},
+    );
   }
 
   /// [month]'s recap, by its first day: `/profile/recaps/2026-09`.
   void goToMonthlyReport(DateTime month) {
     return goNamed(_monthlyReportName, pathParameters: {_monthParam: _monthKey(month)});
-  }
-
-  void goToApiTokens() {
-    return goNamed(_apiTokensName);
-  }
-
-  void goToNewApiToken() {
-    return goNamed(_newApiTokenName);
-  }
-
-  /// Opens Features at [feature] over What's new (#239): pushed, so back
-  /// returns to the note that sent the user there.
-  void pushFeature(Feature feature) {
-    pushNamed(
-      _featuresName,
-      queryParameters: {_featureQuery: feature.value},
-      extra: FeatureLinkSource.whatsNew,
-    );
   }
 
   void goToAvatar() {
@@ -244,17 +214,23 @@ extension on BuildContext {
   }
 
   void goToWorkoutEditor(String workoutId) {
-    return go('$_historyPath/$workoutId');
+    leavingUnsavedLog(() {
+      if (mounted) go('$_historyPath/$workoutId');
+    });
   }
 
   /// A day set aside with "Not today" (#312), in History.
   void goToSkip(String skipId) {
-    return goNamed(_historySkipName, pathParameters: {'skipId': skipId});
+    leavingUnsavedLog(() {
+      if (mounted) goNamed(_historySkipName, pathParameters: {'skipId': skipId});
+    });
   }
 
   /// The suspicious entries (#428), in History.
   void goToEntryReview() {
-    return goNamed(_historyReviewName);
+    leavingUnsavedLog(() {
+      if (mounted) goNamed(_historyReviewName);
+    });
   }
 
   /// A workout that already happened, being filled in (#530), in History:
@@ -264,8 +240,13 @@ extension on BuildContext {
   }
 
   /// Asks when a past workout was, then opens it to fill in (#530): by default
-  /// the last hour, or the same hour [on] another day (#618).
-  void logPast({DateTime? on}) => logPastWorkout(this, open: goToLogWorkout, on: on);
+  /// the last hour, or the same hour [on] another day (#618), as [fill] makes
+  /// it once its times are known (#737).
+  void logPast({DateTime? on, PastWorkout Function(PastWorkout past)? fill}) {
+    leavingUnsavedLog(() {
+      if (mounted) logPastWorkout(this, open: (past) => goToLogWorkout(fill?.call(past) ?? past), on: on);
+    });
+  }
 
   /// A workout from the suspicious entries' list (#428), within History:
   /// pushed on a phone, so Back returns to the list; in the pane on a tablet,
@@ -332,14 +313,24 @@ extension on BuildContext {
     return goNamed(_exerciseArchive);
   }
 
+  /// An exercise of the tab's archive: pushed over it on a phone; beside it
+  /// on a tablet, where the list stays the archive (#718).
+  Future<Object?> goToArchivedExerciseDetail(String exerciseId) {
+    switch (LayoutProvider.of(this)) {
+      case .compact:
+        return push('$_exercisesPath/$exerciseId');
+      case .wide:
+        goNamed(_exerciseArchivedDetailName, pathParameters: {'exerciseId': exerciseId});
+        return Future<Object?>.value();
+    }
+  }
+
   /// Opens the library showing only [filter], replacing whatever was filtered
   /// before — arriving from a chip means "show me these", not "narrow what I
   /// had", and the previous filters are not visible from where the chip was
-  /// tapped.
+  /// tapped. Asked for by name, so a grouped library shows it too (#711).
   void goToFilteredExercises(ExerciseFilter filter) {
-    Exercises.of(this)
-      ..clearFilters()
-      ..addFilter(filter);
+    Exercises.of(this).showOnly(filter);
     return goNamed(_exercisesName);
   }
 

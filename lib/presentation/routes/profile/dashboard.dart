@@ -309,8 +309,8 @@ class _TrainingCard extends StatelessWidget {
     final ThemeData(:textTheme) = Theme.of(context);
     final TrainingChart(:metric, :period) = chart;
     final firstWeekday = firstWeekdayOf(context, listen: true);
-    // replaced whenever a workout is finished or deleted: the totals go stale
-    final workouts = context.select<Stats, WorkoutAggregation>((stats) => stats.workouts);
+    // moves whenever the history Stats reads changed: the totals go stale
+    final revision = context.select<Stats, int>((stats) => stats.revision);
     final title = '${l.chartAllExercises} - ${metric.title(context, settings)}';
 
     // one line, as every card's is: the plot gives its title a fixed strip,
@@ -352,7 +352,7 @@ class _TrainingCard extends StatelessWidget {
         label: title,
         customLabel: header,
         callback: () => Stats.of(context).getTrainingSeries(metric, period, firstWeekday: firstWeekday),
-        refreshKey: (metric, period, firstWeekday, workouts),
+        refreshKey: (metric, period, firstWeekday, revision),
         converter: metric.converter(settings),
         getLeftLabel: metric.leftLabel(context, textTheme.bodySmall),
         getTooltip: metric.tooltip(context),
@@ -447,8 +447,8 @@ class _FrequencyCardState extends State<_FrequencyCard> {
 
   /// One read per exercise, week and history: a rebuild for anything else
   /// (theme, a sibling card) keeps the cells it has.
-  Future<Map<DateTime, int>> _read(int firstWeekday, WorkoutAggregation workouts) {
-    final key = (widget.chart.exerciseId, firstWeekday, workouts);
+  Future<Map<DateTime, int>> _read(int firstWeekday, int revision) {
+    final key = (widget.chart.exerciseId, firstWeekday, revision);
     if (key != _readFor) {
       _readFor = key;
       _days = Stats.of(context).getExerciseDays(widget.chart.exerciseId, firstWeekday: firstWeekday);
@@ -460,7 +460,7 @@ class _FrequencyCardState extends State<_FrequencyCard> {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final firstWeekday = firstWeekdayOf(context, listen: true);
-    final workouts = context.select<Stats, WorkoutAggregation>((stats) => stats.workouts);
+    final revision = context.select<Stats, int>((stats) => stats.revision);
     // an id is not copy: until the catalog resolves, the name waits
     final name = widget.exercises.lookup(widget.chart.exerciseId)?.name ?? '…';
     final now = DateTime.now();
@@ -481,7 +481,7 @@ class _FrequencyCardState extends State<_FrequencyCard> {
             const SizedBox(height: 12),
             Expanded(
               child: FutureBuilder<Map<DateTime, int>>(
-                future: _read(firstWeekday, workouts),
+                future: _read(firstWeekday, revision),
                 builder: (context, snapshot) {
                   return switch (snapshot.data) {
                     Map<DateTime, int> days => Semantics(

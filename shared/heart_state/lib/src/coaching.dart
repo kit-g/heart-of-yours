@@ -24,6 +24,10 @@ abstract interface class CoachingService {
 
   Future<Connection> setConnectionStatus(String connectionId, ConnectionStatus status);
 
+  /// Gives the client of a coach connection the coach's own name for them, or
+  /// with null takes it back. Only the coach of it may.
+  Future<Connection> nameConnection(String connectionId, String? name);
+
   /// Ends it for both people. The server keeps the row, as `severed`.
   Future<void> endConnection(String connectionId);
 
@@ -176,6 +180,7 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
     _hidden.clear();
     _invitations.clear();
     _blocks.clear();
+    _names.clear();
     _status = .idle;
     notifyListeners();
   }
@@ -185,12 +190,17 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
   Future<void> load() async {
     if (!_remote.allowed) return;
     _status = .loading;
+    final began = ++_clock;
     notifyListeners();
     try {
       final (connections, hidden) = await (_service.getConnections(), _service.getHiddenWorkouts()).wait;
       _connections
         ..clear()
         ..addAll(connections);
+      // a name given while this read was out, which it may not hold
+      for (final (:at, :connection) in _names.values) {
+        if (at > began) _rename(connection);
+      }
       _hidden
         ..clear()
         ..addEntries(hidden.map((each) => MapEntry(each.id, each.at)));
@@ -212,6 +222,49 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
     final known = {for (final share in ConnectionShare.values) share.name};
     final kept = coach.shares.where((share) => !known.contains(share));
     _replace(await _service.setConnectionShares(_idOf(coach), {for (final share in shares) share.name, ...kept}));
+  }
+
+  /// Gives the client of [connectionId] the coach's own name for them (#753),
+  /// or with null takes it back: to the invitation's name, or else theirs.
+  /// Only the coach reads it. Throws what the service threw; answers the
+  /// connection as the server now names it, which [Roster.renamed] takes too.
+  ///
+  /// A name is the coach's for the person, so every connection with them as
+  /// a client takes it.
+  Future<Connection> name(String connectionId, String? name) async {
+    final named = await _service.nameConnection(connectionId, name);
+    final given = (at: ++_clock, connection: named);
+    _names[named.targetId] = given;
+    _rename(given.connection);
+    _replace(named);
+    return named;
+  }
+
+  /// Names the coach gave, by client, each with when on [_clock]: a read that
+  /// began before one would bring back the name it replaced.
+  final _names = <String, ({int at, Connection connection})>{};
+
+  /// Counts names given and reads, to tell which came first.
+  var _clock = 0;
+
+  /// [named]'s name on every connection with the same client.
+  void _rename(Connection named) {
+    for (final (index, each) in _connections.indexed.toList()) {
+      if (each.targetId != named.targetId || each.role != named.role) continue;
+      _connections[index] = Connection(
+        targetId: each.targetId,
+        role: each.role,
+        domain: each.domain,
+        status: each.status,
+        createdAt: each.createdAt,
+        connectionId: each.connectionId,
+        acceptedAt: each.acceptedAt,
+        shares: each.shares,
+        name: named.name,
+        avatar: each.avatar,
+        namedByYou: named.namedByYou,
+      );
+    }
   }
 
   /// Stops [connection]'s coach reading anything logged from now on. Either
@@ -241,6 +294,9 @@ class Coaching with ChangeNotifier implements SignOutStateSentry {
         connectionId: connection.connectionId,
         acceptedAt: connection.acceptedAt,
         shares: connection.shares,
+        name: connection.name,
+        avatar: connection.avatar,
+        namedByYou: connection.namedByYou,
       ),
     );
   }

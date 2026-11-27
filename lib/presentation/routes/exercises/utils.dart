@@ -113,54 +113,108 @@ extension on Duration {
   static String _pad(int n) => n.toString().padLeft(2, '0');
 }
 
-/// finds "beautiful" timestamps
+/// The width both ⋯ menus here take where there is room for it, so a long
+/// label wraps inside the menu rather than pushing it off the screen's edge.
+const _optionsMenuWidth = 240.0;
+
+/// Shows [items] in a menu hanging off [button], its right edge on the
+/// button's: [_optionsMenuWidth] wide where there is room, narrower where
+/// there is not (see [menuEndingUnder]).
+///
+/// [showMenu] rather than a [PopupMenuButton]: the button's own menu starts at
+/// the button's left edge wherever there is more room to its right than its
+/// left, which, for the trailing button of a narrow master pane, is out over
+/// the detail pane.
+Future<T?> _showOptions<T>(BuildContext button, List<PopupMenuEntry<T>> items) {
+  final (:position, :constraints) = menuEndingUnder(button, width: _optionsMenuWidth);
+  return showMenu<T>(context: button, position: position, constraints: constraints, items: items);
+}
+
+/// What an exercise page's ⋯ offers.
+enum _ExerciseOption { edit, moveHistory, archive, unarchive }
+
+/// An exercise page's ⋯, hanging off [button] (#710).
 ///
 /// A library exercise has nothing here but the history move: it is not the
 /// user's to edit or archive.
+///
+/// The menu closes itself on a pick, and what follows acts on the answer: there
+/// is no sheet left to pop, and a pop here would take the page instead.
 Future<void> _onExerciseMenu(
-  BuildContext context,
+  BuildContext button,
   Exercise exercise, {
   void Function(Exercise target)? onHistoryMoved,
-}) {
-  final L(:archive, :unarchive, :edit, :moveHistory) = L.of(context);
-  return showBottomMenu(
-    context,
-    [
-      if (exercise.isMine)
-        BottomMenuAction(
-          title: edit,
-          onPressed: () => showNewExerciseDialog(context, editable: exercise),
-          icon: const Icon(Icons.edit_rounded),
-        ),
-      if (onHistoryMoved != null && _canMoveHistory(context, exercise, onMoved: onHistoryMoved))
-        BottomMenuAction(
-          title: moveHistory,
-          onPressed: () {
-            Navigator.of(context).pop();
-            _onMoveHistory(context, exercise, onMoved: onHistoryMoved);
-          },
-          icon: const Icon(Icons.call_merge_rounded),
-        ),
-      if (exercise.isMine)
-        if (exercise.isArchived)
-          BottomMenuAction(
-            title: unarchive,
-            onPressed: () => _onUnarchive(context, exercise),
-            icon: const Icon(Icons.restore_outlined),
-          )
-        else
-          BottomMenuAction(
-            title: archive,
-            onPressed: () => _onArchive(context, exercise),
-            icon: const Icon(Icons.archive_rounded),
-          ),
-    ],
+  VoidCallback? onArchived,
+  VoidCallback? onUnarchived,
+}) async {
+  final l = L.of(button);
+  final options = <_ExerciseOption>[
+    if (exercise.isMine) .edit,
+    if (_canMoveHistory(button, exercise, onMoved: onHistoryMoved)) .moveHistory,
+    if (exercise.isMine) exercise.isArchived ? .unarchive : .archive,
+  ];
+  // a backstop: the button watches what these read, and is not there when
+  // they come to nothing
+  if (options.isEmpty) return;
+  final picked = await _showOptions<_ExerciseOption>(
+    button,
+    options.map((option) {
+      final (icon, title) = _exerciseOptionLook(l, option);
+      return _optionItem(option, icon: icon, title: title);
+    }).toList(),
+  );
+  if (!button.mounted) return;
+  switch (picked) {
+    case .edit:
+      showNewExerciseDialog(button, editable: exercise);
+    case .moveHistory:
+      if (onHistoryMoved case final onMoved?) _onMoveHistory(button, exercise, onMoved: onMoved);
+    case .archive:
+      unawaited(_onArchive(button, exercise, onArchived: onArchived));
+    case .unarchive:
+      unawaited(_onUnarchive(button, exercise, onUnarchived: onUnarchived));
+    case null:
+      break;
+  }
+}
+
+(IconData, String) _exerciseOptionLook(L l, _ExerciseOption option) {
+  return switch (option) {
+    .edit => (Icons.edit_rounded, l.edit),
+    .moveHistory => (Icons.call_merge_rounded, l.moveHistory),
+    .archive => (Icons.archive_rounded, l.archive),
+    .unarchive => (Icons.restore_outlined, l.unarchive),
+  };
+}
+
+/// A choice in one of the ⋯ menus: its icon where a checked choice has its
+/// check, so the two kinds line up.
+PopupMenuItem<T> _optionItem<T>(T value, {required IconData icon, required String title}) {
+  return PopupMenuItem<T>(
+    value: value,
+    child: ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+    ),
   );
 }
 
-Future<void> _onArchive(BuildContext context, Exercise exercise) async {
+/// Asks before archiving; confirmed, leaves the page, then archives.
+///
+/// Everything the answer needs is read now, from the page: the dialog sits on
+/// the root navigator and can outlive the page, as when a link the user
+/// follows meanwhile `go`es elsewhere and replaces what was under it.
+Future<void> _onArchive(BuildContext context, Exercise exercise, {VoidCallback? onArchived}) {
   final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
-  final L(:archiveConfirmTitle, :archiveConfirmBody, :archive, :cancel) = L.of(context);
+  final copy = L.of(context);
+  final L(:archiveConfirmTitle, :archiveConfirmBody, :archive, :cancel) = copy;
+  final root = Navigator.of(context, rootNavigator: true);
+  final leave = _leaving(context, onArchived);
+  final putAway = _putAway(
+    context,
+    (exercises) => exercises.archive(exercise),
+    copy.exerciseArchiveFailed(exercise.name),
+  );
   return showBrandedDialog(
     context,
     title: Text(
@@ -184,10 +238,7 @@ Future<void> _onArchive(BuildContext context, Exercise exercise) async {
             child: Center(
               child: Text(cancel),
             ),
-            onPressed: () {
-              Navigator.of(context, rootNavigator: true).pop();
-              Navigator.of(context).pop();
-            },
+            onPressed: () => root.pop(),
           ),
           PrimaryButton.wide(
             backgroundColor: colorScheme.errorContainer,
@@ -198,7 +249,9 @@ Future<void> _onArchive(BuildContext context, Exercise exercise) async {
               ),
             ),
             onPressed: () {
-              _onConfirmArchive(context, exercise);
+              root.pop();
+              leave();
+              unawaited(putAway());
             },
           ),
         ],
@@ -207,75 +260,106 @@ Future<void> _onArchive(BuildContext context, Exercise exercise) async {
   );
 }
 
-Future<void> _onConfirmArchive(BuildContext context, Exercise exercise) async {
-  // close the dialog
-  Navigator.of(context, rootNavigator: true).pop();
-  Navigator.of(context)
-    ..pop()
-    ..pop();
-  // state
-  await Exercises.of(context).archive(exercise);
+/// Leaves the page, then takes the exercise out of the archive.
+Future<void> _onUnarchive(BuildContext context, Exercise exercise, {VoidCallback? onUnarchived}) {
+  final putAway = _putAway(
+    context,
+    (exercises) => exercises.unarchive(exercise),
+    L.of(context).exerciseUnarchiveFailed(exercise.name),
+  );
+  _leaving(context, onUnarchived)();
+  return putAway();
 }
 
+/// How the page leaves once its exercise is archived or unarchived, read
+/// while it is here: [onLeave], where the route says, or else back to what
+/// is under the page, if anything is. Before the change, so the leaving is
+/// not counted against whatever the user opens or goes back to while the
+/// account answers; and not at all once the page is gone, as a link the
+/// user followed meanwhile already decided where they are.
+VoidCallback _leaving(BuildContext context, VoidCallback? onLeave) {
+  final page = ModalRoute.of(context);
+  return () {
+    if (!context.mounted) return;
+    switch (onLeave) {
+      case final VoidCallback leave:
+        leave();
+      case null:
+        popIfCurrent(page);
+    }
+  };
+}
+
+/// [change] made to the exercises, a failure said with [failure] in a snack
+/// and reported. Read from [context] now, while the page is here: the change
+/// runs once the user has left it, so the snack shows where they went.
+Future<void> Function() _putAway(
+  BuildContext context,
+  Future<void> Function(Exercises) change,
+  String failure,
+) {
+  final exercises = Exercises.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  return () async {
+    try {
+      await change(exercises);
+    } catch (e, s) {
+      reportToSentry(e, stacktrace: s);
+      messenger.snack(failure);
+    }
+  };
+}
+
+/// What the Exercises tab's ⋯ answers with.
+sealed class _LibraryOption {
+  const new();
+}
+
+final class _NewExercise extends _LibraryOption {
+  const new();
+}
+
+final class _ShowArchived extends _LibraryOption {
+  const new();
+}
+
+final class _GroupBy extends _LibraryOption {
+  final PickerGrouping grouping;
+
+  const new(this.grouping);
+}
+
+/// The Exercises tab's ⋯, hanging off [button]: a new exercise, how the
+/// library and every picker group (#620), and the archive when it holds
+/// anything. The groupings are in the menu itself, the one in force checked,
+/// so the choice is made where the button is (#710).
 Future<void> _onExerciseOptions(
-  BuildContext context, {
+  BuildContext button, {
   required VoidCallback onShowArchived,
   bool hasArchived = false,
 }) async {
-  return showBottomMenu(
-    context,
-    [
-      BottomMenuAction(
-        title: L.of(context).newExercise,
-        icon: const Icon(Icons.add_circle_outline_rounded),
-        onPressed: () {
-          Navigator.of(context).pop();
-          showNewExerciseDialog(context);
-        },
-      ),
-      // how the library and every exercise picker group the list (#620); the
-      // title names the grouping in force, so it is heard before it is opened
-      BottomMenuAction(
-        title: L.of(context).pickerGroupBy(Preferences.of(context).pickerGrouping.label(L.of(context))),
-        icon: const Icon(Icons.view_agenda_outlined),
-        onPressed: () {
-          Navigator.of(context).pop();
-          showPickerGroupingMenu(context);
-        },
-      ),
-      if (hasArchived)
-        BottomMenuAction(
-          title: L.of(context).showArchived,
-          icon: const Icon(Icons.archive_outlined),
-          onPressed: () {
-            Navigator.of(context).pop();
-            onShowArchived();
-          },
-        ),
+  final l = L.of(button);
+  final shown = ShownPickerGrouping.of(Preferences.of(button));
+  final picked = await _showOptions<_LibraryOption>(button, [
+    _optionItem(const _NewExercise(), icon: Icons.add_circle_outline_rounded, title: l.newExercise),
+    const PopupMenuDivider(),
+    MenuHeading(l.settingsPickerGrouping),
+    ...shown.items<_LibraryOption>(l, _GroupBy.new),
+    if (hasArchived) ...[
+      const PopupMenuDivider(),
+      _optionItem(const _ShowArchived(), icon: Icons.archive_outlined, title: l.showArchived),
     ],
-  );
-}
-
-Future<void> _onUnarchive(BuildContext context, Exercise exercise) async {
-  final exercises = Exercises.of(context);
-  final navigator = Navigator.of(context);
-  // state
-  await exercises.unarchive(exercise);
-
-  // pop
-  if (exercises.archived.isEmpty) {
-    // go to the very top if nothing is left in the archive
-    navigator
-      // out of dialog
-      ..pop()
-      // out of detail page
-      ..pop()
-      // out of archive
-      ..pop();
-  } else {
-    navigator
-      ..pop()
-      ..pop();
+  ]);
+  if (!button.mounted) return;
+  switch (picked) {
+    case _NewExercise():
+      showNewExerciseDialog(button);
+    case _ShowArchived():
+      onShowArchived();
+    case _GroupBy(:final grouping):
+      shown.apply(Preferences.of(button), grouping);
+    case null:
+      break;
   }
 }
 

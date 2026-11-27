@@ -214,7 +214,7 @@ class _FormatAction extends StatelessWidget {
       crossAxisAlignment: .start,
       children: [
         PrimaryButton.wide(
-          margin: const .symmetric(horizontal: 8.0, vertical: 14),
+          margin: tallButtonPadding,
           onPressed: onPressed,
           child: Center(
             child: Text(label),

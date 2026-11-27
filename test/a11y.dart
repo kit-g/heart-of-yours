@@ -6,6 +6,10 @@
 // are enabled; entries that don't yet are skipped with a reason so the debt
 // stays enumerable instead of silently missing. Do not delete a failing
 // entry — flip its `skip` to null once the underlying issue is fixed.
+//
+// The sweep is over a thousand tests, far longer than any other file, and a
+// file runs on one worker. So it is not a test file itself: `a11y_<n>_test.dart`
+// each run every [_shards]th test of it, and the runner spreads them out.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -39,6 +43,12 @@ import 'support/harness.dart';
 /// surfaces as an unhandled error attributed to whichever test happens to be
 /// running when the platform channel gets around to rejecting it.
 const _signInWithAppleChannel = MethodChannel('com.aboutyou.dart_packages.sign_in_with_apple');
+
+/// The same kind of side effect, on the way to LoginPage: flutter_cache_manager
+/// (behind CachedNetworkImage) asks for the temporary directory once per
+/// isolate and keeps the answer. Unmocked, whether its rejection fails a test
+/// depends on which test asks first, so on how the sweep is split into files.
+const _pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
 
 /// A screen the matrix sweeps. Each maps to a path through the real app —
 /// see [_pumpTo] — rather than a page pumped in isolation, so the check sees
@@ -86,9 +96,13 @@ enum _Screen {
   skipPage,
   notTodaySheet,
   calendar,
+  calendarMonth,
   calendarDay,
+  calendarTemplates,
+  calendarWorkouts,
   pastWorkoutsOffer,
   historyFilterMenu,
+  historyFilterTemplates,
   historyFiltered,
   historyCompact,
   exercises,
@@ -106,6 +120,7 @@ enum _Screen {
   coachingClients,
   coachingActivity,
   coachingClient,
+  coachingFormerClient,
   coachingReview,
   coachingClientCopy,
   coachingMessages,
@@ -126,6 +141,7 @@ enum _Screen {
   yourDevices,
   features,
   recaps,
+  recapsPhone,
   monthlyReport,
   upsyncRunning,
   upsyncFailed,
@@ -359,12 +375,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.weeklyLens,
     _Guideline.androidTapTarget,
-    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
+    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:118, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
   ),
   (
     _Screen.weeklyLens,
     _Guideline.iosTapTarget,
-    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
+    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:118, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
   ),
 
   // The weekly sets card's balance pairs (#342): one drawn, one with too
@@ -375,12 +391,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.weeklyBalance,
     _Guideline.androidTapTarget,
-    'bottom nav bar items, and the card\'s Patterns/Muscles/Balance SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
+    'bottom nav bar items, and the card\'s Patterns/Muscles/Balance SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:118, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
   ),
   (
     _Screen.weeklyBalance,
     _Guideline.iosTapTarget,
-    'bottom nav bar items, and the card\'s Patterns/Muscles/Balance SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
+    'bottom nav bar items, and the card\'s Patterns/Muscles/Balance SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:118, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
   ),
 
   // The dashboard's training-wide charts (#137): a volume chart with its
@@ -459,7 +475,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     (
       _Screen.programs,
       guideline,
-      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:279) and its Start (programs.dart:288) at the house 32pt, and a waiting coach program\'s Start (40pt FilledButton, lib/presentation/routes/workout/program_sent.dart) (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:101), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:424) and its Start (programs.dart:433) at the house 32pt, and a waiting coach program\'s Start (40pt FilledButton, lib/presentation/routes/workout/program_sent.dart) (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.programPage,
@@ -675,6 +691,11 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.calendar, _Guideline.textContrastDark, null),
   (_Screen.calendar, _Guideline.androidTapTarget, null),
   (_Screen.calendar, _Guideline.iosTapTarget, null),
+  (_Screen.calendarMonth, _Guideline.labeledTapTarget, null),
+  (_Screen.calendarMonth, _Guideline.textContrastLight, null),
+  (_Screen.calendarMonth, _Guideline.textContrastDark, null),
+  (_Screen.calendarMonth, _Guideline.androidTapTarget, null),
+  (_Screen.calendarMonth, _Guideline.iosTapTarget, null),
 
   // a day of two workouts (#619): its count, and the list of them it opens
   (_Screen.calendarDay, _Guideline.labeledTapTarget, null),
@@ -682,6 +703,18 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.calendarDay, _Guideline.textContrastDark, null),
   (_Screen.calendarDay, _Guideline.androidTapTarget, null),
   (_Screen.calendarDay, _Guideline.iosTapTarget, null),
+
+  // the lists a day's workout is made from (#737): templates, past workouts
+  (_Screen.calendarTemplates, _Guideline.labeledTapTarget, null),
+  (_Screen.calendarTemplates, _Guideline.textContrastLight, null),
+  (_Screen.calendarTemplates, _Guideline.textContrastDark, null),
+  (_Screen.calendarTemplates, _Guideline.androidTapTarget, null),
+  (_Screen.calendarTemplates, _Guideline.iosTapTarget, null),
+  (_Screen.calendarWorkouts, _Guideline.labeledTapTarget, null),
+  (_Screen.calendarWorkouts, _Guideline.textContrastLight, null),
+  (_Screen.calendarWorkouts, _Guideline.textContrastDark, null),
+  (_Screen.calendarWorkouts, _Guideline.androidTapTarget, null),
+  (_Screen.calendarWorkouts, _Guideline.iosTapTarget, null),
 
   // the one ask for Past workouts (#618), on the first tap of an empty past
   // day in the calendar
@@ -706,6 +739,11 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.historyFilterMenu, _Guideline.textContrastDark, null),
   (_Screen.historyFilterMenu, _Guideline.androidTapTarget, null),
   (_Screen.historyFilterMenu, _Guideline.iosTapTarget, null),
+  (_Screen.historyFilterTemplates, _Guideline.labeledTapTarget, null),
+  (_Screen.historyFilterTemplates, _Guideline.textContrastLight, null),
+  (_Screen.historyFilterTemplates, _Guideline.textContrastDark, null),
+  (_Screen.historyFilterTemplates, _Guideline.androidTapTarget, null),
+  (_Screen.historyFilterTemplates, _Guideline.iosTapTarget, null),
   (_Screen.historyFiltered, _Guideline.labeledTapTarget, null),
   (_Screen.historyFiltered, _Guideline.textContrastLight, null),
   (_Screen.historyFiltered, _Guideline.textContrastDark, null),
@@ -751,12 +789,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.pastWorkoutTimes,
     _Guideline.androidTapTarget,
-    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:202; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
+    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:259; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
   ),
   (
     _Screen.pastWorkoutTimes,
     _Guideline.iosTapTarget,
-    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:202; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
+    'Next is PrimaryButton.shrunk at the house 32pt (lib/presentation/widgets/workout/adjust_times_dialog.dart:259; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), as Save is when History edits a workout\'s times — visual-density change, out of scope',
   ),
   (_Screen.pastWorkoutEditor, _Guideline.labeledTapTarget, null),
   (_Screen.pastWorkoutEditor, _Guideline.textContrastLight, null),
@@ -1018,6 +1056,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.coachingClient, _Guideline.textContrastDark, null),
   (_Screen.coachingClient, _Guideline.androidTapTarget, null),
   (_Screen.coachingClient, _Guideline.iosTapTarget, null),
+  // someone no longer coached (#556): who they were, and the coach's notes
+  (_Screen.coachingFormerClient, _Guideline.labeledTapTarget, null),
+  (_Screen.coachingFormerClient, _Guideline.textContrastLight, null),
+  (_Screen.coachingFormerClient, _Guideline.textContrastDark, null),
+  (_Screen.coachingFormerClient, _Guideline.androidTapTarget, null),
+  (_Screen.coachingFormerClient, _Guideline.iosTapTarget, null),
   (_Screen.coachingReview, _Guideline.labeledTapTarget, null),
   (_Screen.coachingReview, _Guideline.textContrastLight, null),
   (_Screen.coachingReview, _Guideline.textContrastDark, null),
@@ -1153,6 +1197,13 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.recaps, _Guideline.textContrastDark, null),
   (_Screen.recaps, _Guideline.androidTapTarget, null),
   (_Screen.recaps, _Guideline.iosTapTarget, null),
+  // the same list where a phone has no room beside it (#687): the list alone,
+  // a month a page of its own
+  (_Screen.recapsPhone, _Guideline.labeledTapTarget, null),
+  (_Screen.recapsPhone, _Guideline.textContrastLight, null),
+  (_Screen.recapsPhone, _Guideline.textContrastDark, null),
+  (_Screen.recapsPhone, _Guideline.androidTapTarget, null),
+  (_Screen.recapsPhone, _Guideline.iosTapTarget, null),
   (_Screen.monthlyReport, _Guideline.labeledTapTarget, null),
   (_Screen.monthlyReport, _Guideline.textContrastLight, null),
   (_Screen.monthlyReport, _Guideline.textContrastDark, null),
@@ -1274,7 +1325,45 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.workoutDone, _Guideline.iosTapTarget, null),
 ];
 
-void main() {
+/// How many `a11y_<n>_test.dart` files split the sweep between them.
+const _shards = 6;
+
+/// A shard file's name and the number it passes: `a11y_2_test.dart` runs
+/// `a11y(shard: 2)`.
+final _shardFile = RegExp(r'^a11y_(\d+)_test\.dart$');
+final _shardCall = RegExp(r'a11y\(shard: (\d+)\)');
+
+/// Registers the tests of the sweep that fall to [shard], one of
+/// `0 ..< _shards`: every [_shards]th, so each shard gets a share of
+/// every screen and guideline rather than a contiguous, unevenly heavy run.
+void a11y({required int shard}) {
+  assert(0 <= shard && shard < _shards, 'shard $shard is not one of 0 ..< $_shards');
+
+  // The cache keeps the first directory it is given for the whole file, so the
+  // file gets one of its own: nothing it writes outlives the run or is shared
+  // with the shards running beside it.
+  final temporary = Directory.systemTemp.createTempSync('a11y');
+  tearDownAll(() => temporary.deleteSync(recursive: true));
+
+  // A shard number with no file, or a file running another's number, leaves
+  // tests unrun, silently. Every shard checks, so losing one still fails.
+  test('each shard has one file, running its own number', () {
+    final files = {
+      for (final file in Directory('test').listSync().whereType<File>())
+        if (_shardFile.firstMatch(file.uri.pathSegments.last) case final name?)
+          int.parse(name[1]!): _shardCall.firstMatch(file.readAsStringSync())?[1],
+    };
+    expect(files, {for (final n in Iterable.generate(_shards)) n: '$n'});
+  });
+
+  // CI gives each app test job every n-th file, so as many jobs as a11y files
+  // keeps one of these heavy files on each; fewer stacks two on one job.
+  test('CI runs as many app test jobs as there are shards', () {
+    final workflow = File('.github/workflows/unit-tests.yml').readAsStringSync();
+    final matrix = RegExp(r'shard: \[([^\]]*)\]').firstMatch(workflow)![1]!.split(',');
+    expect(matrix, hasLength(_shards));
+  });
+
   late MockLocalDatabase db;
   late MockApi api;
   late MockCdn cdn;
@@ -1293,6 +1382,19 @@ void main() {
         null,
       ),
     );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      _pathProviderChannel,
+      (call) async => switch (call.method) {
+        'getTemporaryDirectory' || 'getApplicationSupportDirectory' => temporary.path,
+        _ => null,
+      },
+    );
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        _pathProviderChannel,
+        null,
+      ),
+    );
 
     db = MockLocalDatabase();
     api = MockApi();
@@ -1302,6 +1404,8 @@ void main() {
     // the session's token is on the client, so the remote leg opens for the
     // screens that read the account (see stubStartup)
     when(api.isAuthenticated).thenReturn(true);
+    // …so a signed-in launch registers the account, and the server keeps it as sent
+    when(api.registerAccount(any)).thenAnswer((invocation) async => invocation.positionalArguments.single as User);
 
     // The history backfill's two reads, answered as "this device is whole" —
     // every screen but the two that are about the row itself re-stubs them.
@@ -1356,7 +1460,11 @@ void main() {
     // environment, so a fallback font's metrics apply) and overflows
     // LogoStripe. A larger, phone-plausible surface sidesteps that without
     // touching production layout.
-    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.physicalSize = switch (screen) {
+      // a screen whose layout is a phone's only on a phone's width (#687)
+      _Screen.recapsPhone => const Size(390, 844),
+      _ => const Size(1200, 2400),
+    };
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -1387,7 +1495,7 @@ void main() {
     if (screen == _Screen.templateMuscles) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
     }
-    if (screen == _Screen.recaps || screen == _Screen.monthlyReport) {
+    if (screen == _Screen.recaps || screen == _Screen.recapsPhone || screen == _Screen.monthlyReport) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'weightUnit': 'metric', 'feature-recaps': 'on'});
       final start = DateTime(2026, 9, 7, 18);
       when(db.getRecapWorkouts(any, any, userId: anyNamed('userId'))).thenAnswer(
@@ -1439,6 +1547,7 @@ void main() {
       _Screen.coachingClients: AppKeys.coachingClientsStack,
       _Screen.coachingActivity: AppKeys.coachingClientsStack,
       _Screen.coachingClient: AppKeys.coachingClientsStack,
+      _Screen.coachingFormerClient: AppKeys.coachingClientsStack,
       _Screen.coachingReview: AppKeys.coachingClientsStack,
       _Screen.coachingClientCopy: AppKeys.coachingClientsStack,
       _Screen.coachingMessages: AppKeys.coachingMessagesStack,
@@ -1545,6 +1654,7 @@ void main() {
         _Screen.coachingClients ||
         _Screen.coachingActivity ||
         _Screen.coachingClient ||
+        _Screen.coachingFormerClient ||
         _Screen.coachingNotes ||
         _Screen.coachingReview ||
         _Screen.coachingClientCopy => [
@@ -1566,6 +1676,15 @@ void main() {
       };
       when(api.getClients(former: anyNamed('former'), cursor: anyNamed('cursor')))
           .thenAnswer((_) async => (items: clients, cursor: null));
+      when(api.getClients(former: true, cursor: anyNamed('cursor'))).thenAnswer(
+        (_) async => (
+          items: [
+            if (screen == _Screen.coachingFormerClient)
+              ClientSummary(connectionId: 'c-old', studentId: 'old', name: 'Pepper', status: 'severed'),
+          ],
+          cursor: null,
+        ),
+      );
       // a library of one program (#557), of one session, which Sam holds
       final library = CoachProgram(
         id: 'p1',
@@ -1984,6 +2103,7 @@ void main() {
           _Screen.libraryStartDays ||
           _Screen.goEasy ||
           _Screen.skipPage ||
+          _Screen.historyFilterTemplates ||
           _Screen.notTodaySheet:
         // things to go easy on (#396): the whole map, a knee listed
         when(cdn.getGoEasy(etag: anyNamed('etag'))).thenAnswer((_) async => (body: _goEasy, etag: null));
@@ -2009,8 +2129,14 @@ void main() {
             .thenAnswer((i) async => (row: i.positionalArguments.single as TrainingSkip, created: true));
         when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
         when(db.getTemplates(any)).thenAnswer(
-          (_) async => switch (screen) {
-            _Screen.programs || _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [
+          (invocation) async => switch (screen) {
+            // the samples are the rows of no user
+            _Screen.historyFilterTemplates when invocation.positionalArguments.single == null => <Template>[],
+            _Screen.programs ||
+            _Screen.programPage ||
+            _Screen.historyNotToday ||
+            _Screen.historyFilterTemplates ||
+            _Screen.skipPage => [
               _session('t1', 0, 'Push', programId: 'p1'),
               _session('t2', 1, 'Pull', programId: 'p1'),
               if (screen == _Screen.programs) _session('t3', 2, 'Day A', programId: 'c1'),
@@ -2026,7 +2152,10 @@ void main() {
         final programs = switch (screen) {
           // the tab with a coach's program waiting beside it (#557)
           _Screen.programs => [_program, _sent],
-          _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [_program],
+          _Screen.programPage ||
+          _Screen.historyNotToday ||
+          _Screen.historyFilterTemplates ||
+          _Screen.skipPage => [_program],
           _ => <Program>[],
         };
         final skips = switch (screen) {
@@ -2133,7 +2262,10 @@ void main() {
       firebaseAuth: firebase,
       hasLocalNotifications: false,
       // notes are there only where keys can be kept
-      keyVault: screen == _Screen.coachingNotes || screen == _Screen.yourDevices ? MemoryKeyVault() : null,
+      keyVault: switch (screen) {
+        _Screen.coachingNotes || _Screen.coachingFormerClient || _Screen.yourDevices => MemoryKeyVault(),
+        _ => null,
+      },
       // the dashboard animates indefinitely — settle would hang on it
       settle: false,
     );
@@ -2485,12 +2617,12 @@ void main() {
             .thenAnswer((_) async => [older]);
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
-        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
+        Preferences.of(tester.element(find.byType(MaterialApp))).setHistoryView(.calendar);
         await tester.pumpTimes();
         await tester.tap(find.bySemanticsLabel(RegExp(r', log a workout on this day$')).first);
         await tester.pumpTimes();
         expect(find.byKey(AppKeys.pastWorkoutsOffer), findsOneWidget);
-      case _Screen.calendarDay:
+      case _Screen.calendarDay || _Screen.calendarTemplates || _Screen.calendarWorkouts:
         // both early today, so the two can never fall either side of midnight
         final today = DateTime.now();
         final first = _unsynced()..start = DateTime(today.year, today.month, today.day, 0, 1);
@@ -2500,14 +2632,28 @@ void main() {
             .thenAnswer((_) async => [second, first]);
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
-        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
+        when(db.getTemplates(any)).thenAnswer((_) async => [_session('t1', 0, 'Push')]);
+        await Templates.of(tester.element(find.byType(MaterialApp))).init();
+        await tester.pumpTimes();
+        Preferences.of(tester.element(find.byType(MaterialApp))).setHistoryView(.calendar);
         await tester.pumpTimes();
         await tester.tap(find.bySemanticsLabel(RegExp(r', 2 workouts$')));
         await tester.pumpTimes();
         // the screen is only honest if the list is open on it: today's two
-        // workouts, and starting another (#618)
-        expect(find.byType(PopupMenuItem<Object>), findsNWidgets(3));
+        // workouts, and starting another (#618), from a template or a past
+        // workout too (#737)
+        expect(find.byType(PopupMenuItem<Object>), findsNWidgets(5));
         expect(find.byKey(AppKeys.calendarStart), findsOneWidget);
+        if (screen == .calendarTemplates) {
+          await tester.tap(find.byKey(AppKeys.calendarFromTemplate));
+          await tester.pumpTimes();
+          expect(find.byKey(AppKeys.makeFromTemplate('t1')), findsOneWidget);
+        }
+        if (screen == .calendarWorkouts) {
+          await tester.tap(find.byKey(AppKeys.calendarFromWorkout));
+          await tester.pumpTimes();
+          expect(find.byKey(AppKeys.makeFromWorkout(first.id)), findsOneWidget);
+        }
       case _Screen.historyCompact:
         final completed = Workout.fromJson(_unsynced().toMap());
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
@@ -2517,8 +2663,9 @@ void main() {
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
         expect(find.byKey(AppKeys.compactWorkout(completed.id)), findsOneWidget);
-      case _Screen.historyFilterMenu || _Screen.historyFiltered:
-        final completed = Workout.fromJson(_unsynced().toMap());
+      case _Screen.historyFilterMenu || _Screen.historyFilterTemplates || _Screen.historyFiltered:
+        // of a template, so there is a way to them
+        final completed = Workout.fromJson({..._unsynced().toMap(), 'templateId': 't1'});
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
         when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
             .thenAnswer((_) async => [completed]);
@@ -2528,21 +2675,54 @@ void main() {
           await tester.tapByKey(AppKeys.historyFilter);
           await tester.pumpTimes();
           expect(find.byType(CheckedPopupMenuItem<MuscleGroupKey>), findsNWidgets(10));
+        } else if (screen == _Screen.historyFilterTemplates) {
+          final context = tester.element(find.byType(MaterialApp));
+          final (templates, programs) = (Templates.of(context), Programs.of(context));
+          await templates.init();
+          await programs.init();
+          await tester.pumpTimes();
+          await tester.tapByKey(AppKeys.historyFilter);
+          await tester.pumpTimes();
+          await tester.tapByKey(AppKeys.historyFilterAxis('templates'));
+          await tester.pumpTimes();
+          expect(find.byKey(AppKeys.historyFilterTemplate('t1')), findsOneWidget);
         } else {
           // a group nothing here trained: the chips, and nothing matches
-          HistoryFilter.of(tester.element(find.byType(MaterialApp))).toggle(.neck);
+          HistoryFilter.of(tester.element(find.byType(MaterialApp)))
+            ..toggle(.neck)
+            ..toggleTemplate('t1')
+            ..from = DateTime(2026)
+            ..until = DateTime(2026, 2);
           await tester.pumpTimes();
           expect(find.byKey(AppKeys.historyFilterChips), findsOneWidget);
           expect(find.byKey(AppKeys.historyFilterEmpty), findsOneWidget);
         }
-      case _Screen.calendar:
+      case _Screen.calendar || _Screen.calendarMonth:
         final completed = Workout.fromJson(_unsynced().toMap());
-        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
+        // three months, so the paged one's arrows are both there
+        final rows = [
+          completed,
+          for (final days in [31, 62])
+            Workout.fromJson({
+              ..._unsynced().toMap(),
+              'id': 'earlier-$days',
+              'start': completed.start.subtract(Duration(days: days)).toIso8601String(),
+              'end': completed.start.subtract(Duration(days: days)).add(const Duration(hours: 1)).toIso8601String(),
+            }),
+        ];
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => rows);
         when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
-            .thenAnswer((_) async => [completed]);
+            .thenAnswer((_) async => rows);
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
-        await tester.tap(find.byKey(AppKeys.historyViewSwitch));
+        Preferences.of(tester.element(find.byType(MaterialApp))).setHistoryView(
+          screen == .calendarMonth ? .month : .calendar,
+        );
+        await tester.pumpTimes();
+        if (screen == _Screen.calendarMonth) {
+          await tester.tapByKey(AppKeys.calendarPreviousMonth);
+          await tester.pumpTimes();
+        }
       case _Screen.history:
         await tester.tapByKey(AppKeys.historyStack);
       case _Screen.pastWorkoutTimes || _Screen.pastWorkoutEditor:
@@ -2596,9 +2776,17 @@ void main() {
       case _Screen.settings || _Screen.anonymousSettings:
         await tester.tap(find.byIcon(Icons.settings_rounded));
       case _Screen.recaps:
+        // at this width a month opens beside the list (#687), with its close
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps?month=2026-09');
+        await tester.pumpTimes();
+        expect(find.widgetWithText(ListTile, 'September 2026'), findsOneWidget);
+        expect(find.byKey(AppKeys.monthlyReport), findsOneWidget);
+        expect(find.byKey(AppKeys.closeDetail), findsOneWidget);
+      case _Screen.recapsPhone:
         GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps');
         await tester.pumpTimes();
-        expect(find.text('September 2026'), findsOneWidget);
+        expect(find.widgetWithText(ListTile, 'September 2026'), findsOneWidget);
+        expect(find.byKey(AppKeys.monthlyReport), findsNothing);
       case _Screen.monthlyReport:
         GoRouter.of(tester.element(find.byType(Navigator).first)).go('/profile/recaps/2026-09');
         await tester.pumpTimes();
@@ -2685,6 +2873,7 @@ void main() {
       case _Screen.coachingClients ||
           _Screen.coachingActivity ||
           _Screen.coachingClient ||
+          _Screen.coachingFormerClient ||
           _Screen.coachingReview ||
           _Screen.coachingClientCopy ||
           _Screen.coachingMessages ||
@@ -2710,8 +2899,21 @@ void main() {
           await tester.tapByKey(AppKeys.coachingClient('c-sam'));
           await tester.pumpTimes();
         }
+        if (screen == _Screen.coachingFormerClient) {
+          await tester.ensureVisible(find.byKey(AppKeys.coachingFormerClients));
+          await tester.tapByKey(AppKeys.coachingFormerClients);
+          await tester.pumpTimes();
+          await tester.tapByKey(AppKeys.coachingClient('c-old'));
+          await tester.pumpTimes();
+        }
         if (screen == _Screen.coachingNotes) {
-          await tester.tapByKey(AppKeys.coachingClientNotes);
+          // beside the client on a page this wide (#693): a menu where the
+          // test font leaves no room for the segments
+          if (find.byKey(AppKeys.coachingBesideMenu).evaluate().isNotEmpty) {
+            await tester.tapByKey(AppKeys.coachingBesideMenu);
+            await tester.pumpTimes();
+          }
+          await tester.tapByKey(AppKeys.coachingBesideTab('notes'));
           await tester.pumpTimes();
         }
         if (screen == _Screen.coachingThread) {
@@ -2792,40 +2994,46 @@ void main() {
     await tester.pumpTimes();
   }
 
-  for (final (screen, guideline, reason) in _matrix) {
+  // One test per matrix entry and preset. Contrast is a property of a
+  // preset's tokens, so those guidelines sweep every preset; tap targets and
+  // labels are geometry and run once.
+  bool everyPreset(_Guideline guideline, String? reason) => guideline.rule == textContrastGuideline && reason == null;
+  final cases = [
+    for (final (screen, guideline, reason) in _matrix)
+      for (final preset in switch (everyPreset(guideline, reason)) {
+        true => Preset.values,
+        false => const [Preset.forge],
+      })
+        (screen, guideline, reason, preset),
+  ];
+  final mine = cases.indexed.where((each) => each.$1 % _shards == shard).map((each) => each.$2);
+
+  for (final (screen, guideline, reason, preset) in mine) {
     final description = switch (reason) {
       String r => '${screen.name} meets ${guideline.name} (skipped: $r)',
       null => '${screen.name} meets ${guideline.name}',
     };
-    // Contrast is a property of a preset's tokens, so those guidelines sweep
-    // every preset; tap targets and labels are geometry and run once.
-    final presets = switch (guideline.rule == textContrastGuideline && reason == null) {
-      true => Preset.values,
-      false => const [Preset.forge],
+    final suffix = switch (everyPreset(guideline, reason)) {
+      true => ' in ${preset.name}',
+      false => '',
     };
-    for (final preset in presets) {
-      final suffix = switch (presets.length > 1) {
-        true => ' in ${preset.name}',
-        false => '',
-      };
-      testWidgets(
-        '$description$suffix',
-        (tester) async {
-          await pumpTo(tester, screen);
+    testWidgets(
+      '$description$suffix',
+      (tester) async {
+        await pumpTo(tester, screen);
 
-          final theme = AppTheme.of(tester.element(find.byType(MaterialApp)));
-          theme.preset = preset;
-          if (guideline.isDark) {
-            theme.toDark();
-          }
-          await tester.pumpTimes();
+        final theme = AppTheme.of(tester.element(find.byType(MaterialApp)));
+        theme.preset = preset;
+        if (guideline.isDark) {
+          theme.toDark();
+        }
+        await tester.pumpTimes();
 
-          final handle = tester.ensureSemantics();
-          await expectLater(tester, meetsGuideline(guideline.rule));
-          handle.dispose();
-        },
-        skip: reason != null,
-      );
-    }
+        final handle = tester.ensureSemantics();
+        await expectLater(tester, meetsGuideline(guideline.rule));
+        handle.dispose();
+      },
+      skip: reason != null,
+    );
   }
 }

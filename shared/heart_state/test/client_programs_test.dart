@@ -16,6 +16,12 @@ class _Server implements ClientProgramService {
 
   var managed = true;
 
+  /// What the client's device plans from (heart-api#439), and the sessions'
+  /// exercises: none unless a test gives them.
+  Map<String, Object> planning = {};
+  List<Object> exercises = [];
+  var failRead = false;
+
   @override
   Future<List<Program>> getClientPrograms(String studentId) async {
     return [if (managed) Program(id: 'p1', name: 'Strength block', perWeek: 2, weeks: 4)];
@@ -23,6 +29,7 @@ class _Server implements ClientProgramService {
 
   @override
   Future<CoachProgramView> getClientProgram(String studentId, String programId) async {
+    if (failRead) throw const ServerFailed();
     return CoachProgramView.fromJson({
       'program': {
         'id': programId,
@@ -35,9 +42,10 @@ class _Server implements ClientProgramService {
       },
       'sessions': [
         for (final id in sessionRevisions.keys)
-          {'id': id, 'name': 'Day A', 'order': 0, 'programId': programId, 'exercises': <Object>[]},
+          {'id': id, 'name': 'Day A', 'order': 0, 'programId': programId, 'exercises': exercises},
       ],
       'position': {'week': 1},
+      ...planning,
     });
   }
 
@@ -57,7 +65,7 @@ class _Server implements ClientProgramService {
     if (refuse case final refusal?) throw refusal;
     writes.add((session.id, baseRevision));
     if (baseRevision != sessionRevisions[session.id]) {
-      throw {'code': 'program_changed', 'revision': sessionRevisions[session.id]};
+      throw refusedAs({'code': 'program_changed', 'revision': sessionRevisions[session.id]});
     }
     sessionRevisions[session.id] = baseRevision + 1;
   }
@@ -69,7 +77,7 @@ class _Server implements ClientProgramService {
     required int baseRevision,
     required String changeId,
   }) async {
-    if (baseRevision != programRevision) throw {'code': 'program_changed', 'revision': programRevision};
+    if (baseRevision != programRevision) throw refusedAs({'code': 'program_changed', 'revision': programRevision});
     programRevision++;
     return program;
   }
@@ -82,6 +90,13 @@ class _Server implements ClientProgramService {
   @override
   Future<void> revertClientChange(String studentId, String programId, String changeId) async {
     reverted.add(changeId);
+  }
+}
+
+class _FailingChanges extends _Server {
+  @override
+  Future<List<ProgramChange>> getClientProgramChanges(String studentId, String programId, {String? since}) async {
+    throw const ServerFailed();
   }
 }
 
@@ -105,6 +120,123 @@ void main() {
     expect(programs.status('p1'), CoachingStatus.loaded);
     expect(programs.view('p1')?.sessions.single.id, 's1');
     expect(programs.changes('p1').map((each) => each.id), ['c2', 'c1']);
+  });
+
+  group("when the client last changed a copy, as the roster's `changed` counts it (#745)", () {
+    ProgramChange change(
+      String id,
+      int day, {
+      String? actor = 'sam',
+      String kind = 'edit',
+      Map<String, dynamic>? before,
+      Map<String, dynamic>? after,
+    }) {
+      return ProgramChange(
+        id: id,
+        programId: 'p1',
+        actorId: actor,
+        kind: kind,
+        revision: day,
+        before: before,
+        after: after,
+        at: DateTime.utc(2026, 11, day),
+      );
+    }
+
+    Map<String, dynamic> session(
+      List<String> exercises, {
+      String name = 'Day A',
+      Map<String, dynamic> more = const {},
+    }) {
+      return {
+        'name': name,
+        'exercises': [
+          for (final id in exercises)
+            {
+              'exercise': {'id': id},
+              'sets': [],
+            },
+        ],
+        ...more,
+      };
+    }
+
+    test("what they said counts; the coach's, nothing said, and nothing read don't", () async {
+      server.changes.addAll([
+        change(
+          'c1',
+          1,
+          before: session(['squat']),
+          after: session(['squat'], name: 'Legs'),
+        ),
+        change('c2', 3, kind: 'create', after: session(['bench'])),
+        change('c3', 5, actor: 'coach', before: session(['bench']), after: session(['press'])),
+        change('c4', 6, actor: null, kind: 'library_update', after: session(['row'])),
+      ]);
+      expect(programs.changedBy('sam', 'p1'), isNull, reason: 'nothing read yet');
+
+      expect(await programs.readChanges('sam', ['p1']), isTrue);
+
+      expect(programs.changedBy('sam', 'p1'), DateTime.utc(2026, 11, 3));
+      expect(programs.changedBy('sam', 'p2'), isNull);
+    });
+
+    test('filing, archiving and revisions alone are nothing', () async {
+      server.changes.addAll([
+        change(
+          'c1',
+          1,
+          before: session(['squat']),
+          after: session(['squat'], more: {'folder': 'f1', 'revision': 2}),
+        ),
+        change('c2', 2, before: {'name': 'Block', 'archived': false}, after: {'name': 'Block', 'archived': true}),
+      ]);
+
+      await programs.readChanges('sam', ['p1']);
+
+      expect(programs.changedBy('sam', 'p1'), isNull);
+    });
+
+    test("a ladder's step up is nothing, in a session or in a program's rules; another swap counts", () async {
+      server.planning = {
+        'actions': [
+          {'kind': 'advance', 'from': 'pushup', 'to': 'dip', 'at': '2026-11-02T00:00:00Z'},
+        ],
+      };
+      server.changes.addAll([
+        change('c1', 2, before: session(['squat', 'pushup']), after: session(['squat', 'dip'])),
+        change(
+          'c2',
+          2,
+          before: {
+            'name': 'Block',
+            'rules': {'pushup': 'ladder'},
+            'revision': 1,
+          },
+          after: {
+            'name': 'Block',
+            'rules': {'dip': 'ladder'},
+            'revision': 2,
+          },
+        ),
+      ]);
+      await programs.readChanges('sam', ['p1']);
+      expect(programs.changedBy('sam', 'p1'), isNull);
+
+      server.changes.add(change('c3', 4, before: session(['squat', 'dip']), after: session(['lunge', 'dip'])));
+      await programs.readChanges('sam', ['p1']);
+      expect(programs.changedBy('sam', 'p1'), DateTime.utc(2026, 11, 4));
+    });
+  });
+
+  test('a copy whose changes fail to read reads as unchanged, and is reported', () async {
+    final errors = <Object>[];
+    programs = ClientPrograms(service: _FailingChanges(), onError: (error, {stacktrace}) => errors.add(error));
+
+    expect(await programs.readChanges('sam', ['p1']), isFalse);
+
+    expect(programs.changedBy('sam', 'p1'), isNull);
+    expect(errors, hasLength(1));
   });
 
   test("a session saved from the revision read lands, and the next starts from the server's", () async {
@@ -184,7 +316,7 @@ void main() {
   test('a write refused as no longer theirs is kept to say so, and the copy stays read-only after a read', () async {
     await programs.open('sam', 'p1');
     programs.editSession('sam', 'p1', session: programs.view('p1')!.sessions.single);
-    server.refuse = {'code': 'forbidden'};
+    server.refuse = refusedAs({'code': 'forbidden'});
     await programs.saveEditable();
 
     expect(programs.conflict('p1')?.refused, isTrue);
@@ -220,6 +352,97 @@ void main() {
       'session_deleted',
     ]);
     expect(reported.names, everyElement('client_program_edited'));
+  });
+
+  group("a session laid out as the client's device would (heart-api#439)", () {
+    final now = DateTime.utc(2026, 11, 16, 12);
+    num round(Exercise _, num kilograms) => (kilograms / 2.5).round() * 2.5;
+    Map<String, dynamic> base(String id, num value, DateTime at) {
+      return ProgramBase(id: id, programId: 'p1', exerciseId: 'squat', value: value, at: at).toMap();
+    }
+
+    setUp(() {
+      server.exercises = [
+        {
+          'id': 'te1',
+          'exercise': {'id': 'squat', 'name': 'Squat', 'category': 'Barbell', 'target': 'Legs'},
+          'sets': [
+            {
+              'id': 'set-1',
+              'set_type': 'normal',
+              'target': {
+                'share': 0.7,
+                'reps': {'min': 5, 'max': 5},
+              },
+            },
+          ],
+        },
+      ];
+      server.planning = {
+        'position': {'week': 1, 'next': 's1'},
+        'bases': [base('b1', 100, DateTime.utc(2026, 11)), base('b2', 110, DateTime.utc(2026, 11, 8))],
+        'actions': <Object>[],
+        'marks': <Object>[],
+      };
+    });
+
+    Future<PlannedWorkout> planAt(DateTime at) async {
+      await programs.open('muffin', 'p1');
+      final session = programs.view('p1')!.sessions.single;
+      return programs.plan(session, at: at, now: now, round: round);
+    }
+
+    test("from the client's bases, with the plan it was asked to be", () async {
+      final (:workout, :plan) = await planAt(now);
+
+      final set = workout.single.single;
+      // 70% of the later 110 is 77, down to the 2.5 step; 100's would be 70
+      expect(set.target?[TargetMeasure.weight]?.min, 75);
+      expect(plan, isNotNull);
+      final planned = ((plan!.plan['exercises'] as List).single as Map)['sets'] as List;
+      expect((planned.single as Map)['setId'], set.id, reason: 'target beside done finds the set it became');
+    });
+
+    test('as it stood when the session was: nothing after it moves it', () async {
+      final (:workout, plan: _) = await planAt(DateTime.utc(2026, 11, 5));
+
+      expect(workout.single.single.target?[TargetMeasure.weight]?.min, 70, reason: "the base the 8th set wasn't yet");
+    });
+
+    test("a history that doesn't fold to where the server says they are plans nothing", () async {
+      // as an answer from before the history was sent reads: none of it
+      server.planning['position'] = {'week': 3, 'next': 's1'};
+
+      final (:workout, :plan) = await planAt(now);
+
+      expect(workout.single.single.target?[TargetMeasure.weight], isNull);
+      expect(plan, isNull);
+    });
+
+    test('a copy whose last read failed plans nothing, rather than from what it read before', () async {
+      await programs.open('muffin', 'p1');
+      server.failRead = true;
+
+      final (:workout, :plan) = await planAt(now);
+
+      expect(programs.view('p1'), isNotNull, reason: 'the earlier read still shows');
+      expect(plan, isNull);
+    });
+
+    test('a copy never read starts as written, with no plan', () {
+      final session = Template.fromJson({
+        'id': 's1',
+        'name': 'Day A',
+        'order': 0,
+        'programId': 'p2',
+        'exercises': server.exercises,
+      });
+
+      final (:workout, :plan) = programs.plan(session, at: now, now: now, round: round);
+
+      expect(workout.single.single.target?[TargetMeasure.weight], isNull);
+      expect(plan, isNull);
+    });
   });
 
   test('sign-out forgets every copy', () async {

@@ -12,7 +12,17 @@ class RemovableChip extends StatelessWidget with HasHaptic<RemovableChip> {
   /// Before the label: a muscle family's dot, on History's chips (#617).
   final Widget? avatar;
 
-  const new({super.key, required this.label, required this.onDeleted, this.avatar});
+  /// The widest the label gets before it ends in an ellipsis, so the × stays in
+  /// reach; as wide as it is, without one.
+  final double maxLabelWidth;
+
+  const new({
+    super.key,
+    required this.label,
+    required this.onDeleted,
+    this.avatar,
+    this.maxLabelWidth = double.infinity,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +32,16 @@ class RemovableChip extends StatelessWidget with HasHaptic<RemovableChip> {
       avatar: avatar,
       label: Padding(
         padding: const .symmetric(horizontal: 4),
-        child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxLabelWidth),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium,
+            maxLines: 1,
+            overflow: .ellipsis,
+            semanticsLabel: label,
+          ),
+        ),
       ),
       visualDensity: const VisualDensity(vertical: -4),
       onDeleted: () {

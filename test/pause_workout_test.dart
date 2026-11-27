@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -21,14 +19,7 @@ void main() {
   // the app's own fonts, as the screens are laid out for them: the test font
   // is wider and overflows the app bars at phone width
   setUpAll(() async {
-    final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
-    for (final entry in manifest.cast<Map>()) {
-      final loader = FontLoader(entry['family'] as String);
-      for (final font in (entry['fonts'] as List).cast<Map>()) {
-        loader.addFont(rootBundle.load(font['asset'] as String));
-      }
-      await loader.load();
-    }
+    await loadAppFonts();
     // a finish withdraws the workout's notifications; no plugin registrant
     // runs under `flutter test` — see notification_refusal_test
     FlutterLocalNotificationsPlatform.instance = AndroidFlutterLocalNotificationsPlugin();

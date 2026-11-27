@@ -11,6 +11,8 @@ class _MaterialExerciseDetailPage extends StatefulWidget {
   final void Function(Exercise)? onTapAlternative;
   final Future<void> Function(Exercise)? onAddToWorkout;
   final void Function(Exercise target)? onHistoryMoved;
+  final VoidCallback? onArchived;
+  final VoidCallback? onUnarchived;
 
   const new({
     super.key,
@@ -24,6 +26,8 @@ class _MaterialExerciseDetailPage extends StatefulWidget {
     this.onTapAlternative,
     this.onAddToWorkout,
     this.onHistoryMoved,
+    this.onArchived,
+    this.onUnarchived,
   });
 
   @override
@@ -71,10 +75,19 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
           if (widget.allowOptions)
             if (widget.exercise.isMine ||
                 _canMoveHistory(context, widget.exercise, onMoved: widget.onHistoryMoved, listen: true))
-              IconButton(
-                tooltip: L.of(context).exerciseOptions,
-                onPressed: () => _onExerciseMenu(context, widget.exercise, onHistoryMoved: widget.onHistoryMoved),
-                icon: const Icon(Icons.more_vert_rounded),
+              // its own context, so the menu hangs off the button (#710)
+              Builder(
+                builder: (button) => IconButton(
+                  tooltip: L.of(context).exerciseOptions,
+                  onPressed: () => _onExerciseMenu(
+                    button,
+                    widget.exercise,
+                    onHistoryMoved: widget.onHistoryMoved,
+                    onArchived: widget.onArchived,
+                    onUnarchived: widget.onUnarchived,
+                  ),
+                  icon: const Icon(Icons.more_vert_rounded),
+                ),
               ),
           if (!widget.exercise.isMine)
             IconButton(

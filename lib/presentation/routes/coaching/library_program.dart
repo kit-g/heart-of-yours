@@ -25,12 +25,17 @@ class CoachProgramPage extends StatefulWidget {
   /// Leaves the page once the program is deleted.
   final VoidCallback onGone;
 
+  /// Puts the page away, where it sits beside the library: there, a close
+  /// rather than a back to nothing (#685). Absent over the list.
+  final VoidCallback? onClose;
+
   const new({
     super.key,
     required this.programId,
     required this.onEdit,
     required this.onEditSession,
     required this.onGone,
+    this.onClose,
   });
 
   @override
@@ -114,6 +119,15 @@ class _CoachProgramPageState extends State<CoachProgramPage> {
     final settled = !unsaved && !library.saving(program.id);
     return Scaffold(
       appBar: AppBar(
+        leading: switch (widget.onClose) {
+          final VoidCallback close => IconButton(
+            key: AppKeys.closeDetail,
+            tooltip: l.close,
+            onPressed: close,
+            icon: const Icon(Icons.close),
+          ),
+          null => null,
+        },
         title: Text(program.program.name),
         actions: [
           // a program with nothing in it, or not yet on the server, has
@@ -290,7 +304,7 @@ class _CoachProgramPageState extends State<CoachProgramPage> {
       final deliveries = await library.send(program.id, picked);
       String name(String connectionId) {
         return switch (roster.clients.where((each) => each.connectionId == connectionId).firstOrNull) {
-          final ClientSummary client => _clientName(l, client),
+          final ClientSummary client => clientName(l, client),
           null => l.coachingClientUnnamed,
         };
       }
@@ -486,11 +500,16 @@ class _Holders extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final roster = Roster.watch(context);
     final muted = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
-    String name(CoachProgramHolder holder) {
+
+    /// As the roster names them now, a name given since the holders were
+    /// read included (#753); standing [alone] as a row's title, or in a
+    /// sentence.
+    String name(CoachProgramHolder holder, {bool alone = false}) {
       final client = roster.clients.where((each) => each.connectionId == holder.connectionId).firstOrNull;
-      return switch ((holder.studentName?.trim(), client)) {
-        (final String name, _) when name.isNotEmpty => name,
-        (_, final ClientSummary client) => _clientName(l, client),
+      return switch ((client, holder.studentName?.trim())) {
+        (final ClientSummary client, _) when alone => clientLabel(l, client),
+        (final ClientSummary client, _) => clientName(l, client),
+        (null, final String name) when name.isNotEmpty => name,
         _ => l.coachingClientUnnamed,
       };
     }
@@ -512,7 +531,7 @@ class _Holders extends StatelessWidget {
           (.failed, []) => [
             ListTile(
               title: Text(l.coachingProgramHoldersFailed, style: muted),
-              trailing: TextButton(onPressed: onRetry, child: Text(l.retry)),
+              trailing: QuietButton(onPressed: onRetry, child: Text(l.retry)),
             ),
           ],
           (_, []) => [
@@ -526,7 +545,7 @@ class _Holders extends StatelessWidget {
               ListTile(
                 key: AppKeys.coachingHolder(holder.connectionId),
                 leading: Avatar(remote: holder.studentAvatar, radius: 20),
-                title: Text(name(holder), maxLines: 1, overflow: .ellipsis),
+                title: Text(name(holder, alone: true), maxLines: 1, overflow: .ellipsis),
                 subtitle: Text(switch (holder.version) {
                   final version when version < latest => l.coachingProgramHolderBehind(version, latest),
                   final version => l.coachingProgramHolderVersion(version),
@@ -534,12 +553,8 @@ class _Holders extends StatelessWidget {
                 // only a copy behind has anything to bring up
                 trailing: switch (holder.version < latest) {
                   true => Builder(
-                    builder: (context) => TextButton(
+                    builder: (context) => QuietButton(
                       key: AppKeys.coachingUpdateCopy(holder.connectionId),
-                      // the theme's compact text button is under the tap-target minimum
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension),
-                      ),
                       onPressed: () => _update(context, holder, name(holder)),
                       child: Text(l.coachingUpdateCopy),
                     ),
@@ -578,7 +593,7 @@ class _SendPickerState extends State<_SendPicker> {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final roster = Roster.watch(context);
-    final clients = roster.clients.where((each) => each.status != 'severed').toList();
+    final clients = roster.clients.where((each) => !_former(each)).toList();
     final held = {for (final holder in widget.holders) holder.connectionId: holder.version};
     return switch ((roster.status, clients)) {
       (.idle || .loading, []) => const Padding(
@@ -610,7 +625,7 @@ class _SendPickerState extends State<_SendPicker> {
                         key: AppKeys.coachingSendTo(client.connectionId),
                         contentPadding: const .symmetric(horizontal: 4),
                         secondary: Avatar(remote: client.avatar, radius: 18),
-                        title: Text(_clientName(l, client), maxLines: 1, overflow: .ellipsis),
+                        title: Text(clientLabel(l, client), maxLines: 1, overflow: .ellipsis),
                         subtitle: switch (held[client.connectionId]) {
                           final int version => Text(l.coachingProgramHasIt(version)),
                           null => null,

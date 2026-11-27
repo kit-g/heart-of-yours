@@ -120,3 +120,102 @@ List<GroupedExercises> groupExercises(
       if (buckets[group] case final members?) (group: group, exercises: members),
   ];
 }
+
+/// The exercise a grouped picker pictures [members]' heading by (#711): one
+/// with a [ExercisePicture.picture] over one without, then the one done most
+/// ([timesDone], finished workouts), then the best known ([_staples]), then
+/// the first in [members]' order. Null for no members. One pass, no sort.
+///
+/// The picture comes first because it is what the heading is for: a custom
+/// exercise done every week has none, and would leave the heading as bare as
+/// before. Someone who has done nothing in the group still gets a familiar
+/// face — the squat over whichever squat sorts first.
+Exercise? representativeOf(Iterable<Exercise> members, {int Function(ExerciseId)? timesDone}) {
+  if (members.isEmpty) return null;
+
+  ({Exercise exercise, bool pictured, int done, int staple}) rank(Exercise exercise) {
+    return (
+      exercise: exercise,
+      pictured: exercise.picture != null,
+      done: timesDone?.call(exercise.id) ?? 0,
+      staple: _stapleRank[exercise.key] ?? _stapleRank.length,
+    );
+  }
+
+  // the earlier keeps a tie, so the group's own order decides last
+  return members.map(rank).reduce((best, each) {
+    final better = switch ((each.pictured, best.pictured)) {
+      (true, false) => true,
+      (false, true) => false,
+      _ => each.done > best.done || (each.done == best.done && each.staple < best.staple),
+    };
+    return better ? each : best;
+  }).exercise;
+}
+
+/// What an exercise is shown by: its thumbnail's link, when it is one an
+/// image can be loaded from. The badge draws exactly these, and a grouped
+/// picker pictures a heading only by one of them (#711).
+extension ExercisePicture on Exercise {
+  String? get picture {
+    return switch (thumbnail?.link) {
+      String url when url.startsWith('https://') => url,
+      _ => null,
+    };
+  }
+}
+
+/// Library slugs ([Exercise.key]) a lifter knows on sight, best known first:
+/// the big lifts, then one staple per family of movement. The library has no
+/// popularity of its own to read, and its order is alphabetical, which put
+/// "Ab Wheel" over Core and "Air Bike" over Cardio. A slug the library drops
+/// is simply never matched, and the group falls back to its own order.
+const _staples = [
+  'squat-barbell',
+  'bench-press-barbell',
+  'deadlift-barbell',
+  'overhead-press-barbell',
+  'pull-up',
+  'pull-up-assisted',
+  'bent-over-row-barbell',
+  'push-up',
+  'bicep-curl-dumbbell',
+  'lat-pulldown-cable',
+  'leg-press',
+  'plank',
+  'running',
+  'plank-weighted',
+  'farmers-walk',
+  'burpee',
+  'power-clean',
+  'bench-press-dumbbell',
+  'romanian-deadlift-barbell',
+  'hip-thrust-barbell',
+  'lunge-dumbbell',
+  'lateral-raise-dumbbell',
+  'triceps-pushdown-cable-straight-bar',
+  'incline-bench-press-barbell',
+  'seated-row-cable',
+  'chest-fly-dumbbell',
+  'chest-dip',
+  'crunch',
+  'hanging-leg-raise',
+  'standing-calf-raise-machine',
+  'leg-extension-machine',
+  'seated-leg-curl-machine',
+  'face-pull-cable',
+  'shrug-dumbbell',
+  'upright-row-barbell',
+  'front-raise-dumbbell',
+  'pullover-dumbbell',
+  'russian-twist',
+  'back-extension',
+  'box-jump',
+  'sled-push',
+  'hip-abductor-machine',
+  'hip-adductor-machine',
+  'kettlebell-swing',
+  'stretching',
+];
+
+final _stapleRank = {for (final (rank, key) in _staples.indexed) key: rank};

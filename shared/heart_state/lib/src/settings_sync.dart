@@ -15,6 +15,11 @@ abstract interface class SettingsAccount implements Listenable {
 
   bool get isAnonymous;
 
+  /// Whether [user]'s settings are the server's copy: until it arrives they
+  /// are only what the device knew of the session, and every answer here
+  /// would read as newer than an account that seems to hold none.
+  bool get settingsKnown;
+
   /// Writes the account's settings; returns what the account then holds, or
   /// null when there is no account to write to.
   Future<Settings?> saveSettings(Settings settings);
@@ -77,6 +82,9 @@ class SettingsSync {
     // before the store is read there is nothing to compare, and adopting into
     // it would write nowhere and notify straight back here
     if (user == null || _auth.isAnonymous || !_preferences.isInitialized) return;
+    // compared against the server's copy only: before it arrives, any answer
+    // here is "newer" than none and would be written for nothing
+    if (!_auth.settingsKnown) return;
 
     _busy = true;
     try {

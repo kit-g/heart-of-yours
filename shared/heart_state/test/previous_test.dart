@@ -173,7 +173,7 @@ void main() {
   });
 
   group('PreviousExercises onSignOut', () {
-    test('clears loaded sets without notifying', () async {
+    test('clears loaded sets and says so', () async {
       final sut = PreviousExercises(
         service: _FakePreviousService(
           response: {
@@ -190,7 +190,7 @@ void main() {
 
       expect(sut.at('squat', 0), isNull);
       expect(sut.last('squat'), isNull);
-      expect(probe.notifications, 0);
+      expect(probe.notifications, 1);
     });
   });
 

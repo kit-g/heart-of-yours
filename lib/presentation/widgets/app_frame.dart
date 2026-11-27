@@ -1,6 +1,9 @@
 import 'package:go_router/go_router.dart';
+import 'package:heart/core/utils/visual.dart' show lessMotion;
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
+import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
+import 'package:heart/presentation/navigation/pushes.dart' show coachingSpaceRuns;
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/tab_frame.dart';
@@ -11,17 +14,47 @@ import 'package:material_ui/material_ui.dart';
 
 /// The app's own space (#566 calls it that, beside Coaching): Profile,
 /// Workout, History and Exercises, through [TabFrame].
+///
+/// Exercises can be left out (#608, [Feature.exercisesTab]): the bar then has
+/// three tabs and reflows as if it never had a fourth. Its branch stays in the
+/// shell, so turning the tab back on finds it where it was left.
 class AppFrame extends StatelessWidget {
+  /// The shell's branches, in the order the router declares them.
+  static const _profile = 0;
+  static const _workout = 1;
+  static const _history = 2;
+  static const _exercises = 3;
+
   final StatefulNavigationShell shell;
+
+  /// Into the Coaching space, from the foot of the rail while it is on.
+  final VoidCallback onCoaching;
 
   const new({
     super.key,
     required this.shell,
+    required this.onCoaching,
   });
 
   @override
   Widget build(BuildContext context) {
     final L(:profile, :workout, :history, :exercises, :keepAwakeBadge) = L.of(context);
+    // turned off, not merely unread: before the preferences load the tab is
+    // there, as it is for everyone who never touched the switch
+    final showsExercises = context.select<Preferences, bool>(
+      (preferences) => preferences.featureAnswer(.exercisesTab) != .off,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
+      // left out while it was the tab on screen: the app moves to the first
+      // tab rather than keep a screen the bar no longer names. Asked of the
+      // router now, not of [shell], which is the frame's as it was built
+      if (!showsExercises && HeartRouter.onExercisesTab(context)) {
+        shell.goBranch(_profile);
+      }
+      // a link into the tab that came before the tabs did
+      HeartRouter.takeLinkOverTheTab(context);
+    });
 
     final destinations = <TabDestination>[
       (
@@ -30,6 +63,7 @@ class AppFrame extends StatelessWidget {
           Icons.person_rounded,
           key: AppKeys.profileStack,
         ),
+        branch: _profile,
       ),
       (
         label: workout,
@@ -64,6 +98,7 @@ class AppFrame extends StatelessWidget {
             };
           },
         ),
+        branch: _workout,
       ),
       (
         label: history,
@@ -71,14 +106,17 @@ class AppFrame extends StatelessWidget {
           Icons.timeline_rounded,
           key: AppKeys.historyStack,
         ),
+        branch: _history,
       ),
-      (
-        label: exercises,
-        icon: (_) => const Icon(
-          Icons.list_rounded,
-          key: AppKeys.exercisesStack,
+      if (showsExercises)
+        (
+          label: exercises,
+          icon: (_) => const Icon(
+            Icons.list_rounded,
+            key: AppKeys.exercisesStack,
+          ),
+          branch: _exercises,
         ),
-      ),
     ];
 
     return Shortcuts(
@@ -87,7 +125,7 @@ class AppFrame extends StatelessWidget {
         actions: <Type, Action<Intent>>{
           _NewWorkoutIntent: CallbackAction<_NewWorkoutIntent>(
             onInvoke: (_) {
-              shell.goBranch(1);
+              shell.goBranch(_workout);
               final name = L.of(context).defaultWorkoutName();
               return startWorkoutOverActive(
                 context,
@@ -100,17 +138,27 @@ class AppFrame extends StatelessWidget {
           shell: shell,
           destinations: destinations,
           onReselect: _customCallbacks,
+          // opt-in (#566): off, the rail ends at its tabs, as before
+          railFooter: switch (_coachingOn(context)) {
+            true => SpaceSwitch(
+              key: AppKeys.coachingButton,
+              icon: Icons.groups_rounded,
+              label: L.of(context).coaching,
+              onPressed: onCoaching,
+            ),
+            false => null,
+          },
         ),
       ),
     );
   }
 }
 
-Future<void> _customCallbacks(BuildContext context, int index) async {
+Future<void> _customCallbacks(BuildContext context, int branch) async {
   // custom callbacks based on the exact location
-  switch (index) {
+  switch (branch) {
     // profile stack
-    case 0:
+    case AppFrame._profile:
       while (context.canPop()) {
         context.pop();
       }
@@ -119,10 +167,10 @@ Future<void> _customCallbacks(BuildContext context, int index) async {
         return Scrolls.of(context).scrollProfileToTop();
       }
     // workout stack
-    case 1:
+    case AppFrame._workout:
       return Scrolls.of(context).scrollWorkoutToTop();
     // history stack
-    case 2:
+    case AppFrame._history:
       // Both scrollables, and no question asked about where the router is. A
       // controller with nothing attached scrolls nothing — see
       // [Scrolls._scrollToTop] — so the editor's is a no-op while the editor
@@ -133,12 +181,12 @@ Future<void> _customCallbacks(BuildContext context, int index) async {
 
       await Future.wait([
         scrolls.scrollEditableWorkoutToTop(),
-        scrolls.resetHistoryStack(),
+        scrolls.resetHistoryStack(lessMotion: lessMotion(context)),
       ]);
 
       return;
     // exercises stack
-    case 3:
+    case AppFrame._exercises:
       // A navbar button is a back action: scroll the page's scrollable to the
       // top if there is one, otherwise back out. On one pane the detail is
       // covering the list and carries no controller of its own, so there is
@@ -154,9 +202,23 @@ Future<void> _customCallbacks(BuildContext context, int index) async {
       if (LayoutProvider.of(context) == .compact && context.canPop()) {
         return context.pop();
       }
+      // two panes, with the archive in the library's place: backed out of a
+      // step at a time, as a pushed page is on one
+      if (HeartRouter.backOutOfExerciseArchive(context)) return;
 
       return Scrolls.of(context).resetExerciseStack();
   }
 }
 
 class _NewWorkoutIntent extends Intent;
+
+/// Whether the Coaching space is on, rebuilding the frame only when that
+/// answer changes, not on every other preference or sign-in notice.
+bool _coachingOn(BuildContext context) {
+  // read outside the selectors, which may not look anything up themselves
+  final auth = Auth.of(context);
+  final preferences = Preferences.of(context);
+  final byPreferences = context.select<Preferences, bool>((it) => coachingSpaceRuns(it, auth));
+  final byAuth = context.select<Auth, bool>((it) => coachingSpaceRuns(preferences, it));
+  return byPreferences && byAuth;
+}

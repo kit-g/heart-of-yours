@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'analytics.dart';
 import 'coaching.dart' show CoachingStatus;
 import 'device_keys.dart';
+import 'refusals.dart';
 import 'remote.dart';
 
 /// What the server does with threads (heart-of-yours#556). Like
@@ -119,6 +120,43 @@ enum MessageDelivery {
   closed,
 }
 
+/// What a message can be about (#556): the server keeps these beside the
+/// sealed words, in the clear, and checks neither.
+enum MessageSubjectType {
+  workout('workout'),
+  exerciseSet('exercise_set');
+
+  /// The server's word for it.
+  final String wire;
+
+  new(this.wire);
+
+  static MessageSubjectType? of(String? wire) => values.where((each) => each.wire == wire).firstOrNull;
+}
+
+/// What one message is about: a workout, or one set of one. A reference,
+/// never content: what's said about it is in the sealed words alone.
+final class MessageSubject {
+  final MessageSubjectType type;
+  final String id;
+
+  const new(this.type, this.id);
+
+  /// One the server holds, when this build knows its kind.
+  static MessageSubject? of(String? type, String? id) {
+    return switch ((MessageSubjectType.of(type), id)) {
+      (final MessageSubjectType type, final String id) when id.isNotEmpty => MessageSubject(type, id),
+      _ => null,
+    };
+  }
+
+  @override
+  bool operator ==(Object other) => other is MessageSubject && other.type == type && other.id == id;
+
+  @override
+  int get hashCode => Object.hash(type, id);
+}
+
 /// One message as the app shows it.
 class Message {
   final ThreadItem item;
@@ -142,6 +180,9 @@ class Message {
     Opened(:final text) => text,
     Locked() || Refused() => null,
   };
+
+  /// What it's about, when it's about something this build knows.
+  MessageSubject? get subject => MessageSubject.of(item.subjectType, item.subjectId);
 }
 
 /// One thread as this device has read it.
@@ -157,13 +198,21 @@ class MessageThread {
   /// this person.
   final bool closed;
 
+  /// The locked messages whose keys were looked for, by id: any other may be
+  /// open in a moment.
+  final Set<String> lookedFor;
+
   const new({
     required this.threadId,
     this.messages = const [],
     this.status = .idle,
     this.hasOlder = false,
     this.closed = false,
+    this.lookedFor = const {},
   });
+
+  /// The messages that stay locked: their keys were looked for, and none came.
+  Iterable<Message> get locked => messages.where((each) => each.opened is Locked && lookedFor.contains(each.id));
 }
 
 /// Coaching messages (heart-of-yours#556): the inbox, each thread, and sending.
@@ -247,6 +296,10 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   final _threads = <Thread>[];
   final _views = <String, MessageThread>{};
   final _drafts = <String, String>{};
+
+  /// What the next message to each connection's person is about, by
+  /// connection: set where the conversation is opened from.
+  final _about = <String, MessageSubject>{};
   final _pulls = _OneAtATime();
   final _flushes = _OneAtATime();
   final _writes = _InTurn();
@@ -311,6 +364,22 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       case false:
         _drafts[threadId] = text;
     }
+  }
+
+  /// What the next message written to [connectionId]'s person is about.
+  MessageSubject? about(String connectionId) => _about[connectionId];
+
+  /// Makes the next message to [connectionId]'s person about [subject], or
+  /// about nothing in particular.
+  void writeAbout(String connectionId, MessageSubject? subject) {
+    if (_about[connectionId] == subject) return;
+    switch (subject) {
+      case final MessageSubject subject:
+        _about[connectionId] = subject;
+      case null:
+        _about.remove(connectionId);
+    }
+    notifyListeners();
   }
 
   /// Reads the inbox: what this device holds first, then the server's.
@@ -545,7 +614,9 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> _pull(String threadId) async {
     final userId = _userId;
-    if (userId == null || !_remote.allowed) return;
+    if (userId == null) return;
+    // nothing can be asked: what is locked stays so
+    if (!_remote.allowed) return _lookedFor(threadId);
     _view(threadId, status: .loading);
     try {
       final stored = await _local.getThreadItems(userId, threadId);
@@ -607,6 +678,10 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       if (locked.isNotEmpty) {
         await _cipher.receive();
         if (userId != _userId) return;
+        // what it opened is shown before the rest counts as locked
+        await _show(threadId);
+        if (userId != _userId) return;
+        _lookedFor(threadId);
         // nothing here waits on it: the answer comes as a key, whenever it does
         if (lookup(threadId) case final Thread thread) {
           unawaited(_cipher.ask(threadId, locked, fingerprint: fingerprintFor?.call(thread)));
@@ -615,6 +690,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     } catch (error, stacktrace) {
       if (userId != _userId) return;
       _view(threadId, status: .failed);
+      _lookedFor(threadId);
       onError?.call(error, stacktrace: stacktrace);
     }
   }
@@ -624,12 +700,10 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
   Future<({List<ThreadItem> items, String? cursor})> _readSince(String threadId, String since) async {
     try {
       return await _service.getThreadItems(threadId, since: since, limit: _page);
-    } on Map catch (refusal) {
-      if (refusal case {'code': 'stale_cursor'}) {
-        final page = await _service.getThreadItems(threadId, limit: _page);
-        return (items: page.items.reversed.toList(), cursor: null);
-      }
-      rethrow;
+    } on ServerRefusal catch (refusal) {
+      if (refusal.code != 'stale_cursor') rethrow;
+      final page = await _service.getThreadItems(threadId, limit: _page);
+      return (items: page.items.reversed.toList(), cursor: null);
     }
   }
 
@@ -653,26 +727,47 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       ]);
       _older[threadId] = page.cursor != null;
       await _show(threadId);
+      // asked for with the rest, at the next read
+      _lookedFor(threadId);
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
     }
   }
 
-  /// Writes [text] to [threadId]: sealed and kept here at once, then sent.
-  /// Throws when it can't be sealed, as with keys not running: nothing is
-  /// kept then, and the words stay with the caller.
-  Future<void> send(String threadId, String text, {String? subjectType, String? subjectId}) async {
+  /// Writes [text] to [threadId]: sealed and kept here at once, then sent,
+  /// about what [about] holds for its person, which it takes: the next one
+  /// is about nothing in particular. Throws when it can't be sealed, as with
+  /// keys not running: nothing is kept then, and the words and what they
+  /// were about stay.
+  Future<void> send(String threadId, String text) async {
     final userId = _userId;
     if (userId == null) throw StateError('no account');
-    final sealed = await _cipher.seal(threadId, text);
+    // taken before anything waits: a second message sent meanwhile is
+    // about nothing in particular
+    final connectionId = lookup(threadId)?.connectionId;
+    final about = switch (connectionId) {
+      final String id => _about.remove(id),
+      null => null,
+    };
+    if (about != null) notifyListeners();
+    final SealedMessage sealed;
+    try {
+      sealed = await _cipher.seal(threadId, text);
+    } catch (_) {
+      if ((connectionId, about) case (final String id, final MessageSubject about) when userId == _userId) {
+        _about.putIfAbsent(id, () => about);
+        notifyListeners();
+      }
+      rethrow;
+    }
     final at = _now().toUtc();
     final item = ThreadItem(
       id: _newId(),
       threadId: threadId,
       senderId: userId,
       kind: 'message',
-      subjectType: subjectType,
-      subjectId: subjectId,
+      subjectType: about?.type.wire,
+      subjectId: about?.id,
       content: sealed.content,
       commitment: sealed.commitment,
       tag: '',
@@ -735,17 +830,16 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
           await _local.storeThreadItems(userId, [(item: sent, position: held.firstOrNull?.position, pending: false)]);
         });
       }
-    } on Map catch (refusal, stacktrace) {
+    } on ServerRefusal catch (refusal, stacktrace) {
       switch (refusal) {
-        case {'code': 'thread_closed'}:
+        case ServerRefusal(code: 'thread_closed'):
           _view(threadId, closed: true);
-        case {'code': 'rate_limited'}:
-          final wait = switch (refusal['retryAfter']) {
-            final num seconds => Duration(seconds: seconds.ceil()),
-            _ => const Duration(minutes: 1),
-          };
+        case ServerRefusal(:final isThrottle) when isThrottle:
           _retries[threadId]?.cancel();
-          _retries[threadId] = Timer(wait, () => unawaited(flush(threadId)));
+          _retries[threadId] = Timer(
+            refusal.retryAfter ?? const Duration(minutes: 1),
+            () => unawaited(flush(threadId)),
+          );
         default:
           onError?.call(refusal, stacktrace: stacktrace);
       }
@@ -897,7 +991,25 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  void _view(String threadId, {List<Message>? messages, CoachingStatus? status, bool? closed}) {
+  /// Every message locked in [threadId] now is one whose key was looked for.
+  void _lookedFor(String threadId) {
+    if (!_views.containsKey(threadId)) return;
+    _view(
+      threadId,
+      lookedFor: {
+        for (final each in thread(threadId).messages)
+          if (each.opened is Locked) each.id,
+      },
+    );
+  }
+
+  void _view(
+    String threadId, {
+    List<Message>? messages,
+    CoachingStatus? status,
+    bool? closed,
+    Set<String>? lookedFor,
+  }) {
     final was = thread(threadId);
     _views[threadId] = MessageThread(
       threadId: threadId,
@@ -905,6 +1017,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
       status: status ?? was.status,
       hasOlder: _older[threadId] ?? false,
       closed: closed ?? was.closed,
+      lookedFor: lookedFor ?? was.lookedFor,
     );
     notifyListeners();
   }
@@ -927,6 +1040,7 @@ class Messages with ChangeNotifier implements SignOutStateSentry {
     _older.clear();
     _forgotten.clear();
     _drafts.clear();
+    _about.clear();
     _marked.clear();
     _answered.clear();
     _status = .idle;

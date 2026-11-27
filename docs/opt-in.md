@@ -116,7 +116,8 @@ ticket doesn't say:
   an offer has to come at the moment the feature would help, and nothing in
   ordinary use marked a lifter who logs after the fact. History's calendar
   (#618) made that moment: **tapping an empty past day is the signal**. The
-  first such tap asks; yes goes straight on to logging that day, and after a
+  first such tap asks; yes goes on to logging that day (straight on, or through the ways to: empty,
+  from a template, as a copy of a past workout, #737), and after a
   no the tap does nothing. Off, the Workout tab and History have no way in;
   a workout already logged this way is an ordinary workout.
 - Coaching (#566) is two features, because it is two people's choices. **Coach
@@ -174,6 +175,15 @@ reason. Off, the Workout tab ends with the user's own templates, and neither
 the assistant nor a pinned shortcut can name a sample. Off is the UI only: the
 samples are still fetched and kept, and a copy made from one is the user's own
 template either way.
+
+The Exercises tab (`Feature.exercisesTab`, #608) is the first switch that
+takes a core surface away rather than adding one: on by default, never asked,
+and off leaves the navigation bar with three tabs, reflowed as if the fourth
+had never been there. Its branch stays in the router, so turning it back on
+finds the tab where it was left, and a way into it (a shared exercise link,
+the archive) opens the same page over the screen on view while it is off.
+The other home screens follow the same switch family as they become
+optional.
 
 ## Answers follow the account
 

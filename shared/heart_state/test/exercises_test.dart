@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/exercises.dart';
@@ -26,8 +28,12 @@ void main() {
 
   const stamp = (version: 'run-1', locale: 'en', etag: null);
 
-  Exercises build({void Function(dynamic error, {dynamic stacktrace})? onError}) {
+  Exercises build({
+    void Function(dynamic error, {dynamic stacktrace})? onError,
+    Duration libraryWait = const Duration(seconds: 30),
+  }) {
     return Exercises(
+      libraryWait: libraryWait,
       remoteService: remote,
       noteService: notes,
       remote: access,
@@ -338,6 +344,42 @@ void main() {
       await sut.init();
       expect(sut.noteFor(bench.id), isNull);
       expect(notes.values, isEmpty);
+    });
+
+    test("the account's own exercises failing to read costs the preferences nothing (#681)", () async {
+      final bench = ex('Bench Press');
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
+      when(remote.getOwnExercises()).thenThrow(const ServerFailed());
+      when(preferences.getExercisePreferences()).thenAnswer(
+        (_) async => [ExercisePreference(exerciseId: bench.id, unitSystem: .imperial)],
+      );
+
+      await sut.init();
+
+      expect(sut.unitFor(bench.id), MeasurementUnit.imperial);
+    });
+
+    test('a preference read that fails keeps every note, rather than reading as none (#681)', () async {
+      final bench = ex('Bench Press');
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
+      when(preferences.getExercisePreferences()).thenAnswer(
+        (_) async => [ExercisePreference(exerciseId: bench.id, note: 'Pause')],
+      );
+      await sut.init();
+
+      // a 5xx, a throttle, a 2xx it could not read: heart_api throws them all
+      for (final failure in [
+        const ServerFailed(),
+        refusedAs({'code': 'rate_limited'}, status: 429),
+        const FormatException('an answer this build cannot read'),
+      ]) {
+        when(preferences.getExercisePreferences()).thenThrow(failure);
+        await sut.init();
+        expect(sut.noteFor(bench.id), 'Pause');
+        expect(notes.values[bench.id], 'Pause');
+      }
     });
 
     test('a catalog gap preserves a cached pin until its exercise can be reconciled', () async {
@@ -678,6 +720,29 @@ void main() {
       final all = sut.search('press', filters: false).toList();
       expect(all, [a]);
     });
+  });
+
+  test('showing only one filter is asked for; a filter set in the picker, or none left, is not (#711)', () {
+    var notified = 0;
+    sut.addListener(() => notified++);
+    sut.addFilter(Category.barbell);
+    expect(sut.filtersAskedFor, isFalse);
+
+    sut.showOnly(const PatternFilter('horizontal_press'));
+    expect(sut.filters, [const PatternFilter('horizontal_press')]);
+    expect(sut.filtersAskedFor, isTrue);
+    expect(notified, 2);
+
+    sut.addFilter(Target.chest);
+    expect(sut.filtersAskedFor, isFalse);
+
+    sut.showOnly(Target.legs);
+    sut.removeFilter(Target.legs);
+    expect(sut.filtersAskedFor, isFalse);
+
+    sut.showOnly(Target.legs);
+    sut.clearFilters();
+    expect(sut.filtersAskedFor, isFalse);
   });
 
   group('search() ranking (#135)', () {
@@ -1075,7 +1140,7 @@ void main() {
   });
 
   group('misc', () {
-    test('iterator, index operator, and sign-out does not notify', () async {
+    test('iterator, index operator, and sign-out says so', () async {
       when(
         local.getExercises(userId: anyNamed('userId')),
       ).thenAnswer(
@@ -1089,7 +1154,7 @@ void main() {
 
       final probe = ListenerProbe()..attach(sut);
       sut.onSignOut();
-      expect(probe.notifications, 0);
+      expect(probe.notifications, 1);
       expect(sut.isInitialized, isFalse);
       expect(sut.selected, isEmpty);
       expect(sut.filters, isEmpty);
@@ -1380,6 +1445,207 @@ void main() {
       final sut = withMoves();
       await expectLater(sut.moveHistory(ex('Squat'), bench), throwsStateError);
       expect(moves.mirrored, isEmpty);
+    });
+  });
+
+  group('a library that does not come (#723)', () {
+    const wait = Duration(milliseconds: 50);
+    final curl = Exercise.fromJson({
+      'id': 'id-curl',
+      'name': 'My Curl',
+      'category': 'Dumbbell',
+      'target': 'Arms',
+      'own': true,
+    });
+    final bench = ex('Bench Press');
+    final arrived = ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp);
+
+    /// The next download, answered when the test says.
+    Completer<(CatalogLibrary?, CatalogStamp)> held() {
+      final download = Completer<(CatalogLibrary?, CatalogStamp)>();
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) => download.future);
+      return download;
+    }
+
+    void fails() => when(library.getLibrary(cached: anyNamed('cached'))).thenThrow(const ServerFailed());
+
+    void answers() => when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => arrived);
+
+    test('is waited for no longer than the wait, reported, and the own exercises are read all the same', () async {
+      held();
+      when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[curl]);
+      final errors = <Object?>[];
+      final exercises = build(libraryWait: wait, onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
+
+      final populated = await exercises.init();
+
+      expect(populated, isFalse, reason: 'nothing the chained start-up can write against');
+      expect(exercises.isInitialized, isFalse);
+      expect(exercises.libraryUnavailable, isTrue);
+      expect(exercises.map((each) => each.id), [curl.id]);
+      expect(errors.single, isA<LibraryStalled>());
+    });
+
+    test('a download that lands after the wait is taken, with the own leg read again over it', () async {
+      final download = held();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      var ran = 0;
+      exercises.whenInitialized('u1', () => ran++);
+      clearInteractions(remote);
+      clearInteractions(preferences);
+
+      download.complete(arrived);
+      await pumpEventQueue();
+
+      expect(exercises.isInitialized, isTrue);
+      expect(exercises.libraryUnavailable, isFalse);
+      expect(exercises.lookup(bench.id), isNotNull);
+      expect(ran, 1);
+      verify(remote.getOwnExercises()).called(1);
+      verify(preferences.getExercisePreferences()).called(1);
+    });
+
+    test('one that fails outright reads the same, and is not a stall', () async {
+      fails();
+      final errors = <Object?>[];
+      final exercises = build(libraryWait: wait, onError: (e, {stacktrace}) => errors.add(e))..userId = 'u1';
+
+      await exercises.init();
+
+      expect(exercises.libraryUnavailable, isTrue);
+      expect(errors.whereType<LibraryStalled>(), isEmpty);
+    });
+
+    test('a retry after a failure downloads afresh, reads the own leg, and puts the catalog in', () async {
+      fails();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      answers();
+      clearInteractions(remote);
+      var told = 0;
+      exercises.addListener(() => told++);
+
+      final retry = exercises.retryLibrary();
+      expect(exercises.retryingLibrary, isTrue);
+      expect(identical(exercises.retryLibrary(), retry), isTrue, reason: 'one retry at a time');
+
+      expect(await retry, isTrue);
+      expect(exercises.isInitialized, isTrue);
+      expect(exercises.libraryUnavailable, isFalse);
+      expect(exercises.retryingLibrary, isFalse);
+      expect(exercises.lookup(bench.id), isNotNull);
+      expect(told, greaterThanOrEqualTo(2));
+      verify(remote.getOwnExercises()).called(1);
+    });
+
+    test('a retry joins the download under way rather than start another', () async {
+      final download = held();
+      final exercises = build(libraryWait: const Duration(seconds: 5))..userId = 'u1';
+      final init = exercises.init();
+      await pumpEventQueue();
+      final retry = exercises.retryLibrary();
+
+      download.complete(arrived);
+      expect(await init, isTrue);
+      expect(await retry, isTrue);
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
+    });
+
+    test('a retry that waits out the download lets go of it, and the next starts afresh', () async {
+      final first = held();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+
+      expect(await exercises.retryLibrary(), isFalse, reason: 'joined the hung one, and waited it out');
+      expect(exercises.libraryUnavailable, isTrue);
+      expect(exercises.retryingLibrary, isFalse);
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
+
+      answers();
+      expect(await exercises.retryLibrary(), isTrue);
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
+      // the first landing late changes nothing more
+      first.complete(arrived);
+      await pumpEventQueue();
+      expect(exercises.isInitialized, isTrue);
+    });
+
+    test('a retry the session ended under changes nothing for the next one', () async {
+      fails();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      final download = held();
+
+      final retry = exercises.retryLibrary();
+      exercises
+        ..onSignOut()
+        ..userId = 'u2';
+      download.complete(arrived);
+
+      expect(await retry, isFalse);
+      expect(exercises.isInitialized, isFalse);
+      expect(exercises.lookup(bench.id), isNull, reason: "the last session's download is not the next one's");
+      expect(exercises.libraryUnavailable, isFalse, reason: "the next session's init hasn't run");
+      expect(exercises.retryingLibrary, isFalse);
+    });
+
+    test(
+      'what waits for the catalog runs once, the first asked of a session only, and never another session',
+      () async {
+        fails();
+        final exercises = build(libraryWait: wait)..userId = 'u1';
+        await exercises.init();
+        var first = 0;
+        var second = 0;
+        var stale = 0;
+        exercises
+          ..whenInitialized('u1', () => first++)
+          // the same session asking again, as a resync does
+          ..whenInitialized('u1', () => second++)
+          // asked by a session that has ended
+          ..whenInitialized('u0', () => stale++);
+        expect(first, 0);
+
+        answers();
+        await exercises.retryLibrary();
+        expect(first, 1);
+        // a later notification runs nothing again
+        exercises.showingMine = true;
+        expect(first, 1);
+        expect(second, 0);
+        expect(stale, 0);
+        // once in, a new ask runs at once
+        exercises.whenInitialized('u1', () => second++);
+        expect(second, 1);
+      },
+    );
+
+    test('what waits is dropped when the session ends first, and the next session may wait', () async {
+      fails();
+      final exercises = build(libraryWait: wait)..userId = 'u1';
+      await exercises.init();
+      var ran = 0;
+      exercises.whenInitialized('u1', () => ran++);
+
+      exercises
+        ..onSignOut()
+        ..userId = 'u2';
+      await exercises.init();
+      var next = 0;
+      exercises.whenInitialized('u2', () => next++);
+      answers();
+      await exercises.retryLibrary();
+      expect(ran, 0);
+      expect(next, 1);
+    });
+
+    test('nothing to retry once the catalog is in', () async {
+      await sut.init();
+      clearInteractions(library);
+
+      expect(await sut.retryLibrary(), isTrue);
+      verifyNever(library.getLibrary(cached: anyNamed('cached')));
     });
   });
 }

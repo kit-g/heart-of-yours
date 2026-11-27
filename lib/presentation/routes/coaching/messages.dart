@@ -7,7 +7,20 @@ class CoachMessagesPage extends StatefulWidget {
   final VoidCallback onYourTraining;
   final ValueChanged<String> onOpen;
 
-  const new({super.key, required this.onYourTraining, required this.onOpen});
+  /// Opens a client's workout a message is about.
+  final void Function(String connectionId, String workoutId)? onOpenWorkout;
+
+  /// Opens a workout of the coach's own a message is about: one their own
+  /// coach wrote about.
+  final ValueChanged<String>? onOpenOwnWorkout;
+
+  const new({
+    super.key,
+    required this.onYourTraining,
+    required this.onOpen,
+    this.onOpenWorkout,
+    this.onOpenOwnWorkout,
+  });
 
   @override
   State<CoachMessagesPage> createState() => _CoachMessagesPageState();
@@ -82,7 +95,17 @@ class _CoachMessagesPageState extends State<CoachMessagesPage> {
                             children: [
                               _ThreadHeader(connectionId: id),
                               Expanded(
-                                child: ThreadView(key: ValueKey(id), connectionId: id),
+                                child: ThreadView(
+                                  key: ValueKey(id),
+                                  connectionId: id,
+                                  onOpenWorkout: (
+                                    client: switch (widget.onOpenWorkout) {
+                                      final open? => (workoutId) => open(id, workoutId),
+                                      null => null,
+                                    },
+                                    own: widget.onOpenOwnWorkout,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -117,7 +140,7 @@ class _ThreadHeader extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              threadName(context, thread, connectionId: connectionId),
+              threadName(context, thread, connectionId: connectionId, listen: true),
               maxLines: 1,
               overflow: .ellipsis,
               style: Theme.of(context).textTheme.titleMedium,
@@ -188,7 +211,7 @@ class _InboxRow extends StatelessWidget {
       selected: selected,
       leading: Avatar(remote: thread.otherAvatar, radius: 20),
       title: Text(
-        threadName(context, thread),
+        threadName(context, thread, listen: true),
         maxLines: 1,
         overflow: .ellipsis,
         style: switch (thread.unread > 0) {

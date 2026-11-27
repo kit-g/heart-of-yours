@@ -88,14 +88,14 @@ void main() {
           ChangeNotifierProvider<Stats>.value(value: stats),
           ChangeNotifierProvider<Preferences>.value(value: settings ?? preferences),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
           // scrollable, as the profile screen always is: unbounded the card
           // grows with its list, and a long one overflows a bare test surface
           home: Scaffold(
             body: SingleChildScrollView(
-              child: GoalsCard(workouts: WorkoutAggregation.empty()),
+              child: GoalsCard(),
             ),
           ),
         ),
@@ -147,6 +147,27 @@ void main() {
     // the count comes from a period-bounded query now rather than off the
     // aggregation, so it is answered even here — the stubbed service says none
     expect(find.text('0 / 4 · per week'), findsOneWidget);
+  });
+
+  // An entry discarded, an older workout deleted or imported: the eight weeks
+  // the chart holds can come back the same, and the count still moved.
+  testWidgets("a row re-reads its count whenever Stats' revision moves, the weeks unchanged or not", (tester) async {
+    await seed([workoutsGoal(target: 4)]);
+    when(
+      statsService.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
+    ).thenAnswer((_) async => WorkoutAggregation.empty());
+    when(statsService.getWorkoutCountBetween(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => 1);
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('1 / 4 · per week'), findsOneWidget);
+
+    when(statsService.getWorkoutCountBetween(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => 3);
+    await tester.runAsync(stats.init);
+    await tester.pumpAndSettle();
+
+    expect(stats.workouts.isEmpty, isTrue, reason: 'the weeks the chart holds did not change');
+    expect(find.text('3 / 4 · per week'), findsOneWidget);
   });
 
   testWidgets('builds before preferences have loaded, rather than throwing', (tester) async {
@@ -280,6 +301,67 @@ void main() {
       expect(find.byKey(AppKeys.goalRow('done-1')), findsNothing);
     });
 
+    // #687: swapping the faces resized the card mid-turn and the page under
+    // it jumped; sizing to the taller face let a long achieved list stretch
+    // the live side. The live side sizes it, and the back scrolls within.
+    testWidgets("keeps the live side's size on either face, and the back scrolls in it", (tester) async {
+      await seed([
+        workoutsGoal(id: 'live-1'),
+        ...List.generate(15, (i) => finished(id: 'done-$i')),
+      ]);
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+      final front = tester.getSize(find.byType(GoalsCard));
+
+      await tester.tap(find.byKey(AppKeys.goalsViewAchieved));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.getSize(find.byType(GoalsCard)), front, reason: 'mid-turn');
+      await tester.pumpAndSettle();
+      expect(tester.getSize(find.byType(GoalsCard)), front);
+
+      // fifteen rows do not fit one row's room: the last is reached by scrolling
+      final last = find.byKey(AppKeys.goalRow('done-14'));
+      expect(last.hitTestable(), findsNothing);
+      await tester.scrollUntilVisible(last, 200, scrollable: find.byType(Scrollable).last);
+      expect(last.hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('builds the achieved side only once it is turned to', (tester) async {
+      await seed([workoutsGoal(id: 'live-1'), finished()]);
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+      // not merely hidden: never built, so none of its rows read anything
+      expect(find.byKey(AppKeys.goalRow('done-1'), skipOffstage: false), findsNothing);
+
+      await tester.tap(find.byKey(AppKeys.goalsViewAchieved));
+      await tester.pumpAndSettle();
+      expect(find.byKey(AppKeys.goalRow('done-1')), findsOneWidget);
+
+      await tester.tap(find.byKey(AppKeys.goalsViewActive));
+      await tester.pumpAndSettle();
+      expect(find.byKey(AppKeys.goalRow('done-1'), skipOffstage: false), findsNothing);
+    });
+
+    testWidgets('a row left swiped open is closed when the card turns back to it', (tester) async {
+      await seed([workoutsGoal(id: 'live-1'), finished()]);
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+      await tester.fling(find.byKey(AppKeys.goalRow('live-1')), const Offset(-500, 0), 1000);
+      await tester.pumpAndSettle();
+      final delete = find.byKey(const ValueKey('GoalRow.live-1.delete'));
+      expect(delete.hitTestable(), findsOneWidget);
+
+      await tester.tap(find.byKey(AppKeys.goalsViewAchieved));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.goalsViewActive));
+      await tester.pumpAndSettle();
+
+      expect(delete.hitTestable(), findsNothing);
+    });
+
     testWidgets('comes back to the live face when the last achieved goal goes', (tester) async {
       // otherwise the card is left showing an empty back with no way off it
       await seed([workoutsGoal(id: 'live-1'), finished()]);
@@ -403,11 +485,11 @@ void main() {
             ChangeNotifierProvider<Preferences>.value(value: settings),
             ChangeNotifierProvider<Programs>.value(value: programs),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             localizationsDelegates: localizationsDelegates,
             supportedLocales: L.supportedLocales,
             home: Scaffold(
-              body: SingleChildScrollView(child: GoalsCard(workouts: WorkoutAggregation.empty())),
+              body: SingleChildScrollView(child: GoalsCard()),
             ),
           ),
         ),
@@ -437,8 +519,41 @@ void main() {
       // the program's 3 a week, and the user's 2 said under it
       expect(find.byKey(AppKeys.goalRow('program:p1:workouts')), findsOneWidget);
       expect(find.byKey(AppKeys.goalRow('goal-1')), findsNothing);
-      expect(find.text('Your 2 a week is paused while you follow Split'), findsOneWidget);
+      expect(find.text('Your own goal of 2 workouts a week is on hold while you follow Split.'), findsOneWidget);
       expect(goals.all.single.stages.single.target, 2);
+    });
+
+    // #687: an account can hold two weekly workouts goals, and a line each
+    // printed the same sentence twice
+    testWidgets('two weekly goals of the same target are set aside in one sentence', (tester) async {
+      await seed([workoutsGoal(target: 4), workoutsGoal(id: 'goal-3', target: 4)]);
+      await follow(split);
+
+      await pumpWith(tester);
+
+      expect(find.text('Your own goal of 4 workouts a week is on hold while you follow Split.'), findsOneWidget);
+      expect(find.textContaining('on hold while you follow'), findsOneWidget);
+    });
+
+    testWidgets('one weekly goal reads as one goal, even without a rung', (tester) async {
+      await seed([Goal(id: 'goal-1', metric: .workouts, cadence: .week, stages: const [])]);
+      await follow(split);
+
+      await pumpWith(tester);
+
+      expect(find.textContaining('Your own goal of'), findsOneWidget);
+      expect(find.textContaining('goals are on hold'), findsNothing);
+    });
+
+    testWidgets('two weekly goals of different targets are set aside in one sentence', (tester) async {
+      await seed([workoutsGoal(target: 2), workoutsGoal(id: 'goal-3', target: 4)]);
+      await follow(split);
+
+      await pumpWith(tester);
+
+      expect(find.text('Your own weekly workout goals are on hold while you follow Split.'), findsOneWidget);
+      expect(find.textContaining('on hold while you follow'), findsOneWidget);
+      expect(goals.all.map((goal) => goal.stages.single.target), [2, 4]);
     });
 
     testWidgets("the program's weekly goal counts the program's own sessions", (tester) async {
@@ -460,7 +575,7 @@ void main() {
       await pumpWith(tester, on: false);
 
       expect(find.byKey(AppKeys.goalRow('goal-1')), findsOneWidget);
-      expect(find.textContaining('is paused while you follow'), findsNothing);
+      expect(find.textContaining('on hold while you follow'), findsNothing);
     });
 
     testWidgets('with Programs off, goals are as they were', (tester) async {

@@ -1,5 +1,7 @@
 import 'package:heart_models/heart_models.dart';
 
+import 'program_growth.dart' show movedAt;
+
 /// Rounds [kilograms] of [exercise] to a weight the user can load: the step
 /// their unit counts in. The caller knows the unit; this library does not.
 typedef RoundWeight = num Function(Exercise exercise, num kilograms);
@@ -39,6 +41,48 @@ PlannedWorkout planSession(
     if (bySlot[slot.id] case final PlannedExercise plan) laid[plan.slot] = _lay(exercise, plan, round);
   }
   return (workout: workout, plan: WorkoutPlan(_planOf(planned, laid)));
+}
+
+/// [session] of [program] as it starts from the program's history: its
+/// [marks] and [actions] fold into the position, the latest of [bases] and the
+/// stages [actions] reached feed [planSession]. The user's own device plans
+/// from what it holds (`Programs.plan`), a coach's from what it can read of a
+/// client's (`ClientPrograms.plan`), so the two lay a session out alike.
+///
+/// [at] lays out one that already happened, logged after the fact: from what
+/// happened before then, whatever came since. What a workout moved counts from
+/// that workout, in [starts] ([movedAt]).
+PlannedWorkout planProgramSession(
+  Template session, {
+  required Program program,
+  required Iterable<ProgramMark> marks,
+  required Iterable<ProgramAction> actions,
+  required Iterable<ProgramBase> bases,
+  required DateTime now,
+  DateTime? at,
+  Map<String, DateTime> starts = const {},
+  int firstWeekday = DateTime.monday,
+  required RoundWeight round,
+}) {
+  Iterable<T> before<T>(Iterable<T> all, DateTime Function(T) when) => switch (at) {
+    final DateTime at => all.where((each) => when(each).isBefore(at)),
+    null => all,
+  };
+  final taken = before(actions, (action) => movedAt(action.workoutId, action.at, starts));
+  return planSession(
+    session,
+    program: program,
+    position: ProgramPosition.of(
+      program,
+      marks: before(marks, (mark) => mark.at),
+      actions: taken,
+      now: at ?? now,
+      firstWeekday: firstWeekday,
+    ),
+    bases: currentBases(before(bases, (base) => movedAt(base.workoutId, base.at, starts))),
+    stages: currentStages(taken),
+    round: round,
+  );
 }
 
 /// What became of one planned set: the set it is, and the weight it shows.

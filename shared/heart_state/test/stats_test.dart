@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/lens.dart';
@@ -14,9 +16,21 @@ class RecordingStatsService implements LocalStatsService {
   final List<(DateTime, String?)> monthlyCountCalls = [];
   int monthlyCountToReturn = 0;
 
+  /// Each read takes the next of these, if any, and waits on it: what a
+  /// session change or a later read can overtake.
+  final summaryGates = <Completer<void>>[];
+
+  /// What the next read throws, once.
+  Object? summaryError;
+
   @override
   Future<WorkoutAggregation> getWorkoutSummary({int? weeksBack, String? userId}) async {
-    return workoutSummary;
+    final summary = workoutSummary;
+    final error = summaryError;
+    summaryError = null;
+    if (summaryGates.isNotEmpty) await summaryGates.removeAt(0).future;
+    if (error != null) throw error;
+    return summary;
   }
 
   @override
@@ -128,17 +142,137 @@ void main() {
       expect(notifications, 1);
     });
 
-    test('init does nothing and does not notify when local summary is empty', () async {
-      service.workoutSummary = WorkoutAggregation.empty();
+    test("an empty read replaces the last user's chart: a user with no workouts sees none", () async {
+      service.workoutSummary = WorkoutAggregation.fromRows([
+        {'id': '2025-08-01T10:00:00Z', 'name': 'Morning', 'start': '2025-08-01T10:00:00Z'},
+      ]);
+      stats.userId = 'old';
+      await stats.init();
+      expect(stats.workouts.isNotEmpty, isTrue);
 
-      expect(stats.workouts.isNotEmpty, isFalse);
+      stats.userId = 'new';
+      service.workoutSummary = WorkoutAggregation.empty();
+      notifications = 0;
       await stats.init();
 
       expect(stats.workouts.isNotEmpty, isFalse);
-      expect(notifications, 0);
+      expect(notifications, 1, reason: 'the chart on screen goes with it');
     });
 
-    test('onSignOut resets workouts to empty without notifying', () async {
+    test("a read the session changed under is dropped: the last user's chart never lands on the next", () async {
+      stats.userId = 'old';
+      final gate = Completer<void>();
+      service
+        ..workoutSummary = WorkoutAggregation.fromRows([
+          {'id': '2025-08-01T10:00:00Z', 'name': 'Morning', 'start': '2025-08-01T10:00:00Z'},
+        ])
+        ..summaryGates.add(gate);
+      final stale = stats.init();
+
+      stats
+        ..onSignOut()
+        ..userId = 'new';
+      notifications = 0;
+      gate.complete();
+      await stale;
+
+      expect(stats.workouts.isNotEmpty, isFalse);
+      expect(notifications, 0, reason: 'a dropped read changes nothing, so says nothing');
+    });
+
+    // #719 as it happens: Log out clears, then awaits the push unregister, and
+    // only then is the next uid keyed. The Profile's re-read for the account
+    // that left lands in that gap.
+    test('a read for the session that ended, landing before the next is keyed, leaves the chart empty', () async {
+      stats.userId = 'old';
+      final gate = Completer<void>();
+      service
+        ..workoutSummary = WorkoutAggregation.fromRows([
+          {'id': '2025-08-01T10:00:00Z', 'name': 'Morning', 'start': '2025-08-01T10:00:00Z'},
+        ])
+        ..summaryGates.add(gate);
+      final stale = stats.init();
+
+      stats.onSignOut();
+      expect(stats.userId, isNull, reason: 'the session it was keyed on is gone');
+      notifications = 0;
+      gate.complete();
+      await stale;
+      expect(notifications, 0);
+
+      stats.userId = 'new';
+      service.workoutSummary = WorkoutAggregation.empty();
+      await stats.init();
+
+      expect(stats.workouts.isNotEmpty, isFalse);
+    });
+
+    test('overlapping reads land in the order they were asked for: the later one wins', () async {
+      stats.userId = 'u1';
+      final (first, second) = (Completer<void>(), Completer<void>());
+      service
+        ..summaryGates.addAll([first, second])
+        ..workoutSummary = WorkoutAggregation.fromRows([
+          {'id': '2025-08-01T10:00:00Z', 'name': 'Morning', 'start': '2025-08-01T10:00:00Z'},
+        ]);
+      final older = stats.init();
+      final latest = WorkoutAggregation.fromRows([
+        {'id': '2025-08-01T10:00:00Z', 'name': 'Morning', 'start': '2025-08-01T10:00:00Z'},
+        {'id': '2025-08-02T10:00:00Z', 'name': 'Evening', 'start': '2025-08-02T10:00:00Z'},
+      ]);
+      service.workoutSummary = latest;
+      final newer = stats.init();
+
+      second.complete();
+      await newer;
+      first.complete();
+      await older;
+
+      expect(stats.workouts, same(latest));
+      expect(notifications, 1, reason: 'the outdated read is dropped');
+    });
+
+    test('a failed read is reported, and leaves what was held', () async {
+      final errors = <Object>[];
+      stats = Stats(onError: (error, {stacktrace}) => errors.add(error), service: service)..userId = 'u1';
+      service.workoutSummary = WorkoutAggregation.fromRows([
+        {'id': '2025-08-01T10:00:00Z', 'name': 'Morning', 'start': '2025-08-01T10:00:00Z'},
+      ]);
+      await stats.init();
+      final held = stats.workouts;
+      final revision = stats.revision;
+
+      service.summaryError = StateError('disk');
+      await stats.init();
+
+      expect(errors, [isA<StateError>()]);
+      expect(stats.workouts, same(held));
+      expect(stats.revision, revision);
+    });
+
+    test('every read that lands moves the revision, and one that changed nothing keeps the aggregation', () async {
+      stats.userId = 'u1';
+      await stats.init();
+      expect(stats.revision, 1, reason: 'empty over empty: the longer windows may still have moved');
+      expect(notifications, 1);
+
+      service.workoutSummary = WorkoutAggregation.fromRows([
+        {'id': '2025-08-01T10:00:00Z', 'name': 'Morning', 'start': '2025-08-01T10:00:00Z'},
+      ]);
+      await stats.init();
+      final held = stats.workouts;
+
+      service.workoutSummary = WorkoutAggregation.fromRows([
+        {'id': '2025-08-01T10:00:00Z', 'name': 'Morning', 'start': '2025-08-01T10:00:00Z'},
+      ]);
+      await stats.init();
+
+      expect(stats.workouts, same(held), reason: 'the same weeks: nothing for the chart to redraw');
+      expect(stats.revision, 3);
+      expect(notifications, 3);
+    });
+
+    test('onSignOut resets workouts to empty and says so', () async {
       // Put some non-empty state in
       service.workoutSummary = WorkoutAggregation.fromRows([
         {
@@ -155,7 +289,8 @@ void main() {
 
       expect(stats.workouts, WorkoutAggregation.empty());
       expect(stats.workouts.isNotEmpty, isFalse);
-      expect(notifications, 0, reason: 'onSignOut should not call notifyListeners');
+      expect(notifications, 1, reason: 'what was on screen goes, for whatever is still showing it (#671)');
+      expect(stats.userId, isNull);
     });
 
     test('getWeeklyWorkoutCount counts the week that starts on the chosen day, for the user', () async {
@@ -386,53 +521,36 @@ void main() {
       expect(identical(fromOf, provided), isTrue);
     });
 
-    testWidgets('watch(context) rebuilds only when notifyListeners is called by init with data', (tester) async {
+    testWidgets('the chart rebuilds when the weeks change, not on a read that found the same ones', (tester) async {
       final service = RecordingStatsService();
-      final provided = Stats(onError: null, service: service);
-
-      // First: empty summary -> init should not notify
-      service.workoutSummary = WorkoutAggregation.empty();
+      final provided = Stats(onError: null, service: service)..userId = 'u1';
 
       var builds = 0;
-      Widget consumer() {
-        return Builder(
-          builder: (context) {
-            final isEmpty = Stats.watch(context).workouts.isEmpty;
-            builds++;
-            return Text('empty=$isEmpty', textDirection: TextDirection.ltr);
-          },
-        );
-      }
-
-      await tester.pumpWidget(
-        ChangeNotifierProvider<Stats>.value(
-          value: provided,
-          child: consumer(),
-        ),
+      // what the Profile's chart listens with
+      final consumer = Selector<Stats, WorkoutAggregation>(
+        selector: (_, stats) => stats.workouts,
+        builder: (_, workouts, _) {
+          builds++;
+          return Text('empty=${workouts.isEmpty}', textDirection: TextDirection.ltr);
+        },
       );
 
-      final initialBuilds = builds;
-      expect(initialBuilds, 1);
+      await tester.pumpWidget(ChangeNotifierProvider<Stats>.value(value: provided, child: consumer));
+      expect(builds, 1);
 
-      // init with empty -> no notify/rebuild
+      // empty over empty: the revision moves, the chart stays
       await provided.init();
       await tester.pump();
-      expect(builds, initialBuilds);
+      expect(provided.revision, 1);
+      expect(builds, 1);
 
-      // Now set non-empty and call init again -> should notify and rebuild
       service.workoutSummary = WorkoutAggregation.fromRows([
-        {
-          'id': '2025-08-03T10:00:00Z',
-          'name': 'Evening',
-          'start': '2025-08-03T10:00:00Z',
-        },
+        {'id': '2025-08-03T10:00:00Z', 'name': 'Evening', 'start': '2025-08-03T10:00:00Z'},
       ]);
       await provided.init();
       await tester.pump();
-      expect(builds, initialBuilds + 1);
-
-      // Widget still present
-      expect(find.byType(Text), findsOneWidget);
+      expect(builds, 2);
+      expect(find.text('empty=false'), findsOneWidget);
     });
   });
 }

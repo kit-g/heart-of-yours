@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'refusals.dart';
 import 'remote.dart';
 
 /// The local half of goal storage.
@@ -45,10 +46,12 @@ extension GoalStageReach on GoalStage {
 /// 500 are worth retrying forever; a refusal is not — retrying one spends a
 /// request on every launch and leaves a goal that looks saved and never will be.
 ///
-/// The server names every failure with a stable [code] for exactly this, so the
-/// client branches on identity rather than on prose that may be reworded.
-/// `server_error` is the one named failure that is still transient; an unnamed
-/// one — no body, a timeout, a proxy's HTML — never reached the handler at all.
+/// The server names every refusal with a stable [code] for exactly this, as a
+/// `ServerRefusal`, so the client branches on identity rather than on prose
+/// that may be reworded. Its throttle (`429 rate_limited`) is the one named
+/// refusal that is still transient. A server error is a 5xx and never a
+/// refusal, and an unnamed failure — no body, a timeout, a proxy's HTML —
+/// never reached the handler at all.
 class GoalRejected implements Exception {
   /// The server's stable identifier: `goal_limit`, `goal_scope`,
   /// `goal_cadence_stages`, `goal_not_found`, `goal_stage_not_found`, or the
@@ -73,22 +76,13 @@ class GoalRejected implements Exception {
   /// telling apart so a stamp can be retried without it rather than dropped.
   bool get isUnknownWorkout => code == 'goal_workout_unknown';
 
-  /// Named, but still transient: the request was fine and the server broke.
-  static const _serverError = 'server_error';
-
   /// Reads a refusal out of whatever the service threw, or null when the
-  /// failure could just as well be an outage.
+  /// failure could just as well be an outage, or is the server's throttle,
+  /// which says "later", not "no".
   static GoalRejected? from(Object? error) {
     return switch (error) {
-      {'code': _serverError} => null,
-      {'code': String code} => GoalRejected(
-        code,
-        reason: switch (error) {
-          {'reason': String reason} => reason,
-          {'message': String message} => message,
-          _ => null,
-        },
-      ),
+      ServerRefusal(:final isThrottle) when isThrottle => null,
+      ServerRefusal(:final code, :final reason) => GoalRejected(code, reason: reason),
       _ => null,
     };
   }
@@ -174,6 +168,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     initialized = false;
     _pulled = false;
     _initializing = null;
+    notifyListeners();
   }
 
   /// Paints from the local mirror, then reconciles with the server and retries
@@ -216,13 +211,19 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   Future<void> _init() async {
     if (userId case String id) {
       try {
-        _replace(await _mine(id));
+        // a session that ended while they were read (#671): the last one's
+        final live = await _mine(id);
+        if (userId != id) return;
+        _replace(live);
+        final archived = await _mine(id, archived: true);
+        if (userId != id) return;
         _archived
           ..clear()
-          ..addAll(await _mine(id, archived: true));
+          ..addAll(archived);
       } catch (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
       }
+      if (userId != id) return;
       initialized = true;
       notifyListeners();
 
@@ -570,7 +571,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     } catch (error, stacktrace) {
       if (GoalRejected.from(error) case GoalRejected rejection) {
         await onRejected(local);
-        throw rejection;
+        Error.throwWithStackTrace(rejection, stacktrace);
       }
       onError?.call(error, stacktrace: stacktrace);
       return local;

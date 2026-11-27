@@ -31,6 +31,7 @@ extension FeatureCopy on Feature {
       .entryReview => l.entryReview,
       .weeklySets => l.lensTitle,
       .sampleTemplates => l.exampleTemplates,
+      .exercisesTab => l.exercisesTab,
       .pastWorkouts => l.pastWorkouts,
       .coachPeople => l.coachPeople,
       .yourCoach => l.yourCoach,
@@ -63,6 +64,7 @@ extension FeatureCopy on Feature {
       .entryReview => l.entryReviewSubtitle,
       .weeklySets => l.weeklySetsSubtitle,
       .sampleTemplates => l.sampleTemplatesSubtitle,
+      .exercisesTab => l.exercisesTabSubtitle,
       .pastWorkouts => l.pastWorkoutsSubtitle,
       .coachPeople => l.coachPeopleSubtitle,
       .yourCoach => l.yourCoachSubtitle,
@@ -90,6 +92,7 @@ extension FeatureCopy on Feature {
       .entryReview => Icons.flag_outlined,
       .weeklySets => Icons.view_week_rounded,
       .sampleTemplates => Icons.grid_view_rounded,
+      .exercisesTab => Icons.list_rounded,
       .pastWorkouts => Icons.more_time_rounded,
       .coachPeople => Icons.groups_rounded,
       .yourCoach => Icons.sports_rounded,
@@ -114,6 +117,7 @@ extension FeatureCopy on Feature {
       .liveRecords ||
       .weeklySets ||
       .sampleTemplates ||
+      .exercisesTab ||
       .pastWorkouts ||
       .coachPeople ||
       .yourCoach => const [],

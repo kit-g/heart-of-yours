@@ -12,6 +12,7 @@ import 'coach_notes.dart';
 import 'coaching.dart';
 import 'device_keys.dart';
 import 'exercises.dart';
+import 'go_easy.dart';
 import 'goals.dart';
 import 'health.dart';
 import 'history_filter.dart';
@@ -66,29 +67,65 @@ Future<void> eraseState(BuildContext context) async {
 /// replaces it under the same running app, and nothing the anonymous uid held
 /// in memory — its workouts, templates, catalog units — may bleed into the
 /// account's lists or, worse, get pushed to its server as pending writes.
+///
+/// Memory only: the rows stay in the store under the uid they belong to.
+///
+/// Every class that reads by uid is keyed on none once it has forgotten: a
+/// read still in flight for the session that ended then lands on no uid and
+/// is dropped, rather than on the uid it was started for, which a class that
+/// left its own unchanged would still hold until [keyUserState] — the log
+/// out's push unregister is awaited in between (#719).
 void clearUserState(BuildContext context) {
-  Alarms.of(context).onSignOut();
-  Anomalies.of(context).onSignOut();
-  ApiTokens.of(context).onSignOut();
-  Backfill.of(context).onSignOut();
-  Charts.of(context).onSignOut();
-  CoachLibrary.of(context).onSignOut();
-  ClientPrograms.of(context).onSignOut();
-  CoachNotes.of(context).onSignOut();
-  Coaching.of(context).onSignOut();
-  DeviceKeys.of(context).onSignOut();
-  Exercises.of(context).onSignOut();
-  Goals.of(context).onSignOut();
-  Health.of(context).onSignOut();
-  HistoryFilter.of(context).onSignOut();
-  Messages.of(context).onSignOut();
-  PreviousExercises.of(context).onSignOut();
-  Programs.of(context).onSignOut();
-  Pushes.of(context).onSignOut();
-  Roster.of(context).onSignOut();
-  Stats.of(context).onSignOut();
-  Templates.of(context).onSignOut();
-  Timers.of(context).onSignOut();
-  Upsync.of(context).onSignOut();
-  Workouts.of(context).onSignOut();
+  for (final (:clear, :key) in _sessionState(context)) {
+    clear?.call();
+    key?.call(null);
+  }
+}
+
+/// Keys every state class that reads by uid on [userId], the session's — or
+/// on none.
+void keyUserState(BuildContext context, String? userId) {
+  for (final (clear: _, :key) in _sessionState(context)) {
+    key?.call(userId);
+  }
+}
+
+/// The uid the session's state is keyed on: null before the first session,
+/// and again once [clearUserState] has forgotten it. Read back from the state
+/// itself, so the app's own sign-outs, which clear before they sign out, leave
+/// nothing for the user change that follows to clear again.
+String? keyedUserId(BuildContext context) => Workouts.of(context).userId;
+
+/// Every state class a session's data lives in, each once: how it forgets the
+/// session, and, for one that reads by uid, how it is keyed on one. One list,
+/// so a class added for the one cannot be missed by the other.
+List<({void Function()? clear, void Function(String?)? key})> _sessionState(BuildContext context) {
+  return [
+    (clear: Exercises.of(context).onSignOut, key: (id) => Exercises.of(context).userId = id),
+    (clear: Charts.of(context).onSignOut, key: (id) => Charts.of(context).userId = id),
+    (clear: Goals.of(context).onSignOut, key: (id) => Goals.of(context).userId = id),
+    (clear: Anomalies.of(context).onSignOut, key: (id) => Anomalies.of(context).userId = id),
+    (clear: Health.of(context).onSignOut, key: (id) => Health.of(context).userId = id),
+    (clear: PreviousExercises.of(context).onSignOut, key: (id) => PreviousExercises.of(context).userId = id),
+    (clear: Stats.of(context).onSignOut, key: (id) => Stats.of(context).userId = id),
+    (clear: Templates.of(context).onSignOut, key: (id) => Templates.of(context).userId = id),
+    (clear: Programs.of(context).onSignOut, key: (id) => Programs.of(context).userId = id),
+    // forgets what it held whenever it is keyed on another uid
+    (clear: null, key: (id) => GoEasy.of(context).userId = id),
+    (clear: Timers.of(context).onSignOut, key: (id) => Timers.of(context).userId = id),
+    (clear: Workouts.of(context).onSignOut, key: (id) => Workouts.of(context).userId = id),
+    (clear: Messages.of(context).onSignOut, key: (id) => Messages.of(context).userId = id),
+    (clear: CoachNotes.of(context).onSignOut, key: (id) => CoachNotes.of(context).userId = id),
+    (clear: Alarms.of(context).onSignOut, key: null),
+    (clear: ApiTokens.of(context).onSignOut, key: null),
+    (clear: Backfill.of(context).onSignOut, key: null),
+    (clear: CoachLibrary.of(context).onSignOut, key: null),
+    (clear: ClientPrograms.of(context).onSignOut, key: null),
+    (clear: Coaching.of(context).onSignOut, key: null),
+    (clear: DeviceKeys.of(context).onSignOut, key: null),
+    (clear: HistoryFilter.of(context).onSignOut, key: null),
+    (clear: Pushes.of(context).onSignOut, key: null),
+    (clear: Roster.of(context).onSignOut, key: null),
+    (clear: Upsync.of(context).onSignOut, key: null),
+  ];
 }

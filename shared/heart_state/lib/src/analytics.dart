@@ -265,8 +265,10 @@ enum CoachingRole {
 }
 
 // Event names. GA4 allows 40 characters of letters, digits and underscores, and
-// reserves the `firebase_`, `google_` and `ga_` prefixes. `screen_view` is not
-// here on purpose: `FirebaseAnalyticsObserver` already sends it.
+// reserves the `firebase_`, `google_` and `ga_` prefixes. `screen_view` is sent
+// by `FirebaseAnalyticsObserver` on every route change; it is here only for a
+// pane that changes with no route ([Analytics.paneShown]).
+const _screenView = 'screen_view';
 const _anonSessionMinted = 'anon_session_minted';
 const _signupPromptShown = 'signup_prompt_shown';
 const _signupStarted = 'signup_started';
@@ -280,6 +282,8 @@ const _deletionCancelled = 'deletion_cancelled';
 // Parameter keys, and the user property names — a separate namespace, capped at
 // 24 characters against a parameter's 40.
 const _provider = 'provider';
+// GA4's own, so reported without being registered
+const _screenName = 'screen_name';
 const _fromAnonymous = 'from_anonymous';
 const _arrival = 'arrival';
 const _reason = 'reason';
@@ -517,6 +521,12 @@ class Analytics {
   void accountDeletionScheduled() => _log(_deletionScheduled);
 
   void accountDeletionCancelled() => _log(_deletionCancelled);
+
+  /// A screen opened in a pane beside a list, which changes no route, so the
+  /// navigator observer never hears of it (#687). [screen] is the name the
+  /// same screen goes by when it is a route of its own, so the two count as
+  /// one screen.
+  void paneShown({required String screen}) => _log(_screenView, {_screenName: screen});
 
   /// Null where there is no session at all — the web's gate, or the moment
   /// after a sign-out. That is neither rung, and saying so beats leaving the

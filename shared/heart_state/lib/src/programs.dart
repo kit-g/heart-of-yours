@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:math';
@@ -10,6 +11,7 @@ import 'client_programs.dart' show ProgramConflict, isProgramChanged;
 import 'program_calendar.dart';
 import 'program_growth.dart';
 import 'program_plan.dart';
+import 'program_reads.dart';
 import 'remote.dart';
 import 'skips.dart';
 import 'templates.dart' show SharedSessions;
@@ -106,7 +108,7 @@ abstract interface class RemoteProgramService {
   Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions});
 
   /// A coach's copy's edit says the revision it started from and names
-  /// itself (#558); `{'code': 'program_changed'}` when the coach changed the
+  /// itself (#558); the `ServerRefusal` `program_changed` when the coach changed the
   /// same fields since.
   Future<Program> editProgram(Program program, {int? baseRevision, String? changeId});
 
@@ -184,6 +186,16 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// Swaps [from] for [to] in the [sessions] that hold it: a ladder's advance
   /// (#350), or its "Keep". Templates are the template list's to edit.
   final Future<void> Function(Iterable<String> sessions, {required String from, required String to})? onAdvance;
+
+  /// Every program read: a launch with many programs asks a few at a time,
+  /// not in one burst the gateway's concurrency limit answers with a 500
+  /// (#660); only while [uid] is the account, with its remote leg open.
+  late final _reads = ProgramReads((uid) => userId == uid && _remote.allowed, failureOf: _remote.failureOf);
+
+  /// When each program was last read because the user asked: a push, a pull
+  /// to refresh, coming back to the app. [growLogged] does not read it again
+  /// straight after.
+  final _askedAt = <String, DateTime>{};
 
   new({
     required this._service,
@@ -426,10 +438,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// [session] as the workout to start (#349): [planSession] with its
   /// program's position, bases and stages, and what it was asked to be. A
   /// template no followed program holds starts as [Template.toWorkout] does,
-  /// with no plan.
+  /// with no plan. [at] lays out one logged after the fact, as it stood then.
   PlannedWorkout plan(
     Template session, {
     required DateTime now,
+    DateTime? at,
     required int firstWeekday,
     required RoundWeight round,
   }) {
@@ -439,12 +452,16 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
       null => null,
     };
     if (id == null || program == null || !program.live) return (workout: session.toWorkout(), plan: null);
-    return planSession(
+    return planProgramSession(
       session,
       program: program,
-      position: position(program, now: now, firstWeekday: firstWeekday),
-      bases: currentBasesOf(id),
-      stages: currentStagesOf(id),
+      marks: _marks[id] ?? const [],
+      actions: _actions[id] ?? const [],
+      bases: basesOf(id),
+      now: now,
+      at: at,
+      starts: startsOf(_workouts?.history ?? const []),
+      firstWeekday: firstWeekday,
       round: round,
     );
   }
@@ -466,6 +483,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     _conflicts.clear();
     _changeIds.clear();
     _coachedReadAt = null;
+    _askedAt.clear();
+    notifyListeners();
   }
 
   @override
@@ -510,8 +529,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     // an archived program's history is read once; nothing moves it after
     await Future.wait([
       for (final MapEntry<String, Program>(key: programId, value: program) in [..._programs.entries])
-        if (!program.archived || !_actions.containsKey(programId)) _step(() => _pull(id, programId)),
-      for (final program in _coached) _step(() => _readHistory(id, program.id!)),
+        if (!program.archived || !_actions.containsKey(programId)) _pullOnce(id, programId),
+      for (final program in _coached) _changesOnce(id, program.id!),
     ]);
   }
 
@@ -592,10 +611,15 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
 
   /// Reads what changed in [programId] since the last change held: oldest
   /// first, a page at a time, a few pages at most.
-  Future<void> _readHistory(String uid, String programId) async {
+  Future<void> _readHistory(String uid, String programId, {bool asked = false}) async {
     final held = [...?_history[programId]];
     for (var page = 0; page < 10; page++) {
-      final (:items, :cursor) = await _remoteService.getProgramChanges(programId, since: held.lastOrNull?.cursor);
+      final (:items, :cursor) = await _reads(
+        uid,
+        'getProgramChanges',
+        () => _remoteService.getProgramChanges(programId, since: held.lastOrNull?.cursor),
+        asked: asked,
+      );
       if (userId != uid) return;
       held.addAll(items);
       if (items.isEmpty || cursor == null) break;
@@ -616,7 +640,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     final owed = _owed.values.any((each) => each.row == .program && each.id == programId);
     if (!owed) {
       await _step(() async {
-        final program = await _remoteService.getProgram(programId);
+        final program = await _reads(id, 'getProgram', () => _remoteService.getProgram(programId), asked: true);
         if (userId != id) return;
         await _service.storeProgram(program, id);
         if (program.id case final String programId) _programs[programId] = program;
@@ -624,8 +648,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
         notifyListeners();
       });
     }
-    await _step(() => _pull(id, programId));
-    if (_programs[programId]?.coachId != null) await _step(() => _readHistory(id, programId));
+    await _pullOnce(id, programId, asked: true);
+    if (_programs[programId]?.coachId != null) await _changesOnce(id, programId, asked: true);
     return _programs[programId];
   }
 
@@ -653,12 +677,37 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     notifyListeners();
   }
 
+  /// [_pull] through [ProgramReads.once]: a cold start's init and a resume's
+  /// [pullCoached] ask for the same programs at once.
+  Future<void> _pullOnce(String uid, String programId, {bool asked = false}) {
+    return _reads.once('pull', uid, programId, () => _step(() => _pull(uid, programId, asked: asked)), asked: asked);
+  }
+
+  /// [_readHistory], as [_pullOnce].
+  Future<void> _changesOnce(String uid, String programId, {bool asked = false}) {
+    return _reads.once(
+      'changes',
+      uid,
+      programId,
+      () => _step(() => _readHistory(uid, programId, asked: asked)),
+      asked: asked,
+    );
+  }
+
   /// Reads [programId]'s actions and bases from the server over the mirror's.
-  Future<void> _pull(String uid, String programId) async {
-    final (actions, bases) = await (
-      _remoteService.getProgramActions(programId),
-      _remoteService.getProgramBases(programId),
-    ).wait;
+  /// Either failing fails both, once, naming whichever did.
+  Future<void> _pull(String uid, String programId, {bool asked = false}) async {
+    final List<ProgramAction> actions;
+    final List<ProgramBase> bases;
+    try {
+      (actions, bases) = await (
+        _reads(uid, 'getProgramActions', () => _remoteService.getProgramActions(programId), asked: asked),
+        _reads(uid, 'getProgramBases', () => _remoteService.getProgramBases(programId), asked: asked),
+      ).wait;
+    } on ParallelWaitError<(List<ProgramAction>?, List<ProgramBase>?), (AsyncError?, AsyncError?)> catch (e) {
+      final AsyncError(:error, :stackTrace) = _reads.merged([e.errors.$1, e.errors.$2].nonNulls);
+      Error.throwWithStackTrace(error, stackTrace);
+    }
     if (userId != uid) return;
     final ownActions = _rowsOwed<ProgramAction>(
       actions,
@@ -671,6 +720,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     await _service.storeProgramBases(programId, ownBases);
     _actions[programId] = ownActions..sort((a, b) => a.at.compareTo(b.at));
     _bases[programId] = ownBases..sort((a, b) => a.at.compareTo(b.at));
+    if (asked) _askedAt[programId] = DateTime.timestamp();
     notifyListeners();
   }
 
@@ -1311,7 +1361,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// own finish or an edit by hand, is left as it is: the rules would read a
   /// history it wasn't part of. [reread] reads those programs' moves from the
   /// server first, when another device may have made one since they were
-  /// read: coming back to the app.
+  /// read: coming back to the app. One the user's own pull read in the last
+  /// minute, as [pullCoached] just did, is not read again.
   ///
   /// One logged from a session this device hasn't read yet waits, with every
   /// later one of its program: grown without it, the rules would read the
@@ -1327,9 +1378,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   }) async {
     final uid = userId;
     if (uid == null) return;
-    // a move a finish wrote counts from when that workout was, not from when
-    // a device got round to writing it: a session logged later still follows
-    final starts = {for (final workout in workouts) workout.id: workout.start};
+    // a session logged later than another's growth was written still follows
+    final starts = startsOf(workouts);
     List<(Workout, String)> waiting() => [
       for (final workout in workouts)
         if ((workout.loggedBy, workout.programId) case (final String by, final String programId)
@@ -1337,8 +1387,17 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
           (workout, programId),
     ];
     if (reread && _remote.allowed) {
-      final read = {for (final (_, programId) in waiting()) programId};
-      await Future.wait([for (final programId in read) _step(() => _pull(uid, programId))]);
+      final now = DateTime.timestamp();
+      // what coming back's pullCoached just read is as fresh as a reread
+      bool fresh(String programId) => switch (_askedAt[programId]) {
+        final DateTime at => now.difference(at) < const Duration(minutes: 1),
+        null => false,
+      };
+      final read = {
+        for (final (_, programId) in waiting())
+          if (!fresh(programId)) programId,
+      };
+      await Future.wait([for (final programId in read) _pullOnce(uid, programId)]);
       if (userId != uid) return;
     }
     final blocked = <String>{};
@@ -1354,6 +1413,28 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
       }
       await grow(workout, session: session);
     }
+  }
+
+  /// Moves this person's program by a session of it they logged after the fact
+  /// themselves (#737), as [growLogged] does by one their coach logged: not
+  /// once something moved the program since it was, when the rules would read
+  /// a history it wasn't part of. [among] are the workouts already in their
+  /// history, and [slots] and [after] are [grow]'s. Answers what it wrote.
+  ///
+  /// [after] is the whole save, the server's part too, as a finish's is: a base
+  /// names its workout, the server refuses one it hasn't got, and a refused row
+  /// is never sent again.
+  Future<List<GrowthMove>> growPast(
+    Workout workout, {
+    required Iterable<Workout> among,
+    Template? session,
+    Map<String, String>? slots,
+    Future<void>? after,
+  }) async {
+    final programId = workout.programId;
+    if (programId == null) return const [];
+    if (!_waits(workout, programId, startsOf(among), shown: _every)) return const [];
+    return grow(workout, session: session, slots: slots, after: after);
   }
 
   /// Whether [workout], logged in [programId], still has its program to move:
@@ -1376,11 +1457,10 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     return !_movedSince(programId, workout.start, starts);
   }
 
-  /// Whether a base or an action of [programId]'s came after [start]: one a
-  /// workout caused by that workout's start, in [starts], and one by hand by
-  /// when it was made.
+  /// Whether a base or an action of [programId]'s came after [start], by
+  /// [movedAt].
   bool _movedSince(String programId, DateTime start, Map<String, DateTime> starts) {
-    bool after(String? workoutId, DateTime at) => (starts[workoutId] ?? at).isAfter(start);
+    bool after(String? workoutId, DateTime at) => movedAt(workoutId, at, starts).isAfter(start);
     return basesOf(programId).any((base) => after(base.workoutId, base.at)) ||
         actionsOf(programId).any((action) => after(action.workoutId, action.at));
   }
@@ -1418,13 +1498,16 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
         _service.getProgramWorkouts(uid, id),
       ).wait;
       final start = workout.start;
+      final starts = startsOf(workouts);
 
       // the position as it stood at [moment], and with [plus] marked in it
       ProgramPosition at(DateTime moment, {ProgramMark? plus}) {
         return ProgramPosition.of(
           program,
           marks: [...marks.where((mark) => mark.at.isBefore(moment)), ?plus],
-          actions: actionsOf(id).where((action) => action.at.isBefore(moment)),
+          actions: actionsOf(id).where(
+            (action) => movedAt(action.workoutId, action.at, starts).isBefore(moment),
+          ),
           now: moment,
         );
       }
@@ -1735,6 +1818,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
       try {
         await _send(each, uid);
         await _settle(each.row, each.id);
+      } on ReadDropped {
+        return;
       } catch (e, s) {
         onError?.call(e, stacktrace: s);
         // asking again gets the same answer: the row stays as it is here,
@@ -1823,7 +1908,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     } catch (error) {
       if (!isProgramChanged(error)) rethrow;
       _conflicts[id] = ProgramConflict(programId: id, fields: program);
-      return _keep(await _remoteService.getProgram(id), uid);
+      return _keep(await _reads(uid, 'getProgram', () => _remoteService.getProgram(id), asked: true), uid);
     }
   }
 
@@ -1868,31 +1953,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     ];
   }
 
-  /// Answers the server gives that repeating would only repeat: a rule or key
-  /// it does not take, a cap reached, a row it does not have.
-  static const _refusals = {
-    'invalid_rule',
-    'invalid_key',
-    'invalid_deload',
-    'invalid_phase',
-    'invalid_test',
-    'invalid_target',
-    'program_limit',
-    'program_history_limit',
-    'program_not_found',
-    'unknown_program',
-    'unknown_exercise',
-    'unknown_workout',
-    'unknown_action',
-    'skip_limit',
-  };
-
-  static bool _isRefusal(Object error) {
-    return switch (error) {
-      {'code': final String code} => _refusals.contains(code),
-      _ => false,
-    };
-  }
+  static bool _isRefusal(Object error) => programFailure(error) == .refused;
 
   void _replace(Iterable<Program> programs) {
     _programs
@@ -1920,6 +1981,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   Future<void> _step(Future<void> Function() body) async {
     try {
       await body();
+    } on ReadDropped {
+      // for an account that left: nothing to say
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }

@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:sealbox/sealbox.dart';
+
+import 'test_utils.dart';
 
 /// Device keys and key delivery (#555), through the real encryption library
 /// and a server that behaves as heart-api's routes do.
@@ -19,7 +22,7 @@ void main() {
     DateTime Function()? now,
     bool Function()? sharesNoteKeys,
   }) {
-    return DeviceKeys(
+    final keys = DeviceKeys(
       service: server.as(userId),
       vault: vault ?? _Vault(),
       remote: remote ?? (RemoteAccess(hasToken: () => true)..account = true),
@@ -27,6 +30,9 @@ void main() {
       now: now,
       sharesNoteKeys: sharesNoteKeys,
     );
+    // what it left running reads no more
+    addTearDown(keys.dispose);
+    return keys;
   }
 
   /// [a] and [b], two devices of one account, let each other in as a
@@ -132,14 +138,14 @@ void main() {
     });
 
     test('a refusal leaves the keys unpublished and is reported, not thrown', () async {
-      server.refuseNext['publish'] = {'error': 'conflict', 'code': 'device_limit'};
+      server.refuseNext['publish'] = refusedAs({'error': 'conflict', 'code': 'device_limit'}, status: 409);
       final phone = device('dana');
 
       await phone.start('dana');
 
       expect(phone.status, DeviceKeysStatus.failed);
       expect(errors, [
-        {'error': 'conflict', 'code': 'device_limit'},
+        isRefusal('device_limit'),
       ]);
       await phone.refresh();
       expect(phone.status, DeviceKeysStatus.published);
@@ -380,12 +386,12 @@ void main() {
       expect(phone.peer('dana')!.devices.firstWhere((each) => each.id == tablet.deviceId).trust, DeviceTrust.vouched);
       // the same again, as after a lost answer: the device as it is
       expect((await phone.vouchFor(fresh)).signature, vouched.signature);
-      await expectLater(laptop.vouchFor(fresh), throwsA({'error': 'conflict', 'code': 'already_vouched'}));
+      await expectLater(laptop.vouchFor(fresh), throwsA(isRefusal('already_vouched')));
       expect(server.devices[tablet.deviceId]!.vouchedBy, phone.deviceId);
     });
 
     test('a device vouches only once it is published, and never for itself', () async {
-      server.refuseNext['publish'] = {'error': 'conflict', 'code': 'device_limit'};
+      server.refuseNext['publish'] = refusedAs({'error': 'conflict', 'code': 'device_limit'}, status: 409);
       final phone = device('dana');
       final tablet = device('dana');
       await phone.start('dana');
@@ -419,7 +425,7 @@ void main() {
 
       await student.devicesChanged('riley');
 
-      expect(errors.single, {'error': 'forbidden', 'code': 'forbidden'});
+      expect(errors.single, isRefusal('forbidden'));
     });
   });
 
@@ -725,8 +731,11 @@ void main() {
     });
 
     for (final (why, failure) in [
-      ('a rate limit', {'error': 'too many requests', 'code': 'rate_limited', 'retryAfter': 60}),
-      ('the server failing', {'error': 'internal server error', 'code': 'internal'}),
+      (
+        'a rate limit',
+        refusedAs({'error': 'too many requests', 'code': 'rate_limited', 'retryAfter': 60}, status: 429),
+      ),
+      ('the server failing', const ServerFailed()),
       ('no network', TimeoutException('no answer')),
     ]) {
       test("$why reading the sender's devices leaves the item for the next receive", () async {
@@ -1192,7 +1201,7 @@ void main() {
       await coach.start('dana');
       await tablet.start('sam');
       final items = [item('m1', await coach.seal(thread, 'hello'), 'dana')];
-      server.refuseNext['devices'] = {'error': 'forbidden', 'code': 'forbidden'};
+      server.refuseNext['devices'] = refusedAs({'error': 'forbidden', 'code': 'forbidden'}, status: 403);
 
       await tablet.ask(thread, items);
       server.calls.clear();
@@ -1514,6 +1523,23 @@ void main() {
       expect(errors, isEmpty);
     });
 
+    test('a yes meant for another comparison says nothing to this one (#668)', () async {
+      final phone = device('dana');
+      final tablet = device('dana');
+      await phone.start('dana');
+      await tablet.start('dana');
+      await codes(phone, tablet);
+
+      final sent = server.queue.length;
+      await phone.approval.confirm(id: 'one-that-ended');
+
+      expect(phone.approval.value!.confirmed, isFalse);
+      expect(server.queue, hasLength(sent), reason: 'no proof sent');
+
+      await phone.approval.confirm(id: phone.approval.value!.id);
+      expect(phone.approval.value!.confirmed, isTrue);
+    });
+
     test('keys swapped in the list between the code and the proof fail it, and nothing is vouched for', () async {
       final phone = device('dana');
       final tablet = device('dana');
@@ -1744,6 +1770,272 @@ void main() {
       expect(errors, isEmpty);
     });
 
+    test('a comparison moves on both sides with no push to say so (#734)', () {
+      fakeAsync((async) {
+        final phone = device('dana');
+        final tablet = device('dana');
+        unawaited(phone.start('dana'));
+        unawaited(tablet.start('dana'));
+        async.flushMicrotasks();
+
+        unawaited(phone.approval.start(tablet.deviceId!));
+        // the tablet is asked once, as by opening the app
+        async.flushMicrotasks();
+        unawaited(tablet.receive());
+        async.elapse(const Duration(seconds: 6));
+        expect(phaseOf(phone), isA<ComparisonCode>());
+        expect(phaseOf(tablet), isA<ComparisonCode>());
+
+        unawaited(phone.approval.confirm());
+        unawaited(tablet.approval.confirm());
+        async.elapse(const Duration(seconds: 8));
+        expect(phaseOf(phone), isA<ComparisonDone>());
+        expect(phaseOf(tablet), isA<ComparisonDone>());
+        expect(errors, isEmpty);
+
+        // and reads no more a while after it is over
+        async.elapse(const Duration(seconds: 40));
+        final reads = server.calls.where((each) => each == 'queue dana').length;
+        async.elapse(const Duration(minutes: 1));
+        expect(server.calls.where((each) => each == 'queue dana'), hasLength(reads));
+      });
+    });
+
+    test('a queue that cannot be read while comparing is told once, and read again (#734)', () {
+      fakeAsync((async) {
+        final phone = device('dana');
+        final tablet = device('dana');
+        unawaited(phone.start('dana'));
+        unawaited(tablet.start('dana'));
+        async.flushMicrotasks();
+        unawaited(phone.approval.start(tablet.deviceId!));
+        async.flushMicrotasks();
+
+        server.refuseNext['queue'] = TimeoutException('no answer');
+        async.elapse(const Duration(seconds: 2));
+        server.refuseNext['queue'] = TimeoutException('no answer');
+        async.elapse(const Duration(seconds: 2));
+        expect(errors, hasLength(1));
+
+        unawaited(tablet.receive());
+        async.elapse(const Duration(seconds: 6));
+        expect(phaseOf(phone), isA<ComparisonCode>());
+        expect(phaseOf(tablet), isA<ComparisonCode>());
+        unawaited(phone.approval.deny());
+        async.elapse(const Duration(seconds: 4));
+      });
+    });
+
+    /// Two devices of one account, started, and [phone] asking [tablet].
+    (DeviceKeys, DeviceKeys) asking(FakeAsync async) {
+      final phone = device('dana');
+      final tablet = device('dana');
+      unawaited(phone.start('dana'));
+      unawaited(tablet.start('dana'));
+      async.flushMicrotasks();
+      unawaited(phone.approval.start(tablet.deviceId!));
+      async.flushMicrotasks();
+      return (phone, tablet);
+    }
+
+    test('a read of the queue that hangs holds nothing up for long (#734)', () {
+      fakeAsync((async) {
+        final (phone, tablet) = asking(async);
+        unawaited(tablet.receive());
+        async.elapse(const Duration(seconds: 6));
+        expect(phaseOf(phone), isA<ComparisonCode>());
+
+        server.holds['queue'] = Completer<void>();
+        async.elapse(const Duration(seconds: 2));
+        server.holds.remove('queue');
+        unawaited(phone.approval.confirm());
+        unawaited(tablet.approval.confirm());
+        async.elapse(const Duration(seconds: 25));
+        expect(phaseOf(phone), isA<ComparisonDone>());
+        expect(phaseOf(tablet), isA<ComparisonDone>());
+      });
+    });
+
+    test('what is held here is not handed over again at every read (#734)', () {
+      fakeAsync((async) {
+        final phone = device('dana');
+        final tablet = device('dana');
+        var handed = 0;
+        unawaited(
+          phone.on('held', (_) async {
+            handed++;
+            throw StateError('not yet');
+          }),
+        );
+        unawaited(phone.start('dana'));
+        unawaited(tablet.start('dana'));
+        async.flushMicrotasks();
+        // the first look at the account's devices hands over again, by itself
+        unawaited(phone.devicesOf('dana'));
+        unawaited(tablet.deliver(userId: 'dana', kind: 'held', payload: '{}'));
+        async.flushMicrotasks();
+        unawaited(phone.receive());
+        async.flushMicrotasks();
+        expect(handed, 1);
+
+        unawaited(phone.approval.start(tablet.deviceId!));
+        async.elapse(const Duration(minutes: 1));
+        expect(handed, 1);
+        unawaited(phone.approval.deny());
+        async.elapse(const Duration(seconds: 4));
+      });
+    });
+
+    test('behind, nothing is read; in front again, it is (#734)', () {
+      fakeAsync((async) {
+        final (phone, _) = asking(async);
+        phone.approval.inFront = false;
+        int reads() => server.calls.where((each) => each == 'queue dana').length;
+        final before = reads();
+        async.elapse(const Duration(seconds: 20));
+        expect(reads(), before);
+        phone.approval.inFront = true;
+        async.elapse(const Duration(seconds: 4));
+        expect(reads(), greaterThan(before));
+        unawaited(phone.approval.deny());
+        async.elapse(const Duration(seconds: 4));
+      });
+    });
+
+    test('a device expecting to be asked hears it with no push, until it no longer expects it (#734)', () {
+      fakeAsync((async) {
+        final phone = device('dana');
+        final tablet = device('dana');
+        unawaited(phone.start('dana'));
+        unawaited(tablet.start('dana'));
+        async.flushMicrotasks();
+        final stop = tablet.approval.expectAsk();
+        unawaited(phone.approval.start(tablet.deviceId!));
+        async.elapse(const Duration(seconds: 6));
+        expect(phaseOf(tablet), isA<ComparisonCode>());
+        stop();
+        unawaited(phone.approval.deny());
+        async.elapse(const Duration(seconds: 4));
+        expect(phaseOf(tablet), isA<ComparisonCancelled>());
+
+        final reads = server.calls.length;
+        async.elapse(const Duration(minutes: 1));
+        expect(server.calls, hasLength(reads));
+      });
+    });
+
+    test('asked on both at once, both keep the same one (#734)', () {
+      fakeAsync((async) {
+        final phone = device('dana');
+        final tablet = device('dana');
+        unawaited(phone.start('dana'));
+        unawaited(tablet.start('dana'));
+        async.flushMicrotasks();
+        unawaited(phone.approval.start(tablet.deviceId!));
+        unawaited(tablet.approval.start(phone.deviceId!));
+        final ids = [phone.approval.value!.id, tablet.approval.value!.id]..sort();
+        async.elapse(const Duration(seconds: 10));
+
+        expect(phone.approval.value!.id, ids.first);
+        expect(tablet.approval.value!.id, ids.first);
+        expect(
+          {phone.approval.value!.replaced, tablet.approval.value!.replaced},
+          {null, ids.last},
+          reason: 'the one that gave its own up says which',
+        );
+        final (mine, theirs) = (phaseOf(phone)! as ComparisonCode, phaseOf(tablet)! as ComparisonCode);
+        expect(mine.decimals, theirs.decimals);
+
+        unawaited(phone.approval.confirm());
+        unawaited(tablet.approval.confirm());
+        async.elapse(const Duration(seconds: 10));
+        expect(phaseOf(phone), isA<ComparisonDone>());
+        expect(phaseOf(tablet), isA<ComparisonDone>());
+        expect(errors, isEmpty);
+      });
+    });
+
+    test('what opened is handed over though it could not be confirmed (#734)', () {
+      fakeAsync((async) {
+        final (phone, tablet) = asking(async);
+        unawaited(tablet.receive());
+        async.flushMicrotasks();
+        // the server took the confirmation, and its answer was lost
+        server.refuseNext['confirmed'] = TimeoutException('no answer');
+        async.elapse(const Duration(seconds: 6));
+        expect(server.refuseNext, isEmpty);
+        expect(phaseOf(phone), isA<ComparisonCode>());
+        expect(phaseOf(tablet), isA<ComparisonCode>());
+        unawaited(phone.approval.deny());
+        async.elapse(const Duration(seconds: 4));
+      });
+    });
+
+    test('an answer to a comparison no longer run here ends it on the other side (#734)', () {
+      fakeAsync((async) {
+        final (phone, tablet) = asking(async);
+        // a restart abandons it, and says nothing
+        phone.stop();
+        unawaited(phone.start('dana'));
+        async.flushMicrotasks();
+        unawaited(tablet.receive());
+        async.flushMicrotasks();
+        expect(phaseOf(tablet), isA<ComparisonWaiting>());
+        unawaited(phone.receive());
+        async.elapse(const Duration(seconds: 4));
+        expect(phaseOf(tablet), isA<ComparisonCancelled>());
+      });
+    });
+
+    test('ending one both asked for is not a refusal of the other device (#734)', () {
+      fakeAsync((async) {
+        final phone = device('dana');
+        final tablet = device('dana');
+        unawaited(phone.start('dana'));
+        unawaited(tablet.start('dana'));
+        async.flushMicrotasks();
+        for (final _ in [1, 2]) {
+          unawaited(phone.approval.start(tablet.deviceId!));
+          unawaited(tablet.approval.start(phone.deviceId!));
+          async.elapse(const Duration(seconds: 10));
+          final gaveUp = [phone, tablet].singleWhere((each) => each.approval.value!.replaced != null);
+          unawaited(gaveUp.approval.deny());
+          async.elapse(const Duration(seconds: 6));
+        }
+        final stop = tablet.approval.expectAsk();
+        final stopToo = phone.approval.expectAsk();
+        for (final (asks, asked) in [(phone, tablet), (tablet, phone)]) {
+          unawaited(asks.approval.start(asked.deviceId!));
+          async.elapse(const Duration(seconds: 6));
+          expect(phaseOf(asked), isA<ComparisonCode>());
+          unawaited(asks.approval.deny());
+          async.elapse(const Duration(seconds: 6));
+        }
+        stop();
+        stopToo();
+        async.elapse(const Duration(minutes: 1));
+      });
+    });
+
+    test('a device let in reads the keys sent after the other was done (#734)', () {
+      fakeAsync((async) {
+        final (phone, tablet) = asking(async);
+        unawaited(tablet.receive());
+        async.elapse(const Duration(seconds: 6));
+        unawaited(phone.approval.confirm());
+        unawaited(tablet.approval.confirm());
+        async.elapse(const Duration(seconds: 8));
+        expect(phaseOf(tablet), isA<ComparisonDone>());
+
+        unawaited(phone.deliver(userId: 'dana', kind: 'late', payload: '{}'));
+        var taken = false;
+        unawaited(tablet.on('late', (_) async => taken = true));
+        async.elapse(const Duration(seconds: 4));
+        expect(taken, isTrue);
+        async.elapse(const Duration(minutes: 1));
+      });
+    });
+
     test('the one that asked is done only once the other said it let it in too', () async {
       final phone = device('dana');
       final tablet = device('dana');
@@ -1844,7 +2136,7 @@ void main() {
       // the tablet's vouch for the phone goes through; the phone's fails
       server
         ..passes['vouch'] = 1
-        ..refuseNext['vouch'] = {'error': 'server error', 'code': 'internal'};
+        ..refuseNext['vouch'] = const ServerFailed();
 
       await compare(phone, tablet);
 
@@ -2077,7 +2369,7 @@ class _As implements RemoteKeyService {
   CryptoDevice _mine(String deviceId) {
     return switch (server.devices[deviceId]) {
       final CryptoDevice device when device.userId == me => device,
-      _ => throw {'error': 'not found', 'code': 'not_found'},
+      _ => throw refusedAs({'error': 'not found', 'code': 'not_found'}),
     };
   }
 
@@ -2091,7 +2383,7 @@ class _As implements RemoteKeyService {
   }) async {
     server.calls.add('publish $me');
     await _answer('publish');
-    if (server.removed.contains(id)) throw {'error': 'forbidden', 'code': 'device_removed'};
+    if (server.removed.contains(id)) throw refusedAs({'error': 'forbidden', 'code': 'device_removed'});
     return server.devices[id] ??= CryptoDevice(
       id: id,
       userId: me,
@@ -2109,7 +2401,7 @@ class _As implements RemoteKeyService {
     final owner = userId ?? me;
     server.calls.add('devices $me $owner');
     await _answer('devices');
-    if (!server._shares(me, owner)) throw {'error': 'forbidden', 'code': 'forbidden'};
+    if (!server._shares(me, owner)) throw refusedAs({'error': 'forbidden', 'code': 'forbidden'});
     return [...server.devices.values.where((each) => each.userId == owner)];
   }
 
@@ -2123,12 +2415,12 @@ class _As implements RemoteKeyService {
     await _answer('vouch');
     final device = _mine(deviceId);
     if (vouchedBy == deviceId || server.devices[vouchedBy]?.userId != me) {
-      throw {'error': 'bad request', 'code': 'bad_request'};
+      throw refusedAs({'error': 'bad request', 'code': 'bad_request'});
     }
     return switch ((device.vouchedBy, device.signature)) {
       (null, _) => server.vouch(deviceId, by: vouchedBy, signature: signature),
       (final by, final said) when by == vouchedBy && said == signature => device,
-      _ => throw {'error': 'conflict', 'code': 'already_vouched'},
+      _ => throw refusedAs({'error': 'conflict', 'code': 'already_vouched'}),
     };
   }
 
@@ -2139,7 +2431,7 @@ class _As implements RemoteKeyService {
     _mine(deviceId);
     final held = server.oneTimeKeys[deviceId] ??= [];
     held.addAll(keys.entries);
-    if (held.length > 50) throw {'error': 'bad request', 'code': 'bad_request'};
+    if (held.length > 50) throw refusedAs({'error': 'bad request', 'code': 'bad_request'});
     return held.length;
   }
 
@@ -2173,9 +2465,9 @@ class _As implements RemoteKeyService {
     server.calls.add('claim $me $userId');
     server.claims.add(deviceIds);
     await _answer('claim');
-    if (!server._shares(me, userId)) throw {'error': 'forbidden', 'code': 'forbidden'};
+    if (!server._shares(me, userId)) throw refusedAs({'error': 'forbidden', 'code': 'forbidden'});
     if (deviceIds case final ids? when ids.isEmpty || ids.length > 10) {
-      throw {'error': 'bad request', 'code': 'bad_request'};
+      throw refusedAs({'error': 'bad request', 'code': 'bad_request'});
     }
     // a named device that isn't theirs, or was removed, is left out
     final named = server.devices.values.where(
@@ -2214,8 +2506,10 @@ class _As implements RemoteKeyService {
     await _answer('enqueue');
     _mine(senderDeviceId);
     final recipient = server.devices[recipientDeviceId];
-    if (recipient == null || !server._shares(me, recipient.userId)) throw {'error': 'not found', 'code': 'not_found'};
-    if (content.length > 1024) throw {'error': 'bad request', 'code': 'bad_request'};
+    if (recipient == null || !server._shares(me, recipient.userId)) {
+      throw refusedAs({'error': 'not found', 'code': 'not_found'});
+    }
+    if (content.length > 1024) throw refusedAs({'error': 'bad request', 'code': 'bad_request'});
     server.queue.add(
       QueuedItem(
         id: id,
@@ -2244,5 +2538,6 @@ class _As implements RemoteKeyService {
     await _answer('confirm');
     _mine(deviceId);
     server.queue.removeWhere((each) => each.recipientDeviceId == deviceId && ids.contains(each.id));
+    await _answer('confirmed');
   }
 }

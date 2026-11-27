@@ -6,7 +6,7 @@ satisfied or explicitly flagged in the handoff.
 
 ## Checklist
 
-1. **Verified** — `make codegen codegen-app` first (a fresh worktree has no
+1. **Verified** — `make codegen` first (a fresh worktree has no
    generated mocks, and `make lint` deliberately does not generate them),
    then `make lint` and `make test` (or the targeted `make test-<pkg>`
    suites) pass; record the exact commands and outcomes. A red lint or test
@@ -25,7 +25,7 @@ satisfied or explicitly flagged in the handoff.
    the generated Dart are derived and not committed: the diff carries the
    two sources only, and `make codegen-heart_language` rebuilds the rest.
 3. **Accessibility** — new interactive controls announce themselves (label,
-   role); screens you touched keep their entries in `test/a11y_test.dart`'s
+   role); screens you touched keep their entries in `test/a11y.dart`'s
    screen×guideline matrix honest: enable what now passes, skip what doesn't
    with a file:line reason. Patterns and adoption rule: `docs/a11y.md`.
 4. **Large screens** — measure `LayoutBuilder` constraints and cap widths

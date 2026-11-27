@@ -17,6 +17,7 @@ class Timers with ChangeNotifier implements SignOutStateSentry {
   void onSignOut() {
     userId = null;
     _timers.clear();
+    notifyListeners();
   }
 
   static Timers of(BuildContext context) {

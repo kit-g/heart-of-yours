@@ -36,7 +36,12 @@ class ProgramPage extends StatelessWidget {
     // deleted, here or on another device, while the page is open
     if (program == null) return Scaffold(appBar: AppBar());
 
-    return _ProgramsOnly(program: program, child: _page(context, programs, program));
+    // whichever way it was opened: news of it would say what the page shows
+    // (#724)
+    return InView(
+      subject: (.program, programId),
+      child: _ProgramsOnly(program: program, child: _page(context, programs, program)),
+    );
   }
 
   Widget _page(BuildContext context, Programs programs, Program program) {
@@ -679,8 +684,10 @@ class _ProgramGoals extends StatelessWidget {
     }
 
     final finished = position.finished;
+    // a fresh reader whenever the history Stats reads changed, which is when
+    // the rows re-read
+    context.select<Stats, int>((stats) => stats.revision);
     final lensSets = sharedLensSets(Stats.of(context).getLensSets);
-    final workouts = context.select<Stats, WorkoutAggregation>((stats) => stats.workouts);
     final muted = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
 
     return Padding(
@@ -696,7 +703,6 @@ class _ProgramGoals extends StatelessWidget {
             GoalRow(
               key: AppKeys.goalRow(each.goal.id),
               goal: each.goal,
-              workouts: workouts,
               lensSets: lensSets,
               feeds: [feed],
             ),
@@ -714,7 +720,6 @@ class _ProgramGoals extends StatelessWidget {
             GoalRow(
               key: AppKeys.goalRow(goal.id),
               goal: goal,
-              workouts: workouts,
               lensSets: lensSets,
               feeds: [feed],
             ),

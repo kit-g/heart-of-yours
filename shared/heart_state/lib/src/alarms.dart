@@ -107,13 +107,19 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
   /// scheduled back then is still pending, so none is scheduled here. A rest
   /// that is over, or belongs to an exercise [active] does not have, is
   /// forgotten.
+  ///
+  /// A rest already running is left alone, and what is saved with it: it is
+  /// that rest's, started before this ran (a start-up that waited for the
+  /// exercise library, #723).
   Future<void> restore(Workout? active) async {
     try {
+      if (_activeExercise != null) return;
       final saved = await _store?.read();
-      if (saved == null) return;
+      // one started while the store was read is as much the running one
+      if (saved == null || _activeExercise != null) return;
       final remaining = saved.end.difference(_now()).inMilliseconds;
       final owned = active?.any((exercise) => exercise.id == saved.exerciseId) ?? false;
-      if (!owned || remaining <= 0 || _activeExercise != null) {
+      if (!owned || remaining <= 0) {
         await _store?.clear();
         return;
       }

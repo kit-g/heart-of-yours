@@ -102,7 +102,7 @@ void main() {
         body: {'error': 'bad request', 'code': 'invalid_cursor'},
       );
 
-      expect(() => api.getClients(cursor: 'zzz'), throwsA(containsPair('code', 'invalid_cursor')));
+      expect(() => api.getClients(cursor: 'zzz'), throwsA(refused('invalid_cursor')));
     });
   });
 
@@ -130,7 +130,7 @@ void main() {
       final path = Router.coachClientReviewed('nobody');
       respond(client: client, method: 'PUT', path: path, statusCode: 404, body: {'code': 'not_found'});
 
-      expect(() => api.markReviewed('nobody'), throwsA(containsPair('code', 'not_found')));
+      expect(() => api.markReviewed('nobody'), throwsA(refused('not_found')));
     });
   });
 
@@ -266,7 +266,7 @@ void main() {
         },
       );
 
-      expect(api.getClientWorkouts(studentId), throwsA(containsPair('code', 'forbidden')));
+      expect(api.getClientWorkouts(studentId), throwsA(refused('forbidden')));
     });
   });
 
@@ -310,7 +310,46 @@ void main() {
         body: {'error': 'forbidden', 'code': 'forbidden', 'reason': 'You can only log for a client you are coaching.'},
       );
 
-      expect(api.logClientWorkout('sam', Workout()), throwsA(containsPair('code', 'forbidden')));
+      expect(api.logClientWorkout('sam', Workout()), throwsA(refused('forbidden')));
+    });
+
+    test("the plan of what was logged goes under the client's workout, in the plan shape (heart-api#439)", () async {
+      respond(client: client, method: 'PUT', path: Router.clientWorkoutPlan('sam', 'w1'), statusCode: 204, body: {});
+      const plan = WorkoutPlan({
+        'exercises': [
+          {
+            'sets': [
+              {'setId': 's1', 'weight': 62.5},
+            ],
+          },
+        ],
+      });
+
+      await api.saveClientWorkoutPlan('sam', 'w1', plan);
+
+      final sent = verify(
+        client.put(
+          Uri.https('api.example.com', Router.clientWorkoutPlan('sam', 'w1')),
+          headers: anyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured.single;
+      expect(jsonDecode(sent as String), {'plan': plan.plan});
+    });
+
+    test('a plan refused is thrown whole', () async {
+      respond(
+        client: client,
+        method: 'PUT',
+        path: Router.clientWorkoutPlan('sam', 'w1'),
+        statusCode: 400,
+        body: {'error': 'bad request', 'code': 'invalid_plan'},
+      );
+
+      expect(
+        api.saveClientWorkoutPlan('sam', 'w1', const WorkoutPlan({'exercises': <Object>[]})),
+        throwsA(refused('invalid_plan')),
+      );
     });
   });
 
@@ -326,7 +365,7 @@ void main() {
 
       expect(
         api.editClientSession('sam', 'p1', Template.empty(id: 's1', order: 0), baseRevision: 1, changeId: 'ch'),
-        throwsA(allOf(containsPair('code', 'program_changed'), containsPair('revision', 2))),
+        throwsA(refused('program_changed', {'revision': 2})),
       );
     });
 

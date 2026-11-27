@@ -19,6 +19,12 @@ void main() {
       return verify(service.logEvent(name, captureAny)).captured.single as Map<Object?, Object?>;
     }
 
+    test('a pane counts as the screen it is as a route of its own (#687)', () {
+      sut.paneShown(screen: 'monthlyReport');
+
+      expect(parametersOf('screen_view'), {'screen_name': 'monthlyReport'});
+    });
+
     test('every parameter reaches the SDK as a String or a num', () {
       sut.signupStarted(provider: .google, fromAnonymous: true);
 

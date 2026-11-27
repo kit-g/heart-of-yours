@@ -1,3 +1,4 @@
+import 'dart:io' show SocketException;
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -7,7 +8,7 @@ import 'package:firebase_auth_platform_interface/firebase_auth_platform_interfac
     show InternalUserInfo, PasswordPolicy;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:heart_models/heart_models.dart' show User;
+import 'package:heart_models/heart_models.dart' show AccountDeleted, Settings, UpgradeRequired, User;
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
@@ -335,14 +336,375 @@ void main() {
       expect(sut.entitlementsKnown, isTrue);
       expect(sut.user?.mayCoach, isTrue);
 
-      // a new name or photo: Firebase hands the account over again, and the
-      // server's answer to it is slow
+      // a new name: Firebase hands the account over again, it goes to the
+      // server, and the server's answer is slow
       when(account.registerAccount(any)).thenAnswer((_) => Completer<User>().future);
-      firebase.userChangedStreamController.add(firebase.currentUser);
+      firebase.userChangedStreamController.add(MockUser(uid: 'muffin', email: 'muffin@test', displayName: 'Muffin'));
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
       expect(sut.entitlementsKnown, isTrue);
       expect(sut.user?.mayCoach, isTrue, reason: 'a coach never reads as one who may not coach in between');
+      sut.dispose();
+    });
+
+    test('the server saying the account is gone ends the session, and the app is told of it (#671)', () async {
+      final firebase = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+      );
+      when(account.isAuthenticated).thenReturn(true);
+      when(account.registerAccount(any)).thenThrow(AccountDeleted());
+      final reported = <String?>[];
+      final sut = Auth(
+        service: account,
+        firebase: firebase,
+        googleSignIn: MockGoogleSignIn(),
+        // what the app clears the account's state on
+        onUserChange: (user) => reported.add(user?.id),
+        onError: (_, {stacktrace}) {},
+      );
+      // the next anonymous session, minted from the mock's user
+      firebase.mockUser = MockUser(uid: 'anonymous', isAnonymous: true);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(reported, ['muffin', null, 'anonymous']);
+      expect(sut.isAnonymous, isTrue);
+      sut.dispose();
+    });
+
+    group('the same session reported again (#676)', () {
+      late MockFirebaseAuth firebase;
+      late List<String> tokens;
+      var entered = 0;
+
+      Auth start({Future<void> Function()? entering, bool registers = true}) {
+        firebase = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+        );
+        tokens = [];
+        entered = 0;
+        when(account.isAuthenticated).thenReturn(true);
+        if (registers) {
+          when(account.registerAccount(any)).thenAnswer(
+            (inv) async => User(
+              id: (inv.positionalArguments.first as User).id,
+              settings: const Settings(firstWeekday: 1),
+              scheduledForDeletionAt: DateTime.utc(2026, 12),
+              entitlements: ['coach'],
+            ),
+          );
+        }
+        return Auth(
+          service: account,
+          firebase: firebase,
+          onEnter: (_, _) async {
+            entered++;
+            await entering?.call();
+          },
+          onToken: tokens.add,
+          onError: (_, {stacktrace}) {},
+        );
+      }
+
+      Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 20));
+
+      test('after the run that started it: not started or registered again, and the token is handed over', () async {
+        final sut = start();
+        await settle();
+
+        // the token read at start-up refreshes it, and Firebase says so
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await settle();
+
+        expect(entered, 1);
+        verify(account.registerAccount(any)).called(1);
+        expect(tokens, hasLength(1));
+        sut.dispose();
+      });
+
+      test('while that run is still out: it waits for it, and then does nothing more', () async {
+        final entering = Completer<void>();
+        final sut = start(entering: () => entering.future);
+        await settle();
+
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await settle();
+        entering.complete();
+        await settle();
+
+        expect(entered, 1);
+        verify(account.registerAccount(any)).called(1);
+        sut.dispose();
+      });
+
+      test('what the server said of the account holds through it', () async {
+        final sut = start();
+        await settle();
+
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await settle();
+
+        expect(sut.user?.settings, const Settings(firstWeekday: 1), reason: 'or every answer here reads as newer');
+        expect(sut.user?.scheduledForDeletionAt, DateTime.utc(2026, 12), reason: 'or the restore gate lets go');
+        expect(sut.user?.mayCoach, isTrue);
+        sut.dispose();
+      });
+
+      test('a new name goes to the server', () async {
+        final sut = start();
+        await settle();
+
+        firebase.userChangedStreamController.add(MockUser(uid: 'muffin', email: 'muffin@test', displayName: 'Muffin'));
+        await settle();
+
+        expect(entered, 1);
+        final [first, second] = verify(account.registerAccount(captureAny)).captured.cast<User>();
+        expect((first.displayName, second.displayName), (null, 'Muffin'));
+        sut.dispose();
+      });
+
+      test('a registration that failed is tried again, without starting up again', () async {
+        final sut = start(registers: false);
+        when(account.registerAccount(any)).thenThrow(const SocketException('offline'));
+        await settle();
+
+        when(account.registerAccount(any))
+            .thenAnswer((inv) async => User(id: (inv.positionalArguments.first as User).id));
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await settle();
+
+        expect(entered, 1);
+        expect(sut.entitlementsKnown, isTrue);
+        sut.dispose();
+      });
+
+      test('a start-up that failed is started again', () async {
+        var fails = true;
+        final sut = start(
+          entering: () async {
+            if (fails) throw const SocketException('offline');
+          },
+        );
+        await settle();
+
+        fails = false;
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await settle();
+
+        expect(entered, 2);
+        expect(sut.entitlementsKnown, isTrue);
+        sut.dispose();
+      });
+    });
+
+    test('a registration that never reaches the server is handed to onError, not thrown (HEART-OF-YOURS-2S)', () async {
+      final firebase = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+      );
+      when(account.isAuthenticated).thenReturn(true);
+      // a socket closed under a backgrounded app
+      when(account.registerAccount(any)).thenAnswer((_) async => throw const SocketException('Bad file descriptor'));
+      final reported = <(Object?, Object?)>[];
+      final sut = Auth(
+        service: account,
+        firebase: firebase,
+        onError: (error, {stacktrace}) => reported.add((error, stacktrace)),
+      );
+      // an unhandled error would fail this test from the zone
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(reported.single.$1, isA<SocketException>());
+      expect(reported.single.$2, isNotNull);
+      expect(sut.isInitialized, isTrue, reason: 'the session is settled all the same');
+      expect(sut.user?.id, 'muffin');
+      expect(sut.entitlementsKnown, isFalse);
+
+      // back online: coming back to the app registers it after all
+      when(account.registerAccount(any)).thenAnswer(
+        (inv) async => User(id: (inv.positionalArguments.first as User).id, entitlements: ['coach']),
+      );
+      await sut.registerAgain();
+      expect(sut.entitlementsKnown, isTrue);
+      expect(sut.user?.mayCoach, isTrue);
+      // and once it is known, coming back asks nothing more
+      clearInteractions(account);
+      await sut.registerAgain();
+      verifyNever(account.registerAccount(any));
+      sut.dispose();
+    });
+
+    group('a build the server no longer serves (#683)', () {
+      late MockFirebaseAuth firebase;
+
+      /// The client's 426 hook, as the app has it: the gate goes up, and with
+      /// it [RemoteAccess.outdated].
+      var outdated = false;
+
+      /// One launch of the app over [firebase]: its own [RemoteAccess] over
+      /// [outdated] and its own list of what it reported.
+      (Auth, List<Object?>) launch() {
+        final reported = <Object?>[];
+        final sut = Auth(
+          service: account,
+          firebase: firebase,
+          remote: RemoteAccess(outdated: () => outdated),
+          onError: (error, {stacktrace}) => reported.add(error),
+        );
+        return (sut, reported);
+      }
+
+      Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 20));
+
+      void refuses() {
+        when(account.registerAccount(any)).thenAnswer((_) async {
+          outdated = true;
+          throw UpgradeRequired();
+        });
+      }
+
+      void accepts() {
+        when(account.registerAccount(any)).thenAnswer(
+          (inv) async => User(id: (inv.positionalArguments.first as User).id, entitlements: ['coach']),
+        );
+      }
+
+      setUp(() {
+        outdated = false;
+        firebase = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+        );
+        when(account.isAuthenticated).thenReturn(true);
+      });
+
+      test('at launch: the session stays the one Firebase has, signed in', () async {
+        refuses();
+        final (sut, reported) = launch();
+        await settle();
+
+        expect(sut.user?.id, firebase.currentUser?.uid, reason: 'the app and Firebase agree on who is in');
+        expect(sut.isLoggedIn, isTrue);
+        expect(sut.entitlementsKnown, isFalse, reason: 'the server never answered');
+        expect(sut.isInitialized, isTrue);
+        expect(reported.single, isA<UpgradeRequired>());
+        sut.dispose();
+      });
+
+      test('later on: what the server said holds, and so does what Firebase changed since', () async {
+        accepts();
+        final (sut, reported) = launch();
+        await settle();
+        expect(sut.user?.mayCoach, isTrue);
+
+        // a new name goes out and is slow to be refused; a newer one goes out
+        // after it and is refused at once
+        final slow = Completer<User>();
+        var calls = 0;
+        when(account.registerAccount(any)).thenAnswer((_) async {
+          if (++calls == 1) return slow.future;
+          outdated = true;
+          throw UpgradeRequired();
+        });
+        firebase.userChangedStreamController.add(MockUser(uid: 'muffin', email: 'muffin@test', displayName: 'Muf'));
+        await settle();
+        firebase.userChangedStreamController.add(MockUser(uid: 'muffin', email: 'muffin@test', displayName: 'Muffin'));
+        await settle();
+        slow.completeError(UpgradeRequired());
+        await settle();
+
+        expect(calls, 2);
+        expect(sut.user?.displayName, 'Muffin', reason: 'not put back to the copy a request went out with');
+        expect(sut.user?.mayCoach, isTrue);
+        expect(sut.entitlementsKnown, isTrue, reason: 'the server said it once, and has not unsaid it');
+        expect(reported, everyElement(isA<UpgradeRequired>()));
+        sut.dispose();
+      });
+
+      test('under the gate nothing is sent again: not a resume, a token refresh, or a settings write', () async {
+        refuses();
+        final (sut, reported) = launch();
+        await settle();
+        var notified = 0;
+        sut.addListener(() => notified++);
+
+        await sut.registerAgain();
+        firebase.userChangedStreamController.add(firebase.currentUser);
+        await settle();
+        final saved = await sut.saveSettings(const Settings(firstWeekday: 1));
+
+        verify(account.registerAccount(any)).called(1);
+        expect(saved, isNull);
+        expect(notified, 0, reason: 'nothing changed under the gate');
+        expect(sut.user?.id, 'muffin');
+        expect(reported, hasLength(1));
+        sut.dispose();
+      });
+
+      // Not something the fix changes — a relaunch is a fresh Auth, and the
+      // gate is down in a fresh process — but the issue's last condition:
+      // Firebase was never signed out, so the update needs no sign-in.
+      test('an updated build, relaunched, registers the same account without a sign-in', () async {
+        refuses();
+        final (outdatedRun, _) = launch();
+        await settle();
+        outdatedRun.dispose();
+
+        outdated = false;
+        accepts();
+        firebase = MockFirebaseAuth(signedIn: true, mockUser: firebase.currentUser as MockUser);
+        final (relaunched, reported) = launch();
+        await settle();
+
+        expect(relaunched.user?.id, 'muffin');
+        expect(relaunched.entitlementsKnown, isTrue);
+        expect(relaunched.user?.mayCoach, isTrue);
+        expect(reported, isEmpty);
+        relaunched.dispose();
+      });
+    });
+
+    test('any other failure of a user change is reported too, and settles the session', () async {
+      final firebase = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+      );
+      when(account.isAuthenticated).thenReturn(true);
+      final reported = <Object?>[];
+      final sut = Auth(
+        service: account,
+        firebase: firebase,
+        // the app's startup failing, as an offline token refresh would
+        onEnter: (_, _) async => throw StateError('startup'),
+        onError: (error, {stacktrace}) => reported.add(error),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(reported.single, isA<StateError>());
+      expect(sut.isInitialized, isTrue);
+      sut.dispose();
+    });
+
+    test('a registration answered after the session changed hands is not kept', () async {
+      final firebase = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'muffin', email: 'muffin@test'),
+      );
+      when(account.isAuthenticated).thenReturn(true);
+      final slow = Completer<User>();
+      when(account.registerAccount(any)).thenAnswer((_) => slow.future);
+      final sut = Auth(service: account, firebase: firebase, isWeb: true);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      // signed out while the request was out
+      firebase.userChangedStreamController.add(null);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      slow.complete(User(id: 'muffin', entitlements: ['coach']));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.user, isNull);
+      expect(sut.entitlementsKnown, isFalse);
       sut.dispose();
     });
 
@@ -711,6 +1073,9 @@ void main() {
     /// The order things happened in, as the app would see them.
     late List<String> events;
     late RemoteAccess remote;
+
+    /// The client's 426 hook, as the app has it (see [RemoteAccess.outdated]).
+    var outdated = false;
     late MockGoogleSignIn google;
     late _Firebase firebase;
     late _AppleSheet apple;
@@ -729,7 +1094,8 @@ void main() {
       _Firebase Function()? firebaseOf,
     }) async {
       events = [];
-      remote = RemoteAccess();
+      outdated = false;
+      remote = RemoteAccess(outdated: () => outdated);
       google = MockGoogleSignIn();
       apple = _AppleSheet();
       when(google.initialize()).thenAnswer((_) async {});
@@ -922,6 +1288,42 @@ void main() {
       expect(remote.replaying, isFalse);
       expect(remote.allowed, isFalse, reason: 'still anonymous');
       expect(errors, hasLength(1));
+    });
+
+    test('a 426 registering a sign-in keeps the account Firebase signed in to (#683)', () async {
+      final errors = <Object>[];
+      final sut = await build(_LinkableAnonymous.new, onError: errors.add);
+      when(account.registerAccount(any)).thenAnswer((_) async {
+        outdated = true;
+        throw UpgradeRequired();
+      });
+
+      await sut.loginWithGoogle();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.user?.id, firebase.currentUser?.uid);
+      expect(sut.user?.id, 'anon-1');
+      expect(sut.isAnonymous, isFalse);
+      expect(errors, isNotEmpty);
+      expect(errors, everyElement(isA<UpgradeRequired>()));
+    });
+
+    test('a sign-out while a sign-in registers is not undone by its 426 (#683)', () async {
+      final sut = await build(_LinkableAnonymous.new);
+      final answer = Completer<User>();
+      when(account.registerAccount(any)).thenAnswer((_) => answer.future);
+
+      final signingIn = sut.loginWithGoogle();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await firebase.signOut();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      outdated = true;
+      answer.completeError(UpgradeRequired());
+      await signingIn;
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.user?.id, isNot('anon-1'), reason: 'the account signed out of stays signed out of');
+      expect(sut.user?.id, firebase.currentUser?.uid);
     });
 
     test('logging in with email from an anonymous session is the uid-changing case', () async {

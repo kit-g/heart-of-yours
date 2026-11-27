@@ -4,6 +4,7 @@ import 'package:feedback/feedback.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/goals_widget.dart';
@@ -41,8 +42,10 @@ import 'package:heart/core/utils/record_book.dart';
 import 'package:heart/core/utils/charts.dart';
 import 'package:heart/core/utils/stats.dart';
 import 'package:heart/core/utils/templates.dart';
+import 'package:heart/core/utils/remote_failures.dart';
 import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
+import 'package:heart/core/utils/lifecycle.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/coaching.dart';
 import 'package:heart/presentation/navigation/entry_review.dart';
@@ -119,7 +122,11 @@ class HeartApp extends StatelessWidget {
         // One gate for every remote leg below; Auth decides, the rest consult.
         // Above them all because each takes it at construction.
         Provider<RemoteAccess>(
-          create: (_) => RemoteAccess(hasToken: () => api.isAuthenticated),
+          create: (_) => RemoteAccess(
+            hasToken: () => api.isAuthenticated,
+            outdated: () => AppVersionSentry.instance.upgradeRequired,
+            failures: remoteFailure,
+          ),
         ),
         ChangeNotifierProvider<AppTheme>(
           create: (_) => AppTheme(),
@@ -273,6 +280,7 @@ class HeartApp extends StatelessWidget {
             service: db,
             readBefore: db.getPreviousSetsBefore,
             readInTemplate: db.getPreviousSetsInTemplate,
+            readSessions: db.getSessionCounts,
           ),
         ),
         ChangeNotifierProvider<Preferences>(
@@ -532,7 +540,7 @@ class HeartApp extends StatelessWidget {
             auth.dispose();
           },
           create: (context) {
-            // the uid the state classes are currently keyed on
+            // the uid the API client's token was last handed over for
             String? current;
             final auth = Auth(
               service: api,
@@ -547,6 +555,8 @@ class HeartApp extends StatelessWidget {
                 userId,
                 hasLocalNotifications: hasLocalNotifications,
               ),
+              // Firebase refreshed the token under a running session
+              onToken: api.reauthenticate,
               // "Erase my data": the anonymous session's store is this
               // device's alone, so the wipe is the local database's to do
               onErase: db.eraseUser,
@@ -567,30 +577,27 @@ class HeartApp extends StatelessWidget {
                 // keeps it.
                 if (user?.id != current) api.unauthenticate();
                 router.refresh();
-                // One uid replacing another under a running app — an account
-                // signed into from an anonymous session. A sign-out clears the
-                // state on its way out; this switch has no such moment, so it
-                // is cleared here, before the new uid is keyed in. Exercises
-                // forgets it was initialized, which is what makes `_initApp`
-                // run the full startup again for the new uid.
-                if (current != null && user != null && user.id != current) {
-                  clearUserState(context);
+                switch ((keyedUserId(context), user)) {
+                  // The session ended without the app's own log out, which
+                  // clears on its way out and leaves nothing keyed: Firebase
+                  // signs a user out by itself on a revoked or expired token
+                  // or a deleted or disabled account, and the server can
+                  // report the account gone (#671). Without this, the
+                  // anonymous session minted next showed the account's
+                  // history, goals and dashboard.
+                  case (String _, null):
+                    _sessionLost(context, router);
+                  // One uid replacing another: an account signed into from an
+                  // anonymous session, which has no such moment either.
+                  case (String keyed, final next?) when next.id != keyed:
+                    clearUserState(context);
+                  case _:
                 }
                 current = user?.id;
-                Exercises.of(context).userId = user?.id;
-                Charts.of(context).userId = user?.id;
-                Goals.of(context).userId = user?.id;
-                Anomalies.of(context).userId = user?.id;
-                Health.of(context).userId = user?.id;
-                PreviousExercises.of(context).userId = user?.id;
-                Stats.of(context).userId = user?.id;
-                Templates.of(context).userId = user?.id;
-                Programs.of(context).userId = user?.id;
-                GoEasy.of(context).userId = user?.id;
-                Timers.of(context).userId = user?.id;
-                Workouts.of(context).userId = user?.id;
-                Messages.of(context).userId = user?.id;
-                CoachNotes.of(context).userId = user?.id;
+                // Exercises forgets it was initialized on a clear, which is
+                // what makes `_initApp` run the full startup again for the
+                // next uid.
+                keyUserState(context, user?.id);
                 if (user?.id case String id) unawaited(_prepareOpening(context, id));
               },
               onError: reportToSentry,
@@ -688,13 +695,13 @@ class _App extends StatefulWidget {
 class _AppState extends State<_App> with WidgetsBindingObserver {
   /// The app's only lifecycle hook, and it sits here because [_App] is the
   /// highest widget that can still read the providers above it.
-  late final AppLifecycleListener _lifecycle;
+  late final AppReturns _lifecycle;
 
   @override
   void initState() {
     super.initState();
-    _lifecycle = AppLifecycleListener(onResume: _onResume);
-    // for didChangeLocales; the AppLifecycleListener above cannot carry it
+    _lifecycle = AppReturns(_onReturn, onResume: _onResume);
+    // for didChangeLocales; the listener above cannot carry it
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -716,6 +723,15 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     if (!mounted) return;
     Health.of(context).onResume();
     Auth.of(context).ensureSession();
+  }
+
+  /// Back from elsewhere: what may have changed meanwhile is read again. Not
+  /// after a photo picker or a permission, which resume the app too.
+  void _onReturn() {
+    if (!mounted) return;
+    final auth = Auth.of(context);
+    // an account whose launch could not reach the server, now perhaps online
+    auth.registerAgain();
     // the sweep that flags entries runs nightly: a phone left open overnight
     // learns of the morning's flags when it comes back
     Anomalies.of(context).pull();
@@ -739,7 +755,6 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
       );
     }
     // messages whose push may never have come (#556)
-    final auth = Auth.of(context);
     if (coachingRuns(preferences, auth)) Messages.of(context).resume();
     // a coach's notes, only where the Coaching space is there and keys run
     if (preferences.isOn(.coachPeople) && (auth.user?.mayCoach ?? false) && DeviceKeys.of(context).supported) {
@@ -747,7 +762,9 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     }
     // a language change whose library fetch failed is retried here; the same
     // tag as the catalog's is a no-op (heart-of-yours#612)
-    Exercises.of(context).onLocaleChanged(languageTag());
+    final exercises = Exercises.of(context)..onLocaleChanged(languageTag());
+    // and a library start-up went on without (#723)
+    if (exercises.libraryUnavailable) exercises.retryLibrary();
   }
 
   /// Localized backend content (the exercise catalog) is served per request
@@ -1106,7 +1123,8 @@ Future<void> _initApp(
       },
     );
 
-    final Exercises(:isInitialized, :init) = Exercises.of(context);
+    final exercises = Exercises.of(context);
+    final Exercises(:isInitialized, :init) = exercises;
 
     final templates = Templates.of(context);
     final programs = Programs.of(context);
@@ -1165,14 +1183,13 @@ Future<void> _initApp(
       // never-granted permission simply yields nothing.
       health.init();
 
+      final owner = exercises.userId;
       init(locale: languageTag()).then<void>(
-        (hasExercises) {
-          // everything below reads or writes against the exercise catalog —
-          // templates and workouts persist rows with a foreign key onto
-          // `exercises.name`. Running them against an empty catalog trades a
-          // reported failure for a constraint violation, so stop here instead.
-          if (!hasExercises) return;
-
+        // everything below reads or writes against the exercise catalog —
+        // templates and workouts persist rows with a foreign key onto
+        // `exercises.name`. Running them against an empty catalog trades a
+        // reported failure for a constraint violation, so they wait for one.
+        (_) => exercises.whenInitialized(owner, () {
           // since workouts initialization looks up exercises
           // in `Exercises`, we must chain these calls this way
           workouts.init().then<void>(
@@ -1194,7 +1211,7 @@ Future<void> _initApp(
             },
           );
           timers.init();
-        },
+        }),
       );
     }
   });
@@ -1224,6 +1241,23 @@ Future<void> _prepareOpening(BuildContext context, String userId) async {
   } finally {
     unawaited(LaunchScreen.release());
   }
+}
+
+/// What the app's own log out does around `clearState`, for a session that
+/// ended without one (#671): the theme goes back to the default, as it does on
+/// every sign-out, the account's state is forgotten in memory, and an open
+/// workout sheet, whose workout went with it, closes instead of rebuilding
+/// over nothing.
+///
+/// Memory only, and nothing is erased: the account's rows, unsynced ones
+/// included, stay under its uid for when it signs back in. The push client
+/// stops on the same user change (`PushPresenter`), dropping the device's
+/// token; the server is not told, since the session that could tell it is
+/// already gone.
+void _sessionLost(BuildContext context, HeartRouter router) {
+  AppTheme.of(context).onSignOut();
+  clearUserState(context);
+  router.closeActiveWorkout();
 }
 
 /// Where a workout notification lands: the workout if it is still going, the
@@ -1367,21 +1401,23 @@ void _resync(BuildContext context, Upsync upsync) {
   final backfill = Backfill.of(context);
   Goals.of(context).init();
   Anomalies.of(context).init();
-  exercises.init(locale: languageTag()).then<void>(
-    (hasExercises) {
-      if (!hasExercises) return;
-      _initTrainingData(
-        workouts: workouts,
-        previous: previous,
-        stats: stats,
-        templates: templates,
-        programs: programs,
-        backfill: backfill,
-        upsync: upsync,
-        preferences: preferences,
+  final owner = exercises.userId;
+  exercises
+      .init(locale: languageTag())
+      .then<void>(
+        (_) => exercises.whenInitialized(owner, () {
+          _initTrainingData(
+            workouts: workouts,
+            previous: previous,
+            stats: stats,
+            templates: templates,
+            programs: programs,
+            backfill: backfill,
+            upsync: upsync,
+            preferences: preferences,
+          );
+        }),
       );
-    },
-  );
 }
 
 Future<void> _initAppInfo(BuildContext context) {

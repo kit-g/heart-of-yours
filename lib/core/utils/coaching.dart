@@ -25,6 +25,9 @@ class RemoteCoaching implements CoachingService {
   }
 
   @override
+  Future<Connection> nameConnection(String connectionId, String? name) => _api.nameConnection(connectionId, name);
+
+  @override
   Future<void> endConnection(String connectionId) => _api.endConnection(connectionId);
 
   @override

@@ -7,38 +7,31 @@ mixin _NoteRoutes on Requests {
   /// Writes the note [id], the device's own UUIDv7, on [connectionId]: a new
   /// one, or what replaces it. The last write wins.
   Future<CoachNote> saveNote(String id, {required String connectionId, required String content}) async {
-    final (json, code) = await put(Router.note(id), body: {'connectionId': connectionId, 'content': content});
-    return switch ((code, json)) {
-      (200 || 201, Map json) => CoachNote.fromJson(json),
-      _ => throw json,
-    };
+    final (json, _) = await put(Router.note(id), body: {'connectionId': connectionId, 'content': content});
+    return CoachNote.fromJson(json);
   }
 
   /// One page of this coach's notes, on [connectionId] or on every client.
   /// `cursor` is there only when more follow.
   Future<({List<CoachNote> notes, String? cursor})> getNotes({String? connectionId, String? cursor}) async {
-    final (json, code) = await get(
+    final response = await get(
       Router.notes,
       query: switch ({'connectionId': ?connectionId, 'cursor': ?cursor}) {
         final Map<String, String> query when query.isNotEmpty => query,
         _ => null,
       },
     );
-    return switch ((code, json)) {
-      (200, {'notes': final List notes}) => (
-        notes: [
-          for (final each in notes)
-            if (each is Map) CoachNote.fromJson(each),
-        ],
-        cursor: json['cursor'] as String?,
-      ),
-      _ => throw json,
-    };
+    final (notes, page) = _listIn(response, 'notes', from: Router.notes);
+    return (
+      notes: [
+        for (final each in notes)
+          if (each is Map) CoachNote.fromJson(each),
+      ],
+      cursor: page['cursor'] as String?,
+    );
   }
 
-  /// Deletes the note [id]. One already gone is refused (`not_found`).
-  Future<void> deleteNote(String id) async {
-    final (json, code) = await delete(Router.note(id));
-    if (code != 204) throw json;
-  }
+  /// Deletes the note [id]. One already gone is the [ServerRefusal]
+  /// `not_found`.
+  Future<void> deleteNote(String id) => delete(Router.note(id));
 }

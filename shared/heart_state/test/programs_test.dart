@@ -1,9 +1,14 @@
+import 'dart:async';
+import 'dart:math';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'test_utils.dart';
 
 /// The Programs notifier (#346): local first, the server's copy after, and a
 /// position that is folded on request, never held.
@@ -46,7 +51,7 @@ void main() {
     remote = _Remote();
     templates = MockTemplateService();
     when(templates.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
-    access = RemoteAccess(hasToken: () => true)..account = true;
+    access = RemoteAccess(hasToken: () => true, failures: testFailures)..account = true;
     errors = [];
     sessionsChanged = 0;
     programs = Programs(
@@ -547,6 +552,315 @@ void main() {
       await relaunch().init();
 
       expect(remote.calls.where((each) => each.startsWith('getProgramActions')), hasLength(1));
+    });
+  });
+
+  group('program reads, a few at a time (#660)', () {
+    final throttled = refusedAs({'code': 'rate_limited', 'retryAfter': 1}, status: 429);
+
+    int asked(String call) => remote.calls.where((each) => each == call).length;
+
+    // getPrograms is the list; these are the per-program reads
+    List<String> reads() => [
+      for (final call in remote.calls)
+        if (call.startsWith('getProgram') && call != 'getPrograms') call,
+    ];
+
+    List<Program> several() => [for (final id in List.generate(6, (i) => 'p$i')) program(id: id)];
+
+    test('many programs are read a few requests at a time, each once', () {
+      fakeAsync((async) {
+        remote.programs = several();
+        remote.holding = Completer();
+
+        programs.init();
+        async.flushMicrotasks();
+        expect(remote.inFlight, 4);
+        remote.holding!.complete();
+        async.flushMicrotasks();
+
+        expect(remote.peak, 4);
+        for (final each in several()) {
+          expect(asked('getProgramActions ${each.id}'), 1);
+          expect(asked('getProgramBases ${each.id}'), 1);
+        }
+        expect(errors, isEmpty);
+      });
+    });
+
+    test('a read the user asked for goes ahead of the launch', () {
+      fakeAsync((async) {
+        local.programs[uid] = several();
+        remote.programs = [...several(), program(id: 'pushed')];
+        remote.holding = Completer();
+        remote.holds = (call) => call != 'getPrograms';
+
+        programs.init();
+        async.flushMicrotasks();
+        programs.pull('pushed');
+        async.flushMicrotasks();
+        remote.holding!.complete();
+        async.flushMicrotasks();
+
+        expect(reads()[4], 'getProgram pushed');
+      });
+    });
+
+    test("a pull the user asked for reads afresh after the launch's, and the next one joins it", () {
+      fakeAsync((async) {
+        local.programs[uid] = [program()];
+        remote.programs = [program()];
+        remote.holding = Completer();
+        remote.holds = (call) => call.startsWith('getProgramActions') || call.startsWith('getProgramBases');
+
+        programs.init();
+        async.flushMicrotasks();
+        // what the push says changed, after the launch's read went out
+        remote.actions['p1'] = [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime.utc(2026, 10, 2))];
+        Program? pushed;
+        programs.pull('p1').then((program) => pushed = program);
+        programs.pull('p1');
+        async.flushMicrotasks();
+        remote.holding!.complete();
+        async.flushMicrotasks();
+
+        expect(pushed?.id, 'p1');
+        expect(asked('getProgramActions p1'), 2);
+        expect(programs.actionsOf('p1').single.id, 'a1');
+      });
+    });
+
+    test('a throttled read is asked again, and is no error', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.bases['p1'] = [
+          ProgramBase(id: 'b1', programId: 'p1', exerciseId: bench, value: 100, at: DateTime.utc(2026, 10, 1)),
+        ];
+        remote.failures['getProgramBases p1'] = [throttled];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 2));
+
+        expect(asked('getProgramBases p1'), 2);
+        expect(asked('getProgramActions p1'), 1);
+        expect(programs.currentBasesOf('p1')[bench]?.value, 100);
+        expect(errors, isEmpty);
+      });
+    });
+
+    test("so is a server that failed, but not a refusal this build doesn't know", () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramBases p1'] = [const ServerFailed()];
+        remote.failures['getProgramActions p1'] = [
+          refusedAs({'code': 'mystery'}),
+        ];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(asked('getProgramBases p1'), 2);
+        expect(asked('getProgramActions p1'), 1);
+        expect('${errors.single}', 'ProgramReadFailed(getProgramActions: mystery)');
+      });
+    });
+
+    test('a server failing every time is reported as itself, by its own status and route', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramBases p1'] = [const ServerFailed(), const ServerFailed(), const ServerFailed()];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(asked('getProgramBases p1'), 3);
+        expect(errors.single, isA<ServerFailed>());
+      });
+    });
+
+    test('one that still fails is reported once, naming the call and not the program', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramBases p1'] = [throttled, throttled, throttled];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(asked('getProgramBases p1'), 3);
+        expect(errors.single, isA<ProgramReadFailed>());
+        expect('${errors.single}', 'ProgramReadFailed(getProgramBases: rate_limited)');
+      });
+    });
+
+    test('both failing are one report naming both', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [throttled, throttled, throttled];
+        remote.failures['getProgramBases p1'] = [throttled, throttled, throttled];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect('${errors.single}', 'ProgramReadFailed(getProgramActions, getProgramBases: rate_limited)');
+      });
+    });
+
+    test('offline, nothing is asked again, and an answer is what gets reported', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [Exception('Connection closed')];
+        remote.failures['getProgramBases p1'] = [
+          refusedAs({'code': 'program_not_found'}, status: 404),
+        ];
+        var done = false;
+
+        programs.init().then((_) => done = true);
+        async.flushMicrotasks();
+
+        expect(done, isTrue, reason: 'no retry waits');
+        expect(asked('getProgramActions p1'), 1);
+        expect(asked('getProgramBases p1'), 1);
+        expect('${errors.single}', 'ProgramReadFailed(getProgramBases: program_not_found)');
+      });
+    });
+
+    test("a gateway's 401, left after a reauth that failed, is asked once and reported as itself", () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [const ServerFailed(401)];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(asked('getProgramActions p1'), 1);
+        expect(errors.single, isA<ServerFailed>().having((e) => e.status, 'status', 401));
+      });
+    });
+
+    test('nor is a forced upgrade, a deleted account, or a 413 with no code', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [UpgradeRequired()];
+        remote.failures['getProgramBases p1'] = [const ServerFailed(413)];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(asked('getProgramActions p1'), 1);
+        expect(asked('getProgramBases p1'), 1);
+      });
+    });
+
+    test('offline beside a server that failed, the server failure is what gets reported', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [Exception('Connection closed')];
+        remote.failures['getProgramBases p1'] = [const ServerFailed(), const ServerFailed(), const ServerFailed()];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(errors.single, isA<ServerFailed>());
+      });
+    });
+
+    test('alone, an answer this build cannot read is reported as itself, and not asked again', () {
+      fakeAsync((async) {
+        const dropped = FormatException('empty response');
+        remote.programs = [program()];
+        remote.failures['getProgramActions p1'] = [dropped];
+
+        programs.init();
+        async.flushMicrotasks();
+
+        expect(errors, [dropped]);
+      });
+    });
+
+    test('a read that hangs gives its slot back, is asked again, and is reported', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.holding = Completer();
+        remote.holds = (call) => call == 'getProgramBases p1';
+
+        programs.init();
+        async.elapse(const Duration(seconds: 60));
+
+        expect(asked('getProgramBases p1'), 3);
+        expect('${errors.single}', 'ProgramReadFailed(getProgramBases: timeout)');
+
+        // nothing is left joined to it
+        remote.holds = (_) => false;
+        remote.calls.clear();
+        programs.pull('p1');
+        async.flushMicrotasks();
+        expect(asked('getProgramBases p1'), 1);
+      });
+    });
+
+    test('a retry waiting when the remote leg closes is let go quietly', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.failures['getProgramBases p1'] = [throttled];
+
+        programs.init();
+        async.flushMicrotasks();
+        access.account = false;
+        async.elapse(const Duration(seconds: 5));
+
+        expect(asked('getProgramBases p1'), 1);
+        expect(errors, isEmpty);
+      });
+    });
+
+    test('signing out under a joined read lets it, and the backlog, go quietly', () {
+      fakeAsync((async) {
+        local.programs[uid] = several();
+        remote.programs = several();
+        remote.holding = Completer();
+        remote.holds = (call) => call != 'getPrograms';
+
+        var finished = 0;
+        programs.init().then((_) => finished++);
+        async.flushMicrotasks();
+        programs.pull('p0').then((_) => finished++);
+        async.flushMicrotasks();
+        programs.userId = 'u2';
+        remote.holding!.complete();
+        async.flushMicrotasks();
+
+        expect(finished, 2);
+        expect(reads(), hasLength(4), reason: 'what waited for a slot is not sent');
+        expect(local.actions, isEmpty);
+        expect(errors, isEmpty);
+      });
+    });
+
+    test("a coach's copy's changes are asked again a page at a time", () {
+      fakeAsync((async) {
+        remote.programs = [
+          Program.fromJson({...program(id: 'mine').toMap(), 'coachId': 'coach-muffin', 'revision': 1}),
+        ];
+        remote.changes['mine'] = [
+          ProgramChange(
+            id: 'ch1',
+            programId: 'mine',
+            actorId: 'coach-muffin',
+            kind: 'edit',
+            revision: 1,
+            at: DateTime.utc(2026, 10, 3),
+            cursor: 'ch1',
+          ),
+        ];
+        remote.failures['getProgramChanges mine -'] = [throttled];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 2));
+
+        expect(asked('getProgramChanges mine -'), 2);
+        expect(programs.coachChanges('mine', after: DateTime.utc(2026, 10, 1)).single.id, 'ch1');
+        expect(errors, isEmpty);
+      });
     });
   });
 
@@ -1320,6 +1634,146 @@ void main() {
         expect(programs.basesOf('p1').where((each) => each.workoutId == 'w1'), hasLength(1));
       });
 
+      test('a session logged after the fact moves it once, and not once something moved it since (#737)', () async {
+        await follow(
+          growing({'squat': const AddWeight(step: 5)}),
+          bases: [base(100, at: DateTime.utc(2026, 10, 2))],
+        );
+        Workout past(String id, DateTime start) => done(
+          id,
+          start: start,
+          exercises: [
+            squats([5, 5, 5], weight: 105),
+          ],
+        );
+        final mine = past('mine', DateTime.utc(2026, 10, 5));
+
+        await programs.growPast(mine, among: const []);
+        await programs.growPast(mine, among: const []);
+        expect(programs.basesOf('p1').where((each) => each.workoutId == 'mine'), hasLength(1));
+
+        // older than that one, whose growth counts from when it was
+        await programs.growPast(past('older', DateTime.utc(2026, 10, 4)), among: [mine]);
+        expect(programs.basesOf('p1').where((each) => each.workoutId == 'older'), isEmpty);
+        // newer, though that one's growth was only written now
+        await programs.growPast(past('newer', DateTime.utc(2026, 10, 7)), among: [mine]);
+        expect(programs.basesOf('p1').where((each) => each.workoutId == 'newer'), hasLength(1));
+      });
+
+      test('two days filled in one after the other: the second starts where the first left it (#737)', () async {
+        await follow(growing({'squat': const AddWeight(step: 5)}), bases: [base(100)]);
+        final monday = done(
+          'monday',
+          start: DateTime.utc(2026, 10, 5),
+          exercises: [
+            squats([5, 5, 5]),
+          ],
+        );
+        final tuesday = DateTime.utc(2026, 10, 6);
+        await programs.growPast(monday, among: const []);
+        // written now, weeks after either
+        expect(programs.currentBasesOf('p1')['squat']?.value, 105);
+
+        final planned = planProgramSession(
+          Template.fromJson({
+            'id': 's1',
+            'name': 'Day A',
+            'order': 0,
+            'programId': 'p1',
+            'exercises': [
+              squats([5], id: 'slot'),
+            ],
+          }),
+          program: programs.lookup('p1')!,
+          marks: const [],
+          actions: programs.actionsOf('p1'),
+          bases: programs.basesOf('p1'),
+          now: DateTime.utc(2026, 10, 20),
+          at: tuesday,
+          starts: startsOf([monday]),
+          round: (_, kg) => kg,
+        );
+        expect(
+          switch (planned.plan?.plan['exercises']) {
+            [{'base': final num base}] => base,
+            _ => null,
+          },
+          105,
+        );
+      });
+
+      test('misses on days filled in after a growth still add up to a cut (#737)', () async {
+        await follow(
+          growing({'squat': const AddWeight(step: 5, miss: MissRule(after: 2, cut: 0.1))}),
+          bases: [base(100)],
+        );
+        Workout on(String id, int day, List<int> reps, num weight) {
+          final workout = done(
+            id,
+            start: DateTime.utc(2026, 10, day),
+            exercises: [squats(reps, weight: weight)],
+          );
+          (local.workouts['p1'] ??= []).add(workout);
+          return workout;
+        }
+
+        final monday = on('monday', 5, [5, 5, 5], 100);
+        await programs.growPast(monday, among: const []);
+        final tuesday = on('tuesday', 6, [3, 3, 3], 105);
+        await programs.growPast(tuesday, among: [monday]);
+        expect(programs.currentBasesOf('p1')['squat']?.value, 105);
+        final thursday = on('thursday', 8, [3, 3, 3], 105);
+        final moves = await programs.growPast(thursday, among: [monday, tuesday]);
+        expect(moves.single.step, isA<Cut>());
+      });
+
+      test('a session logged after the fact is laid out as it stood then (#737)', () async {
+        await follow(
+          growing({'squat': const AddWeight(step: 5)}),
+          bases: [
+            base(100, at: DateTime.utc(2026, 10, 2)),
+            base(120, at: DateTime.utc(2026, 10, 20)),
+          ],
+        );
+        final day = Template.fromJson({
+          'id': 's1',
+          'name': 'Day A',
+          'order': 0,
+          'programId': 'p1',
+          'exercises': [
+            {
+              'id': 'slot',
+              'exercise': squat,
+              'sets': [
+                {
+                  'id': 'ts1',
+                  'target': {
+                    'reps': {'min': 5, 'max': 5},
+                    'weight': {'percent': 100},
+                  },
+                },
+              ],
+            },
+          ],
+        });
+        num? baseThen(DateTime? at) {
+          final planned = programs.plan(
+            day,
+            now: DateTime.utc(2026, 10, 25),
+            at: at,
+            firstWeekday: 1,
+            round: (_, kg) => kg,
+          );
+          return switch (planned.plan?.plan['exercises']) {
+            [{'base': final num base}] => base,
+            _ => null,
+          };
+        }
+
+        expect(baseThen(null), 120);
+        expect(baseThen(DateTime.utc(2026, 10, 10)), 100);
+      });
+
       test("one of their own, or one older than the program's last move, moves nothing", () async {
         await follow(
           growing({'squat': const AddWeight(step: 5)}),
@@ -1364,6 +1818,20 @@ void main() {
 
         expect(remote.calls, contains('getProgramBases p1'));
         expect(programs.basesOf('p1').where((each) => each.workoutId == 'w1'), isEmpty);
+      });
+
+      test('coming back, what pullCoached just read is not read again (#660)', () async {
+        await follow(growing({'squat': const AddWeight(step: 5)}), bases: [base(100)]);
+        await programs.pull('p1');
+        remote.calls.clear();
+
+        await programs.growLogged(
+          [loggedBy('whiskers', 'w1', start: DateTime.utc(2026, 10, 5))],
+          sessionOf: session,
+          reread: true,
+        );
+
+        expect(remote.calls, isNot(contains('getProgramBases p1')));
       });
 
       test('one logged from a session not read here yet waits for it, and the ones after it too', () async {
@@ -2125,7 +2593,30 @@ class _Remote implements RemoteProgramService {
   void _call(String call) {
     calls.add(call);
     if (failing) throw {'error': 'unavailable'};
-    if (refusing case final String code) throw {'code': code};
+    if (refusing case final String code) throw refusedAs({'code': code});
+  }
+
+  /// What each program read throws before it answers, one per ask: a
+  /// throttled one is the server's `429 rate_limited` (#660, #681).
+  final failures = <String, List<Object>>{};
+
+  /// Holds program reads open until it completes, to count them: every one,
+  /// or those [holds] names.
+  Completer<void>? holding;
+  bool Function(String call)? holds;
+  var inFlight = 0;
+  var peak = 0;
+
+  Future<void> _read(String call) async {
+    _call(call);
+    inFlight++;
+    peak = max(peak, inFlight);
+    try {
+      if (holds?.call(call) ?? true) await holding?.future;
+    } finally {
+      inFlight--;
+    }
+    if (failures[call] case final List<Object> pending when pending.isNotEmpty) throw pending.removeAt(0);
   }
 
   @override
@@ -2136,7 +2627,7 @@ class _Remote implements RemoteProgramService {
 
   @override
   Future<Program> getProgram(String programId) async {
-    _call('getProgram $programId');
+    await _read('getProgram $programId');
     return programs.firstWhere((each) => each.id == programId);
   }
 
@@ -2160,7 +2651,7 @@ class _Remote implements RemoteProgramService {
     edits.add((baseRevision, changeId));
     _call('editProgram ${program.id}');
     if (revisions[program.id] case final int current when baseRevision != null) {
-      if (baseRevision != current) throw {'code': 'program_changed', 'revision': current};
+      if (baseRevision != current) throw refusedAs({'code': 'program_changed', 'revision': current});
       revisions[program.id!] = current + 1;
       return Program.fromJson({...program.toMap(), 'revision': current + 1});
     }
@@ -2172,7 +2663,7 @@ class _Remote implements RemoteProgramService {
 
   @override
   Future<({List<ProgramChange> items, String? cursor})> getProgramChanges(String programId, {String? since}) async {
-    _call('getProgramChanges $programId ${since ?? '-'}');
+    await _read('getProgramChanges $programId ${since ?? '-'}');
     final all = changes[programId] ?? const <ProgramChange>[];
     final after = switch (since) {
       final String since => all.skipWhile((each) => each.cursor != since).skip(1),
@@ -2189,7 +2680,7 @@ class _Remote implements RemoteProgramService {
 
   @override
   Future<List<ProgramAction>> getProgramActions(String programId) async {
-    _call('getProgramActions $programId');
+    await _read('getProgramActions $programId');
     return [...?actions[programId]];
   }
 
@@ -2207,7 +2698,7 @@ class _Remote implements RemoteProgramService {
 
   @override
   Future<List<ProgramBase>> getProgramBases(String programId) async {
-    _call('getProgramBases $programId');
+    await _read('getProgramBases $programId');
     return [...?bases[programId]];
   }
 

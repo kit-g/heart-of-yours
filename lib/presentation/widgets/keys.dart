@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show PageStorageKey;
 
 abstract final class AppKeys {
   const new _();
@@ -14,17 +15,30 @@ abstract final class AppKeys {
   /// test tells it is looking at the compact frame.
   static const navigationRail = Key('AppFrame.navigationRail');
 
-  /// Placeholder holding a two-pane detail open before anything is selected.
-  /// Asserting on it distinguishes "nothing selected" from "no detail pane".
-  static const noSelection = Key('AppFrame.noSelection');
-
-  /// History's switch between the list and the calendar, and the calendar
-  /// itself (#609).
+  /// History's switch between its views, a view in its menu, and the calendar
+  /// itself (#609, #739).
   static const historyViewSwitch = Key('History.view.switch');
+  static Key historyViewChoice(String view) => Key('History.view.$view');
+
+  /// The calendar a month at a time (#739): the month shown, the ways to the
+  /// ones beside it, and the date picker.
+  static const calendarMonthTitle = Key('History.calendar.month');
+  static const calendarPreviousMonth = Key('History.calendar.previous');
+  static const calendarNextMonth = Key('History.calendar.next');
+  static const calendarGoToDate = Key('History.calendar.goToDate');
 
   /// A calendar day's list (#618): start a workout today, log one on the day.
   static const calendarStart = Key('History.calendar.start');
   static const calendarLog = Key('History.calendar.log');
+
+  /// And what either is made from (#737): the ways in, the lists they open,
+  /// and a row of one.
+  static const calendarFromTemplate = Key('History.calendar.fromTemplate');
+  static const calendarFromWorkout = Key('History.calendar.fromWorkout');
+  static const templateChoices = Key('History.calendar.templates');
+  static const workoutChoices = Key('History.calendar.workouts');
+  static Key makeFromTemplate(String id) => Key('History.calendar.template.$id');
+  static Key makeFromWorkout(String id) => Key('History.calendar.workout.$id');
   static const historyCalendar = Key('History.calendar');
   static const historyViewSetting = Key('Settings.historyView');
   static const historyDensitySetting = Key('Settings.historyDensity');
@@ -38,6 +52,11 @@ abstract final class AppKeys {
   /// the chips of the groups set, and the empty state with its way out.
   static const historyFilter = Key('History.filter');
   static Key historyFilterGroup(String group) => Key('History.filter.$group');
+  static Key historyFilterAxis(String axis) => Key('History.filter.axis.$axis');
+  static Key historyFilterTemplate(String id) => Key('History.filter.template.$id');
+  static Key historyFilterTemplateChip(String id) => Key('History.filter.template.chip.$id');
+  static const historyFilterFromChip = Key('History.filter.from.chip');
+  static const historyFilterUntilChip = Key('History.filter.until.chip');
   static const historyFilterChips = Key('History.filter.chips');
   static const historyFilterEmpty = Key('History.filter.empty');
   static const historyFilterClear = Key('History.filter.clear');
@@ -161,6 +180,9 @@ abstract final class AppKeys {
   /// there is a timer on it.
   static const restTimers = Key('Settings.restTimers');
   static const pushSettings = Key('Settings.pushSettings');
+
+  /// The note a push shows with the app open (#724).
+  static const pushNote = Key('Push.note');
   static const features = Key('Settings.features');
 
   /// The export page's two actions, one per format.
@@ -270,6 +292,8 @@ abstract final class AppKeys {
   /// One program's band on the Workout tab (#347), and its Start button.
   static Key programBand(String? programId) => Key('Programs.band.$programId');
   static Key programBandStatus(String? programId) => Key('Programs.band.status.$programId');
+  static Key programBandWeeks(String? programId) => Key('Programs.band.weeks.$programId');
+  static Key programBandCount(String? programId) => Key('Programs.band.count.$programId');
   static Key partOfProgram(String? programId) => Key('Programs.partOf.$programId');
   static const programInProgress = Key('Programs.inProgress');
   static Key workoutRecords(String workoutId) => Key('History.records.$workoutId');
@@ -368,13 +392,17 @@ abstract final class AppKeys {
   static const musclePickerRole = Key('MusclePicker.role');
   static const musclePickerFigures = Key('MusclePicker.figures');
 
+  /// The line above the exercise list when the library couldn't be loaded.
+  static const libraryUnavailable = ValueKey('libraryUnavailable');
+
   /// The picker's offer to create an exercise named after a search that
   /// found nothing (#529).
   static const pickerCreateExercise = Key('ExercisePicker.createExercise');
   static const settingsPickerGrouping = Key('Settings.pickerGrouping');
 
-  /// The Coaching space (#566): the way in on Profile, the way back out, its
-  /// tabs, and the line that leads back to a workout still going.
+  /// The Coaching space (#566): the way in (on Profile's app bar, or at the
+  /// foot of the rail), the way back out, its tabs, and the line that leads
+  /// back to a workout still going.
   static const coachingButton = Key('Profile.coaching');
   static const coachingYourTraining = Key('Coaching.yourTraining');
   static const coachingClientsStack = Key('Coaching.clientsStack');
@@ -396,17 +424,28 @@ abstract final class AppKeys {
   /// client's row and its "looked at", and the former ones.
   static const coachingRosterView = Key('Coaching.rosterView');
   static const coachingActivityView = Key('Coaching.activityView');
-  static const coachingFormerClients = Key('Coaching.formerClients');
+
+  /// Kept open as a client opens beside the roster.
+  static const coachingFormerClients = PageStorageKey('Coaching.formerClients');
+  static const coachingClientFormer = Key('Coaching.client.former');
 
   static Key coachingReasonFilter(String? reason) => Key('Coaching.reason.${reason ?? 'all'}');
 
   static Key coachingClient(String connectionId) => Key('Coaching.client.$connectionId');
 
-  static Key coachingMarkReviewed(String connectionId) => Key('Coaching.reviewed.$connectionId');
+  static const coachingCopyPutBackConfirm = Key('Coaching.copyPutBackConfirm');
+  static const coachingSettings = Key('Coaching.settings');
+  static const coachingLogOut = Key('Coaching.logOut');
 
   /// One client (#559): their page, or the pane beside the roster, its way
   /// shut, and a workout or skip of theirs.
   static const coachingClientPane = Key('Coaching.clientPane');
+  static const coachingReplyAbout = Key('Coaching.replyAbout');
+  static const coachingBeside = Key('Coaching.beside');
+  static const coachingBesideMenu = Key('Coaching.besideMenu');
+  static const coachingRosterViewMenu = Key('Coaching.rosterViewMenu');
+  static Key coachingBesideTab(String tab) => Key('Coaching.beside.$tab');
+  static const coachingLatestWorkout = Key('Coaching.latestWorkout');
   static const coachingClientClose = Key('Coaching.clientClose');
   static Key coachingClientWorkout(String workoutId) => Key('Coaching.clientWorkout.$workoutId');
   static const coachingClientSkip = Key('Coaching.clientSkip');
@@ -415,6 +454,10 @@ abstract final class AppKeys {
   /// sessions, a save that didn't land and its answers, and its history.
   static const coachingClientProgram = Key('Coaching.clientProgram');
   static Key coachingClientCopy(String programId) => Key('Coaching.clientCopy.$programId');
+  static Key coachingCopyChanged(String programId) => Key('Coaching.copyChanged.$programId');
+  static const coachingClientRename = Key('Coaching.clientRename');
+  static const coachingClientNameField = Key('Coaching.clientNameField');
+  static const coachingClientNameSave = Key('Coaching.clientNameSave');
   static Key coachingCopySession(String id) => Key('Coaching.copySession.$id');
   static Key coachingCopySessionMenu(String id) => Key('Coaching.copySessionMenu.$id');
   static const coachingCopyAddSession = Key('Coaching.copyAddSession');
@@ -474,6 +517,9 @@ abstract final class AppKeys {
   static const thread = Key('Messages.thread');
   static const messageBox = Key('Messages.box');
   static const messageSend = Key('Messages.send');
+  static const messagesLockedLine = Key('Messages.locked');
+  static const messagesYourDevices = Key('Messages.locked.devices');
+  static const messagesCopyDevicesLink = Key('Messages.locked.copyLink');
   static const coachingClientMessages = Key('Coaching.clientMessages');
   // a coach's notes on a client (#556)
   static const coachingClientNotes = Key('Coaching.clientNotes');
@@ -507,6 +553,13 @@ abstract final class AppKeys {
   static const threadBlock = Key('Messages.block');
   static const threadBlockConfirm = Key('Messages.blockConfirm');
   static const threadCleared = Key('Messages.cleared');
+  static const messageAbout = Key('Messages.about');
+  static const messageSubject = Key('Messages.subject');
+  static const reviewMessage = Key('Review.message');
+  static Key reviewSet(String setId) => Key('Review.set.$setId');
+  static const reviewSetMessage = Key('Review.set.message');
+  static const messageCoachAbout = Key('Workout.messageCoach');
+  static Key messageCoachPick(String connectionId) => Key('Workout.messageCoach.$connectionId');
   static const messageReport = Key('Messages.messageReport');
   static const reportSheet = Key('Report.sheet');
   static const reportInclude = Key('Report.include');

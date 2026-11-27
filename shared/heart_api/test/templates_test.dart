@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:heart_api/src/api.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:mockito/mockito.dart';
+import 'package:network_utils/network_utils.dart' show NetworkException;
 import 'package:test/test.dart';
 
 import 'support/http.dart';
@@ -30,7 +31,7 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('deleteTemplate returns false if code is not 204', () async {
+    test('deleteTemplate throws a failure', () async {
       respond(
         client: client,
         method: 'DELETE',
@@ -39,8 +40,7 @@ void main() {
         body: {'error': 'not found'},
       );
 
-      final result = await api.deleteTemplate('123');
-      expect(result, isFalse);
+      await expectLater(api.deleteTemplate('123'), throwsA(isA<NetworkException>()));
     });
 
     test('getTemplates returns list of Template when valid', () async {
@@ -73,7 +73,7 @@ void main() {
       expect(result.first.name, contains('template'));
     });
 
-    test('getTemplates returns null when JSON is invalid', () async {
+    test('getTemplates throws an answer it cannot read, never answering none', () async {
       respond(
         client: client,
         method: 'GET',
@@ -82,8 +82,7 @@ void main() {
         body: {'unexpected': []},
       );
 
-      final result = await api.getTemplates();
-      expect(result, isNull);
+      await expectLater(api.getTemplates(), throwsA(isA<UnreadableAnswer>()));
     });
 
     test('moveTemplate sends the full body plus an explicit folderId', () async {
@@ -207,7 +206,7 @@ void main() {
           userId: 'u1',
           folder: TemplateFolder(name: 'Push'),
         ),
-        throwsA(containsPair('code', 'bad_request')),
+        throwsA(refused('bad_request')),
       );
     });
 
@@ -250,7 +249,7 @@ void main() {
         body: {'error': 'not found'},
       );
 
-      expect(() => api.deleteFolder(userId: 'u1', folderId: 'f1'), throwsA(isA<Map>()));
+      expect(() => api.deleteFolder(userId: 'u1', folderId: 'f1'), throwsA(isA<NetworkException>()));
     });
 
     test('shareFolder returns one share per template assigned', () async {

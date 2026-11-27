@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
+import 'test_utils.dart';
+
 /// The server's side, in memory: the list it would answer with, and the
 /// refusals it is told to give.
 class _Server implements ApiTokenService {
@@ -131,7 +133,7 @@ void main() {
     test('a refusal at the cap is thrown as such and re-reads the list', () async {
       await sut.load();
       server.tokens.addAll(List.generate(5, (i) => _token('elsewhere-$i')));
-      server.refuseCreate = {'code': 'token_limit', 'reason': 'you can have at most 5 active tokens'};
+      server.refuseCreate = refusedAs({'code': 'token_limit', 'reason': 'you can have at most 5 active tokens'});
 
       await expectLater(
         () => sut.create(name: 'one more', expiry: .never),
@@ -143,7 +145,7 @@ void main() {
 
     test('any other refusal is thrown without a re-read', () async {
       await sut.load();
-      server.refuseCreate = {'code': 'bad_request', 'reason': 'name is too long'};
+      server.refuseCreate = refusedAs({'code': 'bad_request', 'reason': 'name is too long'});
 
       await expectLater(
         () => sut.create(name: 'x' * 101, expiry: .never),
@@ -176,7 +178,7 @@ void main() {
       server.tokens.add(_token('a'));
       await sut.load();
       server.tokens.clear();
-      server.refuseRevoke = {'code': 'not_found', 'message': 'token #a not found'};
+      server.refuseRevoke = refusedAs({'code': 'not_found', 'message': 'token #a not found'});
 
       await sut.revoke(sut.all.single);
 
@@ -207,13 +209,16 @@ void main() {
 
   group('ApiTokenRejected.from', () {
     test('reads a code and either wording', () {
-      expect(ApiTokenRejected.from({'code': 'token_limit', 'reason': 'r'})?.reason, 'r');
-      expect(ApiTokenRejected.from({'code': 'not_found', 'message': 'm'})?.reason, 'm');
+      expect(ApiTokenRejected.from(refusedAs({'code': 'token_limit', 'reason': 'r'}))?.reason, 'r');
+      expect(ApiTokenRejected.from(refusedAs({'code': 'not_found', 'message': 'm'}))?.reason, 'm');
     });
 
-    test('a server error and an unnamed failure are not refusals', () {
-      expect(ApiTokenRejected.from({'code': 'server_error'}), isNull);
+    test('a server error, the throttle and an unnamed failure are not refusals', () {
+      expect(ApiTokenRejected.from(const ServerFailed()), isNull);
+      expect(ApiTokenRejected.from(refusedAs({'code': 'rate_limited', 'retryAfter': 3}, status: 429)), isNull);
       expect(ApiTokenRejected.from(Exception('timeout')), isNull);
+      // a body as it was thrown before #681 is nothing this reads any more
+      expect(ApiTokenRejected.from({'code': 'token_limit'}), isNull);
     });
   });
 }

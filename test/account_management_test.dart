@@ -9,7 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart' show InternalUserInfo;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:heart_models/heart_models.dart' show Thread;
+import 'package:heart_models/heart_models.dart' show ChartPreference, Exercise, Goal, GoalStage, Thread, Workout;
 import 'package:heart_state/heart_state.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
@@ -154,6 +154,134 @@ void main() {
     await tester.pumpTimes();
 
     verify(api.unauthenticate()).called(greaterThanOrEqualTo(1));
+  });
+
+  // Ending on its own rather than through the app's log out (#671): Firebase
+  // signs a user out by itself on a revoked or expired token or a deleted or
+  // disabled account, and the server can report the account gone. The
+  // anonymous session minted next starts empty, and the account's data,
+  // kept on the device under its uid, is its own again when it signs back in.
+  group('a session that ends on its own', () {
+    final finished = Workout(name: 'Push');
+    final going = Workout(name: 'Legs');
+    final goal = Goal(
+      id: 'goal-1',
+      metric: .workouts,
+      cadence: .week,
+      stages: [GoalStage(id: 's0', target: 4)],
+    );
+
+    setUp(() {
+      when(db.getWorkoutHistory('u1')).thenAnswer((_) async => [finished]);
+      when(db.getActiveWorkout('u1')).thenAnswer((_) async => going);
+      when(
+        db.getTargetUserGoals(
+          requesterId: anyNamed('requesterId'),
+          targetUserId: anyNamed('targetUserId'),
+          archived: anyNamed('archived'),
+        ),
+      ).thenAnswer((_) async => <Goal>[]);
+      when(
+        api.getTargetUserGoals(
+          requesterId: anyNamed('requesterId'),
+          targetUserId: anyNamed('targetUserId'),
+          archived: anyNamed('archived'),
+        ),
+      ).thenAnswer((_) async => <Goal>[]);
+      when(
+        db.getTargetUserGoals(requesterId: 'u1', targetUserId: 'u1', archived: false),
+      ).thenAnswer((_) async => [goal]);
+      when(db.getChartRows('u1')).thenAnswer(
+        (_) async => [
+          ChartPreference.create(id: 'pref-1', type: .topSetWeight, data: {'exerciseName': 'bench-press'}).toRow(),
+        ],
+      );
+    });
+
+    /// The account signed in, with its workout in progress, its history and
+    /// its goals read — startup's own reads, which a widget test never gets
+    /// to, run by hand.
+    Future<BuildContext> pumpSignedIn(WidgetTester tester, MockFirebaseAuth firebase) async {
+      tester.view.physicalSize = const Size(1200, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await harness.pumpHeartApp(tester, db: db, api: api, cdn: cdn, firebaseAuth: firebase, settle: false);
+      await tester.pumpTimes();
+      final context = tester.element(find.byType(ProfilePage));
+      unawaited(Workouts.of(context).init());
+      unawaited(Workouts.of(context).initHistory());
+      unawaited(Goals.of(context).init());
+      await tester.pumpTimes();
+      return context;
+    }
+
+    /// Firebase's own sign-out. The mock mints the next anonymous user from
+    /// `mockUser`, which has to be an anonymous one by then; swapping it
+    /// raises no event of its own.
+    Future<void> signedOutByFirebase(WidgetTester tester, MockFirebaseAuth firebase) async {
+      firebase.mockUser = MockUser(uid: 'anonymous', isAnonymous: true);
+      await firebase.signOut();
+      await tester.pumpTimes();
+    }
+
+    void expectNothingOfTheAccount(BuildContext context) {
+      final auth = Auth.of(context);
+      expect(auth.isAnonymous, isTrue);
+      expect(auth.user?.id, 'anonymous');
+      expect(find.byKey(AppKeys.noAccount), findsOneWidget);
+      final workouts = Workouts.of(context);
+      expect(workouts.activeWorkout, isNull, reason: "the account's workout in progress");
+      expect(workouts.lookup(finished.id), isNull, reason: "the account's history");
+      expect(Goals.of(context), isEmpty, reason: "the account's goals");
+      expect(Charts.of(context), isEmpty, reason: "the account's dashboard");
+    }
+
+    testWidgets("shows nothing of the account's, which is its own again when it signs back in", (tester) async {
+      final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
+      final context = await pumpSignedIn(tester, firebase);
+      final workouts = Workouts.of(context);
+      expect(workouts.activeWorkout?.name, 'Legs');
+      expect(workouts.lookup(finished.id), isNotNull);
+      expect(Goals.of(context), isNotEmpty);
+      expect(Charts.of(context), isNotEmpty);
+
+      await signedOutByFirebase(tester, firebase);
+      expectNothingOfTheAccount(context);
+
+      // signed back in: the device kept what was the account's, and reads it
+      // again under its uid
+      firebase.mockUser = _passwordAccount();
+      await firebase.signInWithCredential(null);
+      await tester.pumpTimes();
+      expect(Auth.of(context).user?.id, 'u1');
+      expect(Charts.of(context), isNotEmpty);
+    });
+
+    testWidgets('what the account was still reading stays out of the next session', (tester) async {
+      final history = Completer<Iterable<Workout>?>();
+      when(db.getWorkoutHistory('u1')).thenAnswer((_) => history.future);
+      final catalog = Completer<(DateTime?, Iterable<Exercise>)>();
+      when(db.getExercises(userId: 'u1')).thenAnswer((_) => catalog.future);
+      final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
+      final context = await pumpSignedIn(tester, firebase);
+      final exercises = Exercises.of(context);
+      final initialized = exercises.init();
+      await tester.pumpTimes();
+
+      await signedOutByFirebase(tester, firebase);
+      history.complete([finished]);
+      catalog.complete((null, [Exercise(name: 'Squat', category: .barbell, target: .chest)]));
+      await tester.pumpTimes();
+
+      expect(Workouts.of(context).lookup(finished.id), isNull);
+      expect(Workouts.of(context).historyInitialized, isFalse);
+      // or the next session's startup would take its catalog for read
+      expect(await initialized, isFalse);
+      expect(exercises.isInitialized, isFalse);
+      expect(exercises, isEmpty);
+    });
   });
 
   group('reset password', () {

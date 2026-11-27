@@ -143,6 +143,10 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     ].join('\n');
   }
 
+  /// How long one answer of the server's is waited for while others wait their
+  /// turn: a connection that died with the network would hold them all up.
+  static const _answerTime = Duration(seconds: 15);
+
   /// The most a queue item may carry.
   static const _maxItem = 1024;
 
@@ -285,7 +289,9 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
       if (!own.published || !_remote.allowed) throw StateError('device keys are not published');
       if (device.id == own.id) throw StateError('a device does not vouch for itself');
       final signature = _guard(() => run.sealbox.sign(own.account, vouchMessage(device)));
-      final vouched = await run.service.vouchForCryptoDevice(device.id, vouchedBy: own.id, signature: signature);
+      final vouched = await run.service
+          .vouchForCryptoDevice(device.id, vouchedBy: own.id, signature: signature)
+          .timeout(_answerTime);
       run.check();
       // the account's own devices, as last read, now with the vouch
       if (run.peers[run.userId] case final Peer peer) {
@@ -477,7 +483,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
       ];
       final claimed = {
         for (final named in _batches(unkeyed, _claimLimit))
-          for (final each in await run.service.claimKeys(userId, deviceIds: named)) each.id: each,
+          for (final each in await run.service.claimKeys(userId, deviceIds: named).timeout(_answerTime)) each.id: each,
       };
       // one the claim left out was removed, or stopped being theirs, since the
       // list: nothing reaches it now, and the next send reads the list again
@@ -499,13 +505,15 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
         ));
         final content = _Envelope(sealed.message).encode();
         if (content.length > _maxItem) throw ArgumentError.value(kind, 'kind', 'sealed past what the queue carries');
-        await run.service.enqueueKeyItem(
-          id: _newId(),
-          recipientDeviceId: target.id,
-          senderDeviceId: device.id,
-          kind: kind,
-          content: content,
-        );
+        await run.service
+            .enqueueKeyItem(
+              id: _newId(),
+              recipientDeviceId: target.id,
+              senderDeviceId: device.id,
+              kind: kind,
+              content: content,
+            )
+            .timeout(_answerTime);
         reached.add(target.id);
       }
       _changed(run);

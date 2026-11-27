@@ -8,7 +8,6 @@ part of 'goals.dart';
 /// where rungs are actually edited.
 class GoalDetail extends StatefulWidget {
   final Goal goal;
-  final WorkoutAggregation workouts;
 
   /// Null while the goal is being shown outside a route that can close.
   final VoidCallback? onClose;
@@ -19,7 +18,6 @@ class GoalDetail extends StatefulWidget {
   const new({
     super.key,
     required this.goal,
-    required this.workouts,
     this.onClose,
     this.scrollController,
   });
@@ -49,7 +47,8 @@ class _GoalDetailState extends State<GoalDetail> {
     final scale = goalScale(goal, exercises);
 
     final firstWeekday = settings.firstWeekday;
-    final key = (goal.id, exercise?.name, widget.workouts.workoutCount, firstWeekday);
+    final revision = context.select<Stats, int>((stats) => stats.revision);
+    final key = (goal.id, exercise?.name, revision, firstWeekday);
     if (key != _key) {
       _key = key;
       _reading = currentGoalValue(

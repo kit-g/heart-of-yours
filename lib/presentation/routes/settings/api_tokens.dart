@@ -3,10 +3,6 @@ part of 'settings.dart';
 /// Where a token goes: the one page that says what to call and how.
 final _developerDocs = Uri.https('heart-of.me', '/developers.html');
 
-/// The export page's button margin: the house 32pt button grown to a 48pt
-/// target, for the handful of buttons here that are the page's only action.
-const _tallButton = EdgeInsets.symmetric(horizontal: 8.0, vertical: 14);
-
 /// The purpose menu's width: the house 56pt step that fits its longest label.
 const _purposeMenuWidth = 224.0;
 
@@ -124,7 +120,7 @@ class _ApiTokensPageState extends State<ApiTokensPage> with HasHaptic<ApiTokensP
                       Text(apiTokensLoadFailed),
                       PrimaryButton.shrunk(
                         key: AppKeys.retryApiTokens,
-                        margin: _tallButton,
+                        margin: tallButtonPadding,
                         onPressed: tokens.load,
                         child: Text(retry),
                       ),
@@ -141,7 +137,7 @@ class _ApiTokensPageState extends State<ApiTokensPage> with HasHaptic<ApiTokensP
                     true => Text(apiTokensAtCapacity(ApiToken.maxActive), style: textTheme.bodySmall),
                     false => PrimaryButton.wide(
                       key: AppKeys.newApiToken,
-                      margin: _tallButton,
+                      margin: tallButtonPadding,
                       onPressed: widget.onNewToken,
                       child: Center(
                         child: Row(
@@ -509,7 +505,7 @@ class _NewApiTokenPageState extends State<NewApiTokenPage>
                 true => const LinearProgressIndicator(),
                 false => PrimaryButton.wide(
                   key: AppKeys.createApiToken,
-                  margin: _tallButton,
+                  margin: tallButtonPadding,
                   onPressed: () => _create(context),
                   child: Center(
                     child: Text(createApiToken),
@@ -528,10 +524,11 @@ class _NewApiTokenPageState extends State<NewApiTokenPage>
   Future<void> _pickPurpose(BuildContext context) {
     final l = L.of(context);
     buzz();
+    final (:position, :constraints) = menuUnderValue(context, _purposeKey, width: _purposeMenuWidth);
     return showMenu<ApiTokenPurpose?>(
       context: context,
-      position: menuUnderValue(context, _purposeKey, width: _purposeMenuWidth),
-      constraints: const BoxConstraints(minWidth: _purposeMenuWidth, maxWidth: _purposeMenuWidth),
+      position: position,
+      constraints: constraints,
       items: [
         for (final purpose in [null, ...ApiTokenPurpose.values])
           PopupMenuItem<ApiTokenPurpose?>(
@@ -641,7 +638,7 @@ class _Reveal extends StatelessWidget {
         const SizedBox(height: 24),
         PrimaryButton.wide(
           key: AppKeys.copyApiToken,
-          margin: _tallButton,
+          margin: tallButtonPadding,
           onPressed: () {
             copyToClipboard(minted.secret);
             snack(context, apiTokenCopied);
@@ -660,7 +657,7 @@ class _Reveal extends StatelessWidget {
         const SizedBox(height: 8),
         PrimaryButton.wide(
           key: AppKeys.apiTokenStored,
-          margin: _tallButton,
+          margin: tallButtonPadding,
           backgroundColor: colorScheme.surfaceContainerHighest,
           onPressed: onDone,
           child: Center(

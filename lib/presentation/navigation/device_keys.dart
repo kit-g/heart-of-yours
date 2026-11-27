@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:heart/core/utils/lifecycle.dart';
 import 'package:heart/presentation/navigation/pushes.dart';
 import 'package:heart/presentation/navigation/router/router.dart' show HeartRouter;
 import 'package:heart/presentation/widgets/compare_codes.dart';
@@ -30,9 +31,11 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
   Auth? _auth;
 
   /// A sign-in from an anonymous session keeps the server closed until its
-  /// store is replayed: keys start once it opens.
+  /// store is replayed: keys start once it opens. Only its opening is
+  /// listened to: it also speaks at a sign-out, while the account is still
+  /// there to start keys for (#734).
   Upsync? _upsync;
-  late final AppLifecycleListener _lifecycle;
+  late final AppReturns _lifecycle;
 
   /// The account keys run for, or null while they don't.
   String? _running;
@@ -46,7 +49,11 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
   @override
   void initState() {
     super.initState();
-    _lifecycle = AppLifecycleListener(onResume: _onResume);
+    _lifecycle = AppReturns(
+      _onReturn,
+      onShow: () => _approval?.inFront = true,
+      onHide: () => _approval?.inFront = false,
+    );
     // a sheet closing may leave a request waiting that came while it was up
     comparisonSheet.addListener(_asked);
   }
@@ -66,8 +73,9 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
     }
     final upsync = Upsync.of(context);
     if (!identical(upsync, _upsync)) {
-      _upsync?.removeListener(_sync);
-      _upsync = upsync..addListener(_sync);
+      _upsync?.opened.removeListener(_sync);
+      _upsync = upsync;
+      upsync.opened.addListener(_sync);
     }
     final approval = DeviceKeys.of(context).approval;
     if (!identical(approval, _approval)) {
@@ -81,7 +89,7 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
   void dispose() {
     _preferences?.removeListener(_sync);
     _auth?.removeListener(_sync);
-    _upsync?.removeListener(_sync);
+    _upsync?.opened.removeListener(_sync);
     _approval?.removeListener(_asked);
     comparisonSheet.removeListener(_asked);
     _lifecycle.dispose();
@@ -103,7 +111,7 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
         _running = null;
         keys.stop();
       case (final String userId, _) when userId != _running || keys.status != .published:
-        // again on every word from Auth or Upsync until the server has the
+        // again on every word from Auth, and as Upsync opens the leg, until the server has the
         // keys: the token, and the end of a replay, may come after the account
         _running = userId;
         unawaited(keys.start(userId));
@@ -121,7 +129,15 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
 
   void _show() {
     final approval = _approval;
-    if (!mounted || approval == null || comparisonSheet.value != null) return;
+    if (!mounted || approval == null) return;
+    if (comparisonSheet.value case final String sheet) {
+      // the sheet that is up shows it, or went on with it: closed, it isn't
+      // shown again
+      if (approval.value case CodeComparison(:final id, :final replaced) when id == sheet || replaced == sheet) {
+        _shown = id;
+      }
+      return;
+    }
     final asked = switch (approval.value) {
       CodeComparison(role: .responder, running: true, :final id) => id,
       _ => null,
@@ -132,7 +148,7 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
     unawaited(showCodeComparison(root, approval, asked));
   }
 
-  void _onResume() {
+  void _onReturn() {
     if (_running != null) unawaited(DeviceKeys.of(context).refresh());
   }
 

@@ -42,7 +42,7 @@ void main() {
     harness = const TestAppHarness();
     requests = [];
 
-    // same baseline stubs as a11y_test.dart
+    // same baseline stubs as a11y.dart
     when(
       db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
     ).thenAnswer((_) async => WorkoutAggregation.empty());
@@ -87,7 +87,7 @@ void main() {
 
   Future<void> pumpImportPage(WidgetTester tester, {MockFirebaseAuth? firebase}) async {
     // wide enough for the logo stripe under the test environment's fallback
-    // font — see a11y_test.dart
+    // font — see a11y.dart
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -151,9 +151,9 @@ void main() {
     expect(preview.url.path, '/v1/workouts/imports');
     expect(preview.url.queryParameters['source'], 'strong');
     expect(preview.url.queryParameters['dryRun'], 'true');
-    expect(preview.body, _csv);
+    expect(jsonDecode(preview.body), {'csv': _csv});
     expect(commit.url.queryParameters, isNot(contains('dryRun')));
-    expect(commit.body, _csv);
+    expect(jsonDecode(commit.body), {'csv': _csv});
 
     // no consent step — there was nothing to decide
     expect(find.text('New exercises found'), findsNothing);
@@ -382,7 +382,7 @@ void main() {
     FileSelectorPlatform.instance = FakePicker(
       XFile.fromData(utf8.encode('not,a,strong,export'), name: 'random.csv'),
     );
-    serveImport(statusCode: 400, preview: {'reason': 'missing "Workout Name" column'});
+    serveImport(statusCode: 400, preview: {'code': 'bad_request', 'reason': 'missing "Workout Name" column'});
 
     await pumpImportPage(tester);
     await tester.tap(find.text('Choose file'));
@@ -439,7 +439,7 @@ void main() {
       for (final request in requests) {
         expect(request.url.queryParameters['source'], 'hevy');
         expect(request.url.queryParameters, isNot(contains('unit')));
-        expect(request.body, hevy);
+        expect(jsonDecode(request.body), {'csv': hevy});
       }
       expect(find.text('1 workout imported'), findsOneWidget);
     });
@@ -448,7 +448,10 @@ void main() {
       FileSelectorPlatform.instance = FakePicker(
         XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
       );
-      serveImport(statusCode: 400, preview: {'reason': 'not a readable Hevy export: missing "title"'});
+      serveImport(
+        statusCode: 400,
+        preview: {'code': 'bad_request', 'reason': 'not a readable Hevy export: missing "title"'},
+      );
 
       await pumpImportPage(tester);
       await tester.tap(find.text('Hevy'));
@@ -520,7 +523,7 @@ void main() {
         expect(request.url.queryParameters['source'], 'heart');
         expect(request.url.queryParameters, isNot(contains('unit')));
         expect(request.url.queryParameters, isNot(contains('tzOffset')));
-        expect(request.body, heart);
+        expect(jsonDecode(request.body), {'csv': heart});
       }
       expect(find.text('1 workout imported'), findsOneWidget);
     });
@@ -529,7 +532,7 @@ void main() {
       FileSelectorPlatform.instance = FakePicker(
         XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
       );
-      serveImport(statusCode: 400, preview: {'reason': 'not a Heart CSV export'});
+      serveImport(statusCode: 400, preview: {'code': 'bad_request', 'reason': 'not a Heart CSV export'});
 
       await pumpImportPage(tester);
       await tester.tap(find.text('Heart'));

@@ -18,8 +18,8 @@ void main(List<String> args) => build(args, (input, output) async {
   final rust = input.packageRoot.resolve('rust/');
   final prebuilt = input.packageRoot.resolve('prebuilt/$triple/$library');
 
-  final built = switch (_cargoHome()) {
-    final String cargoHome => await _cargo(code, triple, rust, library, cargoHome),
+  final built = switch (_tools()) {
+    final String tools => await _cargo(code, triple, rust, library, tools),
     null when File.fromUri(prebuilt).existsSync() => prebuilt,
     null => throw Exception(
       'sealbox needs Rust to build for $triple: install it with rustup (https://rustup.rs), '
@@ -40,14 +40,17 @@ void main(List<String> args) => build(args, (input, output) async {
   ]);
 });
 
-/// Where cargo and rustup live, when they are installed.
-String? _cargoHome() {
-  final home = Platform.environment['HOME'] ?? '';
-  final cargoHome = Platform.environment['CARGO_HOME'] ?? '$home/.cargo';
-  return switch (File('$cargoHome/bin/cargo').existsSync()) {
-    true => cargoHome,
-    false => null,
-  };
+String get _cargoHome => Platform.environment['CARGO_HOME'] ?? '${Platform.environment['HOME'] ?? ''}/.cargo';
+
+/// Where cargo and rustup are, when they are installed: rustup's own place, or
+/// Homebrew's, whose rustup puts nothing in it. GitHub's macOS images have only
+/// the latter since November 2026.
+String? _tools() {
+  return [
+    '$_cargoHome/bin',
+    '/opt/homebrew/opt/rustup/bin',
+    '/usr/local/opt/rustup/bin',
+  ].where((each) => ['cargo', 'rustup'].every((tool) => File('$each/$tool').existsSync())).firstOrNull;
 }
 
 /// What cargo and rustup need to reach crates.io and the toolchains through
@@ -71,7 +74,7 @@ const _network = [
   'RUSTUP_HOME',
 ];
 
-Future<Uri> _cargo(CodeConfig code, String triple, Uri rust, String library, String cargoHome) async {
+Future<Uri> _cargo(CodeConfig code, String triple, Uri rust, String library, String tools) async {
   final home = Platform.environment['HOME'] ?? '';
 
   // Built rather than inherited: Xcode's SDKROOT, for one, breaks linking
@@ -79,8 +82,8 @@ Future<Uri> _cargo(CodeConfig code, String triple, Uri rust, String library, Str
   // through, so a machine behind a proxy can still fetch crates and targets.
   final environment = {
     'HOME': home,
-    'PATH': '$cargoHome/bin:/usr/bin:/bin:/usr/sbin:/sbin',
-    'CARGO_HOME': cargoHome,
+    'PATH': '$tools:/usr/bin:/bin:/usr/sbin:/sbin',
+    'CARGO_HOME': _cargoHome,
     'CARGO_TARGET_DIR': rust.resolve('target/').toFilePath(),
     for (final name in _network)
       if (Platform.environment[name] case final String value) name: value,
@@ -89,7 +92,7 @@ Future<Uri> _cargo(CodeConfig code, String triple, Uri rust, String library, Str
 
   Future<void> run(String tool, List<String> arguments) async {
     final result = await Process.run(
-      '$cargoHome/bin/$tool',
+      '$tools/$tool',
       arguments,
       workingDirectory: rust.toFilePath(),
       environment: environment,

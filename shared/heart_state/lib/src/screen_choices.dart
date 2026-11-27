@@ -1,13 +1,15 @@
 import 'package:heart_models/heart_models.dart';
 
-/// What History opens on (#609): the list of workouts, or the calendar. The
-/// list is what History always was, and stays the default.
+/// What History opens on: the list of workouts, the calendar's months one
+/// under another (#609), or one month at a time (#739). The list is what
+/// History always was, and stays the default.
 ///
 /// [value] is the storage key, on the device and in the account, and never
 /// changes once shipped.
 enum HistoryView {
   list('list'),
-  calendar('calendar');
+  calendar('calendar'),
+  month('month');
 
   final String value;
 

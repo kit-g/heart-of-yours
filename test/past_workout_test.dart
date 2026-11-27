@@ -3,12 +3,10 @@
 // in; on, either one asks when it was, then opens History's editor on a new
 // workout whose Save puts it in History like a finish, stored and sent. A
 // workout in progress is never touched, and leaving stores nothing.
-import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
@@ -26,16 +24,7 @@ import 'support/harness.dart';
 void main() {
   // the app's own fonts, as the screens are laid out for them: the test font
   // is wider and overflows the app bars at phone width
-  setUpAll(() async {
-    final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
-    for (final entry in manifest.cast<Map>()) {
-      final loader = FontLoader(entry['family'] as String);
-      for (final font in (entry['fonts'] as List).cast<Map>()) {
-        loader.addFont(rootBundle.load(font['asset'] as String));
-      }
-      await loader.load();
-    }
-  });
+  setUpAll(loadAppFonts);
 
   const userId = 'u1';
   const phone = Size(390, 844);
@@ -391,24 +380,24 @@ void main() {
     });
 
     testWidgets(
-      'a workout of no time is refused, and the times stay up',
+      'an end put on the start takes it along: there is no workout of no time',
       (tester) async {
         await launch(tester, on: true);
         await openTab(tester, AppKeys.historyStack);
         await tester.tapByKey(AppKeys.logPastWorkout);
         await tester.pumpTimes();
 
+        await tester.tap(find.text('Start time'));
+        await tester.pumpTimes();
+        final start = tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker)).initialDateTime;
         await tester.tap(find.text('End time'));
         await tester.pumpTimes();
-        final wheel = tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker));
-        wheel.onDateTimeChanged(wheel.minimumDate!);
+        tester.widget<CupertinoDatePicker>(find.byType(CupertinoDatePicker)).onDateTimeChanged(start);
         await tester.pumpTimes();
+        expect(find.text('1:00:00'), findsOneWidget);
         await tester.tap(find.text('Next'));
         await tester.pumpTimes();
-
-        expect(find.text('The end has to come after the start.'), findsOneWidget);
-        expect(find.text('When was it?'), findsOneWidget);
-        expect(find.byType(WorkoutEditor), findsNothing);
+        expect(find.byType(WorkoutEditor), findsOneWidget);
       },
       variant: TargetPlatformVariant.only(.iOS),
     );

@@ -237,6 +237,41 @@ void main() {
       expect(messages.thread(threadId).messages.single.text, 'queued');
     });
 
+    test('one counts as locked only once its key was looked for', () async {
+      server.items = [_item('stuck', cursor: 'c1')];
+      cipher.missing.add('stuck');
+      cipher.holdReceive = Completer();
+      await messages.load();
+
+      unawaited(messages.open(threadId));
+      await pumpEventQueue();
+      expect(messages.thread(threadId).messages.single.opened, isA<Locked>());
+      expect(messages.thread(threadId).locked, isEmpty, reason: 'its key may be in the queue');
+
+      cipher.holdReceive!.complete();
+      await pumpEventQueue();
+      expect(messages.thread(threadId).locked.map((each) => each.id), ['item-stuck']);
+
+      cipher.missing.clear();
+      cipher.arrive(threadId);
+      await pumpEventQueue();
+      expect(messages.thread(threadId).locked, isEmpty);
+    });
+
+    test('one whose key was in the queue never counts as locked', () async {
+      server.items = [_item('queued', cursor: 'c1')];
+      cipher.missing.add('queued');
+      cipher.queued = {threadId};
+      await messages.load();
+      var seen = false;
+      messages.addListener(() => seen |= messages.thread(threadId).locked.isNotEmpty);
+
+      await messages.open(threadId);
+      await pumpEventQueue();
+
+      expect(seen, isFalse);
+    });
+
     test('coming back to the front reads the inbox and the thread on screen', () async {
       server.items = [_item('first', cursor: 'c1')];
       await messages.load();
@@ -520,12 +555,44 @@ void main() {
     test('shares the key first, then sends, under the id it was written with', () async {
       await messages.load();
 
-      await messages.send(threadId, 'my knee', subjectType: 'workout', subjectId: 'w1');
+      messages.writeAbout('c1', const MessageSubject(.workout, 'w1'));
+      await messages.send(threadId, 'my knee');
 
       expect(cipher.shares, ['t1 $coach print-c1']);
       expect(server.posted.single, (id: 'mine-0', content: 'sealed:my knee', subjectId: 'w1'));
       final sent = messages.thread(threadId).messages.single;
       expect((sent.text, sent.mine, sent.delivery), ('my knee', true, MessageDelivery.sent));
+    });
+
+    test('what a message is about goes with the next one written to that person, then clears', () async {
+      await messages.load();
+      messages.writeAbout('c1', const MessageSubject(.exerciseSet, 's3'));
+      expect(messages.about('c1'), const MessageSubject(.exerciseSet, 's3'));
+
+      final first = messages.send(threadId, 'that third set');
+      // a second, sent while the first is still on its way, is about nothing
+      final second = messages.send(threadId, 'and the rest');
+      await (first, second).wait;
+
+      expect(server.posted.map((each) => each.subjectId), ['s3', null]);
+      expect(messages.thread(threadId).messages.first.subject, const MessageSubject(.exerciseSet, 's3'));
+      expect(messages.about('c1'), isNull, reason: 'said: the next one is about nothing in particular');
+    });
+
+    test('a message that could not be sealed keeps what it was about', () async {
+      await messages.load();
+      messages.writeAbout('c1', const MessageSubject(.workout, 'w1'));
+      cipher.sealFails = StateError('device keys are off');
+
+      await expectLater(messages.send(threadId, 'my knee'), throwsStateError);
+
+      expect(messages.about('c1'), const MessageSubject(.workout, 'w1'));
+    });
+
+    test("a subject this build doesn't know reads as none", () {
+      expect(MessageSubject.of('skip', 'k1'), isNull);
+      expect(MessageSubject.of('workout', ''), isNull);
+      expect(MessageSubject.of('exercise_set', 's1'), const MessageSubject(.exerciseSet, 's1'));
     });
 
     test('what went out reads the inbox again, so the thread moves up it', () async {
@@ -569,7 +636,7 @@ void main() {
 
     test('a closed thread keeps the message here, unsent, and says so', () async {
       await messages.load();
-      server.refusePost = {'error': 'forbidden', 'code': 'thread_closed', 'reason': '…'};
+      server.refusePost = refusedAs({'error': 'forbidden', 'code': 'thread_closed', 'reason': '…'}, status: 403);
 
       await messages.send(threadId, 'still there?');
 
@@ -582,7 +649,11 @@ void main() {
     testWidgets('too many at once waits as long as the server says, then goes', (tester) async {
       // the test's fake clock: the wait passes without real seconds
       await messages.load();
-      server.refusePost = {'error': 'too many requests', 'code': 'rate_limited', 'retryAfter': 30};
+      server.refusePost = refusedAs({
+        'error': 'too many requests',
+        'code': 'rate_limited',
+        'retryAfter': 30,
+      }, status: 429);
 
       await messages.send(threadId, 'one more');
       expect(messages.thread(threadId).messages.single.delivery, MessageDelivery.waiting);
@@ -780,7 +851,7 @@ class _Server implements RemoteThreadService {
   final posted = <({String id, String content, String? subjectId})>[];
   int pageSize = 50;
   Object? failNextPost;
-  Map<String, Object>? refusePost;
+  ServerRefusal? refusePost;
 
   /// Holds each post, and each page once read, until completed.
   Completer<void>? holdPost;
@@ -820,7 +891,7 @@ class _Server implements RemoteThreadService {
       failNextPost = null;
       throw failure;
     }
-    if (refusePost case final Map<String, Object> refusal) throw refusal;
+    if (refusePost case final ServerRefusal refusal) throw refusal;
     return ThreadItem(
       id: id,
       threadId: threadId,
@@ -972,11 +1043,15 @@ class _Cipher implements ThreadCipher {
   Set<String> queued = {};
   int receives = 0;
 
+  /// Holds [receive] until completed.
+  Completer<void>? holdReceive;
+
   void arrive(String threadId) => _keys.add(threadId);
 
   @override
   Future<void> receive() async {
     receives++;
+    await holdReceive?.future;
     if (queued.isEmpty) return;
     missing.clear();
     for (final each in queued) {

@@ -8,8 +8,9 @@ class ProfilePage extends StatefulWidget {
   /// Where the no-account dialog's action lands: the login page.
   final VoidCallback onLogIn;
 
-  /// Every past month's recap, and one month's (#154).
-  final VoidCallback onRecaps;
+  /// Every past month's recap (#154), with the one given open beside them
+  /// where the page has room.
+  final ValueChanged<DateTime?> onRecaps;
 
   /// Into the Coaching space (#566), while Coach people is on.
   final VoidCallback onCoaching;
@@ -124,8 +125,9 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
         actions: [
           // a student's coach, when there is one to write to (#556)
           const _CoachMessages(),
-          // opt-in (#566): off, Settings is the first action, as before
-          if (coachingSpaceOn(context, listen: true))
+          // opt-in (#566): off, Settings is the first action, as before. A
+          // wide window has it at the foot of the rail instead (#685)
+          if (coachingSpaceOn(context, listen: true) && LayoutProvider.of(context) == .compact)
             IconButton(
               key: AppKeys.coachingButton,
               tooltip: L.of(context).coaching,
@@ -150,7 +152,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
           // macos renders things differently
           if (platform == .macOS) const SizedBox(width: 8),
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
+            padding: const .only(right: 16),
             child: switch (isAnonymous) {
               // there is nothing to log out of; the slot says what the session
               // is instead, and opens the one place that explains it
@@ -176,7 +178,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
         selector: (_, provider) => provider.workouts,
         builder: (_, workouts, _) {
           final emptyState = Stack(
-            alignment: Alignment.center,
+            alignment: .center,
             children: [
               IgnorePointer(
                 child: WorkoutsAggregationChart(
@@ -227,7 +229,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                 emptyState: emptyState,
               ),
               // opt-in (#154): off, an empty sliver that reads nothing
-              _RecapsSection(workouts: workouts, onRecaps: widget.onRecaps, onMonth: widget.onMonthlyReport),
+              _RecapsSection(onRecaps: widget.onRecaps, onMonth: widget.onMonthlyReport),
               // opt-in (#136): off, this is an empty sliver and nothing else
               _MuscleMapSection(workouts: workouts),
               // on by default, a switch since #526: sets and sessions a week by pattern or muscle (#341)
@@ -240,15 +242,14 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const .symmetric(vertical: 6, horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: .spaceBetween,
-                    children: [
-                      // The section had a button and nothing else: on a tablet
-                      // that left one control floating over an empty screen,
-                      // with nothing to say what it was for. Goals and
-                      // Templates both name themselves and both say when they
-                      // are empty; this is the one that was missed.
-                      Text(charts, style: textTheme.headlineSmall),
+                  // The section had a button and nothing else: on a tablet
+                  // that left one control floating over an empty screen,
+                  // with nothing to say what it was for. Goals and
+                  // Templates both name themselves and both say when they
+                  // are empty; this is the one that was missed.
+                  child: HeadingRow(
+                    heading: Text(charts, style: textTheme.headlineSmall),
+                    actions: [
                       PrimaryButton.shrunk(
                         onPressed: () async {
                           final charts = Charts.of(context);
@@ -266,10 +267,11 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                           }
                         },
                         child: Row(
+                          mainAxisSize: .min,
                           spacing: 6,
                           children: [
                             const Icon(Icons.add_rounded),
-                            Text(newChart),
+                            Flexible(child: Text(newChart)),
                           ],
                         ),
                       ),
@@ -417,7 +419,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
   /// What the user picked: an (Exercise, ChartPreferenceType) record from the
   /// exercise picker, or a [DashboardChart] of one of the other kinds (#137).
   Future<dynamic> _showNewChartDialog(BuildContext context, TextEditingController controller, FocusNode focus) {
-    final L(:newChart, :exercises, :chartFrequency, :chartAllExercises, :chartAlreadyAdded) = L.of(context);
+    final L(:newChart, :exercises, :chartFrequencyPick, :chartAllExercises, :chartAlreadyAdded) = L.of(context);
     final charts = Charts.of(context);
     final training = charts.whereType<TrainingChart>().map((each) => each.metric).toSet();
     final frequent = charts.whereType<FrequencyChart>().map((each) => each.exerciseId).toSet();
@@ -453,7 +455,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                   return Navigator.of(context, rootNavigator: true).pop(FrequencyChart(exerciseId: exercise.id));
                 }
               },
-              title: Text(chartFrequency),
+              title: Text(chartFrequencyPick),
               trailing: const Icon(Icons.chevron_right_rounded),
             ),
             Padding(

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:heart_models/heart_models.dart' hide PreSignedUrl;
@@ -7,7 +6,6 @@ import 'package:network_utils/network_utils.dart';
 
 import 'imports.dart';
 import 'moves.dart';
-import 'programs.dart';
 import 'renames.dart';
 
 part 'routes/accounts.dart';
@@ -89,43 +87,41 @@ class Api
     instance.defaultHeaders = headers;
   }
 
-  // Every verb runs through [_tripwire]: the one answer that must never come
-  // back is caught before any caller can act on it.
-
+  /// Every failed request is thrown, so a route reads only what succeeded.
+  /// What it is thrown as is [failure]'s to say, in one place.
   @override
-  Future<Response> get(String endpoint, {Map<String, String>? headers, Map<String, dynamic>? query}) {
-    return super.get(endpoint, headers: headers, query: query).then(_tripwire);
-  }
+  bool get throwsOnFailure => true;
 
+  /// A failure as the callers read it (#681), the order mattering: the three
+  /// answers the app acts on everywhere come first, before anything is read as
+  /// a refusal. Then a named 4xx is a [ServerRefusal]; anything else, a 5xx, a
+  /// gateway's page or a body without a `code`, stays a [NetworkException],
+  /// its body dropped, since it can echo what the account sent. A 2xx that
+  /// could not be read is an [UnreadableAnswer].
+  ///
+  /// The upgrade prompt still fires on a 426: `onUpgradeRequired` has run by
+  /// the time this is asked.
   @override
-  Future<Response> post(String endpoint, {Map<String, String>? headers, Json? body, Map<String, dynamic>? query}) {
-    return super.post(endpoint, headers: headers, body: body, query: query).then(_tripwire);
-  }
-
-  @override
-  Future<Response> put(String endpoint, {Map<String, String>? headers, Json? body}) {
-    return super.put(endpoint, headers: headers, body: body).then(_tripwire);
-  }
-
-  @override
-  Future<Response> patch(String endpoint, {Map<String, String>? headers, Json? body}) {
-    return super.patch(endpoint, headers: headers, body: body).then(_tripwire);
-  }
-
-  @override
-  Future<Response> delete(String endpoint, {Map<String, String>? headers, Map<String, dynamic>? query}) {
-    return super.delete(endpoint, headers: headers, query: query).then(_tripwire);
-  }
-
-  /// The server refused the token because it belongs to an anonymous
-  /// session (heart-of-yours#91). That token never has business on the wire —
-  /// `RemoteAccess` closes every leg while the session is anonymous — so this
-  /// is not a failure to retry but a gate that failed, and it is thrown as its
-  /// own type so it reaches Sentry under a name rather than as a body map.
-  static Response _tripwire(Response response) {
-    return switch (response) {
-      ({'code': 'anonymous_account'}, 403) => throw const AnonymousSessionRejected(),
-      _ => response,
+  Exception failure(NetworkException exception) {
+    final NetworkException(:statusCode, :method, :path, :body) = exception;
+    return switch ((statusCode, body)) {
+      (426, _) => UpgradeRequired(),
+      (400, {'code': 'ACCOUNT_DELETED'}) => AccountDeleted(),
+      (403, {'code': 'anonymous_account'}) => AnonymousSessionRejected(),
+      _ => switch (ServerRefusal.tryParse(
+        status: statusCode,
+        method: method ?? '',
+        route: exception.endpoint ?? '',
+        body: body,
+      )) {
+        final ServerRefusal refusal => refusal,
+        null when statusCode >= 200 && statusCode < 300 => UnreadableAnswer(
+          statusCode: statusCode,
+          method: method,
+          path: path,
+        ),
+        null => NetworkException(statusCode: statusCode, method: method, path: path),
+      },
     };
   }
 
@@ -180,13 +176,33 @@ class Api
 }
 
 /// `201` made the row, `200` found it — by id, or by name for the two
-/// resources with one. Anything else is thrown whole, code and all, so the
-/// caller can tell a refusal (`id_taken`, `goal_limit`) from an outage.
-(Map, bool) _created((Map, int) response) {
+/// resources with one. A refusal never gets here: [Api.failure] threw it.
+(Map, bool) _created(Response response) {
   return switch (response) {
-    (Map json, 201) => (json, true),
-    (Map json, 200) => (json, false),
-    (final json, _) => throw json,
+    (final json, 201) => (json, true),
+    (final json, _) => (json, false),
+  };
+}
+
+/// Whether [error] says the thing asked about is not there: a 404, with a
+/// code or without (a gateway's `{message: Not Found}`). For a read that has
+/// a meaning for none, none.
+bool _gone(Object error) => originOf(error)?.statusCode == 404;
+
+/// The list under [key] in [response], what the call to [from] answered, and
+/// the page it came in, for its cursor. Only reads: the call is the route's.
+///
+/// A 2xx without that list is an [UnreadableAnswer] on [from], reported and
+/// grouped like any other failed request; never a bare cast error, and never
+/// an empty list, which a caller that syncs would read as "the account holds
+/// none". The record a call answers carries no request, so the route is the
+/// one thing the caller names; the verb is left out, as the route says which
+/// call it was.
+(List, Json) _listIn(Response response, String key, {required String from}) {
+  final (json, status) = response;
+  return switch (json[key]) {
+    final List list => (list, json),
+    _ => throw UnreadableAnswer(statusCode: status, path: '/$from'),
   };
 }
 
@@ -204,11 +220,33 @@ Map<String, dynamic> _withClientId(Map<String, dynamic> body) {
   };
 }
 
+/// A 2xx whose body could not be read: not JSON, or JSON but not an object.
+///
+/// A [NetworkException], so it is reported and grouped like any other failed
+/// request, by status and route and never the body; and a [FormatException],
+/// which is what a caller with no HTTP types in sight already reads as "an
+/// answer this build cannot read, and asking again gets the same one".
+class UnreadableAnswer extends NetworkException implements FormatException {
+  const new({required super.statusCode, super.method, super.path});
+
+  @override
+  String get message => 'an answer this build cannot read';
+
+  @override
+  int? get offset => null;
+
+  @override
+  dynamic get source => null;
+}
+
 /// An anonymous session's token reached the server, which answered `403
 /// anonymous_account`. The remote leg is meant to be closed for the whole of
 /// an anonymous session, so this is a tripwire: reported, never retried.
+///
+/// Not const: the client records which failure each one came from on the
+/// instance, and a const one would be every one of them.
 class AnonymousSessionRejected implements Exception {
-  const new();
+  new();
 
   @override
   String toString() => 'AnonymousSessionRejected: an anonymous token reached heart-api';

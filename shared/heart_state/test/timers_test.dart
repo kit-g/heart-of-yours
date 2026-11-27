@@ -128,7 +128,7 @@ void main() {
       expect(service.setCalls, isEmpty);
     });
 
-    test('onSignOut clears userId and timers without notifying', () async {
+    test('onSignOut clears userId and timers and says so', () async {
       timers.userId = 'user-1';
       service.timersToReturn = {'Push Up': 30};
       await timers.init();
@@ -138,7 +138,7 @@ void main() {
       timers.onSignOut();
       expect(timers.userId, isNull);
       expect(timers['Push Up'], isNull);
-      expect(notifications, 0, reason: 'onSignOut does not call notifyListeners');
+      expect(notifications, 1, reason: 'what was on screen goes, for whatever is still showing it (#671)');
     });
 
     test('setRestTimer updates same key multiple times and ends with last value', () async {

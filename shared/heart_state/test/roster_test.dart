@@ -71,6 +71,16 @@ class _Server implements RosterService {
     (logged[studentId] ??= []).add(workout);
     return Workout.fromJson({...workout.toMap(), 'loggedBy': 'whiskers', 'loggedByName': 'Whiskers'});
   }
+
+  /// Keyed by workout: the first one stays, as the server keeps it.
+  final loggedPlans = <String, WorkoutPlan>{};
+  Object? refusePlan;
+
+  @override
+  Future<void> saveClientWorkoutPlan(String studentId, String workoutId, WorkoutPlan plan) async {
+    if (refusePlan case final Object refusal) throw refusal;
+    loggedPlans.putIfAbsent(workoutId, () => plan);
+  }
 }
 
 Workout _workout(String id, DateTime start) {
@@ -162,6 +172,106 @@ void main() {
     ]);
   });
 
+  test('a look clears a changed program too, and keeps the rest of the row (#745)', () async {
+    server.clients.add(
+      ClientSummary(
+        connectionId: 'c-muffin',
+        studentId: 'muffin',
+        name: 'Muff',
+        namedByYou: true,
+        status: 'active',
+        reasons: ['changed', 'gap'],
+        assistant: true,
+      ),
+    );
+    await roster.load();
+
+    await roster.markReviewed(roster.clients.single);
+
+    final row = roster.clients.single;
+    expect(row.reasons, ['gap']);
+    expect((row.name, row.namedByYou, row.assistant), ('Muff', true, true));
+  });
+
+  test("a name the coach gave reaches the client's row, live or former (#753)", () async {
+    server.clients.add(_client('muffin'));
+    server.former.add(
+      ClientSummary(connectionId: 'c-pepper', studentId: 'pepper', status: 'severed', reasons: const []),
+    );
+    await roster.load();
+    await roster.loadFormer();
+    var told = 0;
+    roster.addListener(() => told++);
+
+    Connection named(String id, String? name, {required bool byYou}) => Connection(
+      targetId: id.substring(2),
+      role: .coach,
+      domain: .fitness,
+      status: .active,
+      createdAt: DateTime.utc(2026),
+      connectionId: id,
+      name: name,
+      namedByYou: byYou,
+    );
+    roster.renamed(named('c-muffin', 'Muff', byYou: true));
+    roster.renamed(named('c-pepper', 'Pep', byYou: true));
+    roster.renamed(named('c-nobody', 'Nope', byYou: true));
+
+    expect((roster.clients.single.name, roster.clients.single.namedByYou), ('Muff', true));
+    expect(roster.client('c-pepper')?.name, 'Pep');
+    expect(told, 2, reason: 'a connection no row is about changes nothing');
+
+    roster.renamed(named('c-muffin', 'muffin', byYou: false));
+    expect((roster.clients.single.name, roster.clients.single.namedByYou), ('muffin', false));
+  });
+
+  test('a name is the coach\'s for the person: every row of theirs takes it, in any domain (#753)', () async {
+    server.clients.addAll([
+      ClientSummary(connectionId: 'c-fit', studentId: 'muffin', name: 'muffin', status: 'active', reasons: const []),
+      ClientSummary(connectionId: 'c-run', studentId: 'muffin', name: 'muffin', status: 'active', reasons: const []),
+      _client('pepper'),
+    ]);
+    await roster.load();
+
+    roster.renamed(
+      Connection(
+        targetId: 'muffin',
+        role: .coach,
+        domain: .fitness,
+        status: .active,
+        createdAt: DateTime.utc(2026),
+        connectionId: 'c-fit',
+        name: 'Muff',
+        namedByYou: true,
+      ),
+    );
+
+    expect(roster.clients.map((each) => each.name), ['Muff', 'Muff', 'pepper']);
+  });
+
+  test('a read already out when a name was given keeps the name (#753)', () async {
+    server.clients.add(_client('muffin'));
+    await roster.load();
+    final reading = roster.load();
+    roster.renamed(
+      Connection(
+        targetId: 'muffin',
+        role: .coach,
+        domain: .fitness,
+        status: .active,
+        createdAt: DateTime.utc(2026),
+        connectionId: 'c-muffin',
+        name: 'Muff',
+        namedByYou: true,
+      ),
+    );
+    await reading;
+    expect(roster.clients.single.name, 'Muff', reason: 'the read began before the name');
+
+    await roster.load();
+    expect(roster.clients.single.name, 'muffin', reason: "a read after it is the server's word");
+  });
+
   test('a look is counted once the server took it, and a refused one is not (#568)', () async {
     final reported = ReportedAnalytics();
     roster = Roster(
@@ -172,8 +282,8 @@ void main() {
     await roster.load();
 
     await roster.markReviewed(roster.clients.single);
-    server.refuse = {'code': 'not_found'};
-    await expectLater(roster.markReviewed(roster.clients.single), throwsA(isA<Map>()));
+    server.refuse = refusedAs({'code': 'not_found'});
+    await expectLater(roster.markReviewed(roster.clients.single), throwsA(isA<ServerRefusal>()));
 
     expect(reported.names, ['client_reviewed']);
   });
@@ -181,16 +291,16 @@ void main() {
   test('a refused look changes nothing here', () async {
     server.clients.add(_client('muffin', reasons: ['note']));
     await roster.load();
-    server.refuse = {'code': 'not_found'};
+    server.refuse = refusedAs({'code': 'not_found'});
 
-    await expectLater(roster.markReviewed(roster.clients.single), throwsA(containsPair('code', 'not_found')));
+    await expectLater(roster.markReviewed(roster.clients.single), throwsA(isRefusal('not_found')));
     expect(roster.clients.single.reasons, ['note']);
   });
 
   test('a failed read reports the error and says so', () async {
     final errors = [];
     roster = Roster(service: server, onError: (error, {stacktrace}) => errors.add(error));
-    server.refuse = {'code': 'server_error'};
+    server.refuse = const ServerFailed();
 
     await roster.load();
 
@@ -343,16 +453,60 @@ void main() {
       expect(reported.parametersOf('workout_logged_for'), {'exercise_count': 1, 'set_count': 1});
     });
 
-    test('a log refused is thrown, and changes nothing here', () async {
-      server.refuseLog = {'code': 'forbidden'};
+    test("a program session's plan goes with it, once the workout is in (heart-api#439)", () async {
+      final workout = Workout(name: 'Day A')..start = DateTime.utc(2026, 11, 9);
+      const plan = WorkoutPlan({'exercises': <Map<String, dynamic>>[]});
 
-      expect(roster.logFor('muffin', Workout()), throwsA(containsPair('code', 'forbidden')));
+      await roster.logFor('muffin', workout, plan: plan);
+
+      expect(server.logged['muffin'], [workout]);
+      expect(server.loggedPlans, {workout.id: plan});
+    });
+
+    test('no plan sends none', () async {
+      await roster.logFor('muffin', Workout()..start = DateTime.utc(2026, 11, 9));
+      expect(server.loggedPlans, isEmpty);
+    });
+
+    test("a plan that doesn't land leaves it logged, and goes with the next try", () async {
+      final errors = <Object>[];
+      roster = Roster(service: server, onError: (error, {stacktrace}) => errors.add(error));
+      final workout = Workout(name: 'Day A')..start = DateTime.utc(2026, 11, 9);
+      const plan = WorkoutPlan({'exercises': <Map<String, dynamic>>[]});
+      server.refusePlan = const ServerFailed();
+
+      await roster.logFor('muffin', workout, plan: plan);
+
+      expect(server.logged['muffin'], [workout], reason: 'a comparison lost, never a workout');
+      expect(server.loggedPlans, isEmpty);
+      expect(errors, [isA<ServerFailed>()]);
+
+      server.refusePlan = null;
+      await roster.loadRecord('muffin');
+      await pumpEventQueue();
+      expect(server.loggedPlans, {workout.id: plan});
+    });
+
+    test('a plan refused as malformed is let go: sending it again cannot help', () async {
+      final workout = Workout(name: 'Day A')..start = DateTime.utc(2026, 11, 9);
+      server.refusePlan = refusedAs({'code': 'invalid_plan'});
+      await roster.logFor('muffin', workout, plan: const WorkoutPlan({'exercises': <Map<String, dynamic>>[]}));
+
+      server.refusePlan = null;
+      await roster.sendOwedPlans();
+      expect(server.loggedPlans, isEmpty);
+    });
+
+    test('a log refused is thrown, and changes nothing here', () async {
+      server.refuseLog = refusedAs({'code': 'forbidden'});
+
+      expect(roster.logFor('muffin', Workout()), throwsA(isRefusal('forbidden')));
       await pumpEventQueue();
       expect(roster.workoutsOf('muffin'), isEmpty);
     });
 
     test('a refusal leaves it failed, and sign-out forgets it', () async {
-      server.refuse = {'code': 'forbidden'};
+      server.refuse = refusedAs({'code': 'forbidden'});
       await roster.loadRecord('muffin');
       expect(roster.recordStatus('muffin'), CoachingStatus.failed);
 

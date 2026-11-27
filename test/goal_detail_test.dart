@@ -120,7 +120,7 @@ void main() {
             body: SizedBox(
               height: 700,
               width: 400,
-              child: GoalDetail(goal: goal, workouts: WorkoutAggregation.empty(), onClose: onClose),
+              child: GoalDetail(goal: goal, onClose: onClose),
             ),
           ),
         ),

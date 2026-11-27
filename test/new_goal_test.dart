@@ -428,7 +428,7 @@ class _FakeRemote implements GoalService {
   Future<Goal> createGoal(Goal goal, String userId) async {
     if (rejectNextCreate case final GoalRejected rejection) {
       rejectNextCreate = null;
-      throw {'code': rejection.code};
+      throw ServerRefusal(status: 400, code: rejection.code, method: 'POST', route: '/v1/goals');
     }
     goals.add(goal);
     return goal;

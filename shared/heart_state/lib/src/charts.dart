@@ -177,8 +177,12 @@ class Charts with ChangeNotifier, Iterable<DashboardChart> implements SignOutSta
   @override
   void onSignOut() {
     _charts.clear();
+    // a load still reading for the session that ended is dropped on landing,
+    // rather than marking the next one's dashboard read (#719)
+    userId = null;
     initialized = false;
     _loading = null;
+    notifyListeners();
   }
 
   @override
@@ -225,6 +229,8 @@ class Charts with ChangeNotifier, Iterable<DashboardChart> implements SignOutSta
   Future<void> _load(String id) async {
     try {
       final charts = await _service.getCharts(id);
+      // the session ended while they were read (#671): the last one's charts
+      if (userId != id) return;
       _charts
         ..clear()
         ..addAll(charts);

@@ -4,10 +4,14 @@ import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 
 extension Position on GlobalKey {
-  RelativeRect? position() {
-    final context = currentContext;
-    if (context == null) return null;
-    final RenderBox renderBox = context.findRenderObject() as RenderBox;
+  RelativeRect? position() => currentContext?.menuPosition();
+}
+
+extension MenuPosition on BuildContext {
+  /// Where a menu dropping from the widget at this context sits: under it,
+  /// as wide as it.
+  RelativeRect menuPosition() {
+    final RenderBox renderBox = findRenderObject() as RenderBox;
     final Offset offset = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
     return RelativeRect.fromLTRB(
@@ -101,5 +105,39 @@ class _RenderShareOfWidth extends RenderProxyBox {
     } else {
       size = constraints.smallest;
     }
+  }
+}
+
+/// A section's title inside a menu: not a choice, so not a [PopupMenuItem],
+/// which would be announced as a dimmed button.
+class MenuHeading<T> extends PopupMenuEntry<T> {
+  final String title;
+
+  const new(this.title, {super.key});
+
+  @override
+  double get height => 32;
+
+  @override
+  bool represents(T? value) => false;
+
+  @override
+  State<MenuHeading<T>> createState() => _MenuHeadingState<T>();
+}
+
+class _MenuHeadingState<T> extends State<MenuHeading<T>> {
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return Semantics(
+      header: true,
+      child: Padding(
+        padding: const .fromLTRB(12, 8, 12, 4),
+        child: Text(
+          widget.title,
+          style: textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+        ),
+      ),
+    );
   }
 }

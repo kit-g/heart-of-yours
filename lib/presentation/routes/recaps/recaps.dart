@@ -8,6 +8,7 @@ import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/muscle_figures.dart';
 import 'package:heart/presentation/widgets/responsive/columns.dart';
+import 'package:heart/presentation/widgets/responsive/master_detail.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';

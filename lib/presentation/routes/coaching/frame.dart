@@ -58,25 +58,31 @@ class _CoachingFrameState extends State<CoachingFrame> {
         (
           label: l.coachingClients,
           icon: (_) => const Icon(Icons.groups_rounded, key: AppKeys.coachingClientsStack),
+          branch: 0,
         ),
         (
           label: l.coachingMessages,
           icon: (_) => const _MessagesIcon(),
+          branch: 1,
         ),
         (
           label: l.coachingPrograms,
           icon: (_) => const Icon(Icons.event_repeat_rounded, key: AppKeys.coachingProgramsStack),
+          branch: 2,
         ),
         (
           label: l.coachingMe,
           icon: (_) => const Icon(Icons.badge_outlined, key: AppKeys.coachingMeStack),
+          branch: 3,
         ),
       ],
       // every tab is one page for now: tapping it again has nowhere to go back to
       onReselect: (_, _) {},
-      railFooter: Padding(
-        padding: const .only(bottom: 16),
-        child: _YourTrainingButton(onPressed: onYourTraining, rail: true),
+      railFooter: SpaceSwitch(
+        key: AppKeys.coachingYourTraining,
+        icon: Icons.fitness_center_rounded,
+        label: l.coachingYourTraining,
+        onPressed: onYourTraining,
       ),
       banner: Selector<Workouts, bool>(
         selector: (_, workouts) => workouts.hasActiveWorkout,
@@ -108,51 +114,22 @@ class _MessagesIcon extends StatelessWidget {
   }
 }
 
-/// The way out of the space, in words: an icon alone could be mistaken for
-/// starting a workout, and this is the only way back. Beside its icon in an
-/// app bar, under it at the foot of the rail, as the rail's own tabs are.
+/// The way out of the space on a compact window, in words beside its icon:
+/// an icon alone could be mistaken for starting a workout, and this is the
+/// only way back. A wide window has it at the foot of the rail instead.
 class _YourTrainingButton extends StatelessWidget {
   final VoidCallback onPressed;
-  final bool rail;
 
-  const new({required this.onPressed, this.rail = false});
+  const new({required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
-    final label = L.of(context).coachingYourTraining;
-    const icon = Icon(Icons.fitness_center_rounded);
-    return switch (rail) {
-      false => TextButton.icon(
-        key: AppKeys.coachingYourTraining,
-        onPressed: onPressed,
-        icon: icon,
-        label: Text(label),
-      ),
-      true => Semantics(
-        button: true,
-        label: label,
-        excludeSemantics: true,
-        child: InkWell(
-          key: AppKeys.coachingYourTraining,
-          onTap: onPressed,
-          borderRadius: const .all(.circular(12)),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 72, minHeight: 56),
-            child: Padding(
-              padding: const .symmetric(horizontal: 4, vertical: 8),
-              child: Column(
-                mainAxisSize: .min,
-                spacing: 4,
-                children: [
-                  icon,
-                  Text(label, style: Theme.of(context).textTheme.labelMedium, textAlign: .center),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    };
+    return TextButton.icon(
+      key: AppKeys.coachingYourTraining,
+      onPressed: onPressed,
+      icon: const Icon(Icons.fitness_center_rounded),
+      label: Text(L.of(context).coachingYourTraining),
+    );
   }
 }
 

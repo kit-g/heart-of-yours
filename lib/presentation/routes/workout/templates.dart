@@ -86,47 +86,45 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  copy,
-                  style: textTheme.headlineSmall,
-                ),
-                Row(
-                  children: [
-                    // folders are the server's — it mints their ids — so there
-                    // are none to make without an account
-                    if (!isAnonymous)
-                      IconButton(
-                        tooltip: newFolder,
-                        // a square tight box rather than `visualDensity`, same as
-                        // the movement filter: Material clamps the density's
-                        // horizontal adjustment at zero, so it trimmed the height
-                        // alone and the splash came out an ellipse
-                        constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-                        padding: .zero,
-                        icon: const Icon(Icons.create_new_folder_outlined),
-                        onPressed: () {
-                          _createFolder(context);
-                        },
-                      ),
-                    if (templates.allowsNewTemplate)
-                      PrimaryButton.shrunk(
-                        backgroundColor: colorScheme.secondaryContainer,
-                        onPressed: () {
-                          widget.goToTemplateEditor(newTemplate: true);
-                        },
-                        child: Row(
-                          children: [
-                            const Icon(Icons.add_rounded, size: 18),
-                            Text(template),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
+            padding: const .all(8),
+            // the actions go under the heading when they don't fit beside it:
+            // a longer language at a large text size on a phone (#701)
+            child: HeadingRow(
+              heading: Text(
+                copy,
+                style: textTheme.headlineSmall,
+              ),
+              actions: [
+                // folders are the server's — it mints their ids — so there
+                // are none to make without an account
+                if (!isAnonymous)
+                  IconButton(
+                    tooltip: newFolder,
+                    // a square tight box rather than `visualDensity`, same as
+                    // the movement filter: Material clamps the density's
+                    // horizontal adjustment at zero, so it trimmed the height
+                    // alone and the splash came out an ellipse
+                    constraints: const .tightFor(width: 36, height: 36),
+                    padding: .zero,
+                    icon: const Icon(Icons.create_new_folder_outlined),
+                    onPressed: () {
+                      _createFolder(context);
+                    },
+                  ),
+                if (templates.allowsNewTemplate)
+                  PrimaryButton.shrunk(
+                    backgroundColor: colorScheme.secondaryContainer,
+                    onPressed: () {
+                      widget.goToTemplateEditor(newTemplate: true);
+                    },
+                    child: Row(
+                      mainAxisSize: .min,
+                      children: [
+                        const Icon(Icons.add_rounded, size: 18),
+                        Flexible(child: Text(template)),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -412,7 +410,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
   void _showFolderError(BuildContext context, Object error) {
     final L(:folderNameTaken, :unknownError) = L.of(context);
     final message = switch (error) {
-      {'code': 'bad_request'} => folderNameTaken,
+      ServerRefusal(code: 'bad_request') => folderNameTaken,
       _ => unknownError,
     };
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -1314,7 +1312,7 @@ class _FolderNameFormState extends State<_FolderNameForm> {
       final L(:folderNameTaken, :unknownError) = L.of(context);
       _saving.value = false;
       _rejected.value = switch (error) {
-        {'code': 'bad_request'} => folderNameTaken,
+        ServerRefusal(code: 'bad_request') => folderNameTaken,
         _ => unknownError,
       };
     }

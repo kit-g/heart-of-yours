@@ -750,6 +750,26 @@ const _continuesEffort = """(CASE WHEN s.set_type IS 'drop' THEN coalesce(
     0
 ) ELSE 0 END)""";
 
+/// How many finished workouts each exercise was done in: a workout counts
+/// when it holds a completed working set of the exercise. Warm-ups and
+/// discarded sets are no session of it, as everywhere else that counts. A
+/// grouped picker pictures each group by the one done most (#711).
+const sessionsPerExercise = '''
+SELECT
+    we.exercise_id AS exercise_id,
+    count(DISTINCT w.id) AS sessions
+FROM workouts w
+INNER JOIN workout_exercises we ON we.workout_id = w.id
+INNER JOIN sets s ON s.exercise_id = we.id
+WHERE w.user_id = ?
+  AND w."end" IS NOT NULL
+  AND s.completed
+  AND s.set_type IS NOT 'warmup'
+  /*discarded:s*/
+GROUP BY we.exercise_id
+;
+''';
+
 /// Completed working sets per exercise per finished workout started in a
 /// window, with the exercise's muscle tagging: the muscle map's read.
 const muscleSets =

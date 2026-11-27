@@ -66,7 +66,7 @@ The library won't do these. Each one that can be shown is pinned by a test in
 
 ## Building
 
-`hook/build.dart` runs cargo for the target whenever Rust is installed, so the source is always what
+`hook/build.dart` runs cargo for the target whenever rustup is installed (its own way, or Homebrew's), so the source is always what
 ships. Only a machine without Rust takes a library from `prebuilt/<rust triple>/`. Cargo inherits
 nothing from the build's environment but the network settings (proxies, certificates, rustup's
 servers), since Xcode's `SDKROOT` breaks linking cargo's own build scripts. For Android it links with

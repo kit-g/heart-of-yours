@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -18,6 +20,19 @@ typedef CatalogStamp = ({String version, String locale, String? etag});
 class const CatalogLanguageMismatch(final String stamped, final String? device) implements Exception {
   @override
   String toString() => 'CatalogLanguageMismatch: library stamped $stamped holds no $stamped names (device $device)';
+}
+
+/// A download of the library that gave no answer within
+/// [Exercises.libraryWait] (#723). Its own type, not a `TimeoutException`:
+/// a request that fails outright offline is not worth a report, but one that
+/// hangs is what leaves a user with no library and nothing said.
+class LibraryStalled implements Exception {
+  final Duration waited;
+
+  const new(this.waited);
+
+  @override
+  String toString() => 'LibraryStalled: no answer in ${waited.inSeconds} s';
 }
 
 /// One locale file of the library: its exercises, and the words lifters search
@@ -149,12 +164,41 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   bool isInitialized = false;
   String? userId;
 
+  /// How long a download of the library is waited for before [init] goes on
+  /// without it (#723): a network that never answers must not hold the user's
+  /// own exercises, or the start-up behind them, for good. The download is
+  /// not cut off: on a slow link it lands later, and is taken then.
+  final Duration libraryWait;
+
+  /// Whether [init] ran and ended without the library: the user's own
+  /// exercises are all there is until a download brings it.
+  bool get libraryUnavailable => _libraryUnavailable;
+  bool _libraryUnavailable = false;
+
+  /// Whether [retryLibrary] is under way.
+  bool get retryingLibrary => _retry != null;
+  Future<bool>? _retry;
+
+  /// The download of the library under way, which outlives the wait for it:
+  /// a retry joins it rather than starting over.
+  Future<bool>? _download;
+
+  /// The one start-up waiting for the catalog ([whenInitialized]).
+  VoidCallback? _waiting;
+
   /// The `Accept-Language` tag the catalog was last requested under. Localized
   /// copy is only as fresh as this tag — it is the cache key [onLocaleChanged]
   /// compares against.
   String? _catalogLocale;
 
   bool _showingMine = false;
+
+  /// Whether the filters in force are ones the user asked to be shown — the
+  /// library opened "showing only" something, from a chip or a count
+  /// elsewhere ([showOnly]) — rather than ones set in the picker. A grouped
+  /// picker hides and sets aside its own filters (#711), but never these.
+  bool get filtersAskedFor => _filtersAskedFor;
+  bool _filtersAskedFor = false;
 
   bool get showingMine => _showingMine;
 
@@ -176,6 +220,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     required this._preferenceService,
     this.analytics,
     RemoteAccess? remote,
+    this.libraryWait = const Duration(seconds: 30),
   }) : _remote = remote ?? RemoteAccess();
 
   /// Whether people outgrow the catalog. Absent in tests.
@@ -185,12 +230,16 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   void onSignOut() {
     userId = null;
     isInitialized = false;
+    _libraryUnavailable = false;
+    _retry = null;
+    _download = null;
     _catalogLocale = null;
     _exercises.clear();
     _glossary = .empty();
     _selectedExercises.clear();
     _units.clear();
     _notes.clear();
+    notifyListeners();
   }
 
   @override
@@ -267,31 +316,168 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// from syncing. Populated means the library is in, or its sync went
   /// through — the user's own exercises alone are not a catalog the chained
   /// init can write against.
+  ///
+  /// The library is waited for no longer than [libraryWait] (#723). Without
+  /// it, the user's own exercises are still read and shown, and
+  /// [libraryUnavailable] says so until [retryLibrary] brings it.
   Future<bool> init({String? locale}) async {
     _catalogLocale = locale;
+    // A session that ends mid-init (#671) has had its state cleared for the
+    // next one: what this run read is the last one's, and it must neither go
+    // back in nor mark the next one's catalog as initialized, which would skip
+    // that one's startup. False then, which also stops the chained init.
+    final owner = userId;
+    bool left() => _disposed || userId != owner;
     await _step(() async {
-      final (_, local) = await _service.getExercises(userId: userId);
-      if (local.isNotEmpty) {
+      final (_, local) = await _service.getExercises(userId: owner);
+      if (local.isNotEmpty && !left()) {
         _exercises.addAll(local.byId);
-        _glossary = await _catalogService.getSearchGlossary() ?? .empty();
-        if (!_disposed) notifyListeners();
+        final glossary = await _catalogService.getSearchGlossary() ?? .empty();
+        if (left()) return;
+        _glossary = glossary;
+        notifyListeners();
       }
     });
-    if (userId case String id) {
+    if (owner case String id when !left()) {
       await _step(() async {
-        _units.addAll(await _service.getExerciseUnits(id));
-        _notes.addAll(await _noteService?.read(id) ?? {});
+        final units = await _service.getExerciseUnits(id);
+        final notes = await _noteService?.read(id) ?? {};
+        if (left()) return;
+        _units.addAll(units);
+        _notes.addAll(notes);
       });
     }
-    final synced = await _step(_syncLibrary);
-    if (_remote.allowed) await _step(_syncOwn);
+    if (left()) return false;
+    final synced = await _awaitLibrary(owner);
+    if (left()) return false;
+    await _ownLeg(owner);
 
     // the app may be gone by the time the catalog is read — a tree torn down
     // mid-init has no one to tell
-    if (_disposed) return false;
-    isInitialized = synced || _exercises.values.any((each) => !each.isMine);
-    notifyListeners();
+    if (left()) return false;
+    _settle(synced);
     return isInitialized;
+  }
+
+  /// The account's own exercises and its preferences, after the library: the
+  /// preferences land on library rows, so they are read again whenever the
+  /// library comes in late.
+  Future<void> _ownLeg(String? owner) async {
+    if (!_remote.allowed) return;
+    await _step(_syncOwn);
+    // its own read, run whether or not the list above landed: a failed
+    // list must not cost the preferences of every library exercise
+    if (owner case String id when !_disposed && userId == id) await _syncPreferences(id);
+  }
+
+  /// Whether the catalog is one the chained start-up can write against, and
+  /// whether the library is missing from it.
+  void _settle(bool synced) {
+    isInitialized = synced || _exercises.values.any((each) => !each.isMine);
+    _libraryUnavailable = !isInitialized;
+    notifyListeners();
+  }
+
+  /// The library's download for [owner]'s session, joined if one is under way.
+  /// Answers whether it went through; what it throws is reported.
+  Future<bool> _downloadLibrary(String? owner) {
+    if (_download case final Future<bool> running) return running;
+    final download = _step(() => _syncLibrary(owner));
+    _download = download;
+    download.whenComplete(() {
+      if (identical(_download, download)) _download = null;
+    });
+    return download;
+  }
+
+  /// The library's download, waited for no longer than [libraryWait]: past
+  /// that, reported as [LibraryStalled] and answered false, while the
+  /// download goes on and is taken when it lands ([_lateLibrary]).
+  Future<bool> _awaitLibrary(String? owner) {
+    final download = _downloadLibrary(owner);
+    return download.timeout(
+      libraryWait,
+      onTimeout: () {
+        onError?.call(LibraryStalled(libraryWait), stacktrace: StackTrace.current);
+        _lateLibrary(download, owner);
+        return false;
+      },
+    );
+  }
+
+  /// A download that outlived the wait for it, taken when it lands: the
+  /// account's own leg read again over it, and the catalog settled, which
+  /// lets what waits for it go ahead. Nothing if the session ended, or the
+  /// catalog came in meanwhile.
+  void _lateLibrary(Future<bool> download, String? owner) {
+    unawaited(
+      download.then((synced) async {
+        bool left() => _disposed || userId != owner;
+        if (!synced || left() || isInitialized) return;
+        await _ownLeg(owner);
+        if (left() || isInitialized) return;
+        _settle(true);
+      }),
+    );
+  }
+
+  /// Runs [then] once the catalog of the session [owner] began is one the
+  /// chained start-up can write against: at once if it is, else when a
+  /// download brings the library that [init] went on without (#723). Never
+  /// once that session has ended.
+  ///
+  /// One waits at a time: a second asked for the same session while the
+  /// first does is dropped, since the first is the start-up that reads
+  /// everything a later one would (an account taking over an anonymous
+  /// session's id asks again).
+  void whenInitialized(String? owner, VoidCallback then) {
+    if (_disposed || userId != owner) return;
+    if (isInitialized) return then();
+    if (_waiting != null) return;
+    void check() {
+      if (_disposed || userId != owner || isInitialized) {
+        removeListener(check);
+        if (identical(_waiting, check)) _waiting = null;
+      }
+      if (!_disposed && userId == owner && isInitialized) then();
+    }
+
+    _waiting = check;
+    addListener(check);
+  }
+
+  /// Downloads the library again, after [init] went on without it (#723):
+  /// joins the download under way, if there is one, for [libraryWait] more.
+  /// Past that it lets go of that download, which is still taken if it
+  /// lands, so the next retry starts afresh: a connection that hangs never
+  /// answers. Answers whether the catalog is in now; a second call while one
+  /// runs waits for that one. Nothing to do once the catalog is in.
+  Future<bool> retryLibrary() {
+    if (isInitialized) return Future.value(true);
+    if (_retry case final Future<bool> running) return running;
+    final owner = userId;
+    bool left() => _disposed || userId != owner;
+    final retry = () async {
+      final download = _downloadLibrary(owner);
+      final synced = await download.timeout(
+        libraryWait,
+        onTimeout: () {
+          if (identical(_download, download)) _download = null;
+          _lateLibrary(download, owner);
+          return false;
+        },
+      );
+      if (left()) return false;
+      if (synced && !isInitialized) await _ownLeg(owner);
+      if (left()) return false;
+      _retry = null;
+      if (!isInitialized) _settle(synced);
+      notifyListeners();
+      return isInitialized;
+    }();
+    _retry = retry;
+    notifyListeners();
+    return retry;
   }
 
   bool _disposed = false;
@@ -336,7 +522,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     if (!isInitialized) return;
 
     try {
-      await _syncLibrary();
+      await _syncLibrary(userId).timeout(libraryWait, onTimeout: () => throw LibraryStalled(libraryWait));
       notifyListeners();
     } catch (e, s) {
       _catalogLocale = previous;
@@ -381,7 +567,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// such a cache passes every stamp comparison and would never be replaced
   /// (#612). It is downloaded afresh, and reported — the report carries the
   /// two language codes and nothing else, and is how the cause gets found.
-  Future<void> _syncLibrary() async {
+  Future<void> _syncLibrary(String? owner) async {
     final warm = _exercises.values.any((each) => !each.isMine);
     final stored = switch (warm) {
       true => await _catalogService.getCatalogStamp(),
@@ -390,6 +576,8 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     final cached = _vouched(stored);
 
     final (library, stamp) = await _libraryService.getLibrary(cached: cached);
+    // one that lands after its session ended is the last one's
+    if (_disposed || userId != owner) return;
     switch (library) {
       case (:final exercises, :final glossary):
         final sorted = exercises.toList()..sort();
@@ -427,7 +615,6 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
           await _service.setExerciseUnit(exerciseName: each.id, userId: id, unit: u);
         }
       }
-      await _syncPreferences(id);
     }
   }
 
@@ -623,11 +810,17 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
     if (!_remote.allowed) return;
 
-    switch (unit) {
-      case MeasurementUnit u:
-        await _remoteService.saveUnitPreference(exercise.id, u);
-      case null:
-        await _remoteService.deleteUnitPreference(exercise.id);
+    // the device's choice stands either way: a failure to tell the server is
+    // reported, not thrown at the screen that made it
+    try {
+      switch (unit) {
+        case MeasurementUnit u:
+          await _remoteService.saveUnitPreference(exercise.id, u);
+        case null:
+          await _remoteService.deleteUnitPreference(exercise.id);
+      }
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
     }
   }
 
@@ -677,18 +870,33 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     notifyListeners();
   }
 
+  /// The library showing only [filter], replacing whatever was filtered
+  /// before: what the user asked for by name ([filtersAskedFor]).
+  void showOnly(ExerciseFilter filter) {
+    _filters
+      ..clear()
+      ..add(filter);
+    _filtersAskedFor = true;
+    notifyListeners();
+  }
+
+  /// A filter set in the picker: what is in force from then on is the
+  /// picker's own, not what was asked for.
   void addFilter(ExerciseFilter filter) {
     _filters.add(filter);
+    _filtersAskedFor = false;
     notifyListeners();
   }
 
   void removeFilter(ExerciseFilter filter) {
     _filters.remove(filter);
+    _filtersAskedFor = _filtersAskedFor && _filters.isNotEmpty;
     notifyListeners();
   }
 
   void clearFilters() {
     _filters.clear();
+    _filtersAskedFor = false;
     notifyListeners();
   }
 

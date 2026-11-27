@@ -283,10 +283,7 @@ class const _HealthNotice({
               // and only while the band above it actually is two tiles —
               // below that width it stacks, and the notice is under a
               // full-width card again
-              final width = switch (besideColumn && tilesShareRow(constraints.maxWidth)) {
-                true => (constraints.maxWidth - tileGutter) / 2,
-                false => readableWidth,
-              };
+              final width = besideColumn ? tileWidth(constraints.maxWidth) : readableWidth;
 
               return ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: width),

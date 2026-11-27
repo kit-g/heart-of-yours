@@ -16,27 +16,20 @@ typedef ReportedWords = ({
 /// Coaching messages (heart-of-yours#556): one thread per connection, whose
 /// items are ciphertext the server never reads.
 ///
-/// A refusal is thrown whole, as everywhere, so a caller branches on its
-/// `code` (`thread_closed`, `rate_limited` with `retryAfter`, `stale_cursor`,
-/// `not_implemented`).
+/// A refusal is a [ServerRefusal], as everywhere, so a caller branches on its
+/// `code` (`thread_closed`, `rate_limited` with `retryAfter`, `stale_cursor`).
 mixin _ThreadRoutes on Requests {
   /// The one thread of [connectionId], opened the first time it is asked for.
   Future<Thread> openThread(String connectionId) async {
-    final (json, code) = await post(Router.connectionThread(connectionId));
-    return switch ((code, json)) {
-      (200 || 201, Map json) => Thread.fromJson(json),
-      _ => throw json,
-    };
+    final (json, _) = await post(Router.connectionThread(connectionId));
+    return Thread.fromJson(json);
   }
 
   /// The inbox: every thread, last arrival first. Read whole or not at all:
   /// it replaces the device's inbox, where a thread skipped would be deleted.
   Future<List<Thread>> getThreads() async {
-    final (json, code) = await get(Router.threads);
-    return switch ((code, json)) {
-      (200, {'threads': final List threads}) => [for (final each in threads) Thread.fromJson(each as Map)],
-      _ => throw json,
-    };
+    final (threads, _) = _listIn(await get(Router.threads), 'threads', from: Router.threads);
+    return [for (final each in threads) Thread.fromJson(each as Map)];
   }
 
   /// Stores one item. [id] is the device's, so a retry answers the stored item
@@ -52,7 +45,7 @@ mixin _ThreadRoutes on Requests {
     String? subjectType,
     String? subjectId,
   }) async {
-    final (json, code) = await post(
+    final (json, _) = await post(
       Router.threadItems(threadId),
       body: {
         'id': id,
@@ -64,10 +57,7 @@ mixin _ThreadRoutes on Requests {
         'subjectId': ?subjectId,
       },
     );
-    return switch ((code, json)) {
-      (200 || 201, Map json) => ThreadItem.fromJson(json),
-      _ => throw json,
-    };
+    return ThreadItem.fromJson(json);
   }
 
   /// A page of [threadId]'s items: after [since] in stored order, or before
@@ -79,31 +69,27 @@ mixin _ThreadRoutes on Requests {
     String? before,
     int? limit,
   }) async {
-    final (json, code) = await get(
-      Router.threadItems(threadId),
+    final path = Router.threadItems(threadId);
+    final response = await get(
+      path,
       query: switch ({'since': ?since, 'before': ?before, 'limit': ?limit?.toString()}) {
         final Map<String, String> query when query.isNotEmpty => query,
         _ => null,
       },
     );
-    return switch ((code, json)) {
-      (200, {'items': final List items}) => (
-        items: [
-          for (final each in items)
-            if (each is Map) ThreadItem.fromJson(each),
-        ],
-        cursor: json['cursor'] as String?,
-      ),
-      _ => throw json,
-    };
+    final (items, page) = _listIn(response, 'items', from: path);
+    return (
+      items: [
+        for (final each in items)
+          if (each is Map) ThreadItem.fromJson(each),
+      ],
+      cursor: page['cursor'] as String?,
+    );
   }
 
   /// Deletes every message of [threadId] for both people. The thread stays,
   /// with when and by whom.
-  Future<void> clearThread(String threadId) async {
-    final (json, code) = await delete(Router.threadItems(threadId));
-    if (code != 204) throw json;
-  }
+  Future<void> clearThread(String threadId) => delete(Router.threadItems(threadId));
 
   /// Reports [reportedId], with [messages] they sent: each the words in the
   /// clear, the reporter's key for them, and what the server answered when it
@@ -114,8 +100,8 @@ mixin _ThreadRoutes on Requests {
     String? connectionId,
     required String reason,
     List<ReportedWords> messages = const [],
-  }) async {
-    final (json, code) = await post(
+  }) {
+    return post(
       Router.reports,
       body: {
         'reportedId': reportedId,
@@ -136,12 +122,10 @@ mixin _ThreadRoutes on Requests {
         ],
       },
     );
-    if (code != 204) throw json;
   }
 
   /// Moves this person's read position in [threadId] to [cursor].
-  Future<void> markThreadRead(String threadId, String cursor) async {
-    final (json, code) = await put(Router.threadRead(threadId), body: {'cursor': cursor});
-    if (code != 204) throw json;
+  Future<void> markThreadRead(String threadId, String cursor) {
+    return put(Router.threadRead(threadId), body: {'cursor': cursor});
   }
 }

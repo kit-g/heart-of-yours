@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:heart/core/env/push.dart';
 import 'package:heart/presentation/routes/coaching/coaching.dart' show ClientsPage;
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/setting_picker.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -14,6 +14,7 @@ import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
 import 'support/harness.dart';
+import 'support/push_client.dart';
 
 /// The push client (#567) and its settings (#554): opt-in through the
 /// coaching switches, so with both off nothing reaches FCM or the server, and
@@ -22,13 +23,13 @@ void main() {
   late MockLocalDatabase db;
   late MockApi api;
   late MockCdn cdn;
-  late _FakeClient client;
+  late FakePushClient client;
 
   setUp(() {
     db = MockLocalDatabase();
     api = MockApi();
     cdn = MockCdn();
-    client = _FakeClient();
+    client = FakePushClient();
     stubStartup(db, api);
     when(api.getConnections()).thenAnswer((_) async => []);
     when(api.getHiddenWorkouts()).thenAnswer((_) async => []);
@@ -148,6 +149,60 @@ void main() {
       ),
     ).called(1);
     expect(client.calls, isNot(contains('ask')), reason: 'the permission is asked in context, never at launch');
+  });
+
+  testWidgets('a token that came while a replay held the server closed is registered once it opens (#734)', (
+    tester,
+  ) async {
+    client.tokenMade = Completer<void>();
+    await pump(tester, {'feature-yourCoach': 'on'});
+    final context = tester.element(find.byType(Navigator).first);
+    final remote = RemoteAccess.of(context);
+
+    remote.replaying = true;
+    client.tokenMade!.complete();
+    await tester.pumpTimes();
+    verifyNever(
+      api.registerDevice(
+        platform: anyNamed('platform'),
+        token: anyNamed('token'),
+        utcOffsetMinutes: anyNamed('utcOffsetMinutes'),
+      ),
+    );
+
+    // the replay over: nothing of the account's changes, so only Upsync says
+    await Upsync.of(context).run('muffin');
+    await tester.pumpTimes();
+    verify(
+      api.registerDevice(
+        platform: anyNamed('platform'),
+        token: 'fcm-1',
+        utcOffsetMinutes: anyNamed('utcOffsetMinutes'),
+      ),
+    ).called(1);
+  });
+
+  testWidgets('a log out takes the token back, and nothing registers it again (#734)', (tester) async {
+    await pump(tester, {'feature-yourCoach': 'on'}, keyVault: MemoryKeyVault());
+    final context = tester.element(find.byType(Navigator).first);
+    clearInteractions(api);
+
+    // clearState's order, up to the session's end: the account is still there
+    unawaited(Pushes.of(context).unregister());
+    clearUserState(context);
+    await tester.pumpTimes();
+
+    verify(api.unregisterDevice('fcm-1')).called(1);
+    verifyNever(
+      api.registerDevice(
+        platform: anyNamed('platform'),
+        token: anyNamed('token'),
+        utcOffsetMinutes: anyNamed('utcOffsetMinutes'),
+      ),
+    );
+    // nor are the keys started again for the account that leaves
+    verifyNever(api.getKeyQueue(any));
+    expect(DeviceKeys.of(context).status, DeviceKeysStatus.off);
   });
 
   testWidgets('a new token is registered too', (tester) async {
@@ -323,7 +378,7 @@ void main() {
 
     verify(api.getProgram('p1')).called(1);
     verifyNever(api.getPrograms());
-    expect(client.calls, isNot(contains('show')), reason: 'a silent push shows nothing');
+    expect(find.byKey(AppKeys.pushNote), findsNothing, reason: 'a silent push shows nothing');
   });
 
   testWidgets("a silent push that someone's devices changed reads that person's devices (#555)", (tester) async {
@@ -335,7 +390,7 @@ void main() {
     await tester.pumpTimes();
 
     verify(api.getCryptoDevices(userId: 'dana')).called(1);
-    expect(client.calls, isNot(contains('show')), reason: 'a silent push shows nothing');
+    expect(find.byKey(AppKeys.pushNote), findsNothing, reason: 'a silent push shows nothing');
   });
 
   testWidgets(
@@ -379,18 +434,9 @@ void main() {
       await tester.pumpTimes();
 
       verify(api.getKeyQueue(deviceId)).called(1);
-      expect(client.calls, isNot(contains('show')), reason: 'a silent push shows nothing');
+      expect(find.byKey(AppKeys.pushNote), findsNothing, reason: 'a silent push shows nothing');
     },
   );
-
-  testWidgets('a visible push in front is shown by the app, with its title alone', (tester) async {
-    await pump(tester, {'feature-yourCoach': 'on'});
-
-    client.arrivals.add((push: Push.of({'topic': 'coaching.message', 'threadId': 't1'})!, title: 'Dana messaged you'));
-    await tester.pumpTimes();
-
-    expect(client.calls, contains('show coaching.message Dana messaged you'));
-  });
 
   testWidgets("a coach's tap on an accepted invitation opens Coaching's clients", (tester) async {
     // the server's copy of the account, with the entitlement: it arrives
@@ -453,6 +499,69 @@ void main() {
       verify(api.setPushSetting('coaching.message', 'off')).called(1);
     });
 
+    testWidgets('a topic has its switch at the end of its row (#735)', (tester) async {
+      await pump(tester, {'feature-yourCoach': 'on'});
+      go(tester, '/profile/settings/notifications');
+      await tester.pumpTimes();
+      final topic = find.byKey(const ValueKey('pushTopic-coaching.message'));
+      final title = tester.getRect(find.descendant(of: topic, matching: find.text('Messages')));
+      final pick = tester.getRect(find.descendant(of: topic, matching: find.byType(SettingSwitcher<String>)));
+      expect(pick.left, greaterThan(title.right));
+      expect(pick.right, closeTo(tester.getRect(topic).right - 16, 1));
+      expect(pick.top, lessThan(title.bottom + 24));
+    });
+
+    testWidgets('segments that fit no row are a menu (#735)', (tester) async {
+      when(api.getPushSettings()).thenAnswer(
+        (_) async => PushSettings(
+          topics: [
+            PushSetting(
+              topic: 'coaching.message',
+              group: 'coaching',
+              name: 'Messages',
+              description: 'When someone you train with writes to you',
+              delivery: 'instant',
+              options: ['instant', 'daily', 'off'],
+            ),
+          ],
+        ),
+      );
+      await pump(tester, {'feature-yourCoach': 'on'});
+      go(tester, '/profile/settings/notifications');
+      await tester.pumpTimes();
+      tester.view.physicalSize = const Size(360, 2400);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpTimes();
+      tester.takeException();
+      final topic = find.byKey(const ValueKey('pushTopic-coaching.message'));
+      expect(find.descendant(of: topic, matching: find.byType(SettingSwitcher<String>)), findsNothing);
+
+      await tester.tap(find.descendant(of: topic, matching: find.text('Instant')));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Off').last);
+      await tester.pumpTimes();
+      verify(api.setPushSetting('coaching.message', 'off', connectionId: null)).called(1);
+    });
+
+    testWidgets('with no room beside its name, the switch goes below (#735)', (tester) async {
+      await pump(tester, {'feature-yourCoach': 'on'});
+      go(tester, '/profile/settings/notifications');
+      await tester.pumpTimes();
+      tester.view.physicalSize = const Size(360, 2400);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpTimes();
+      // what else is on the page overflows at this size in the test font
+      tester.takeException();
+      final topic = find.byKey(const ValueKey('pushTopic-coaching.message'));
+      final words = tester.getRect(
+        find.descendant(of: topic, matching: find.text('When someone you train with writes to you')),
+      );
+      final pick = tester.getRect(find.descendant(of: topic, matching: find.byType(SettingSwitcher<String>)));
+      expect(pick.top, greaterThanOrEqualTo(words.bottom));
+    });
+
     testWidgets('the list keeps to a readable width on a tablet', (tester) async {
       await pump(tester, {'feature-yourCoach': 'on'});
       go(tester, '/profile/settings/notifications');
@@ -490,6 +599,36 @@ void main() {
           perPersonAs: perPersonAs,
         );
       }
+
+      testWidgets('each person is named as everywhere else', (tester) async {
+        Connection coach(String id, {String? name}) => Connection(
+          targetId: 'coach-$id',
+          role: .student,
+          domain: .fitness,
+          status: .active,
+          createdAt: DateTime.utc(2026, 11, 8),
+          connectionId: id,
+          acceptedAt: DateTime.utc(2026, 11, 8),
+          name: name,
+        );
+        when(api.getConnections()).thenAnswer(
+          (_) async => [coach('c1', name: 'Kit G.'), coach('c2'), coach('c3')],
+        );
+        when(api.getPushSettings()).thenAnswer(
+          (_) async => PushSettings(
+            topics: [
+              setting('coaching.message', ['coach', 'student', 'peer']),
+            ],
+          ),
+        );
+        await pump(tester, {'feature-yourCoach': 'on', 'coachName-c1': 'Old name', 'coachName-c2': 'Alex'});
+        go(tester, '/profile/settings/notifications');
+        await tester.pumpTimes();
+
+        expect(find.text('Kit G.'), findsOneWidget, reason: "their profile's, over the invitation's");
+        expect(find.text('Alex'), findsOneWidget);
+        expect(find.text('Your coach'), findsOneWidget);
+      });
 
       testWidgets("a coach is offered only the topics a student's side can choose for them", (tester) async {
         when(api.getPushSettings()).thenAnswer(
@@ -548,68 +687,4 @@ void main() {
       expect(find.text('Retry'), findsOneWidget);
     });
   });
-}
-
-class _FakeClient implements PushClient {
-  final calls = <String>[];
-  final newTokens = StreamController<String>.broadcast();
-  final arrivals = StreamController<({Push push, String? title})>.broadcast();
-  final taps = StreamController<Push>.broadcast();
-  final pending = <Push>[];
-
-  /// Holds [createChannels] until completed, when set.
-  Completer<void>? channelsMade;
-
-  /// Holds [start] until completed, when set.
-  Completer<void>? tokenMade;
-
-  @override
-  Stream<String> get tokens => newTokens.stream;
-
-  @override
-  Stream<({Push push, String? title})> get arrived => arrivals.stream;
-
-  @override
-  Stream<Push> get opened => taps.stream;
-
-  @override
-  Future<String?> start() async {
-    calls.add('start');
-    await tokenMade?.future;
-    return 'fcm-1';
-  }
-
-  @override
-  Future<bool> stop() async {
-    calls.add('stop');
-    return true;
-  }
-
-  @override
-  Future<Push?> launchedBy() async => null;
-
-  @override
-  Future<List<Push>> takePending() async {
-    final taken = [...pending];
-    pending.clear();
-    return taken;
-  }
-
-  @override
-  Future<void> createChannels({required String comments, required String messages, required String coaching}) async {
-    calls.add('channels $comments $messages $coaching');
-    await channelsMade?.future;
-  }
-
-  @override
-  Future<void> deleteChannels() async => calls.add('delete channels');
-
-  @override
-  Future<void> show(Push push, {required String title}) async => calls.add('show ${push.topic} $title');
-
-  @override
-  Future<bool> askPermission({Analytics? analytics}) async {
-    calls.add('ask');
-    return true;
-  }
 }

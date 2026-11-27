@@ -17,6 +17,7 @@ import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/live_goals.dart';
 import 'package:heart/core/utils/live_records.dart';
 import 'package:heart/core/utils/misc.dart';
+import 'package:heart/core/utils/plates.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/shown_programs.dart';
 import 'package:heart/core/utils/records.dart';
@@ -26,6 +27,8 @@ import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/part_of_program.dart';
+import 'package:heart/presentation/widgets/note.dart';
+import 'package:heart/presentation/widgets/push_note.dart' show BelowPushNote;
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/confetti.dart';
 import 'package:heart/presentation/widgets/countdown.dart';
@@ -899,14 +902,12 @@ class NewWorkoutHeader extends StatelessWidget {
             spacing: 8,
             children: [
               Expanded(child: start),
-              Tooltip(
-                message: L.of(context).logPastWorkout,
-                child: PrimaryButton.shrunk(
-                  key: WorkoutDetailKeys.logPastWorkout,
-                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-                  onPressed: log,
-                  child: const Icon(Icons.more_time_rounded, size: 18),
-                ),
+              PrimaryButton.shrunk(
+                key: WorkoutDetailKeys.logPastWorkout,
+                tooltip: L.of(context).logPastWorkout,
+                backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                onPressed: log,
+                child: const Icon(Icons.more_time_rounded, size: 18),
               ),
             ],
           ),
@@ -933,7 +934,11 @@ class NewWorkoutHeader extends StatelessWidget {
                 mainAxisSize: .min,
                 children: [
                   const Icon(Icons.add_rounded, size: 18),
-                  Text(L.of(context).startNewWorkout),
+                  // a fixed-height pinned header: one line, cut short at a
+                  // large text size rather than run past the button (#701)
+                  Flexible(
+                    child: Text(L.of(context).startNewWorkout, maxLines: 1, overflow: .ellipsis),
+                  ),
                 ],
               ),
             };
@@ -1120,7 +1125,11 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     final ThemeData(:colorScheme, :scaffoldBackgroundColor, :textTheme, :platform) = Theme.of(context);
     final l = L.of(context);
     final workouts = widget.workouts;
-    final active = workouts.activeWorkout!;
+    // gone from under the open sheet with the session it belonged to (#671):
+    // the route takes the sheet down, and until it does there is nothing to
+    // draw
+    final active = workouts.activeWorkout;
+    if (active == null) return const SizedBox.shrink();
     // a program's session (#349): its plan under each exercise, and a lighter
     // cycle said once at the top; a coach's program runs under Your coach
     // alone (#593)
@@ -1295,13 +1304,11 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                                             // paused (#134): the way back sits beside the
                                             // stopped clock, where the eye goes to check it
                                             if (workouts.isPaused)
-                                              Tooltip(
-                                                message: l.resumePausedWorkout,
-                                                child: PrimaryButton.shrunk(
-                                                  key: WorkoutDetailKeys.resume,
-                                                  onPressed: workouts.resume,
-                                                  child: const Icon(Icons.play_arrow_rounded),
-                                                ),
+                                              PrimaryButton.shrunk(
+                                                key: WorkoutDetailKeys.resume,
+                                                tooltip: l.resumePausedWorkout,
+                                                onPressed: workouts.resume,
+                                                child: const Icon(Icons.play_arrow_rounded),
                                               ),
                                             WorkoutTimer(
                                               key: WorkoutDetailKeys.timer,

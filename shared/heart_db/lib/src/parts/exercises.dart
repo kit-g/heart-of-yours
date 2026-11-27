@@ -351,6 +351,15 @@ mixin _Exercises on _LocalDatabase
     return _db.rawQuery(sql.getPreviousExercises, [userId]).then(_previousByExercise);
   }
 
+  /// How many finished workouts each exercise was done in, working sets only;
+  /// an exercise never done is absent.
+  Future<Map<ExerciseId, int>> getSessionCounts(String userId) async {
+    final rows = await _db.rawQuery(_counted(sql.sessionsPerExercise), [userId]);
+    return {
+      for (final row in rows) row['exercise_id'] as String: row['sessions'] as int,
+    };
+  }
+
   /// [getPreviousSets] as of [before]: each exercise's last finished session
   /// that started earlier — "last time" from a past workout's point of view.
   Future<Map<ExerciseId, List<Map<String, dynamic>>>> getPreviousSetsBefore(String userId, DateTime before) {

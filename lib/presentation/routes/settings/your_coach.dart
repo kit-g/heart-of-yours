@@ -41,13 +41,9 @@ class _CoachCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    // their name as their profile says it now (heart-api#409), else as their
-    // invitation showed it on this device
-    final name = switch ((coach.name?.trim(), coach.connectionId)) {
-      (final String name, _) when name.isNotEmpty => name,
-      (_, final String id) => Preferences.watch(context).coachName(id),
-      _ => null,
-    };
+    // a name an invitation showed is kept there
+    Preferences.watch(context);
+    final name = coachName(context, coach);
     final paused = coach.status == .paused;
     final shares = {
       for (final share in coach.shares)
@@ -74,7 +70,7 @@ class _CoachCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: .stretch,
         children: [
-          Text(name ?? l.yourCoach, style: textTheme.titleMedium),
+          Text(name, style: textTheme.titleMedium),
           if (paused)
             Text(l.yourCoachPaused, style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
           share(.history, l.invitationShareHistory),
@@ -84,19 +80,20 @@ class _CoachCard extends StatelessWidget {
           if ((coach.connectionId, Preferences.watch(context).isOn(.yourCoach)) case (final String id, true))
             Align(
               alignment: .centerLeft,
-              child: TextButton.icon(
+              child: QuietButton(
+                plain: true,
                 key: AppKeys.yourCoachMessage(id),
-                style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
                 onPressed: () => HeartRouter.of(context).openThread(id),
-                icon: const Icon(Icons.forum_outlined),
-                label: Text(l.messagesWith(name ?? l.yourCoach)),
+                icon: Icons.forum_outlined,
+                child: Text(l.messagesWith(name)),
               ),
             ),
           Align(
             alignment: .centerLeft,
-            child: TextButton(
-              style: TextButton.styleFrom(minimumSize: const Size(64, 48), foregroundColor: colorScheme.error),
-              onPressed: () => _leave(context, name ?? l.yourCoach),
+            child: QuietButton(
+              plain: true,
+              danger: true,
+              onPressed: () => _leave(context, name),
               child: Text(l.yourCoachLeave),
             ),
           ),
@@ -113,14 +110,13 @@ class _CoachCard extends StatelessWidget {
       title: Text(l.yourCoachLeaveTitle(name)),
       content: Text(l.yourCoachLeaveBody),
       actions: [
-        TextButton(
-          style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+        QuietButton(
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
           child: Text(l.cancel),
         ),
-        TextButton(
+        QuietButton(
+          danger: true,
           key: AppKeys.yourCoachLeaveConfirm,
-          style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
           child: Text(l.yourCoachLeave),
         ),
@@ -169,9 +165,8 @@ class _BlockedState extends State<_Blocked> {
               contentPadding: .zero,
               leading: Avatar(remote: person.avatar, radius: 16),
               title: Text(person.name ?? ''),
-              trailing: TextButton(
+              trailing: QuietButton(
                 key: AppKeys.yourCoachUnblock(person.id),
-                style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
                 onPressed: () => _try(context, () => Coaching.of(context).lift(person)),
                 child: Text(l.yourCoachUnblock),
               ),

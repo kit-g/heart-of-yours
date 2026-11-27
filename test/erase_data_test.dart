@@ -32,7 +32,7 @@ void main() {
 
   Future<void> pumpToSettings(WidgetTester tester, {required MockFirebaseAuth firebase}) async {
     // the default 800x600 surface overflows LogoStripe under the test
-    // environment's fallback font (see a11y_test.dart); a phone-plausible
+    // environment's fallback font (see a11y.dart); a phone-plausible
     // window sidesteps that without touching production layout
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;

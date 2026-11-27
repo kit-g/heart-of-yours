@@ -274,3 +274,42 @@ String recordKindName(L l, RecordKind kind) {
     .bestPace => l.bestPace,
   };
 }
+
+/// A set's numbers as the app writes them elsewhere: "60 kg x 5", a weight
+/// alone, reps alone, or a distance and a time.
+String setInWords(L l, RecordFormats formats, PlannedNumbers numbers) {
+  final weight = switch (numbers.weight) {
+    final num weight when weight > 0 => formats.weight(weight),
+    _ => null,
+  };
+  final reps = switch (numbers.reps) {
+    final num reps when reps > 0 => reps.toInt(),
+    _ => null,
+  };
+  final distance = switch (numbers.distance) {
+    final num distance when distance > 0 => formats.distance(distance),
+    _ => null,
+  };
+  final duration = switch (numbers.duration) {
+    final num seconds when seconds > 0 => formats.time(seconds),
+    _ => null,
+  };
+  return switch ((weight, reps, distance, duration)) {
+    (final String weight, final int reps, _, _) => l.weightedSetRepresentation(weight, reps),
+    (final String weight, null, _, _) => weight,
+    (null, final int reps, _, _) => '× $reps',
+    (null, null, final String distance, final String duration) => '$distance · $duration',
+    (null, null, final String distance, null) => distance,
+    (null, null, null, final String duration) => duration,
+    _ => '—',
+  };
+}
+
+/// What a workout is called where it's named in a list or a title: its own
+/// name, else that it has none.
+String workoutTitle(L l, Workout workout) {
+  return switch (workout.name?.trim()) {
+    final String name when name.isNotEmpty => name,
+    _ => l.coachingReviewUntitled,
+  };
+}

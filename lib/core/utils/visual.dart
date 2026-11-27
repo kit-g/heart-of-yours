@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
@@ -183,38 +184,6 @@ Future<T?> showBrandedDialog<T>(
   );
 }
 
-/// Asks before something that can't be undone: [cancel] and [confirm], the
-/// latter in the error colour under [key]. Answers whether it was confirmed.
-Future<bool> confirmDestructive(
-  BuildContext context, {
-  required String title,
-  required String body,
-  required String confirm,
-  required String cancel,
-  required Key key,
-}) async {
-  final colorScheme = Theme.of(context).colorScheme;
-  final sure = await showBrandedDialog<bool>(
-    context,
-    title: Text(title),
-    content: Text(body),
-    actions: [
-      TextButton(
-        style: TextButton.styleFrom(minimumSize: const .new(64, 48)),
-        onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
-        child: Text(cancel),
-      ),
-      TextButton(
-        key: key,
-        style: TextButton.styleFrom(minimumSize: const .new(64, 48), foregroundColor: colorScheme.error),
-        onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
-        child: Text(confirm),
-      ),
-    ],
-  );
-  return sure ?? false;
-}
-
 class BottomMenuAction {
   final String title;
   final Widget? icon;
@@ -306,6 +275,14 @@ extension SectionHeaderStyle on ThemeData {
 }
 
 /// Where a menu opens under whatever [context] belongs to, as wide as it.
+/// Where a menu opens at a point, as a long press's: [at] in global terms,
+/// against the overlay the menu is laid out in.
+RelativeRect menuAt(BuildContext context, Offset at) {
+  final overlay = Overlay.of(context).context.findRenderObject();
+  if (overlay is! RenderBox) return RelativeRect.fill;
+  return RelativeRect.fromRect(at & const Size(1, 1), Offset.zero & overlay.size);
+}
+
 /// Measured against the navigator's overlay, as [menuUnderValue] is.
 RelativeRect menuUnder(BuildContext context) {
   final box = context.findRenderObject();
@@ -314,6 +291,23 @@ RelativeRect menuUnder(BuildContext context) {
   final rect = box.localToGlobal(Offset.zero, ancestor: overlay) & box.size;
   return RelativeRect.fromRect(rect.bottomLeft & Size(rect.width, 0), Offset.zero & overlay.size);
 }
+
+/// Pops [route] while it is the one on top of its navigator, and only then;
+/// says whether it did. Closed meanwhile by the person, or covered by
+/// something they opened since, popping would close whatever is there
+/// instead; and the first route has nothing under it to show, so it is
+/// never popped (a caller with somewhere else to go goes there).
+bool popIfCurrent<T>(Route<T>? route, [T? result]) {
+  final navigator = route?.navigator;
+  if (route == null || navigator == null || !route.isCurrent || !navigator.canPop()) return false;
+  navigator.pop(result);
+  return true;
+}
+
+/// Where an anchored menu hangs, and how wide it is: the two go to
+/// [showMenu] together, as `position` and `constraints`, since a position
+/// worked out for one width puts a menu of another somewhere else.
+typedef MenuPlacement = ({RelativeRect position, BoxConstraints constraints});
 
 /// Where a menu opens off a trailing value: under it, its right edge on the
 /// value's. `Position.position()` hangs a menu off a widget's *left* edge,
@@ -324,23 +318,37 @@ RelativeRect menuUnder(BuildContext context) {
 /// the menu out in that overlay, and inside the two-pane shell the overlay
 /// starts after the rail, so a window offset lands the menu a rail's width to
 /// the right of the value.
-RelativeRect menuUnderValue(BuildContext context, GlobalKey key, {required double width}) {
+MenuPlacement menuUnderValue(BuildContext context, GlobalKey key, {required double width}) {
   return switch (key.currentContext) {
     BuildContext value => menuEndingUnder(value, width: width),
-    null => RelativeRect.fill,
+    null => (position: RelativeRect.fill, constraints: .tightFor(width: width)),
   };
 }
 
-/// [menuUnderValue] for the widget [context] belongs to: a menu [width] wide
-/// under it, its right edge on the widget's — for a trailing button that has
-/// its own context to hand and no key.
-RelativeRect menuEndingUnder(BuildContext context, {required double width}) {
+/// [menuUnderValue] for the widget [context] belongs to: a menu under it, its
+/// right edge on the widget's — for a trailing button that has its own
+/// context to hand and no key.
+///
+/// [width] wide where there is room for it, and otherwise as wide as the room
+/// left of the widget: from the overlay's start, short of the popup's own 8pt
+/// margin and the safe area it keeps clear of. Any wider, the popup could not
+/// end under the widget and would start at the margin and run right past it
+/// — at the 600pt breakpoint, out of the master pane and over the detail.
+MenuPlacement menuEndingUnder(BuildContext context, {required double width}) {
   final box = context.findRenderObject();
-  final overlay = Navigator.of(context).overlay?.context.findRenderObject();
-  if (box is! RenderBox || overlay is! RenderBox) return RelativeRect.fill;
-  final Offset(:dx, :dy) = box.localToGlobal(Offset.zero, ancestor: overlay);
+  final overlay = Navigator.of(context).overlay?.context;
+  final overlayBox = overlay?.findRenderObject();
+  if (box is! RenderBox || overlay == null || overlayBox is! RenderBox) {
+    return (position: RelativeRect.fill, constraints: .tightFor(width: width));
+  }
+  final Offset(:dx, :dy) = box.localToGlobal(Offset.zero, ancestor: overlayBox);
   final Size(width: w, height: h) = box.size;
-  return RelativeRect.fromLTRB(dx + w - width, dy + h, overlay.size.width - (dx + w), dy + h);
+  final inset = MediaQuery.maybePaddingOf(overlay)?.left ?? 0;
+  final fitted = math.max(0.0, math.min(width, dx + w - 8 - inset));
+  return (
+    position: RelativeRect.fromLTRB(dx + w - fitted, dy + h, overlayBox.size.width - (dx + w), dy + h),
+    constraints: .tightFor(width: fitted),
+  );
 }
 
 /// Where a menu opens over [box]: its rect in the navigator's overlay, which
@@ -374,4 +382,25 @@ bool lessMotion(BuildContext context) {
 /// layout that has to know its extent before it lays the text out.
 double lineExtent(TextStyle? style, TextScaler scaler) {
   return scaler.scale(style?.fontSize ?? 14) * (style?.height ?? 1.4);
+}
+
+/// How wide [text] lays out on one line where [context] is, as a `Text`
+/// there draws it: the ambient style merged with [style], bold when the
+/// platform asks for bold text, at [textScaler] (the reader's by default).
+/// Measuring at the plain weight undercounts: bold digits run 5–8% wider in
+/// some presets' faces.
+double lineWidth(BuildContext context, String text, {TextStyle? style, TextScaler? textScaler}) {
+  final bold = MediaQuery.boldTextOf(context);
+  final painter = TextPainter(
+    text: TextSpan(
+      text: text,
+      style: DefaultTextStyle.of(context).style.merge(style).merge(bold ? const TextStyle(fontWeight: .bold) : null),
+    ),
+    textDirection: Directionality.of(context),
+    textScaler: textScaler ?? MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
 }

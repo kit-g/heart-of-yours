@@ -4,7 +4,7 @@ part of 'coaching.dart';
 /// sessions, a save of the coach's that didn't land with both versions to
 /// pick from, and every change either of them made, each one that can be put
 /// back.
-class ClientProgramPage extends StatefulWidget {
+class ClientProgramPage extends StatelessWidget {
   final String connectionId;
   final String programId;
 
@@ -14,10 +14,39 @@ class ClientProgramPage extends StatefulWidget {
   const new({super.key, required this.connectionId, required this.programId, required this.onEditSession});
 
   @override
-  State<ClientProgramPage> createState() => _ClientProgramPageState();
+  Widget build(BuildContext context) {
+    final view = ClientPrograms.watch(context).view(programId);
+    return Scaffold(
+      appBar: AppBar(title: Text(view?.program.name ?? '')),
+      body: Align(
+        alignment: .topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: readableWidth),
+          child: _ClientProgramBody(
+            connectionId: connectionId,
+            programId: programId,
+            onEditSession: onEditSession,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _ClientProgramPageState extends State<ClientProgramPage> {
+/// A client's copy of a program, read on opening: a page's body on a phone,
+/// a tab beside the client on a tablet (#693).
+class _ClientProgramBody extends StatefulWidget {
+  final String connectionId;
+  final String programId;
+  final void Function({required bool isNew}) onEditSession;
+
+  const new({super.key, required this.connectionId, required this.programId, required this.onEditSession});
+
+  @override
+  State<_ClientProgramBody> createState() => _ClientProgramBodyState();
+}
+
+class _ClientProgramBodyState extends State<_ClientProgramBody> {
   @override
   void initState() {
     super.initState();
@@ -28,9 +57,29 @@ class _ClientProgramPageState extends State<ClientProgramPage> {
     if (!mounted) return;
     final roster = Roster.of(context);
     final programs = ClientPrograms.of(context);
+    final preferences = Preferences.of(context);
     if (roster.client(widget.connectionId) == null) await roster.load();
     if (roster.client(widget.connectionId) case final ClientSummary client) {
       await programs.open(client.studentId, widget.programId);
+      if (programs.status(widget.programId) != .loaded) return;
+      // the coach has seen what the client changed in it (#745): by the
+      // server's clock as well as this device's, which may run behind it
+      final newest = programs.changes(widget.programId).firstOrNull?.at;
+      final now = DateTime.now();
+      await preferences.setProgramSeen(widget.programId, switch (newest) {
+        final DateTime newest when newest.isAfter(now) => newest,
+        _ => now,
+      });
+      // and their row's changed program, which a look at them leaves when it
+      // couldn't say which copy changed, is seen here
+      if (roster.client(widget.connectionId) case final ClientSummary client
+          when client.reasons.contains(ClientReason.changed.name)) {
+        try {
+          await roster.markReviewed(client);
+        } catch (error, stacktrace) {
+          reportToSentry(error, stacktrace: stacktrace);
+        }
+      }
     }
   }
 
@@ -40,27 +89,18 @@ class _ClientProgramPageState extends State<ClientProgramPage> {
     final programs = ClientPrograms.watch(context);
     final client = Roster.watch(context).client(widget.connectionId);
     final view = programs.view(widget.programId);
-    return Scaffold(
-      appBar: AppBar(title: Text(view?.program.name ?? '')),
-      body: Align(
-        alignment: .topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: readableWidth),
-          child: switch ((programs.status(widget.programId), view, client)) {
-            (_, final CoachProgramView view, final ClientSummary client) => RefreshIndicator.adaptive(
-              onRefresh: _load,
-              child: _CopyView(view: view, client: client, onEditSession: widget.onEditSession),
-            ),
-            (.failed, _, _) => _Empty(
-              icon: Icons.cloud_off_rounded,
-              title: l.coachingCopyFailed,
-              action: OutlinedButton(onPressed: _load, child: Text(l.retry)),
-            ),
-            _ => const Center(child: CircularProgressIndicator.adaptive()),
-          },
-        ),
+    return switch ((programs.status(widget.programId), view, client)) {
+      (_, final CoachProgramView view, final ClientSummary client) => RefreshIndicator.adaptive(
+        onRefresh: _load,
+        child: _CopyView(view: view, client: client, onEditSession: widget.onEditSession),
       ),
-    );
+      (.failed, _, _) => _Empty(
+        icon: Icons.cloud_off_rounded,
+        title: l.coachingCopyFailed,
+        action: OutlinedButton(onPressed: _load, child: Text(l.retry)),
+      ),
+      _ => const Center(child: CircularProgressIndicator.adaptive()),
+    };
   }
 }
 
@@ -110,7 +150,7 @@ class _CopyView extends StatelessWidget {
         if (programs.conflict(program.id!) case final ProgramConflict conflict)
           ProgramConflictCard(
             conflict: conflict,
-            name: _clientName(l, client),
+            name: clientName(l, client),
             onKeepTheirs: () => programs.dropMine(conflict.programId),
             onKeepMine: () => programs.keepMine(client.studentId, conflict.programId),
           ),
@@ -150,10 +190,7 @@ class _CopyView extends StatelessWidget {
             title: Text(l.programAddSession, style: TextStyle(color: colorScheme.primary)),
             onTap: () => edit(null),
           ),
-        Padding(
-          padding: const .fromLTRB(16, 24, 16, 4),
-          child: Text(l.coachingCopyHistory, style: textTheme.titleMedium),
-        ),
+        _Heading(l.coachingCopyHistory),
         if (changes.isEmpty)
           Padding(
             padding: const .symmetric(horizontal: 16),
@@ -204,7 +241,7 @@ class _ChangeTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final who = switch (change.actorId) {
-      final String id when id == client.studentId => _clientName(l, client),
+      final String id when id == client.studentId => clientName(l, client),
       _ => l.coachingCopyYou,
     };
     final what = describeProgramChange(l, change, who: who);
@@ -214,14 +251,15 @@ class _ChangeTile extends StatelessWidget {
       title: Text(what),
       subtitle: Text([when, if (change.stale) l.coachingCopyOldApp].join(' · ')),
       trailing: switch (mayPutBack) {
-        true => TextButton(
+        true => QuietButton(
           key: AppKeys.coachingCopyPutBack(change.id),
-          // the theme's compact text button is under the tap-target minimum
-          style: TextButton.styleFrom(minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension)),
           onPressed: () async {
             final messenger = ScaffoldMessenger.of(context);
+            final programs = ClientPrograms.of(context);
+            // it changes what the client trains, so it says so first (#686)
+            if (!await _confirmPutBack(context, what: what, name: clientName(l, client))) return;
             try {
-              await ClientPrograms.of(context).revert(client.studentId, change.programId, change);
+              await programs.revert(client.studentId, change.programId, change);
             } catch (error, stacktrace) {
               reportToSentry(error, stacktrace: stacktrace);
               messenger.snack(l.coachingCopyPutBackFailed);
@@ -233,4 +271,34 @@ class _ChangeTile extends StatelessWidget {
       },
     );
   }
+}
+
+/// Whether the coach means to undo [what] in [name]'s program: asked first,
+/// since it changes what the client trains (#686).
+Future<bool> _confirmPutBack(BuildContext context, {required String what, required String name}) async {
+  final l = L.of(context);
+  final ThemeData(:colorScheme) = Theme.of(context);
+  final picked = await showBrandedDialog<bool>(
+    context,
+    title: Text(l.coachingCopyPutBackTitle, textAlign: .center),
+    content: Text(l.coachingCopyPutBackBody(what, name), textAlign: .center),
+    actions: [
+      Column(
+        spacing: 8,
+        children: [
+          PrimaryButton.wide(
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
+            child: Center(child: Text(l.cancel)),
+          ),
+          PrimaryButton.wide(
+            key: AppKeys.coachingCopyPutBackConfirm,
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
+            child: Center(child: Text(l.coachingCopyPutBack)),
+          ),
+        ],
+      ),
+    ],
+  );
+  return picked ?? false;
 }
