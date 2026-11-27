@@ -18,6 +18,10 @@ struct OngoingWorkoutBundle: WidgetBundle {
         if #available(iOS 17, *) {
             GoalsWidget()
         }
+        // "Not today" as a control (#445)
+        if #available(iOS 18, *) {
+            NotTodayControl()
+        }
     }
 }
 
