@@ -166,7 +166,7 @@ Future<void> _onExerciseMenu(
   if (!button.mounted) return;
   switch (picked) {
     case .edit:
-      showNewExerciseDialog(button, editable: exercise);
+      unawaited(showEditExerciseDialog(button, exercise));
     case .moveHistory:
       if (onHistoryMoved case final onMoved?) _onMoveHistory(button, exercise, onMoved: onMoved);
     case .archive:

@@ -381,6 +381,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "editOwnExercise": "Edit exercise",
+  "@editOwnExercise": {
+    "description": "Header of the exercise dialog when it edits one of the user's own exercises (#616)",
+    "type": "text",
+    "placeholders": {}
+  },
   "exerciseOptions": "Exercise options",
   "@exerciseOptions": {
     "description": "Button tooltip",

@@ -8,6 +8,7 @@ import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoActionSheet;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:heart/core/utils/templates.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
@@ -48,6 +49,20 @@ void main() {
           providers: [
             ChangeNotifierProvider<Exercises>.value(value: state.exercises),
             ChangeNotifierProvider<Workouts>.value(value: state.workouts),
+            // Edit has whoever holds a copy of the exercise read it again (#616)
+            ChangeNotifierProvider<Templates>(
+              create: (_) {
+                final (db, api) = (MockLocalDatabase(), MockApi());
+                return Templates(
+                  service: db,
+                  remoteService: api,
+                  configService: MockCdn(),
+                  folderService: LocalTemplateFolders(db),
+                  remoteFolderService: api,
+                  filingService: RemoteTemplateFiling(api),
+                );
+              },
+            ),
             ChangeNotifierProvider<Preferences>.value(value: state.preferences),
             ChangeNotifierProvider<Charts>.value(value: state.charts),
             ChangeNotifierProvider<Goals>.value(value: state.goals),

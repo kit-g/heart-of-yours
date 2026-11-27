@@ -1823,3 +1823,4 @@ coachingClientSince,"What a coach sees for a client with no name at all, so two 
 coachingClientRename,Button and dialog title on the coach's page for a client: give them a name of the coach's own (#753),Rename,Rename,Переименовать,Cambiar nombre,Renommer
 coachingClientNameHint,Hint in the field where a coach names a client (#753),Name,Name,Имя,Nombre,Nom
 coachingClientNameOnlyYou,Under the field where a coach names a client: the client never sees it (#753),Only you see this name.,Only you see this name.,Это имя видите только вы.,Solo tú ves este nombre.,Vous seul voyez ce nom.
+editOwnExercise,Header of the exercise dialog when it edits one of the user's own exercises (#616),Edit exercise,Edit exercise,Изменить упражнение,Editar ejercicio,Modifier l'exercice

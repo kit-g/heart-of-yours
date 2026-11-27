@@ -176,7 +176,11 @@ void main() {
       'own': 1,
     });
 
-    Future<BuildContext> pumpToEdit(WidgetTester tester, Exercise editable) async {
+    Future<BuildContext> pumpToEdit(
+      WidgetTester tester,
+      Exercise editable, {
+      Future<Exercise?> Function(BuildContext, Exercise)? through,
+    }) async {
       await harness.pumpHeartApp(
         tester,
         db: db,
@@ -188,7 +192,10 @@ void main() {
       await tester.pumpTimes();
       // below the app's localizations and navigator, as a page's would be
       final context = tester.element(find.byType(Scaffold).first);
-      unawaited(showNewExerciseDialog(context, editable: editable));
+      unawaited(switch (through) {
+        final open? => open(context, editable),
+        null => showNewExerciseDialog(context, editable: editable),
+      });
       await tester.pumpTimes();
       return context;
     }
@@ -198,6 +205,8 @@ void main() {
     testWidgets('offers the name prefilled, and a new one saves under the same id', (tester) async {
       final context = await pumpToEdit(tester, own);
 
+      expect(find.text('Edit exercise'), findsOneWidget);
+      expect(find.text('Create new exercise'), findsNothing);
       expect(tester.widget<TextField>(nameField()).controller?.text, 'Landmine Press');
       expect((save(tester) as PrimaryButton).onPressed, isNull, reason: 'nothing changed yet');
 
@@ -209,7 +218,7 @@ void main() {
       await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
       await tester.pumpTimes();
 
-      expect(find.text('Create new exercise'), findsNothing);
+      expect(find.text('Edit exercise'), findsNothing);
       final renamed = Exercises.of(context).lookup(own.id);
       expect(renamed?.name, 'Landmine Press, half-kneeling');
       expect(renamed?.isMine, isTrue);
@@ -260,13 +269,61 @@ void main() {
       await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
       await tester.pumpTimes();
 
-      expect(find.text('Create new exercise'), findsOneWidget);
+      expect(find.text('Edit exercise'), findsOneWidget);
       expect(find.text('You already have an exercise with this name'), findsOneWidget);
       verify(api.renameExercise(any)).called(1);
       verifyNever(api.editExercise(any));
 
       await tester.enterTextAndWait(nameField(), 'Taken Elsewhere 2');
       expect(find.text('You already have an exercise with this name'), findsNothing);
+    });
+
+    testWidgets('with the server out of reach the rename still saves, marked to send later', (tester) async {
+      await harness.pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: MockFirebaseAuth(
+          mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+          signedIn: true,
+        ),
+        settle: false,
+      );
+      await tester.pumpTimes();
+      when(api.renameExercise(any)).thenThrow(Exception('Connection failed'));
+      final context = tester.element(find.byType(Scaffold).first);
+      unawaited(showNewExerciseDialog(context, editable: own));
+      await tester.pumpTimes();
+
+      await tester.enterTextAndWait(nameField(), 'Half-kneeling Press');
+      await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
+      await tester.pumpTimes();
+
+      expect(find.text('Edit exercise'), findsNothing);
+      expect(Exercises.of(context).lookup(own.id)?.name, 'Half-kneeling Press');
+      verify(db.setExerciseEditUnsent(own.id, 'u1', unsent: true, renamed: true)).called(1);
+    });
+
+    testWidgets('a rename has the templates and the workouts holding the exercise read again', (tester) async {
+      final context = await pumpToEdit(tester, own, through: showEditExerciseDialog);
+      Finder field() => find.byKey(AppKeys.newExerciseInstructions);
+      clearInteractions(db);
+
+      // nothing a template or a workout shows of it
+      await tester.ensureVisible(field());
+      await tester.enterTextAndWait(field(), 'Knee on a pad.');
+      await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
+      await tester.pumpTimes();
+      verifyNever(db.getTemplates(any));
+
+      unawaited(showEditExerciseDialog(context, own));
+      await tester.pumpTimes();
+      await tester.enterTextAndWait(nameField(), 'Half-kneeling Press');
+      await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
+      await tester.pumpTimes();
+
+      verify(db.getTemplates(any)).called(1);
     });
 
     testWidgets('instructions alone are an edit, saved trimmed, and cleared to none (#621)', (tester) async {
