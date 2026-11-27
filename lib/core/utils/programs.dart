@@ -55,6 +55,14 @@ class LocalPrograms implements LocalProgramService {
   }
 
   @override
+  Future<String?> getProgramHistoryCursor(String userId) => _db.getProgramHistoryCursor(userId);
+
+  @override
+  Future<void> storeProgramHistoryCursor(String userId, String? cursor) {
+    return _db.storeProgramHistoryCursor(userId, cursor);
+  }
+
+  @override
   Future<void> storeProgramBases(String programId, Iterable<ProgramBase> bases) {
     return _db.storeProgramBases(programId, bases);
   }
@@ -132,6 +140,9 @@ class RemotePrograms implements RemoteProgramService {
   Future<void> deleteProgram(String programId, {required bool keepTemplates}) {
     return _api.deleteProgram(programId, keepTemplates: keepTemplates);
   }
+
+  @override
+  Future<ProgramHistoryChanges> getProgramHistory({String? since}) => _api.getProgramHistory(since: since);
 
   @override
   Future<List<ProgramAction>> getProgramActions(String programId) => _api.getProgramActions(programId);
