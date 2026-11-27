@@ -1124,6 +1124,234 @@ void main() {
     });
   });
 
+  group('an edit with the server out of reach (#616)', () {
+    late _Renames renames;
+    late _Unsent unsent;
+    final own = Exercise.fromJson({
+      'id': 'own-1',
+      'name': 'Landmine Press',
+      'category': 'Barbell',
+      'target': 'Shoulders',
+      'own': 1,
+    });
+    final offline = Exception('Connection failed');
+
+    setUp(() async {
+      renames = _Renames();
+      unsent = _Unsent();
+      sut = Exercises(
+        remoteService: remote,
+        remote: access,
+        service: local,
+        libraryService: library,
+        catalogService: catalog,
+        preferenceService: preferences,
+        renameService: renames,
+        unsentService: unsent,
+      )..userId = 'u1';
+      when(remote.editExercise(any)).thenAnswer((i) async => i.positionalArguments.first as Exercise);
+      when(remote.getOwnExercises()).thenAnswer((_) async => [own]);
+      await sut.makeExercise(own);
+      sut.isInitialized = true;
+      clearInteractions(remote);
+      clearInteractions(local);
+    });
+
+    tearDown(() => access.account = true);
+
+    test('a rename sticks, is marked, and reaches the server on the next sync', () async {
+      renames.failure = offline;
+      await sut.editExercise(own.renamed('Half-kneeling Press'));
+
+      expect(sut.lookup(own.id)?.name, 'Half-kneeling Press');
+      expect(unsent.marked['u1'], {own.id: UnsentExerciseEdit.renamed});
+      expect(sut.hasUnsentEdits, isTrue);
+
+      // still out of reach: the device's copy stands, and nothing is reported
+      await sut.sendUnsentEdits();
+      expect(sut.lookup(own.id)?.name, 'Half-kneeling Press');
+      expect(unsent.marked['u1'], {own.id: UnsentExerciseEdit.renamed});
+
+      renames.failure = null;
+      await sut.sendUnsentEdits();
+
+      expect(renames.sent.single.name, 'Half-kneeling Press');
+      expect(sut.lookup(own.id)?.name, 'Half-kneeling Press');
+      expect(unsent.marked['u1'], isEmpty);
+      expect(sut.hasUnsentEdits, isFalse);
+      final stored = verify(local.storeExercises(captureAny, userId: 'u1')).captured.last as Iterable<Exercise>;
+      expect(stored.single.name, 'Half-kneeling Press');
+    });
+
+    test('a relaunch reads the mark, and the sync sends the edit before it takes the list', () async {
+      renames.failure = offline;
+      await sut.editExercise(own.renamed('Half-kneeling Press'));
+      renames.failure = null;
+
+      final relaunched = Exercises(
+        remoteService: remote,
+        remote: access,
+        service: local,
+        libraryService: library,
+        catalogService: catalog,
+        preferenceService: preferences,
+        renameService: renames,
+        unsentService: unsent,
+      )..userId = 'u1';
+      when(local.getExercises(userId: 'u1')).thenAnswer(
+        (_) async => (null, [own.renamed('Half-kneeling Press')]),
+      );
+      when(local.getExerciseUnits('u1')).thenAnswer((_) async => {});
+      await relaunched.init();
+
+      expect(renames.sent.single.name, 'Half-kneeling Press');
+      expect(relaunched.lookup(own.id)?.name, 'Half-kneeling Press');
+      expect(unsent.marked['u1'], isEmpty);
+    });
+
+    test('a refusal is thrown, and nothing changes', () async {
+      renames.failure = const _NameTaken();
+
+      await expectLater(sut.editExercise(own.renamed('Sled Push')), throwsA(isA<_NameTaken>()));
+
+      expect(sut.lookup(own.id)?.name, 'Landmine Press');
+      expect(unsent.marked['u1'] ?? const {}, isEmpty);
+    });
+
+    test('a rename refused later costs the name only: the rest of the edit goes up', () async {
+      renames.failure = offline;
+      await sut.editExercise(own.renamed('Sled Push').copyWith(target: .chest));
+      renames.failure = const _NameTaken();
+
+      final renamed = await sut.sendUnsentEdits();
+
+      expect(renamed, {own.id}, reason: 'the holders of a copy read it again');
+
+      final sent = verify(remote.editExercise(captureAny)).captured.single as Exercise;
+      expect(sent.name, 'Landmine Press');
+      expect(sent.target, Target.chest);
+      expect(sut.lookup(own.id)?.name, 'Landmine Press');
+      expect(sut.lookup(own.id)?.target, Target.chest);
+      expect(unsent.marked['u1'], isEmpty);
+    });
+
+    test('an edit that kept the name never undoes a rename made elsewhere', () async {
+      when(remote.editExercise(any)).thenThrow(offline);
+      await sut.editExercise(own.copyWith(target: .chest));
+      expect(unsent.marked['u1'], {own.id: UnsentExerciseEdit.named});
+      when(remote.editExercise(any)).thenAnswer((i) async => i.positionalArguments.first as Exercise);
+      when(remote.getOwnExercises()).thenAnswer((_) async => [own.renamed('Half-kneeling Press')]);
+      clearInteractions(remote);
+
+      final renamed = await sut.sendUnsentEdits();
+
+      expect(renames.sent, isEmpty);
+      final sent = verify(remote.editExercise(captureAny)).captured.single as Exercise;
+      expect(sent.target, Target.chest);
+      expect(sut.lookup(own.id)?.name, 'Half-kneeling Press');
+      expect(sut.lookup(own.id)?.target, Target.chest);
+      expect(renamed, {own.id});
+      expect(unsent.marked['u1'], isEmpty);
+    });
+
+    test('any other refusal of an unsent rename drops the edit for the server\'s copy, and is reported', () async {
+      final reported = <Object>[];
+      sut = Exercises(
+        onError: (error, {stacktrace}) => reported.add(error as Object),
+        remoteService: remote,
+        remote: access,
+        service: local,
+        libraryService: library,
+        catalogService: catalog,
+        preferenceService: preferences,
+        renameService: renames,
+        unsentService: unsent,
+      )..userId = 'u1';
+      await sut.makeExercise(own);
+      sut.isInitialized = true;
+      renames.failure = offline;
+      await sut.editExercise(own.renamed('Sled Push'));
+      renames.failure = const FormatException('unreadable');
+      clearInteractions(remote);
+
+      await sut.sendUnsentEdits();
+
+      verifyNever(remote.editExercise(any));
+      expect(reported.single, isFormatException);
+      expect(sut.lookup(own.id)?.name, 'Landmine Press');
+      expect(unsent.marked['u1'], isEmpty);
+    });
+
+    test('a mark on an exercise the account no longer lists is dropped', () async {
+      renames.failure = offline;
+      await sut.editExercise(own.renamed('Half-kneeling Press'));
+      when(remote.getOwnExercises()).thenAnswer((_) async => []);
+
+      await sut.sendUnsentEdits();
+
+      expect(unsent.marked['u1'], isEmpty);
+      expect(sut.hasUnsentEdits, isFalse);
+    });
+
+    test('an edit saved while the list is on its way is not undone by it', () async {
+      final other = Exercise.fromJson({
+        'id': 'own-2',
+        'name': 'Sled Push',
+        'category': 'Machine',
+        'target': 'Legs',
+        'own': 1,
+      });
+      await sut.makeExercise(other);
+      renames.failure = offline;
+      await sut.editExercise(own.renamed('Half-kneeling Press'));
+      renames.failure = null;
+      final list = Completer<Iterable<Exercise>>();
+      when(remote.getOwnExercises()).thenAnswer((_) => list.future);
+
+      final sending = sut.sendUnsentEdits();
+      await sut.editExercise(other.renamed('Prowler Push'));
+      list.complete([own, other]);
+      await sending;
+
+      expect(sut.lookup(other.id)?.name, 'Prowler Push');
+      expect(sut.lookup(own.id)?.name, 'Half-kneeling Press');
+    });
+
+    test('a unit the server lists is banked; the kept copy\'s old one is not', () async {
+      final imperial = Exercise.fromJson({...own.toMap(), 'unitSystem': 'imperial'});
+      renames.failure = offline;
+      await sut.editExercise(imperial.renamed('Half-kneeling Press'));
+      renames.failure = null;
+      clearInteractions(local);
+
+      await sut.sendUnsentEdits();
+
+      verifyNever(local.setExerciseUnit(exerciseName: own.id, userId: 'u1', unit: anyNamed('unit')));
+    });
+
+    test('archiving an unsent rename sends the name with it', () async {
+      renames.failure = offline;
+      await sut.editExercise(own.renamed('Half-kneeling Press'));
+      renames.failure = null;
+
+      await sut.archive(own);
+
+      expect(renames.sent.single.name, 'Half-kneeling Press');
+      expect(renames.sent.single.isArchived, isTrue);
+      expect(unsent.marked['u1'], isEmpty);
+    });
+
+    test('without an account the edit is the device\'s alone, and is not marked', () async {
+      access.account = false;
+
+      await sut.editExercise(own.renamed('Half-kneeling Press'));
+
+      expect(sut.lookup(own.id)?.name, 'Half-kneeling Press');
+      expect(renames.sent, isEmpty);
+      expect(unsent.marked['u1'] ?? const {}, isEmpty);
+    });
+  });
+
   group('showingMine', () {
     test('getter/setter works and notifies', () {
       final probe = ListenerProbe()..attach(sut);
@@ -1689,12 +1917,42 @@ class _MoveFake implements ExerciseMoveService {
   }
 }
 
+class _Unsent implements UnsentExerciseEditService {
+  final marked = <String, Map<String, UnsentExerciseEdit>>{};
+
+  @override
+  Future<Map<String, UnsentExerciseEdit>> read(String userId) async => {...?marked[userId]};
+
+  @override
+  Future<void> mark(String exerciseId, String userId, UnsentExerciseEdit? edit) async {
+    final held = marked.putIfAbsent(userId, () => {});
+    switch (edit) {
+      case final UnsentExerciseEdit edit:
+        held[exerciseId] = edit;
+      case null:
+        held.remove(exerciseId);
+    }
+  }
+}
+
+/// The app's name for the server's `409 name_taken`.
+class _NameTaken implements Exception {
+  const new();
+}
+
 class _Renames implements RemoteExerciseRenameService {
   final sent = <Exercise>[];
 
+  /// Thrown by the next rename, and every one after, until cleared.
+  Object? failure;
+
   @override
   Future<Exercise> renameExercise(Exercise exercise) async {
+    if (failure case final Object failure) throw failure;
     sent.add(exercise);
     return exercise;
   }
+
+  @override
+  bool isNameTaken(Object error) => error is _NameTaken;
 }

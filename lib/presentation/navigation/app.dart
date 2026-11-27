@@ -147,6 +147,7 @@ class HeartApp extends StatelessWidget {
               catalogService: LocalCatalog(db),
               preferenceService: RemoteExercisePreferences(api),
               renameService: RemoteExerciseRenames(api),
+              unsentService: UnsentExerciseEdits(db),
               noteService: ExerciseNotes(db, api),
               moveService: ExerciseMoves(db, api),
               remote: RemoteAccess.of(context),
@@ -164,7 +165,9 @@ class HeartApp extends StatelessWidget {
             // catalog instead, in the user's language (#612)
             api
               ..exerciseOnDevice = ((id) => switch (exercises.lookup(id)) {
-                final exercise? => (name: exercise.name, own: exercise.isMine),
+                // an own exercise's name is the server's to give, unless the
+                // device holds a rename the server has not had yet (#616)
+                final exercise? => (name: exercise.name, own: exercise.isMine && !exercises.isRenameUnsent(id)),
                 null => null,
               })
               // before the catalog is in, every exercise is a miss
@@ -765,6 +768,17 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
     final exercises = Exercises.of(context)..onLocaleChanged(languageTag());
     // and a library start-up went on without (#723)
     if (exercises.libraryUnavailable) exercises.retryLibrary();
+    // an own exercise edited with the server out of reach (#616), and
+    // whoever holds a copy of one that came back under another name
+    if (exercises.hasUnsentEdits) {
+      final (templates, workouts) = (Templates.of(context), Workouts.of(context));
+      exercises.sendUnsentEdits().then((renamed) {
+        if (renamed.isNotEmpty) templates.reread();
+        for (final id in renamed) {
+          workouts.reread(id, active: true);
+        }
+      });
+    }
   }
 
   /// Localized backend content (the exercise catalog) is served per request
