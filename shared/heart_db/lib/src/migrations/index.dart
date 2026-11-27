@@ -204,4 +204,10 @@ const _migrations = <int, List<String>>{
     addWorkoutLoggedBy,
     addWorkoutLoggedByName,
   ],
+  37: [
+    addTemplateUnsentBase,
+    addTemplateAssignedBy,
+    addTemplateSource,
+    addTemplateSyncEnabled,
+  ],
 };

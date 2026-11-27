@@ -81,6 +81,9 @@ extension on Map {
         return switch (key) {
           'exercises' when value is String => MapEntry(key, _orderedByStamp(jsonDecode(value))),
           'folder' when value is String => MapEntry(key, jsonDecode(value)),
+          // who assigned it, as the server said (#448)
+          'assignedBy' when value is String => MapEntry(key, jsonDecode(value)),
+          'syncEnabled' when value is int => MapEntry(key, value != 0),
           _ => MapEntry(key, value),
         };
       },

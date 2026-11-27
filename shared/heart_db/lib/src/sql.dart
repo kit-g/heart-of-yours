@@ -413,6 +413,9 @@ SELECT
     _templates.program_id AS programId,
     _templates.note,
     _templates.joined,
+    _templates.assigned_by AS assignedBy,
+    _templates.source_template_id AS sourceTemplateId,
+    _templates.sync_enabled AS syncEnabled,
     (
         SELECT json_group_array(
             json_object(

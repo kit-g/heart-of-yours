@@ -94,10 +94,59 @@ mixin _Templates on _LocalDatabase implements TemplateService {
     );
   }
 
+  /// Marks [templateId] as changed here and not yet on the server (#448),
+  /// keeping [base], the server's copy the change started from. A template
+  /// already marked keeps the base it has: the server never saw what came
+  /// between. The mark outlives every store of the row, until
+  /// [clearTemplateUnsent].
+  Future<void> markTemplateUnsent(String templateId, Template base) {
+    return _db.rawUpdate(
+      'UPDATE $_templates SET unsent_base = coalesce(unsent_base, ?) WHERE id = ?',
+      [jsonEncode(base.toMap()), templateId],
+    );
+  }
+
+  /// The templates of [userId] that owe the server a change, each with the
+  /// copy the change started from, or null where that copy cannot be read.
+  Future<Map<String, Template?>> getUnsentTemplates(String userId) async {
+    final rows = await _db.query(
+      _templates,
+      columns: ['id', 'unsent_base'],
+      where: 'user_id = ? AND unsent_base IS NOT NULL',
+      whereArgs: [userId],
+    );
+    Template? read(Object? json) {
+      try {
+        return Template.fromJson(jsonDecode(json as String) as Map);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    return {for (final row in rows) row['id'] as String: read(row['unsent_base'])};
+  }
+
+  /// The change reached the server, or was let go.
+  Future<void> clearTemplateUnsent(String templateId) {
+    return _db.update(_templates, {'unsent_base': null}, where: 'id = ?', whereArgs: [templateId]);
+  }
+
   @override
   Future<void> storeTemplates(Iterable<Template> templates, {String? userId}) {
     return _db.transaction(
       (txn) async {
+        // The insert below replaces the row, and with it what the row owes
+        // the server (#448). Not every caller stores the server's copy (a
+        // program files its sessions through here), so the mark is carried
+        // over, and letting go of it is [clearTemplateUnsent]'s alone.
+        final owed = {
+          for (final row in await txn.query(
+            _templates,
+            columns: ['id', 'unsent_base'],
+            where: 'unsent_base IS NOT NULL',
+          ))
+            row['id']: row['unsent_base'],
+        };
         final batch = txn.batch();
 
         for (final template in templates) {
@@ -111,8 +160,25 @@ mixin _Templates on _LocalDatabase implements TemplateService {
               'program_id': template.programId,
               'note': template.note,
               'joined': template.joined?.toUtc().toIso8601String(),
+              // an assigned template stays one when read back (#448)
+              'assigned_by': switch (template.assignedBy) {
+                // by `Profile.fromJson`'s keys: its own `toMap` writes the name
+                // under one `fromJson` does not read
+                final Profile profile => jsonEncode({
+                  'id': profile.id,
+                  'username': profile.name,
+                  'avatar': profile.avatar,
+                }),
+                null => null,
+              },
+              'source_template_id': template.sourceTemplateId,
+              'sync_enabled': switch (template.syncEnabled) {
+                final bool enabled => enabled ? 1 : 0,
+                null => null,
+              },
               // exercises this build could not read (#277)
               'unread': _Workouts._encodeUnread(template.unread),
+              'unsent_base': owed[template.id],
             },
             conflictAlgorithm: .replace,
           );
