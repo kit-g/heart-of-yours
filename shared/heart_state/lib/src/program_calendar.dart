@@ -31,6 +31,41 @@ List<SessionAhead> plannedSessions(
   ];
 }
 
+/// The latest of [program]'s preferred days before [now]'s that went by with
+/// its session undone: no workout and no skip of the program's on that day or
+/// since (#445). The moment "Not today" would have had something to say.
+///
+/// Null for a program with no days, since nothing was ever due on one; for
+/// one paused, finished, archived or with nothing up next; for a day before
+/// the program existed, or before [resumedAt], when it was last brought back from
+/// a pause; and for a program with no [marks] at all. That last one is a
+/// program not begun, and also what a device that has not read its history
+/// yet looks like: neither is a session someone let go by. [marks] are when
+/// its workouts and skips were.
+DateTime? undoneDay(
+  Program program,
+  ProgramPosition position, {
+  required Iterable<DateTime> marks,
+  required DateTime now,
+  DateTime? resumedAt,
+}) {
+  if (!program.live || position.paused || position.finished || position.next == null) return null;
+  if (marks.isEmpty) return null;
+  final today = DateTime(now.year, now.month, now.day);
+  // a week holds every weekday once: the latest preferred day is in the last seven
+  final day = Iterable.generate(
+    7,
+    (back) => DateTime(today.year, today.month, today.day - back - 1),
+  ).where((day) => program.days.contains(day.weekday)).firstOrNull;
+  if (day == null) return null;
+  if (program.createdAt?.toLocal() case final DateTime created when day.isBefore(_dayOf(created))) return null;
+  if (resumedAt?.toLocal() case final DateTime resumed when day.isBefore(_dayOf(resumed))) return null;
+  final since = marks.any((at) => !_dayOf(at.toLocal()).isBefore(day));
+  return since ? null : day;
+}
+
+DateTime _dayOf(DateTime at) => DateTime(at.year, at.month, at.day);
+
 /// Every session still to come, with the week it falls in, up to the end of a
 /// program with a length.
 Iterable<(String, int)> _ahead(Program program, ProgramPosition position) sync* {
