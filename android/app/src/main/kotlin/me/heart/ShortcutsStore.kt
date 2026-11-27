@@ -20,6 +20,11 @@ object ShortcutsStore {
     const val USER_ID = "userId"
     /// Whether the feature is on, for the Start widget (#367): "true" or absent.
     const val ENABLED = "enabled"
+    /// "Not today" as it can be asked for from outside (#445): its words and
+    /// the day already set aside, or absent while it cannot be asked for.
+    const val NOT_TODAY = "notToday"
+    /// The moments "Not today" was asked for and Dart has not taken yet.
+    const val PENDING_SKIPS = "pendingSkips"
 
     fun prefs(context: Context): SharedPreferences = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
