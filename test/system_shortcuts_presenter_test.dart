@@ -10,6 +10,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'support/harness.dart' show RecordedAnalytics;
 
 /// The platform's layer, remembering every list it was told.
 class _Recorder implements SystemShortcuts {
@@ -51,6 +52,27 @@ class _Recorder implements SystemShortcuts {
   Future<void> setExercises(Iterable<ShortcutExercise> list) async {
     exercises.add(list.toList());
   }
+
+  final notToday = <ShortcutNotToday?>[];
+
+  /// What the native side holds for Dart to take; taking clears it.
+  final asked = <DateTime>[];
+  void Function()? listener;
+
+  @override
+  Future<void> setNotToday(ShortcutNotToday? value) async {
+    notToday.add(value);
+  }
+
+  @override
+  Future<List<DateTime>> takeSkips() async {
+    final taken = [...asked];
+    asked.clear();
+    return taken;
+  }
+
+  @override
+  set onSkips(void Function()? listener) => this.listener = listener;
 }
 
 void main() {
@@ -65,6 +87,9 @@ void main() {
   late MockApi api;
   late MockCdn cdn;
   late _Recorder recorder;
+  late Programs programs;
+  late MockLocalProgramService programService;
+  late RecordedAnalytics analytics;
 
   Template template({required String id, required String name, int order = 0}) {
     return Template.fromWorkout(id, Workout(name: name), order);
@@ -119,9 +144,19 @@ void main() {
       catalogService: MockLocalCatalogService(),
       preferenceService: MockRemoteExercisePreferenceService(),
     );
+    // nobody's programs until a test signs someone in: the mirror only, no server
+    programService = MockLocalProgramService();
+    programs = Programs(
+      service: programService,
+      remoteService: MockRemoteProgramService(),
+      templates: db,
+      remote: RemoteAccess(allowed: false),
+    );
+    analytics = RecordedAnalytics();
   });
 
   tearDown(() {
+    programs.dispose();
     templates.dispose();
     preferences.dispose();
     auth.dispose();
@@ -138,6 +173,8 @@ void main() {
           ChangeNotifierProvider<Timers>.value(value: timers),
           ChangeNotifierProvider<Auth>.value(value: auth),
           ChangeNotifierProvider<Exercises>.value(value: exercises),
+          ChangeNotifierProvider<Programs>.value(value: programs),
+          Provider<Analytics>.value(value: Analytics(service: analytics)),
         ],
         child: MaterialApp(
           localizationsDelegates: localizationsDelegates,
@@ -409,6 +446,142 @@ void main() {
       await tester.pump();
       expect(recorder.sessions.last, 'u1');
       expect(recorder.exercises.last, isNotEmpty);
+    });
+  });
+
+  group('Not today from outside the app (#445)', () {
+    const words = (label: 'Not today', done: 'Today is set aside', day: null);
+
+    /// Someone signed in, with the skips read: what makes it askable.
+    Future<void> signIn() async {
+      programs.userId = 'u1';
+      await programs.init();
+    }
+
+    String dayOf(DateTime at) {
+      String two(int value) => value.toString().padLeft(2, '0');
+      return '${at.year}-${two(at.month)}-${two(at.day)}';
+    }
+
+    testWidgets('off, nothing is published and nothing asked for is recorded', (tester) async {
+      await signIn();
+      recorder.asked.add(DateTime.timestamp());
+      await pump(tester);
+
+      expect(recorder.notToday, [null]);
+      verifyNever(programService.storeSkip(any, any));
+    });
+
+    testWidgets('on, with someone signed in: its words, and no day set aside', (tester) async {
+      preferences.setFeature(.notToday, on: true);
+      await pump(tester);
+      // nobody's skips are known yet
+      expect(recorder.notToday, [null]);
+
+      await signIn();
+      await tester.pump();
+
+      expect(recorder.notToday.last, words);
+    });
+
+    testWidgets('a workout running takes it away: the user is training', (tester) async {
+      preferences.setFeature(.notToday, on: true);
+      await signIn();
+      await pump(tester);
+      expect(recorder.notToday.last, words);
+
+      workouts.startWorkout(source: .blank, name: 'Session');
+      await tester.pump();
+
+      expect(recorder.notToday.last, isNull);
+    });
+
+    testWidgets('what was asked for before the launch is recorded once the skips are known', (tester) async {
+      preferences.setFeature(.notToday, on: true);
+      final at = DateTime.timestamp().subtract(const Duration(minutes: 5));
+      recorder.asked.add(at);
+      await pump(tester);
+      verifyNever(programService.storeSkip(any, any));
+
+      await signIn();
+      await tester.pump();
+      await tester.pump();
+
+      final skip = verify(programService.storeSkip(captureAny, 'u1')).captured.single as TrainingSkip;
+      expect((skip.at, skip.isDay), (at, true));
+      // …and the day it set aside is published back
+      expect(recorder.notToday.last, (label: 'Not today', done: 'Today is set aside', day: dayOf(at.toLocal())));
+      expect(analytics.of('day_skipped'), [
+        {'source': 'outside'},
+      ]);
+    });
+
+    testWidgets('told of one while running, it takes it at once; a second the same day is not a second skip', (
+      tester,
+    ) async {
+      preferences.setFeature(.notToday, on: true);
+      await signIn();
+      await pump(tester);
+
+      final now = DateTime.timestamp();
+      recorder.asked.add(now);
+      recorder.listener!();
+      await tester.pump();
+      await tester.pump();
+      verify(programService.storeSkip(any, 'u1')).called(1);
+
+      recorder.asked.add(now.add(const Duration(seconds: 30)));
+      recorder.listener!();
+      await tester.pump();
+      await tester.pump();
+      verifyNever(programService.storeSkip(any, 'u1'));
+      expect(recorder.asked, isEmpty);
+    });
+
+    testWidgets('coming back to the app takes what was asked for meanwhile', (tester) async {
+      preferences.setFeature(.notToday, on: true);
+      await signIn();
+      await pump(tester);
+
+      recorder.asked.add(DateTime.timestamp());
+      for (final AppLifecycleState state in [.inactive, .hidden, .paused, .hidden, .inactive, .resumed]) {
+        tester.binding.handleAppLifecycleStateChanged(state);
+      }
+      await tester.pump();
+      await tester.pump();
+
+      verify(programService.storeSkip(any, 'u1')).called(1);
+    });
+
+    testWidgets('what one session asked for is never recorded under the next', (tester) async {
+      preferences.setFeature(.notToday, on: true);
+      await signIn();
+      await pump(tester);
+
+      // asked for, and the session ends before the app took it
+      recorder.asked.add(DateTime.timestamp());
+      programs.onSignOut();
+      await tester.pump();
+      expect(recorder.asked, isEmpty);
+
+      programs.userId = 'u2';
+      await programs.init();
+      await tester.pump();
+      await tester.pump();
+      verifyNever(programService.storeSkip(any, any));
+    });
+
+    testWidgets('asked for, then switched off before the app saw it: dropped', (tester) async {
+      await signIn();
+      await pump(tester);
+
+      recorder.asked.add(DateTime.timestamp());
+      recorder.listener!();
+      await tester.pump();
+      await tester.pump();
+
+      verifyNever(programService.storeSkip(any, any));
+      expect(recorder.asked, isEmpty);
     });
   });
 }

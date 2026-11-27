@@ -96,7 +96,7 @@ class SkipPage extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 32),
-                _ThatDay(key: ValueKey(skip.id), at: skip.at),
+                _ThatDay(key: ValueKey(skip.id), skip: skip),
               ],
             ),
           ),
@@ -106,60 +106,93 @@ class SkipPage extends StatelessWidget {
   }
 }
 
-/// What the day looked like when it was set aside (#312): the training before
-/// it, read from History, and what Health has for it. Worked out from what this
-/// phone holds rather than stored with the skip, so nothing of it syncs, and
-/// the Health part is the device's mirror, shown and never kept anywhere else
-/// (`docs/2026-09-05.health-data.md`). Weather joins it with #310.
-class _ThatDay extends StatefulWidget {
-  final DateTime at;
+/// What a day looked like to [_ThatDay]: the training before it, and the
+/// health readings kept with it — null for a skip with no snapshot, whose
+/// readings are the mirror's as it stands.
+typedef _Day = ({SkipTraining training, Map<HealthMetric, double>? body});
 
-  const new({super.key, required this.at});
+/// What the day looked like when it was set aside (#312): the training before
+/// it and what Health had for it, as the skip's snapshot kept them at that
+/// moment (#445), so a workout deleted since, or the steps of the rest of the
+/// day, change nothing here. The snapshot is this phone's alone: nothing of it
+/// syncs, and the Health part goes when the mirror is forgotten
+/// (`docs/2026-09-05.health-data.md`).
+///
+/// A skip without one — made before snapshots, or on another device — is
+/// worked out from what this phone holds now, as every skip was before.
+/// Weather joins it with #310.
+class _ThatDay extends StatefulWidget {
+  final TrainingSkip skip;
+
+  const new({super.key, required this.skip});
 
   @override
   State<_ThatDay> createState() => _ThatDayState();
 }
 
 class _ThatDayState extends State<_ThatDay> {
-  /// The four weeks before the skip: far enough back to say how long it had
-  /// been, and to hold the week and the two days the lines below read.
-  late final Future<List<LensSets>> _before = Stats.of(
-    context,
-  ).getLensSets(widget.at.subtract(const Duration(days: 28)), widget.at);
+  late Future<_Day> _day = _read();
+
+  /// Whether the mirror held anything at the last look: once it is
+  /// forgotten, the snapshot's readings went with it, and the day is read again.
+  bool? _hadHealth;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final has = Health.watch(context).hasData;
+    if (_hadHealth == true && !has) _day = _read();
+    _hadHealth = has;
+  }
+
+  Future<_Day> _read() async {
+    final at = widget.skip.at;
+    final stats = Stats.of(context);
+    final taken = switch (widget.skip.id) {
+      final String id => await SkipSnapshots.of(context).read(id),
+      null => null,
+    };
+    // nothing of Health kept, whether Health had not caught up with the day
+    // when the skip was recorded or the mirror was forgotten since: the
+    // mirror answers, as for a skip with nothing kept at all
+    if (taken case SkipSnapshot(:final training, :final body)) {
+      return (training: training, body: body.isEmpty ? null : body);
+    }
+    final rows = await stats.getLensSets(at.subtract(skipTrainingReach), at);
+    return (training: trainingOf(rows, at), body: null);
+  }
+
+  /// Calendar days from [from] to [to], both local: counted on the dates
+  /// alone, so a day an hour short when the clocks change is still a day.
+  static int _daysBetween(DateTime from, DateTime to) {
+    return DateTime.utc(to.year, to.month, to.day).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
+  }
 
   @override
   Widget build(BuildContext context) {
     final copy = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final muted = textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant);
-    final health = Health.watch(context);
+    // the mirror, for a skip with nothing kept, is watched in didChangeDependencies
     final preferences = Preferences.watch(context);
-    final day = widget.at.toLocal();
-    final readings = [
-      for (final metric in _body)
-        if (health[metric].where((each) => DateUtils.isSameDay(each.day, day)).lastOrNull case (:final value, day: _))
-          (metric, metric.display(value, preferences, copy)),
-    ];
+    final day = widget.skip.at.toLocal();
 
-    return FutureBuilder<List<LensSets>>(
-      future: _before,
+    return FutureBuilder<_Day>(
+      future: _day,
       builder: (context, snapshot) {
-        final rows = snapshot.data ?? const <LensSets>[];
-        final last = rows
-            .map((row) => row.start)
-            .fold<DateTime?>(
-              null,
-              (latest, start) => switch (latest) {
-                final DateTime latest when latest.isAfter(start) => latest,
-                _ => start,
-              },
-            );
-        final week = widget.at.subtract(const Duration(days: 7));
-        final recent = widget.at.subtract(const Duration(hours: 48));
-        final sets = rows.where((row) => row.start.isAfter(week)).fold(0, (sum, row) => sum + row.sets);
-        final recovering = {
-          for (final row in rows.where((row) => row.start.isAfter(recent))) ...muscleGroupsOf(row).keys,
+        final SkipTraining(:lastWorkoutAt, :setsWeek, :recovering) =
+            snapshot.data?.training ?? const SkipTraining(lastWorkoutAt: null, setsWeek: 0, recovering: {});
+        // kept with the skip, or, for a skip with nothing kept, the mirror's
+        final body = switch (snapshot.data) {
+          (training: _, body: final Map<HealthMetric, double> body) => body,
+          (training: _, body: null) => SkipSnapshots.of(context).bodyOn(widget.skip.at, takenAt: widget.skip.at),
+          null => const <HealthMetric, double>{},
         };
+        final readings = [
+          for (final metric in skipBodyMetrics)
+            if (body[metric] case final double value) (metric, metric.display(value, preferences, copy)),
+        ];
+        final groups = recovering.map(MuscleGroup.tryFromString).nonNulls;
 
         return Column(
           key: AppKeys.skipThatDay,
@@ -167,27 +200,27 @@ class _ThatDayState extends State<_ThatDay> {
           spacing: 4,
           children: [
             Text(copy.skipThatDay, style: textTheme.titleSmall),
-            switch (last) {
-              final DateTime last => Text(
-                copy.skipDaysSince(DateUtils.dateOnly(day).difference(DateUtils.dateOnly(last.toLocal())).inDays),
-              ),
+            switch (lastWorkoutAt) {
+              final DateTime last => Text(copy.skipDaysSince(_daysBetween(last.toLocal(), day))),
               null => Text(copy.skipNoWorkoutBefore),
             },
-            Text(copy.skipSetsWeek(sets)),
-            if (recovering.isNotEmpty)
-              Text(copy.skipRecovering(recovering.map((group) => group.label(copy)).join(', '))),
+            Text(copy.skipSetsWeek(setsWeek)),
+            if (groups.isNotEmpty) Text(copy.skipRecovering(groups.map((group) => group.label(copy)).join(', '))),
             if (readings.isNotEmpty) ...[
               const SizedBox(height: 12),
+              // health values: hidden while a bug report captures the screen
               for (final (metric, (number, unit)) in readings)
-                Text(
-                  [
-                    metric.label(copy),
-                    number,
-                    ?switch (unit) {
-                      '' => null,
-                      final String unit => unit,
-                    },
-                  ].join(' '),
+                RedactedInCapture(
+                  child: Text(
+                    [
+                      metric.label(copy),
+                      number,
+                      ?switch (unit) {
+                        '' => null,
+                        final String unit => unit,
+                      },
+                    ].join(' '),
+                  ),
                 ),
               Text(copy.skipFromHealth, style: muted),
             ],
@@ -196,12 +229,4 @@ class _ThatDayState extends State<_ThatDay> {
       },
     );
   }
-
-  /// What Health can say about a day someone chose not to train.
-  static const _body = [
-    HealthMetric.sleepAsleep,
-    HealthMetric.heartRateVariability,
-    HealthMetric.restingHeartRate,
-    HealthMetric.steps,
-  ];
 }

@@ -41,6 +41,7 @@ import 'package:heart/core/utils/live_records.dart';
 import 'package:heart/core/utils/record_book.dart';
 import 'package:heart/core/utils/charts.dart';
 import 'package:heart/core/utils/stats.dart';
+import 'package:heart/core/utils/skip_snapshots.dart';
 import 'package:heart/core/utils/templates.dart';
 import 'package:heart/core/utils/remote_failures.dart';
 import 'package:heart/core/utils/upsync.dart';
@@ -468,6 +469,30 @@ class HeartApp extends StatelessWidget {
             local: db,
             onError: reportHealthFailure,
           ),
+        ),
+        // What a day looked like when it was set aside (#445): taken as the
+        // skip is made, on this phone only. Health values pass through it, so
+        // it has no remote leg and its errors go through the redacting
+        // reporter, as health's do. Not lazy: it is what Programs tells of a
+        // skip, whether or not a page has asked for one yet.
+        Provider<SkipSnapshots>(
+          lazy: false,
+          create: (context) {
+            final health = Health.of(context);
+            final snapshots = SkipSnapshots(
+              store: LocalSkipSnapshots(db),
+              trainingBefore: (at, userId) async {
+                return trainingOf(await db.getLensSets(at.subtract(skipTrainingReach), at, userId: userId), at);
+              },
+              healthOf: (metric) => health[metric],
+              onError: reportHealthFailure,
+            );
+            Programs.of(context)
+              ..onSkipped = snapshots.take
+              ..onUnskipped = snapshots.drop
+              ..onSkipReplaced = snapshots.move;
+            return snapshots;
+          },
         ),
         ChangeNotifierProvider<Alarms>(
           // same contract as _WorkoutTimeoutScheduler: with notifications off

@@ -77,7 +77,11 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           // a past workout (#530), beside the empty one, while it is on
           onLogPastWorkout: preferences.isOn(.pastWorkouts) ? widget.onLogPastWorkout : null,
         ),
-        if (preferences.isOn(.notToday)) const _NotToday(),
+        // the day's button, or, until it is answered, its one ask (#445)
+        switch (preferences.isOn(.notToday)) {
+          true => const _NotToday(),
+          false => const _NotTodayOffer(),
+        },
         _ProgramsSection(
           onOpen: widget.goToProgram,
           onFromFolder: widget.goToNewProgram,

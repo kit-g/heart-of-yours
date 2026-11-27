@@ -120,6 +120,17 @@ ticket doesn't say:
   from a template, as a copy of a past workout, #737), and after a
   no the tap does nothing. Off, the Workout tab and History have no way in;
   a workout already logged this way is an ordinary workout.
+- Not today (`Feature.notToday`, #312) shipped settings-only, for want of a
+  moment: a standing offer on the Workout tab would have been the nag the
+  feature promises not to be. #445 found the moment: **a program's session
+  gone undone past its day**, with nothing logged since. The first time that
+  is true, the ask sits on the Workout tab where the day's button would be;
+  yes puts the button there. Nobody without a program on set days is ever
+  asked. Its ways in from outside the app (the Start widget's tile, the
+  launcher's item on Android, the Shortcuts action and the control on iOS)
+  are this feature's, not Shortcuts': published only while it is on, and
+  absent otherwise. The two iOS ones declared in the binary stay, as App
+  Shortcuts do, and answer that it is off.
 - Coaching (#566) is two features, because it is two people's choices. **Coach
   people** (`Feature.coachPeople`) has no ask, as Past workouts had none before
   #618, and is the first switch that depends on the account: during the beta it shows only for an
