@@ -143,6 +143,21 @@ mixin _AccountRoutes on Requests implements AccountService, FeedbackService {
   /// does not own is the [ServerRefusal] `not_found`.
   Future<void> revokeApiToken(String tokenId) => delete(Router.accountToken(tokenId));
 
+  /// The apps the account approved through OAuth (an assistant such as
+  /// Claude or ChatGPT), most recently connected first, each with the scopes
+  /// it holds (#448).
+  ///
+  /// A failure is thrown, never answered as no apps.
+  Future<Iterable<ConnectedApp>> listConnectedApps() async {
+    final (apps, _) = _listIn(await get(Router.connectedApps), 'apps', from: Router.connectedApps);
+    return _readable(apps, ConnectedApp.fromJson);
+  }
+
+  /// Disconnects an app: every token it holds is revoked, whatever its
+  /// scopes. `204`; one the account does not hold is the [ServerRefusal]
+  /// `not_found`.
+  Future<void> disconnectApp(String grantId) => delete(Router.connectedApp(grantId));
+
   /// [json] with its `purpose` only when it is one this build can name.
   ///
   /// The server's enum may grow ahead of the app in the stores, and

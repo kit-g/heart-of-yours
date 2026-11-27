@@ -61,6 +61,9 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
     final unfiled = templates.templatesIn(null).toList();
     final programFolders = templates.programFolders;
     return CustomScrollView(
+      // said outright, since the pull that reads the server again (#448)
+      // needs a drag to land even when the page fits the screen
+      physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         SliverAppBar(
           scrolledUnderElevation: 0,

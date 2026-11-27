@@ -143,6 +143,23 @@ class _ApiTokens extends ApiTokens {
   void onSignOut() => calls++;
 }
 
+class _ConnectedApps extends ConnectedApps {
+  int calls = 0;
+
+  new() : super(service: _NoConnectedApps());
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _NoConnectedApps implements ConnectedAppService {
+  @override
+  Future<Iterable<ConnectedApp>> listConnectedApps() async => const [];
+
+  @override
+  Future<void> disconnectApp(String grantId) async {}
+}
+
 class _Coaching extends Coaching {
   int calls = 0;
 
@@ -461,6 +478,7 @@ void main() {
     late _Alarms alarms;
     late _Anomalies anomalies;
     late _ApiTokens apiTokens;
+    late _ConnectedApps connectedApps;
     late _Coaching coaching;
     late _Auth auth;
     late _Backfill backfill;
@@ -488,6 +506,7 @@ void main() {
       alarms = _Alarms();
       anomalies = _Anomalies();
       apiTokens = _ApiTokens();
+      connectedApps = _ConnectedApps();
       coaching = _Coaching();
       auth = _Auth(log: log);
       backfill = _Backfill();
@@ -521,6 +540,7 @@ void main() {
             ChangeNotifierProvider<Alarms>.value(value: alarms),
             ChangeNotifierProvider<Anomalies>.value(value: anomalies),
             ChangeNotifierProvider<ApiTokens>.value(value: apiTokens),
+            ChangeNotifierProvider<ConnectedApps>.value(value: connectedApps),
             ChangeNotifierProvider<Coaching>.value(value: coaching),
             ChangeNotifierProvider<Auth>.value(value: auth),
             ChangeNotifierProvider<Backfill>.value(value: backfill),
@@ -560,6 +580,7 @@ void main() {
         alarms.calls,
         anomalies.calls,
         apiTokens.calls,
+        connectedApps.calls,
         coaching.calls,
         auth.calls,
         charts.calls,
@@ -649,6 +670,7 @@ void main() {
     late _Alarms alarms;
     late _Anomalies anomalies;
     late _ApiTokens apiTokens;
+    late _ConnectedApps connectedApps;
     late _Coaching coaching;
     late _Backfill backfill;
     late _Charts charts;
@@ -684,6 +706,7 @@ void main() {
       alarms = _Alarms();
       anomalies = _Anomalies();
       apiTokens = _ApiTokens();
+      connectedApps = _ConnectedApps();
       coaching = _Coaching();
       backfill = _Backfill();
       charts = _Charts();
@@ -722,6 +745,7 @@ void main() {
             ChangeNotifierProvider<Alarms>.value(value: alarms),
             ChangeNotifierProvider<Anomalies>.value(value: anomalies),
             ChangeNotifierProvider<ApiTokens>.value(value: apiTokens),
+            ChangeNotifierProvider<ConnectedApps>.value(value: connectedApps),
             ChangeNotifierProvider<Coaching>.value(value: coaching),
             ChangeNotifierProvider<Auth>.value(value: auth),
             ChangeNotifierProvider<Backfill>.value(value: backfill),
@@ -763,6 +787,7 @@ void main() {
         alarms.calls,
         anomalies.calls,
         apiTokens.calls,
+        connectedApps.calls,
         coaching.calls,
         charts.calls,
         exercises.calls,
@@ -860,7 +885,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the twenty-five known notifiers', () {
+    test('the fan-out list is the twenty-six known notifiers', () {
       final fanned = _fannedOut(File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync()).toSet();
 
       expect(fanned, {
@@ -873,6 +898,7 @@ void main() {
         'ClientPrograms',
         'CoachLibrary',
         'Coaching',
+        'ConnectedApps',
         'DeviceKeys',
         'Exercises',
         'Goals',

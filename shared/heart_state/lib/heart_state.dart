@@ -11,6 +11,7 @@ export 'src/client_programs.dart';
 export 'src/coach_library.dart';
 export 'src/coach_notes.dart';
 export 'src/coaching.dart';
+export 'src/connected_apps.dart';
 export 'src/device_keys.dart';
 export 'src/auth.dart';
 export 'src/backfill.dart';

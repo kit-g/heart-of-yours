@@ -47,7 +47,10 @@ class _ApiTokensPageState extends State<ApiTokensPage> with HasHaptic<ApiTokensP
     // notification during the build that mounts this page reaches whoever
     // else is watching the list mid-frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ApiTokens.of(context).load();
+      if (!mounted) return;
+      ApiTokens.of(context).load();
+      // the apps let in through OAuth sit on the same page (#448)
+      ConnectedApps.of(context).load();
     });
   }
 
@@ -65,11 +68,14 @@ class _ApiTokensPageState extends State<ApiTokensPage> with HasHaptic<ApiTokensP
       :retry,
       :apiTokensActive,
       :apiTokensPast,
+      :connectedApps,
+      :connectedAppsExplainer,
     ) = L.of(
       context,
     );
     final ThemeData(:textTheme) = Theme.of(context);
     final tokens = ApiTokens.watch(context);
+    final apps = ConnectedApps.watch(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -121,7 +127,12 @@ class _ApiTokensPageState extends State<ApiTokensPage> with HasHaptic<ApiTokensP
                       PrimaryButton.shrunk(
                         key: AppKeys.retryApiTokens,
                         margin: tallButtonPadding,
-                        onPressed: tokens.load,
+                        // the apps below are read with the tokens, and
+                        // again with them
+                        onPressed: () {
+                          tokens.load();
+                          apps.load();
+                        },
                         child: Text(retry),
                       ),
                     ],
@@ -180,11 +191,103 @@ class _ApiTokensPageState extends State<ApiTokensPage> with HasHaptic<ApiTokensP
                 ],
               ],
             },
+            // Absent until the account has let an app in: most never do, and
+            // for them the page is as it was.
+            //
+            // A read that failed with nothing read before says so, with its
+            // own way to ask again, unless the tokens' failure above already
+            // does: silence there would read as "nothing has access".
+            if (apps.all.isEmpty && apps.status == .failed && tokens.status != .failed) ...[
+              const SizedBox(height: 24),
+              _Section(
+                title: connectedApps,
+                children: [
+                  Padding(
+                    padding: const .symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: .start,
+                      spacing: 12,
+                      children: [
+                        Text(apiTokensLoadFailed),
+                        PrimaryButton.shrunk(
+                          key: AppKeys.retryConnectedApps,
+                          margin: tallButtonPadding,
+                          onPressed: apps.load,
+                          child: Text(retry),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (apps.all.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              _Section(
+                title: connectedApps,
+                children: [
+                  Padding(
+                    padding: const .symmetric(horizontal: 16),
+                    child: Text(connectedAppsExplainer, style: textTheme.bodySmall),
+                  ),
+                  for (final app in apps.all)
+                    _ConnectedAppRow(
+                      app: app,
+                      onDisconnect: () => _confirmDisconnect(context, app),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 24),
           ],
         ),
       ),
     );
+  }
+
+  /// Ends the app's access for good, so it asks first, as a revoke does.
+  Future<void> _confirmDisconnect(BuildContext context, ConnectedApp app) {
+    final L(:disconnectAppTitle, :disconnectAppBody, :keepConnectedApp, :disconnectApp) = L.of(context);
+    final ThemeData(:colorScheme) = Theme.of(context);
+
+    return showBrandedDialog(
+      context,
+      title: Text(
+        disconnectAppTitle(app.name),
+        textAlign: .center,
+      ),
+      content: Padding(
+        padding: const .all(8.0),
+        child: Text(
+          disconnectAppBody,
+          textAlign: .center,
+        ),
+      ),
+      icon: Icon(Icons.link_off_rounded, color: colorScheme.error),
+      actions: [
+        _RevokeActions(
+          confirmKey: AppKeys.confirmDisconnectApp,
+          keepCopy: keepConnectedApp,
+          revokeCopy: disconnectApp,
+          onRevoke: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            _disconnect(context, app);
+          },
+        ),
+      ],
+    );
+  }
+
+  Future<void> _disconnect(BuildContext context, ConnectedApp app) async {
+    buzz();
+    final messenger = ScaffoldMessenger.of(context);
+    final l = L.of(context);
+    try {
+      await ConnectedApps.of(context).disconnect(app);
+    } catch (e, s) {
+      widget.onError?.call(e, stacktrace: s);
+      messenger.snack(l.noConnectivity);
+    }
   }
 
   Future<void> _openDocs() {
@@ -297,6 +400,59 @@ class _TokenRow extends StatelessWidget {
   }
 }
 
+/// What [scope] lets an app do, in words. One this build has no words for
+/// still shows, as other access: a permission is never left off the row.
+String _scopeCopy(String scope, L l) {
+  return switch (scope) {
+    'read' => l.connectedAppScopeRead,
+    'read:coaching' => l.connectedAppScopeReadCoaching,
+    'write:templates' => l.connectedAppScopeWriteTemplates,
+    _ => l.connectedAppScopeOther,
+  };
+}
+
+/// One app the account let in (#448): its name, what it may do, its dates,
+/// and the way to disconnect it.
+class _ConnectedAppRow extends StatelessWidget {
+  final ConnectedApp app;
+  final VoidCallback onDisconnect;
+
+  const new({required this.app, required this.onDisconnect});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    final format = DateFormat.yMMMd(l.localeName);
+    String date(DateTime at) => format.format(at.toLocal());
+
+    // a set: two scopes without words of their own read as one line
+    final may = {for (final scope in app.scopes) _scopeCopy(scope, l)}.join(' · ');
+    final used = switch (app.lastUsedAt) {
+      DateTime at => l.apiTokenLastUsedOn(date(at)),
+      null => l.apiTokenNeverUsed,
+    };
+
+    return ListTile(
+      key: AppKeys.connectedAppRow(app.id),
+      titleAlignment: .center,
+      leading: const Icon(Icons.hub_rounded),
+      title: Text(app.name),
+      subtitle: Text(
+        '$may\n${l.connectedAppConnectedOn(date(app.connectedAt))} · $used',
+        style: textTheme.bodySmall,
+      ),
+      isThreeLine: true,
+      trailing: IconButton(
+        key: AppKeys.disconnectApp(app.id),
+        tooltip: l.disconnectApp,
+        icon: Icon(Icons.link_off_rounded, color: colorScheme.error),
+        onPressed: onDisconnect,
+      ),
+    );
+  }
+}
+
 /// The revoke dialog's two actions: a neutral fill for keeping the token, the
 /// error container for the revoke. A widget for the reason `_EraseDataActions`
 /// is: the fills follow the theme the dialog is showing under.
@@ -305,7 +461,16 @@ class _RevokeActions extends StatelessWidget {
   final String revokeCopy;
   final VoidCallback onRevoke;
 
-  const new({required this.keepCopy, required this.revokeCopy, required this.onRevoke});
+  /// The destructive action's key: the revoke's, unless the dialog ends
+  /// something else.
+  final Key confirmKey;
+
+  const new({
+    required this.keepCopy,
+    required this.revokeCopy,
+    required this.onRevoke,
+    this.confirmKey = AppKeys.confirmRevokeApiToken,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -323,7 +488,7 @@ class _RevokeActions extends StatelessWidget {
           },
         ),
         PrimaryButton.wide(
-          key: AppKeys.confirmRevokeApiToken,
+          key: confirmKey,
           backgroundColor: colorScheme.errorContainer,
           onPressed: onRevoke,
           child: Center(

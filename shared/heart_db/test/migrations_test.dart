@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 34);
+          expect(await userVersion(db), 37);
           expect(
             await tables(db),
             {
@@ -524,7 +524,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 34);
+          expect(await userVersion(db), 37);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -750,7 +750,7 @@ void main() {
 
       await LocalDatabase.init();
       db = await raw();
-      expect(await userVersion(db), 34);
+      expect(await userVersion(db), 37);
       expect(
         await columns(db, 'program_actions'),
         allOf(containsPair('exercise_id', 'TEXT'), containsPair('slot', 'TEXT'), containsPair('stage', 'INTEGER')),
@@ -769,7 +769,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 34);
+    expect(await userVersion(db), 37);
     expect(
       await columns(db, 'anomalies'),
       allOf(containsPair('set_id', 'TEXT'), containsPair('status', 'TEXT'), containsPair('synced', 'INTEGER')),
@@ -788,7 +788,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 34);
+    expect(await userVersion(db), 37);
     expect(
       await columns(db, 'thread_items'),
       allOf(containsPair('content', 'TEXT'), containsPair('position', 'INTEGER'), containsPair('pending', 'INTEGER')),
@@ -807,7 +807,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 34);
+    expect(await userVersion(db), 37);
     expect(
       await columns(db, 'coach_notes'),
       allOf(containsPair('content', 'TEXT'), containsPair('pending', 'INTEGER'), containsPair('deleted', 'INTEGER')),
@@ -824,11 +824,36 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 34);
+    expect(await userVersion(db), 37);
     expect(
       await columns(db, 'workouts'),
       allOf(containsPair('logged_by', 'TEXT'), containsPair('logged_by_name', 'TEXT')),
     );
+    await db.close();
+  });
+
+  test('v37 keeps what a template owes the server and who assigned it, empty for those before (#448)', () async {
+    await LocalDatabase.init(version: 34);
+    var db = await raw();
+    expect(await columns(db, 'templates'), isNot(contains('unsent_base')));
+    await db.insert('templates', {'id': 't1', 'user_id': 'u1', 'name': 'Push'});
+    await db.close();
+
+    await LocalDatabase.init();
+    db = await raw();
+    expect(await userVersion(db), 37);
+    expect(
+      await columns(db, 'templates'),
+      allOf(
+        containsPair('unsent_base', 'TEXT'),
+        containsPair('assigned_by', 'TEXT'),
+        containsPair('source_template_id', 'TEXT'),
+        containsPair('sync_enabled', 'INTEGER'),
+      ),
+    );
+    final [row] = await db.query('templates');
+    expect(row['unsent_base'], isNull);
+    expect(row['assigned_by'], isNull);
     await db.close();
   });
 
@@ -842,7 +867,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 34);
+    expect(await userVersion(db), 37);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
@@ -896,7 +921,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 34);
+          expect(await userVersion(db), 37);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');

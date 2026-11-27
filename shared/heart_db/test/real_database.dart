@@ -174,6 +174,11 @@ const _schema = [
   // v34 (#560)
   addWorkoutLoggedBy,
   addWorkoutLoggedByName,
+  // v37 (#448)
+  addTemplateUnsentBase,
+  addTemplateAssignedBy,
+  addTemplateSource,
+  addTemplateSyncEnabled,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production

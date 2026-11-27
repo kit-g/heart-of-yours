@@ -289,6 +289,156 @@ void main() {
     });
   });
 
+  group('connected apps (#448)', () {
+    ConnectedApp app(String id, {String? name, List<String> scopes = const ['read'], DateTime? lastUsedAt}) {
+      return ConnectedApp(
+        id: id,
+        clientId: 'https://$id.example/metadata.json',
+        name: name ?? id,
+        scopes: scopes,
+        resource: 'https://api.example.com/mcp',
+        connectedAt: DateTime.utc(2026, 10, 18),
+        lastUsedAt: lastUsedAt,
+      );
+    }
+
+    setUp(() {
+      when(api.listApiTokens()).thenAnswer((_) async => <ApiToken>[]);
+    });
+
+    testWidgets('the page is as it was for an account that let none in', (tester) async {
+      when(api.listConnectedApps()).thenAnswer((_) async => <ConnectedApp>[]);
+      await pumpToTokens(tester);
+
+      expect(find.text('Connected apps'), findsNothing);
+      expect(find.byKey(AppKeys.newApiToken), findsOneWidget);
+    });
+
+    testWidgets('a read that fails says so and can be asked again, and costs the tokens nothing', (tester) async {
+      when(api.listConnectedApps()).thenThrow(Exception('offline'));
+      await pumpToTokens(tester);
+
+      expect(find.text('Connected apps'), findsOneWidget);
+      expect(find.byKey(AppKeys.newApiToken), findsOneWidget);
+
+      when(api.listConnectedApps()).thenAnswer((_) async => [app('writer', name: 'Assistant')]);
+      await tester.tapByKey(AppKeys.retryConnectedApps);
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.retryConnectedApps), findsNothing);
+      expect(find.text('Assistant'), findsOneWidget);
+    });
+
+    testWidgets('with both reads failed, the one Retry reads both again', (tester) async {
+      when(api.listApiTokens()).thenThrow(Exception('offline'));
+      when(api.listConnectedApps()).thenThrow(Exception('offline'));
+      await pumpToTokens(tester);
+
+      expect(find.byKey(AppKeys.retryApiTokens), findsOneWidget);
+      expect(find.byKey(AppKeys.retryConnectedApps), findsNothing);
+
+      when(api.listApiTokens()).thenAnswer((_) async => <ApiToken>[]);
+      when(api.listConnectedApps()).thenAnswer((_) async => [app('writer', name: 'Assistant')]);
+      await tester.tapByKey(AppKeys.retryApiTokens);
+      await tester.pumpTimes();
+
+      expect(find.text('Assistant'), findsOneWidget);
+    });
+
+    testWidgets('each app says what it may do, in words, beside when it connected', (tester) async {
+      when(api.listConnectedApps()).thenAnswer(
+        (_) async => [
+          app(
+            'writer',
+            name: 'Assistant',
+            scopes: ['read', 'write:templates'],
+            lastUsedAt: DateTime.utc(2026, 11, 20, 12),
+          ),
+          app('reader', name: 'Reader'),
+          app('coach', name: 'Coach desk', scopes: ['read', 'read:coaching']),
+        ],
+      );
+      await pumpToTokens(tester);
+
+      expect(find.text('Connected apps'), findsOneWidget);
+      expect(find.text('Assistant'), findsOneWidget);
+      expect(find.textContaining('Read your training · Create and change templates'), findsOneWidget);
+      expect(find.textContaining('Last used Nov 20, 2026'), findsOneWidget);
+      // one that only reads says only that
+      final reader = tester.widget<Text>(
+        find.descendant(of: find.byKey(AppKeys.connectedAppRow('reader')), matching: find.textContaining('Connected ')),
+      );
+      expect(reader.data, startsWith('Read your training\n'));
+      expect(reader.data, contains('Never used'));
+      expect(find.textContaining('Read your training · Read your clients’ training'), findsOneWidget);
+      expect(find.byKey(AppKeys.disconnectApp('writer')), findsOneWidget);
+      expect(find.byKey(AppKeys.disconnectApp('reader')), findsOneWidget);
+    });
+
+    testWidgets('a permission this build has no words for still shows, once', (tester) async {
+      when(api.listConnectedApps()).thenAnswer(
+        (_) async => [
+          app('later', name: 'Later', scopes: ['read', 'write:workouts', 'write:programs']),
+        ],
+      );
+      await pumpToTokens(tester);
+
+      expect(find.textContaining('Read your training · Other access\n'), findsOneWidget);
+    });
+
+    testWidgets('disconnect asks first, then revokes the whole grant and drops the row', (tester) async {
+      when(api.listConnectedApps()).thenAnswer(
+        (_) async => [
+          app('writer', name: 'Assistant', scopes: ['read', 'write:templates']),
+        ],
+      );
+      when(api.disconnectApp(any)).thenAnswer((_) async {});
+      await pumpToTokens(tester);
+
+      await tester.tapByKey(AppKeys.disconnectApp('writer'));
+      await tester.pumpTimes();
+      expect(find.text('Disconnect Assistant?'), findsOneWidget);
+      verifyNever(api.disconnectApp(any));
+
+      await tester.tap(find.text('Keep it connected'));
+      await tester.pumpTimes();
+      expect(find.text('Disconnect Assistant?'), findsNothing);
+      expect(find.byKey(AppKeys.connectedAppRow('writer')), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.disconnectApp('writer'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.confirmDisconnectApp);
+      await tester.pumpTimes();
+
+      // one call for the grant: read and write go together
+      verify(api.disconnectApp('writer')).called(1);
+      expect(find.byKey(AppKeys.connectedAppRow('writer')), findsNothing);
+      expect(find.text('Connected apps'), findsNothing);
+    });
+
+    testWidgets('a disconnect that fails keeps the row and says so', (tester) async {
+      when(api.listConnectedApps()).thenAnswer((_) async => [app('writer', name: 'Assistant')]);
+      when(api.disconnectApp(any)).thenThrow(Exception('offline'));
+      await pumpToTokens(tester);
+
+      await tester.tapByKey(AppKeys.disconnectApp('writer'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.confirmDisconnectApp);
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.connectedAppRow('writer')), findsOneWidget);
+      expect(find.byType(SnackBar), findsOneWidget);
+    });
+
+    testWidgets('on a wide window the rows keep to the capped column', (tester) async {
+      when(api.listConnectedApps()).thenAnswer((_) async => [app('writer', name: 'Assistant')]);
+      await pumpToTokens(tester, size: const Size(1366, 1024));
+
+      final row = tester.getRect(find.byKey(AppKeys.connectedAppRow('writer')));
+      expect(row.width, lessThanOrEqualTo(640));
+    });
+  });
+
   group('on a wide window', () {
     testWidgets('the list is capped and centred like the settings it opened from', (tester) async {
       when(api.listApiTokens()).thenAnswer((_) async => [_token('live', name: 'My sheet')]);

@@ -24,6 +24,7 @@ import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/anomalies.dart';
 import 'package:heart/core/utils/api_tokens.dart';
 import 'package:heart/core/utils/coaching.dart';
+import 'package:heart/core/utils/connected_apps.dart';
 import 'package:heart/core/utils/library.dart';
 import 'package:heart/core/utils/roster.dart';
 import 'package:heart/core/utils/backfill.dart';
@@ -53,6 +54,7 @@ import 'package:heart/presentation/navigation/goals_widget.dart';
 import 'package:heart/presentation/navigation/home_widgets.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
+import 'package:heart/presentation/navigation/kept_templates.dart';
 import 'package:heart/presentation/navigation/pause.dart';
 import 'package:heart/presentation/navigation/program_calendar.dart';
 import 'package:heart/presentation/navigation/pushes.dart';
@@ -215,6 +217,7 @@ class HeartApp extends StatelessWidget {
             folderService: LocalTemplateFolders(db),
             remoteFolderService: api,
             filingService: RemoteTemplateFiling(api),
+            unsent: UnsentTemplates(db),
             remote: RemoteAccess.of(context),
             analytics: analytics,
             maxTemplates: appConfig.maxTemplates,
@@ -352,6 +355,15 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<ApiTokens>(
           create: (context) => ApiTokens(
             service: RemoteApiTokens(api),
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // The apps the account let in through OAuth (#448): server-only too,
+        // read when the same page opens.
+        ChangeNotifierProvider<ConnectedApps>(
+          create: (context) => ConnectedApps(
+            service: RemoteConnectedApps(api),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),
@@ -754,6 +766,9 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
         reread: true,
       );
     }
+    // templates and folders made or replaced elsewhere, by an assistant or
+    // another device (#448): nothing tells the app of those
+    Templates.of(context).refresh();
     // messages whose push may never have come (#556)
     if (coachingRuns(preferences, auth)) Messages.of(context).resume();
     // a coach's notes, only where the Coaching space is there and keys run
@@ -857,7 +872,11 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
                                 },
                             // this device's encryption keys (#555), by the
                             // push client's rule
-                            child: DeviceKeysPresenter(child: child ?? const SizedBox.shrink()),
+                            child: DeviceKeysPresenter(
+                              // the name of a template kept beside the one
+                              // that replaced it (#448)
+                              child: KeptTemplatesPresenter(child: child ?? const SizedBox.shrink()),
+                            ),
                           ),
                         ),
                       ),
