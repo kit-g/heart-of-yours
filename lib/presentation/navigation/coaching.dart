@@ -28,6 +28,7 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
   Preferences? _preferences;
   Auth? _auth;
   Coaching? _coaching;
+  OpeningReads? _opening;
 
   /// The `coaching_role` last told to analytics, so a sync that changes
   /// nothing sends nothing: a record, because null is an answer too.
@@ -62,6 +63,11 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
       _coaching?.removeListener(_reportRole);
       _coaching = coaching..addListener(_reportRole);
     }
+    final opening = OpeningReads.maybeOf(context);
+    if (!identical(opening, _opening)) {
+      _opening?.removeListener(_sync);
+      _opening = opening?..addListener(_sync);
+    }
     _sync();
   }
 
@@ -70,6 +76,7 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
     _preferences?.removeListener(_sync);
     _auth?.removeListener(_sync);
     _coaching?.removeListener(_reportRole);
+    _opening?.removeListener(_sync);
     super.dispose();
   }
 
@@ -119,6 +126,8 @@ class _CoachingPresenterState extends State<CoachingPresenter> {
     // no token yet: the read would be skipped, so it isn't counted as made.
     // Auth tells again once the server's copy of the account arrives
     if (!RemoteAccess.of(context).allowed) return;
+    // a launch's own reads go first (#676); told again once they are in
+    if (!(_opening?.settled ?? true)) return;
     _read = read;
     Coaching.of(context).load();
     // the inbox too, for the unread counts on the ways in (#556): after the

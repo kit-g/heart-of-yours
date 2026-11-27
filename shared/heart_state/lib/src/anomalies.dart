@@ -112,6 +112,15 @@ class Anomalies with ChangeNotifier, Iterable<Anomaly> implements SignOutStateSe
 
   /// The mirror, then the server's list over it.
   Future<void> init() async {
+    await read();
+    await pull();
+  }
+
+  /// The mirror alone: what is flagged and what was discarded, as this device
+  /// last knew it. A launch reads it at once, since totals leave discarded
+  /// entries out from the first frame, and leaves [pull] for after its
+  /// opening reads (#676).
+  Future<void> read() async {
     final userId = this.userId;
     if (userId == null) return;
     try {
@@ -119,7 +128,6 @@ class Anomalies with ChangeNotifier, Iterable<Anomaly> implements SignOutStateSe
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
     }
-    await pull();
   }
 
   /// Pushes the decisions owed, then reads the server's whole list. Flags
