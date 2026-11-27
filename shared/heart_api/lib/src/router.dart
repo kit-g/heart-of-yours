@@ -12,6 +12,7 @@ abstract final class Router {
   static const workouts = 'v1/workouts';
   static const workoutImports = '$workouts/imports';
   static const accountTokens = '$accounts/tokens';
+  static const connectedApps = '$accounts/connected-apps';
   static const programs = 'v1/programs';
   static const connections = 'v1/connections';
   static const invitations = 'v1/invitations';
@@ -246,6 +247,8 @@ abstract final class Router {
   static String accountToken(String tokenId) {
     return '$accountTokens/$tokenId';
   }
+
+  static String connectedApp(String grantId) => '$connectedApps/$grantId';
 
   static String exercise(String exerciseId) => '$exercises/$exerciseId';
 

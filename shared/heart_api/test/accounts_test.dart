@@ -416,4 +416,82 @@ void main() {
       expect(() => api.revokeApiToken('nope'), throwsA(refused('not_found')));
     });
   });
+
+  group('connected apps (#448)', () {
+    const assistant = {
+      'id': '01a1f717-611c-7353-b8d4-89b94a6856fd',
+      'clientId': 'https://assistant.example/oauth/metadata.json',
+      'name': 'Assistant',
+      'scopes': ['read', 'write:templates'],
+      'resource': 'https://api.example.com/mcp',
+      'connectedAt': '2026-10-18T10:00:00.000Z',
+      'lastUsedAt': '2026-11-20T08:30:00.000Z',
+    };
+
+    test('listConnectedApps reads each app with the scopes it holds', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.connectedApps,
+        statusCode: 200,
+        body: {
+          'apps': [
+            assistant,
+            {
+              ...assistant,
+              'id': 'second',
+              'name': 'Reader',
+              'scopes': ['read'],
+            }..remove('lastUsedAt'),
+          ],
+        },
+      );
+
+      final apps = (await api.listConnectedApps()).toList();
+
+      expect(apps.map((app) => app.name), ['Assistant', 'Reader']);
+      expect(apps.first.scopes, ['read', 'write:templates']);
+      expect(apps.first.lastUsedAt, DateTime.utc(2026, 11, 20, 8, 30));
+      expect(apps.last.scopes, ['read']);
+      expect(apps.last.lastUsedAt, isNull);
+    });
+
+    test('listConnectedApps passes over a row this build cannot read', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.connectedApps,
+        statusCode: 200,
+        body: {
+          'apps': [
+            {'id': 'broken'},
+            assistant,
+          ],
+        },
+      );
+
+      expect((await api.listConnectedApps()).map((app) => app.name), ['Assistant']);
+    });
+
+    test('listConnectedApps is empty for an account that connected none', () async {
+      respond(client: client, method: 'GET', path: Router.connectedApps, statusCode: 200, body: {'apps': []});
+      expect(await api.listConnectedApps(), isEmpty);
+    });
+
+    test('disconnectApp is quiet on 204', () async {
+      respond(client: client, method: 'DELETE', path: Router.connectedApp('g1'), statusCode: 204, body: {});
+      await expectLater(api.disconnectApp('g1'), completes);
+    });
+
+    test('disconnectApp throws the 404 as a refusal', () async {
+      respond(
+        client: client,
+        method: 'DELETE',
+        path: Router.connectedApp('nope'),
+        statusCode: 404,
+        body: {'error': 'not found', 'code': 'not_found', 'message': 'connected app #nope not found'},
+      );
+      expect(() => api.disconnectApp('nope'), throwsA(refused('not_found')));
+    });
+  });
 }
