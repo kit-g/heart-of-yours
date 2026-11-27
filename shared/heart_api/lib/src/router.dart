@@ -173,6 +173,10 @@ abstract final class Router {
   /// A copy's history, as its student reads it (#558).
   static String programChanges(String programId) => '${program(programId)}/changes';
 
+  /// Every program's history, or what changed in it since a cursor
+  /// (heart-api#458).
+  static const programHistory = '$programs/history';
+
   /// Where a student starts a coach's copy that waits for them (#557).
   static String programStart(String programId) => '${program(programId)}/start';
 

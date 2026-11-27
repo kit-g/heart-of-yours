@@ -78,6 +78,31 @@ mixin _ProgramRoutes on Requests, _ExerciseNaming {
     return Template.fromJson(_named(json));
   }
 
+  /// A page of the account's programs with their history, each whole: every
+  /// program without [since], or only the ones whose steps or bases changed
+  /// after that cursor (heart-api#458). What this build cannot read comes set
+  /// aside in the answer, never dropped: the server sends a program again
+  /// only when its history changes.
+  ///
+  /// A [since] the server no longer knows is the `ServerRefusal`
+  /// `stale_cursor`; reading again without one starts over.
+  Future<ProgramHistoryChanges> getProgramHistory({String? since}) async {
+    final (json, status) = await get(
+      Router.programHistory,
+      query: switch (since) {
+        final String since => {'since': since},
+        // no map at all: an empty one would still put a bare `?` on the URL
+        null => null,
+      },
+    );
+    try {
+      return ProgramHistoryChanges.fromJson(json);
+    } catch (_) {
+      // a page without its list, say: reported by route, never as a cast
+      throw UnreadableAnswer(statusCode: status, method: 'GET', path: '/${Router.programHistory}');
+    }
+  }
+
   Future<List<ProgramAction>> getProgramActions(String programId) async {
     final path = Router.programActions(programId);
     final (actions, _) = _listIn(await get(path), 'actions', from: path);
