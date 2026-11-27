@@ -174,6 +174,8 @@ const _schema = [
   // v34 (#560)
   addWorkoutLoggedBy,
   addWorkoutLoggedByName,
+  // v35 (#616)
+  addExerciseEditUnsent,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production

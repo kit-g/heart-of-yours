@@ -7,6 +7,10 @@ String? _encoded(Map<String, dynamic>? json) {
   };
 }
 
+// `exercises.edit_unsent`: nothing owed, an edit, an edit that renamed
+const _editUnsent = 1;
+const _renameUnsent = 2;
+
 mixin _Exercises on _LocalDatabase
     implements ExerciseService, ExerciseHistoryService, ExercisesMetricsService, PreviousExerciseService {
   @override
@@ -269,6 +273,40 @@ mixin _Exercises on _LocalDatabase
         await txn.insert(_exerciseDetails, {'exercise_id': exerciseId, 'user_id': userId, 'note': note});
       }
     });
+  }
+
+  /// [userId]'s own exercises whose edit the account has not had (#616), by
+  /// id, each with whether the edit renamed it.
+  Future<Map<String, bool>> getUnsentExerciseEdits(String userId) async {
+    final rows = await _db.query(
+      _exercises,
+      columns: ['id', 'edit_unsent'],
+      where: 'user_id = ? AND edit_unsent > 0',
+      whereArgs: [userId],
+    );
+    return {for (final row in rows) row['id'] as String: row['edit_unsent'] == _renameUnsent};
+  }
+
+  /// Marks [userId]'s own exercise as holding an edit the account has not
+  /// had, one that [renamed] it or not, or as sent.
+  Future<void> setExerciseEditUnsent(
+    String exerciseId,
+    String userId, {
+    required bool unsent,
+    bool renamed = false,
+  }) async {
+    await _db.update(
+      _exercises,
+      {
+        'edit_unsent': switch ((unsent, renamed)) {
+          (false, _) => 0,
+          (true, false) => _editUnsent,
+          (true, true) => _renameUnsent,
+        },
+      },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [exerciseId, userId],
+    );
   }
 
   @override
