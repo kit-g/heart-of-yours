@@ -75,6 +75,9 @@ mixin _Erase on _LocalDatabase {
         // the claim that this device holds the whole history: it holds none of
         // it now, and the next sign-in has to page it down again
         batch.delete(_syncs, where: 'table_name = ?', whereArgs: [_Mirror.historyBackfillKey(userId)]);
+        // how far into the server's program history the mirror reached: the
+        // programs it described are gone
+        batch.delete(_syncs, where: 'table_name = ?', whereArgs: [_Programs.programHistoryKey(userId)]);
         await batch.commit(noResult: true);
       },
     );
