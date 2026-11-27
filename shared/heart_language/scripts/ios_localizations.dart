@@ -134,6 +134,9 @@ const runnerShortcutTitleKeys = [
   'iosShortcutWeeklyIntent',
   'iosShortcutExercise',
   'iosShortcutCouldNotAnswer',
+  // Not today from outside the app (#445): the action's name is the feature's
+  'programNotToday',
+  'iosShortcutNotTodayOff',
 ];
 
 /// Writes the Siri phrases and the titles beside the Runner's Info.plist. The
@@ -239,6 +242,10 @@ const widgetCatalogKeys = [
   'widgetGoal',
   'widgetGoalsEmpty',
   'widgetAddGoal',
+  // Not today (#445): the control's name, and the action the Start widget's
+  // tile runs, in the app's own words for it
+  'programNotToday',
+  'iosShortcutNotTodayOff',
 ];
 
 /// Writes the widget extension's catalog beside its Info.plist: the

@@ -24,15 +24,24 @@ import io.flutter.plugin.common.MethodChannel
 object ShortcutsChannel {
     private const val TAG = "HeartShortcuts"
     private const val START_ID = "start_workout"
+    private const val NOT_TODAY_ID = "not_today"
 
     /// What Dart last said; both arrive on every launch's first sync.
     private var enabled = false
     private var templates: List<*> = emptyList<Any>()
 
-    fun register(context: Context, messenger: BinaryMessenger) {
+    fun register(context: Context, messenger: BinaryMessenger): MethodChannel {
         val store = ShortcutsStore.prefs(context.applicationContext)
-        MethodChannel(messenger, "heart/shortcuts").setMethodCallHandler { call, result ->
+        val channel = MethodChannel(messenger, "heart/shortcuts")
+        channel.setMethodCallHandler { call, result ->
             when (call.method) {
+                // "Not today" from outside the app (#445), or none of it
+                "setNotToday" -> {
+                    NotToday.publish(context.applicationContext, call.arguments as? Map<*, *>)
+                    publish(context.applicationContext)
+                    result.success(null)
+                }
+                "takeSkips" -> result.success(NotToday.take(context.applicationContext))
                 "setEnabled" -> {
                     enabled = call.arguments as? Boolean ?: false
                     publish(context.applicationContext)
@@ -78,21 +87,33 @@ object ShortcutsChannel {
                 else -> result.notImplemented()
             }
         }
+        return channel
     }
 
     private fun publish(context: Context) {
         val room = ShortcutManagerCompat.getMaxShortcutCountPerActivity(context)
-        val shortcuts = when (enabled) {
-            false -> emptyList<ShortcutInfoCompat>()
-            true -> (sequenceOf(start(context)) + templates.asSequence().mapNotNull { entry ->
+        // "Start a workout" and the templates are Shortcuts' (#284); "Not
+        // today" is its own feature's (#445), there whenever it can be asked
+        // for, ahead of the templates. It stays on a day already set aside,
+        // where it only says so: nothing would bring it back at midnight
+        // with the app closed
+        val starts = when (enabled) {
+            false -> emptySequence()
+            true -> sequenceOf(start(context))
+        }
+        val named = when (enabled) {
+            false -> emptySequence()
+            true -> templates.asSequence().mapNotNull { entry ->
                 val map = entry as? Map<*, *> ?: return@mapNotNull null
                 val id = map["id"] as? String ?: return@mapNotNull null
                 val name = map["name"] as? String ?: return@mapNotNull null
                 shortcut(context, id, name)
-            })
-                .take(room)
-                .toList()
+            }
         }
+        val notToday = NotToday.words(ShortcutsStore.prefs(context))
+            ?.let { sequenceOf(notToday(context, it.label)) }
+            ?: emptySequence()
+        val shortcuts = (starts + notToday + named).take(room).toList()
         try {
             if (shortcuts.isEmpty()) {
                 ShortcutManagerCompat.removeAllDynamicShortcuts(context)
@@ -117,6 +138,18 @@ object ShortcutsChannel {
             .setIcon(IconCompat.createWithResource(context, R.mipmap.ic_launcher))
             .setIntent(intent)
             .addCapabilityBinding("actions.intent.START_EXERCISE")
+            .build()
+    }
+
+    /// Sets today aside without opening the app (#445): [NotTodayActivity]
+    /// has no window. The label is Dart's, in the app's language.
+    private fun notToday(context: Context, label: String): ShortcutInfoCompat {
+        val intent = Intent(Intent.ACTION_VIEW, null, context, NotTodayActivity::class.java)
+        return ShortcutInfoCompat.Builder(context, NOT_TODAY_ID)
+            .setShortLabel(label)
+            .setLongLabel(label)
+            .setIcon(IconCompat.createWithResource(context, R.mipmap.ic_launcher))
+            .setIntent(intent)
             .build()
     }
 

@@ -186,6 +186,20 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
+        <!-- "Not today" from outside the app (#445): the Start widget's tile
+             is a broadcast, and the launcher's item an activity with no
+             window, so neither brings the app to the front. Both only keep
+             the moment for the app to record. -->
+        <receiver
+            android:name=".NotTodayReceiver"
+            android:exported="false" />
+        <activity
+            android:name=".NotTodayActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay" />
         <!-- The active goals on the Home Screen (#368), and its settings. -->
         <receiver
             android:name=".GoalsWidget"

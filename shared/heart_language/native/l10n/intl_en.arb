@@ -203,6 +203,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "iosShortcutNotTodayOff": "Heart can't set today aside right now. Open Heart, and check that Not today is on in its settings.",
+  "@iosShortcutNotTodayOff": {
+    "description": "What Siri says to the Not today action when it cannot set the day aside: the feature is off, a workout is running, or nobody is signed in (#445). Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
   "iosShortcutNoRest": "No rest is running",
   "@iosShortcutNoRest": {
     "description": "What Siri says to extend or skip with no rest running. Generated into Localizable.xcstrings",

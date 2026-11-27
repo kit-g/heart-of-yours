@@ -2413,6 +2413,29 @@ void main() {
       expect(SkipReason.of(given.reason), SkipReason.justNo);
     });
 
+    test('whoever keeps what the day looked like is told of each skip as it is made', () async {
+      final followed = await following();
+      final told = <String>[];
+      programs.onSkipped = (skip, userId) async => told.add('skipped ${skip.id} $userId');
+      programs.onUnskipped = (id) async => told.add('unskipped $id');
+      programs.onSkipReplaced = (from, to) async => told.add('replaced $from $to');
+      // told before the server is asked: the moment is the skip's, not the answer's
+      remote.failing = true;
+
+      final skip = await programs.skip(followed, session: 's1');
+      final day = await programs.skipDay();
+      expect(told, ['skipped ${skip.id} ${programs.userId}', 'skipped ${day.id} ${programs.userId}']);
+
+      // a reason is the same skip again: moved, neither taken back nor taken anew
+      told.clear();
+      final given = await programs.giveReason(day, .tired);
+      expect(told, ['replaced ${day.id} ${given.id}']);
+
+      told.clear();
+      await programs.unskip(given);
+      expect(told, ['unskipped ${given.id}']);
+    });
+
     test("a program-less skip, the mirror's and the server's, is listed", () async {
       final orphan = TrainingSkip(id: 'orphan', at: DateTime.utc(2026, 10, 2), templateId: 's2');
       local.skips.add(orphan);

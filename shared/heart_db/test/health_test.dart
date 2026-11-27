@@ -44,6 +44,8 @@ void main() {
     // sailing past a hand-written copy of the schema.
     await db.execute(healthSamples);
     await db.execute(healthSamplesIndex);
+    // what a skip kept of a day (#445) is emptied with the mirror
+    await db.execute(createSkipSnapshots);
     local = await LocalDatabase.init(other: db);
   });
 

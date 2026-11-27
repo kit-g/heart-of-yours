@@ -50,6 +50,7 @@ mixin _Upsync on _LocalDatabase {
           _programs,
           _programsOwed,
           _skips,
+          _skipSnapshots,
           _exerciseDetails,
           _exercises,
           _charts,

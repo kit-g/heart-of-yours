@@ -79,6 +79,9 @@ struct StartEntry: TimelineEntry {
     /// `Color.toARGB32()` of the theme's accent, from the training snapshot;
     /// nil before the app has published one.
     let accent: (light: UInt32, dark: UInt32)?
+    /// "Not today" (#445), while it can be asked for; nil, the widget has no
+    /// tile for it.
+    var notToday: NotTodaySnapshot? = nil
 }
 
 @available(iOS 17, *)
@@ -94,19 +97,33 @@ struct StartProvider: AppIntentTimelineProvider {
         return entry(snapshot, choice: configuration.choice)
     }
 
-    /// Nothing here changes with the clock: the app reloads the timeline
-    /// whenever the templates or the feature change.
+    /// One thing here changes with the clock: a day set aside (#445) is over
+    /// at midnight, so a second entry starts the next day, when the tile
+    /// offers "Not today" again. The app reloads the timeline whenever the
+    /// templates or either feature change.
     func timeline(for configuration: StartWidgetIntent, in context: Context) async -> Timeline<StartEntry> {
-        Timeline(entries: [entry(StartSnapshot.read() ?? .none, choice: configuration.choice)], policy: .never)
+        let snapshot = StartSnapshot.read() ?? .none
+        // by the calendar, not by 24 hours: a day the clocks change is not 24 long
+        let today = Calendar.current.startOfDay(for: .now)
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: today) ?? today.addingTimeInterval(24 * 60 * 60)
+        return Timeline(
+            entries: [
+                entry(snapshot, choice: configuration.choice),
+                entry(snapshot, choice: configuration.choice, date: tomorrow),
+            ],
+            policy: .never
+        )
     }
 
-    private func entry(_ snapshot: StartSnapshot, choice: StartChoice?) -> StartEntry {
+    private func entry(_ snapshot: StartSnapshot, choice: StartChoice?, date: Date = .now) -> StartEntry {
         let training = TrainingSnapshot.read()
         return StartEntry(
-            date: .now,
+            date: date,
             snapshot: snapshot,
             choice: choice,
-            accent: training.map { ($0.accent, $0.accentDark) }
+            accent: training.map { ($0.accent, $0.accentDark) },
+            // the gallery's sample is the Start widget as everyone has it
+            notToday: snapshot == .sample ? nil : NotTodaySnapshot.read()
         )
     }
 }
@@ -168,18 +185,62 @@ private struct StartView: View {
 
     /// "Start a workout" and up to three templates, each its own tap; fewer
     /// templates, fewer tiles, and none leaves "Start a workout" the width.
+    /// With "Not today" on (#445) the last tile is its, and the templates
+    /// take the two between.
     private func medium(accent: Color) -> some View {
-        let tiles: [StartSnapshot.Template?] = [nil] + entry.snapshot.templates.prefix(3).map { $0 }
+        let room = entry.notToday == nil ? 3 : 2
+        let tiles: [StartTile] =
+            [.start(nil)]
+            + entry.snapshot.templates.prefix(room).map { .start($0) }
+            + (entry.notToday.map { [.notToday($0)] } ?? [])
         let rows = stride(from: 0, to: tiles.count, by: 2).map { Array(tiles[$0..<min($0 + 2, tiles.count)]) }
         return VStack(spacing: 8) {
             ForEach(rows.indices, id: \.self) { row in
                 HStack(spacing: 8) {
                     ForEach(rows[row].indices, id: \.self) { column in
-                        tile(rows[row][column], accent: accent)
+                        switch rows[row][column] {
+                        case let .start(template): tile(template, accent: accent)
+                        case let .notToday(notToday): tile(notToday)
+                        }
                     }
                 }
             }
         }
+    }
+
+    /// "Not today" (#445): a tap sets today aside where the widget is, with
+    /// no app opened. Once the day is set aside the tile says so and is no
+    /// longer a button, until the next day.
+    @ViewBuilder
+    private func tile(_ notToday: NotTodaySnapshot) -> some View {
+        switch notToday.setAside(on: entry.date) {
+        case true:
+            tileBody(notToday.done, symbol: "checkmark")
+        case false:
+            Button(intent: NotTodayIntent()) {
+                tileBody(notToday.label, symbol: "arrow.uturn.forward")
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func tileBody(_ words: String, symbol: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: 28)
+                .background(Color.secondary.opacity(0.18), in: Circle())
+                .accessibilityHidden(true)
+            Text(verbatim: words)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
     }
 
     /// A template's own name, as the user wrote it, or the empty workout's.
@@ -204,6 +265,29 @@ private struct StartView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
         }
+    }
+}
+
+/// What a tile of the medium widget is: a way to start, or "Not today".
+@available(iOS 17, *)
+private enum StartTile {
+    case start(StartSnapshot.Template?)
+    case notToday(NotTodaySnapshot)
+}
+
+/// "Not today" as a control (#445, iOS 18): on the Lock Screen, in Control
+/// Centre and on the Action button, one press sets today aside. Controls
+/// are declared in the binary and cannot be hidden per user: with the
+/// feature off this one changes nothing, as the App Shortcuts do (#284).
+@available(iOS 18, *)
+struct NotTodayControl: ControlWidget {
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: NotTodaySnapshot.controlKind) {
+            ControlWidgetButton(action: NotTodayIntent()) {
+                Label("Not today", systemImage: "arrow.uturn.forward")
+            }
+        }
+        .displayName("Not today")
     }
 }
 

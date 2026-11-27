@@ -95,6 +95,7 @@ enum _Screen {
   entryReview,
   skipPage,
   notTodaySheet,
+  notTodayOffer,
   calendar,
   calendarMonth,
   calendarDay,
@@ -879,6 +880,22 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Screen.notTodaySheet,
     _Guideline.iosTapTarget,
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+
+  // The one ask for "Not today" (#445, lib/presentation/routes/workout/not_today.dart):
+  // on the Workout tab, once a program's session went undone past its day.
+  (_Screen.notTodayOffer, _Guideline.labeledTapTarget, null),
+  (_Screen.notTodayOffer, _Guideline.textContrastLight, null),
+  (_Screen.notTodayOffer, _Guideline.textContrastDark, null),
+  (
+    _Screen.notTodayOffer,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items, and the offer\'s two buttons at the house 32pt (lib/presentation/widgets/feature_offer.dart:80 and :85; lib/presentation/widgets/buttons.dart:109 primaryButtonMinHeight), are below 48x48 — visual-density change, out of scope',
+  ),
+  (
+    _Screen.notTodayOffer,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items, and the offer\'s two buttons at the house 32pt (lib/presentation/widgets/feature_offer.dart:80 and :85; lib/presentation/widgets/buttons.dart:109 primaryButtonMinHeight), are below 44x44 — visual-density change, out of scope',
   ),
 
   (_Screen.exercises, _Guideline.labeledTapTarget, null),
@@ -2102,7 +2119,8 @@ void a11y({required int shard}) {
           _Screen.goEasy ||
           _Screen.skipPage ||
           _Screen.historyFilterTemplates ||
-          _Screen.notTodaySheet:
+          _Screen.notTodaySheet ||
+          _Screen.notTodayOffer:
         // things to go easy on (#396): the whole map, a knee listed
         when(cdn.getGoEasy(etag: anyNamed('etag'))).thenAnswer((_) async => (body: _goEasy, etag: null));
         when(db.getGoEasy(any)).thenAnswer((_) async => {'knee'});
@@ -2134,6 +2152,7 @@ void a11y({required int shard}) {
             _Screen.programPage ||
             _Screen.historyNotToday ||
             _Screen.historyFilterTemplates ||
+            _Screen.notTodayOffer ||
             _Screen.skipPage => [
               _session('t1', 0, 'Push', programId: 'p1'),
               _session('t2', 1, 'Pull', programId: 'p1'),
@@ -2154,6 +2173,11 @@ void a11y({required int shard}) {
           _Screen.historyNotToday ||
           _Screen.historyFilterTemplates ||
           _Screen.skipPage => [_program],
+          // on every day of the week, so that yesterday's session went undone
+          // whenever this runs: what raises the ask (#445)
+          _Screen.notTodayOffer => [
+            _program.copyWith(days: const {1, 2, 3, 4, 5, 6, 7}),
+          ],
           _ => <Program>[],
         };
         final skips = switch (screen) {
@@ -2169,7 +2193,15 @@ void a11y({required int shard}) {
         when(api.getPrograms()).thenAnswer((_) async => programs);
         when(db.getProgramActions(any, programId: anyNamed('programId'))).thenAnswer((_) async => []);
         when(db.getProgramBases(any, programId: anyNamed('programId'))).thenAnswer((_) async => []);
-        when(db.getProgramMarks(any, any)).thenAnswer((_) async => []);
+        when(db.getProgramMarks(any, any)).thenAnswer(
+          (_) async => switch (screen) {
+            // begun, then a day gone by with nothing: what raises the ask (#445)
+            _Screen.notTodayOffer => [
+              ProgramMark(templateId: 't1', at: DateTime.now().subtract(const Duration(days: 3)), isWorkout: true),
+            ],
+            _ => <ProgramMark>[],
+          },
+        );
         when(db.storePrograms(any, any)).thenAnswer((_) async {});
         when(db.storeProgramActions(any, any)).thenAnswer((_) async {});
         when(db.storeProgramBases(any, any)).thenAnswer((_) async {});
@@ -2510,7 +2542,8 @@ void a11y({required int shard}) {
           _Screen.libraryStartDays ||
           _Screen.goEasy ||
           _Screen.skipPage ||
-          _Screen.notTodaySheet:
+          _Screen.notTodaySheet ||
+          _Screen.notTodayOffer:
         await tester.tapByKey(AppKeys.workoutStack);
         await tester.pumpTimes();
         // read here for the reason the upsync run is started here: `_initApp`
@@ -2576,6 +2609,9 @@ void a11y({required int shard}) {
             await tester.tapByKey(AppKeys.notTodayDay);
             await tester.pumpTimes();
             expect(find.byKey(AppKeys.skipSheet), findsOneWidget);
+          case _Screen.notTodayOffer:
+            // the screen is only honest if the ask is on it
+            expect(find.byKey(AppKeys.notTodayOffer), findsOneWidget);
           default:
             break;
         }

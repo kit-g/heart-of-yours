@@ -14,6 +14,7 @@ const _programActions = 'program_actions';
 const _programBases = 'program_bases';
 const _programsOwed = 'programs_owed';
 const _skips = 'skips';
+const _skipSnapshots = 'skip_snapshots';
 const _anomalies = 'anomalies';
 const _workoutPlans = 'workout_plans';
 const _charts = 'charts';

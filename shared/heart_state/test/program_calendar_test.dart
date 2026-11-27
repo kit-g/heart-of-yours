@@ -74,6 +74,102 @@ void main() {
     });
   });
 
+  group('undoneDay', () {
+    // days are Monday, Wednesday, Friday; 2026-10-12 is a Monday
+    // begun the week before: a program nobody has trained yet is not behind
+    final begun = [DateTime(2026, 10, 9, 18)];
+    DateTime? undone(
+      Program p,
+      DateTime now, {
+      Iterable<DateTime>? marks,
+      ProgramPosition? at,
+      DateTime? resumedAt,
+    }) {
+      return undoneDay(p, at ?? position(p), marks: marks ?? begun, now: now, resumedAt: resumedAt);
+    }
+
+    test('the latest preferred day behind today, when nothing happened on it or since', () {
+      // Thursday: Wednesday went by
+      expect(undone(program(), DateTime(2026, 10, 15, 9)), DateTime(2026, 10, 14));
+      // the next Monday: Friday did
+      expect(undone(program(), DateTime(2026, 10, 19, 7)), DateTime(2026, 10, 16));
+    });
+
+    test('today is never behind: its session can still be done', () {
+      // Wednesday morning, Monday trained
+      final marks = [DateTime(2026, 10, 12, 18)];
+      expect(undone(program(), DateTime(2026, 10, 14, 7), marks: marks), isNull);
+    });
+
+    test('a workout or a skip on the day, or any day since, settles it', () {
+      final thursday = DateTime(2026, 10, 15, 9);
+      expect(undone(program(), thursday, marks: [DateTime(2026, 10, 14, 19)]), isNull);
+      // done a day late: the days are a hint, never a gate
+      expect(undone(program(), thursday, marks: [DateTime(2026, 10, 15, 7)]), isNull);
+      // the day before does not
+      expect(undone(program(), thursday, marks: [DateTime(2026, 10, 13, 19)]), DateTime(2026, 10, 14));
+    });
+
+    test('a mark is placed on the day it fell on here, not in UTC', () {
+      // late on the Wednesday, local: its UTC day may already be Thursday
+      final late = DateTime(2026, 10, 14, 23, 30).toUtc();
+      expect(undone(program(), DateTime(2026, 10, 15, 9), marks: [late]), isNull);
+    });
+
+    test('nothing done in it at all is a program not begun, or a history not read yet: not asked about', () {
+      expect(undone(program(), DateTime(2026, 10, 15, 9), marks: const []), isNull);
+    });
+
+    test('a day inside a pause was nobody\'s to train', () {
+      final thursday = DateTime(2026, 10, 15, 9);
+      // brought back this morning: Wednesday was in the pause
+      expect(undone(program(), thursday, resumedAt: DateTime(2026, 10, 15, 8)), isNull);
+      // brought back on Tuesday: Wednesday was a day of its own
+      expect(undone(program(), thursday, resumedAt: DateTime(2026, 10, 13, 8)), DateTime(2026, 10, 14));
+    });
+
+    test('nothing was due before the program existed', () {
+      final p = Program(
+        id: 'p1',
+        name: 'Full body',
+        days: const {1, 3, 5},
+        sessions: const ['a', 'b', 'c'],
+        joined: {'a': joined, 'b': joined, 'c': joined},
+        createdAt: DateTime(2026, 10, 15, 8),
+      );
+      expect(undone(p, DateTime(2026, 10, 15, 9)), isNull);
+      // made on the day itself: that day's session was its to do
+      final friday = DateTime(2026, 10, 16);
+      final made = Program(
+        id: 'p1',
+        name: 'Full body',
+        days: const {1, 3, 5},
+        sessions: const ['a', 'b', 'c'],
+        joined: {'a': joined, 'b': joined, 'c': joined},
+        createdAt: DateTime(2026, 10, 16, 8),
+      );
+      expect(undone(made, DateTime(2026, 10, 17, 9)), friday);
+    });
+
+    test('no days, archived, or nothing up next: nothing was ever due', () {
+      final thursday = DateTime(2026, 10, 15, 9);
+      expect(undone(program(days: const {}), thursday), isNull);
+      expect(undone(program(archived: true), thursday), isNull);
+      final p = program(weeks: 1);
+      final finished = ProgramPosition.of(
+        p,
+        marks: [
+          for (final (index, session) in ['a', 'b', 'c'].indexed)
+            ProgramMark(templateId: session, at: DateTime.utc(2026, 9, 2 + index), isWorkout: true),
+        ],
+        actions: const [],
+        now: thursday,
+      );
+      expect(finished.finished, isTrue);
+      expect(undone(p, thursday, at: finished), isNull);
+    });
+  });
+
   group('occurrenceOf', () {
     final p = program();
     final done = workout('w1', 'a', DateTime.utc(2026, 10, 5, 8));

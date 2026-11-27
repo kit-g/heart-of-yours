@@ -187,6 +187,18 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// (#350), or its "Keep". Templates are the template list's to edit.
   final Future<void> Function(Iterable<String> sessions, {required String from, required String to})? onAdvance;
 
+  /// A skip was just made, a program's or a plain day's: whoever keeps what
+  /// the day looked like (#445) takes it now, before the server is asked.
+  /// Set by the app once both exist; it never throws.
+  Future<void> Function(TrainingSkip skip, String userId)? onSkipped;
+
+  /// A skip was taken back, by id.
+  Future<void> Function(String skipId)? onUnskipped;
+
+  /// A skip was recorded again under a new id, [to], its reason given: the
+  /// same moment, so whatever was kept under [from] is [to]'s now.
+  Future<void> Function(String from, String to)? onSkipReplaced;
+
   /// Every program read: a launch with many programs asks a few at a time,
   /// not in one burst the gateway's concurrency limit answers with a 500
   /// (#660); only while [uid] is the account, with its remote leg open.
@@ -245,6 +257,12 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
 
   /// Whether the mirror's programs have been read.
   bool get hasLoaded => _loaded;
+
+  /// Whether the skips are as whole as this launch can make them: the
+  /// server's read over the mirror's, or the mirror's alone with no server to
+  /// ask. Until then a day another device set aside may not be known here.
+  bool get skipsSettled => _skipsSettled;
+  bool _skipsSettled = false;
 
   /// Every program, archived ones included, oldest first.
   List<Program> get all => UnmodifiableListView(_programs.values);
@@ -308,6 +326,22 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
       final at = day.isUtc ? mark.at.toUtc() : mark.at.toLocal();
       return at.year == day.year && at.month == day.month && at.day == day.day;
     });
+  }
+
+  /// The preferred day of [program] that last went by with its session undone
+  /// and nothing since ([undoneDay]); null when none did.
+  DateTime? undoneDayOf(Program program, {required DateTime now, int firstWeekday = DateTime.monday}) {
+    return undoneDay(
+      program,
+      position(program, now: now, firstWeekday: firstWeekday),
+      marks: (_marks[program.id] ?? const <ProgramMark>[]).map((mark) => mark.at),
+      now: now,
+      // a day inside a pause was nobody's to train
+      resumedAt: (_actions[program.id] ?? const <ProgramAction>[])
+          .where((action) => action.kind == .resume)
+          .map((action) => action.at)
+          .fold<DateTime?>(null, (latest, at) => latest == null || at.isAfter(latest) ? at : latest),
+    );
   }
 
   /// What became of [session] in [program]'s week [week] (#391): the workout or
@@ -470,6 +504,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   void onSignOut() {
     userId = null;
     _loaded = false;
+    _skipsSettled = false;
     _programs.clear();
     _actions.clear();
     _bases.clear();
@@ -509,7 +544,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     // for whoever waits on it: a link from a calendar (#391)
     notifyListeners();
 
-    if (!_remote.allowed) return;
+    if (!_remote.allowed) {
+      _skipsSettled = true;
+      notifyListeners();
+      return;
+    }
 
     await _step(() => _flush(id));
 
@@ -525,6 +564,10 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     });
 
     await _step(() => _pullSkips(id));
+    if (userId == id) {
+      _skipsSettled = true;
+      notifyListeners();
+    }
 
     // an archived program's history is read once; nothing moves it after
     await Future.wait([
@@ -1169,7 +1212,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// (`docs/2026-10-11.programs.md`): the position moves on, and a growth
   /// rule never reads a skip. History, not state: taking it back is [unskip].
   Future<TrainingSkip> skip(Program program, {required String session, SkipReason? reason, DateTime? at}) {
-    return _skipOf(
+    return _skipNow(
       TrainingSkip(
         id: uuidV7(),
         at: at ?? DateTime.timestamp(),
@@ -1183,24 +1226,40 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// "Not today" (#312) on a day no program asked anything of: the day set
   /// aside, and nothing else. Heart records it and prescribes nothing.
   Future<TrainingSkip> skipDay({SkipReason? reason, DateTime? at}) {
-    return _skipOf(TrainingSkip(id: uuidV7(), at: at ?? DateTime.timestamp(), reason: reason?.value));
+    return _skipNow(TrainingSkip(id: uuidV7(), at: at ?? DateTime.timestamp(), reason: reason?.value));
+  }
+
+  /// [skip] made, and told to [onSkipped] at once: what the day looked like
+  /// is taken as the skip is made, not after the server has answered.
+  Future<TrainingSkip> _skipNow(TrainingSkip skip) async {
+    final taking = switch (userId) {
+      final String uid => onSkipped?.call(skip, uid),
+      null => null,
+    };
+    try {
+      return await _skipOf(skip);
+    } finally {
+      await taking;
+    }
   }
 
   /// [skip] again with [reason], the one tap offered after it. The server keeps
   /// a skip as it was first recorded, so the reason comes as the same moment
   /// under a new id, and the first one goes.
   Future<TrainingSkip> giveReason(TrainingSkip skip, SkipReason reason) async {
-    await unskip(skip);
-    return _skipOf(
-      TrainingSkip(
-        id: uuidV7(),
-        at: skip.at,
-        reason: reason.value,
-        weather: skip.weather,
-        templateId: skip.templateId,
-        programId: skip.programId,
-      ),
+    final again = TrainingSkip(
+      id: uuidV7(),
+      at: skip.at,
+      reason: reason.value,
+      weather: skip.weather,
+      templateId: skip.templateId,
+      programId: skip.programId,
     );
+    // the same skip, said again: what was taken of its day goes with it to
+    // the new id, before the first is deleted and a read can prune it
+    if ((skip.id, again.id) case (final String from, final String to)) await onSkipReplaced?.call(from, to);
+    await _unskip(skip);
+    return _skipOf(again);
   }
 
   Future<TrainingSkip> _skipOf(TrainingSkip skip) async {
@@ -1236,6 +1295,14 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
 
   /// Takes [skip] back: its session, if it had one, is due again.
   Future<void> unskip(TrainingSkip skip) async {
+    try {
+      await _unskip(skip);
+    } finally {
+      if (skip.id case final String id) await onUnskipped?.call(id);
+    }
+  }
+
+  Future<void> _unskip(TrainingSkip skip) async {
     final programId = skip.programId;
     final skipId = skip.id;
     if (skipId == null) return;

@@ -318,6 +318,11 @@ enum ShortcutsChannel {
 
     static func register(with messenger: FlutterBinaryMessenger) {
         let channel = FlutterMethodChannel(name: "heart/shortcuts", binaryMessenger: messenger)
+        // "Not today" asked for while the app is alive (#445): Dart takes the
+        // moment now rather than at the next resume
+        NotTodayOutside.handoff = {
+            DispatchQueue.main.async { channel.invokeMethod("skips", arguments: nil) }
+        }
         channel.setMethodCallHandler { call, result in
             switch call.method {
             case "setTemplates":
@@ -355,6 +360,12 @@ enum ShortcutsChannel {
                     UserDefaults.standard.removeObject(forKey: sessionKey)
                 }
                 result(nil)
+            case "setNotToday":
+                // "Not today" from outside the app (#445), or none of it
+                publishNotToday(call.arguments as? [String: Any])
+                result(nil)
+            case "takeSkips":
+                result(NotTodayOutside.take())
             case "setEnabled":
                 // the icon's menu; the App Shortcuts are in the binary
                 enabled = call.arguments as? Bool ?? false
@@ -416,6 +427,26 @@ enum ShortcutsChannel {
         return stored.compactMap { entry in
             guard let id = entry["id"], let name = entry["name"] else { return nil }
             return (id, name)
+        }
+    }
+
+    /// Keeps what Dart published for "Not today" and redraws what shows it.
+    /// A moment asked for and not yet taken is one Dart does not know of: its
+    /// day stays marked until Dart, having recorded it, says so itself.
+    static func publishNotToday(
+        _ published: [String: Any]?,
+        to defaults: UserDefaults? = TrainingSnapshot.suite,
+        now: Date = Date()
+    ) {
+        var snapshot: NotTodaySnapshot? = nil
+        if let label = published?["label"] as? String, let done = published?["done"] as? String {
+            snapshot = NotTodaySnapshot(label: label, done: done, day: published?["day"] as? String)
+            if snapshot?.day == nil, NotTodayOutside.waiting(on: now, in: defaults) {
+                snapshot?.day = NotTodaySnapshot.day(of: now)
+            }
+        }
+        if NotTodaySnapshot.write(snapshot, to: defaults) {
+            NotTodaySnapshot.reload()
         }
     }
 

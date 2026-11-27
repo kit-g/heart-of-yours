@@ -60,6 +60,9 @@ class MainActivity : FlutterFragmentActivity() {
     /// the Live Activity uses on iOS, carrying one command at a time.
     private var commands: MethodChannel? = null
 
+    /// The `heart/shortcuts` channel, while the engine runs.
+    private var shortcuts: MethodChannel? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         commands = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "heart/ongoing_workout").also(CommandRelay::attach)
@@ -79,7 +82,9 @@ class MainActivity : FlutterFragmentActivity() {
         }
 
         // the launcher's per-template shortcuts (#286)
-        ShortcutsChannel.register(this, flutterEngine.dartExecutor.binaryMessenger)
+        // …and "Not today" asked for outside the app (#445), told to Dart
+        // while this engine is up
+        shortcuts = ShortcutsChannel.register(this, flutterEngine.dartExecutor.binaryMessenger).also(NotToday::attach)
         WidgetsChannel.register(this, flutterEngine.dartExecutor.binaryMessenger)
         // the Wear OS app (#250)
         WatchChannel.register(this, flutterEngine.dartExecutor.binaryMessenger)
@@ -152,6 +157,8 @@ class MainActivity : FlutterFragmentActivity() {
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
         commands?.let(CommandRelay::detach)
+        shortcuts?.let(NotToday::detach)
+        shortcuts = null
         WatchChannel.unregister(this)
         commands = null
         super.cleanUpFlutterEngine(flutterEngine)

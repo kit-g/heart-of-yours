@@ -115,3 +115,100 @@ final class QuickActionsTests: XCTestCase {
         XCTAssertNil(QuickActions.link(of: foreign))
     }
 }
+
+/// "Not today" from outside the app (#445): the moment is kept for Dart, the
+/// day is marked at once, and nothing is offered while nothing is published.
+final class NotTodayOutsideTests: XCTestCase {
+    private var defaults: UserDefaults!
+    private let suite = "NotTodayOutsideTests"
+    private var calendar = Calendar(identifier: .gregorian)
+    private let words = NotTodaySnapshot(label: "Not today", done: "Today is set aside", day: nil)
+
+    override func setUp() {
+        super.setUp()
+        defaults = UserDefaults(suiteName: suite)
+        defaults.removePersistentDomain(forName: suite)
+        calendar.timeZone = TimeZone(identifier: "America/Vancouver")!
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: suite)
+        super.tearDown()
+    }
+
+    private func date(_ day: Int, hour: Int = 9) -> Date {
+        calendar.date(from: DateComponents(year: 2026, month: 11, day: day, hour: hour))!
+    }
+
+    func testWithNothingPublishedItIsOffAndKeepsNothing() {
+        XCTAssertEqual(NotTodayOutside.record(now: date(26), defaults: defaults, calendar: calendar), .off)
+        XCTAssertTrue(NotTodayOutside.take(from: defaults).isEmpty)
+    }
+
+    func testKeepsTheMomentAndMarksTheDay() {
+        NotTodaySnapshot.write(words, to: defaults)
+
+        let outcome = NotTodayOutside.record(now: date(26), defaults: defaults, calendar: calendar)
+
+        XCTAssertEqual(outcome, .setAside("Today is set aside"))
+        XCTAssertEqual(NotTodaySnapshot.read(from: defaults)?.day, "2026-11-26")
+        XCTAssertEqual(NotTodayOutside.take(from: defaults), [Int64(date(26).timeIntervalSince1970 * 1000)])
+        // taken once
+        XCTAssertTrue(NotTodayOutside.take(from: defaults).isEmpty)
+    }
+
+    func testASecondAskTheSameDayKeepsNothingMore() {
+        NotTodaySnapshot.write(words, to: defaults)
+        _ = NotTodayOutside.record(now: date(26), defaults: defaults, calendar: calendar)
+
+        let again = NotTodayOutside.record(now: date(26, hour: 20), defaults: defaults, calendar: calendar)
+
+        XCTAssertEqual(again, .already("Today is set aside"))
+        XCTAssertEqual(NotTodayOutside.take(from: defaults).count, 1)
+    }
+
+    func testTheNextDayCanBeSetAsideAgain() {
+        NotTodaySnapshot.write(words, to: defaults)
+        _ = NotTodayOutside.record(now: date(26), defaults: defaults, calendar: calendar)
+
+        let next = NotTodayOutside.record(now: date(27), defaults: defaults, calendar: calendar)
+
+        XCTAssertEqual(next, .setAside("Today is set aside"))
+        XCTAssertEqual(NotTodayOutside.take(from: defaults).count, 2)
+    }
+
+    func testWhatDartPublishesKeepsTheDayOfAMomentItHasNotTaken() {
+        NotTodaySnapshot.write(words, to: defaults)
+        let now = Date()
+        _ = NotTodayOutside.record(now: now, defaults: defaults)
+
+        // Dart, not knowing of it yet, says today is free
+        ShortcutsChannel.publishNotToday(["label": "Not today", "done": "Today is set aside"], to: defaults, now: now)
+        XCTAssertEqual(NotTodaySnapshot.read(from: defaults)?.day, NotTodaySnapshot.day(of: now))
+
+        // once taken and, say, undone in the app, Dart's word stands
+        _ = NotTodayOutside.take(from: defaults)
+        ShortcutsChannel.publishNotToday(["label": "Not today", "done": "Today is set aside"], to: defaults, now: now)
+        XCTAssertNil(NotTodaySnapshot.read(from: defaults)?.day)
+    }
+
+    func testTheDayIsNamedAsDartNamesItWhateverTheDevicesCalendar() {
+        // a phone on the Buddhist calendar is in 2569; Dart says 2026
+        var buddhist = Calendar(identifier: .buddhist)
+        buddhist.timeZone = calendar.timeZone
+        XCTAssertEqual(NotTodaySnapshot.day(of: date(26), calendar: buddhist).prefix(4), "2569")
+
+        var gregorian = NotTodaySnapshot.gregorian
+        gregorian.timeZone = calendar.timeZone
+        XCTAssertEqual(NotTodaySnapshot.day(of: date(26), calendar: gregorian), "2026-11-26")
+        XCTAssertEqual(NotTodaySnapshot.gregorian.identifier, .gregorian)
+    }
+
+    func testPublishingNothingTakesItAway() {
+        NotTodaySnapshot.write(words, to: defaults)
+
+        ShortcutsChannel.publishNotToday(nil, to: defaults)
+
+        XCTAssertNil(NotTodaySnapshot.read(from: defaults))
+    }
+}

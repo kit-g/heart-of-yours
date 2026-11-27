@@ -204,4 +204,7 @@ const _migrations = <int, List<String>>{
     addWorkoutLoggedBy,
     addWorkoutLoggedByName,
   ],
+  36: [
+    createSkipSnapshots,
+  ],
 };

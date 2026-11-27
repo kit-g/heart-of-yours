@@ -52,6 +52,7 @@ export 'src/screen_choices.dart';
 export 'src/workout_review.dart';
 export 'src/stats.dart';
 export 'src/set_stopwatch.dart';
+export 'src/skip_snapshots.dart';
 export 'src/skips.dart';
 export 'src/supersets.dart';
 export 'src/template_drafting.dart';

@@ -320,6 +320,9 @@ abstract final class AppKeys {
   /// aside.
   static const notTodayDay = Key('Workout.notToday');
   static const notTodayUndo = Key('Workout.notToday.undo');
+  static const notTodayOffer = Key('Workout.notToday.offer');
+  static const notTodayAccept = Key('Workout.notToday.offer.accept');
+  static const notTodayDecline = Key('Workout.notToday.offer.decline');
 
   /// The sheet after a skip (#312): its reason chips, and its Undo.
   static const skipSheet = Key('Skip.sheet');

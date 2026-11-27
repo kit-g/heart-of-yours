@@ -142,12 +142,12 @@ void main() {
       // localization silently
       // every Swift file of the app: the phrases in Shortcuts.swift, the rest
       // commands' words in RestVoice.swift, the questions' in Questions.swift
-      final swift = Directory('${root.path}/../../ios/Runner')
-          .listSync()
-          .whereType<File>()
-          .where((file) => file.path.endsWith('.swift'))
-          .map((file) => file.readAsStringSync())
-          .join('\n');
+      // — and the one the app compiles from the widget extension's folder
+      // that speaks: the "Not today" action (#445), in StartSnapshot.swift
+      final swift = [
+        ...Directory('${root.path}/../../ios/Runner').listSync().whereType<File>(),
+        File('${root.path}/../../ios/OngoingWorkout/StartSnapshot.swift'),
+      ].where((file) => file.path.endsWith('.swift')).map((file) => file.readAsStringSync()).join('\n');
       for (final key in [...runnerShortcutPhraseKeys, ...runnerShortcutTitleKeys]) {
         final english = (translations['en']![key] as String)
             .replaceAll(r'${applicationName}', r'\(.applicationName)')

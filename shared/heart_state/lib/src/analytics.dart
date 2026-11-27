@@ -654,8 +654,16 @@ class Analytics {
   /// A skip taken back with its Undo: how often "Not today" was a slip.
   void programUnskipped() => _log(_programUnskipped);
 
-  /// "Not today" (#312) on a day no program asked for, from the Workout tab.
-  void daySkipped() => _log(_daySkipped);
+  /// "Not today" (#312) on a day no program asked for: from the Workout tab,
+  /// or from [outside] the app, the widget, the launcher or a shortcut (#445).
+  void daySkipped({bool outside = false}) {
+    _log(_daySkipped, {
+      _source: switch (outside) {
+        true => 'outside',
+        false => 'tab',
+      },
+    });
+  }
 
   /// The one-tap reason after a skip, a program's or a plain day's: which
   /// tag, never anything about the day.

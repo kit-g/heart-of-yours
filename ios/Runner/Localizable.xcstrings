@@ -221,6 +221,28 @@
         }
       }
     },
+    "Heart can't set today aside right now. Open Heart, and check that Not today is on in its settings.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heart no puede marcar el día ahora. Abre Heart y comprueba que «Hoy no» está activado en los ajustes."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heart ne peut pas marquer cette journée pour le moment. Ouvrez Heart et vérifiez que « Pas aujourd’hui » est activé dans les réglages."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сейчас Heart не может отметить этот день. Откройте Heart и проверьте, что функция «Не сегодня» включена в настройках."
+          }
+        }
+      }
+    },
     "Heart could not answer that right now": {
       "localizations": {
         "es": {
@@ -481,6 +503,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Тренировка не идёт"
+          }
+        }
+      }
+    },
+    "Not today": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy no"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas aujourd’hui"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не сегодня"
           }
         }
       }

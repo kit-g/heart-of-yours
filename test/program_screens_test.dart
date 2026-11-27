@@ -15,6 +15,7 @@ import 'package:heart/presentation/routes/workout/workout.dart' show ProgramPage
 import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/program_progress.dart';
+import 'package:heart_db/heart_db.dart' show SkipSnapshotRow;
 import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetailKeys, startingWorkout;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -1119,6 +1120,188 @@ void main() {
       Preferences.of(tester.element(find.byType(MaterialApp))).setFeature(.notToday, on: false);
       await tester.pumpTimes();
       expect(find.byKey(AppKeys.skipThatDay), findsNothing);
+    });
+  });
+
+  group('the one ask for Not today (#445)', () {
+    void features({FeatureAnswer notToday = .unasked}) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-programs': FeatureAnswer.on.name,
+        'feature-notToday': notToday.name,
+      });
+    }
+
+    /// The program on every day of the week, so that yesterday was one of its
+    /// days whenever the test runs, with nothing logged on it or since.
+    void withDays(Set<int> days) {
+      final onDays = Program(
+        id: 'p1',
+        name: 'Split',
+        perWeek: 3,
+        days: days,
+        sessions: const ['t1', 't2'],
+        createdAt: DateTime.utc(2026, 10, 1),
+      );
+      when(db.getPrograms(userId)).thenAnswer((_) async => [onDays]);
+      when(api.getPrograms()).thenAnswer((_) async => [onDays]);
+      when(db.getTemplates(userId)).thenAnswer(
+        (_) async => [template('t1', 0, 'Push', programId: 'p1'), template('t2', 1, 'Pull', programId: 'p1')],
+      );
+      // begun, and then left: a program with nothing done in it is not asked about
+      when(db.getProgramMarks(userId, 'p1')).thenAnswer(
+        (_) async => [
+          ProgramMark(templateId: 't1', at: DateTime.now().subtract(const Duration(days: 3)), isWorkout: true),
+        ],
+      );
+    }
+
+    testWidgets('a session undone past its day asks, once; yes puts the button in its place', (tester) async {
+      features();
+      withDays(const {1, 2, 3, 4, 5, 6, 7});
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.notTodayOffer), findsOneWidget);
+      expect(find.byKey(AppKeys.notTodayDay), findsNothing);
+
+      await tester.tapByKey(AppKeys.notTodayAccept);
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.notTodayOffer), findsNothing);
+      expect(find.byKey(AppKeys.notTodayDay), findsOneWidget);
+      final preferences = Preferences.of(tester.element(find.byType(MaterialApp)));
+      expect(preferences.isOn(.notToday), isTrue);
+    });
+
+    testWidgets('no earns the one notice, and after it the tab is as it was', (tester) async {
+      features();
+      withDays(const {1, 2, 3, 4, 5, 6, 7});
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.notTodayDecline);
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.notTodayOffer), findsNothing);
+      expect(find.byKey(AppKeys.featureDeclinedNotice), findsOneWidget);
+
+      await tester.tap(
+        find.descendant(of: find.byKey(AppKeys.featureDeclinedNotice), matching: find.byType(IconButton)),
+      );
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.featureDeclinedNotice), findsNothing);
+      expect(find.byKey(AppKeys.notTodayOffer), findsNothing);
+      expect(find.byKey(AppKeys.notTodayDay), findsNothing);
+    });
+
+    testWidgets('nobody is asked without a day gone by: no days, or no program at all', (tester) async {
+      features();
+      withDays(const {});
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.notTodayOffer), findsNothing);
+      // never shown, so never spent: still unasked
+      final preferences = Preferences.of(tester.element(find.byType(MaterialApp)));
+      expect(preferences.featureAnswer(.notToday), FeatureAnswer.unasked);
+    });
+
+    testWidgets('an answer already given is never asked again', (tester) async {
+      for (final FeatureAnswer answered in [.off, .pending]) {
+        features(notToday: answered);
+        withDays(const {1, 2, 3, 4, 5, 6, 7});
+        await openWorkoutTab(tester);
+
+        expect(find.byKey(AppKeys.notTodayOffer), findsNothing, reason: '$answered');
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
+
+    testWidgets('a session done since settles the day: nothing to ask about', (tester) async {
+      features();
+      withDays(const {1, 2, 3, 4, 5, 6, 7});
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      when(db.getProgramMarks(userId, 'p1')).thenAnswer(
+        (_) async => [ProgramMark(templateId: 't1', at: yesterday, isWorkout: true)],
+      );
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.notTodayOffer), findsNothing);
+    });
+
+    testWidgets('a program nobody has trained yet is not behind: nothing to ask about', (tester) async {
+      features();
+      withDays(const {1, 2, 3, 4, 5, 6, 7});
+      when(db.getProgramMarks(userId, 'p1')).thenAnswer((_) async => []);
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.notTodayOffer), findsNothing);
+    });
+  });
+
+  group('what the day looked like, kept at the skip (#445)', () {
+    void features() {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-programs': FeatureAnswer.off.name,
+        'feature-notToday': FeatureAnswer.on.name,
+      });
+    }
+
+    testWidgets('a skip takes its snapshot as it is made, and Undo drops it', (tester) async {
+      features();
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.notTodayDay);
+      await tester.pumpTimes();
+
+      final day = verify(db.storeSkip(captureAny, userId)).captured.first as TrainingSkip;
+      final [id, uid, taken] = verify(db.storeSkipSnapshot(captureAny, captureAny, captureAny)).captured;
+      expect((id, uid), (day.id, userId));
+      expect((taken as SkipSnapshotRow).training.keys, containsAll(['lastWorkoutAt', 'setsWeek', 'recovering']));
+
+      // a reason is the same skip again: its snapshot moves to the new id
+      await tester.tapByKey(AppKeys.skipReason('busy'));
+      await tester.pumpTimes();
+      final given = verify(db.storeSkip(captureAny, userId)).captured.last as TrainingSkip;
+      verify(db.moveSkipSnapshot(day.id, given.id)).called(1);
+      verifyNever(db.deleteSkipSnapshot(any));
+
+      await tester.tapByKey(AppKeys.notTodayUndo);
+      await tester.pumpTimes();
+      verify(db.deleteSkipSnapshot(given.id)).called(1);
+    });
+
+    testWidgets("a skip's page reads what was kept, whatever the log says now", (tester) async {
+      final at = DateTime.utc(2026, 10, 8, 18);
+      final day = TrainingSkip(id: 'd1', at: at);
+      when(db.getSkips(userId)).thenAnswer((_) async => [day]);
+      when(api.getSkips()).thenAnswer((_) async => [day]);
+      when(db.getSkipSnapshot('d1')).thenAnswer(
+        (_) async => (
+          takenAt: at,
+          training: {
+            'lastWorkoutAt': '2026-10-05T08:00:00.000Z',
+            'setsWeek': 21,
+            'recovering': const ['back'],
+          },
+          body: {'steps': 4200.0},
+        ),
+      );
+      // the workouts it was taken from are gone since
+      when(db.getLensSets(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => []);
+      features();
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.historyStack);
+      await tester.pumpTimes();
+      await tester.tap(find.byKey(AppKeys.historySkip('d1')));
+      await tester.pumpTimes();
+
+      expect(find.text('3 days since the last workout'), findsOneWidget);
+      expect(find.text('21 sets in the week before'), findsOneWidget);
+      expect(find.textContaining('Still recovering'), findsOneWidget);
+      expect(find.textContaining('4,200'), findsOneWidget);
+      expect(find.text('From Health, on this device only'), findsOneWidget);
     });
   });
 

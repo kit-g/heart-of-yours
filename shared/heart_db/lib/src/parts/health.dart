@@ -130,10 +130,13 @@ mixin _Health on _LocalDatabase implements HealthSampleStore {
 
   @override
   Future<void> deleteHealthSamples(String userId) async {
-    await _db.delete(
-      _healthSamples,
-      where: 'user_id = ?',
-      whereArgs: [userId],
+    await _db.transaction(
+      (txn) async {
+        await txn.delete(_healthSamples, where: 'user_id = ?', whereArgs: [userId]);
+        // the copies a skip took of them (#445) go with the mirror; what the
+        // training looked like that day is not health's, and stays
+        await txn.update(_skipSnapshots, {'body': null}, where: 'user_id = ?', whereArgs: [userId]);
+      },
     );
   }
 }

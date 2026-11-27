@@ -119,6 +119,14 @@ final class ShortcutExercise {
   int get hashCode => Object.hash(id, name);
 }
 
+/// "Not today" from outside the app (#445), as the native layers show it:
+/// the words on the widget's tile, the launcher's item and the action's
+/// answer, in the app's language, and the calendar day ("2026-11-26", the
+/// device's own) already set aside, if today is — then they say [done] and
+/// offer nothing. The native side never writes a skip: it keeps the moment
+/// one was asked for, and Dart records it ([SystemShortcuts.takeSkips]).
+typedef ShortcutNotToday = ({String label, String done, String? day});
+
 /// The system's assistant layer: Siri, the Shortcuts app and Spotlight on iOS,
 /// the launcher on Android. Dart tells it what it needs to know and nothing
 /// more; the intents and shortcuts themselves live natively and open the app
@@ -149,6 +157,19 @@ abstract interface class SystemShortcuts {
 
   /// The exercises the assistant can name (#288). Empty: none.
   Future<void> setExercises(Iterable<ShortcutExercise> exercises);
+
+  /// "Not today" as it can be asked for from outside (#445); null takes the
+  /// widget's tile and the launcher's item away, and is what the feature
+  /// switched off, a workout running, and nobody signed in all publish.
+  Future<void> setNotToday(ShortcutNotToday? notToday);
+
+  /// The moments "Not today" was asked for from outside the app and not yet
+  /// recorded, oldest first; asking clears them.
+  Future<List<DateTime>> takeSkips();
+
+  /// Called when the native side has kept a moment for [takeSkips] while the
+  /// app is alive to take it; null stops listening.
+  set onSkips(void Function()? listener);
 }
 
 /// Null where there is no assistant layer to speak to.
@@ -215,6 +236,41 @@ class _MethodChannelShortcuts implements SystemShortcuts {
   @override
   Future<void> setExercises(Iterable<ShortcutExercise> exercises) {
     return _tell('setExercises', exercises.map((exercise) => exercise.toMap()).toList());
+  }
+
+  @override
+  Future<void> setNotToday(ShortcutNotToday? notToday) {
+    return _tell('setNotToday', switch (notToday) {
+      (:final label, :final done, :final day) => {'label': label, 'done': done, 'day': ?day},
+      null => null,
+    });
+  }
+
+  @override
+  Future<List<DateTime>> takeSkips() async {
+    try {
+      final kept = await _channel.invokeListMethod<Object?>('takeSkips') ?? const [];
+      return [
+        for (final each in kept)
+          if (each case final int millis) DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true),
+      ];
+    } on MissingPluginException {
+      return const [];
+    } on PlatformException catch (e, stacktrace) {
+      _logger.warning('Shortcuts takeSkips failed', e, stacktrace);
+      return const [];
+    }
+  }
+
+  @override
+  set onSkips(void Function()? listener) {
+    _channel.setMethodCallHandler(switch (listener) {
+      final void Function() listener => (call) async {
+        if (call.method != 'skips') throw MissingPluginException('heart/shortcuts has no ${call.method}');
+        listener();
+      },
+      null => null,
+    });
   }
 
   Future<void> _tell(String method, Object? arguments) async {

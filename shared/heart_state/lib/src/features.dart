@@ -55,11 +55,14 @@ enum Feature {
   previousInTemplate('previousInTemplate'),
 
   /// "Not today" (#312) on any day, not only a program's: one tap on the
-  /// Workout tab sets the day aside, with an optional reason. Settings-only,
-  /// like keep-awake: an offer on the Workout tab would be the very nag the
-  /// feature promises not to be. A program's own "Not today" is Programs',
-  /// and stays with it. Skips sync whatever the answer; off, the button and
-  /// the plain days in History go.
+  /// Workout tab sets the day aside, with an optional reason, and from
+  /// outside the app the same tap in the widget, the launcher and the
+  /// Shortcuts app (#445). Asked once, on the Workout tab, the first time a
+  /// program's session goes undone past its day: the moment it would have
+  /// had something to say, and never a standing nag on that tab. A program's
+  /// own "Not today" is Programs', and stays with it. Skips sync whatever the
+  /// answer; off, the button, the ways in from outside and the plain days in
+  /// History go.
   notToday('notToday'),
 
   /// Which plates go on each side of the bar for a set's weight (#132), from a
