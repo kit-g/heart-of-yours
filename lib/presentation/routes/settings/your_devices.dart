@@ -132,7 +132,7 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
       if (mounted) snack(context, l.deviceStartOverFailed);
       widget.onError?.call(error, stacktrace: stacktrace);
     } finally {
-      _startingOver.value = false;
+      if (mounted) _startingOver.value = false;
     }
   }
 
@@ -192,7 +192,7 @@ class _YourDevicesPageState extends State<YourDevicesPage> {
       if (mounted) snack(context, l.deviceRemoveFailed);
       widget.onError?.call(error, stacktrace: stacktrace);
     } finally {
-      _removing.value = {..._removing.value}..remove(deviceId);
+      if (mounted) _removing.value = {..._removing.value}..remove(deviceId);
     }
   }
 
@@ -426,7 +426,8 @@ class _Heading extends StatelessWidget {
   }
 }
 
-/// When a device last reached the server, by day: today, yesterday, a date,
+/// When a device last reached the server, by day: today or yesterday (while
+/// the reader's day is the server's UTC one), a date,
 /// and, past [_stale], since when it hasn't, with a quiet mark.
 class _Seen {
   final L l;
@@ -439,10 +440,13 @@ class _Seen {
   Widget? line(BuildContext context, CryptoDevice device) {
     final on = device.lastSeenOn;
     if (on == null) return null;
-    final now = DateTime.now().toUtc();
+    final here = DateTime.now();
+    final now = here.toUtc();
     // both UTC days, as the server keeps them
     final days = DateTime.utc(now.year, now.month, now.day).difference(on).inDays;
     final date = format.format(on);
+    // "today" is the reader's day: said only while it is the server's too
+    final sameDay = (here.year, here.month, here.day) == (now.year, now.month, now.day);
     return switch (days) {
       >= _stale => Row(
         key: AppKeys.deviceStale(device.id),
@@ -452,8 +456,8 @@ class _Seen {
           Flexible(child: Text(l.deviceNotSeenSince(date))),
         ],
       ),
-      <= 0 => Text(l.deviceSeenToday),
-      1 => Text(l.deviceSeenYesterday),
+      <= 0 when sameDay => Text(l.deviceSeenToday),
+      1 when sameDay => Text(l.deviceSeenYesterday),
       _ => Text(l.deviceSeenOn(date)),
     };
   }

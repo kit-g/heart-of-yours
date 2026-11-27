@@ -179,7 +179,7 @@ void main() {
       });
     }
 
-    test('removeCryptoDevice signs the removal in the query, encoded, and says whether it held a place', () async {
+    test('removeCryptoDevice signs the removal in the query, encoded', () async {
       const removedBy = '01a1b7d4-bdd4-7e28-a0cd-b45015ff37b4';
       // base64 with every character a query has to encode
       const signature = 'ab+/cd==';
@@ -189,18 +189,17 @@ void main() {
         method: 'DELETE',
         path: Router.cryptoDevice(_deviceId),
         query: query,
-        statusCode: 200,
-        body: {'placed': false},
+        statusCode: 204,
+        body: {},
       );
 
-      final placed = await api.removeCryptoDevice(
+      await api.removeCryptoDevice(
         _deviceId,
         removedBy: removedBy,
         signedAt: 1764115200,
         signature: signature,
       );
 
-      expect(placed, isFalse);
       final sent = verify(client.delete(captureAny, headers: anyNamed('headers'))).captured.single as Uri;
       expect(sent.path, '/v1/keys/devices/$_deviceId');
       expect(sent.queryParameters, query);

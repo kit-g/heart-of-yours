@@ -76,7 +76,8 @@ extension _Checking on DeviceKeys {
   /// The account's own list says this device was removed by naming it among
   /// the removed, or, once it published, by leaving it out: it forgets its
   /// keys and throws [_Removed]. Not a list read before its publish went
-  /// through, which couldn't have held it.
+  /// through, which couldn't have held it, and not one that lists it as
+  /// waiting, which only took its place: it waits again, keys kept.
   Future<List<CryptoDevice>> _listed(_Run run, String userId) async {
     final own = userId == run.userId;
     final (device, since) = (run.device, run.publishes);
@@ -93,14 +94,23 @@ extension _Checking on DeviceKeys {
       final String id => listed.removed.any((each) => each.id == id),
       null => false,
     };
-    final left = switch (device) {
-      _Device(published: true, :final id) =>
-        since == run.publishes && run.device?.id == id && !listed.devices.any((each) => each.id == id),
-      _ => false,
+    // read before its latest publish, a list can't tell where it stands
+    final current = switch (device) {
+      _Device(published: true, :final id) when since == run.publishes && run.device?.id == id => id,
+      _ => null,
     };
+    final waits = current != null && listed.waiting.any((each) => each.id == current);
+    final left = current != null && !waits && !listed.devices.any((each) => each.id == current);
     if (named || left) {
       await _forgetRemoved(run);
       throw _Removed();
+    }
+    // not seen for long, its place went to another and it waits for one
+    // again: it keeps its keys, and asks for a place at the next publish
+    if (waits) {
+      await run.saveDevice(device!.copyWith(published: false));
+      run.status = .waiting;
+      _changed(run);
     }
     run.ownListing = listed;
     return listed.devices;

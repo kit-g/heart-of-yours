@@ -510,11 +510,13 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
   Future<void> remove(String deviceId) async {
     final run = _run;
     if (run == null || !_remote.allowed) throw StateError('device keys are off');
-    final _Device device;
     try {
-      device = await _local(run);
-      if (deviceId == device.id) throw ArgumentError.value(deviceId, 'deviceId', 'this device');
-      await _serial(run, () => _removeSigned(run, device, deviceId));
+      await _serial(run, () async {
+        // read in its turn: a step before this one may have made it over
+        final device = await _local(run);
+        if (deviceId == device.id) throw ArgumentError.value(deviceId, 'deviceId', 'this device');
+        await _removeSigned(run, device, deviceId);
+      });
     } on _Removed {
       // this device was removed itself: it forgot its keys, and says so
       return;
@@ -610,10 +612,7 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     final own = [...listing.devices, ...listing.waiting].where((each) => each.id == self).firstOrNull;
     if (own == null || target.createdAt.isAfter(own.createdAt)) return null;
     final at = own.createdAt.add(const Duration(days: 1));
-    return switch (_now().isBefore(at)) {
-      true => at,
-      false => null,
-    };
+    return _now().isBefore(at) ? at : null;
   }
 
   /// Reads what waits for this device, opens it, keeps it, confirms it, then

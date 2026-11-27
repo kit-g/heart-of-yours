@@ -141,7 +141,7 @@ void main() {
 
   /// A signed removal of [deviceId], or of any device: for stubbing and
   /// verifying, whatever it was signed with.
-  Future<bool> removal([String? deviceId]) => api.removeCryptoDevice(
+  Future<void> removal([String? deviceId]) => api.removeCryptoDevice(
     deviceId ?? any,
     removedBy: anyNamed('removedBy'),
     signedAt: anyNamed('signedAt'),
@@ -305,7 +305,6 @@ void main() {
     testWidgets('another device is removed from its menu, asked once; this one has no menu', (tester) async {
       when(removal()).thenAnswer((_) async {
         when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => CryptoDevices([phone]));
-        return true;
       });
       await pump(tester);
       await openDevices(tester);
@@ -381,7 +380,6 @@ void main() {
       );
       when(removal()).thenAnswer((_) async {
         room = true;
-        return true;
       });
     }
 
@@ -489,8 +487,18 @@ void main() {
 
       Finder under(String id, String words) =>
           find.descendant(of: find.byKey(AppKeys.deviceRow(id)), matching: find.text(words));
-      expect(under(today_, l(tester).deviceSeenToday), findsOneWidget);
-      expect(under(yesterday, l(tester).deviceSeenYesterday), findsOneWidget);
+      // "today" only while the reader's day is the server's UTC one: across
+      // midnight between them, the date is said
+      final here = DateTime.now();
+      final sameDay = (here.year, here.month, here.day) == (today.year, today.month, today.day);
+      expect(
+        under(today_, sameDay ? l(tester).deviceSeenToday : l(tester).deviceSeenOn(format.format(daysAgo(0)))),
+        findsOneWidget,
+      );
+      expect(
+        under(yesterday, sameDay ? l(tester).deviceSeenYesterday : l(tester).deviceSeenOn(format.format(daysAgo(1)))),
+        findsOneWidget,
+      );
       expect(under(week, l(tester).deviceSeenOn(format.format(daysAgo(7)))), findsOneWidget);
       expect(under(old, l(tester).deviceNotSeenSince(format.format(daysAgo(20)))), findsOneWidget);
       expect(find.byKey(AppKeys.deviceStale(old)), findsOneWidget);
@@ -523,7 +531,7 @@ void main() {
           ],
         ),
       );
-      when(removal()).thenAnswer((_) async => false);
+      when(removal()).thenAnswer((_) async {});
       await pump(tester);
       await openDevices(tester);
       final format = DateFormat.yMMMd('en');
@@ -599,7 +607,7 @@ void main() {
     });
 
     testWidgets('while its removal runs, the row offers nothing more', (tester) async {
-      final answer = Completer<bool>();
+      final answer = Completer<void>();
       when(removal()).thenAnswer((_) => answer.future);
       await pump(tester);
       await openDevices(tester);
@@ -610,7 +618,7 @@ void main() {
 
       expect(find.byKey(AppKeys.deviceMenu(tablet.id)), findsNothing);
       when(api.getCryptoDevices(userId: anyNamed('userId'))).thenAnswer((_) async => CryptoDevices([phone]));
-      answer.complete(true);
+      answer.complete();
       await tester.pumpTimes();
       expect(find.byKey(AppKeys.deviceRow(tablet.id)), findsNothing);
     });

@@ -120,16 +120,19 @@ void main() {
       expect(vault.entries.keys, everyElement(startsWith('keys.dana.')));
     });
 
-    test('a device removed for good starts over under a new id', () async {
+    test('an id the server refuses as removed, and never took from here, starts over under a new one', () async {
       final vault = _Vault();
       final phone = device('dana', vault: vault);
       await phone.start('dana');
       final old = phone.deviceId!;
       server.remove(old);
 
-      // the vault says published, the server says removed: the next publish is
-      // a new device, as a phone restored over a removed one would be
-      final again = device('dana', vault: vault..unpublish('dana'));
+      // keys this install never published, under an id the server says was
+      // removed: as a phone restored over a removed one would be
+      vault
+        ..unpublish('dana')
+        ..entries.remove('keys.dana.known');
+      final again = device('dana', vault: vault);
       await again.start('dana');
 
       expect(again.deviceId, isNot(old));
@@ -277,9 +280,12 @@ void main() {
       await phone.devicesOf('dana');
       final predicted = phone.removableAt(server.devices[tablet.deviceId]!);
 
-      final refused = await phone
-          .remove(tablet.deviceId!)
-          .then<RemovalRefused?>((_) => null, onError: (Object e) => e as RemovalRefused);
+      RemovalRefused? refused;
+      try {
+        await phone.remove(tablet.deviceId!);
+      } on RemovalRefused catch (caught) {
+        refused = caught;
+      }
 
       expect(refused?.reason, RemovalRefusal.tooNew);
       final at = server.waiting[phone.deviceId]!.createdAt.add(const Duration(days: 1));
@@ -300,6 +306,51 @@ void main() {
       expect(phone.status, DeviceKeysStatus.published);
       expect(server.devices.keys, [phone.deviceId]);
       expect(phone.peer('dana')!.devices.map((each) => each.id), [phone.deviceId]);
+      expect(errors, isEmpty);
+    });
+
+    test('removed from elsewhere while it waits, it forgets its keys and comes back only when asked', () async {
+      await waiting();
+      final old = phone.deviceId!;
+
+      server.remove(old, by: tablet.deviceId);
+      // nothing tells it but its next try for a place
+      await phone.refresh();
+
+      expect(phone.status, DeviceKeysStatus.removed);
+      expect(phone.deviceId, isNull);
+      expect(server.devices.keys, [tablet.deviceId], reason: 'no new device by itself');
+      expect(server.waiting, isEmpty);
+      expect(errors, isEmpty);
+    });
+
+    test('a device whose place went to another while it was away waits again, keys kept', () async {
+      final vault = _Vault();
+      phone = device('dana', vault: vault);
+      final student = device('sam');
+      await phone.start('dana');
+      await student.start('sam');
+      final id = phone.deviceId!;
+      final sealed = await phone.seal('thread-1', 'hello');
+      // not seen for long: the server gave its place away, and keeps it waiting
+      server
+        ..waiting[id] = server.devices.remove(id)!
+        ..places = 0;
+
+      await phone.devicesOf('dana');
+
+      expect(phone.status, DeviceKeysStatus.waiting);
+      expect(phone.deviceId, id);
+      final opened = await phone.open('thread-1', [
+        (id: 'm1', senderId: 'dana', content: sealed.content, commitment: sealed.commitment),
+      ]);
+      expect((opened.single as Opened).text, 'hello', reason: 'nothing forgotten');
+
+      server.places = 1;
+      await phone.refresh();
+
+      expect(phone.status, DeviceKeysStatus.published);
+      expect(phone.deviceId, id);
       expect(errors, isEmpty);
     });
 

@@ -69,27 +69,23 @@ mixin _KeyRoutes on Requests {
 
   /// Removes one of the account's devices for good: it can't come back under
   /// its id. [removedBy], this device, signed the removal ([signature]) at
-  /// [signedAt], in seconds since the epoch (heart-api#483). Answers whether
-  /// the device removed held a place, rather than waiting for one.
+  /// [signedAt], in seconds since the epoch (heart-api#483). Answered with
+  /// nothing.
   ///
   /// Refused with `device_too_new` (and `removableAt`) for a device added
   /// before [removedBy] while [removedBy] is in its first day,
   /// `unknown_device`, `bad_signature`, `signature_expired`, and
   /// `device_removed` when [removedBy] itself was removed.
-  Future<bool> removeCryptoDevice(
+  Future<void> removeCryptoDevice(
     String deviceId, {
     required String removedBy,
     required int signedAt,
     required String signature,
-  }) async {
-    final (json, _) = await delete(
+  }) {
+    return delete(
       Router.cryptoDevice(deviceId),
       query: {'removedBy': removedBy, 'signedAt': '$signedAt', 'signature': signature},
     );
-    return switch (json) {
-      {'placed': final bool placed} => placed,
-      _ => true,
-    };
   }
 
   /// Adds single-use keys, by the name the device knows each by. Answers how

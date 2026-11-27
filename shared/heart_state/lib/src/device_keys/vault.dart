@@ -104,6 +104,13 @@ class _Run {
     await _vault.delete(_key(_removedMark));
   }
 
+  /// Whether the server ever took [deviceId] from this install, in a place
+  /// or waiting for one: what tells a device the account removed from an id
+  /// the server refuses that it never held from here.
+  Future<bool> known(String deviceId) async => await read('known') == deviceId;
+
+  Future<void> saveKnown(String deviceId) => write('known', deviceId);
+
   /// One of the account's own devices went: a note key that came from
   /// another device may be held by more than this one knows of, so the next
   /// note seals under one made here.
