@@ -39,5 +39,8 @@ import flutter_local_notifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "HomeWidgetsChannel") {
       HomeWidgetsChannel.register(with: registrar.messenger())
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "SoundsChannel") {
+      SoundsChannel.shared.register(with: registrar.messenger())
+    }
   }
 }

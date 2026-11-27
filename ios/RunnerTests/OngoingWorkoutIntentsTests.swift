@@ -1,3 +1,4 @@
+import UserNotifications
 import XCTest
 
 @testable import Runner
@@ -139,6 +140,20 @@ final class CompleteSetIntentTests: XCTestCase {
         XCTAssertNil(state.rest)
         XCTAssertNil(notification)
         XCTAssertEqual(state.next, "Next: set 2 · 185 kg x 5")
+    }
+
+    func testTheRestNotificationSoundsAsTheAppChose() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "OngoingWorkoutIntentsTests.sound"))
+        defer { defaults.removePersistentDomain(forName: "OngoingWorkoutIntentsTests.sound") }
+
+        XCTAssertEqual(OngoingWorkoutIntents.sound(in: defaults), .default, "workout sounds off: the system's, as in 1.9")
+        defaults.set("", forKey: OngoingWorkoutIntents.restSoundKey)
+        XCTAssertNil(OngoingWorkoutIntents.sound(in: defaults), "at volume off: none")
+        defaults.set("rest_bell", forKey: OngoingWorkoutIntents.restSoundKey)
+        XCTAssertEqual(
+            OngoingWorkoutIntents.sound(in: defaults),
+            UNNotificationSound(named: UNNotificationSoundName("rest_bell.wav"))
+        )
     }
 
     func testATickForAnotherSetIsStale() {

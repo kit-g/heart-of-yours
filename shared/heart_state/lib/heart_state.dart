@@ -63,4 +63,5 @@ export 'src/weeks.dart';
 export 'src/workout_activity.dart';
 export 'src/warmups.dart';
 export 'src/workout_plans.dart';
+export 'src/workout_sounds.dart';
 export 'src/workouts.dart';

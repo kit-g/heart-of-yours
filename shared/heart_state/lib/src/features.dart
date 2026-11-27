@@ -164,7 +164,14 @@ enum Feature {
   /// when an invitation is accepted, under this key, so the key is the
   /// server's too. Off pauses the connection: the coach stops seeing new
   /// workouts, and only the student resumes it.
-  yourCoach('yourCoach');
+  yourCoach('yourCoach'),
+
+  /// The rest's end, a ticked set and a record, heard (#169): a choice of
+  /// rest sound, a volume, and the two optional cues. Asked once, under the
+  /// exercise whose rest first runs out with the app on screen. Off, the
+  /// rest timer sounds as it did in 1.9 — the notification's system sound,
+  /// and nothing of the app's own.
+  workoutSounds('workoutSounds');
 
   final String value;
 

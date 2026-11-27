@@ -102,6 +102,8 @@ class _FeaturesPageState extends State<FeaturesPage> {
       .entryReview => const _EntryReviewSwitch(),
       .coachPeople => const _CoachPeopleSwitch(),
       .yourCoach => const _YourCoachSwitch(),
+      // the sound, the volume, and the cues that are not the rest's
+      .workoutSounds => const _FeatureSwitch(.workoutSounds, extra: _WorkoutSoundsSettings()),
       _ => _FeatureSwitch(feature),
     };
   }
@@ -286,7 +288,7 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
                         preferences.setOption(option, on: checked ?? false, source: .settings);
                       },
                       title: Text(option.title(l)),
-                      controlAffinity: ListTileControlAffinity.trailing,
+                      controlAffinity: .trailing,
                       dense: true,
                       visualDensity: .compact,
                       contentPadding: const .symmetric(horizontal: 8),
@@ -406,6 +408,131 @@ class const _WatchReadingsSwitch() extends StatelessWidget {
       visualDensity: .compact,
       contentPadding: const .symmetric(horizontal: 8),
       shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+    );
+  }
+}
+
+/// One of workout sounds' pick-one choices, as a value-and-menu row
+/// ([MenuValue]): four sounds or four volumes in Russian outgrow a 360dp
+/// phone as segments under the switch's indent (docs/style.md).
+class _SoundChoice<T extends Object> extends StatefulWidget {
+  final String title;
+  final T value;
+  final List<T> values;
+  final String Function(T) label;
+  final ValueChanged<T> onPicked;
+
+  const new({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.values,
+    required this.label,
+    required this.onPicked,
+  });
+
+  @override
+  State<_SoundChoice<T>> createState() => _SoundChoiceState<T>();
+}
+
+class _SoundChoiceState<T extends Object> extends State<_SoundChoice<T>> with HasHaptic<_SoundChoice<T>> {
+  /// The value at the row's end, which the menu hangs off.
+  final _valueKey = GlobalKey();
+
+  Future<void> _pick(BuildContext anchor) async {
+    final (:position, :constraints) = menuEndingUnder(anchor, width: 200);
+    final picked = await showMenu<T>(
+      context: anchor,
+      position: position,
+      constraints: constraints,
+      items: [
+        for (final each in widget.values)
+          CheckedPopupMenuItem<T>(value: each, checked: each == widget.value, child: Text(widget.label(each))),
+      ],
+    );
+    if (picked case final T picked when mounted) widget.onPicked(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const .symmetric(horizontal: 8),
+      dense: true,
+      visualDensity: .compact,
+      shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+      title: Text(widget.title),
+      trailing: MenuValue(widget.label(widget.value), key: _valueKey),
+      onTap: () {
+        buzz();
+        if (_valueKey.currentContext case final value?) _pick(value);
+      },
+    );
+  }
+}
+
+/// What workout sounds (#169) let the user choose, under its switch while it
+/// is on: the rest's sound and the volume, each played as it is picked, and a
+/// sound on every ticked set. The record's sound has no row until there are
+/// records to hear (#160): a switch for a sound that never plays is dead.
+class _WorkoutSoundsSettings extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final sounds = WorkoutSounds.watch(context);
+
+    return Column(
+      crossAxisAlignment: .stretch,
+      children: [
+        _SoundChoice<RestSound>(
+          key: AppKeys.restSoundPicker,
+          title: l.restSoundLabel,
+          value: sounds.restSound,
+          values: RestSound.values,
+          label: (sound) => sound.title(l),
+          onPicked: sounds.setRestSound,
+        ),
+        _SoundChoice<SoundVolume>(
+          key: AppKeys.soundVolumePicker,
+          title: l.soundVolume,
+          value: sounds.volume,
+          values: SoundVolume.values,
+          label: (volume) => volume.title(l),
+          onPicked: sounds.setVolume,
+        ),
+        CheckboxListTile.adaptive(
+          key: AppKeys.setDoneSound,
+          value: sounds.setDoneSound,
+          onChanged: (checked) {
+            HapticFeedback.selectionClick();
+            sounds.setSetDoneSound(on: checked ?? false);
+          },
+          title: Text(l.setDoneSoundLabel),
+          controlAffinity: .trailing,
+          dense: true,
+          visualDensity: .compact,
+          contentPadding: const .symmetric(horizontal: 8),
+          shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+        ),
+        // only where a record is noticed as it happens (#160): nothing else
+        // would sound it
+        if (Preferences.watch(context).isOn(.liveRecords))
+          CheckboxListTile.adaptive(
+            key: AppKeys.recordSound,
+            value: sounds.recordSound,
+            onChanged: (checked) {
+              HapticFeedback.selectionClick();
+              sounds.setRecordSound(on: checked ?? false);
+            },
+            title: Text(l.recordSoundLabel),
+            controlAffinity: .trailing,
+            dense: true,
+            visualDensity: .compact,
+            contentPadding: const .symmetric(horizontal: 8),
+            shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+          ),
+      ],
     );
   }
 }

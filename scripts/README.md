@@ -17,6 +17,9 @@ Test Summary job in `unit-tests.yml` runs.
   machine's shared Google credentials is touched; the key needs Viewer on the GA4
   property, which is granted in Analytics admin and not through GCP IAM. See the
   module docstring for the setup.
+- `sounds.py` — synthesises the workout sounds (#169) from sine waves and writes
+  each to `ios/Runner/Sounds/` and Android's `res/raw/`. Deterministic: rerun it
+  after changing a sound, and commit the .wav files it rewrites.
 - `count.sh` — counts Dart lines and reports the two biggest files.
 - `android_app_key.sh` — one-time recipe for generating the Android upload
   keystore; the live keystore is fetched from S3 during deploys.

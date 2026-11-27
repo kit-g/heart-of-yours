@@ -16,6 +16,7 @@ import 'package:heart/core/env/push.dart';
 import 'package:heart/core/env/rest_store.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/env/shortcuts.dart';
+import 'package:heart/core/env/sounds.dart';
 import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/utils/whats_new.dart';
 import 'package:heart/core/theme/state.dart';
@@ -60,6 +61,7 @@ import 'package:heart/presentation/navigation/device_keys.dart';
 import 'package:heart/presentation/navigation/system_shortcuts.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/navigation/watch.dart';
+import 'package:heart/presentation/navigation/workout_sounds.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart' show requestFinishAtLastSet;
 import 'package:heart_api/heart_api.dart';
@@ -291,6 +293,21 @@ class HeartApp extends StatelessWidget {
           // the second read is harmless.
           create: (_) => Preferences(analytics: analytics)..init(locale: PlatformDispatcher.instance.locale),
         ),
+        // the workout sounds (#169): through the native player, behind the
+        // same gate as everything else native
+        ChangeNotifierProvider<WorkoutSounds>(
+          create: (context) => WorkoutSounds(
+            preferences: Preferences.of(context),
+            player: switch (hasLocalNotifications ?? false) {
+              true => const ChannelSoundPlayer(),
+              false => null,
+            },
+            buzz: switch (hasLocalNotifications ?? false) {
+              true => HapticFeedback.vibrate,
+              false => null,
+            },
+          )..init(),
+        ),
         ChangeNotifierProvider<AppInfo>(
           create: (_) => AppInfo(
             onError: reportToSentry,
@@ -473,7 +490,7 @@ class HeartApp extends StatelessWidget {
           // same contract as _WorkoutTimeoutScheduler: with notifications off
           // the plugin is never initialized, so no call may reach it — and a
           // sign-out (or a uid switch) stops the timer through this
-          create: (_) => Alarms(
+          create: (context) => Alarms(
             cancelRestTimerNotifications: switch (hasLocalNotifications ?? false) {
               true => cancelExerciseNotification,
               false => null,
@@ -483,6 +500,8 @@ class HeartApp extends StatelessWidget {
               true => const PreferencesRestStore(),
               false => null,
             },
+            // the end of a rest is heard, or is where workout sounds are offered
+            onRunOut: (exerciseId) => WorkoutSounds.of(context).restRanOut(exerciseId),
           ),
         ),
         // The pull half of "the app is catching up": after `Workouts`, whose
@@ -844,20 +863,23 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
                         false => null,
                       },
                       child: PausePresenter(
-                        child: ProgramCalendarPresenter(
-                          // the push client (#567), running only with a
-                          // coaching switch on; the same gate again, since
-                          // it posts through the notifications plugin
-                          child: PushPresenter(
-                            client:
-                                widget.pushClient ??
-                                switch ((widget.hasLocalNotifications, kIsWeb)) {
-                                  (true, false) => FirebasePushClient(Theme.of(context).platform),
-                                  _ => null,
-                                },
-                            // this device's encryption keys (#555), by the
-                            // push client's rule
-                            child: DeviceKeysPresenter(child: child ?? const SizedBox.shrink()),
+                        child: WorkoutSoundsPresenter(
+                          enabled: widget.hasLocalNotifications,
+                          child: ProgramCalendarPresenter(
+                            // the push client (#567), running only with a
+                            // coaching switch on; the same gate again, since
+                            // it posts through the notifications plugin
+                            child: PushPresenter(
+                              client:
+                                  widget.pushClient ??
+                                  switch ((widget.hasLocalNotifications, kIsWeb)) {
+                                    (true, false) => FirebasePushClient(Theme.of(context).platform),
+                                    _ => null,
+                                  },
+                              // this device's encryption keys (#555), by the
+                              // push client's rule
+                              child: DeviceKeysPresenter(child: child ?? const SizedBox.shrink()),
+                            ),
                           ),
                         ),
                       ),

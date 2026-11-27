@@ -638,6 +638,7 @@ void main() {
         'pastWorkouts',
         'coachPeople',
         'yourCoach',
+        'workoutSounds',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });

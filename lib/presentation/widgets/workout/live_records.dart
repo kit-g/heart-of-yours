@@ -287,6 +287,9 @@ class _LiveRecordsScopeState extends State<_LiveRecordsScope> {
       HapticFeedback.mediumImpact();
       _celebrate(full: note.goals.any(isFinalRung));
     }
+    // the record's sound (#169) is a record's: a note that only reaches a
+    // goal's rung (#625) has its confetti and no fanfare
+    if (note.kinds.isNotEmpty) WorkoutSounds.of(context).record();
     _note.value = note;
     _noteTimer?.cancel();
     _noteTimer = Timer(_noteFor, _withdraw);
