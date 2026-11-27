@@ -541,20 +541,282 @@ void main() {
         {'s1'},
       );
     });
+  });
 
-    test('an archived program\'s history is read once', () async {
-      remote.programs = [
-        Program.fromJson({...program().toMap(), 'archived': true}),
-      ];
-      remote.actions['p1'] = [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime.utc(2026, 10, 2))];
+  group("every program's history in one read (#707)", () {
+    ProgramAction pause(String id, {String programId = 'p1'}) {
+      return ProgramAction(id: id, programId: programId, kind: .pause, at: DateTime.utc(2026, 10, 2));
+    }
+
+    ProgramBase base(String id, double value, {String programId = 'p1'}) {
+      return ProgramBase(id: id, programId: programId, exerciseId: bench, value: value, at: DateTime.utc(2026, 10, 1));
+    }
+
+    List<String> historyReads() => [
+      for (final call in remote.calls)
+        if (call.startsWith('getProgramHistory')) call,
+    ];
+
+    /// One page, as the server sends it.
+    ProgramHistoryChanges page(List<Map<String, dynamic>> programs, {String? cursor, bool hasMore = false}) {
+      return ProgramHistoryChanges.fromJson({'programs': programs, 'cursor': cursor, 'hasMore': hasMore});
+    }
+
+    test('a first launch asks without a cursor, for every program at once, and keeps its place', () async {
+      remote.programs = [program(), program(id: 'p2'), program(id: 'p3')];
+      remote.actions['p1'] = [pause('a1')];
+      remote.bases['p2'] = [base('b1', 100, programId: 'p2')];
 
       await programs.init();
-      await relaunch().init();
 
-      expect(remote.calls.where((each) => each.startsWith('getProgramActions')), hasLength(1));
+      expect(historyReads(), ['getProgramHistory -']);
+      expect(remote.calls.where((each) => each.startsWith('getProgramActions')), isEmpty);
+      expect(remote.calls.where((each) => each.startsWith('getProgramBases')), isEmpty);
+      expect(programs.actionsOf('p1').single.id, 'a1');
+      expect(programs.currentBasesOf('p2')[bench]?.value, 100);
+      expect(local.cursors[uid], 'h1');
+      expect(errors, isEmpty);
+    });
+
+    test('the next launch asks from there, and a launch with nothing new changes nothing', () async {
+      remote.programs = [program()];
+      remote.actions['p1'] = [pause('a1')];
+      await programs.init();
+      remote.calls.clear();
+
+      final next = relaunch();
+      await next.init();
+
+      expect(historyReads(), ['getProgramHistory h1']);
+      expect(next.actionsOf('p1').single.id, 'a1', reason: 'from the mirror');
+      expect(local.cursors[uid], 'h1');
+    });
+
+    test('a program whose history changed elsewhere comes whole, and the others stay as held', () async {
+      remote.programs = [program(), program(id: 'p2')];
+      remote.actions['p1'] = [pause('a1')];
+      remote.bases['p2'] = [base('b1', 100, programId: 'p2'), base('b2', 105, programId: 'p2')];
+      await programs.init();
+      // a workout deleted on another device took its base with it
+      remote.bases['p2'] = [base('b1', 100, programId: 'p2')];
+      remote.moved.add('p2');
+
+      final next = relaunch();
+      await next.init();
+
+      expect(next.basesOf('p2').map((each) => each.id), ['b1']);
+      expect(local.bases.map((each) => each.id), ['b1']);
+      expect(next.actionsOf('p1').single.id, 'a1');
+      expect(local.cursors[uid], 'h2');
+    });
+
+    test('a read cut short goes on from the new cursor straight away', () async {
+      remote.programs = [program(), program(id: 'p2')];
+      remote.historyAnswer = (since) => switch (since) {
+        null => page([remote.historyOf('p1').toMap()], cursor: 'c1', hasMore: true),
+        _ => page([remote.historyOf('p2').toMap()], cursor: 'c2'),
+      };
+      remote.actions['p2'] = [pause('a2', programId: 'p2')];
+
+      await programs.init();
+
+      expect(historyReads(), ['getProgramHistory -', 'getProgramHistory c1']);
+      expect(programs.actionsOf('p2').single.id, 'a2');
+      expect(local.cursors[uid], 'c2');
+    });
+
+    test('a server that says there is more where it already was is not asked forever', () async {
+      remote.programs = [program()];
+      remote.historyAnswer = (since) => page(const [], cursor: 'c1', hasMore: true);
+
+      await programs.init();
+
+      expect(historyReads(), ['getProgramHistory -', 'getProgramHistory c1']);
+    });
+
+    test('a cursor from before a database move starts the read over', () async {
+      local.cursors[uid] = 'old';
+      remote.programs = [program()];
+      remote.actions['p1'] = [pause('a1')];
+      remote.failures['getProgramHistory old'] = [
+        refusedAs({'code': 'stale_cursor'}),
+      ];
+
+      await programs.init();
+
+      expect(historyReads(), ['getProgramHistory old', 'getProgramHistory -']);
+      expect(programs.actionsOf('p1').single.id, 'a1');
+      expect(local.cursors[uid], 'h1');
+      expect(errors, isEmpty);
+    });
+
+    test('a cursor the server refuses outright is reported, and the next launch starts over', () async {
+      local.cursors[uid] = 'garbage';
+      remote.programs = [program()];
+      remote.failures['getProgramHistory garbage'] = [
+        refusedAs({'code': 'bad_request'}),
+      ];
+
+      await programs.init();
+
+      // not read as a fresh start there and then: the server said no
+      expect(historyReads(), ['getProgramHistory garbage']);
+      expect(local.cursors[uid], isNull);
+      expect('${errors.single}', 'ProgramReadFailed(getProgramHistory: bad_request)');
+    });
+
+    test('past something this build cannot read the place stays, so a build that can still gets it', () async {
+      remote.programs = [program(), program(id: 'p2')];
+      remote.historyAnswer = (since) => switch (since) {
+        null => page([remote.historyOf('p2').toMap()], cursor: 'c1', hasMore: true),
+        'c1' => page(
+          [
+            {
+              'programId': 'p1',
+              'actions': [
+                {'id': 'a1', 'kind': 'pause', 'at': '2026-10-02T00:00:00.000Z'},
+                // a step from a later build
+                {'id': 'a2', 'kind': 'teleport', 'at': '2026-10-03T00:00:00.000Z'},
+              ],
+              'bases': <Object>[],
+            },
+          ],
+          cursor: 'c2',
+          hasMore: true,
+        ),
+        _ => page(const [], cursor: 'c3'),
+      };
+
+      await programs.init();
+
+      expect(programs.actionsOf('p1').map((each) => each.id), ['a1'], reason: 'what can be read is taken');
+      expect(historyReads(), hasLength(3), reason: 'the read itself goes on');
+      expect(local.cursors[uid], 'c1', reason: 'the last place everything before was taken whole');
+      expect(errors, isEmpty);
+    });
+
+    test('a program the list has yet to bring holds the place too; one deleted here does not', () async {
+      remote.programs = [program()];
+      remote.historyAnswer = (since) => page([
+        remote.historyOf('p1').toMap(),
+        {'programId': 'elsewhere', 'actions': <Object>[], 'bases': <Object>[]},
+      ], cursor: 'c1');
+
+      await programs.init();
+      expect(local.cursors[uid], isNull);
+      expect(local.actions, isEmpty);
+
+      // deleted here, and the server yet to hear of it
+      local.owed.add((row: .program, id: 'elsewhere', programId: 'elsewhere', change: .deleted));
+      remote.failures['deleteProgram elsewhere false'] = [const ServerFailed()];
+      await relaunch().init();
+      expect(local.cursors[uid], 'c1');
+    });
+
+    test("what this device still owes outlives the server's copy of the history", () async {
+      final mine = pause('mine');
+      local.programs[uid] = [program()];
+      local.actions.add(mine);
+      local.owed.add((row: .action, id: 'mine', programId: 'p1', change: .created));
+      remote.programs = [program()];
+      remote.actions['p1'] = [pause('a1')];
+      remote.failures['replayProgramAction mine'] = [const ServerFailed()];
+
+      await programs.init();
+
+      expect(programs.actionsOf('p1').map((each) => each.id), unorderedEquals(['a1', 'mine']));
+      expect(local.actions.map((each) => each.id), unorderedEquals(['a1', 'mine']));
+    });
+
+    test('a list that could not be read does not cost the histories', () async {
+      local.programs[uid] = [program()];
+      local.cursors[uid] = 'h1';
+      remote.programs = [program()];
+      remote.actions['p1'] = [pause('a1')];
+      remote.moved.add('p1');
+      remote.failures['getPrograms'] = [const ServerFailed()];
+
+      await programs.init();
+
+      expect(historyReads(), ['getProgramHistory h1']);
+      expect(programs.actionsOf('p1').single.id, 'a1');
+    });
+
+    test('a step the server refused is dropped by a read of its program, though nothing changed there', () async {
+      final mine = pause('mine');
+      local.programs[uid] = [program()];
+      local.actions.add(mine);
+      local.cursors[uid] = 'h1';
+      local.owed.add((row: .action, id: 'mine', programId: 'p1', change: .created));
+      remote.programs = [program()];
+      remote.failures['replayProgramAction mine'] = [
+        refusedAs({'code': 'unknown_workout'}),
+      ];
+
+      await programs.init();
+
+      expect(remote.calls, containsAll(['getProgramActions p1', 'getProgramBases p1']));
+      expect(programs.actionsOf('p1'), isEmpty);
+      expect(local.actions, isEmpty);
+    });
+
+    test('a throttled read is asked again, and is no error', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.bases['p1'] = [base('b1', 100)];
+        remote.failures['getProgramHistory -'] = [
+          refusedAs({'code': 'rate_limited', 'retryAfter': 1}, status: 429),
+        ];
+
+        programs.init();
+        async.elapse(const Duration(seconds: 2));
+
+        expect(historyReads(), hasLength(2));
+        expect(programs.currentBasesOf('p1')[bench]?.value, 100);
+        expect(errors, isEmpty);
+      });
+    });
+
+    test('two starts at once, a launch and the one after a replay, are one read', () {
+      fakeAsync((async) {
+        local.programs[uid] = [program()];
+        remote.programs = [program()];
+        remote.holding = Completer();
+        remote.holds = (call) => call.startsWith('getProgramHistory');
+
+        programs.init();
+        async.flushMicrotasks();
+        programs.init();
+        async.flushMicrotasks();
+        remote.holding!.complete();
+        async.flushMicrotasks();
+
+        expect(historyReads(), hasLength(1));
+      });
+    });
+
+    test('signing out under the read keeps nothing of it', () {
+      fakeAsync((async) {
+        remote.programs = [program()];
+        remote.actions['p1'] = [pause('a1')];
+        remote.holding = Completer();
+        remote.holds = (call) => call.startsWith('getProgramHistory');
+
+        programs.init();
+        async.flushMicrotasks();
+        programs.userId = 'u2';
+        remote.holding!.complete();
+        async.flushMicrotasks();
+
+        expect(local.actions, isEmpty);
+        expect(local.cursors, isEmpty);
+        expect(errors, isEmpty);
+      });
     });
   });
 
+  // A launch reads every program's history at once (#707); these are the
+  // reads of one program, which a push or coming back to the app asks for.
   group('program reads, a few at a time (#660)', () {
     final throttled = refusedAs({'code': 'rate_limited', 'retryAfter': 1}, status: 429);
 
@@ -573,7 +835,9 @@ void main() {
         remote.programs = several();
         remote.holding = Completer();
 
-        programs.init();
+        for (final each in several()) {
+          programs.pull(each.id!);
+        }
         async.flushMicrotasks();
         expect(remote.inFlight, 4);
         remote.holding!.complete();
@@ -590,8 +854,12 @@ void main() {
 
     test('a read the user asked for goes ahead of the launch', () {
       fakeAsync((async) {
-        local.programs[uid] = several();
-        remote.programs = [...several(), program(id: 'pushed')];
+        // a launch's backlog: the history, and each coach's copy's changes
+        final coached = [
+          for (final each in several()) Program.fromJson({...each.toMap(), 'coachId': 'coach-muffin', 'revision': 1}),
+        ];
+        local.programs[uid] = coached;
+        remote.programs = [...coached, program(id: 'pushed')];
         remote.holding = Completer();
         remote.holds = (call) => call != 'getPrograms';
 
@@ -606,16 +874,16 @@ void main() {
       });
     });
 
-    test("a pull the user asked for reads afresh after the launch's, and the next one joins it", () {
+    test('a pull the user asked for reads afresh after the one running, and the next one joins it', () {
       fakeAsync((async) {
         local.programs[uid] = [program()];
         remote.programs = [program()];
         remote.holding = Completer();
         remote.holds = (call) => call.startsWith('getProgramActions') || call.startsWith('getProgramBases');
 
-        programs.init();
+        programs.pull('p1');
         async.flushMicrotasks();
-        // what the push says changed, after the launch's read went out
+        // what the push says changed, after the first read went out
         remote.actions['p1'] = [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime.utc(2026, 10, 2))];
         Program? pushed;
         programs.pull('p1').then((program) => pushed = program);
@@ -638,7 +906,7 @@ void main() {
         ];
         remote.failures['getProgramBases p1'] = [throttled];
 
-        programs.init();
+        programs.pull('p1');
         async.elapse(const Duration(seconds: 2));
 
         expect(asked('getProgramBases p1'), 2);
@@ -656,7 +924,7 @@ void main() {
           refusedAs({'code': 'mystery'}),
         ];
 
-        programs.init();
+        programs.pull('p1');
         async.elapse(const Duration(seconds: 5));
 
         expect(asked('getProgramBases p1'), 2);
@@ -670,7 +938,7 @@ void main() {
         remote.programs = [program()];
         remote.failures['getProgramBases p1'] = [const ServerFailed(), const ServerFailed(), const ServerFailed()];
 
-        programs.init();
+        programs.pull('p1');
         async.elapse(const Duration(seconds: 5));
 
         expect(asked('getProgramBases p1'), 3);
@@ -683,7 +951,7 @@ void main() {
         remote.programs = [program()];
         remote.failures['getProgramBases p1'] = [throttled, throttled, throttled];
 
-        programs.init();
+        programs.pull('p1');
         async.elapse(const Duration(seconds: 5));
 
         expect(asked('getProgramBases p1'), 3);
@@ -698,7 +966,7 @@ void main() {
         remote.failures['getProgramActions p1'] = [throttled, throttled, throttled];
         remote.failures['getProgramBases p1'] = [throttled, throttled, throttled];
 
-        programs.init();
+        programs.pull('p1');
         async.elapse(const Duration(seconds: 5));
 
         expect('${errors.single}', 'ProgramReadFailed(getProgramActions, getProgramBases: rate_limited)');
@@ -714,7 +982,7 @@ void main() {
         ];
         var done = false;
 
-        programs.init().then((_) => done = true);
+        programs.pull('p1').then((_) => done = true);
         async.flushMicrotasks();
 
         expect(done, isTrue, reason: 'no retry waits');
@@ -729,7 +997,7 @@ void main() {
         remote.programs = [program()];
         remote.failures['getProgramActions p1'] = [const ServerFailed(401)];
 
-        programs.init();
+        programs.pull('p1');
         async.elapse(const Duration(seconds: 5));
 
         expect(asked('getProgramActions p1'), 1);
@@ -743,7 +1011,7 @@ void main() {
         remote.failures['getProgramActions p1'] = [UpgradeRequired()];
         remote.failures['getProgramBases p1'] = [const ServerFailed(413)];
 
-        programs.init();
+        programs.pull('p1');
         async.elapse(const Duration(seconds: 5));
 
         expect(asked('getProgramActions p1'), 1);
@@ -757,7 +1025,7 @@ void main() {
         remote.failures['getProgramActions p1'] = [Exception('Connection closed')];
         remote.failures['getProgramBases p1'] = [const ServerFailed(), const ServerFailed(), const ServerFailed()];
 
-        programs.init();
+        programs.pull('p1');
         async.elapse(const Duration(seconds: 5));
 
         expect(errors.single, isA<ServerFailed>());
@@ -770,7 +1038,7 @@ void main() {
         remote.programs = [program()];
         remote.failures['getProgramActions p1'] = [dropped];
 
-        programs.init();
+        programs.pull('p1');
         async.flushMicrotasks();
 
         expect(errors, [dropped]);
@@ -783,7 +1051,7 @@ void main() {
         remote.holding = Completer();
         remote.holds = (call) => call == 'getProgramBases p1';
 
-        programs.init();
+        programs.pull('p1');
         async.elapse(const Duration(seconds: 60));
 
         expect(asked('getProgramBases p1'), 3);
@@ -803,7 +1071,7 @@ void main() {
         remote.programs = [program()];
         remote.failures['getProgramBases p1'] = [throttled];
 
-        programs.init();
+        programs.pull('p1');
         async.flushMicrotasks();
         access.account = false;
         async.elapse(const Duration(seconds: 5));
@@ -813,23 +1081,22 @@ void main() {
       });
     });
 
-    test('signing out under a joined read lets it, and the backlog, go quietly', () {
+    test('signing out under reads in flight lets them, and the backlog, go quietly', () {
       fakeAsync((async) {
         local.programs[uid] = several();
         remote.programs = several();
         remote.holding = Completer();
-        remote.holds = (call) => call != 'getPrograms';
 
         var finished = 0;
-        programs.init().then((_) => finished++);
-        async.flushMicrotasks();
-        programs.pull('p0').then((_) => finished++);
+        for (final each in several()) {
+          programs.pull(each.id!).then((_) => finished++);
+        }
         async.flushMicrotasks();
         programs.userId = 'u2';
         remote.holding!.complete();
         async.flushMicrotasks();
 
-        expect(finished, 2);
+        expect(finished, 6);
         expect(reads(), hasLength(4), reason: 'what waited for a slot is not sent');
         expect(local.actions, isEmpty);
         expect(errors, isEmpty);
@@ -2555,6 +2822,22 @@ class _Local implements LocalProgramService {
   @override
   Future<void> deleteProgramBase(String baseId) async => bases.removeWhere((each) => each.id == baseId);
 
+  /// Each account's place in the server's program history.
+  final cursors = <String, String>{};
+
+  @override
+  Future<String?> getProgramHistoryCursor(String userId) async => cursors[userId];
+
+  @override
+  Future<void> storeProgramHistoryCursor(String userId, String? cursor) async {
+    switch (cursor) {
+      case final String cursor:
+        cursors[userId] = cursor;
+      case null:
+        cursors.remove(userId);
+    }
+  }
+
   final owed = <ProgramOwed>[];
 
   @override
@@ -2591,12 +2874,17 @@ class _Remote implements RemoteProgramService {
   final failingFilings = <String>{};
 
   void _call(String call) {
+    _note(call);
+    if (failures[call] case final List<Object> pending when pending.isNotEmpty) throw pending.removeAt(0);
+  }
+
+  void _note(String call) {
     calls.add(call);
     if (failing) throw {'error': 'unavailable'};
     if (refusing case final String code) throw refusedAs({'code': code});
   }
 
-  /// What each program read throws before it answers, one per ask: a
+  /// What each call throws before it answers, one per ask: for a read, a
   /// throttled one is the server's `429 rate_limited` (#660, #681).
   final failures = <String, List<Object>>{};
 
@@ -2608,7 +2896,7 @@ class _Remote implements RemoteProgramService {
   var peak = 0;
 
   Future<void> _read(String call) async {
-    _call(call);
+    _note(call);
     inFlight++;
     peak = max(peak, inFlight);
     try {
@@ -2676,6 +2964,35 @@ class _Remote implements RemoteProgramService {
   Future<void> deleteProgram(String programId, {required bool keepTemplates}) async {
     _call('deleteProgram $programId $keepTemplates');
     programs = [...programs.where((each) => each.id != programId)];
+  }
+
+  /// The programs whose history changed since the last read; a read without
+  /// a cursor answers every program whatever this says.
+  final moved = <String>{};
+  var _cursors = 0;
+
+  /// The pages a read answers instead, by the cursor asked from.
+  ProgramHistoryChanges Function(String? since)? historyAnswer;
+
+  ProgramHistoryOf historyOf(String programId) {
+    return ProgramHistoryOf(programId: programId, actions: [...?actions[programId]], bases: [...?bases[programId]]);
+  }
+
+  @override
+  Future<ProgramHistoryChanges> getProgramHistory({String? since}) async {
+    await _read('getProgramHistory ${since ?? '-'}');
+    if (historyAnswer case final answer?) return answer(since);
+    final changed = [
+      for (final id in programs.map((each) => each.id).nonNulls)
+        if (since == null || moved.contains(id)) historyOf(id),
+    ];
+    moved.clear();
+    return ProgramHistoryChanges(
+      programs: changed,
+      // nothing new answers the cursor it was asked from
+      cursor: changed.isEmpty ? since : 'h${++_cursors}',
+      hasMore: false,
+    );
   }
 
   @override

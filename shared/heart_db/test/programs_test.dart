@@ -345,4 +345,45 @@ void main() {
     expect((await local.getPrograms('user-2')).single.id, 'p1');
     expect(await local.getProgramActions('user-2'), hasLength(1));
   });
+
+  group("the place in the server's program history (#707)", () {
+    test('storing a program again keeps its steps and bases', () async {
+      // as the app's own connection has them: the test database opens without
+      await db.execute('PRAGMA foreign_keys = ON');
+      await local.storeProgram(program(), userId);
+      await local.storeProgramActions('p1', [
+        ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime.utc(2026, 10, 2)),
+      ]);
+      await local.storeProgramBases('p1', [
+        ProgramBase(id: 'b1', programId: 'p1', exerciseId: bench, value: 100, at: DateTime.utc(2026, 10, 1)),
+      ]);
+
+      // a launch's list read, and a push that named the program
+      await local.storePrograms([program()], userId);
+      await local.storeProgram(program(), userId);
+
+      expect((await local.getProgramActions(userId)).map((each) => each.id), ['a1']);
+      expect((await local.getProgramBases(userId)).map((each) => each.id), ['b1']);
+    });
+
+    test('none before a first read, then the cursor as it was given, per account', () async {
+      expect(await local.getProgramHistoryCursor(userId), isNull);
+
+      await local.storeProgramHistoryCursor(userId, 'MjgzNjQ1fDAx');
+      await local.storeProgramHistoryCursor(userId, 'MjgzNjQ2fDAy');
+
+      expect(await local.getProgramHistoryCursor(userId), 'MjgzNjQ2fDAy');
+      expect(await local.getProgramHistoryCursor('user-2'), isNull);
+    });
+
+    test('forgotten on request, and with the account\'s rows', () async {
+      await local.storeProgramHistoryCursor(userId, 'c1');
+      await local.storeProgramHistoryCursor(userId, null);
+      expect(await local.getProgramHistoryCursor(userId), isNull);
+
+      await local.storeProgramHistoryCursor(userId, 'c2');
+      await local.eraseUser(userId);
+      expect(await local.getProgramHistoryCursor(userId), isNull);
+    });
+  });
 }

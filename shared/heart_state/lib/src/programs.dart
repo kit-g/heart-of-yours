@@ -74,6 +74,14 @@ abstract interface class LocalProgramService {
 
   Future<void> deleteProgramBase(String baseId);
 
+  /// Where [userId]'s next read of every program's history starts (#707):
+  /// the server's cursor as it gave it, null before a first read.
+  Future<String?> getProgramHistoryCursor(String userId);
+
+  /// Keeps [cursor] as that place; null forgets it, and the next read starts
+  /// over.
+  Future<void> storeProgramHistoryCursor(String userId, String? cursor);
+
   /// What [userId]'s server has not confirmed, in the order it was written.
   Future<List<ProgramOwed>> getProgramsOwed(String userId);
 
@@ -118,6 +126,14 @@ abstract interface class RemoteProgramService {
 
   Future<void> deleteProgram(String programId, {required bool keepTemplates});
 
+  /// A page of the account's programs with their history, each whole: all
+  /// of them without [since], else the ones whose history changed after that
+  /// cursor (#707). The `ServerRefusal` `stale_cursor` for a cursor the
+  /// server no longer knows.
+  Future<ProgramHistoryChanges> getProgramHistory({String? since});
+
+  /// One program's steps: the program a push named. A launch reads them all
+  /// at once, with [getProgramHistory].
   Future<List<ProgramAction>> getProgramActions(String programId);
 
   Future<Replayed<ProgramAction>> replayProgramAction(ProgramAction action);
@@ -494,7 +510,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   }
 
   /// Reads the mirror, then, with the remote leg open, sends what the server
-  /// is still owed, and reads the server's programs and each followed one's
+  /// is still owed, and reads the server's programs and what changed in their
   /// history over the mirror's: whole, but for what is still owed. Nobody
   /// awaits this, so each step reports what it throws and the next still runs.
   Future<void> init() async {
@@ -526,10 +542,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
 
     await _step(() => _pullSkips(id));
 
-    // an archived program's history is read once; nothing moves it after
     await Future.wait([
-      for (final MapEntry<String, Program>(key: programId, value: program) in [..._programs.entries])
-        if (!program.archived || !_actions.containsKey(programId)) _pullOnce(id, programId),
+      // every program's steps and bases in one read, and from the second
+      // launch on only what changed (#707). Whatever became of the list: a
+      // program the mirror lacks only holds the read's place where it is.
+      _historyOnce(id),
       for (final program in _coached) _changesOnce(id, program.id!),
     ]);
   }
@@ -709,6 +726,14 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
       Error.throwWithStackTrace(error, stackTrace);
     }
     if (userId != uid) return;
+    await _take(programId, actions, bases);
+    if (asked) _askedAt[programId] = DateTime.timestamp();
+    notifyListeners();
+  }
+
+  /// Keeps [actions] and [bases], the server's, as [programId]'s history, in
+  /// the mirror and here: whole, but for what this device still owes.
+  Future<void> _take(String programId, List<ProgramAction> actions, List<ProgramBase> bases) async {
     final ownActions = _rowsOwed<ProgramAction>(
       actions,
       .action,
@@ -720,8 +745,96 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
     await _service.storeProgramBases(programId, ownBases);
     _actions[programId] = ownActions..sort((a, b) => a.at.compareTo(b.at));
     _bases[programId] = ownBases..sort((a, b) => a.at.compareTo(b.at));
-    if (asked) _askedAt[programId] = DateTime.timestamp();
-    notifyListeners();
+  }
+
+  /// [_pullHistory] through [ProgramReads.once]: a launch's init and the one
+  /// that follows an anonymous store's replay ask at once.
+  Future<void> _historyOnce(String uid) {
+    return _reads.once('history', uid, _noProgram, () => _step(() => _pullHistory(uid)));
+  }
+
+  /// The most pages one read follows. A page holds up to fifty programs, so
+  /// this is far past any account; it only ends a read the server never does.
+  static const _historyPages = 40;
+
+  /// Reads the history of every program that changed since the place this
+  /// device last kept (#707), all of them the first time, over the mirror's:
+  /// each program comes whole, and replaces what is held but for what is
+  /// still owed. One request on a launch with nothing new, where each program
+  /// used to cost two.
+  ///
+  /// The place moves only past pages taken in full. The server sends a
+  /// program again only when its history changes, so past a page with
+  /// something this build cannot read (a step kind from a later one), or a
+  /// program this device does not hold yet, the place stays where it was and
+  /// the next launch reads from there again: nothing is lost to the build
+  /// that can read it. What can be read is taken meanwhile.
+  Future<void> _pullHistory(String uid) async {
+    var since = await _service.getProgramHistoryCursor(uid);
+    var keeping = true;
+    for (final _ in Iterable<void>.generate(_historyPages)) {
+      final ProgramHistoryChanges changes;
+      try {
+        changes = await _historyPage(uid, since);
+      } on _StaleCursor {
+        // from before the server's database moved: the place means nothing
+        // now, and the read starts over
+        await _service.storeProgramHistoryCursor(uid, null);
+        if (userId != uid) return;
+        since = null;
+        continue;
+      }
+      if (userId != uid) return;
+
+      var taken = changes.isWhole;
+      for (final ProgramHistoryOf(:programId, :actions, :bases) in changes.programs) {
+        if (!_programs.containsKey(programId)) {
+          // one deleted here, whose delete the server has yet to hear, has
+          // no history to keep; any other is one the list has yet to bring
+          taken = taken && _deletedHere(programId);
+          continue;
+        }
+        await _take(programId, actions, bases);
+        if (userId != uid) return;
+      }
+      if (changes.programs.isNotEmpty) notifyListeners();
+
+      final next = changes.cursor;
+      keeping = keeping && taken;
+      if (keeping && next != null && next != since) await _service.storeProgramHistoryCursor(uid, next);
+      if (userId != uid) return;
+      // no further page, or a server that says there is one where this one was
+      if (!changes.hasMore || next == null || next == since) return;
+      since = next;
+    }
+  }
+
+  /// One page of [_pullHistory], in a slot and retried like every program
+  /// read; a cursor the server no longer knows as [_StaleCursor].
+  ///
+  /// Any other refusal of a cursor is reported, and the cursor goes with it:
+  /// the server takes back what it gave unchanged, so one it refuses now it
+  /// refuses at every launch, and no program's history would be read again.
+  /// The next launch starts over instead.
+  Future<ProgramHistoryChanges> _historyPage(String uid, String? since) async {
+    try {
+      return await _reads(uid, 'getProgramHistory', () => _remoteService.getProgramHistory(since: since));
+    } on ProgramReadFailed catch (failed) {
+      switch ((since, failed.error)) {
+        case (String(), ServerRefusal(code: 'stale_cursor')):
+          throw const _StaleCursor();
+        case (String(), ServerRefusal()):
+          await _service.storeProgramHistoryCursor(uid, null);
+      }
+      rethrow;
+    }
+  }
+
+  bool _deletedHere(String programId) {
+    return switch (_owed[(ProgramRow.program, programId)]?.change) {
+      .deleted || .deletedKeepingTemplates => true,
+      .created || .edited || null => false,
+    };
   }
 
   /// Reads the account's skips from the server over the mirror's, but for
@@ -1811,6 +1924,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
   /// only fail the same way.
   Future<void> _flush(String uid) async {
     final owed = [..._owed.values]..sort((a, b) => _turn(a).compareTo(_turn(b)));
+    // programs with a row the server refused, each read whole again after
+    final refused = <String>{};
     for (final each in owed) {
       if (userId != uid) return;
       // settled on the way: a program's create files its sessions
@@ -1824,10 +1939,17 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
         onError?.call(e, stacktrace: s);
         // asking again gets the same answer: the row stays as it is here,
         // and the server's copy decides what the next read keeps
-        if (!_isRefusal(e)) return;
+        if (!_isRefusal(e)) break;
         await _settle(each.row, each.id);
+        // a step or base, that is: the launch's read brings only histories
+        // that changed on the server (#707), and a refused row changed none
+        if (each.row case .action || .base) refused.add(each.programId);
       }
     }
+    await Future.wait([
+      for (final programId in refused)
+        if (_programs.containsKey(programId)) _pullOnce(uid, programId),
+    ]);
   }
 
   static int _turn(ProgramOwed owed) {
@@ -1987,6 +2109,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry, SharedSessions
       onError?.call(e, stacktrace: s);
     }
   }
+}
+
+/// The server no longer knows the cursor a history read was made from.
+class _StaleCursor implements Exception {
+  const new();
 }
 
 /// The user's history with one of the library's programs (#F27): what its

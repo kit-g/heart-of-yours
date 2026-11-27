@@ -288,6 +288,86 @@ void main() {
     });
   });
 
+  group("every program's history in one read (#707)", () {
+    const history = {
+      'programs': [
+        {'programId': 'p0', 'actions': [], 'bases': []},
+        {
+          'programId': 'p1',
+          'actions': [
+            {'id': 'a1', 'kind': 'resume', 'at': '2026-10-01T00:00:00.000Z'},
+            // a step from a later build
+            {'id': 'a2', 'kind': 'teleport', 'at': '2026-10-02T00:00:00.000Z'},
+          ],
+          'bases': [
+            {'id': 'b1', 'exerciseId': 'e1', 'value': 100, 'at': '2026-10-03T00:00:00.000Z'},
+          ],
+        },
+      ],
+      'cursor': 'c1',
+      'hasMore': true,
+    };
+
+    test('a first read asks without a cursor, and each row is filed under its program', () async {
+      respond(client: client, method: 'GET', path: Router.programHistory, statusCode: 200, body: history);
+
+      final page = await api.getProgramHistory();
+
+      expect(page.cursor, 'c1');
+      expect(page.hasMore, isTrue);
+      final [empty, moved] = page.programs;
+      expect(empty.programId, 'p0');
+      expect(empty.actions, isEmpty);
+      expect(empty.bases, isEmpty);
+      expect([for (final action in moved.actions) (action.id, action.programId)], [('a1', 'p1')]);
+      expect([for (final base in moved.bases) (base.id, base.programId, base.value)], [('b1', 'p1', 100)]);
+    });
+
+    test('what this build cannot read is set aside, not dropped', () async {
+      respond(client: client, method: 'GET', path: Router.programHistory, statusCode: 200, body: history);
+
+      final page = await api.getProgramHistory();
+
+      expect(page.isWhole, isFalse);
+      expect(page.programs.last.unreadActions, [containsPair('id', 'a2')]);
+    });
+
+    test('a later read asks from the cursor it was given', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.programHistory,
+        query: {'since': 'c1'},
+        statusCode: 200,
+        body: {'programs': [], 'cursor': 'c1', 'hasMore': false},
+      );
+
+      final page = await api.getProgramHistory(since: 'c1');
+
+      expect(page.programs, isEmpty);
+      expect((page.cursor, page.hasMore), ('c1', false));
+    });
+
+    test('a cursor from before a database move is refused by its code', () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.programHistory,
+        query: {'since': 'old'},
+        statusCode: 400,
+        body: {'error': 'bad request', 'code': 'stale_cursor'},
+      );
+
+      await expectLater(api.getProgramHistory(since: 'old'), throwsA(refused('stale_cursor')));
+    });
+
+    test('an answer without its programs is unreadable, on the route', () async {
+      respond(client: client, method: 'GET', path: Router.programHistory, statusCode: 200, body: {'cursor': 'c1'});
+
+      await expectLater(api.getProgramHistory(), throwsA(isA<UnreadableAnswer>()));
+    });
+  });
+
   group('skips', () {
     Map<String, dynamic> skip(String id) {
       return {'id': id, 'at': '2026-10-03T07:00:00.000Z', 'templateId': 't2', 'programId': 'p1'};

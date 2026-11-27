@@ -126,35 +126,44 @@ mixin _Programs on _LocalDatabase {
       };
     }
 
-    await db.insert(
-      _programs,
-      {
-        'id': id,
-        'user_id': userId,
-        'name': name,
-        'note': note,
-        'source': source,
-        'per_week': perWeek,
-        'days': days.isEmpty ? null : jsonEncode(days),
-        'weeks': weeks,
-        'rules': jsonEncode(map['rules']),
-        'constraint_key': constraint,
-        'archived': archived ? 1 : 0,
-        'sessions': jsonEncode(sessions),
-        'created_at': createdAt?.toUtc().toIso8601String(),
-        'deload': encoded('deload'),
-        'phases': encoded('phases'),
-        'tests': encoded('tests'),
-        'coach_id': coachId,
-        'coach_name': coachName,
-        'waiting_since': waitingSince?.toUtc().toIso8601String(),
-        'revision': revision,
-        'session_revisions': switch (sessionRevisions) {
-          final revisions when revisions.isEmpty => null,
-          final revisions => jsonEncode(revisions),
-        },
+    final row = <String, Object?>{
+      'id': id,
+      'user_id': userId,
+      'name': name,
+      'note': note,
+      'source': source,
+      'per_week': perWeek,
+      'days': days.isEmpty ? null : jsonEncode(days),
+      'weeks': weeks,
+      'rules': jsonEncode(map['rules']),
+      'constraint_key': constraint,
+      'archived': archived ? 1 : 0,
+      'sessions': jsonEncode(sessions),
+      'created_at': createdAt?.toUtc().toIso8601String(),
+      'deload': encoded('deload'),
+      'phases': encoded('phases'),
+      'tests': encoded('tests'),
+      'coach_id': coachId,
+      'coach_name': coachName,
+      'waiting_since': waitingSince?.toUtc().toIso8601String(),
+      'revision': revision,
+      'session_revisions': switch (sessionRevisions) {
+        final revisions when revisions.isEmpty => null,
+        final revisions => jsonEncode(revisions),
       },
-      conflictAlgorithm: .replace,
+    };
+    // An upsert in place, never `INSERT OR REPLACE`: a replace deletes the
+    // row first, and with foreign keys on that takes the program's steps and
+    // bases with it. A launch stores every program, and reads back only the
+    // histories that changed (#707), so nothing would put them back.
+    final columns = row.keys.toList();
+    await db.rawInsert(
+      '''
+      INSERT INTO $_programs (${columns.join(', ')})
+      VALUES (${columns.map((_) => '?').join(', ')})
+      ON CONFLICT (id) DO UPDATE SET ${columns.where((column) => column != 'id').map((column) => '$column = excluded.$column').join(', ')}
+      ''',
+      [...row.values],
     );
   }
 
@@ -348,6 +357,47 @@ mixin _Programs on _LocalDatabase {
 
   Future<void> deleteProgramBase(String baseId) {
     return _db.delete(_programBases, where: 'id = ?', whereArgs: [baseId]);
+  }
+
+  /// The `syncs` key under which [userId]'s place in the server's program
+  /// history is kept (#707), per uid as the backfill marks are: a second
+  /// account on this device starts from the beginning.
+  static String programHistoryKey(String userId) => 'program_history:$userId';
+
+  /// Where [userId]'s next read of every program's history starts: the
+  /// server's cursor as it gave it, null before a first read. It says the
+  /// mirror holds every program's steps and bases up to there, so it is kept
+  /// in the same store, and goes when the account's rows do.
+  Future<String?> getProgramHistoryCursor(String userId) async {
+    final rows = await _db.query(
+      _syncs,
+      columns: ['version'],
+      where: 'table_name = ?',
+      whereArgs: [programHistoryKey(userId)],
+    );
+    return switch (rows) {
+      [{'version': final String cursor}] => cursor,
+      _ => null,
+    };
+  }
+
+  /// Keeps [cursor] as [userId]'s place, or forgets the place when null: the
+  /// next read then starts over.
+  Future<void> storeProgramHistoryCursor(String userId, String? cursor) async {
+    switch (cursor) {
+      case final String cursor:
+        await _db.insert(
+          _syncs,
+          {
+            'table_name': programHistoryKey(userId),
+            'version': cursor,
+            'synced_at': DateTime.now().toUtc().toIso8601String(),
+          },
+          conflictAlgorithm: .replace,
+        );
+      case null:
+        await _db.delete(_syncs, where: 'table_name = ?', whereArgs: [programHistoryKey(userId)]);
+    }
   }
 
   /// [userId]'s program writes the server has not confirmed, oldest first.
