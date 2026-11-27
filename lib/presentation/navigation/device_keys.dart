@@ -35,6 +35,7 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
   /// listened to: it also speaks at a sign-out, while the account is still
   /// there to start keys for (#734).
   Upsync? _upsync;
+  OpeningReads? _opening;
   late final AppReturns _lifecycle;
 
   /// The account keys run for, or null while they don't.
@@ -77,6 +78,11 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
       _upsync = upsync;
       upsync.opened.addListener(_sync);
     }
+    final opening = OpeningReads.maybeOf(context);
+    if (!identical(opening, _opening)) {
+      _opening?.removeListener(_sync);
+      _opening = opening?..addListener(_sync);
+    }
     final approval = DeviceKeys.of(context).approval;
     if (!identical(approval, _approval)) {
       _approval?.removeListener(_asked);
@@ -90,6 +96,7 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
     _preferences?.removeListener(_sync);
     _auth?.removeListener(_sync);
     _upsync?.opened.removeListener(_sync);
+    _opening?.removeListener(_sync);
     _approval?.removeListener(_asked);
     comparisonSheet.removeListener(_asked);
     _lifecycle.dispose();
@@ -110,6 +117,9 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
       case (null, String()):
         _running = null;
         keys.stop();
+      // a launch's own reads go first (#676); told again once they are in
+      case (String(), _) when !(_opening?.settled ?? true):
+        return;
       case (final String userId, _) when userId != _running || keys.status != .published:
         // again on every word from Auth, and as Upsync opens the leg, until the server has the
         // keys: the token, and the end of a replay, may come after the account

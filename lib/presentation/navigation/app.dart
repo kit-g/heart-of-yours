@@ -128,6 +128,11 @@ class HeartApp extends StatelessWidget {
             failures: remoteFailure,
           ),
         ),
+        // What waits for a launch's first reads (#676): above every notifier
+        // and presenter that asks it.
+        ChangeNotifierProvider<OpeningReads>(
+          create: (_) => OpeningReads(),
+        ),
         ChangeNotifierProvider<AppTheme>(
           create: (_) => AppTheme(),
         ),
@@ -575,7 +580,12 @@ class HeartApp extends StatelessWidget {
                 // stays closed until that one's own token lands (#363). The
                 // same uid re-reported — a token refresh, a profile edit —
                 // keeps it.
-                if (user?.id != current) api.unauthenticate();
+                if (user?.id != current) {
+                  api.unauthenticate();
+                  // and whatever waited for its launch is let go: the reads
+                  // find the session gone, and the next launch waits afresh
+                  OpeningReads.maybeOf(context)?.settle();
+                }
                 router.refresh();
                 switch ((keyedUserId(context), user)) {
                   // The session ended without the app's own log out, which
@@ -1126,6 +1136,23 @@ Future<void> _initApp(
     final exercises = Exercises.of(context);
     final Exercises(:isInitialized, :init) = exercises;
 
+    // From here the launch dials out, once the token below is on the client.
+    // What the opening page shows goes first; the rest of the session's reads
+    // (flagged entries here, coaching's and the device's keys in their
+    // presenters) wait until that is in, so one launch is not one burst
+    // (#676). Said now, before the first await: the presenters hear of the
+    // token the moment it lands. Only where the full start-up runs for an
+    // account: nothing else has reads to wait for.
+    final opening = OpeningReads.maybeOf(context);
+    final launch = switch (opening) {
+      final OpeningReads opening when !isInitialized && sessionToken != null => opening.begin(),
+      _ => null,
+    };
+    // this launch's alone to open: one that ended says nothing of the next
+    void opened() {
+      if (launch != null) opening?.settle(launch);
+    }
+
     final templates = Templates.of(context);
     final programs = Programs.of(context);
     final prefs = Preferences.of(context);
@@ -1168,7 +1195,18 @@ Future<void> _initApp(
     // token is on the client. The profile may have started a goals run before
     // it was; this one then follows it with the server's copy.
     Goals.of(context).init();
-    Anomalies.of(context).init();
+    // What is flagged and discarded is read from the device at once: totals
+    // leave discarded entries out from the first frame. The server's list
+    // over it is the part that waits.
+    final anomalies = Anomalies.of(context);
+    anomalies.read().whenComplete(() {
+      switch (opening) {
+        case final OpeningReads opening:
+          opening.after(anomalies.pull);
+        case null:
+          anomalies.pull();
+      }
+    });
     // the replay resumes from the ledger, so a launch mid-run picks up where
     // the last one stopped
     if (owed && userId != null) upsync.run(userId);
@@ -1184,35 +1222,41 @@ Future<void> _initApp(
       health.init();
 
       final owner = exercises.userId;
-      init(locale: languageTag()).then<void>(
-        // everything below reads or writes against the exercise catalog —
-        // templates and workouts persist rows with a foreign key onto
-        // `exercises.name`. Running them against an empty catalog trades a
-        // reported failure for a constraint violation, so they wait for one.
-        (_) => exercises.whenInitialized(owner, () {
-          // since workouts initialization looks up exercises
-          // in `Exercises`, we must chain these calls this way
-          workouts.init().then<void>(
-            (_) {
-              router.refresh();
-              // the rest a killed process left counting, if the workout it
-              // belongs to is the one just restored (#141)
-              alarms.restore(workouts.activeWorkout);
-              return _initTrainingData(
-                workouts: workouts,
-                previous: previous,
-                stats: stats,
-                templates: templates,
-                programs: programs,
-                backfill: backfill,
-                upsync: upsync,
-                preferences: prefs,
+      init(locale: languageTag())
+          // no catalog, so none of what follows it either: nothing to wait for
+          .whenComplete(() {
+            if (!exercises.isInitialized) opened();
+          })
+          .then<void>(
+            // everything below reads or writes against the exercise catalog —
+            // templates and workouts persist rows with a foreign key onto
+            // `exercises.name`. Running them against an empty catalog trades a
+            // reported failure for a constraint violation, so they wait for one.
+            (_) => exercises.whenInitialized(owner, () {
+              // since workouts initialization looks up exercises
+              // in `Exercises`, we must chain these calls this way
+              workouts.init().then<void>(
+                (_) {
+                  router.refresh();
+                  // the rest a killed process left counting, if the workout it
+                  // belongs to is the one just restored (#141)
+                  alarms.restore(workouts.activeWorkout);
+                  return _initTrainingData(
+                    workouts: workouts,
+                    previous: previous,
+                    stats: stats,
+                    templates: templates,
+                    programs: programs,
+                    backfill: backfill,
+                    upsync: upsync,
+                    preferences: prefs,
+                    onOpened: opened,
+                  );
+                },
               );
-            },
+              timers.init();
+            }),
           );
-          timers.init();
-        }),
-      );
     }
   });
 }
@@ -1318,6 +1362,7 @@ Future<void> _initTrainingData({
   required Backfill backfill,
   required Upsync upsync,
   required Preferences preferences,
+  VoidCallback? onOpened,
 }) {
   final templatesRead = templates.init();
   final programsRead = programs.init();
@@ -1326,7 +1371,15 @@ Future<void> _initTrainingData({
   // that ran it was opening the History screen — so a workout from the phone
   // reached the tablet's goals and previous-set tags a launch late, after some
   // unrelated visit to History had quietly seeded it.
-  return workouts.initHistory().then<void>(
+  final historyRead = workouts.initHistory();
+  // the opening page has what it shows once these three are in, whatever
+  // became of each: what waited for them goes now (#676)
+  if (onOpened != null) {
+    Future.wait<void>([
+      for (final read in [templatesRead, programsRead, historyRead]) read.then<void>((_) {}, onError: (_) {}),
+    ]).whenComplete(onOpened);
+  }
+  return historyRead.then<void>(
     (_) async {
       // both read training data straight out of that mirror, so they are only
       // correct once it has been filled

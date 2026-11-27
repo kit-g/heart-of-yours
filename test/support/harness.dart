@@ -50,6 +50,17 @@ void stubStartup(MockLocalDatabase db, MockApi api) {
   // …so a signed-in launch registers the account, and the server keeps it as sent
   when(api.registerAccount(any)).thenAnswer((invocation) async => invocation.positionalArguments.single);
 
+  stubStartupMirror(db);
+  when(api.getAccountSummary()).thenAnswer((_) async => const AccountSummary(collections: {}));
+
+  when(api.getExercises()).thenAnswer((_) async => <Exercise>[]);
+  when(api.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
+  when(api.getWorkoutGallery(cursor: anyNamed('cursor'))).thenAnswer((_) async => ProgressGalleryResponse.fromJson({}));
+}
+
+/// The device's half of [stubStartup]: an empty mirror that reads without
+/// tripping, for a test that brings a client of its own.
+void stubStartupMirror(MockLocalDatabase db) {
   when(
     db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
   ).thenAnswer((_) async => WorkoutAggregation.empty());
@@ -65,14 +76,8 @@ void stubStartup(MockLocalDatabase db, MockApi api) {
 
   // the history backfill: a device that has already paged everything down, so
   // no test that merely launches the app has to say anything about it
-  const nothing = AccountSummary(collections: {});
   when(db.isHistoryBackfilled(any)).thenAnswer((_) async => true);
-  when(db.mirrorSummary(any)).thenAnswer((_) async => nothing);
-  when(api.getAccountSummary()).thenAnswer((_) async => nothing);
-
-  when(api.getExercises()).thenAnswer((_) async => <Exercise>[]);
-  when(api.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
-  when(api.getWorkoutGallery(cursor: anyNamed('cursor'))).thenAnswer((_) async => ProgressGalleryResponse.fromJson({}));
+  when(db.mirrorSummary(any)).thenAnswer((_) async => const AccountSummary(collections: {}));
 }
 
 /// An analytics transport that keeps what it was told, for a test to assert
@@ -149,6 +154,10 @@ class TestAppHarness {
     // where encryption keys live (#555): none, so keys never run, unless a
     // test brings its own
     KeyVault? keyVault,
+    // whether the test lets start-up itself run, in real time: it then
+    // registers the account and lets the rest of the session's reads go, and
+    // nothing here stands in for either
+    bool startUp = false,
   }) async {
     final cfg = appConfig ?? AppConfig.test(allowsFeedbackFeature: false);
 
@@ -183,11 +192,16 @@ class TestAppHarness {
     // registered here instead, as coming back to the app would (#676)
     // Once Firebase's first word has arrived, which may take a few frames;
     // a test that signs in later registers through the sign-in itself.
-    for (var i = 0; i < 5; i++) {
+    //
+    // Nor does start-up get to say the opening page has its data, which the
+    // rest of the session's reads wait for (coaching's, the device's keys):
+    // said here too.
+    for (var i = 0; i < 5 && !startUp; i++) {
       await tester.pump();
       if (find.byType(Navigator).evaluate().firstOrNull case final Element element) {
         final auth = Auth.of(element);
         if (auth.user == null) continue;
+        OpeningReads.maybeOf(element)?.settle();
         unawaited(auth.registerAgain());
         break;
       }

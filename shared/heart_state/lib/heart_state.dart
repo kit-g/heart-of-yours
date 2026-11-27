@@ -30,6 +30,7 @@ export 'src/lens.dart';
 export 'src/locked_messages.dart';
 export 'src/messages.dart';
 export 'src/muscle_family.dart';
+export 'src/opening_reads.dart';
 export 'src/package.dart';
 export 'src/plates.dart';
 export 'src/password.dart';
