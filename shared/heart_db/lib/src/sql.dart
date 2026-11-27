@@ -736,16 +736,18 @@ GROUP BY _recent.exercise_id, _recent.workout_exercise_id, _recent.last_workout_
 """;
 
 /// Whether the set aliased `s` continues the effort before it (#614): a drop
-/// right after a ticked set of its exercise entry that is not a warm-up, the
-/// rule [DropEfforts] keeps in Dart. A drop after a set never ticked starts
-/// an effort of its own, as it does once finishing drops the unticked set.
+/// whose nearest earlier counted set in its exercise entry, ticked and not
+/// discarded, is not a warm-up; the rule [DropEfforts] keeps in Dart. A set
+/// never ticked or discarded is passed over, so discarding the set a drop
+/// follows leaves the drop to count, and discarding a drop never adds a set.
 /// Sets are in the order they were stored, which is the order the workout
 /// lists them. A drop set counts as one set however many drops it has, so
 /// the counts below leave these out; volume does not. The subquery runs for a
 /// drop alone.
 const _continuesEffort = """(CASE WHEN s.set_type IS 'drop' THEN coalesce(
-    (SELECT p.completed AND coalesce(p.set_type, 'normal') IS NOT 'warmup' FROM sets p
-     WHERE p.exercise_id = s.exercise_id AND p.rowid < s.rowid
+    (SELECT coalesce(p.set_type, 'normal') IS NOT 'warmup' FROM sets p
+     WHERE p.exercise_id = s.exercise_id AND p.rowid < s.rowid AND p.completed
+       /*discarded:p*/
      ORDER BY p.rowid DESC LIMIT 1),
     0
 ) ELSE 0 END)""";

@@ -15,7 +15,6 @@ void main() {
 
   test('a set and the drops after it are one effort, and the next plain set starts another', () {
     final sets = [set(.warmup), set(.normal), set(.drop), set(.drop), set(.normal), set(.drop)];
-    expect(sets.efforts.map((each) => each.continues), [false, false, true, true, false, true]);
     expect(sets.countEfforts(), 2);
   });
 
@@ -34,8 +33,18 @@ void main() {
     expect(sets.countEfforts((each) => each.setType != .warmup), 2);
   });
 
-  test('a drop after a set never ticked starts an effort, as once finishing drops that set', () {
+  test('a set never ticked is passed over, as once finishing removes it', () {
     expect([set(.normal, done: false), set(.drop)].countEfforts(), 1);
-    expect([set(.normal), set(.drop, done: false), set(.drop)].countEfforts(), 2);
+    expect([set(.normal), set(.drop, done: false), set(.drop)].countEfforts(), 1);
+    expect([set(.normal), set(.warmup, done: false), set(.drop)].countEfforts(), 1);
+    expect([set(.normal), set(.warmup), set(.drop)].countEfforts(), 2);
+  });
+
+  test('a discarded entry is passed over: discarding never adds a set, and its drops still count', () {
+    final top = set(.normal);
+    final bad = set(.drop);
+    bool kept(ExerciseSet each) => isTickedWorkingSet(each) && each != top && each != bad;
+    expect([top, set(.drop)].countEfforts(kept), 1);
+    expect([set(.normal), bad, set(.drop)].countEfforts(kept), 1);
   });
 }

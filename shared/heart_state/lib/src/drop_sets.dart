@@ -9,29 +9,27 @@ import 'package:heart_models/heart_models.dart';
 /// An effort counts as one set wherever sets are counted; volume counts the
 /// load of every drop; and no drop can hold a record (the decisions on #614).
 extension DropEfforts on Iterable<ExerciseSet> {
-  /// Each set, and whether it continues the effort before it: a drop after a
-  /// set that is not a warm-up. How a workout shows its sets, ticked or not.
-  Iterable<(ExerciseSet, {bool continues})> get efforts sync* {
-    ExerciseSet? before;
-    for (final set in this) {
-      yield (set, continues: set.setType == .drop && before != null && before.setType != .warmup);
-      before = set;
-    }
-  }
-
   /// The sets [counts] keeps (by default the ticked working sets: the count
   /// History, the muscle map, the lenses, goals and recaps show), counted by
-  /// effort. A drop right after a set [counts] keeps adds nothing; one after a
-  /// set it leaves out, one never ticked or a discarded entry, starts an
-  /// effort of its own. That is also what the finished workout says once the
-  /// unticked set is gone, and what the stored counts read.
+  /// effort. A drop adds nothing when the nearest set before it that [counts]
+  /// keeps is not a warm-up. A set [counts] leaves out, one never ticked or a
+  /// discarded entry, is passed over: finishing removes an unticked set, so
+  /// the workout in progress and the finished one count alike, and discarding
+  /// a bad entry never adds a set. A ticked warm-up ends the effort before it
+  /// whether or not it is counted. The stored counts read the same rule.
   int countEfforts([bool Function(ExerciseSet set) counts = isTickedWorkingSet]) {
     var count = 0;
-    var keptBefore = false;
+    var open = false;
     for (final set in this) {
       final kept = counts(set);
-      if (kept && !(set.setType == .drop && keptBefore)) count++;
-      keptBefore = kept && set.setType != .warmup;
+      if (set.setType == .warmup) {
+        if (kept) count++;
+        if (kept || set.isCompleted) open = false;
+        continue;
+      }
+      if (!kept) continue;
+      if (!(set.setType == .drop && open)) count++;
+      open = true;
     }
     return count;
   }

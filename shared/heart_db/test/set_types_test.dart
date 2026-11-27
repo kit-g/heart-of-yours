@@ -372,12 +372,11 @@ void main() {
 
     test('in a recap\'s sets, which still carry every drop for the volume', () async {
       final sets = await local.getRecapSets(from, to, userId: user);
-      expect(sets.map((each) => (each.drop, each.continuesEffort)), [
-        (false, false),
-        (true, true),
-        (true, true),
-        (false, false),
-      ]);
+      // the read asks for no order within a workout
+      expect(
+        sets.map((each) => (each.drop, each.continuesEffort)),
+        unorderedEquals([(false, false), (true, true), (true, true), (false, false)]),
+      );
     });
 
     test('and no drop holds a record', () async {
@@ -399,7 +398,55 @@ void main() {
       expect(volume!.single.$1, 100 * 8 + 80 * 6 + 70 * 20 + 100 * 6);
     });
 
-    test('a drop after a set never ticked starts an effort of its own', () async {
+    test('a set never ticked is passed over, as once finishing removes it', () async {
+      await local.storeWorkoutHistory([
+        server(
+          'w2',
+          start: '2026-09-27T08:00:00.000Z',
+          sets: [
+            set('p-top', weight: 100, reps: 8),
+            {...set('q-drop', weight: 80, reps: 6, type: 'drop'), 'completed': false},
+            set('r-drop', weight: 60, reps: 6, type: 'drop'),
+          ],
+        ),
+      ], user);
+
+      final lens = await local.getLensSets(from, to, userId: user);
+      expect(lens.map((each) => each.sets), unorderedEquals([2, 1]));
+    });
+
+    test('a discarded set is passed over: its drops still count, and discarding a drop adds no set', () async {
+      Anomaly discardedSet(String id) {
+        return Anomaly.fromJson({
+          'id': 'anomaly-$id',
+          'workoutId': 'w1',
+          'workoutStart': '2026-09-20T08:00:00.000Z',
+          'setId': id,
+          'exerciseId': benchPress.id,
+          'exerciseName': 'Bench Press',
+          'reason': 'outlier_weight',
+          'observed': {'weight': 100, 'reps': 8},
+          'typical': 100,
+          'status': 'invalid',
+          'detectedAt': '2026-09-21T03:00:00.000Z',
+        });
+      }
+
+      local.leavesOutDiscarded = true;
+      addTearDown(() => local.leavesOutDiscarded = false);
+
+      // the first drop gone: the second still continues the top set
+      await local.storeAnomaly(discardedSet('y-drop'), user);
+      expect((await local.getLensSets(from, to, userId: user)).single.sets, 2);
+
+      // the top set gone too: the drop left is the effort, and still a set
+      await local.storeAnomaly(discardedSet('a-top'), user);
+      expect((await local.getLensSets(from, to, userId: user)).single.sets, 2);
+      final [totals] = await local.getTrainingTotals(from, to, userId: user);
+      expect(totals.sets, 2);
+    });
+
+    test('a drop after a set never ticked starts an effort of its own, as it does once finished', () async {
       await local.storeWorkoutHistory([
         server(
           'w2',
