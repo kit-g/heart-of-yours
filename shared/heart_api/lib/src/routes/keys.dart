@@ -5,7 +5,8 @@ part of '../api.dart';
 /// The server holds public keys and sealed items only: nothing here ever
 /// carries a private key or words in the clear. A refusal is a
 /// [ServerRefusal], as everywhere, so a caller branches on its `code`
-/// (`device_removed`, `device_limit`, `rate_limited`, `queue_full`).
+/// (`device_removed`, `device_waiting`, `device_limit`, `device_too_new`,
+/// `rate_limited`, `queue_full`).
 /// The most devices one claim may name (heart-api#424).
 const _claimLimit = 10;
 
@@ -35,8 +36,10 @@ mixin _KeyRoutes on Requests {
   }
 
   /// The account's own devices, or, with [userId], those of someone it has or
-  /// had a connection with.
-  Future<List<CryptoDevice>> getCryptoDevices({String? userId}) async {
+  /// had a connection with. The account's own list also says which of its
+  /// devices wait for a place, which were removed lately, by which device,
+  /// and the day each was last seen (heart-api#483).
+  Future<CryptoDevices> getCryptoDevices({String? userId}) async {
     final (json, _) = await get(
       Router.cryptoDevices,
       // null rather than empty: an empty map still leaves a bare `?` on the path
@@ -45,7 +48,7 @@ mixin _KeyRoutes on Requests {
         null => null,
       },
     );
-    return CryptoDevices.fromJson(json).devices;
+    return CryptoDevices.fromJson(json);
   }
 
   /// Vouches for [deviceId], one of the account's devices that already
@@ -65,8 +68,29 @@ mixin _KeyRoutes on Requests {
   }
 
   /// Removes one of the account's devices for good: it can't come back under
-  /// its id.
-  Future<void> removeCryptoDevice(String deviceId) => delete(Router.cryptoDevice(deviceId));
+  /// its id. [removedBy], this device, signed the removal ([signature]) at
+  /// [signedAt], in seconds since the epoch (heart-api#483). Answers whether
+  /// the device removed held a place, rather than waiting for one.
+  ///
+  /// Refused with `device_too_new` (and `removableAt`) for a device added
+  /// before [removedBy] while [removedBy] is in its first day,
+  /// `unknown_device`, `bad_signature`, `signature_expired`, and
+  /// `device_removed` when [removedBy] itself was removed.
+  Future<bool> removeCryptoDevice(
+    String deviceId, {
+    required String removedBy,
+    required int signedAt,
+    required String signature,
+  }) async {
+    final (json, _) = await delete(
+      Router.cryptoDevice(deviceId),
+      query: {'removedBy': removedBy, 'signedAt': '$signedAt', 'signature': signature},
+    );
+    return switch (json) {
+      {'placed': final bool placed} => placed,
+      _ => true,
+    };
+  }
 
   /// Adds single-use keys, by the name the device knows each by. Answers how
   /// many the server now holds for the device.

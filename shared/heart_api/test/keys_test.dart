@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:heart_api/src/api.dart';
+import 'package:heart_models/heart_models.dart' show ServerRefusal;
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 
@@ -105,8 +106,41 @@ void main() {
         },
       );
 
-      expect(await api.getCryptoDevices(), hasLength(1));
-      expect(await api.getCryptoDevices(userId: 'CoachDanaUid551191'), hasLength(2));
+      expect((await api.getCryptoDevices()).devices, hasLength(1));
+      expect((await api.getCryptoDevices(userId: 'CoachDanaUid551191')).devices, hasLength(2));
+    });
+
+    test("the account's own list reads its waiting and lately removed devices, and when each was last seen", () async {
+      respond(
+        client: client,
+        method: 'GET',
+        path: Router.cryptoDevices,
+        statusCode: 200,
+        body: {
+          'devices': [
+            {..._device, 'lastSeenOn': '2026-11-25'},
+          ],
+          'waiting': [
+            {..._device, 'id': '01a1b7d4-bdd4-7e28-a0cd-b45015ff37b4', 'lastSeenOn': '2026-11-26'},
+          ],
+          'removed': [
+            {
+              ..._device,
+              'id': '01a1b7d4-bdd4-7e28-a0cd-b45015ff37b5',
+              'removedAt': '2026-11-24T10:00:00Z',
+              'removedBy': _deviceId,
+            },
+            {..._device, 'id': '01a1b7d4-bdd4-7e28-a0cd-b45015ff37b6', 'removedAt': '2026-11-20T10:00:00Z'},
+          ],
+        },
+      );
+
+      final listed = await api.getCryptoDevices();
+
+      expect(listed.devices.single.lastSeenOn, DateTime.utc(2026, 11, 25));
+      expect(listed.waiting.single.id, endsWith('37b4'));
+      expect(listed.removed.map((each) => each.removedBy), [_deviceId, null]);
+      expect(listed.removed.first.removedAt, DateTime.utc(2026, 11, 24, 10));
     });
 
     test('vouchForCryptoDevice sends the vouch and reads the device back', () async {
@@ -145,12 +179,53 @@ void main() {
       });
     }
 
-    test('removeCryptoDevice deletes the device', () async {
-      respond(client: client, method: 'DELETE', path: Router.cryptoDevice(_deviceId), statusCode: 204, body: {});
+    test('removeCryptoDevice signs the removal in the query, encoded, and says whether it held a place', () async {
+      const removedBy = '01a1b7d4-bdd4-7e28-a0cd-b45015ff37b4';
+      // base64 with every character a query has to encode
+      const signature = 'ab+/cd==';
+      final query = {'removedBy': removedBy, 'signedAt': '1764115200', 'signature': signature};
+      respond(
+        client: client,
+        method: 'DELETE',
+        path: Router.cryptoDevice(_deviceId),
+        query: query,
+        statusCode: 200,
+        body: {'placed': false},
+      );
 
-      await api.removeCryptoDevice(_deviceId);
+      final placed = await api.removeCryptoDevice(
+        _deviceId,
+        removedBy: removedBy,
+        signedAt: 1764115200,
+        signature: signature,
+      );
 
-      verify(client.delete(Uri.https('api.example.com', 'v1/keys/devices/$_deviceId'), headers: anyNamed('headers')));
+      expect(placed, isFalse);
+      final sent = verify(client.delete(captureAny, headers: anyNamed('headers'))).captured.single as Uri;
+      expect(sent.path, '/v1/keys/devices/$_deviceId');
+      expect(sent.queryParameters, query);
+      expect(sent.query, contains('signature=ab%2B%2Fcd%3D%3D'));
+    });
+
+    test("a removal refused for a device too new says when it won't be", () async {
+      final query = {'removedBy': _deviceId, 'signedAt': '1', 'signature': 's'};
+      respond(
+        client: client,
+        method: 'DELETE',
+        path: Router.cryptoDevice(_deviceId),
+        query: query,
+        statusCode: 403,
+        body: {'error': 'forbidden', 'code': 'device_too_new', 'removableAt': '2026-11-27T09:00:00Z'},
+      );
+
+      await expectLater(
+        api.removeCryptoDevice(_deviceId, removedBy: _deviceId, signedAt: 1, signature: 's'),
+        throwsA(
+          isA<ServerRefusal>()
+              .having((refusal) => refusal.code, 'code', 'device_too_new')
+              .having((refusal) => refusal.details['removableAt'], 'removableAt', '2026-11-27T09:00:00Z'),
+        ),
+      );
     });
 
     test('a device id that is not a UUID never reaches a path', () {

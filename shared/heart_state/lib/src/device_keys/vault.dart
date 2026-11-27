@@ -34,6 +34,10 @@ class _Run {
 
   final peers = <String, Peer>{};
 
+  /// The account's own list as last read: what waits for a place, what was
+  /// removed lately, and this device's own row.
+  CryptoDevices? ownListing;
+
   /// When each thread last shared its keys with every device it knew of.
   final sharedAt = <String, DateTime>{};
 
@@ -86,6 +90,7 @@ class _Run {
     device = null;
     box = null;
     peers.clear();
+    ownListing = null;
     sharedAt.clear();
     owing.clear();
     arrived = false;

@@ -72,10 +72,16 @@ enum DeviceKeysStatus {
   /// start or resume.
   failed,
 
-  /// The account holds as many devices with keys as the server takes
-  /// (`device_limit`): this one's go on once one is removed, here or
-  /// elsewhere, and are tried again at each start, resume and change to the
-  /// account's devices (#750).
+  /// The account has no place for this device, and the server keeps it
+  /// waiting for one (`device_waiting`): nothing is sent to it, but it may
+  /// remove a device, after its first day for one added before it. It takes
+  /// its place as soon as there is one, tried again at each start, resume and
+  /// change to the account's devices (#750).
+  waiting,
+
+  /// The account has no place for this device, nor room for it to wait
+  /// (`device_limit`): the server knows nothing of it, so a device is removed
+  /// from another of the account's. Tried again as [waiting] is.
   full,
 
   /// The server removed this device, from another or from this one's
@@ -142,6 +148,13 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
   /// Names a device's keys in a fingerprint. Part of every invitation link a
   /// coach sends, so changing it breaks the links still out there.
   static const fingerprintContext = 'heart-of.me/device-keys/v1';
+
+  /// What a device signs to remove [deviceId] from [ownerId]'s account at
+  /// [signedAt], in seconds since the epoch (heart-api#483). The server
+  /// checks these bytes, so changing them breaks removing.
+  static String removeMessage({required String ownerId, required String deviceId, required int signedAt}) {
+    return ['heart-of.me/remove-device/v1', ownerId, deviceId.toLowerCase(), '$signedAt'].join('\n');
+  }
 
   /// What one device signs to vouch for another of the same person's.
   static String vouchMessage(CryptoDevice device) {
@@ -488,31 +501,24 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
   /// held is replaced before anything else is sealed under it. Then this
   /// device publishes, when it waited for room. Throws what the server says,
   /// and [ArgumentError] for this device, which is never removed from here.
+  ///
+  /// The removal is signed by this device, which the server has to know, in
+  /// its place or waiting for one: [RemovalRefused] says why it can't, and
+  /// when, where that is known. A removal of one gone already counts as
+  /// done. This device having been removed itself makes it forget its keys,
+  /// and answers quietly.
   Future<void> remove(String deviceId) async {
     final run = _run;
     if (run == null || !_remote.allowed) throw StateError('device keys are off');
-    final device = await _local(run);
-    if (deviceId == device.id) throw ArgumentError.value(deviceId, 'deviceId', 'this device');
-    await _serial(run, () async {
-      try {
-        await run.service.removeCryptoDevice(deviceId).timeout(_answerTime);
-      } on ServerRefusal catch (refusal) {
-        // removed already, from another device: the same as from here
-        if (refusal.code != 'not_found' && refusal.code != 'device_removed') rethrow;
-      }
-      // kept before anything else: a seal that comes before the next read of
-      // the devices finds it gone, even after a relaunch
-      await run.saveSeen(run.userId, {...await run.seen(run.userId)}..remove(deviceId));
-      await run.ownDeviceWent();
-      await run.forgetSessions(deviceId);
-      if (run.peers[run.userId] case final Peer own) {
-        run.peers[run.userId] = Peer(
-          userId: own.userId,
-          check: own.check,
-          devices: [...own.devices.where((each) => each.id != deviceId)],
-        );
-      }
-    });
+    final _Device device;
+    try {
+      device = await _local(run);
+      if (deviceId == device.id) throw ArgumentError.value(deviceId, 'deviceId', 'this device');
+      await _serial(run, () => _removeSigned(run, device, deviceId));
+    } on _Removed {
+      // this device was removed itself: it forgot its keys, and says so
+      return;
+    }
     _changed(run);
     try {
       // in first, when it waited for room: then the list holds it too
@@ -524,6 +530,90 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
       // removed all the same: the list is read again on the next open
       _report(error, stacktrace);
     }
+  }
+
+  /// [remove]'s turn: signs, sends, and on its way out forgets what it knew
+  /// of [deviceId].
+  Future<void> _removeSigned(_Run run, _Device device, String deviceId) async {
+    // nothing recorded of this device: its word counts for nothing yet
+    if (run.status == .full) throw const RemovalRefused(.notJoined);
+    final signedAt = _now().millisecondsSinceEpoch ~/ 1000;
+    final message = removeMessage(ownerId: run.userId, deviceId: deviceId, signedAt: signedAt);
+    final signature = _guard(() => run.sealbox.sign(device.account, message));
+    try {
+      await run.service
+          .removeCryptoDevice(deviceId, removedBy: device.id, signedAt: signedAt, signature: signature)
+          .timeout(_answerTime);
+    } on ServerRefusal catch (refusal, stacktrace) {
+      switch (refusal.code) {
+        // gone already, from another device: the same as from here
+        case 'not_found':
+          break;
+        // an older device, before this one's first day is out
+        case 'device_too_new':
+          throw RemovalRefused(.tooNew, removableAt: DateTime.tryParse('${refusal.details['removableAt']}'));
+        // this device's clock is off by more than the server allows
+        case 'signature_expired':
+          throw const RemovalRefused(.clock);
+        // the server doesn't know this device, though it thought it did:
+        // said, and worth knowing about
+        case 'unknown_device':
+          _report(refusal, stacktrace);
+          throw const RemovalRefused(.notJoined);
+        // this device was removed itself
+        case 'device_removed':
+          await _forgetRemoved(run);
+          throw _Removed();
+        default:
+          rethrow;
+      }
+    }
+    // kept before anything else: a seal that comes before the next read of
+    // the devices finds it gone, even after a relaunch
+    await run.saveSeen(run.userId, {...await run.seen(run.userId)}..remove(deviceId));
+    await run.ownDeviceWent();
+    await run.forgetSessions(deviceId);
+    if (run.peers[run.userId] case final Peer own) {
+      run.peers[run.userId] = Peer(
+        userId: own.userId,
+        check: own.check,
+        devices: [...own.devices.where((each) => each.id != deviceId)],
+      );
+    }
+    if (run.ownListing case final CryptoDevices listing) {
+      run.ownListing = CryptoDevices(
+        [...listing.devices.where((each) => each.id != deviceId)],
+        waiting: [...listing.waiting.where((each) => each.id != deviceId)],
+        removed: listing.removed,
+      );
+    }
+  }
+
+  /// The account's other devices waiting for a place, as last read: never
+  /// sent anything.
+  List<CryptoDevice> get waiting {
+    final self = deviceId;
+    return [...?_run?.ownListing?.waiting.where((each) => each.id != self)];
+  }
+
+  /// The account's devices removed lately, newest first, each with when and
+  /// by which device, as last read.
+  List<CryptoDevice> get removedLately => [...?_run?.ownListing?.removed];
+
+  /// When this device may remove [target], another of the account's: a device
+  /// added after this one at once, one added before it once this one has been
+  /// in use for a day. Null when it may now, or when this device's own row
+  /// wasn't read, so only the server can tell.
+  DateTime? removableAt(CryptoDevice target) {
+    final (self, listing) = (deviceId, _run?.ownListing);
+    if (self == null || listing == null) return null;
+    final own = [...listing.devices, ...listing.waiting].where((each) => each.id == self).firstOrNull;
+    if (own == null || target.createdAt.isAfter(own.createdAt)) return null;
+    final at = own.createdAt.add(const Duration(days: 1));
+    return switch (_now().isBefore(at)) {
+      true => at,
+      false => null,
+    };
   }
 
   /// Reads what waits for this device, opens it, keeps it, confirms it, then
@@ -692,6 +782,34 @@ class DeviceKeys with ChangeNotifier implements SignOutStateSentry, ThreadCipher
     };
     onError?.call(reported, stacktrace: stacktrace);
   }
+}
+
+/// Why this device couldn't remove another (#750).
+enum RemovalRefusal {
+  /// The other was added before this one, whose first day isn't out:
+  /// [RemovalRefused.removableAt] says when it is.
+  tooNew,
+
+  /// The server knows nothing of this device: the account had no room even
+  /// for it to wait. Another of the account's devices removes it.
+  notJoined,
+
+  /// This device's clock is too far off for its signature to count.
+  clock,
+}
+
+/// What [DeviceKeys.remove] throws when the server won't take this device's
+/// word for the removal.
+class RemovalRefused implements Exception {
+  final RemovalRefusal reason;
+
+  /// When the removal will go through, for [RemovalRefusal.tooNew].
+  final DateTime? removableAt;
+
+  const new(this.reason, {this.removableAt});
+
+  @override
+  String toString() => 'RemovalRefused(${reason.name})';
 }
 
 /// The most devices one claim may name.

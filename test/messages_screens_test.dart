@@ -254,14 +254,30 @@ void main() {
       expectSaid("Some messages can't be opened any more.");
     });
 
-    testWidgets('on a device the account has no room for say so, and no link is offered (#750)', (tester) async {
+    testWidgets('on a device waiting for a place say so, and no link is offered: it removes one itself (#750)', (
+      tester,
+    ) async {
+      keys
+        ..status = .waiting
+        ..others = {'tablet': .pinned};
+      await open(tester, from: ['muffin', 'whiskers']);
+      expectSaid(
+        "This device can't open messages yet: your account has as many devices as it can hold. "
+        'Remove one you no longer use in Your devices.',
+      );
+    });
+
+    testWidgets('with nowhere even to wait, send the person to another device, with the link for it (#750)', (
+      tester,
+    ) async {
       keys
         ..status = .full
         ..others = {'tablet': .pinned};
       await open(tester, from: ['muffin', 'whiskers']);
       expectSaid(
         "This device can't open messages yet: your account has as many devices as it can hold. "
-        'Remove one you no longer use in Your devices.',
+        'Remove one you no longer use from another of your devices.',
+        buttons: true,
       );
     });
 

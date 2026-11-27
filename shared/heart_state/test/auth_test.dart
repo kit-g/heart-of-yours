@@ -749,7 +749,7 @@ void main() {
           scheduledForDeletionAt: DateTime.utc(2026, 10, 19),
         ),
       );
-      when(account.undoAccountDeletion()).thenAnswer((_) async => null);
+      when(account.undoAccountDeletion()).thenAnswer((_) async {});
 
       final sut = Auth(service: account, firebase: firebase);
       await Future<void>.delayed(const Duration(milliseconds: 20));

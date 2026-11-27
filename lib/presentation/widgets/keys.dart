@@ -251,6 +251,13 @@ abstract final class AppKeys {
   static const deviceRemoveConfirm = Key('YourDevices.removeConfirm');
   static const yourDevicesFull = Key('YourDevices.full');
 
+  /// Waiting devices, recent removals and a device not seen lately (#750).
+  static const yourDevicesWaiting = Key('YourDevices.waiting');
+  static const yourDevicesRemovedLately = Key('YourDevices.removedLately');
+  static Key waitingRow(String id) => Key('YourDevices.waiting.$id');
+  static Key removedRow(String id) => Key('YourDevices.removed.$id');
+  static Key deviceStale(String id) => Key('YourDevices.stale.$id');
+
   /// A device the server removed (#750): the notice, and starting over.
   static const yourDevicesRemoved = Key('YourDevices.removed');
   static const deviceStartOver = Key('YourDevices.startOver');

@@ -121,11 +121,11 @@ class _DeviceKeysPresenterState extends State<DeviceKeysPresenter> {
   }
 
   /// Whether [status] needs no new start: published, or waiting on what a
-  /// start can't change (room on the account, or being asked to start over),
+  /// start can't change (a place on the account, or being asked to start over),
   /// which a resume and a change to the account's devices try again (#750).
   static bool _settled(DeviceKeysStatus status) {
     return switch (status) {
-      .published || .full || .removed => true,
+      .published || .waiting || .full || .removed => true,
       .off || .local || .failed => false,
     };
   }
