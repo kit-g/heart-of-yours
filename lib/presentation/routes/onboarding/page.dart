@@ -32,6 +32,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   static const _screens = 3;
 
+  /// How much of the copy's foot fades out: the padding under a screen that
+  /// fits, so nothing of one is touched.
+  static const _fade = 16.0;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -92,28 +96,40 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
             ),
             Expanded(
-              child: PageView(
-                controller: _controller,
-                onPageChanged: (index) => _page.value = index,
-                children: [
-                  // the splash's heart, met again on the first thing the
-                  // app says
-                  _Screen(
-                    glyph: .heart,
-                    title: onboardingWelcomeTitle,
-                    body: [onboardingWelcomeBody],
-                  ),
-                  _Screen(
-                    glyph: const .icon(Icons.smartphone_outlined),
-                    title: onboardingLocalTitle,
-                    body: [onboardingLocalBody, onboardingLocalTrade],
-                  ),
-                  _Screen(
-                    glyph: const .icon(Icons.cloud_sync_outlined),
-                    title: onboardingAccountTitle,
-                    body: [onboardingAccountBody],
-                  ),
-                ],
+              // A screen that outgrows its room scrolls, and its copy fades
+              // out above the dots rather than being cut flat against them,
+              // which read as a page that ended mid-line (#704).
+              child: ShaderMask(
+                blendMode: .dstIn,
+                shaderCallback: (bounds) => LinearGradient(
+                  begin: .topCenter,
+                  end: .bottomCenter,
+                  colors: const [Colors.black, Colors.black, Colors.transparent],
+                  stops: [0, 1 - _fade / math.max(bounds.height, _fade), 1],
+                ).createShader(bounds),
+                child: PageView(
+                  controller: _controller,
+                  onPageChanged: (index) => _page.value = index,
+                  children: [
+                    // the splash's heart, met again on the first thing the
+                    // app says
+                    _Screen(
+                      glyph: .heart,
+                      title: onboardingWelcomeTitle,
+                      body: [onboardingWelcomeBody],
+                    ),
+                    _Screen(
+                      glyph: const .icon(Icons.smartphone_outlined),
+                      title: onboardingLocalTitle,
+                      body: [onboardingLocalBody, onboardingLocalTrade],
+                    ),
+                    _Screen(
+                      glyph: const .icon(Icons.cloud_sync_outlined),
+                      title: onboardingAccountTitle,
+                      body: [onboardingAccountBody],
+                    ),
+                  ],
+                ),
               ),
             ),
             ValueListenableBuilder<int>(
@@ -184,13 +200,9 @@ class _Screen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        title,
-                        style: textTheme.headlineMedium,
-                        textAlign: .center,
-                      ),
+                      WholeWords(title, style: textTheme.headlineMedium, textAlign: .center),
                       for (final paragraph in body)
-                        Text(
+                        WholeWords(
                           paragraph,
                           style: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
                           textAlign: .center,
@@ -294,6 +306,9 @@ class _Dot extends StatelessWidget {
 /// fill for the login page and the accent for the app — the app is where a
 /// first launch is headed, an account is the option.
 class _Footer extends StatelessWidget {
+  /// Read at a label's own size: a scaler need not treat every size alike.
+  static const _holdUpTo = 14.0;
+
   final int page;
   final int screens;
   final VoidCallback onNext;
@@ -313,6 +328,7 @@ class _Footer extends StatelessWidget {
     final L(:onboardingNext, :onboardingContinue, :logIn, :onboardingScreenOf) = L.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     final isLast = page == screens - 1;
+    final holdsSpace = MediaQuery.textScalerOf(context).scale(_holdUpTo) <= _holdUpTo * 1.5;
 
     return Center(
       child: ConstrainedBox(
@@ -341,11 +357,16 @@ class _Footer extends StatelessWidget {
                   // uses it: built only where it appears, the footer grew by a
                   // button on the last screen and shoved the dots — and the
                   // action under them — up the page as the reader arrived.
+                  //
+                  // Not at the largest text sizes: there the held space is a
+                  // third of a phone, and the copy above was left one line of
+                  // room to scroll in (#704). Reading it matters more than the
+                  // dots holding still.
                   Visibility(
                     visible: isLast,
-                    maintainSize: true,
-                    maintainAnimation: true,
-                    maintainState: true,
+                    maintainSize: holdsSpace,
+                    maintainAnimation: holdsSpace,
+                    maintainState: holdsSpace,
                     child: PrimaryButton.wide(
                       key: AppKeys.onboardingSignIn,
                       margin: tallButtonPadding,
