@@ -15,11 +15,14 @@
 // cannot deterministically observe the API side of it.
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/widgets/heading_row.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/logo.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -116,6 +119,9 @@ Future<void> _expectHeading(WidgetTester tester, String heading, {required bool?
       expect(actions.top, greaterThanOrEqualTo(headingRect.bottom), reason: '"$heading": its actions overlap it');
   }
 }
+
+/// The Workout tab's pinned Start header: the box its sliver pins.
+final _startHeader = find.descendant(of: find.byType(PinnedHeaderSliver), matching: find.byType(ColoredBox)).first;
 
 void main() {
   late MockLocalDatabase db;
@@ -338,4 +344,241 @@ void main() {
       );
     }
   }
+
+  // The largest accessibility text size (iOS's AX5 is 3.1x) on the narrowest
+  // phones, in every language: the surfaces that are a fixed line or a fixed
+  // height, where growing text was cut rather than made room for.
+  for (final locale in L.supportedLocales) {
+    for (final width in [320.0, 360.0]) {
+      final phone = Size(width, 780);
+      final where = 'at the largest text under $locale on a ${width.round()}dp phone';
+
+      // Flutter does not hyphenate: a word wider than its line is broken where
+      // the line ends, "Добро пожалова / ть" (#704)
+      testWidgets('$where, onboarding breaks no word', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 3.1;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        SharedPreferences.setMockInitialValues({});
+        tester.view.physicalSize = phone * 3;
+        tester.view.devicePixelRatio = 3;
+        addTearDown(tester.view.reset);
+        tester.platformDispatcher.localesTestValue = [locale];
+        addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+        await harness.pumpHeartApp(
+          tester,
+          db: db,
+          api: api,
+          cdn: cdn,
+          firebaseAuth: MockFirebaseAuth(signedIn: false),
+          hasLocalNotifications: false,
+          settle: false,
+        );
+        await tester.pumpTimes();
+
+        final l = L.of(tester.element(find.byType(Navigator).first));
+        final screens = [
+          [l.onboardingWelcomeTitle, l.onboardingWelcomeBody],
+          [l.onboardingLocalTitle, l.onboardingLocalBody, l.onboardingLocalTrade],
+          [l.onboardingAccountTitle, l.onboardingAccountBody],
+        ];
+        for (final copy in screens) {
+          for (final text in copy) {
+            final paragraph = tester.renderObject<RenderParagraph>(find.text(text));
+            expect(
+              paragraph.getMinIntrinsicWidth(double.infinity),
+              lessThanOrEqualTo(paragraph.constraints.maxWidth),
+              reason: '"$text": its longest word is wider than its line',
+            );
+            expect(paragraph.textScaler.scale(10), greaterThan(10), reason: '"$text" still answers the text size');
+          }
+          // The copy has a window of its own between Skip and the dots, big
+          // enough to read in, and all of it can be scrolled into that window:
+          // none is painted under the dots or the button.
+          final scrollable = find
+              .ancestor(of: find.text(copy.first), matching: find.byType(SingleChildScrollView))
+              .first;
+          final window = tester.getRect(scrollable);
+          final dots = tester.getRect(find.byKey(AppKeys.onboardingScreenCount));
+          final action = tester.getRect(
+            find.byKey(copy == screens.last ? AppKeys.onboardingContinue : AppKeys.onboardingNext),
+          );
+          expect(window.bottom, lessThanOrEqualTo(dots.top), reason: 'the copy runs under the dots');
+          expect(dots.bottom, lessThanOrEqualTo(action.top));
+          expect(action.bottom, lessThanOrEqualTo(phone.height));
+          // two thirds of the phone until the last screen, whose second
+          // button takes its share
+          expect(
+            window.height,
+            greaterThanOrEqualTo(phone.height * (copy == screens.last ? 1 / 2 : 2 / 3)),
+            reason: 'the footer leaves the copy too little room to read in',
+          );
+          expect(tester.getRect(find.text(copy.first)).top, greaterThanOrEqualTo(window.top));
+
+          final position = tester
+              .state<ScrollableState>(
+                find.descendant(of: scrollable, matching: find.byType(Scrollable)).first,
+              )
+              .position;
+          position.jumpTo(position.maxScrollExtent);
+          await tester.pump();
+          expect(
+            tester.getRect(find.text(copy.last)).bottom,
+            lessThanOrEqualTo(window.bottom - 16),
+            reason: '"${copy.last}" cannot be scrolled clear of the footer',
+          );
+          if (copy != screens.last) {
+            await tester.tapByKey(AppKeys.onboardingNext);
+            await tester.pumpTimes(4);
+          }
+        }
+        expect(tester.takeException(), isNull);
+      });
+
+      // pinned at 40pt flat, the label was cut top and bottom (#704)
+      for (final pastWorkouts in [false, true]) {
+        final beside = pastWorkouts ? ', beside Log past workout' : '';
+        testWidgets('$where, the Start header grows to its label$beside', (tester) async {
+          // Profile is laid out on the way to the Workout tab, and at this
+          // size its weekly chart's axis labels outgrow their band. That is
+          // fl_chart's trouble; anything else reported here is the header's.
+          final reported = <FlutterErrorDetails>[];
+          final onError = FlutterError.onError;
+          FlutterError.onError = reported.add;
+          addTearDown(() => FlutterError.onError = onError);
+
+          tester.platformDispatcher.textScaleFactorTestValue = 3.1;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+          if (pastWorkouts) {
+            SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-pastWorkouts': 'on'});
+          }
+          await pumpTo(tester, _Screen.workout, locale, phone: phone);
+          await tester.pumpTimes();
+          FlutterError.onError = onError;
+          expect(reported.where((error) => !'$error'.contains('fl_chart')), isEmpty);
+
+          expect(find.byKey(WorkoutDetailKeys.logPastWorkout), pastWorkouts ? findsOneWidget : findsNothing);
+          final l = L.of(tester.element(find.byType(Navigator).first));
+          final label = find.text(l.startNewWorkout);
+          final paragraph = tester.renderObject<RenderParagraph>(label);
+          final whole = TextPainter(
+            text: paragraph.text,
+            textDirection: .ltr,
+            textScaler: paragraph.textScaler,
+          )..layout(maxWidth: paragraph.constraints.maxWidth);
+          addTearDown(whole.dispose);
+          expect(paragraph.size.height, greaterThanOrEqualTo(whole.height), reason: 'the label is cut short');
+          expect(paragraph.didExceedMaxLines, isFalse);
+          expect(
+            paragraph.getMinIntrinsicWidth(double.infinity),
+            lessThanOrEqualTo(paragraph.constraints.maxWidth),
+            reason: 'a word of the label is wider than its line',
+          );
+          expect(paragraph.textScaler.scale(10), greaterThan(10), reason: 'the label still answers the text size');
+
+          final button = tester.getRect(find.byKey(WorkoutDetailKeys.startNewWorkout));
+          final header = tester.getRect(_startHeader);
+          final text = tester.getRect(label);
+          expect(button.top, lessThanOrEqualTo(text.top));
+          expect(button.bottom, greaterThanOrEqualTo(text.bottom));
+          expect(header.top, lessThanOrEqualTo(button.top));
+          expect(header.bottom, greaterThanOrEqualTo(button.bottom));
+          // pinned: what it takes, the list under it never gets back
+          expect(header.height, lessThanOrEqualTo(phone.height / 4));
+        });
+      }
+    }
+  }
+
+  // The logo stripe is one fixed line under the app bar. Scaled a second time
+  // by `Text`, "Every beat counts." ran 89px off a 360dp phone at 1.3x (#762).
+  // Larger text now grows the mark and the motto together and only while both
+  // fit, so neither is clipped and the motto never pays for the mark.
+  for (final locale in L.supportedLocales) {
+    for (final width in [320.0, 360.0, 390.0, 430.0, 820.0]) {
+      testWidgets('under $locale at ${width.round()}dp the logo stripe keeps the mark whole at any text size', (
+        tester,
+      ) async {
+        tester.view.physicalSize = Size(width, 780) * 3;
+        tester.view.devicePixelRatio = 3;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        // the stripe by itself, hung the way every page hangs it: the pages
+        // under it have large-text trouble of their own
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: locale,
+            localizationsDelegates: localizationsDelegates,
+            supportedLocales: L.supportedLocales,
+            home: Scaffold(
+              appBar: AppBar(
+                bottom: const PreferredSize(preferredSize: Size.fromHeight(56), child: LogoStripe()),
+              ),
+            ),
+          ),
+        );
+
+        final markText = find.text(LogoTitle.logotype);
+        final motto = find.descendant(of: find.byType(LogoStripe), matching: find.byType(Motto));
+        double? sizeOf(Finder text) =>
+            text.evaluate().isEmpty ? null : tester.renderObject<RenderParagraph>(text).text.style?.fontSize;
+        Finder drawn(Finder within) => find.descendant(of: within, matching: find.byType(RichText));
+
+        for (final bold in [false, true]) {
+          tester.platformDispatcher
+            ..textScaleFactorTestValue = 1
+            ..accessibilityFeaturesTestValue = FakeAccessibilityFeatures(boldText: bold);
+          await tester.pump();
+          final plainMark = sizeOf(markText)!;
+          final plainMotto = sizeOf(drawn(motto));
+          expect(plainMark, 28);
+
+          for (final scale in [0.85, 1.0, 1.3, 2.0, 3.1]) {
+            final at = '${scale}x${bold ? ', bold' : ''}';
+            tester.platformDispatcher.textScaleFactorTestValue = scale;
+            await tester.pump();
+            expect(tester.takeException(), isNull, reason: at);
+
+            final stripe = tester.getRect(find.byType(LogoStripe));
+            expect(stripe.width, width);
+            expect(stripe.height, lessThanOrEqualTo(56), reason: '$at: taller than the room every page gives it');
+
+            final mark = tester.renderObject<RenderParagraph>(markText);
+            final markRect = tester.getRect(markText);
+            expect(mark.size.width, greaterThanOrEqualTo(mark.getMaxIntrinsicWidth(double.infinity)), reason: at);
+            expect(sizeOf(markText), greaterThanOrEqualTo(plainMark), reason: '$at: the mark never shrinks');
+            expect(markRect.left, greaterThanOrEqualTo(stripe.left), reason: at);
+            expect(markRect.right, lessThanOrEqualTo(stripe.right), reason: at);
+            expect(markRect.top, greaterThanOrEqualTo(stripe.top), reason: at);
+            expect(markRect.bottom, lessThanOrEqualTo(stripe.bottom), reason: at);
+
+            // the motto is part of the mark: English in every language, and
+            // there at a larger text size wherever it is at the ordinary one
+            switch (plainMotto) {
+              case null:
+                expect(motto, findsNothing, reason: at);
+              case final plain:
+                expect(find.descendant(of: motto, matching: find.text('Every beat counts.')), findsOneWidget);
+                expect(sizeOf(drawn(motto)), greaterThanOrEqualTo(plain), reason: '$at: the motto gave way');
+                expect(plain, greaterThanOrEqualTo(11));
+                final mottoRect = tester.getRect(motto);
+                expect(mottoRect.left, greaterThanOrEqualTo(markRect.right), reason: at);
+                expect(mottoRect.right, lessThanOrEqualTo(stripe.right - 16 + .01), reason: at);
+            }
+          }
+        }
+        // a phone shows both halves; only a window under the mark's own
+        // width would not
+        expect(motto, width >= 360 ? findsOneWidget : anything);
+      });
+    }
+  }
+
+  // At ordinary text nothing moved: the header is the 40pt it always was.
+  testWidgets('at 1x the Start header is 40pt', (tester) async {
+    await pumpTo(tester, _Screen.workout, const Locale('en'));
+    await tester.pumpTimes();
+    expect(tester.getSize(_startHeader).height, 40);
+    expect(tester.getSize(find.byKey(WorkoutDetailKeys.startNewWorkout)).height, 32);
+  });
 }
